@@ -1,12 +1,12 @@
 {
   "schema": 1,
   "channel": "android-preview",
-  "revision": 108,
+  "revision": 111,
   "minimum_android_code": 1102,
   "maximum_android_code": 2147483000,
-  "sha256": "604aedb016ced259bb50612071a908e151aac82049d3599ec7a4787f9beb80c6",
-  "size_bytes": 125808,
-  "pack_url": "https://160701541-cell.github.io/xinyanshuo/android-preview/canglan-content-rev-108.pck",
+  "sha256": "4deda476862a44e7c2ed98b97c9065b946a3f66fd8a3d2b694331c73979bc088",
+  "size_bytes": 148176,
+  "pack_url": "https://160701541-cell.github.io/xinyanshuo/android-preview/canglan-content-rev-111.pck",
   "notes": "苍岚：内容与资源更新",
-  "signature": "gA8vnjDO615j4jcE+qLpCKO28TAnhKeP34hgehipqYBJ7ESyBf+0KX2PYypFYXyrExMbHKWPh5N7kr/rWcvDOltiyzg2fN0B9abKzTWO+2zPgXPcfeoKALjv5dwGL2ocA5CBXrTE1lNDLGHe2RYxHwJvxWjQ3tQLaoiItyVX/8LOxij4liCXumb4ZY74QFSmZW0c0in4fZ4FKfgiFxJ146swDUJ8sxcFtK6EIabJZ1xyrPwFDy3XHJ0C/445ITGL5ukxw22vSzZppoWtpdLZMigAZKZUB2kjR5WS49qnowHidBzSqDEqGIiBTneHSDTFZQlmlGGfASLxB8XiFNO4Dq6DK+HAobknGzK4ZJN5lYzFxzBlzzInheeva6bWY8GUzGZCE6fM8WE8L8Z1AejvFcsGrh30u8Uia0wprlpkTPvTe5ertUR+80hQPqCnmG5XPhA2p5KL2R9L+kYLVajOxhSDLfRMhNSRUKldPhHZbMMg4UnyYYTXbabBEE+mKL0m"
+  "signature": "l+ruQzCFoe7L2wCJ+qt3fWH8TmUnEDZU4XJoBS+XCe3/Ayks7dFxD5mhKa32DHkoNR6rIpo3JHY+rtMmZIC/+V2D86DeYNJfvcul+zMYcEqAz6Xg+5HziFvqmszSFE74/ciJoIkt2GgnV0F/ndL+iQ7wewk/87EZY5rTGI/ne5rHiJJhLAwv+KqrdFOqbycMRMULFaWxp+R2GVuMBNdd1Adz1gNkjFCKCA8Innazj3K96MEyARjyrHWRoKjXTEQtWHr9hsG3J/F3/x+OJrg7ZPqrzPMLIfev8KdgPEHyYSkH3C6awfZNtp0pv3zvylYxuqeuK37eLcA5KPk7aSiIuN03Q0ZxeeEzAfCRxz7F+aPY8Qzv8JE+OXcU+j5G2+bSDrWsb2/XYOUjzfHN491jQtfd+yXZZSgfrsXu7yo+0KSS1IBoqwGptEE087iqRL/pmqFO2HDgY1NIJkL93v2YbLT1twjjTkFtcZP0gUiwfawc/uyPUmMH+RAeyAgjX3do"
 }
