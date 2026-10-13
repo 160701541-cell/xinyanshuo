@@ -1,0 +1,12 @@
+{
+  "schema": 1,
+  "channel": "android-preview",
+  "revision": 104,
+  "minimum_android_code": 1102,
+  "maximum_android_code": 2147483000,
+  "sha256": "cb6a49aabdc0fff15689b8c977b88f4b4cb13bb6345130764dfe8c28a98dd72e",
+  "size_bytes": 136432,
+  "pack_url": "https://160701541-cell.github.io/xinyanshuo/android-preview/canglan-content-rev-104.pck",
+  "notes": "苍岚：内容与资源更新",
+  "signature": "jc/8qrubLvjDwzwS1my17O1cYinBGIxfwixdyInnF5nM2vKdghKOhiBioArcEsyUTb6N9wwa7JStyUmWESMqMboGhBtSF/NHnQBDUDe+VFyw99gV97TRF7ZfwiMVgW6xpFLoErU6M/5rjn7RmoShZBbdFFMHZp91EWOG1LQ/5XgFNMdW09bSh8PB7oipOjIBWhb+8iBuwyQbBIRPW0Barw3eiDFSbZ0zErTVpYqwsysSNoBE66DRTq3aYMAbru7J7rZgmM0mhnCMVHS+xGDLGEPPJ0w1N+qBhqSx4rjVgpWB+v++HsF+fGLKAnTzrFJt+I9WCMNp06voR6didw+JbrDE6y0sWax12t8bZcM9+kHu/HgR4Tpe9r90T+yHVP6hMecaQrsr4SVlXuCwQksWREL+WJNfnwqNYFEo+jXPeNTaWVTJlkMwPXt2P5BeahyJmXPSHnEY/1XpzBuACDxSzvHi7YzP6NAV1gq32MZJ4QpFU4Yh3nu1iGzzkTobou1f"
+}
