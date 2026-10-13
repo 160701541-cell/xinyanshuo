@@ -1,14 +1,12 @@
 # 苍岚游戏内更新（android-preview）
 
-此目录是给正式发布的资源补丁使用的公开 HTTPS 发布目录。
+**已首次发布签名的资源测试补丁。** `latest.json` 当前发布 #104，资源文件 `canglan-content-rev-104.pck`（136,432 字节）。该版本仅用于验证游戏内增量资源更新机制，不代表游戏内容已正式发行或手机 OTA 验收完成。
 
-**当前状态：尚未发布正式补丁。** `latest.json` 不存在是刻意的：这意味着客户端离线运行或提示更新站未开放，而不是下载未经签名的文件。
+- 基础安装包：`v0.2.0-dev.102`（Android `versionCode=1102`），使用固定 APK 签名。
+- 签名资源版次：`revision=104`，RSA 签名、文件大小与 SHA-256 已通过独立发布门禁。
+- 资源内容：Work 陶罐资产与可见 HUD 文案改为「心魇说 · 苍岚·人生世界」的测试脚本。
+- 更新入口：https://160701541-cell.github.io/xinyanshuo/android-preview/latest.json
+- 技术注意：当前未完成 Android 手机真实下载、断网续传/回退/存档验收。GitHub Pages CI 成功不等于所有终端网络都能访问。
+- 已发现默认 Godot PCK 内容选择可能把自动加载脚本一并打进包；正在对后续修订实行真实文件索引安全审查，不把 CI PASS 冒充完整安全验收。
 
-只有同时满足下列要求后才能发布：
-
-- 首次长期基础 APK 已使用**固定的 Android 签名密钥**，并打包了对应的 RSA-3072 公钥。
-- 补丁文件 `canglan-content-rev-N.pck` 是 Godot 正常导出的实际 PCK，不包含更新器信任锚、签名私钥或 Android keystore。
-- `latest.json` 的 RSA 私钥签名与基础 APK 的不可更改公钥相符；内容修订号递增、完整性 SHA-256 和实际长度一致。
-- 在公网先存放完整 PCK，再发布指向它的 `latest.json`，并核验普通 Android 浏览器匿名访问成功。
-
-目前只有官网成功部署，没有开启任何可安装的补丁，勿上传测试用 UNSIGNED_DEVELOPER_TEMPLATE。
+本目录**只公开经签名核验的 PCK**，禁止提交源码、签名私钥、Android keystore、访问令牌或玩家数据。发布下一版必须先通过私有仓库质量门禁，并让 `latest.json` 指向实际存在的完整 PCK。
