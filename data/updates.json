@@ -2,12 +2,11 @@
   "schema": 1,
   "channel": "signed-releases",
   "updated_at": "2026-10-14T07:36:07.824Z",
-  "source": "android-preview/latest.json and signed release CI/development history",
+  "source": "Official signed Android PCK manifests and verified historical release reports (exact historical publish timestamps not inferred)",
   "verification": "Website displays metadata; actual RSA PCK/sha256 verified by Godot app",
   "entries": [
     {
       "revision": 147,
-      "published_utc": "2026-10-14T06:00:00Z",
       "version_name": "0.2.0-dev.147",
       "sha256": "1e9a61a2c5eab2feb22e48a8c52570f59835187729766a6a773c91593d5c8f65",
       "size_bytes": 18025408,
@@ -16,7 +15,6 @@
     },
     {
       "revision": 146,
-      "published_utc": "2026-10-14T04:00:00Z",
       "version_name": "0.2.0-dev.146",
       "sha256": "a054f58985de841d308d2952b0d1b1458b8733661ec4baf7eb1c24728ace6384",
       "size_bytes": 10178544,
@@ -25,7 +23,6 @@
     },
     {
       "revision": 145,
-      "published_utc": "2026-10-14T02:00:00Z",
       "version_name": "0.2.0-dev.145",
       "sha256": "799b346f10661e819fc6dfc0cdba2e9a15acecda049927f7bf58d9a944a4cc2d",
       "notes": "正式签名内容修订 #145：原有基础角色/游戏系统验证发布；实验性人物工厂和未通过美术审核的材质不包含在此正式版本。",
