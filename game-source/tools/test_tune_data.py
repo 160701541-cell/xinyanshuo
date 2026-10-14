@@ -114,6 +114,24 @@ class TuningTests(unittest.TestCase):
         with self.assertRaisesRegex(TuneError,'invalid_numeric'):
             validate_contract(c)
 
+    def test_non_negotiable_fps_floor_cannot_be_relaxed(self):
+        c=copy.deepcopy(self.contract)
+        c['gates']['performance']['metrics']['fps_p05']['min']=5
+        with self.assertRaisesRegex(TuneError,'quality_floor_relaxed'):
+            validate_contract(c)
+
+    def test_zero_world_accounting_faults_cannot_be_relaxed(self):
+        c=copy.deepcopy(self.contract)
+        c['gates']['logic']['metrics']['inventory_balance_faults']['max']=1
+        with self.assertRaisesRegex(TuneError,'quality_floor_relaxed'):
+            validate_contract(c)
+
+    def test_required_quality_metric_cannot_be_deleted(self):
+        c=copy.deepcopy(self.contract)
+        del c['gates']['visual']['metrics']['roof_tile_legibility_faults']
+        with self.assertRaisesRegex(TuneError,'hard_quality_floor_missing'):
+            validate_contract(c)
+
     def test_invented_approval_receipt_not_enough_for_signed_release(self):
         e=self.evidence()
         e['art_review']['approved']=True
