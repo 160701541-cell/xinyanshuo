@@ -1,12 +1,12 @@
 {
   "schema": 1,
   "channel": "android-preview",
-  "revision": 166,
+  "revision": 167,
   "minimum_android_code": 1165,
   "maximum_android_code": 2147483000,
-  "sha256": "3b6d91664559ac1cbd8b38354000a2bae2f7e82f02de458cd5d815708c99e307",
-  "size_bytes": 50816,
-  "pack_url": "https://160701541-cell.github.io/xinyanshuo/android-preview/canglan-content-rev-166.pck",
-  "notes": "P0-G2：修复近镜头天空光束破面，优化阳光亮度；资源热更新，无需重装APK",
-  "signature": "Yin9dq9zFz7RhiML98iBsFUd0eSEzcprPgjaticQYYe3iXxCKVnL2U1G8C5kBwxsmVjxfxhMUQSNygXdVXK0EzxczyemUCSRRXI7U9JoRJ84WCnJwXFQSc5duZJWecDzwcutZRSFKg3vPHvtY5dEyerPY/PCwwSptiQ3AdDTk4hisfzSxqwTVXMyy3bcmAp/xrVbGM5WGRG4fDvJn9puo5VgDYB/w9VVPcG6b61ulANra/vqwDxtQxjpLMV09UPWlDu6Z7SXotxzDIzeprh7KsEGHTP/sgtfW0TSbp5cjfqQ4GX2FZ57TVhGoREmKZ/n8OlSKaaqWoAZb9McfSD2Ojk4N1hUxkeyEikcBk0bi9QvY9xFmX9/u62xpIBDjKMS4sb6BW1EwQItnGU/JO/VQgMk/5T12fwlHJ/NoHVEk9zn5jg4/kgVHwHPQp+QhDFpFQoTdUTfBwFlk2tIozX70NjVLCoCqDmJ9WwwtBrPPudKYHlltCaA9bVziGqA5QMr"
+  "sha256": "0b1577e774f22959939a7befd0d7b183765f217d5e75683ac46b973207ac5b8e",
+  "size_bytes": 1247136,
+  "pack_url": "https://160701541-cell.github.io/xinyanshuo/android-preview/canglan-content-rev-167.pck",
+  "notes": "P0-G3：18个实体施工材料、真实工人运料与逐角木桩放线；累计包含天空#166修复",
+  "signature": "mEBkhivLxBwB6rTDJ2svHt5Bngyp93Lo7K9eJMigAbeBelZFZWCG78p82fw44uSWk5z9b8JTXFGCmzDLIZ4UYTtIxopJXJiXqJgN8jLCcrs0KsYWpGH1KbCyNKvOGCL1B2JXJHvGfOHhjHsNsAl+tWGT0TOb5L7osADphMcjAbBnghDL8LQwvy2Du0ccNZaaal3O0XqzGM2ro4tQ2iVLnx9D5JNkhNzI+KrCfqoV09fOil5yE/Cr45UmXxKCYK+RcO5xQJhrDN/12VOPIRBSJR/V6AX5kLtbsMByggICAfGil8SV4ClVnIc+Lf4JTsCqhguuOTnbNq/JLffdewjnS0Xa2/Omp6WkHZIh/k0iziCab03CmahFnPOI7cMlwf9GYrY1xRz/PWKtGGj6GRpiWDSvto2+Rn857M/xPOo3OiGOd1ubRTz58TG6ZcXyy44kbQPmPSI5lWa0Dx1oLeOef+ki9apRYbibkhJIDU0F5atFrcKFDwXJk9CNHJc+oZk2"
 }
