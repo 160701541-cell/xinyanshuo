@@ -1,10 +1,19 @@
 {
   "schema": 1,
   "channel": "signed-releases",
-  "updated_at": "2026-10-14T07:36:07.824Z",
-  "source": "Official signed Android PCK manifests and verified historical release reports (exact historical publish timestamps not inferred)",
-  "verification": "Website displays metadata; actual RSA PCK/sha256 verified by Godot app",
+  "updated_at": "2026-10-14T08:52:33Z",
+  "source": "android-preview/latest.json; signed PCK from verified CI",
+  "verification": "RSA/PCK compatibility is checked by native Godot application, not website.",
   "entries": [
+    {
+      "revision": 148,
+      "first_seen_utc": "2026-10-14T08:52:33Z",
+      "notes": "苍岚：内容与资源更新",
+      "sha256": "6b87af612648a3bb5497d484629f038b1f81389f2e9d37ee2296f67f0525d2d3",
+      "size_bytes": 18024784,
+      "status": "signed_release",
+      "version_name": "0.2.0-dev.148"
+    },
     {
       "revision": 147,
       "version_name": "0.2.0-dev.147",
