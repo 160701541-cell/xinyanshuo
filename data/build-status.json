@@ -4,6 +4,17 @@
   "source": "GitHub Actions workflow_run events (not API polling)",
   "runs": [
     {
+      "id": 38557656357,
+      "workflow": "Canglan Native 3D Terrain Android ARM64 Preview",
+      "scope": "正式Android构建",
+      "branch": "main",
+      "status": "queued",
+      "conclusion": null,
+      "created_utc": "2026-10-14T11:35:35Z",
+      "last_event_utc": "2026-10-14T11:35:35Z",
+      "run_url": "https://github.com/160701541-cell/canglan-world/actions/runs/38557656357"
+    },
+    {
       "id": 38545713846,
       "workflow": "Guoman Toon + Chinese Modular Architecture — Real Render Review",
       "scope": "开发质量检查",
@@ -70,5 +81,5 @@
     "pck_revision": 149,
     "pck_sha256": "09861b6d6165b55971986227479ac448ecfc05338a8ca7498e42462769860a8d"
   },
-  "observed_at_utc": "2026-10-14T09:55:20Z"
+  "observed_at_utc": "2026-10-14T11:35:35Z"
 }
