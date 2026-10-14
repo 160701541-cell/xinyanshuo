@@ -1,13 +1,13 @@
 {
   "schema": 1,
   "channel": "android-preview-base-apk",
-  "version_name": "0.2.0-dev.145",
-  "version_code": 1145,
+  "version_name": "0.2.0-dev.146",
+  "version_code": 1146,
   "package_name": "org.canglan.ancient25d.preview",
   "signature_cert_sha256": "353c65d2bdde16509b33c976e9bed615013080b071629cfbf7fdeb43e4217057",
-  "sha256": "7b2199d9ae9ed35a8be879ae8d220ac542fe662f9c69f27f4470a2dc2b7c0076",
-  "size_bytes": 38133128,
-  "file": "android-preview/base/Canglan-AncientWorld-v0.2.0-dev.145-Stable-Signed-ARM64.apk",
+  "sha256": "f39741d1389d64d69216423a395fafc9f3aa29cf6d79e62eb6f3c3e944dfe0cc",
+  "size_bytes": 44466078,
+  "file": "android-preview/base/Canglan-AncientWorld-v0.2.0-dev.146-Stable-Signed-ARM64.apk",
   "orientation": "landscape_native_manifest_verified",
   "release_status": "signed_native_ci_verified_phone_acceptance_pending",
   "notes": "新版同证书 Android APK。请覆盖安装旧版以保留存档；实机横屏及人物动画尚待验证。"
