@@ -182,6 +182,16 @@
   ],
   "pull_requests": [
     {
+      "number": 16,
+      "title": "P0-G3: 18 real 3D construction assets, measured blueprint and staged paid worker survey OTA",
+      "branch": "work/p0g3-site-materials",
+      "scope": "Work开发分支",
+      "state": "open",
+      "draft": true,
+      "last_event_utc": "2026-10-14T15:17:55Z",
+      "pr_url": "https://github.com/160701541-cell/canglan-world/pull/16"
+    },
+    {
       "number": 15,
       "title": "P0-G2: scoped signed sky-shaft hot update for v165 (no native rebuild)",
       "branch": "release/p0g2-sky-shafts",
@@ -202,5 +212,5 @@
     "pck_revision": 166,
     "pck_sha256": "3b6d91664559ac1cbd8b38354000a2bae2f7e82f02de458cd5d815708c99e307"
   },
-  "observed_at_utc": "2026-10-14T14:13:46Z"
+  "observed_at_utc": "2026-10-14T15:17:55Z"
 }
