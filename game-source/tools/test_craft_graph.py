@@ -131,7 +131,7 @@ class GraphTests(unittest.TestCase):
                 d['recipes'].append({
                   'id':'mint_firewood','name':'火生柴',
                   'inputs':{'roof_module':1},'outputs':{'firewood':1},
-                  'loss_g':14800,'work_minutes':1,'energy_kj':0,
+                  'loss_g':42800,'work_minutes':1,'energy_kj':0,
                   'station':'table','unlock':{'mode':'known'}})
             self.change(mutate)
 
