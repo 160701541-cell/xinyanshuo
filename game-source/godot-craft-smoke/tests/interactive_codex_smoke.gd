@@ -29,7 +29,7 @@ func _run_actual_ui() -> void:
 	ui.search_box.text = ""
 	ui.filter_button.select(1)
 	ui._refresh_items()
-	if ui.item_buttons.size() != 6:
+	if ui.item_buttons.size() != 7:
 		_die(ui, "UI_RAW_FILTER_INCORRECT")
 		return
 	ui.filter_button.select(0)
