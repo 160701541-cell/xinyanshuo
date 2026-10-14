@@ -46,3 +46,79 @@
 .records-note{font-size:11px;color:#9daf9f;margin:23px 0 0}
 @media(max-width:900px){.concept-grid{grid-template-columns:1fr}.concept-poster{min-height:0;max-height:700px}.concept-grid .concept-poster img{height:540px;object-fit:cover;object-position:center 47%}.concept-scenes{grid-template-columns:1fr 1fr;grid-template-rows:1fr}.concept-scenes figure{min-height:200px}.history-grid{grid-template-columns:repeat(2,1fr)}.log-heading{flex-direction:column;align-items:stretch;gap:10px}.sync-mark{margin-bottom:32px}.topbar nav{flex-wrap:wrap;justify-content:flex-end;gap:12px 19px;max-width:65%}.topbar{height:auto;min-height:100px}}
 @media(max-width:610px){.art-section,.public-records,.release-history{padding:63px 0 71px}.concept-scenes{grid-template-columns:1fr;grid-template-rows:auto auto}.concept-scenes figure{min-height:0}.concept-scenes img{height:240px}.concept-poster{min-height:0}.concept-grid .concept-poster img{height:515px}.history-grid{grid-template-columns:1fr}.log-entry summary{gap:8px;flex-wrap:wrap}.log-date{flex-basis:100%;min-width:0;padding:0}.log-title{font-size:15px}.log-entry summary::before{padding-top:2px}.log-content{margin-left:0;padding:0 14px}.log-tag{display:none}.concept-grid figcaption{padding-left:14px;padding-right:14px;align-items:start;flex-direction:column;gap:4px}.concept-grid figcaption strong{font-size:16px}.brand{flex-shrink:0}.topbar{gap:10px}.topbar nav{max-width:60%;gap:4px 12px}.topbar nav a{font-size:11px}.section-lead{font-size:14px}}
+
+
+
+/* 苍岚正式视觉方向：参考用户提供的沉浸式山河/城市/人物游戏官网，
+   概念海报为愿景，真实实机另标识。移动端不再窄版排成一条蛇。 */
+:root{--bg:#101a20;--bg2:#17242a;--text:#f5f1e7;--muted:#bfccc7;--gold:#e6c28d;--stroke:#53666b;--card:#19282d}
+body{background:#101a20;color:var(--text)}
+.wrap{width:min(1380px,calc(100% - 64px))}
+.topbar{min-height:94px;height:auto;padding-block:15px}
+.topbar nav a{transition:color .2s}
+.topbar nav a:hover,.community-card:hover .community-cta{color:#f2d39e}
+.hero{isolation:isolate;display:flex;min-height:710px;padding:94px 0 96px;flex-direction:column;align-items:flex-start;justify-content:center}
+.hero::before{content:"";position:absolute;z-index:-1;inset:-35px calc((min(1380px,100vw - 64px) - 100vw) / 2) -16px;pointer-events:none;background:linear-gradient(90deg,#09161ce8 0%,#0b1c23b8 44%,#101a2090 75%,#101a20 100%),linear-gradient(0deg,#101a20,transparent 47%),url('./art/canglan-frontier-concept.svg') center 38%/cover no-repeat}
+.hero::after{content:"";position:absolute;inset:auto -30px 0;z-index:-1;height:45%;background:linear-gradient(0deg,#101a20,transparent);pointer-events:none}
+.hero-vision-backdrop{position:absolute;inset:0;z-index:-2;pointer-events:none}
+.hero .eyebrow{letter-spacing:4px;color:#edd1a6}
+.hero h1{font-size:clamp(74px,11vw,168px);line-height:1;letter-spacing:7px;font-weight:650;margin:38px 0 24px;text-shadow:0 12px 40px #081519b8}
+.hero h1 .hero-subtitle{display:block;margin:11px 0 27px 8px;font-size:clamp(18px,2.7vw,34px);font-weight:500;letter-spacing:12px;color:#e0c8a5}
+.hero h1 em{display:block;font-size:clamp(26px,3.4vw,43px);line-height:1.55;font-weight:400;letter-spacing:3px;color:#f5efe2}
+.hero .lead{font-size:17px;letter-spacing:8px;color:#f0ce92}
+.hero .intro{font-size:16px;max-width:625px;color:#d8e5dc;line-height:2}
+.hero-actions{flex-wrap:wrap;max-width:720px}
+.action.primary{background:#ddbb83;color:#17221e;border-color:#ddbb83}
+.aside-note{margin-top:40px;color:#dfd2b8}
+.art-section{background:linear-gradient(180deg,#101a20,#14252a 37%,#0d1a20);padding-block:95px 110px}
+.art-section h2{font-size:clamp(42px,5.7vw,76px);letter-spacing:5px}
+.concept-grid{grid-template-columns:.84fr 1.45fr;gap:19px}
+.concept-grid figure{border-color:#7c887d55;box-shadow:0 28px 70px #0007}
+.concept-scenes{gap:19px}
+.concept-grid figcaption{background:linear-gradient(transparent,#071218ef);min-height:112px}
+.concept-disclaimer{font-size:12px;line-height:1.8;color:#e2d3b7;background:#162b2ce0;border-left-color:#f1cb90}
+.community-section{padding:100px 0;background:linear-gradient(130deg,#101d22,#1b302c 65%,#10212a);border-top:1px solid #4c615d;border-bottom:1px solid #4c615d;scroll-margin-top:12px}
+.community-section h2{max-width:860px;font-size:clamp(37px,5vw,67px)}
+.community-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px}
+.community-card{position:relative;display:flex;align-items:flex-start;flex-direction:column;gap:9px;min-height:285px;padding:27px 28px;border:1px solid #71807867;background:linear-gradient(160deg,#203530,#112429);color:#efece3;transition:transform .2s,border .2s;overflow:hidden}
+.community-card:hover{transform:translateY(-3px);border-color:#e0bc85}
+.community-primary{background:linear-gradient(145deg,#46513c,#1c3432 72%,#152a2d)}
+.community-icon{display:grid;place-items:center;width:45px;height:45px;border:1px solid #e0ba82;color:#e8c99b;font-family:serif;font-size:21px;margin-bottom:10px}
+.community-type{font-size:10px;color:#dfc291;letter-spacing:2.1px}
+.community-card strong{font-family:"Noto Serif SC","Songti SC",serif;font-size:clamp(21px,2.2vw,30px);font-weight:500;letter-spacing:1px}
+.community-info{color:#b9cfc5;font-size:13px}
+.community-cta{display:inline-block;margin-top:auto;font-size:13px;letter-spacing:1px;color:#f1cf92}
+.community-actions{display:flex;gap:17px;flex-wrap:wrap;align-items:center;margin-top:auto}
+.community-actions .community-cta{margin:0}
+.community-actions button{border:1px solid #657b75;background:transparent;color:#e5dac5;font:inherit;padding:6px 11px;font-size:12px;cursor:pointer}
+.community-note{font-size:12px;line-height:1.8;color:#a5bcb3;margin-top:22px}
+.features,.public-records{background:#101a20}
+.release-history,.updates{background:#172a2d}
+@media(max-width:940px){
+ .wrap{width:calc(100% - 42px)}
+ .community-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .hero::before{inset:-35px -30px 0}
+ .hero{min-height:600px}
+}
+@media(max-width:630px){
+ .wrap{width:calc(100% - 32px)}
+ .topbar{padding-block:14px;gap:10px}
+ .topbar nav{flex-wrap:wrap;justify-content:flex-end;gap:3px 9px;max-width:61%}
+ .topbar nav a{font-size:10px}
+ .hero{padding:78px 0 84px;min-height:560px}
+ .hero::before{inset:-30px -16px 0;background-position:55% 38%}
+ .hero h1{font-size:clamp(66px,19vw,106px);margin-top:26px;letter-spacing:3px}
+ .hero h1 .hero-subtitle{letter-spacing:6px;margin:12px 0 25px;font-size:20px}
+ .hero h1 em{font-size:27px;letter-spacing:1px;line-height:1.55}
+ .hero .lead{font-size:13px;letter-spacing:4px}
+ .hero .intro{font-size:13px;line-height:1.9}
+ .hero-actions{margin-top:21px;gap:8px}
+ .hero-actions .action{padding:10px 12px;font-size:12px}
+ .aside-note{font-size:11px;margin-top:28px}
+ .concept-grid .concept-poster img{height:470px}
+ .community-section{padding:65px 0 73px}
+ .community-grid{grid-template-columns:1fr}
+ .community-card{min-height:217px;padding:22px}
+ .community-card strong{font-size:25px}
+ .art-section h2{font-size:43px}
+}
