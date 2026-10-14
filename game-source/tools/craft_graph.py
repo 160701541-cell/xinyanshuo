@@ -159,6 +159,13 @@ class CraftGraph:
                 self.consumers[item_id].append(key)
             for item_id in recipe['outputs']:
                 self.producers[item_id].append(key)
+        # Reject invented natural resources *before* dependency traversal:
+        # a malicious recipe must not turn quarry/soil/wood into synthetic
+        # resources, even if it also creates a cycle.
+        for item_id, item in self.items.items():
+            if item['stage'] == 'raw':
+                require(not self.producers.get(item_id),
+                        f'{item_id}:raw_resource_generated_by_recipe')
         graph={item_id:set() for item_id in self.items}
         for recipe in self.recipes.values():
             for out in recipe['outputs']:
