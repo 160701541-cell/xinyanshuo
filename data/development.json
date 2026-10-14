@@ -2,9 +2,9 @@
   "schema": 1,
   "channel": "public-development-log",
   "source_file": "docs/DEVELOPMENT_LOG.md",
-  "source_commit": "b127a6add96ebd7b3fa2095deb6a509241def1b8",
-  "source_hash": "4e9e41c4699bddd65a58c283ebb93632156261dfbbe00be9035a0ca53ba8b7c3",
-  "synced_at": "2026-10-14T11:37:59Z",
+  "source_commit": "2666845dc7be95ad1147d583f14296302e9f1c13",
+  "source_hash": "163139531998a2418f1dd24048ead65e797696207847eb27b6c6972888c18ff5",
+  "synced_at": "2026-10-14T11:38:32Z",
   "public_note": "开发工作日志不是签名游戏更新日志；未发布功能可能写在这里。隐去密钥与内部配置。",
   "entries": [
     {
@@ -18,7 +18,7 @@
       "id": "dev-002-0343fc0cd5",
       "title": "2026-10-14 — 按用户实机反馈开始修渲染/HUD/地形（源码已提交；未构建新APK）",
       "date": "2026-10-14",
-      "body": "用户报告：HUD「GPU 不可用」、地面水面/瓦片纹理和大块网格影、Draw898、天空悬浮白块、角色/NPC T-pose或悬空。本轮**确实修改GitHub源代码**：\n- `godot3d/project.godot` 从强制 GL Compatibility 切换为 Mobile 渲染方法（Android Vulkan 目标）；此为下一次APK的代码配置，不说明已在用户手机启用Vulkan；运行时仍可能因驱动失败自动回退。\n- `godot3d/scripts/performance/mobile_performance.gd` 启动时日志分别记录GPU型号、配置渲染方法、实际渲染方法和driver；若不是Mobile/Vulkan提供告警；HUD不再称整个GPU「不可用」，正确显示「GPU耗时计时未支持」并在设置状态显示GPU型号/渲染器；临时性能目标标注Draw200、三角面150000；方向光阴影atlas由1024改为2048。**注意**shadow atlas增加显存开销，需要真机测绘，不证明网格影已修复。\n- `godot3d/tools/terrain_review/build_runtime_terrain.gd` 将草/泥UV比例从0.8降至0.12，岩石0.1、其余0.18，并禁止缺失PNG贴图时静默生成assets；`godot3d/scripts/valley_terrain_500.gd` 添加运行时材质资源路径与渲染器诊断。**必须重新离线烘焙Terrain3D资产并打包，否则旧APK纹理UV不会变化**。\n\n**仍待完成（不能冒称已完成）**：新Mobile渲染完整CI及签名APK、Android logcat Vulkan初始化证据；原生Terrain3D五类control图逐像素抽样/实机草坡石三截图；遮挡网格阴影根因验证；按网格/材质前20项真实Drawcall分析及合批/MultiMesh/Atlas、悬浮白构件清除、主角/NPC动作和脚底碰撞修复。尚未取得用户设备日志，**898仅为用户现场报告的基线**；本轮无优化后帧率、无真机截图、也未发布新APK。下一步以真实CI/Android日志证据逐项修复，保留旧v153稳定下载及PCK#149通道。",
+      "body": "用户报告：HUD「GPU 不可用」、地面水面/瓦片纹理和大块网格影、Draw898、天空悬浮白块、角色/NPC T-pose或悬空。本轮**确实修改GitHub源代码**：\n- `godot3d/project.godot` 从强制 GL Compatibility 切换为 Mobile 渲染方法（Android Vulkan 目标）；此为下一次APK的代码配置，不说明已在用户手机启用Vulkan；运行时仍可能因驱动失败自动回退。\n- `godot3d/scripts/performance/mobile_performance.gd` 启动时日志分别记录GPU型号、配置渲染方法、实际渲染方法和driver；若不是Mobile/Vulkan提供告警；HUD不再称整个GPU「不可用」，正确显示「GPU耗时计时未支持」并在设置状态显示GPU型号/渲染器；临时性能目标标注Draw200、三角面150000；方向光阴影atlas由1024改为2048。**注意**shadow atlas增加显存开销，需要真机测绘，不证明网格影已修复。\n- `godot3d/tools/terrain_review/build_runtime_terrain.gd` 将草/泥UV比例从0.8降至0.12，岩石0.1、其余0.18，并禁止缺失PNG贴图时静默生成assets；`godot3d/scripts/valley_terrain_500.gd` 添加运行时材质资源路径与渲染器诊断。**必须重新离线烘焙Terrain3D资产并打包，否则旧APK纹理UV不会变化**。\n\n额外新增 `godot3d/scripts/main.gd` 启动诊断 `[CanglanDrawAudit]`，按 MeshInstance3D 的网格/材质分组输出前20项surface实例数，便于定位可合批资源。**这是CPU场景结构估计，不是GPU真实逐项drawcall**；总体实际Draw仍应以RenderingServer计数为准。\n\n**仍待完成（不能冒称已完成）**：新Mobile渲染完整CI及签名APK、Android logcat Vulkan初始化证据；原生Terrain3D五类control图逐像素抽样/实机草坡石三截图；遮挡网格阴影根因验证；按网格/材质前20项真实Drawcall分析及合批/MultiMesh/Atlas、悬浮白构件清除、主角/NPC动作和脚底碰撞修复。尚未取得用户设备日志，**898仅为用户现场报告的基线**；本轮无优化后帧率、无真机截图、也未发布新APK。下一步以真实CI/Android日志证据逐项修复，保留旧v153稳定下载及PCK#149通道。",
       "source_status": "source-main-development"
     },
     {
