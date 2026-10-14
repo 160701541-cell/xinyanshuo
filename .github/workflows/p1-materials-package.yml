@@ -1,0 +1,57 @@
+name: P1 material package — public unsigned art QA
+on:
+  push:
+    branches: [main]
+    paths:
+      - game-source/tools/generate_materials.py
+      - game-source/tools/test_materials.py
+      - .github/workflows/p1-materials-package.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  package-original-materials:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify PNG generator and reproducible output
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd game-source/tools
+          python3 test_materials.py -v
+          python3 generate_materials.py --output ../godot3d/assets/materials/p1
+          python3 - <<'PY'
+          import json, pathlib, hashlib
+          root=pathlib.Path('../godot3d/assets/materials/p1')
+          manifest=json.loads((root/'manifest.json').read_text())
+          assert manifest['status']=='prototype_unapproved'
+          assert len(manifest['materials'])==2
+          for name,channels in manifest['materials'].items():
+              assert set(channels)=={'albedo','normal','roughness'}
+              for channel,item in channels.items():
+                  p=root/item['path']
+                  assert p.stat().st_size>300
+                  assert hashlib.sha256(p.read_bytes()).hexdigest()==item['sha256']
+          print('VERIFIED_P1_PNG_SET',len(list(root.glob('*.png'))))
+          PY
+      - name: Archive original material studies
+        shell: bash
+        run: |
+          cd game-source
+          python3 - <<'PY'
+          import pathlib,zipfile
+          root=pathlib.Path('godot3d/assets/materials/p1')
+          with zipfile.ZipFile('canglan-p1-materials-UNAPPROVED.zip','w',compression=zipfile.ZIP_DEFLATED) as z:
+              for p in sorted(root.iterdir()):
+                  z.write(p,p.as_posix())
+          print('PACKAGE_BYTES',pathlib.Path('canglan-p1-materials-UNAPPROVED.zip').stat().st_size)
+          PY
+      - name: Upload package (not a signed game update)
+        uses: actions/upload-artifact@v4
+        with:
+          name: canglan-p1-materials-UNAPPROVED
+          path: game-source/canglan-p1-materials-UNAPPROVED.zip
+          retention-days: 3
+          if-no-files-found: error
