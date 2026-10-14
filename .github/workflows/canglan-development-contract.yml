@@ -11,6 +11,8 @@ on:
       - "game-source/tools/test_craft_graph.py"
       - "game-source/tools/tune_data.py"
       - "game-source/tools/test_tune_data.py"
+      - "game-source/tools/production_contracts.py"
+      - "game-source/tools/test_production_contracts.py"
       - ".github/workflows/canglan-development-contract.yml"
   workflow_dispatch:
 permissions:
@@ -30,6 +32,22 @@ jobs:
         run: python3 -m unittest discover -s game-source/tools -p "test_craft_graph.py" -v
       - name: Real tuning gates and safety tests
         run: python3 -m unittest discover -s game-source/tools -p "test_tune_data.py" -v
+      - name: Enforce per-item production contracts with adversarial tests
+        run: python3 -m unittest discover -s game-source/tools -p "test_production_contracts.py" -v
+      - name: Generate per-item blocked manufacturing contract report
+        run: |
+          python3 game-source/tools/production_contracts.py \
+            --catalog game-source/data/craft/material_graph.v1.json \
+            --report manufacturing-contract-report.json
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          doc=json.loads(Path('manufacturing-contract-report.json').read_text())
+          assert doc['catalog_item_count']==24
+          assert len(doc['unproven_items'])==24
+          assert not doc['release_approved']
+          print('MANUFACTURING_DESIGN_DEFINED_BUT_ASSETS_NOT_GAME_APPROVED')
+          PY
       - name: Validate material graph and emit machine-readable development evidence
         run: |
           python3 game-source/tools/craft_graph.py \
@@ -60,6 +78,7 @@ jobs:
           name: canglan-development-contract-and-material-graph
           path: |
             craft-development-report.json
+            manufacturing-contract-report.json
             engineering-readiness-report.json
           retention-days: 7
           if-no-files-found: error
