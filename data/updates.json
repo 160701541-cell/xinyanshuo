@@ -1,10 +1,18 @@
 {
   "schema": 1,
   "channel": "signed-releases",
-  "updated_at": "2026-10-14T09:00:24Z",
+  "updated_at": "2026-10-14T14:18:41Z",
   "source": "android-preview/latest.json; signed PCK from verified CI",
   "verification": "RSA/PCK compatibility is checked by native Godot application, not website.",
   "entries": [
+    {
+      "revision": 166,
+      "first_seen_utc": "2026-10-14T14:18:41Z",
+      "notes": "P0-G2：修复近镜头天空光束破面，优化阳光亮度；资源热更新，无需重装APK",
+      "sha256": "3b6d91664559ac1cbd8b38354000a2bae2f7e82f02de458cd5d815708c99e307",
+      "size_bytes": 50816,
+      "status": "signed_release"
+    },
     {
       "revision": 149,
       "first_seen_utc": "2026-10-14T09:00:24Z",
