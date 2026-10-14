@@ -122,3 +122,92 @@ body{background:#101a20;color:var(--text)}
  .community-card strong{font-size:25px}
  .art-section h2{font-size:43px}
 }
+
+/* CANGLAN OFFICIAL CINEMATIC VISION 2026-10-14 */
+:root{--bg:#0c1417;--bg2:#14202a;--text:#f4eee5;--muted:#b5c3bd;--gold:#d3b27b;--stroke:#3e4d4d;--card:#162129}
+body{background:#0b151c;color:#f1e9dc}
+body:before{content:"";position:fixed;z-index:-1;inset:0;pointer-events:none;background:linear-gradient(130deg,rgba(17,35,36,.82),rgba(12,18,25,.93)),url("https://images.unsplash.com/photo-1757015714925-0dec0c089ef3?auto=format&fit=crop&w=1500&q=60") center center/cover}
+.grain{z-index:8;opacity:.035}
+.topbar{background:linear-gradient(105deg,rgba(5,15,21,.94),rgba(14,28,34,.83));border-bottom:1px solid #34474a;padding:0 22px}
+.hero{width:100%;max-width:none;min-height:690px;padding:135px max(25px,calc((100vw - 1100px)/2)) 105px;overflow:hidden;isolation:isolate}
+.hero-vision-backdrop{position:absolute;z-index:-3;inset:0;background-image:linear-gradient(90deg,rgba(4,12,19,.90) 0%,rgba(4,12,19,.47) 43%,rgba(4,12,19,.06) 82%),linear-gradient(0deg,rgba(9,21,27,.96),transparent 50%),url("https://images.unsplash.com/photo-1769185232770-95add61b10bd?auto=format&fit=crop&w=1800&q=80");background-size:cover;background-position:center 52%;filter:saturate(.96)}
+.hero:after{content:"苍岚   ·   观山海，见众生";position:absolute;right:5%;bottom:42px;color:rgba(255,236,205,.56);font-family:serif;letter-spacing:.35em;font-size:12px}
+.hero h1{font-weight:650;color:#fbf3e4;text-shadow:0 3px 28px #081a20;line-height:1.08}
+.hero h1 .hero-subtitle{font-size:clamp(20px,3vw,35px);display:block;letter-spacing:.4em;margin:5px 0 28px;color:#e7c792}
+.hero h1 em{display:block;font-size:clamp(23px,4vw,44px);line-height:1.45;margin-top:20px;color:#f3ecdf}
+.hero .lead,.hero .intro,.hero .aside-note{color:#e9ebdf;text-shadow:0 2px 20px #001}
+.hero .intro{font-size:16px;max-width:580px}
+.hero-actions{flex-wrap:wrap}
+.action.primary{background:linear-gradient(120deg,#f5d6a1,#cda76c);border:0;color:#18272a;box-shadow:0 7px 24px #07101255}
+.action.muted{border-color:#afc2ba7a;background:#071a21a6;color:#f5f0e4}
+.art-section{padding:80px 0 90px;background:linear-gradient(180deg,#0c191e,#121e26)}
+.art-section h2{color:#f0e3cc}
+.concept-grid{grid-template-columns: minmax(250px,.85fr) minmax(0,1.6fr);gap:18px}
+.concept-poster,.concept-scenes figure{border:1px solid #80715a!important;border-radius:4px;background:#10191c}
+.concept-poster{min-height:550px}
+.concept-poster:before{content:"";position:absolute;inset:0;z-index:0;background:url("https://images.unsplash.com/photo-1773843586151-0f2e4565d90c?auto=format&fit=crop&w=900&q=75") center/cover}
+.concept-poster>img{opacity:.62;mix-blend-mode:screen}
+.concept-scenes figure:first-child:before,.concept-scenes figure:last-child:before{content:"";position:absolute;inset:0;z-index:0;background-size:cover;background-position:center}
+.concept-scenes figure:first-child:before{background-image:linear-gradient(0deg,#0019,transparent),url("https://images.unsplash.com/photo-1769066312416-f3117db6266a?auto=format&fit=crop&w=1400&q=75")}
+.concept-scenes figure:last-child:before{background-image:linear-gradient(0deg,#0019,transparent),url("https://images.unsplash.com/photo-1757015714925-0dec0c089ef3?auto=format&fit=crop&w=1400&q=75")}
+.concept-scenes figure>img{opacity:.16;mix-blend-mode:screen}
+.concept-grid figcaption{z-index:2;position:absolute}
+.concept-disclaimer{border:1px solid #5b6256;background:#13212ac7;padding:16px 20px}
+.world-vision-notes{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin:0 0 36px}
+.world-vision-notes a{min-height:188px;position:relative;isolation:isolate;display:flex;flex-direction:column;justify-content:flex-end;padding:22px 15px;color:#fff;background:#122932;overflow:hidden;border:1px solid #68756999;box-shadow:0 20px 35px #0005}
+.world-vision-notes a:before{content:"";position:absolute;inset:0;z-index:-2;background:var(--vision-cover) center /cover;transition:transform .5s}
+.world-vision-notes a:after{content:"";position:absolute;inset:0;z-index:-1;background:linear-gradient(0deg,#081619f2,#14202516 90%)}
+.world-vision-notes a:hover:before{transform:scale(1.07)}
+.world-vision-notes strong{font-family:serif;letter-spacing:2px;font-weight:500;font-size:21px;text-shadow:0 2px 12px #000}
+.world-vision-notes small{font-size:11px;color:#edd9be}
+.world-vision-notes a:nth-child(1){--vision-cover:url("https://images.unsplash.com/photo-1769066312416-f3117db6266a?auto=format&fit=crop&w=700&q=75")}
+.world-vision-notes a:nth-child(2){--vision-cover:url("https://images.unsplash.com/photo-1757015714925-0dec0c089ef3?auto=format&fit=crop&w=700&q=75")}
+.world-vision-notes a:nth-child(3){--vision-cover:url("https://images.unsplash.com/photo-1769185232770-95add61b10bd?auto=format&fit=crop&w=700&q=75")}
+.world-vision-notes a:nth-child(4){--vision-cover:url("https://images.unsplash.com/photo-1780683558609-a27e0bbcb9ee?auto=format&fit=crop&w=700&q=75")}
+.world-vision-notes a:nth-child(5){--vision-cover:url("https://images.unsplash.com/photo-1773843586151-0f2e4565d90c?auto=format&fit=crop&w=700&q=75")}
+.public-records,.release-history,.community-section{background:#101b22}
+.log-entry,.community-card,.update-card,.history-grid>*{background:#13232c;border-color:#455454}
+.community-primary{background:linear-gradient(148deg,#344637,#162c31)!important;border:1px solid #d7b47d!important}
+.community-card{transition:transform .2s,border-color .2s}
+.community-card:hover{transform:translateY(-3px);border-color:#c9ac79}
+.footer{background:#0d171e}
+@media(min-width:1200px){
+ .topbar{position:fixed;inset:0 auto 0 0;width:218px;height:100vh;z-index:12;display:flex;flex-direction:column;align-items:stretch;justify-content:flex-start;padding:32px 17px;border-right:1px solid #a59c7555;border-bottom:0;background:linear-gradient(160deg,#10151be8,#152028ef)}
+ .topbar .brand{padding:13px 0 32px;border-bottom:1px solid #485253}
+ .topbar nav{display:flex;flex-direction:column;align-items:stretch;gap:3px;margin-top:26px}
+ .topbar nav a{padding:10px 14px;border-radius:4px;letter-spacing:.06em}
+ .topbar nav a:hover{background:#d9b77c1b}
+ body>main,body>.footer{margin-left:218px}
+ .hero{padding-left:7%;padding-right:6%;min-height:690px}
+ .hero:after{right:6%}
+ .wrap{width:min(1180px,calc(100% - 56px))}
+}
+@media(max-width:1199px){
+ .topbar{height:auto;min-height:70px;position:sticky;top:0;padding:9px 15px;gap:20px;display:flex;align-items:center}
+ .topbar nav{display:flex;flex-wrap:nowrap;max-width:70vw;overflow-x:auto;gap:14px;scrollbar-width:none;white-space:nowrap}
+ .topbar nav::-webkit-scrollbar{display:none}
+ .topbar nav a{flex-shrink:0}
+}
+@media(max-width:780px){
+ .hero{min-height:630px;padding:100px 22px 78px}
+ .hero-vision-backdrop{background-position:60% center}
+ .hero h1{font-size:clamp(53px,10vw,80px)}
+ .art-section{padding-top:68px}
+ .world-vision-notes{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+ .world-vision-notes a{min-height:155px}
+ .world-vision-notes a:nth-child(5){grid-column:span 2}
+ .concept-grid{grid-template-columns:1fr}
+ .concept-poster{min-height:440px}
+ .concept-scenes figure{min-height:260px}
+ .topbar .brand-copy small{display:none}
+ .community-grid{grid-template-columns:1fr}
+}
+@media(max-width:410px){
+ .topbar .brand{min-width:92px;gap:6px}
+ .topbar nav{max-width:58vw}
+ .hero{padding-top:72px}
+ .hero h1{font-size:52px}
+ .hero h1 .hero-subtitle{font-size:22px}
+ .hero h1 em{font-size:25px}
+ .world-vision-notes a{min-height:130px;padding:14px}
+}
