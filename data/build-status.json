@@ -30,10 +30,10 @@
       "workflow": "Canglan Native 3D Terrain Android ARM64 Preview",
       "scope": "开发质量检查",
       "branch": "release/in-game-apk-installer",
-      "status": "queued",
-      "conclusion": null,
+      "status": "completed",
+      "conclusion": "failure",
       "created_utc": "2026-10-14T18:54:10Z",
-      "last_event_utc": "2026-10-14T18:54:10Z",
+      "last_event_utc": "2026-10-14T19:04:46Z",
       "run_url": "https://github.com/160701541-cell/canglan-world/actions/runs/38619098094"
     },
     {
@@ -311,5 +311,5 @@
     "pck_revision": 167,
     "pck_sha256": "0b1577e774f22959939a7befd0d7b183765f217d5e75683ac46b973207ac5b8e"
   },
-  "observed_at_utc": "2026-10-14T19:00:42Z"
+  "observed_at_utc": "2026-10-14T19:04:46Z"
 }
