@@ -67,7 +67,7 @@
           !Number.isSafeInteger(d.version_code) || d.version_code < 1102 ||
           d.package_name !== 'org.canglan.ancient25d.preview' ||
           typeof d.file !== 'string' ||
-          !/^android-preview\\/base\\/[A-Za-z0-9._-]+\\.apk$/.test(d.file) ||
+          !/^android-preview\/base\/[A-Za-z0-9._-]+\.apk$/.test(d.file) ||
           typeof d.sha256 !== 'string' || !/^[a-f0-9]{64}$/.test(d.sha256) ||
           !Number.isSafeInteger(d.size_bytes) || d.size_bytes <= 10000000 ||
           d.signature_cert_sha256 !== '353c65d2bdde16509b33c976e9bed615013080b071629cfbf7fdeb43e4217057') {
@@ -99,7 +99,7 @@
               m.filename !== fileName || m.sha256 !== d.sha256 ||
               m.size_bytes !== d.size_bytes ||
               typeof m.download_url !== 'string' ||
-              !/^https:\\/\\/github\\.com\\/160701541-cell\\/xinyanshuo\\/releases\\/download\\/canglan-v[0-9A-Za-z.-]+\\/Canglan-AncientWorld-v[0-9A-Za-z.-]+-Stable-Signed-ARM64\\.apk$/.test(m.download_url) ||
+              !/^https:\/\/github\.com\/160701541-cell\/xinyanshuo\/releases\/download\/canglan-v[0-9A-Za-z.-]+\/Canglan-AncientWorld-v[0-9A-Za-z.-]+-Stable-Signed-ARM64\.apk$/.test(m.download_url) ||
               !m.download_url.endsWith('/' + fileName)) return;
           apkButton.href = m.download_url;
           apkButton.textContent = '下载 APK v' + d.version_name + '（线路 A · 推荐）';
