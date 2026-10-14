@@ -1,57 +1,65 @@
-name: P1 material package — public unsigned art QA
+name: P1 Art QA - Technical Only (NO Game Release)
 on:
   push:
     branches: [main]
     paths:
-      - game-source/tools/generate_materials.py
-      - game-source/tools/test_materials.py
-      - .github/workflows/p1-materials-package.yml
+      - "game-source/tools/generate_materials.py"
+      - "game-source/tools/audit_materials.py"
+      - "game-source/tools/test_materials.py"
+      - ".github/workflows/p1-materials-package.yml"
   workflow_dispatch:
 permissions:
   contents: read
+concurrency:
+  group: canglan-p1-art-qa-main
+  cancel-in-progress: true
 jobs:
-  package-original-materials:
+  independently-audit-materials:
     runs-on: ubuntu-latest
-    timeout-minutes: 8
+    timeout-minutes: 12
     steps:
       - uses: actions/checkout@v4
-      - name: Verify PNG generator and reproducible output
+      - name: Python compiler check
+        run: python3 -m compileall -q game-source/tools
+      - name: Run regression tests including adversarial mutation cases
+        run: python3 -m unittest discover -s game-source/tools -p "test_materials.py" -v
+      - name: Generate deterministic original PBR maps
+        run: python3 game-source/tools/generate_materials.py --output game-source/godot3d/assets/materials/p1
+      - name: Independent pixel-level audit (fail closed)
+        run: |
+          python3 game-source/tools/audit_materials.py \
+            --root game-source/godot3d/assets/materials/p1 \
+            --report game-source/p1-material-qa-report.json
+      - name: Package audited sources and proof - NOT a signed game patch
         shell: bash
         run: |
           set -euo pipefail
-          cd game-source/tools
-          python3 test_materials.py -v
-          python3 generate_materials.py --output ../godot3d/assets/materials/p1
-          python3 - <<'PY'
-          import json, pathlib, hashlib
-          root=pathlib.Path('../godot3d/assets/materials/p1')
-          manifest=json.loads((root/'manifest.json').read_text())
-          assert manifest['status']=='prototype_unapproved'
-          assert len(manifest['materials'])==2
-          for name,channels in manifest['materials'].items():
-              assert set(channels)=={'albedo','normal','roughness'}
-              for channel,item in channels.items():
-                  p=root/item['path']
-                  assert p.stat().st_size>300
-                  assert hashlib.sha256(p.read_bytes()).hexdigest()==item['sha256']
-          print('VERIFIED_P1_PNG_SET',len(list(root.glob('*.png'))))
-          PY
-      - name: Archive original material studies
-        shell: bash
-        run: |
           cd game-source
           python3 - <<'PY'
-          import pathlib,zipfile
+          import json,pathlib,zipfile
           root=pathlib.Path('godot3d/assets/materials/p1')
-          with zipfile.ZipFile('canglan-p1-materials-UNAPPROVED.zip','w',compression=zipfile.ZIP_DEFLATED) as z:
-              for p in sorted(root.iterdir()):
-                  z.write(p,p.as_posix())
-          print('PACKAGE_BYTES',pathlib.Path('canglan-p1-materials-UNAPPROVED.zip').stat().st_size)
+          report=json.loads(pathlib.Path('p1-material-qa-report.json').read_text())
+          assert report['technical_gate']=='PASS'
+          assert report['art_direction_gate'].startswith('BLOCKED')
+          assert report['android_release_gate'].startswith('BLOCKED')
+          payload=[*sorted(root.glob('*.png')),root/'manifest.json',pathlib.Path('p1-material-qa-report.json')]
+          assert len(payload)==8, 'six maps, manifest, and honest QA report required'
+          target=pathlib.Path('canglan-p1-MATERIAL-QA-ART-NOT-APPROVED.zip')
+          with zipfile.ZipFile(target,'w',compression=zipfile.ZIP_DEFLATED) as archive:
+              for item in payload:
+                  archive.write(item,item.as_posix())
+          with zipfile.ZipFile(target) as archive:
+              assert archive.testzip() is None
+              assert len(archive.namelist())==8
+          print('QA_ARCHIVE_BYTES',target.stat().st_size)
+          print('GAME_RELEASE','BLOCKED: not imported into real Godot project')
           PY
-      - name: Upload package (not a signed game update)
+      - name: Upload technical evidence (no APK or signed PCK)
         uses: actions/upload-artifact@v4
         with:
-          name: canglan-p1-materials-UNAPPROVED
-          path: game-source/canglan-p1-materials-UNAPPROVED.zip
-          retention-days: 3
+          name: canglan-p1-material-TECHNICAL-QA-not-art-approved
+          path: |
+            game-source/canglan-p1-MATERIAL-QA-ART-NOT-APPROVED.zip
+            game-source/p1-material-qa-report.json
+          retention-days: 7
           if-no-files-found: error
