@@ -231,6 +231,7 @@
   // The visitor polls CDN data every 120s, NEVER the private GitHub API.
   // Thus unlimited visitors do NOT exhaust the GitHub REST rate limit.
   const observerRows = document.getElementById('build-observer-rows');
+  const observerPRs = document.getElementById('build-observer-prs');
   const observerSync = document.getElementById('build-observer-sync');
   const apkLive = document.getElementById('build-apk-state');
   const apkDetail = document.getElementById('build-apk-note');
@@ -258,6 +259,39 @@
       }
       const digest = JSON.stringify(feed);
       if (digest !== lastObserverDigest) {
+        clear(observerRows);
+        if (observerPRs) {
+          clear(observerPRs);
+          const recentPRs = Array.isArray(feed.pull_requests)
+            ? feed.pull_requests.slice(0, 8) : [];
+          if (!recentPRs.length) {
+            addText(observerPRs, 'p', 'loading-copy',
+              '尚未收到最新的PR打开、更新或合并事件；请以GitHub实际提交为准。');
+          }
+          recentPRs.forEach(pr => {
+            if (!Number.isSafeInteger(pr.number) || pr.number <= 0) return;
+            const card = document.createElement('article');
+            card.className = 'observer-run';
+            addText(card, 'strong', 'observer-run-title', '#' + pr.number + ' · '
+              + String(pr.title || '开发任务').slice(0, 120));
+            const merged = pr.state === 'merged';
+            const state = merged ? '已合并'
+              : pr.state === 'closed' ? '已关闭'
+              : pr.draft ? '草案 / 进行中' : '待审核 / 开发中';
+            addText(card, 'span', 'observer-pill' + (merged ? ' passed' : ''), state);
+            addText(card, 'p', 'observer-run-meta',
+              String(pr.scope || '开发分支') + ' · '
+              + String(pr.branch || '未知分支').slice(0, 55) + ' · 更新于：'
+              + safeDate(pr.last_event_utc));
+            const link = document.createElement('a');
+            link.href = 'https://github.com/160701541-cell/canglan-world/pull/' + pr.number;
+            link.target = '_blank';
+            link.rel = 'noopener noreferrer';
+            link.textContent = '查看真实PR进度 ↗';
+            card.appendChild(link);
+            observerPRs.appendChild(card);
+          });
+        }
         clear(observerRows);
         const latest = feed.runs.slice(0, 9);
         if (!latest.length) {
