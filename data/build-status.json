@@ -4,6 +4,17 @@
   "source": "GitHub Actions workflow_run events (not API polling)",
   "runs": [
     {
+      "id": 38614547926,
+      "workflow": "Canglan Native 3D Terrain Android ARM64 Preview",
+      "scope": "Work开发分支",
+      "branch": "work/p0g3-site-materials",
+      "status": "queued",
+      "conclusion": null,
+      "created_utc": "2026-10-14T18:22:06Z",
+      "last_event_utc": "2026-10-14T18:22:06Z",
+      "run_url": "https://github.com/160701541-cell/canglan-world/actions/runs/38614547926"
+    },
+    {
       "id": 38614313904,
       "workflow": "Canglan P0-G3 true construction 3D catalog and labor-led survey OTA",
       "scope": "Work开发分支",
@@ -266,17 +277,6 @@
       "created_utc": "2026-10-14T17:56:53Z",
       "last_event_utc": "2026-10-14T17:57:30Z",
       "run_url": "https://github.com/160701541-cell/canglan-world/actions/runs/38610975928"
-    },
-    {
-      "id": 38610799055,
-      "workflow": "Canglan Cloud Autonomous Fuzz and Quality Review",
-      "scope": "开发质量检查",
-      "branch": "main",
-      "status": "queued",
-      "conclusion": null,
-      "created_utc": "2026-10-14T17:55:38Z",
-      "last_event_utc": "2026-10-14T17:55:38Z",
-      "run_url": "https://github.com/160701541-cell/canglan-world/actions/runs/38610799055"
     }
   ],
   "pull_requests": [
@@ -311,5 +311,5 @@
     "pck_revision": 167,
     "pck_sha256": "0b1577e774f22959939a7befd0d7b183765f217d5e75683ac46b973207ac5b8e"
   },
-  "observed_at_utc": "2026-10-14T18:21:28Z"
+  "observed_at_utc": "2026-10-14T18:22:06Z"
 }
