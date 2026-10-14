@@ -8,9 +8,9 @@
     "id": 38612814113,
     "branch": "work/p0g3-site-materials",
     "workflow": "Canglan Native 3D Terrain Android ARM64 Preview",
-    "status": "queued",
+    "status": "in_progress",
     "conclusion": null,
-    "last_event_utc": "2026-10-14T18:09:53Z",
+    "last_event_utc": "2026-10-14T18:10:42Z",
     "run_url": "https://github.com/160701541-cell/canglan-world/actions/runs/38612814113"
   },
   "recovery": {
@@ -19,5 +19,5 @@
     "instruction": "Read last SHA, CI outcome and next action. Resume without overriding Work."
   },
   "threshold_minutes": 90,
-  "checked_at_utc": "2026-10-14T18:10:43+00:00"
+  "checked_at_utc": "2026-10-14T18:11:17+00:00"
 }
