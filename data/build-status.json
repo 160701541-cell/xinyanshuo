@@ -180,7 +180,18 @@
       "run_url": "https://github.com/160701541-cell/canglan-world/actions/runs/38545050078"
     }
   ],
-  "pull_requests": [],
+  "pull_requests": [
+    {
+      "number": 15,
+      "title": "P0-G2: scoped signed sky-shaft hot update for v165 (no native rebuild)",
+      "branch": "release/p0g2-sky-shafts",
+      "scope": "开发分支",
+      "state": "open",
+      "draft": true,
+      "last_event_utc": "2026-10-14T14:13:46Z",
+      "pr_url": "https://github.com/160701541-cell/canglan-world/pull/15"
+    }
+  ],
   "signed_release": {
     "apk_published": true,
     "pck_published": true,
@@ -191,5 +202,5 @@
     "pck_revision": 149,
     "pck_sha256": "09861b6d6165b55971986227479ac448ecfc05338a8ca7498e42462769860a8d"
   },
-  "observed_at_utc": "2026-10-14T12:22:56Z"
+  "observed_at_utc": "2026-10-14T14:13:46Z"
 }
