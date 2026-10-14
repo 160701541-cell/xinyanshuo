@@ -4,6 +4,17 @@
   "source": "GitHub Actions workflow_run events (not API polling)",
   "runs": [
     {
+      "id": 38597630607,
+      "workflow": "Canglan P0-G3 true construction 3D catalog and labor-led survey OTA",
+      "scope": "Work开发分支",
+      "branch": "work/p0g3-site-materials",
+      "status": "queued",
+      "conclusion": null,
+      "created_utc": "2026-10-14T16:23:09Z",
+      "last_event_utc": "2026-10-14T16:23:09Z",
+      "run_url": "https://github.com/160701541-cell/canglan-world/actions/runs/38597630607"
+    },
+    {
       "id": 38589540876,
       "workflow": "Canglan P0-G3 true construction 3D catalog and labor-led survey OTA",
       "scope": "Work开发分支",
@@ -289,5 +300,5 @@
     "pck_revision": 167,
     "pck_sha256": "0b1577e774f22959939a7befd0d7b183765f217d5e75683ac46b973207ac5b8e"
   },
-  "observed_at_utc": "2026-10-14T15:31:34Z"
+  "observed_at_utc": "2026-10-14T16:23:09Z"
 }
