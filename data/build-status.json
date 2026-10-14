@@ -8,10 +8,10 @@
       "workflow": "Canglan Cloud Autonomous Fuzz and Quality Review",
       "scope": "开发质量检查",
       "branch": "main",
-      "status": "queued",
+      "status": "in_progress",
       "conclusion": null,
       "created_utc": "2026-10-14T17:56:53Z",
-      "last_event_utc": "2026-10-14T17:56:53Z",
+      "last_event_utc": "2026-10-14T17:57:23Z",
       "run_url": "https://github.com/160701541-cell/canglan-world/actions/runs/38610975928"
     },
     {
@@ -311,5 +311,5 @@
     "pck_revision": 167,
     "pck_sha256": "0b1577e774f22959939a7befd0d7b183765f217d5e75683ac46b973207ac5b8e"
   },
-  "observed_at_utc": "2026-10-14T17:56:53Z"
+  "observed_at_utc": "2026-10-14T17:57:23Z"
 }
