@@ -6,6 +6,30 @@
   const revision = document.getElementById('revision');
   const size = document.getElementById('pack-size');
   document.getElementById('year').textContent = String(new Date().getFullYear());
+  // Official community: plain digits are copyable even if a mobile browser
+  // does not support the external QQ deep-link URI.
+  const copyQQ = document.getElementById('copy-qq');
+  if (copyQQ) copyQQ.addEventListener('click', async () => {
+    const original = copyQQ.textContent;
+    try {
+      await navigator.clipboard.writeText('160701541');
+      copyQQ.textContent = '已复制 160701541';
+    } catch (_) {
+      // Copy fallback for WebViews and non-secure contexts.
+      const input = document.createElement('textarea');
+      input.value = '160701541';
+      input.setAttribute('readonly', '');
+      input.style.position = 'fixed';
+      input.style.opacity = '0';
+      document.body.appendChild(input);
+      input.select();
+      const copied = document.execCommand('copy');
+      input.remove();
+      copyQQ.textContent = copied ? '已复制 160701541' : 'QQ：160701541（长按复制）';
+    }
+    setTimeout(() => { copyQQ.textContent = original; }, 2800);
+  });
+
   // The public website hosts APK + signed PCK independently, under the SAME
   // GitHub Pages origin. Never feed the APK manifest to the PCK update parser.
   const apkStatus = document.getElementById('apk-download-status');
