@@ -203,6 +203,24 @@
       releaseSync.textContent = '更新日志服务稍后重试；未验证版本不会显示。';
     }
   }
+  // The contact controls do not require any third-party script, account
+  // login, or external tracking. The public QQ invite was provided by the
+  // project owner for publication on the official site.
+  const copyQQ = document.getElementById('copy-qq');
+  if (copyQQ) copyQQ.addEventListener('click', async () => {
+    try {
+      if (!navigator.clipboard || !window.isSecureContext) throw new Error('Clipboard API unavailable');
+      await navigator.clipboard.writeText('160701541');
+      copyQQ.textContent = '已复制 QQ：160701541 ✓';
+    } catch (_) {
+      copyQQ.textContent = 'QQ：160701541（可长按复制）';
+    }
+    setTimeout(() => { copyQQ.textContent = '复制QQ号'; }, 3000);
+  });
+  const menu = Array.from(document.querySelectorAll('.side-nav a'));
+  for (const item of menu) item.addEventListener('click', () => {
+    for (const link of menu) link.classList.toggle('active',link === item);
+  });
   loadDevelopment();
   loadReleases();
   setInterval(() => {
