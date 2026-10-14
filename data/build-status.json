@@ -4,6 +4,17 @@
   "source": "GitHub Actions workflow_run events (not API polling)",
   "runs": [
     {
+      "id": 38606980341,
+      "workflow": "Canglan Native 3D Terrain Android ARM64 Preview",
+      "scope": "Work开发分支",
+      "branch": "work/p0g3-site-materials",
+      "status": "in_progress",
+      "conclusion": null,
+      "created_utc": "2026-10-14T17:28:43Z",
+      "last_event_utc": "2026-10-14T17:29:27Z",
+      "run_url": "https://github.com/160701541-cell/canglan-world/actions/runs/38606980341"
+    },
+    {
       "id": 38606922379,
       "workflow": "Canglan Native 3D Terrain Android ARM64 Preview",
       "scope": "Work开发分支",
@@ -266,17 +277,6 @@
       "created_utc": "2026-10-14T15:24:35Z",
       "last_event_utc": "2026-10-14T15:24:40Z",
       "run_url": "https://github.com/160701541-cell/canglan-world/actions/runs/38589043475"
-    },
-    {
-      "id": 38588538142,
-      "workflow": "Canglan Character Factory Pilot QA",
-      "scope": "Work开发分支",
-      "branch": "work/p0g3-site-materials",
-      "status": "completed",
-      "conclusion": "success",
-      "created_utc": "2026-10-14T15:21:06Z",
-      "last_event_utc": "2026-10-14T15:21:36Z",
-      "run_url": "https://github.com/160701541-cell/canglan-world/actions/runs/38588538142"
     }
   ],
   "pull_requests": [
@@ -311,5 +311,5 @@
     "pck_revision": 167,
     "pck_sha256": "0b1577e774f22959939a7befd0d7b183765f217d5e75683ac46b973207ac5b8e"
   },
-  "observed_at_utc": "2026-10-14T17:28:45Z"
+  "observed_at_utc": "2026-10-14T17:29:27Z"
 }
