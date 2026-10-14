@@ -1,8 +1,64 @@
 {
   "schema": 1,
   "channel": "canglan-build-observer",
-  "source": "GitHub Actions workflow_run events (not API polling)",
-  "runs": [],
+  "source": "Verified official Android run + verified recent development QA; subsequent statuses delivered by GitHub Actions workflow_run events, not API polling",
+  "runs": [
+    {
+      "id": 38545713846,
+      "workflow": "Guoman Toon + Chinese Modular Architecture — Real Render Review",
+      "scope": "开发质量检查",
+      "branch": "feat/guoman-toon-house-reviewed-main",
+      "status": "completed",
+      "conclusion": "success",
+      "created_utc": "2026-10-14T09:55:20Z",
+      "last_event_utc": "2026-10-14T09:55:20Z",
+      "run_url": "https://github.com/160701541-cell/canglan-world/actions/runs/38545713846"
+    },
+    {
+      "id": 38545713903,
+      "workflow": "Canglan Gameplay Real-Frame Visual Review",
+      "scope": "开发质量检查",
+      "branch": "feat/guoman-toon-house-reviewed-main",
+      "status": "completed",
+      "conclusion": "success",
+      "created_utc": "2026-10-14T09:54:47Z",
+      "last_event_utc": "2026-10-14T09:54:47Z",
+      "run_url": "https://github.com/160701541-cell/canglan-world/actions/runs/38545713903"
+    },
+    {
+      "id": 38545713868,
+      "workflow": "Canglan Character Factory Pilot QA",
+      "scope": "开发质量检查",
+      "branch": "feat/guoman-toon-house-reviewed-main",
+      "status": "completed",
+      "conclusion": "success",
+      "created_utc": "2026-10-14T09:54:26Z",
+      "last_event_utc": "2026-10-14T09:54:26Z",
+      "run_url": "https://github.com/160701541-cell/canglan-world/actions/runs/38545713868"
+    },
+    {
+      "id": 38545713801,
+      "workflow": "Canglan Near/Far Actor Visual LOD QA",
+      "scope": "开发质量检查",
+      "branch": "feat/guoman-toon-house-reviewed-main",
+      "status": "completed",
+      "conclusion": "success",
+      "created_utc": "2026-10-14T09:54:23Z",
+      "last_event_utc": "2026-10-14T09:54:23Z",
+      "run_url": "https://github.com/160701541-cell/canglan-world/actions/runs/38545713801"
+    },
+    {
+      "id": 38545050078,
+      "workflow": "Canglan Native 3D Terrain Android ARM64 Preview",
+      "scope": "正式Android构建",
+      "branch": "main",
+      "status": "completed",
+      "conclusion": "success",
+      "created_utc": "2026-10-14T09:48:26Z",
+      "last_event_utc": "2026-10-14T09:48:26Z",
+      "run_url": "https://github.com/160701541-cell/canglan-world/actions/runs/38545050078"
+    }
+  ],
   "signed_release": {
     "apk_published": true,
     "pck_published": true,
@@ -13,5 +69,5 @@
     "pck_revision": 149,
     "pck_sha256": "09861b6d6165b55971986227479ac448ecfc05338a8ca7498e42462769860a8d"
   },
-  "observed_at_utc": null
+  "observed_at_utc": "2026-10-14T09:55:20Z"
 }
