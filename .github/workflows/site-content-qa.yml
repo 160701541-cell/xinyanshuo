@@ -11,6 +11,13 @@ on:
       - data/**
       - android-preview/latest.json
       - .github/workflows/site-content-qa.yml
+  pull_request:
+    paths:
+      - index.html
+      - site.js
+      - style.css
+      - art/**
+      - .github/workflows/site-content-qa.yml
   workflow_dispatch:
 
 permissions:
@@ -28,12 +35,12 @@ jobs:
       - uses: actions/checkout@v4
       - name: JavaScript parse test
         run: node --check site.js
-      - name: Static HTML, signed changelog and 3 original concept art checks
+      - name: Cinematic visuals, mobile-ready community links and signed changelog checks
         shell: bash
         run: |
           set -euo pipefail
           python3 - <<'PY'
-          import json,re,xml.etree.ElementTree as ET
+          import json,re
           from html.parser import HTMLParser
           from pathlib import Path
           class Page(HTMLParser):
@@ -48,15 +55,31 @@ jobs:
                          'changelog','release-history','release-sync','download',
                          'apk-download-link','updates'):
               assert anchor in page.ids,anchor
-          files=['art/canglan-world-poster.svg','art/canglan-village-concept.svg',
-                 'art/canglan-frontier-concept.svg']
-          for f in files:
+          # New REAL cinematic AI concept art assets, shipped in this site,
+          # not CSS-only vector mountain doodles. Exclude artifacts masquerading
+          # as "gameplay" and verify all 4 image data objects are WebP.
+          visuals=['art/canglan-vision-hero.webp',
+                   'art/canglan-towns-life.webp',
+                   'art/canglan-six-kingdoms.webp',
+                   'art/canglan-robed-wanderer.webp']
+          for f in visuals:
               p=Path(f)
-              assert p.exists() and p.stat().st_size>2000
-              root=ET.parse(f).getroot()
-              assert root.tag.endswith('svg')
-              assert any(v.get('src')=='./'+f and v.get('alt') for v in page.images)
-              assert '非游戏实机' in p.read_text(encoding='utf8') or '非实际游戏画面' in p.read_text(encoding='utf8')
+              raw=p.read_bytes()
+              assert p.stat().st_size>30000,('Incomplete cinematic hero image',f)
+              assert raw[:4]==b'RIFF' and raw[8:12]==b'WEBP',('Corrupt image',f)
+              assert int.from_bytes(raw[4:8],'little')==len(raw)-8
+              assert any(v.get('src')=='./'+f and v.get('alt') for v in page.images),f
+          html=Path('index.html').read_text(encoding='utf8')
+          assert html.count('概念')>=6
+          assert '不是游戏实机截图' in html or '不是当前 APK 的画面截图' in html
+          assert '1125050836' in html and '160701541' in html and 'xys160701541' in html
+          assert 'https://qun.qq.com/universal-share/share?' in html
+          assert 'https://wpa.qq.com/msgrd?' in html
+          assert 'https://www.douyin.com/search/xys160701541?type=user' in html
+          assert 'id="copy-qq"' in html and 'id="community"' in html
+          assert '#world' in html and '#concept' in html
+          print('PASS 4 IMMERSIVE REAL WEBP CONCEPT IMAGES, responsive community contacts, honest non-gameplay labels')
+
           a=json.loads(Path('data/development.json').read_text(encoding='utf8'))
           b=json.loads(Path('data/updates.json').read_text(encoding='utf8'))
           latest=json.loads(Path('android-preview/latest.json').read_text(encoding='utf8'))
@@ -74,5 +97,5 @@ jobs:
               assert forbidden not in json.dumps(a),f'PRIVATE_LOG_LEAK: {forbidden}'
           print('PASS REAL OFFICIAL DEVLOG',len(a['entries']))
           print('PASS SIGNED GAME RELEASE HISTORY',len(b['entries']),'latest',latest['revision'])
-          print('PASS 3 CLEARLY LABELED ORIGINAL NON-GAMEPLAY CONCEPT IMAGES')
+          print('PASS CINEMATIC CONCEPT POSTERS NEVER MISLABELLED AS GAMEPLAY')
           PY
