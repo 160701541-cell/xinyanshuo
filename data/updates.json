@@ -1,10 +1,18 @@
 {
   "schema": 1,
   "channel": "signed-releases",
-  "updated_at": "2026-10-14T14:18:41Z",
+  "updated_at": "2026-10-14T15:32:00Z",
   "source": "android-preview/latest.json; signed PCK from verified CI",
   "verification": "RSA/PCK compatibility is checked by native Godot application, not website.",
   "entries": [
+    {
+      "revision": 167,
+      "first_seen_utc": "2026-10-14T15:32:00Z",
+      "notes": "P0-G3：18个实体施工材料、真实工人运料与逐角木桩放线；累计包含天空#166修复",
+      "sha256": "0b1577e774f22959939a7befd0d7b183765f217d5e75683ac46b973207ac5b8e",
+      "size_bytes": 1247136,
+      "status": "signed_release"
+    },
     {
       "revision": 166,
       "first_seen_utc": "2026-10-14T14:18:41Z",

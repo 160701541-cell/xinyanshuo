@@ -8,10 +8,10 @@
       "workflow": "Canglan P0-G3 true construction 3D catalog and labor-led survey OTA",
       "scope": "Work开发分支",
       "branch": "work/p0g3-site-materials",
-      "status": "in_progress",
-      "conclusion": null,
+      "status": "completed",
+      "conclusion": "success",
       "created_utc": "2026-10-14T15:27:54Z",
-      "last_event_utc": "2026-10-14T15:28:50Z",
+      "last_event_utc": "2026-10-14T15:31:34Z",
       "run_url": "https://github.com/160701541-cell/canglan-world/actions/runs/38589540876"
     },
     {
@@ -286,8 +286,8 @@
     "apk_code": 1165,
     "apk_sha256": "9e0a2fb215775579f7e96c3975925cb17f456e82df93f5d850ebceb30a0131d4",
     "apk_file": "android-preview/base/Canglan-AncientWorld-v0.2.0-dev.165-Stable-Signed-ARM64.apk",
-    "pck_revision": 166,
-    "pck_sha256": "3b6d91664559ac1cbd8b38354000a2bae2f7e82f02de458cd5d815708c99e307"
+    "pck_revision": 167,
+    "pck_sha256": "0b1577e774f22959939a7befd0d7b183765f217d5e75683ac46b973207ac5b8e"
   },
-  "observed_at_utc": "2026-10-14T15:28:50Z"
+  "observed_at_utc": "2026-10-14T15:31:34Z"
 }
