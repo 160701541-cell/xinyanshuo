@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="color-scheme" content="dark">
   <meta name="theme-color" content="#102522">
-  <meta name="description" content="心魇说 xinyanshuo · 苍岚·人生世界。国风2.5D古代生活世界，游戏更新和正式发布信息。">
+  <meta name="description" content="《苍岚·人生世界》独立游戏官方网站：国风古代生活开放世界、原创概念海报、自动同步的真实开发日志、正式签名版本更新记录与Android下载。">
   <meta property="og:title" content="心魇说 · xinyanshuo">
   <meta property="og:description" content="苍岚·人生世界 — 一次安装基础包，之后在游戏内更新世界。">
   <meta property="og:type" content="website">
@@ -17,17 +17,36 @@
   <div class="grain" aria-hidden="true"></div>
   <header class="topbar wrap">
     <a class="brand" href="./" aria-label="心魇说首页"><span class="seal">心</span><span class="brand-copy">心魇说<small>xinyanshuo</small></span></a>
-    <nav><a href="#world">世界</a><a href="#updates">更新</a><a href="#about">说明</a></nav>
+    <nav aria-label="网站导航"><a href="#world">世界</a><a href="#concept">概念美术</a><a href="#devlog">开发日志</a><a href="#changelog">更新日志</a><a href="#download">下载</a></nav>
   </header>
   <main>
     <section class="hero wrap" id="world">
       <div class="eyebrow"><span class="dot"></span> CANGLAN · WORLD IN DEVELOPMENT</div>
       <h1>世界不止于<br><em>一方天地。</em></h1>
       <p class="lead">苍岚 · 人生世界</p>
-      <p class="intro">一个仍在塑造中的国风 2.5D 古代生活世界。山川、村落、人物与万物，不该只是背景，而应拥有自己的存在与变化。</p>
-      <div class="hero-actions"><a class="action primary" href="#download">下载 Android APK <span aria-hidden="true">↓</span></a><a class="action muted" href="#updates">查看世界更新</a></div>
+      <p class="intro">一个仍在塑造中的国风古代开放世界。山川、村落、人物与万物，不该只是背景，而应拥有自己的存在与变化。</p>
+      <div class="hero-actions"><a class="action primary" href="#download">下载 Android APK <span aria-hidden="true">↓</span></a><a class="action muted" href="#devlog">查看真实开发进度</a><a class="action muted" href="#concept">世界观海报</a></div>
       <div class="aside-note">开发阶段 · 游戏画面与玩法尚未达到最终品质</div>
       <div class="mountain" aria-hidden="true"><span></span><span></span><span></span></div>
+    </section>
+
+    <section class="art-section" id="concept" aria-labelledby="concept-title">
+      <div class="wrap">
+        <div class="small-title">CONCEPT ART · WORLD VISION</div>
+        <h2 id="concept-title">山河万里，<br>众生各有一生。</h2>
+        <p class="section-lead">你不一定是英雄。商旅、农人、守关者与匠人，同样拥有姓名、去处与命运。下面是我们希望《苍岚》最终呈现的世界感，而不是已经实现的画质。</p>
+        <div class="concept-grid">
+          <figure class="concept-poster">
+            <img src="./art/canglan-world-poster.svg" alt="原创《苍岚》竖幅世界观海报：山河村落与独行旅人，一人一命、一城一生" loading="lazy" width="600" height="848">
+            <figcaption><strong>一人一命 · 一城一生</strong><span>世界观海报</span></figcaption>
+          </figure>
+          <div class="concept-scenes">
+            <figure><img src="./art/canglan-village-concept.svg" alt="原创村落概念：瓦房、溪流、田地和各自生活的村民" loading="lazy" width="1200" height="680"><figcaption><strong>万家灯火，各有生计</strong><span>村镇、商队、田野与生活</span></figcaption></figure>
+            <figure><img src="./art/canglan-frontier-concept.svg" alt="原创边关概念：雪岭、城关、远行商队与守军" loading="lazy" width="1200" height="680"><figcaption><strong>山河辽阔，万里同行</strong><span>边关、贸易、风雪与地理生态</span></figcaption></figure>
+          </div>
+        </div>
+        <p class="concept-disclaimer"><strong>重要说明：</strong>本栏目为原创概念美术/视觉方向参考，不是Godot实机截图，不代表这些场景、人物或画质已经制作完成。真实可玩效果以安装包与实际游戏画面为准。</p>
+      </div>
     </section>
     <section class="updates" id="updates">
       <div class="wrap two-col">
@@ -41,13 +60,27 @@
         </div>
       </div>
     </section>
+
+    <section class="public-records wrap" id="devlog" aria-labelledby="devlog-title">
+      <div class="log-heading"><div><div class="small-title">DEVELOPMENT LOG · SOURCE-SYNCED</div><h2 id="devlog-title">真实的开发过程，<br>公开给你看。</h2><p class="section-lead">官网自动同步项目正式工作日志：已完成、失败、待处理都如实保留。记录来自源码主分支，测试成功不等于已经正式发布或通过玩家审美验收。</p></div><div class="sync-mark"><span class="pulse" aria-hidden="true"></span><strong id="development-sync">正在加载正式开发日志…</strong><small>主分支变更自动同步 · 页面约每60秒检查新记录</small></div></div>
+      <div id="development-list" class="log-list" aria-live="polite"><p class="loading-copy">正在读取已发布的工作日志。请稍候。</p></div>
+      <div class="log-bottom"><span id="development-count">尚未载入记录</span><button class="log-load-more" id="development-more" type="button" hidden>展开更早的日志</button></div>
+    </section>
+    <section class="release-history" id="changelog" aria-labelledby="changelog-title">
+      <div class="wrap">
+        <div class="small-title">SIGNED GAME RELEASES · VERIFIED HISTORY</div><h2 id="changelog-title">游戏更新日志</h2>
+        <p class="section-lead">只列入真实发布的签名更新，不把开发中的人物、美术草案或尚未通过的功能冒充正式内容。最新版本直接读取官方RSA签名清单。</p>
+        <div class="history-grid" id="release-history" aria-live="polite"><p class="loading-copy">正在读取正式发布记录…</p></div>
+        <p class="records-note" id="release-sync">正式更新以游戏内数字签名、SHA-256和兼容性校验为准；网页仅供查询。</p>
+      </div>
+    </section>
     <section class="features wrap" id="about">
       <div class="small-title">BUILT FOR A LIVING WORLD</div>
       <div class="feature-grid"><article><span class="index">01</span><h3>真实世界</h3><p>不靠堆砌 UI 描述世界，而让地形、建筑和物品在同一个空间里相互影响。</p></article><article><span class="index">02</span><h3>独立生命</h3><p>NPC、物资和时间有独立状态与因果，不因玩家存在而失去真实逻辑。</p></article><article><span class="index">03</span><h3>安全演进</h3><p>代码与密钥不在公共发布站，发布的资源先经验证才能进入玩家世界。</p></article></div>
       <div class="notice" id="download"><strong>Android 基础 APK · 独立于游戏内资源更新</strong><p id="apk-download-status" role="status" aria-live="polite">正在查询已校验的基础安装包。若尚未发布，下载按钮不会出现。</p><a id="apk-download-link" class="action primary" href="#" download hidden>下载已签名 Android APK</a><p id="apk-hash" class="download-checksum"></p><p>当前已知旧版 v102 使用原长期签名，但原生屏幕方向锁定竖屏；新版横屏 APK 仍需单独构建与实机验收。已安装 v102 的玩家不必重新安装；今后升级基础包应使用同签名覆盖安装，勿卸载清空存档。兼容的游戏内容仍可在应用内检查更新。</p></div>
     </section>
   </main>
-  <footer class="footer"><div class="wrap"><span>心魇说 · xinyanshuo</span><span>苍岚·人生世界 © <span id="year">2026</span></span></div></footer>
+  <footer class="footer"><div class="wrap"><span>心魇说 · xinyanshuo</span><span>苍岚·人生世界 © <span id="year">2026</span> · 官网开发日志自动同步 · 概念美术非游戏截图</span></div></footer>
   <script src="site.js" defer></script>
 </body>
 </html>
