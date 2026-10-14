@@ -82,6 +82,15 @@ class GraphTests(unittest.TestCase):
         with self.assertRaisesRegex(CatalogError,'mass_not_balanced'):
             self.change(lambda d:d['recipes'][0]['outputs'].update(clay_slurry=100))
 
+    def test_existing_world_mass_scale_is_preserved(self):
+        self.assertEqual(self.graph.items['log']['mass_g'],40000)
+        self.assertEqual(self.graph.items['timber_beam_standard']['mass_g'],20000)
+        self.assertEqual(self.graph.items['roof_module']['mass_g'],43800)
+
+    def test_legacy_mass_scale_tamper_is_rejected(self):
+        with self.assertRaisesRegex(CatalogError,'material_mass_incompatible'):
+            self.change(lambda d: d['items'][5].update(mass_g=8000))
+
     def test_unknown_items_rejected(self):
         with self.assertRaisesRegex(CatalogError,'unknown_item'):
             self.change(lambda d:d['recipes'][0]['inputs'].update(ghost_gold=1))
