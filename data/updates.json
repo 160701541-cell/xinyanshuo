@@ -1,10 +1,19 @@
 {
   "schema": 1,
   "channel": "signed-releases",
-  "updated_at": "2026-10-14T08:52:33Z",
+  "updated_at": "2026-10-14T09:00:24Z",
   "source": "android-preview/latest.json; signed PCK from verified CI",
   "verification": "RSA/PCK compatibility is checked by native Godot application, not website.",
   "entries": [
+    {
+      "revision": 149,
+      "first_seen_utc": "2026-10-14T09:00:24Z",
+      "notes": "苍岚：内容与资源更新",
+      "sha256": "09861b6d6165b55971986227479ac448ecfc05338a8ca7498e42462769860a8d",
+      "size_bytes": 18025216,
+      "status": "signed_release",
+      "version_name": "0.2.0-dev.149"
+    },
     {
       "revision": 148,
       "first_seen_utc": "2026-10-14T08:52:33Z",
