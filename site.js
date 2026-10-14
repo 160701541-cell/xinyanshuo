@@ -218,7 +218,7 @@
         lastReleaseDigest = digest;
       }
       releaseSync.textContent = '当前签名内容：#' + latest.revision
-        + ' · 历史版本记录 ' + list.length + ' 条 · 页面约60秒检查新版本；正式签名和兼容性校验仍在游戏客户端执行。';
+        + ' · 历史版本记录 ' + list.length + ' 条 · 页面约120秒检查新版本；正式签名和兼容性校验仍在游戏客户端执行。';
     } catch (_) {
       if (!lastReleaseDigest) {
         clear(historyList);
@@ -227,18 +227,116 @@
       releaseSync.textContent = '更新日志服务稍后重试；未验证版本不会显示。';
     }
   }
+  // Project control room: static JSON is EVENT-PUSHED from GitHub Actions.
+  // The visitor polls CDN data every 120s, NEVER the private GitHub API.
+  // Thus unlimited visitors do NOT exhaust the GitHub REST rate limit.
+  const observerRows = document.getElementById('build-observer-rows');
+  const observerSync = document.getElementById('build-observer-sync');
+  const apkLive = document.getElementById('build-apk-state');
+  const apkDetail = document.getElementById('build-apk-note');
+  const workflowLive = document.getElementById('build-workflow-state');
+  const workflowDetail = document.getElementById('build-workflow-note');
+  const statusText = {
+    queued: '等待构建', requested: '等待启动', pending: '等待启动', waiting: '等待资源',
+    in_progress: '正在执行', completed: '构建已结束'
+  };
+  const conclusionText = {
+    success: '成功', failure: '失败', cancelled: '已取消',
+    timed_out: '已超时', skipped: '已跳过', startup_failure: '未能启动',
+    action_required: '等待人工处理', neutral: '已结束', stale: '已过期'
+  };
+  let lastObserverDigest = '';
+  async function loadBuildObserver() {
+    if (!observerRows) return;
+    try {
+      const feed = await getFreshJSON('./data/build-status.json');
+      if (feed.schema !== 1 || feed.channel !== 'canglan-build-observer'
+          || !Array.isArray(feed.runs) || feed.runs.length > 25
+          || !feed.runs.every(x => Number.isSafeInteger(x.id)
+            && typeof x.workflow === 'string' && typeof x.status === 'string')) {
+        throw new Error('Invalid observer channel');
+      }
+      const digest = JSON.stringify(feed);
+      if (digest !== lastObserverDigest) {
+        clear(observerRows);
+        const latest = feed.runs.slice(0, 9);
+        if (!latest.length) {
+          addText(observerRows, 'p', 'loading-copy', '尚无新的工作流事件，等待下一次GitHub运行回传。');
+        }
+        latest.forEach(run => {
+          const card = document.createElement('article');
+          card.className = 'observer-run';
+          const status = run.status === 'completed'
+            ? (conclusionText[run.conclusion] || '已结束')
+            : (statusText[run.status] || '状态待确认');
+          const dt = new Date(run.last_event_utc || '');
+          const age = Number.isFinite(dt.getTime()) ? Date.now() - dt.getTime() : NaN;
+          const delayed = run.status !== 'completed' && (Number.isNaN(age) || age > 40 * 60000);
+          const state = delayed ? '超过40分钟无新事件 · 待确认' : status;
+          addText(card, 'strong', 'observer-run-title', String(run.workflow).slice(0, 120));
+          addText(card, 'span', 'observer-pill' + (run.conclusion === 'failure' ? ' failed' : run.conclusion === 'success' ? ' passed' : ''), state);
+          addText(card, 'p', 'observer-run-meta', String(run.scope || '开发任务')
+            + ' · ' + String(run.branch || '未知分支').slice(0, 50)
+            + ' · 最近事件：' + safeDate(run.last_event_utc));
+          const link = document.createElement('a');
+          link.textContent = 'GitHub构建 #' + String(run.id) + ' ↗';
+          link.href = 'https://github.com/160701541-cell/canglan-world/actions/runs/' + run.id;
+          link.target = '_blank';
+          link.rel = 'noopener noreferrer';
+          card.appendChild(link);
+          observerRows.appendChild(card);
+        });
+        lastObserverDigest = digest;
+      }
+      const apk = feed.signed_release || {};
+      apkLive.textContent = apk.apk_published
+        ? '已发布 APK v' + String(apk.apk_version || '?') : '尚未完成APK实体文件核验';
+      apkDetail.textContent = apk.apk_published
+        ? 'Android code ' + String(apk.apk_code) + ' · 官方同证书 · 已校验文件SHA256'
+        : '仅凭CI绿色不能证明新包已发布；请查看已签名下载入口';
+      const newest = feed.runs[0];
+      workflowLive.textContent = newest
+        ? (newest.status === 'completed'
+          ? (conclusionText[newest.conclusion] || '已结束')
+          : (statusText[newest.status] || '等待确认'))
+        : '暂未收到构建事件';
+      workflowDetail.textContent = newest
+        ? String(newest.workflow).slice(0, 100)
+          + ' · #' + newest.id + ' · ' + safeDate(newest.last_event_utc)
+        : 'GitHub事件推送到官网，不查询私有仓库API';
+      if (observerSync) {
+        const newestTime = newest ? newest.last_event_utc : feed.observed_at_utc;
+        const age = Date.now() - new Date(newestTime || '').getTime();
+        const freshness = Number.isFinite(age) && age > 40 * 60000
+          ? ' · 注意：最后事件距今超过40分钟，任务运行状态请点开GitHub确认。'
+          : '';
+        observerSync.textContent = '最新可见工作流事件：'
+          + safeDate(newestTime) + ' · 官网静态数据每120秒检查；非持续GitHub API轮询。'
+          + freshness;
+      }
+    } catch (error) {
+      if (observerSync) observerSync.textContent =
+        '构建监测数据暂时无法同步；未知不代表成功或失败。请以GitHub构建记录及签名APK清单为准。';
+      if (workflowLive) workflowLive.textContent = '监测暂不可用 · 状态待确认';
+      if (apkLive) apkLive.textContent = '暂无法校验最新APK';
+    }
+  }
+
   loadDevelopment();
   loadReleases();
+  loadBuildObserver();
   setInterval(() => {
     if (document.visibilityState !== 'hidden') {
       loadDevelopment();
       loadReleases();
+      loadBuildObserver();
     }
-  }, 60000);
+  }, 120000);
   document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'visible') {
       loadDevelopment();
       loadReleases();
+      loadBuildObserver();
     }
   });
 })();
