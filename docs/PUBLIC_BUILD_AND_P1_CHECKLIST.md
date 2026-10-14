@@ -84,3 +84,13 @@
 - [真实公开QA构建#38643860617](https://github.com/160701541-cell/xinyanshuo/actions/runs/38643860617) PASS；job 116125782923实际日志显示12 tests OK，PNG独立审计与工件上传PASS。这里只代表技术QA。
 - [执行规范](ENGINEERING_QA_RELEASE_POLICY.md)已入库；[人工视觉复审](P1_MATERIAL_ART_REVIEW_20261015.md)主动将现有材质列为ART FAIL（青瓦仍像柔和条带，白墙过于平滑，欠真实构件/近景细节）。技术通过绝不代替Godot实景、Android和人工审美。
 - 本轮未新发APK/PCK，当前手机版本仍以APK176及PCK167为公开基线；原游戏迁移、主世界集成、RSA签名和手机负载仍BLOCKED。
+
+## 2026-10-15 新增真正的开发质量生产系统（已运行，不是概念口号）
+
+- **生产前标准已落地**：`docs/CANGLAN_DEVELOPMENT_MANUFACTURING_STANDARD_V1.md`，要求任何新物体/功能从第一天先有玩家使用场景、物理/美术工艺、原料/实体产权、操作响应、视觉近景、性能和失败恢复的**规格合同**；结案仍需独立审核。
+- **可执行数据调教器**：`game-source/tools/tune_data.py` + `data/tuning/engineering_contract.v1.json`，有不可削弱的硬指标：碰撞/输入冲突、库存/旧档/无授权解锁等逻辑事故为0；Android 15分钟稳态门禁；视觉真实Godot截图。脚本只根据有证据的超标指标给出小步候选参数，不自动改动玩家游戏、更不能自动认定审美通过。
+- **逐物品生产合同引擎**：`game-source/tools/production_contracts.py` 动态检查当前24类物品每一个的九道制作门禁：设计、合法原始美术、物理账务、Godot导入、真实审美、触摸操作、Android性能、旧档兼容与签名发布。自动产出JSON缺口报告；目前全部24个都尚未具备完整游戏发布证据，**阻止宣称已完成**。
+- **首个真实物料/制造超图**：`game-source/data/craft/material_graph.v1.json` 有24类物品、14条多输入多输出工序、6项研究和4份图纸；覆盖黏土→淘泥→青砖/青瓦、石灰→灰泥、木梁→青瓦屋面、砖灰→白墙模块。由`craft_graph.py`校验总质量守恒（简化g计价模型、非真实化学计量）、无天然材料凭空造出、无循环增殖、解锁/工坊/库存合法性。实验程序`evaluate_experiment`只创建**研究候选**，不改现有`WorldState`，不会送免费材料或图纸。与原`physical_material_registry.gd`中原木40kg、结构梁20kg规格对齐，新梁ID不静默覆盖旧物品。
+- **真正的引擎解析**：新增只读Godot 4.4.1 GDScript目录桥接器`game-source/godot3d/scripts/crafting/craft_catalog_reader.gd`，并用隔离微工程验证资源图谱查询、研究/图纸门禁、物料预算；**不是原主游戏UI/工单完成**。
+- **最终公开真实QA结果**：[GitHub Actions #38646840315](https://github.com/160701541-cell/xinyanshuo/actions/runs/38646840315)结论**success**：原料工艺图17项、数据调教16项、单品生产合同8项，合计41项真实Python测试全部通过；另有实际Godot 4.4.1无渲染器隔离图谱脚本运行PASS。对应机器可读报告及Godot运行日志已上传GitHub工件，报告仍显式`release_approved=false`。早期CI曾抓到脚本语法错误及错误的物料反例质量，已修正后重新全部通过；不删测试求绿灯。
+- **严禁混淆阶段**：S/U（公共架构+真实自动测试）通过；独立Godot数据只读I=部分通过；原游戏`WorldState`工单与实际图纸界面、玩家研发解锁、国漫美术与Android设备验证/正式签名R **均未完成**。官网正式基包仍APK176、热更新#167。用户手机此刻不会出现“新物品树”。后续按一个墙段的真实资源→原料加工→图纸研究→施工工人→可视化→存档完整闭环才可标注正式游戏通过。
