@@ -43,7 +43,10 @@ func _run_actual_ui() -> void:
 		_die(ui, "UI_LOCKED_RECIPE_NOT_EXPLAINED")
 		return
 	var snapshot_before: Dictionary = ui.get_snapshot()
-	ui.set_world_view(["ceramics_1"],["bp_kiln_arch"],["kiln"],
+	var actual_research: Array[String] = ["ceramics_1"]
+	var actual_blueprints: Array[String] = ["bp_kiln_arch"]
+	var actual_stations: Array[String] = ["kiln"]
+	ui.set_world_view(actual_research, actual_blueprints, actual_stations,
 		{"tile_blank":1,"firewood":1})
 	var unlocked_text: String = ui.detail_rich.get_parsed_text()
 	if not unlocked_text.contains("可申请工单"):
