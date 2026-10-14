@@ -46,7 +46,8 @@ jobs:
           page.feed(Path('index.html').read_text(encoding='utf8'))
           for anchor in ('concept','devlog','development-list','development-sync',
                          'changelog','release-history','release-sync','download',
-                         'apk-download-link','updates'):
+                         'apk-download-link','updates','build-status',
+                         'build-observer-rows','build-observer-sync','build-apk-state'):
               assert anchor in page.ids,anchor
           files=['art/canglan-world-poster.svg','art/canglan-village-concept.svg',
                  'art/canglan-frontier-concept.svg']
@@ -59,6 +60,19 @@ jobs:
               assert '非游戏实机' in p.read_text(encoding='utf8') or '非实际游戏画面' in p.read_text(encoding='utf8')
           a=json.loads(Path('data/development.json').read_text(encoding='utf8'))
           b=json.loads(Path('data/updates.json').read_text(encoding='utf8'))
+          status=json.loads(Path('data/build-status.json').read_text(encoding='utf8'))
+          assert status['schema']==1 and status['channel']=='canglan-build-observer'
+          assert len(status.get('runs',[]))<=25
+          for r in status.get('runs',[]):
+              assert r['status'] in {'requested','queued','waiting','pending','in_progress','completed'}
+              if r['status']=='completed':
+                  assert r['conclusion'] in {'success','failure','cancelled','timed_out','skipped','neutral','action_required','startup_failure','stale'}
+              assert r['run_url'].startswith('https://github.com/160701541-cell/canglan-world/actions/runs/')
+          release=status.get('signed_release',{})
+          if release.get('apk_published'):
+              assert re.fullmatch('[0-9a-f]{64}',release['apk_sha256'])
+          assert '120000' in Path('site.js').read_text(encoding='utf8'), 'Browser must use 2-minute refresh, not API busy-polling'
+
           latest=json.loads(Path('android-preview/latest.json').read_text(encoding='utf8'))
           assert a['schema']==1 and a['channel']=='public-development-log'
           assert len(a['entries'])>5 and all(x['title'] and x['body'] for x in a['entries'])
@@ -75,4 +89,5 @@ jobs:
           print('PASS REAL OFFICIAL DEVLOG',len(a['entries']))
           print('PASS SIGNED GAME RELEASE HISTORY',len(b['entries']),'latest',latest['revision'])
           print('PASS 3 CLEARLY LABELED ORIGINAL NON-GAMEPLAY CONCEPT IMAGES')
+          print('PASS P0 EVENT-DRIVEN BUILD OBSERVER',len(status['runs']),'workflows; site refresh >=120s')
           PY
