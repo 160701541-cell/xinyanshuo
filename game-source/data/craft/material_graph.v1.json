@@ -1,0 +1,571 @@
+{
+  "schema": 1,
+  "id": "canglan.material_graph.prototype",
+  "status": "design_candidate_not_integrated",
+  "units": "integer_item_units_with_declared_gram_mass",
+  "mass_policy": "sum_inputs_g=sum_outputs_g+loss_g;not_actual_stoichiometry",
+  "world_authority": "existing_WorldState_only",
+  "items": [
+    {
+      "id": "clay_soil",
+      "name": "黏质土",
+      "stage": "raw",
+      "mass_g": 1000,
+      "origin": "natural:clay_bed"
+    },
+    {
+      "id": "sandy_soil",
+      "name": "砂质土",
+      "stage": "raw",
+      "mass_g": 1000,
+      "origin": "natural:river_bank"
+    },
+    {
+      "id": "water",
+      "name": "水",
+      "stage": "raw",
+      "mass_g": 1000,
+      "origin": "natural:well_or_river"
+    },
+    {
+      "id": "firewood",
+      "name": "薪柴",
+      "stage": "raw",
+      "mass_g": 1000,
+      "origin": "harvested_wood"
+    },
+    {
+      "id": "limestone",
+      "name": "石灰石",
+      "stage": "raw",
+      "mass_g": 1000,
+      "origin": "natural:quarry"
+    },
+    {
+      "id": "log",
+      "name": "原木",
+      "stage": "raw",
+      "mass_g": 8000,
+      "origin": "existing_world_harvest"
+    },
+    {
+      "id": "straw_bundle",
+      "name": "稻草捆",
+      "stage": "raw",
+      "mass_g": 700,
+      "origin": "agriculture"
+    },
+    {
+      "id": "clay_slurry",
+      "name": "淘泥浆",
+      "stage": "intermediate",
+      "mass_g": 2800,
+      "origin": "hand_mix_clay"
+    },
+    {
+      "id": "settled_clay",
+      "name": "淘洗细泥",
+      "stage": "intermediate",
+      "mass_g": 1500,
+      "origin": "clay_settling"
+    },
+    {
+      "id": "sand_residue",
+      "name": "筛余砂",
+      "stage": "intermediate",
+      "mass_g": 600,
+      "origin": "clay_settling"
+    },
+    {
+      "id": "washed_sand",
+      "name": "淘洗砂",
+      "stage": "intermediate",
+      "mass_g": 800,
+      "origin": "sand_wash"
+    },
+    {
+      "id": "wet_brick",
+      "name": "湿砖坯",
+      "stage": "intermediate",
+      "mass_g": 1600,
+      "origin": "mould_brick"
+    },
+    {
+      "id": "tile_blank",
+      "name": "弧瓦坯",
+      "stage": "intermediate",
+      "mass_g": 1200,
+      "origin": "mould_roof_tile"
+    },
+    {
+      "id": "earthen_fired_brick",
+      "name": "烧结青砖",
+      "stage": "product",
+      "mass_g": 1300,
+      "origin": "kiln_brick"
+    },
+    {
+      "id": "qing_roof_tile",
+      "name": "青瓦",
+      "stage": "product",
+      "mass_g": 950,
+      "origin": "fire_roof_tile"
+    },
+    {
+      "id": "ash",
+      "name": "炉灰",
+      "stage": "byproduct",
+      "mass_g": 100,
+      "origin": "kiln_firing"
+    },
+    {
+      "id": "quicklime",
+      "name": "生石灰",
+      "stage": "intermediate",
+      "mass_g": 560,
+      "origin": "burn_lime"
+    },
+    {
+      "id": "slaked_lime",
+      "name": "熟石灰浆",
+      "stage": "intermediate",
+      "mass_g": 750,
+      "origin": "slake_lime"
+    },
+    {
+      "id": "plaster_mix",
+      "name": "米灰抹面料",
+      "stage": "intermediate",
+      "mass_g": 1500,
+      "origin": "mix_plaster"
+    },
+    {
+      "id": "mud_wall_panel",
+      "name": "夯土墙芯",
+      "stage": "construction",
+      "mass_g": 4000,
+      "origin": "ram_wall_core"
+    },
+    {
+      "id": "timber_beam_standard",
+      "name": "结构木梁",
+      "stage": "intermediate",
+      "mass_g": 6000,
+      "origin": "saw_standard_beam"
+    },
+    {
+      "id": "wood_scrap",
+      "name": "木屑余料",
+      "stage": "byproduct",
+      "mass_g": 2000,
+      "origin": "saw_standard_beam"
+    },
+    {
+      "id": "roof_module",
+      "name": "青瓦屋面模块",
+      "stage": "construction",
+      "mass_g": 15800,
+      "origin": "assemble_roof_module"
+    },
+    {
+      "id": "wall_module",
+      "name": "灰泥砖墙模块",
+      "stage": "construction",
+      "mass_g": 6700,
+      "origin": "assemble_wall_module"
+    }
+  ],
+  "research": [
+    {
+      "id": "clay_filtering",
+      "name": "淘泥工艺",
+      "requires": [],
+      "cost": {
+        "paper": 1
+      },
+      "observations": [
+        "clay_sedimentation"
+      ],
+      "work_minutes": 60
+    },
+    {
+      "id": "ceramics_1",
+      "name": "烧砖与控温",
+      "requires": [
+        "clay_filtering"
+      ],
+      "cost": {
+        "paper": 2
+      },
+      "observations": [
+        "kiln_temperature_logged",
+        "fired_sample_inspected"
+      ],
+      "work_minutes": 240
+    },
+    {
+      "id": "lime_work",
+      "name": "石灰工艺",
+      "requires": [
+        "ceramics_1"
+      ],
+      "cost": {
+        "paper": 2
+      },
+      "observations": [
+        "limestone_sample",
+        "firing_temperature_logged"
+      ],
+      "work_minutes": 180
+    },
+    {
+      "id": "roof_joinery",
+      "name": "屋面构造学",
+      "requires": [
+        "ceramics_1"
+      ],
+      "cost": {
+        "paper": 2
+      },
+      "observations": [
+        "tile_pitch_measured",
+        "roof_load_tested"
+      ],
+      "work_minutes": 300
+    },
+    {
+      "id": "architectural_plaster",
+      "name": "灰泥工艺",
+      "requires": [
+        "lime_work"
+      ],
+      "cost": {
+        "paper": 2
+      },
+      "observations": [
+        "plaster_strength_sampled"
+      ],
+      "work_minutes": 240
+    },
+    {
+      "id": "earth_wall",
+      "name": "夯土工艺",
+      "requires": [
+        "clay_filtering"
+      ],
+      "cost": {
+        "paper": 1
+      },
+      "observations": [
+        "rammed_layer_density"
+      ],
+      "work_minutes": 150
+    }
+  ],
+  "blueprints": [
+    {
+      "id": "bp_clay_sieve",
+      "name": "淘泥筛图纸",
+      "reveals": [
+        "clay_settling"
+      ]
+    },
+    {
+      "id": "bp_kiln_arch",
+      "name": "砖瓦窑图纸",
+      "reveals": [
+        "kiln_brick",
+        "fire_roof_tile"
+      ]
+    },
+    {
+      "id": "bp_wall_module",
+      "name": "灰泥砖墙构件图",
+      "reveals": [
+        "assemble_wall_module"
+      ]
+    },
+    {
+      "id": "bp_roof_module",
+      "name": "青瓦屋面构件图",
+      "reveals": [
+        "assemble_roof_module"
+      ]
+    }
+  ],
+  "recipes": [
+    {
+      "id": "hand_mix_clay",
+      "name": "搅拌淘泥",
+      "inputs": {
+        "clay_soil": 2,
+        "water": 1
+      },
+      "outputs": {
+        "clay_slurry": 1
+      },
+      "loss_g": 200,
+      "work_minutes": 12,
+      "station": "mixing_tub",
+      "unlock": {
+        "mode": "known"
+      },
+      "energy_kj": 0
+    },
+    {
+      "id": "clay_settling",
+      "name": "过滤淘泥",
+      "inputs": {
+        "clay_slurry": 1
+      },
+      "outputs": {
+        "settled_clay": 1,
+        "sand_residue": 1
+      },
+      "loss_g": 700,
+      "work_minutes": 80,
+      "station": "settling_tank",
+      "unlock": {
+        "mode": "blueprint",
+        "id": "bp_clay_sieve",
+        "research": "clay_filtering"
+      },
+      "energy_kj": 0
+    },
+    {
+      "id": "sand_wash",
+      "name": "淘砂",
+      "inputs": {
+        "sandy_soil": 1,
+        "water": 1
+      },
+      "outputs": {
+        "washed_sand": 1
+      },
+      "loss_g": 1200,
+      "work_minutes": 25,
+      "station": "sieve",
+      "unlock": {
+        "mode": "known"
+      },
+      "energy_kj": 0
+    },
+    {
+      "id": "mould_brick",
+      "name": "制砖坯",
+      "inputs": {
+        "settled_clay": 1,
+        "water": 1
+      },
+      "outputs": {
+        "wet_brick": 1
+      },
+      "loss_g": 900,
+      "work_minutes": 45,
+      "station": "brick_mould",
+      "unlock": {
+        "mode": "research",
+        "id": "ceramics_1"
+      },
+      "energy_kj": 0
+    },
+    {
+      "id": "kiln_brick",
+      "name": "烧制青砖",
+      "inputs": {
+        "wet_brick": 1,
+        "firewood": 1
+      },
+      "outputs": {
+        "earthen_fired_brick": 1,
+        "ash": 1
+      },
+      "loss_g": 1200,
+      "work_minutes": 180,
+      "station": "kiln",
+      "unlock": {
+        "mode": "blueprint",
+        "id": "bp_kiln_arch",
+        "research": "ceramics_1"
+      },
+      "energy_kj": 3000
+    },
+    {
+      "id": "mould_roof_tile",
+      "name": "压制弧瓦坯",
+      "inputs": {
+        "settled_clay": 1,
+        "water": 1
+      },
+      "outputs": {
+        "tile_blank": 1
+      },
+      "loss_g": 1300,
+      "work_minutes": 65,
+      "station": "tile_mould",
+      "unlock": {
+        "mode": "research",
+        "id": "ceramics_1"
+      },
+      "energy_kj": 0
+    },
+    {
+      "id": "fire_roof_tile",
+      "name": "烧青瓦",
+      "inputs": {
+        "tile_blank": 1,
+        "firewood": 1
+      },
+      "outputs": {
+        "qing_roof_tile": 1,
+        "ash": 1
+      },
+      "loss_g": 1150,
+      "work_minutes": 220,
+      "station": "kiln",
+      "unlock": {
+        "mode": "blueprint",
+        "id": "bp_kiln_arch",
+        "research": "ceramics_1"
+      },
+      "energy_kj": 3000
+    },
+    {
+      "id": "burn_lime",
+      "name": "煅烧石灰",
+      "inputs": {
+        "limestone": 1,
+        "firewood": 1
+      },
+      "outputs": {
+        "quicklime": 1,
+        "ash": 1
+      },
+      "loss_g": 1340,
+      "work_minutes": 200,
+      "station": "kiln",
+      "unlock": {
+        "mode": "research",
+        "id": "lime_work"
+      },
+      "energy_kj": 3000
+    },
+    {
+      "id": "slake_lime",
+      "name": "消解生石灰",
+      "inputs": {
+        "quicklime": 1,
+        "water": 1
+      },
+      "outputs": {
+        "slaked_lime": 1
+      },
+      "loss_g": 810,
+      "work_minutes": 60,
+      "station": "slaking_pit",
+      "unlock": {
+        "mode": "research",
+        "id": "lime_work"
+      },
+      "energy_kj": 0
+    },
+    {
+      "id": "mix_plaster",
+      "name": "配米灰抹面",
+      "inputs": {
+        "slaked_lime": 1,
+        "sand_residue": 1,
+        "water": 1
+      },
+      "outputs": {
+        "plaster_mix": 1
+      },
+      "loss_g": 850,
+      "work_minutes": 80,
+      "station": "plaster_mixer",
+      "unlock": {
+        "mode": "research",
+        "id": "architectural_plaster"
+      },
+      "energy_kj": 0
+    },
+    {
+      "id": "ram_wall_core",
+      "name": "夯土墙芯",
+      "inputs": {
+        "clay_slurry": 1,
+        "straw_bundle": 1,
+        "sand_residue": 1
+      },
+      "outputs": {
+        "mud_wall_panel": 1
+      },
+      "loss_g": 100,
+      "work_minutes": 140,
+      "station": "ramming_frame",
+      "unlock": {
+        "mode": "research",
+        "id": "earth_wall"
+      },
+      "energy_kj": 0
+    },
+    {
+      "id": "saw_standard_beam",
+      "name": "锯结构木梁",
+      "inputs": {
+        "log": 1
+      },
+      "outputs": {
+        "timber_beam_standard": 1,
+        "wood_scrap": 1
+      },
+      "loss_g": 0,
+      "work_minutes": 120,
+      "station": "sawbench",
+      "unlock": {
+        "mode": "known"
+      },
+      "energy_kj": 0
+    },
+    {
+      "id": "assemble_roof_module",
+      "name": "组装屋面",
+      "inputs": {
+        "timber_beam_standard": 2,
+        "qing_roof_tile": 4
+      },
+      "outputs": {
+        "roof_module": 1
+      },
+      "loss_g": 0,
+      "work_minutes": 300,
+      "station": "construction_site",
+      "unlock": {
+        "mode": "blueprint",
+        "id": "bp_roof_module",
+        "research": "roof_joinery"
+      },
+      "energy_kj": 0
+    },
+    {
+      "id": "assemble_wall_module",
+      "name": "砌筑灰泥砖墙",
+      "inputs": {
+        "plaster_mix": 1,
+        "earthen_fired_brick": 4
+      },
+      "outputs": {
+        "wall_module": 1
+      },
+      "loss_g": 0,
+      "work_minutes": 240,
+      "station": "construction_site",
+      "unlock": {
+        "mode": "blueprint",
+        "id": "bp_wall_module",
+        "research": "architectural_plaster"
+      },
+      "energy_kj": 0
+    }
+  ]
+}
