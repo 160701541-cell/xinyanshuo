@@ -18,7 +18,7 @@
   <div class="grain" aria-hidden="true"></div>
   <header class="topbar wrap">
     <a class="brand" href="./" aria-label="心魇说首页"><span class="seal">心</span><span class="brand-copy">心魇说<small>xinyanshuo</small></span></a>
-    <nav aria-label="网站导航"><a href="#world">世界</a><a href="#concept">概念美术</a><a href="#devlog">开发日志</a><a href="#changelog">更新日志</a><a href="#download">下载</a><a href="#community">官方群</a></nav>
+    <nav aria-label="网站导航"><a href="#world">世界</a><a href="#concept">概念美术</a><a href="#build-status">开发现场</a><a href="#devlog">开发日志</a><a href="#changelog">更新日志</a><a href="#download">下载</a><a href="#community">官方群</a></nav>
   </header>
   <main>
     <section class="hero wrap" id="world">
@@ -31,6 +31,19 @@
       <div class="hero-vision-backdrop" aria-hidden="true"></div>
     </section>
 
+    <section class="build-observer" id="build-status" aria-labelledby="build-observer-title">
+      <div class="wrap">
+        <div class="small-title">DEVELOPMENT CONTROL ROOM · 工作状态实时公开</div>
+        <h2 id="build-observer-title">开发现场 · 构建透明</h2>
+        <p class="section-lead">GPT-6 与 Work 的实际工作以GitHub提交、工作流事件为准。构建排队、运行、失败或成功均展示；网页每2分钟刷新官方静态数据，不直接轮询GitHub API。没有新的事件，不等于开发者一直在后台运行。</p>
+        <div class="observer-top">
+          <div class="observer-card"><span>公开签名 APK · 实际文件核验</span><strong id="build-apk-state">正在校验已发布的安装包…</strong><small id="build-apk-note">只有文件大小、SHA256、固定证书均符合才显示已发布</small></div>
+          <div class="observer-card"><span>构建事件状态</span><strong id="build-workflow-state">等待工作流事件同步…</strong><small id="build-workflow-note">通过 GitHub Actions 事件自动推送，无GitHub REST API定时轮询</small></div>
+        </div>
+        <div id="build-observer-rows" class="observer-runs" aria-live="polite"><p class="loading-copy">读取最近构建状态…</p></div>
+        <p class="records-note" id="build-observer-sync" role="status" aria-live="polite">此处显示真实构建任务及最后事件时间；若事件过期，将明确标为待确认。</p>
+      </div>
+    </section>
     <section class="art-section" id="concept" aria-labelledby="concept-title">
       <div class="wrap">
         <div class="small-title">THE WORLD WE ARE BUILDING · 美术愿景</div>
@@ -70,7 +83,7 @@
     </section>
 
     <section class="public-records wrap" id="devlog" aria-labelledby="devlog-title">
-      <div class="log-heading"><div><div class="small-title">DEVELOPMENT LOG · SOURCE-SYNCED</div><h2 id="devlog-title">真实的开发过程，<br>公开给你看。</h2><p class="section-lead">官网自动同步项目正式工作日志：已完成、失败、待处理都如实保留。记录来自源码主分支，测试成功不等于已经正式发布或通过玩家审美验收。</p></div><div class="sync-mark"><span class="pulse" aria-hidden="true"></span><strong id="development-sync">正在加载正式开发日志…</strong><small>主分支变更自动同步 · 页面约每60秒检查新记录</small></div></div>
+      <div class="log-heading"><div><div class="small-title">DEVELOPMENT LOG · SOURCE-SYNCED</div><h2 id="devlog-title">真实的开发过程，<br>公开给你看。</h2><p class="section-lead">官网自动同步项目正式工作日志：已完成、失败、待处理都如实保留。记录来自源码主分支，测试成功不等于已经正式发布或通过玩家审美验收。</p></div><div class="sync-mark"><span class="pulse" aria-hidden="true"></span><strong id="development-sync">正在加载正式开发日志…</strong><small>主分支变更自动同步 · 页面约每2分钟检查新记录</small></div></div>
       <div id="development-list" class="log-list" aria-live="polite"><p class="loading-copy">正在读取已发布的工作日志。请稍候。</p></div>
       <div class="log-bottom"><span id="development-count">尚未载入记录</span><button class="log-load-more" id="development-more" type="button" hidden>展开更早的日志</button></div>
     </section>
