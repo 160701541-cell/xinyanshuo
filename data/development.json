@@ -2,9 +2,9 @@
   "schema": 1,
   "channel": "public-development-log",
   "source_file": "docs/DEVELOPMENT_LOG.md",
-  "source_commit": "4545353ac6ea01efb174d6490450ec1f60a99208",
-  "source_hash": "84cd4869637686860a8144de6828adedc9f9c9f7d17f18d4693a094022016473",
-  "synced_at": "2026-10-14T18:51:34Z",
+  "source_commit": "8a78595262df2d0a1e87fa6cd838958263f575e2",
+  "source_hash": "f694d99bc9508f64fd108f9f39c930ef6557c0746e99090da438218c44353284",
+  "synced_at": "2026-10-14T18:52:12Z",
   "public_note": "开发工作日志不是签名游戏更新日志；未发布功能可能写在这里。隐去密钥与内部配置。",
   "entries": [
     {
@@ -18,7 +18,7 @@
       "id": "dev-002-8fc9fada8f",
       "title": "NPC自主建设·云端真实障碍筛选（自动）",
       "date": "开发制度",
-      "body": "- 🟡 CI #38616929041 / `0f4de7cd9ff9` / INCOMPLETE：CI未产生可信的NPC分类测试结果；请检查构建阶段。Run: [内部开发仓库链接]",
+      "body": "- 🟡 CI #38618470896 / `b721de725cba` / INCOMPLETE：CI未产生可信的NPC分类测试结果；请检查构建阶段。Run: [内部开发仓库链接]\n\n- 🟡 CI #38616929041 / `0f4de7cd9ff9` / INCOMPLETE：CI未产生可信的NPC分类测试结果；请检查构建阶段。Run: [内部开发仓库链接]",
       "source_status": "source-main-development"
     },
     {
