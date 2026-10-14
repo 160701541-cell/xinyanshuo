@@ -58,7 +58,7 @@ body{background:#101a20;color:var(--text)}
 .topbar nav a{transition:color .2s}
 .topbar nav a:hover,.community-card:hover .community-cta{color:#f2d39e}
 .hero{isolation:isolate;display:flex;min-height:710px;padding:94px 0 96px;flex-direction:column;align-items:flex-start;justify-content:center}
-.hero::before{content:"";position:absolute;z-index:-1;inset:-35px calc((min(1380px,100vw - 64px) - 100vw) / 2) -16px;pointer-events:none;background:linear-gradient(90deg,#09161ce8 0%,#0b1c23b8 44%,#101a2090 75%,#101a20 100%),linear-gradient(0deg,#101a20,transparent 47%),url('./art/canglan-frontier-concept.svg') center 38%/cover no-repeat}
+.hero::before{content:"";position:absolute;z-index:-1;inset:-35px -5vw -16px;pointer-events:none;background:linear-gradient(90deg,#09161ce8 0%,#0b1c23b8 44%,#101a2090 75%,#101a20 100%),linear-gradient(0deg,#101a20,transparent 47%),url('./art/canglan-frontier-concept.svg') center 38%/cover no-repeat}
 .hero::after{content:"";position:absolute;inset:auto -30px 0;z-index:-1;height:45%;background:linear-gradient(0deg,#101a20,transparent);pointer-events:none}
 .hero-vision-backdrop{position:absolute;inset:0;z-index:-2;pointer-events:none}
 .hero .eyebrow{letter-spacing:4px;color:#edd1a6}
