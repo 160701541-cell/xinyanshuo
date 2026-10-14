@@ -1,16 +1,16 @@
 {
   "schema": 1,
   "channel": "canglan-development-watchdog",
-  "light": "yellow",
-  "reason": "WORKFLOW_AWAITING_RESULT",
+  "light": "red",
+  "reason": "LATEST_WORKFLOW_FAILED",
   "meaning": "GitHub workflow health only; not ChatGPT internal thinking health",
   "evidence": {
     "id": 38612814113,
     "branch": "work/p0g3-site-materials",
     "workflow": "Canglan Native 3D Terrain Android ARM64 Preview",
-    "status": "in_progress",
-    "conclusion": null,
-    "last_event_utc": "2026-10-14T18:10:42Z",
+    "status": "completed",
+    "conclusion": "failure",
+    "last_event_utc": "2026-10-14T18:13:46Z",
     "run_url": "https://github.com/160701541-cell/canglan-world/actions/runs/38612814113"
   },
   "recovery": {
@@ -19,5 +19,5 @@
     "instruction": "Read last SHA, CI outcome and next action. Resume without overriding Work."
   },
   "threshold_minutes": 90,
-  "checked_at_utc": "2026-10-14T18:11:17+00:00"
+  "checked_at_utc": "2026-10-14T18:14:43+00:00"
 }
