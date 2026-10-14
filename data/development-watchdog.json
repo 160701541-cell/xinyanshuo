@@ -1,16 +1,16 @@
 {
   "schema": 1,
   "channel": "canglan-development-watchdog",
-  "light": "yellow",
-  "reason": "WORKFLOW_AWAITING_RESULT",
+  "light": "red",
+  "reason": "LATEST_WORKFLOW_FAILED",
   "meaning": "GitHub workflow health only; not ChatGPT internal thinking health",
   "evidence": {
     "id": 38608905118,
     "branch": "work/p0g3-site-materials",
     "workflow": "Canglan P0-G3 true construction 3D catalog and labor-led survey OTA",
-    "status": "in_progress",
-    "conclusion": null,
-    "last_event_utc": "2026-10-14T17:43:35Z",
+    "status": "completed",
+    "conclusion": "failure",
+    "last_event_utc": "2026-10-14T17:48:33Z",
     "run_url": "https://github.com/160701541-cell/canglan-world/actions/runs/38608905118"
   },
   "recovery": {
@@ -19,5 +19,5 @@
     "instruction": "Read last SHA, CI outcome and next action. Resume without overriding Work."
   },
   "threshold_minutes": 90,
-  "checked_at_utc": "2026-10-14T17:44:23+00:00"
+  "checked_at_utc": "2026-10-14T17:49:02+00:00"
 }
