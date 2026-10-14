@@ -23,7 +23,7 @@
           typeof d.sha256 !== 'string' || !/^[a-f0-9]{64}$/.test(d.sha256) ||
           !Number.isSafeInteger(d.size_bytes) || d.size_bytes <= 10000000 ||
           typeof d.signature_cert_sha256 !== 'string' ||
-          !/^[a-f0-9]{64}$/.test(d.signature_cert_sha256)) {
+          d.signature_cert_sha256 !== '353c65d2bdde16509b33c976e9bed615013080b071629cfbf7fdeb43e4217057') {
         throw new Error('Invalid base APK metadata');
       }
       apkButton.href = './' + d.file;
@@ -31,9 +31,12 @@
       apkButton.hidden = false;
       const mib = (d.size_bytes / 1048576).toFixed(1);
       apkButton.textContent = '下载 Android 基础 APK (' + mib + ' MB)';
-      apkStatus.textContent = '长期签名技术测试包 v' + d.version_name +
+      const landscape = d.orientation === 'landscape_native_manifest_verified';
+      apkStatus.textContent = '固定签名 Android APK v' + d.version_name +
         ' · Android code ' + d.version_code +
-        '。注意：v102 原生锁定竖屏，非已修复横屏的新版本。';
+        (landscape
+          ? '。原生横屏已通过安装包清单验证，手机实际操作/美术仍待测试。'
+          : '。注意：旧版原生锁定竖屏，新横屏包尚未取代它。');
       apkHash.textContent = '文件 SHA-256：' + d.sha256;
     })
     .catch(() => {

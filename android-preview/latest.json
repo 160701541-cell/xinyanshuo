@@ -1,12 +1,12 @@
 {
   "schema": 1,
   "channel": "android-preview",
-  "revision": 117,
+  "revision": 141,
   "minimum_android_code": 1102,
   "maximum_android_code": 2147483000,
-  "sha256": "8935d4278e2c805e8270e39364299fdf68b1cdce819123ebc8348a6b88da2c68",
-  "size_bytes": 204640,
-  "pack_url": "https://160701541-cell.github.io/xinyanshuo/android-preview/canglan-content-rev-117.pck",
-  "notes": "修复进入世界后仅显示背景色：补齐旧版APK缺失的场景依赖和相机脚本",
-  "signature": "idUshMjXBq4CGG84M79gD1bqRONG9MWh+El6oEwv/RwmwAXV4k3RGmgvoon2E7MgJc8erC7D4aeWq0QRNALboIpDX9rZmUM+WWWf/R6sZ7+4PFqOTKq/rhbONJ7goKjQdZ0nQX4Gu8Ha7AHQWvei24u2AtOWPp98MxtXhh/0MowwjHnoGpLaqEfu4duO9lZMod3nFPJKWx4Fwil3gCqlHEjj0EAMaOR12thxJabHXvY2BeRtrd/vTSR7J5ZfzCiraE9ON8uzujDPXT+Xu+lf5iCRhLyJI02G00+Qfym8jgMPqd8+RwDMarrLf4Y2k1FI06yyvwXYSEotUu+0NCZxbTuQsV9z8I9RXKg/r14vn+sguzFaflaqZiIz/u0mfb5K20xa9w9H9rKhBEPJ01YnHusEpw1XLj50zTf8VPs8z+iGadYD7hUS9idSn74ADmdZRuU35v93ettEZ78Y/KE9lgNze8mXTNPo1EtJ6LBidM/o6yCjdsRF6j4lbO8+6F/C"
+  "sha256": "2e6722c4681fee5771d3d5f8ed5d2f24c03f4d1dfa88085425ebce9526a2a898",
+  "size_bytes": 3841408,
+  "pack_url": "https://160701541-cell.github.io/xinyanshuo/android-preview/canglan-content-rev-141.pck",
+  "notes": "苍岚：内容与资源更新",
+  "signature": "UP1mcwTSHy1+NX3XU0XOrQjvu3QK39cnhY5jzB1srhgkZx5MQ2sAoQ0UM6d6gQ+75J/j2ZNt7laDLaJwUHva5UC0bRTcH6AgPuDUow6ED4e20cKb4safMWU7rAL9SNfkLTKjPvOIb+oU5YL3805g30cF7WTJphkJtyCULAlYE7ZmEudxx6QLm/B5SyvABbzKGjJ57NbwOBnMLeyGOCa3o3jvOf6Cn68HqDbAmL0GdX1FVXO6V7nKUXu7jYVAsJNgRHJLuNjz92c8HpzyJ0BmGdbI1gcH313PH1Ep1WiENfx8zIEwCNseADZxkTVZHyXh1qsOiOC9zgm9DXcqBy3OOh7nI6b4DosWcjRSZ/kB5I40b30wSa3UlQ3kEyWbl7O8Y0sQsuwqnWVRVcbT5nX5CL1yMXx1fGzI6kAu0wLAG/8oCbZZscK6IOsFhO5gCXCojuKBjHjGm120piWsQLM2wgffqWvD02Vy13gi8koqrFtM6kpynjirVcpWZdyxJTOL"
 }

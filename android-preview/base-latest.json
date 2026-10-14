@@ -1,14 +1,14 @@
 {
   "schema": 1,
   "channel": "android-preview-base-apk",
-  "version_name": "0.2.0-dev.102",
-  "version_code": 1102,
+  "version_name": "0.2.0-dev.141",
+  "version_code": 1141,
   "package_name": "org.canglan.ancient25d.preview",
   "signature_cert_sha256": "353c65d2bdde16509b33c976e9bed615013080b071629cfbf7fdeb43e4217057",
-  "sha256": "9f4d85c93e6a0d88826a49dcb1d0e63f5aa1de4db9ef39a01a68e8cb6b4fe7d2",
-  "size_bytes": 34537791,
-  "file": "android-preview/base/Canglan-AncientWorld-v0.2.0-dev.102-Stable-Signed-ARM64.apk",
-  "orientation": "portrait_locked_native_manifest",
-  "release_status": "signed_technical_preview_not_art_or_landscape_approved",
-  "notes": "原固定签名首装基础包。原生 Manifest 锁竖屏；新横屏基包尚未完成。"
+  "sha256": "fe6de929032d781127afd5d622d63893a56d41602e0b7d600421d73fbf8b3b2b",
+  "size_bytes": 38133128,
+  "file": "android-preview/base/Canglan-AncientWorld-v0.2.0-dev.141-Stable-Signed-ARM64.apk",
+  "orientation": "landscape_native_manifest_verified",
+  "release_status": "signed_native_ci_verified_phone_acceptance_pending",
+  "notes": "新版同证书 Android APK。请覆盖安装旧版以保留存档；实机横屏及人物动画尚待验证。"
 }
