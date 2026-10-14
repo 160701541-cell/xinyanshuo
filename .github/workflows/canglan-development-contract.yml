@@ -1,0 +1,63 @@
+name: Canglan Production Engineering - Contract and Material Graph
+on:
+  push:
+    branches: [main]
+    paths:
+      - "game-source/data/craft/**"
+      - "game-source/data/tuning/**"
+      - "game-source/tools/craft_graph.py"
+      - "game-source/tools/test_craft_graph.py"
+      - "game-source/tools/tune_data.py"
+      - "game-source/tools/test_tune_data.py"
+      - ".github/workflows/canglan-development-contract.yml"
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: canglan-development-engine-main
+  cancel-in-progress: true
+jobs:
+  craft-and-tuning-quality:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - name: Compile technical scripts
+        run: python3 -m compileall -q game-source/tools
+      - name: Real recipe graph / material conservation / research / adversarial tests
+        run: python3 -m unittest discover -s game-source/tools -p "test_craft_graph.py" -v
+      - name: Real tuning gates and safety tests
+        run: python3 -m unittest discover -s game-source/tools -p "test_tune_data.py" -v
+      - name: Validate material graph and emit machine-readable development evidence
+        run: |
+          python3 game-source/tools/craft_graph.py \
+            --catalog game-source/data/craft/material_graph.v1.json \
+            --from-item clay_soil --target-item roof_module \
+            --report craft-development-report.json
+          python3 - <<'PY'
+          from pathlib import Path
+          import json
+          from sys import path
+          path.insert(0,'game-source/tools')
+          from tune_data import load_json,calibrate
+          c=load_json('game-source/data/tuning/engineering_contract.v1.json')
+          report=calibrate(c,{'schema':1,'records':[]})
+          assert report['quality_gates']['visual']['state']=='BLOCKED'
+          assert report['quality_gates']['controls']['state']=='BLOCKED'
+          assert report['quality_gates']['logic']['state']=='BLOCKED'
+          assert report['quality_gates']['performance']['state']=='BLOCKED'
+          assert report['quality_gates']['art']['state']=='BLOCKED'
+          assert not report['release_allowed']
+          Path('engineering-readiness-report.json').write_text(
+              json.dumps(report,ensure_ascii=False,indent=2)+'\n',encoding='utf-8')
+          print('PRODUCTION_RELEASE_BLOCKED_CORRECTLY: no game/phone evidence')
+          PY
+      - name: Upload verifiable engineering data (NOT signed game content)
+        uses: actions/upload-artifact@v4
+        with:
+          name: canglan-development-contract-and-material-graph
+          path: |
+            craft-development-report.json
+            engineering-readiness-report.json
+          retention-days: 7
+          if-no-files-found: error
