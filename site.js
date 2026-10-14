@@ -161,8 +161,8 @@
     card.appendChild(top);
     addText(card, 'h3', '', '资源更新 #' + item.revision);
     addText(card, 'p', '', item.notes || '已发布并经过数字签名验证的游戏内容包。');
-    addText(card, 'time', '', item.published_utc
-      ? ('登记：' + safeDate(item.published_utc)) : '历史签名版本');
+    addText(card, 'time', '', item.first_seen_utc
+      ? ('官网首次记录：' + safeDate(item.first_seen_utc)) : '历史签名版本 · 原始精确发布时间未记录');
     if (item.version_name) addText(card, 'span', 'version-label', '关联Android基础包：' + item.version_name);
     if (item.sha256) addText(card, 'code', '', 'PCK SHA-256：' + item.sha256);
     return card;
