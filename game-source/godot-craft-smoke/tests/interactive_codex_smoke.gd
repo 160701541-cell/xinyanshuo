@@ -1,11 +1,11 @@
 extends SceneTree
 ## Render-independent UI event smoke: real Godot 4.4.1 parser and Control tree.
-const Panel = preload("res://scripts/craft_codex_panel.gd")
+const CodexUI = preload("res://scripts/craft_codex_panel.gd")
 func _initialize() -> void:
 	call_deferred("_run_actual_ui")
 
 func _run_actual_ui() -> void:
-	var ui: Control = Panel.new()
+	var ui: Control = CodexUI.new()
 	ui.source_path = "res://data/material_graph.v1.json"
 	root.add_child(ui)
 	var snap: Dictionary = ui.get_snapshot()
