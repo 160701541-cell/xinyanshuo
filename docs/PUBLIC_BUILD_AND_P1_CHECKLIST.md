@@ -51,3 +51,11 @@
 ## 下个实际任务
 
 **P1-B01**先生成青灰瓦、素白灰泥原始颜色/法线/粗糙度材质；离线检查图像尺寸、无透明缺像素、贴图接缝/法线长度、几张资源复用与SHA256；确认能够安全公开后再迁到 `game-source/`，正式Godot导入/Android实测另记。随后完成P1-A的闭合白墙与瓦脊实物结构、制作人形动作。
+
+## 2026-10-15 本轮实际代码增量（公开仓库）
+
+- **P1-B01 开始编码，非仅规划**：新增 `game-source/tools/generate_materials.py`，纯 Python 标准库可重复生成青灰瓦与米白灰泥两套 256×256 的 RGB Albedo、切线空间Normal、Roughness PNG，共 6 张；附 SHA256 manifest。纹理属于原创**程序美术试样**，不是专业贴图终版。
+- 新增 `game-source/tools/test_materials.py`，本地真实运行 `python test_materials.py -v`：**1 test，OK**，覆盖PNG像素头、zlib解码、CRC、尺寸、图片载荷、法线存在、SHA256与重复导出一致性。另运行脚本实际生成6张PNG及manifest；这些生成二进制尚未提交官网，不能宣称Godot已导入或游戏已更新。
+- GitHub源码提交：`12d3381ed901791df1aef7446b23524e7eea4e2e`（生成器）、`6e2229cce43144355a4d06516a752d877dd63fe8`（测试）。仅向**现有公开官网仓库**添加两个原创脚本；旧私有主仓库仍为private，未对其做visibility变更或全量迁移。
+- **安全/发布边界**：未复制私有仓库源码/历史/令牌/密钥/玩家存档；未触碰Android签名、现有APK/PCK/公开feed；旧仓库Actions尚未从GitHub设置层禁用；无法以此次结果声称停止了私人Actions费用。正式M04～M08仍未完成。
+- **下一验收**：在公开构建目录生成纹理并逐项做Godot 4.4.1真实导入/同机位画面；对私有源码作逐文件公开许可审计以后，才能迁移游戏本体并配置公开CI。明确区分源码S=通过、离线T=通过、Godot T=未验、发布R=未完成、Android D=未验证、美术A=未通过。
