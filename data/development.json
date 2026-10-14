@@ -2,16 +2,16 @@
   "schema": 1,
   "channel": "public-development-log",
   "source_file": "docs/DEVELOPMENT_LOG.md",
-  "source_commit": "7ea2c580a4967ea4e904ea3f287c5fa6af689872",
-  "source_hash": "2e24ce347ff8e99dbde9729717450728c55b1116a537c30503e9f6e55ce1c271",
-  "synced_at": "2026-10-14T18:06:14Z",
+  "source_commit": "dbca3691316928a06e1775f9033520496e15ebf0",
+  "source_hash": "00bcb9a5f2aa7d1266d4e0cc33e587ce2cbb96649558c504d2df690fed5e4201",
+  "synced_at": "2026-10-14T18:10:43Z",
   "public_note": "开发工作日志不是签名游戏更新日志；未发布功能可能写在这里。隐去密钥与内部配置。",
   "entries": [
     {
       "id": "dev-001-7940613f18",
       "title": "2026-10-15 — NPC本地AI自主施工第一阶段（源码已提交，CI/手机未验证）",
       "date": "2026-10-15",
-      "body": "**用户需求**：项目重点转向实体原材料、工具、3D建筑构件、人物与材质，NPC由AI自主选择施工策略。此阶段在 **Work分支 `work/p0g3-site-materials`** 真实提交两个AI层：`scripts/ai/offline_building_policy.gd` 是Android也能原地运行的轻量**效用评分模型**，无需联网、无大语言模型权重，能根据材料短缺/昼夜/工地状态选择继续施工、等待、休息、检查；`scripts/ai/local_builder_brain.gd` 是电脑上可选的本地 Ollama `qwen2.5:1.5b` 非阻塞HTTP接入，端点只允许127.0.0.1，3秒超时，严格JSON动作白名单，模型缺席/错误返回可回退本地效用策略，不能直接变更`WorldState`、账目、产权、施工阶段。Godot `scripts/main.gd`已接入原来每游戏分钟真实工地执行处并在NPC实体记录`ai_planner_source`与`ai_construction_action`，合法动作仍只经 `ConstructionService` 进行资源归属、工时、工具与位置核对，缺建材不能凭空修屋。源提交`10e35cf1`、`c6098a7f`、`61449e25`、`9f803a17`；完整说明 `docs/LOCAL_NPC_AI_INTEGRATION.md`（`6f3a75cb`）。\n\n**测试与发布**：`tests/local_builder_ai_test.gd` 覆盖非法/越权模型动作、日夜规则、缺材料与不修改台账；新增两个AI脚本到累计签名PCK资源白名单及 `.github/workflows/canglan-construction-library.yml` 的Godot解析和测试阻断门槛。**至记录时CI结果仍未检查成功，未验证手机获得新PCK，不可将源码提交当作游戏正式上线。**\n\n**关键工程边界**：当前手机端只具备本地可执行**非LLM**评分行为模型，Qwen/Ollama只在有本机服务的电脑可用，不得宣称Android已经内置量化大语言模型。真正Android离线LLM仍需通过同证书APK打包ARM64本地推理引擎/模型文件并进行内存、能耗与系统兼容实测。建筑方面真实施工链目前只到农房4根角桩放线，未实装地下基槽、墙体与梁架实体安装；AI不具备自动凭空修完房屋的权限。后续应先检查新CI（解析、功能测试、PCK索引与签名），修复报错，再扩展有账务/工具/实体的施工阶段。",
+      "body": "**追加可验证联通测试（同日）**：新增隔离回环 `godot3d/tools/ai/mock_ollama.py`（`fbf28418`），只在CI测试期间模拟 Ollama `/api/generate` 的受限JSON协议，不是假装已安装真正Qwen；新增实际Godot `tests/local_builder_ai_http_test.gd`（`e5654794`、`6d07eddf`），验证异步HTTP决策被安全策略接受，并确保模型不直接修改世界台账；将测试阻断接入原有资源签名与自动发布流水线（`7a10e918`）。运行成功仍需等CI确认；Android版只使用本地轻量效用模型，原生GGUF仍未交付。\n\n\n\n**用户需求**：项目重点转向实体原材料、工具、3D建筑构件、人物与材质，NPC由AI自主选择施工策略。此阶段在 **Work分支 `work/p0g3-site-materials`** 真实提交两个AI层：`scripts/ai/offline_building_policy.gd` 是Android也能原地运行的轻量**效用评分模型**，无需联网、无大语言模型权重，能根据材料短缺/昼夜/工地状态选择继续施工、等待、休息、检查；`scripts/ai/local_builder_brain.gd` 是电脑上可选的本地 Ollama `qwen2.5:1.5b` 非阻塞HTTP接入，端点只允许127.0.0.1，3秒超时，严格JSON动作白名单，模型缺席/错误返回可回退本地效用策略，不能直接变更`WorldState`、账目、产权、施工阶段。Godot `scripts/main.gd`已接入原来每游戏分钟真实工地执行处并在NPC实体记录`ai_planner_source`与`ai_construction_action`，合法动作仍只经 `ConstructionService` 进行资源归属、工时、工具与位置核对，缺建材不能凭空修屋。源提交`10e35cf1`、`c6098a7f`、`61449e25`、`9f803a17`；完整说明 `docs/LOCAL_NPC_AI_INTEGRATION.md`（`6f3a75cb`）。\n\n**测试与发布**：`tests/local_builder_ai_test.gd` 覆盖非法/越权模型动作、日夜规则、缺材料与不修改台账；新增两个AI脚本到累计签名PCK资源白名单及 `.github/workflows/canglan-construction-library.yml` 的Godot解析和测试阻断门槛。**至记录时CI结果仍未检查成功，未验证手机获得新PCK，不可将源码提交当作游戏正式上线。**\n\n**关键工程边界**：当前手机端只具备本地可执行**非LLM**评分行为模型，Qwen/Ollama只在有本机服务的电脑可用，不得宣称Android已经内置量化大语言模型。真正Android离线LLM仍需通过同证书APK打包ARM64本地推理引擎/模型文件并进行内存、能耗与系统兼容实测。建筑方面真实施工链目前只到农房4根角桩放线，未实装地下基槽、墙体与梁架实体安装；AI不具备自动凭空修完房屋的权限。后续应先检查新CI（解析、功能测试、PCK索引与签名），修复报错，再扩展有账务/工具/实体的施工阶段。",
       "source_status": "source-main-development"
     },
     {
