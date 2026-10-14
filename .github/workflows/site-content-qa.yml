@@ -47,7 +47,7 @@ jobs:
           for anchor in ('concept','devlog','development-list','development-sync',
                          'changelog','release-history','release-sync','download',
                          'apk-download-link','updates','build-status',
-                         'build-observer-rows','build-observer-sync','build-apk-state'):
+                         'build-observer-rows','build-observer-prs','build-observer-sync','build-apk-state'):
               assert anchor in page.ids,anchor
           files=['art/canglan-world-poster.svg','art/canglan-village-concept.svg',
                  'art/canglan-frontier-concept.svg']
@@ -63,6 +63,10 @@ jobs:
           status=json.loads(Path('data/build-status.json').read_text(encoding='utf8'))
           assert status['schema']==1 and status['channel']=='canglan-build-observer'
           assert len(status.get('runs',[]))<=25
+          assert len(status.get('pull_requests',[])) <= 25
+          for pr in status.get('pull_requests',[]):
+              assert isinstance(pr['number'],int) and pr['number']>0
+              assert pr['pr_url']=='https://github.com/160701541-cell/canglan-world/pull/'+str(pr['number'])
           for r in status.get('runs',[]):
               assert r['status'] in {'requested','queued','waiting','pending','in_progress','completed'}
               if r['status']=='completed':
