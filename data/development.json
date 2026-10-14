@@ -2,9 +2,9 @@
   "schema": 1,
   "channel": "public-development-log",
   "source_file": "docs/DEVELOPMENT_LOG.md",
-  "source_commit": "0114f6b5c8ccc4edece8a26ce25e12f878f8eb32",
-  "source_hash": "ad75d1205ace2b50320e53c79050a94711dd45b65a0a02e291608c045e6d6265",
-  "synced_at": "2026-10-14T11:52:16Z",
+  "source_commit": "736ecd7f1c914dd29d9a1a88bd527c1be540fd33",
+  "source_hash": "af016676d7738df66c0fa21a19be446ab87bf2033a33460b7bdacfc1ebf95864",
+  "synced_at": "2026-10-14T12:09:52Z",
   "public_note": "开发工作日志不是签名游戏更新日志；未发布功能可能写在这里。隐去密钥与内部配置。",
   "entries": [
     {
@@ -15,455 +15,462 @@
       "source_status": "source-main-development"
     },
     {
-      "id": "dev-002-8b1f04699b",
+      "id": "dev-002-393cb50e69",
+      "title": "2026-10-14 — 修复真实发布阻断：Android #159/#160 已通过构建，但官网推送发生非快进竞争；已加入安全重试",
+      "date": "2026-10-14",
+      "body": "用户明确要求**实际更新而不是仅有源码**。现核实原生Android构建 run `38557908369`、`38559499234` 的 **android job 均 SUCCESS**，完整签名APK #159/#160 已经由发布脚本验证包名、原证书、横屏/代码及文件SHA，但官网发布 job 均 FAILED：`xinyanshuo/main` 被并发站点日志同步提前更新，`git push origin HEAD:main` 返回 `[rejected] (fetch first)`，故**没有对玩家生效**。此为确切根因，不是编译、GPU或签名错误。\n\n实际修复：GitHub workflow `.github/workflows/godot-3d-android.yml` 的正式发布阶段 now `git fetch` 最新官网main→`git reset --hard origin/main`→重新核验并暂存当前签名APK/清单→正常push，遇到竞态最多重试8轮，**禁止强制推送或覆盖站点日志**。每轮保持原包证书与单调版本号检查。还新增 `scripts/update_apk_discovery.gd` 和 `scripts/update_bootstrap.gd` 的**游戏内新APK发现与官网打开安装入口**：校验官方发布清单中的固定域名、包名、原证书SHA256、文件名、版本码，优先提示native APK覆盖安装，PCK仍走RSA签名，不能将Vulkan/原生库改动伪装热更新。注意此新功能只有用户**安装包含该代码的新APK后**才能生效；旧版v153无法凭这份源码自动检测新版APK，首次仍需官网下载安装。\n\n截至本条写入：修复源码已进入main，但**新一轮APK发布尚未核实成功**；公开 `base-latest.json` 仍 #153，v1 PCK仍 #149。不得向用户声称有新包，不删除存档，不碰旧PCK渠道。需要等实际成功的 publish job 和官方JSON更新、APK文件SHA核对后才给下载地址。",
+      "source_status": "source-main-development"
+    },
+    {
+      "id": "dev-003-8b1f04699b",
       "title": "2026-10-14 — 用户要求完整热更新及清退废弃人物/建筑/模型：资源审计第一步已提交，尚未发布",
       "date": "2026-10-14",
       "body": "**实际提交**：新增 `godot3d/tools/audit_legacy_models.py`，对现有场景、材质、模型和脚本/目录引用进行**只读**扫描，报告疑似无直接引用的资产及其文件大小，按人物、建筑、地景分类。这一步不会删除模型，以免错误清理动态目录、预构建资产、存档涉及的稳定实体ID、Terrain3D原生库或运行时生成的GLB。运行该脚本须在资源构建完成后的实际项目中执行，并人工复核动态调用和构建脚本；尚无真实审计结果，禁止凭空列出已删除数量或节省MB。\n\n**热更新安全边界**：v153旧APK已包含Terrain3D原生ARM64库；普通美术/场景/脚本可以按当前签名PCK规则做增量，但Godot renderer/Vulkan、原生GDExtension、原生Android模块等不可能通过PCK替换APK中二进制，必须签发同证书新APK。现行公开v1 PCK仍是#149，v2 signed-content feed尚未正式发布。删除仓库或新PCK里的旧文件也**不能保证删除手机已安装旧APK内置资源**；必须用新版资源加载白名单/替换场景、复核打包排除路径，并通过同签名APK升级完成原生变化。用户原存档、身份ID、背包必须保留；资源路径迁移需要稳定映射/回退协议，不能直接清空user://。\n\n**当前状态：已落库审计工具，未实际清退废弃模型、未构建新APK/PCK、未更改官网最新下载文件。** 下一步需要对构建后的资产报表和动态引用图进行复核，再精确排除弃用模型、校验新场景、运行质量门禁并分别发布可签名验证的APK及兼容资源补丁；发布前不把 #149 称为本次更新。",
       "source_status": "source-main-development"
     },
     {
-      "id": "dev-003-0343fc0cd5",
+      "id": "dev-004-0343fc0cd5",
       "title": "2026-10-14 — 按用户实机反馈开始修渲染/HUD/地形（源码已提交；未构建新APK）",
       "date": "2026-10-14",
       "body": "用户报告：HUD「GPU 不可用」、地面水面/瓦片纹理和大块网格影、Draw898、天空悬浮白块、角色/NPC T-pose或悬空。本轮**确实修改GitHub源代码**：\n- `godot3d/project.godot` 从强制 GL Compatibility 切换为 Mobile 渲染方法（Android Vulkan 目标）；此为下一次APK的代码配置，不说明已在用户手机启用Vulkan；运行时仍可能因驱动失败自动回退。\n- `godot3d/scripts/performance/mobile_performance.gd` 启动时日志分别记录GPU型号、配置渲染方法、实际渲染方法和driver；若不是Mobile/Vulkan提供告警；HUD不再称整个GPU「不可用」，正确显示「GPU耗时计时未支持」并在设置状态显示GPU型号/渲染器；临时性能目标标注Draw200、三角面150000；方向光阴影atlas由1024改为2048。**注意**shadow atlas增加显存开销，需要真机测绘，不证明网格影已修复。\n- `godot3d/tools/terrain_review/build_runtime_terrain.gd` 将草/泥UV比例从0.8降至0.12，岩石0.1、其余0.18，并禁止缺失PNG贴图时静默生成assets；`godot3d/scripts/valley_terrain_500.gd` 添加运行时材质资源路径与渲染器诊断。**必须重新离线烘焙Terrain3D资产并打包，否则旧APK纹理UV不会变化**。\n\n额外新增 `godot3d/scripts/main.gd` 启动诊断 `[CanglanDrawAudit]`，按 MeshInstance3D 的网格/材质分组输出前20项surface实例数，便于定位可合批资源。**这是CPU场景结构估计，不是GPU真实逐项drawcall**；总体实际Draw仍应以RenderingServer计数为准。\n\n**仍待完成（不能冒称已完成）**：新Mobile渲染完整CI及签名APK、Android logcat Vulkan初始化证据；原生Terrain3D五类control图逐像素抽样/实机草坡石三截图；遮挡网格阴影根因验证；按网格/材质前20项真实Drawcall分析及合批/MultiMesh/Atlas、悬浮白构件清除、主角/NPC动作和脚底碰撞修复。尚未取得用户设备日志，**898仅为用户现场报告的基线**；本轮无优化后帧率、无真机截图、也未发布新APK。下一步以真实CI/Android日志证据逐项修复，保留旧v153稳定下载及PCK#149通道。",
       "source_status": "source-main-development"
     },
     {
-      "id": "dev-004-9a2636b9ec",
+      "id": "dev-005-9a2636b9ec",
       "title": "2026-10-14 — v153真机验收门禁已落库（仅文档，未冒称实机通过）",
       "date": "2026-10-14",
       "body": "新增 `docs/MOBILE_V153_ACCEPTANCE.md`，完整定义覆盖安装不清数据/签名与原生Terrain启动、旧PCK#149兼容、存档和实体ID、横竖屏双区手势、四视角和相机避墙、北西坡地碰撞、NPC与行走动作、20–30分钟FPS/温控、国漫成品骨骼表情验收以及P0/P1拒发条件。此提交是**真机验收协议**，不包含游戏功能代码变更、不代表APK154构建或手机FPS测试完成；仍以已经核实的v153正式APK为安装基线。下一开发动作需有复现证据后对症修复代码，再走quality_gate/签名/实机验收，切勿将规范文件提交冒充完成美术或性能优化。",
       "source_status": "source-main-development"
     },
     {
-      "id": "dev-005-67d9daa0ce",
+      "id": "dev-006-67d9daa0ce",
       "title": "2026-10-14 — Work 整合 APK #153 已实际签名、发布与官网部署成功",
       "date": "2026-10-14",
       "body": "版本0.2.0-dev.153，versionCode1153，ARM64，同原包名/永久证书，73,058,452字节（73.06MB）。\nAPK SHA256：aa1a9ed20e69b23624455b596fb5f0163526be85415c2145bc3fb093d7504fa1\n证书 SHA256：353c65d2bdde16509b33c976e9bed615013080b071629cfbf7fdeb43e4217057\n源码：095df86be9bfe4161aa914bc1a681c757c040326\n构建与发布： [内部开发仓库链接] SUCCESS\n官网部署： https://github.com/160701541-cell/xinyanshuo/actions/runs/38546077141 SUCCESS\n官方实际下载： https://160701541-cell.github.io/xinyanshuo/android-preview/base/Canglan-AncientWorld-v0.2.0-dev.153-Stable-Signed-ARM64.apk\n\n完整quality_gate、实际main四视角OpenGL、包内Terrain3D ARM64库/原生性能DEX、apksigner永久证书pin、编译Manifest横屏均通过。覆盖安装，不卸载；APK忽略不高于内置版本的旧缓存PCK，原存档路径与身份保留，手机存档回归仍须实际验证。\n\n包含正式Terrain3D 2km/16个512m地区、动态原生碰撞、五套技术PBR/control/本地数据、既有模型动画、新HUD、清晨雾云光束、原生刷新率/温控/性能模块。PR9/10/11已源码批量整合至main并关闭草稿。标准长袍PR8、美术国漫达标、PCG/道路城镇、薄包/v2feed仍未完成。\n\n#150回归失败已修复，#151被新压缩构建替代，#152模板debug证书被正确拒绝。#153改用原永久密钥apksigner重签并重新核对，没有放宽证书pin。本次只更新官网android-preview安装包/元数据，不覆盖海报/官方群/日志；旧v1资源feed仍149，未把缺native库的Terrain PCK发给旧APK。\n\n国漫概念图美术尚未达标，首包73.06MB不是<30MB。桌面Mesa软件渲染第三人称约575 drawcall/216955面/5FPS/176ms GPU是场景诊断，不能当作手机FPS或80draw/12万面预算通过；手机120FPS/<8ms/显存/温度没有实测。GPT6需要合并网格材质、shadow/LOD、相机避墙、角色与国风美术调校，以及覆盖安装/库存ID/山坡移动/后台温控和20–30分钟真机性能验收。\n\n完整报告同时保存 docs/APK153_RELEASE_REPORT.md；官网部署38546077141 SUCCESS，构建/发布38545050078均SUCCESS。私有草稿PR9/10/11源码已整合并关闭，主角PR8仍待达标。手机画质/性能未验证，不把发布当成国漫画质或120FPS已实现。遵守P0可观测进展与工作流查询120秒冷却；本任务构建现已完成，无需继续轮询。",
       "source_status": "source-main-development"
     },
     {
-      "id": "dev-006-699c8b4ebe",
+      "id": "dev-007-699c8b4ebe",
       "title": "2026-10-14 — P0状态看板落地及官网APK实物复验：v153已正式发布，旧PCK保持#149",
       "date": "2026-10-14",
       "body": "**本条是上一条P0最高指令的实际执行回执，非未来承诺。** 限流恢复后，手动GitHub Actions查询已成功（不再每几秒连续请求），确认真正的**原生Terrain Android构建** workflow `Canglan Native 3D Terrain Android ARM64 Preview` run **`38545050078` SUCCESS**；另有国漫场景/四视角/近远LOD工作流 run `38545713846`、`38545713903`、`38545713868`、`38545713801` 均成功，这四项只证明分支测试，不是新APK已发布证据。\n\n**APK实际已发布且不是以前的v149：** 官方公开仓库 `android-preview/base-latest.json` 已推进到 `0.2.0-dev.153` / Android `versionCode=1153`、约73,058,452字节，发布文件 `android-preview/base/Canglan-AncientWorld-v0.2.0-dev.153-Stable-Signed-ARM64.apk`；**实际公网仓库文件** SHA256 `aa1a9ed20e69b23624455b596fb5f0163526be85415c2145bc3fb093d7504fa1` 与清单字节一一匹配，证书维持旧永久签名 `353c65d2bdde16509b33c976e9bed615013080b071629cfbf7fdeb43e4217057`。正式 v1 内容补丁**仍是#149**，不是#153；原因是Terrain3D native .so需要更换APK底座，不能向旧APK推新的原生地形PCK。绝不可混用编号、让玩家以为PCK#153已发布。**未在用户手机真正安装，实机表现仍须用户反馈。**\n\n**已真正接入官网**：公开站 `index.html` 新增 **「开发现场 · 构建透明」**及「GPT-6/Work PR进度」模块，`site.js`/CSS在手机每**120秒**从官方公开静态 `data/build-status.json` 加载状态，不从手机对私有GitHub做API轮询；私有 `.github/workflows/site-log-sync.yml` 已实装当前**native Android workflow**及其他可观察QA的 `requested/in_progress/completed`、`pull_request_target` 实际打开/提交/合并**事件推送**，失败照样公开。私有 `tools/site_build_status_export.py` 仅取GitHub自动交付的事件payload并将文件SHA、签名证书核验后的最新APK/PCK是否发布写入公开JSON，历史已知运行从单次真实查询播种，暂无PR事件时网站坦言未见更新。官网「状态未知」不等于Work运行/停滞。这套推送监控无需GitHub Actions REST持续请求，可以避免此前每几秒查询导致再次限流。\n- **已经真验证** 私有同步工作流 `38547056466`, `38547095570`, `38547355678`, `38547388742` **SUCCESS**，已自动将P0优先级日志公开镜像到 `data/development.json` 最新首条（源commit `c77be6a9c3d4ba217cf3c6009f79ee1b87ad21e9`，62条公开日志），公开 `data/build-status.json` 实际显示APK `apk_published=true` 且物理SHA校验成功、PCK `pck_published=true` 修订149。官网静态QA上次已验证成功；网站最新功能提交后的最终Pages部署状态需继续核对，不能用源码成功冒充玩家浏览器已完成验收。\n- **未提供无法支持的“ChatGPT离线两分钟自动跑任务”**：助手不可能靠一条聊天承诺离线永远每120秒主动检查；我们采用的是可持续工作的GitHub事件推送＋用户手机网页120秒刷新。不在GitHub发生的Work内部思考无法监测，只展示可核验的PR/CI与最新事件时间。",
       "source_status": "source-main-development"
     },
     {
-      "id": "dev-007-12a8ce4dc0",
+      "id": "dev-008-12a8ce4dc0",
       "title": "2026-10-14 — 整合构建缺陷已修复，完整世界回归成功；压缩原生 APK #152 打包中",
       "date": "2026-10-14",
       "body": "首轮整合APK #150被quality_gate阻止导出，**没有发布失败APK**。四项失败具体为：Terrain3D默认free_editor_textures清空runtime资产列表；两项旧设置回归仍要求竖屏；旧HUD回归按改版前直系子节点查找按钮，且用自身visible代替实际is_visible_in_tree判断工具菜单。实际地面物理射线、原生Terrain3D玩家移动、存档/身份/物品检查已通过。修复保留5材质与原始纹理、更新横屏锁定/实际HUD层级和隐藏菜单断言；失败断言立即终止本测试子进程，保留其他回归，不再白等100秒。\n\n修复源码 `1355cbcb9fd07a166aa6f330a1ea1d162fed54de`；完整官方World Tests **#145 SUCCESS** [内部开发仓库链接] ，包括16 regions/5材质/城区零高度、原生碰撞、实际玩家移动、全脚本、实体存档、横屏、第一第三人称、新HUD/氛围等。新地形PNG保持normal-roughness alpha并启用mipmaps。APK流程增加Xvfb/Mesa **实际main四视角截图与shader错误检查**，不是只看headless绿色，也不是国漫美术质量或真机FPS通过。\n\n已按Godot4.4.1官方export源码核实并打开 `gradle_build/compress_native_libraries=true`，避免改用Gradle/AAR后默认不压缩原生库导致包体膨胀；构建concurrency改为最新提交替代过时APK任务。最终打包代码 `c021103ab9fcd2483d495e17a6bc26f808f89733`，APK **#152** run [内部开发仓库链接] 已触发，实际大小/证书/公开下载链接仍待构建成功核对。#150失败和#151被更新任务替代不能冒充APK完成；官网已有#148/#149是并行会话的旧引擎包，不能称包含本轮Terrain/UI/原生整合。",
       "source_status": "source-main-development"
     },
     {
-      "id": "dev-008-2506da7c93",
+      "id": "dev-009-2506da7c93",
       "title": "2026-10-14 — 用户授权 Work 直接整合资源并打包 APK（构建 #150 进行中，未假报发布）",
       "date": "2026-10-14",
       "body": "用户16:45明确“你整合打包吧”，16:58“继续”，17:05“整合资源打包”；本次不再只交给GPT6，Work直接执行整合与签名打包。**代码已进入main：`4b4ebe5eae604a49fc91af881e2cc2bfe64ae110`**，合入PR9/10/11源码并完成正式地形接入，共66个源文件/证据项；详细范围、理由、兼容边界见 `docs/NATIVE_TERRAIN_APK_INTEGRATION.md`。并行会话的publisher安全修复、官网海报/官方群/日志要求均保留，不能发布APK时用旧模板覆盖官网。\n\n- 正式地面已改为Terrain3D原生节点，原ArrayMesh地面和ConcavePolygon碰撞移除；2km方形边界、16个512m区域，构建机生成高度/地区数据，手机读取本地资源。原地理海拔26m城区映射本地游戏Y=0，旧房屋/人物/物品身份与坐标不整体平移；动态碰撞64m、16m块，碰撞/clipmap锚点跟随玩家，远观时不丢失玩家地面。\n- 原HUD/清晨氛围/实际原生Hz温控性能模块进入main。五材质control混合加确定性技术PBR纹理，不覆盖原建筑材质；**尚非国漫概念图美术验收通过**，PCG散布与新城建尚未完成。候选KayKit/Kenney建筑包未下载；PR8标准人物仍是短袖轮廓，缺合法成品长袍裙摆，保持草稿不冒充已完成。\n- 同证书APK覆盖安装后，以APK自带revision忽略不高于自带版本的缓存PCK，并拒绝安装旧包；否则旧#147缓存会盖掉新Terrain/HUD。保留原存档、包名和证书。新Terrain3D native .so必须在APK，当前打包流程只发布新APK/base-latest，**不向旧v1 latest.json发布无法运行的Terrain3D PCK**；旧热更新通道保留，v2基础设施/单文件增量和回滚代码存在，v2 feed未发布，<30MB也未验证。\n- 本地Godot4.4.1 source import/main/terrain语法、Python/YAML与全部workflow bash语法检查通过；本机无完整AndroidSDK，真正AAR与APK由GitHub构建。官方工作流 **#150** [内部开发仓库链接] 已启动，正在安装引擎/模板/SDK；完整assets import/quality_gate/terrain碰撞和玩家移动/正式证书校验及发布尚待结果，**此时没有新APK成功链接或手机性能结论**。\n- 后续Work持续修复构建错误直到有可核验APK，记录实际包体/证书/Pages链接；GPT6负责真机覆盖安装、存档身份、实际画面/移动、返回后台/刷新率温控及面数drawcall显存FPS，普通测试与美术调校自主完成。公开工作日志按既有自动同步链持续更新；构建失败同样需如实记录，不用旧包冒充本次资源整合。",
       "source_status": "source-main-development"
     },
     {
-      "id": "dev-009-184d6ed5e7",
+      "id": "dev-010-184d6ed5e7",
       "title": "长期硬性规则：官网概念美术、开发日志与正式更新日志同步（2026-10-14 用户确认）",
       "date": "2026-10-14",
       "body": "**用户明确要求（必须长期遵守）：**\n1. 官网 `https://160701541-cell.github.io/xinyanshuo/` 的**主视觉应以达到项目最终国风仙侠CG品质的概念海报、世界观、山河城镇、人物及氛围美术为核心**，不能因为游戏开发期简陋就把主页设计成粗糙的程序画示意图，更不能以“概念图不是实机”作为拒绝展示概念图的理由。需在适当位置区分「最终美术愿景 / 概念海报 / 摄影气氛参考」与「当前真实Godot实机画面」；绝不把概念截图虚构成已实现玩法。\n2. 每一项**实际完成、进行中、失败、已测试但未发布、发布成功**均及时记录正式`docs/DEVELOPMENT_LOG.md`，并通过 `.github/workflows/site-log-sync.yml` 自动公开镜像到官网`data/development.json`。触发包括主线文档更新、官方Android正式发布和每**15分钟修复检查**。官网前端`site.js`至少每约60秒检查新数据（页面刷新可立刻重新取）；这是**分钟级自动同步**，不要虚称毫秒级实时。绝不可因源码未合并或网络失败冒充已正式发布。\n3. **正式更新日志** `data/updates.json` 必须只从经RSA签名、SHA256验证的官方PCK版本历史自动生成，与`android-preview/latest.json`最新`revision`一致；草案/概念/测试模型不写作已发布。同步失败必须在网站明确展示可追踪的状态和最后同步时间，不要静态填虚构更新日期。\n4. **网站设计由公开仓库独立维护，不得被游戏热更新流水线覆盖！** 实测Android #148 发布时旧 `publish_xinyanshuo_release.py` 把公开官网刚更新的`index.html`、`style.css`、`site.js`覆盖回过时模板，直接摧毁真实日志+QQ群+概念网站。已在官方主分支修复为 `SITE_OWNER_PRESERVED`：后续OTA发布只追加RSA签名包/APK/json，网页三文件仅公开站不存在时才bootstrap。今后自动构建/恢复必须对照这个不可破坏的规则。官网专属静态QA检查三海报存在、QQ联系方式、日志/更新文件结构及官方签名历史。\n5. **官方联系方式固定公开在游戏官网**：用户指定群聊《心魇说官方测试群》以用户提供完整 `qun.qq.com/universal-share/share` 邀请URL做真正可点按钮；个人QQ `160701541` 提供会话链接与复制号码；抖音账号 `xys160701541` 提供能工作的账号搜索入口（若未来确认抖音标准个人主页直达链接则更新）；不擅自更换号码，也不要暴露额外私人信息。\n6. 官网手机浏览器必须真正响应式：海报、文字和按钮铺满合理宽度，不能出现用户截图中“只有左半边有内容、右侧大块空白”的缺陷。桌面可采用国风游戏式导航侧栏，手机改为适配屏幕的滚动顶部导航。今后实际核对 GitHub Pages 部署结果，不能只报告Git提交成功。\n7. 概念图与海报采用用户认可的半写实国风动画CG目标，不能用简单几何山峰、矢量低模色块替代最终愿景。若临时采用获许可的现实中国山河/古建摄影作气氛底图必须明确是「摄影气氛参考」，并继续开发原创电影级视觉资产，而非把照片说成原创人物概念稿。\n\n**本轮官网代码事实：** 最新公开站已经恢复被 #148 发布误覆盖的 `index.html/site.js/style.css`（含正式日志、签名版本、官方群、QQ及抖音），增加五主题视觉入口和大图国风山河封面；发布器 `godot3d/tools/publish_xinyanshuo_release.py` 已明确永不覆盖现有官网HTML/CSS/JS。官网静态素材还需继续向用户第二张概念图的丰富程度精修；凡替换美术须实测手机显示并经用户审核。",
       "source_status": "source-main-development"
     },
     {
-      "id": "dev-010-1ed60d17e7",
+      "id": "dev-011-1ed60d17e7",
       "title": "2026-10-14 — Work 交付 Terrain3D 真实地形走向预览；国漫概念图成为硬性美术验收标准（PR #11，尚未发布）",
       "date": "2026-10-14",
       "body": "用户要求停止平面地面方案，改Terrain3D；2km×2km北/西山脉、南侧平原，中心500m×500m统一海拔；先看实际俯视图确认山脉走向。另要求先列CC0资产URL，经用户验证再下载，先草/岩石散布，再树/道具/道路城镇。**用户16:24补充明确：地形也必须参考国漫画风，向所给《苍岚》概念图水准发展，不达标就不算完成。** 此最新约束收紧此前“可整体改中世纪”的选择；后续建筑生产停止AI生成，不得用接入方便的西式低模作为最终国风美术达标证明。\n\n**已实际写出并上传**：PR [内部开发仓库链接] ，分支 `work/terrain3d-alignment-0.1`，证据提交 `82c3a582f57844fe5339dc7ea939fff2dce1ad9c`。隔离Godot4.4.1 + Terrain3D1.0.2项目 `godot3d/tools/terrain_review/`，固定官方插件SHA256安装器、米制FastNoiseLite高度场（octaves5/frequency0.003/固定seed）、原生Terrain3D导入/region保存/EXR导出/俯视与斜视真实viewport截图入口；`.github/workflows/terrain3d-alignment-review.yml` 自动出图；`docs/CC0_ASSET_URL_REVIEW.json` 记录9条已对照官方git tree的GLB/glTF路径、URL、blob SHA；`docs/TERRAIN3D_ART_DIRECTION_HANDOFF.md` 写明理由、接口、美术要求、已测/未测与GPT6分工。截图及JSON实测高度报告已提交 `docs/evidence/terrain3d_20261014/`。\n\n**真实验证证据**：Actions [内部开发仓库链接] SUCCESS，源码 `d5ab86fabc958e0525bb13000969efb9bb0c2492`；实际Terrain3D1.0.2 + Compatibility + Mesa llvmpipe软件OpenGL渲染，并非AI概念图或headless虚拟截图。2048²/1m采样涵盖2km可玩范围，北=-Z（图顶）、西=-X（图左），中心500m平台26m，水位12m/东南低地。高度5.6035–441.9870m，导出16个512m regions及浮点EXR、无损control；城区中心/边缘从实际Terrain3D数据读取核对26m。首次预览发现native data创建前region_size设置被忽略，已修复顺序并重跑验证512m。Godot脚本语法、Python/YAML、山脉方向/城区数据窄检查通过。完整导出证据artifact ID11880029619/33,956,731B，14天保留；GPT6接入后须将已确认地区数据纳入正式资源版本，生成器可复现现阶段未编辑数据。\n\n**不能混淆的边界**：这批是待用户审定的地形结构预览，尚未替换正式main地形或改动既有实体/存档，未发布APK/PCK。坡度草/土/岩、低海拔沙、城区石板ID与混合已生成control图；截图使用诊断色图，**不是最终PBR或五规则实时auto shader**（Terrain3D内置auto只选两个纹理）。人眼看图仍有碎斑岩区、缺少岩层细节/植被/远景层次，**未达到用户国漫概念图水准**。最终必须有岩层/沟谷/主次山脊、冷雾暖光/远近层次、自然土草砂石过渡、国风木瓦街巷和立体植被，凭实际引擎图和移动视频评判，不以CI绿色代替用户视觉验收。\n\n**资产仍未下载**：KayKit Dungeon官方CC0确有墙/门/桶箱GLB；Medieval Hexagon官方CC0是独立glTF+bin/纹理，并非GLB，民居/酒馆/铁匠铺/塔/井为整栋；Kenney Castle Kit/Fantasy Town Kit为3D CC0候选，未核实单文件GLB直链；Medieval RTS为2D，排除；未找到可独立核实的“KayKit Castle Pack”准确官方包名。以上西式低模候选尚不符合最新国漫画质，不能擅自下载、覆盖原材质或宣布高精建筑完成。散布、道路、50栋城建/15农舍尚未进入生产；等山脉确认后按用户顺序推进。\n\n**省token分工**：Work负责可复用引擎/数据/原生与shader架构、关键缺陷；GPT6负责用户确认后的完整仓库接入、已有实体落脚点/碰撞/存档回归、资源美术调校、草岩石试点及真实手机测试、APK签名与热更新发布，普通导入/摆放/测试/发布自主完成，仅跨引擎接口、原生兼容、数据迁移、shader架构困难再交Work。Terrain3D新增native .so需要同证书新APK底座，旧APK仅更新PCK不能补出缺失原生库。真实手机面数/drawcall/显存/FPS/<8ms/120帧/流式pop-in未测，**不填目标值冒充实测**；独立桌面预览也不能代表Android验收。工作日志/正式更新日志按已有官网自动同步制度公开，本PR不是正式游戏更新。",
       "source_status": "source-main-development"
     },
     {
-      "id": "dev-011-b516014f3e",
+      "id": "dev-012-b516014f3e",
       "title": "2026-10-14 — 官网视觉愿景回归：概念海报做主视觉，公开官方社群，并持续同步两类真实日志",
       "date": "2026-10-14",
       "body": "**用户长期强制要求（持续生效）**：**工作日志（真实开发过程）和更新日志（已签名正式版本）必须在游戏官网自动持续更新，并明确把这条要求本身写入工作日志**；官网必须有根据《苍岚·人生世界》世界理念制作的高质量**概念图、概念海报和世界观视觉**。不能用低质平面折线/静态图占位，把用户确定的古风半写实动画/电影级美术目标降格；用户已上传明确的视觉官网参考（暗金黑青配色、宏大城池湖山航拍、长袍旅人、人物特写、群像、市井、动捕与国风世界六大主题）。**概念图是视觉目标，理应作为游戏官网主视觉**；只需将其标示为“概念艺术/最终画面方向，非目前实机”，与真实运行截图保持可区分，绝不禁止概念海报进入首页。\n\n本轮确实已经提交**公开官网仓库** `160701541-cell/xinyanshuo` 的 `index.html`、`style.css` 和 `site.js`：重写第一屏标题“苍岚·人生世界 / 这一世，你想成为怎样的人”，突出自由人生、市井活力与万里山河；重做深色/暖金官网主体与窄屏手机的响应式大视觉布局；保留既有“概念美术/世界愿景”页面、三份已上线原创概念SVG和日后更高质量图位，**本轮这些旧图还没有达到用户给出的电影级宣传图品质，不能将布局已改写成美术已达标**。新增「官方社群」主页内容：\n- **QQ测试群**：`心魇说官方测试群`，直接原样使用用户明确提供的官方 `qun.qq.com/universal-share/share?... `邀请链接，保留完整查询凭证，不复述长token；这条分享链接由QQ本身生成、可能过期；\n- **个人QQ**：`160701541`，QQ会话按钮使用 `wpa.qq.com/msgrd?v=3&uin=160701541...`，增加移动端复制号码（Clipboard API + 浏览器备用回退）；若QQ客户端协议链接不能唤起，应保留号码可复制；\n- **抖音账号**：用户提供的是字符串 `xys160701541`，当前未获得真实sec_uid，不虚构单人主页URL；设 `https://www.douyin.com/search/xys160701541` 抖音搜索链接及明确按钮“在抖音搜索该账号”，后续有真profile链接再改为直达。\n- 顶部导航加入「官方群」并联动社群内容。用户截图参考中还要求“游戏介绍/世界观/概念图/开发日志/更新日志/下载/FAQ/群”的网站结构，目前FAQ和真实电影级海报图资源仍是**待做**，不能宣传为全部完成。\n\n已存在并持续维护的跨库日志生产链：**私有库** `docs/DEVELOPMENT_LOG.md` 真正主分支变更后自动触发 `.github/workflows/site-log-sync.yml`，将经过脱敏的开发进度发布成**公开库** `data/development.json`；真实签名APK/PCK revision 清单才允许进入 `data/updates.json`；用户网页版 `site.js` 每约60秒检查新纪录、页面重回前台亦检查，每15分钟计划任务修复漏推。GitHub Actions+Pages/CDN同步是**分钟级近实时**，不承诺毫秒级流式实时。任何正式功能、真实测试成功/失败、改动文件、未完成问题和后续计划都必须及时更新日志；新发布后自动同步版本号、日期和客观改动。**只做官网静态页面改版，不意味着游戏APK资源热更新；最新正式游戏版本仍由公开 `android-preview/latest.json` 决定。**\n\n**下一步必须解决的设计欠账**：用用户给出的画质目标制作/上传真正电影气质的宏观国风场景、村镇市井、长袍主角、山川河流、六国争战、修行与生活主题高清概念海报（版权来源明确），在网页首页替换旧的低质量SVG主视觉，并在移动端首屏有出色构图；随后做手机浏览器真实截图与下载/入群链路测试。主角标准人形模型PR#8没有因此变成美术已完成或正式游戏更新。",
       "source_status": "source-main-development"
     },
     {
-      "id": "dev-012-8fb0603ad8",
+      "id": "dev-013-8fb0603ad8",
       "title": "2026-10-14 — Work 交付 APK 原生性能桥接与签名逐文件资源 v2（PR #10，原生/真机/发布待 GPT-6）",
       "date": "2026-10-14",
       "body": "用户要求120Hz/120fps、全屏横屏和返回暂停、温控、<30MB首包、完整资源首次下载、逐文件增量/原子回滚及异步本地加载。**当前实际为Godot4.4.1原生GL APK，没有WebView**，本次没有加入假WebView/WebGPU优化；没有声称普通应用能强锁CPU频率/禁止OS回收。\n\n代码 commit `dadbec471c0804eaaa7d70aab5cbc1358e845e65`，分支 `work/native-performance-content-v2`，PR [内部开发仓库链接]），**堆叠在PR#9之上，先集成#9，再将#10 base改main**。接口/理由/边界/包体和完整步骤见PR内 `docs/NATIVE_PERFORMANCE_CONTENT_V2_HANDOFF.md`。共33文件，不是已签名发布的新APK或热更新。\n\n- 真Java Godot v2 AAR插件 `native/android/`：请求同分辨率最合适高刷新模式，报告真实supported modes/current Hz；前台支持时启用持续性能/ADPF脚本CPU工作段提示（非锁频/非整frame计时），后台释放、保存暂停；全屏/cutout、锁横屏、返回/旋转触发游戏暂停。标准安卓构建改Gradle并用官方安装Android模板CLI，有独立AAR编译QA。\n- `scripts/performance/` 已接main及设置：120Hz能力默认.75流畅/120目标，四秒持续超时或draw>80/tri>120000自动降档，10秒冷却；精确120周期8.333ms保留容差避免无故降级；42℃下降一档、冷到39℃才重置，46℃或系统severe进省电。实际FPS/Hz/GPU/纹理显存统计可关，GPU不可用不显示伪0ms。阴影1024/自动LOD；**这是预算监控/降档，当前177mesh/约22万面WIP仍须GPT-6合并材料网格和真正低LOD才能保证预算，不能宣称已硬限达标**。可选大人物先本地线程预载，再用原factory实例化；不改变实体/物品/存档。\n- 新薄底座 `scripts/content/`：独立schema2签名清单包含每文件SHA/URL/大小+完整重建PCK SHA，blob按SHA复用去重；实际GodotPCKPacker重建，仅全部完整才原子提交active/backup/journal；prepared不误判崩溃，booting未确认回退；提交/挂载边界再次线程验包，禁止进程内混挂新旧版本，更新后重启。首次自动加载器内异步下载，有完整缓存离线进世界，场景资源索引/模型和贴图本地线程预载，不在材质运行时拉HTTP。保留上一完整PCK与已下载blob，未完成单文件失败会重下，不是跨退出仍保证执行的WorkManager。\n- `tools/content_v2.py/build_scene_index.py/prepare_thin_project.py/report_apk_budget.py` 与安卓手动 `build_thin_candidate=true` 入口：复用真实全资产导出，生产完整SHA blobstore+签名清单+独立同证书thin release候选+尺寸报告，实际30,000,000字节预算关失败即拒绝。**旧v1 feed/受保护bootstrap/老#102兼容链未替换，v2 feed未发布**。原生与加载器变化需要同证书APK覆盖升级一次，不卸载、不改原user存档；以后兼容内容可逐文件增量。\n- ASTC方面保留etc2_astc导入支持，补外部PNG/JPEG高质量VRAM+mipmap导入配置；嵌入GLB CTEX实际格式与设备支持仍须检查，**没有宣称显存已减半**。该原生Godot不会因为WebView支持WebGPU就自动换渲染器。\n- 尺寸：核对线上#147 APK **52,308,175字节/52.31MB**，累计PCK **18,025,408字节/18.03MB**；后者不是已生成的v2完整快照。新thin和完整v2尚未构建量测，不能写<30MB完成。按18MB、10–20Mbps、100个对象100–300ms额外请求延迟及5–15秒本地准备，示例首次25–60秒，非当前真机实测；真实值必须用候选报告和cold启动时间替换。\n- **Work窄验证通过**：真实Godot4.4.1语法检查、一次性测试RSA签名/篡改/路径/core拒绝、Python与GodotPCKPacker哈希一致且真实挂载读文件；仅一文件改变只需一个blob；缺失/损坏不提交、prepared首次不误回退、booting失败回退且旧包可挂载、不混挂；120周期容差/42℃滞回/60Hz回退；Python语法、workflow YAML及thin步骤bash语法。正式key未写入源码。本机无SDK/Java，AAR编译/APK原生证书与全资产薄包/真机120与温控/GPU计时/Pages未测，交GPT-6，避免重复整仓构建消耗Work额度。\n\n**GPT-6自行接班**：集成#9→#10，保留同期人物/面捕；native QA真AAR绿后正式旧v1 APK/PCK回归，同证书/插件类与metadata查验；真机60/90/120Hz、厂商限制、cutout/返回/后台/20–30分钟性能温度显存，合并当前WIP网格与低面LOD，若80/12万/120fps未达标如实报告；手动build_thin_candidate，真实薄包<30MB关通过，首装/离线/断网/磁盘满/杀进程/半更新/boot失败回退、UID/class/remap全资产依赖检查，cold/hot时间和完整资源量测；上传新android-assets全部blob，latest-v2最后发布，原v1继续服务旧底座，Pages成功后才发布固定同证书新底座并说明一次覆盖安装。普通Gradle/测试/LOD/体积/发布自行完成，仅原生接口/线程/签名协议架构难题再找Work。**尚未更新用户手机，不称稳定120fps或薄首包完成。**",
       "source_status": "source-main-development"
     },
     {
-      "id": "dev-013-10a23e8d25",
+      "id": "dev-014-10a23e8d25",
       "title": "官网透明开发与更新制度（永久执行，自2026-10-14起）",
       "date": "2026-10-14",
       "body": "用户明确要求（**长期强制规范**）：**所有正式工作日志、更新日志应自动同步到官网** `https://160701541-cell.github.io/xinyanshuo/` 并公开可阅读、可检索历史；每次实际开发后详细记录已改动的文件/功能/QA证据、未完成事项和下一步，每个正式签名游戏更新之后准确标注版本、内容、发布状态；官网需设置**原创游戏世界观概念图、海报展区**，并持续围绕“真正活着的古代世界、独立NPC、商旅山川、玩家一生”更新美术；概念图**明确标记非游戏实机画面**，绝不以概念海报冒充已经实现的画面。标准主角资产和动捕应按实际美术/版权与Godot测试状态报告，不能拿CI绿色代替玩家美术验收。\n\n**同步执行规范**：在项目`main`有新的`docs/DEVELOPMENT_LOG.md`变更时，GitHub Actions通过**单独低成本网站同步工作流**自动解析最新日志、隐去密码/密钥/个人隐私并发布`data/development.json`至公共`xinyanshuo`站点；每次正式签名PCK或APK发布后的`latest.json`和`base-latest.json`才有资格进入**官方更新日志**；官网页面按约60秒周期获取新数据（GitHub Pages/CDN可能导致短暂延迟，非毫秒级实时），另设定时补偿同步，显示“最后同步时间”。设计/开发草案必须明确标注“尚未发布”，不许将测试分支写成正式版本。若发布令牌/权限或CI失败，不能假报官网已更新，需在报告中说明失败并保留原有合法数据。官网允许打开完整日志与版本历史，并在移动端正常阅读。\n\n**这一轮执行**：官网网页新增开发/更新日志区域、三幅基于游戏理念的原创SVG概念美术（村镇生活、边关商路、山河众生海报），所有图片均有“概念美术·非实际游戏画面”标签；网站的历史正式版本仅以签名修订#145、#146、#147等可核对元数据为准，保留独立站点官方APK/内容包下载原机制。注意：当前进行中的标准VRoid52人物方案PR#8尚未合并，不得被误标记为“已发布”的#148。\n\n**实际公开网站验收证据（2026-10-14）**：GitHub官方 **私有主仓库日志同步工作流 #38529654939 SUCCESS**，自动读取本正式开发日志主分支并将**54条真实开发记录**脱敏发布到公开仓库 `data/development.json`；发布日志存储 `source_commit`、源内容SHA256、首次同步时间，浏览器按约60秒重新拉取。对应的公开 `data/updates.json` 已核对签名修订 **#145、#146、#147** 的真实哈希并保持时间无法精确证实时不编造发布时间。公开站点 Pages 构建 **#38529802335 SUCCESS**，官方静态内容QA工作流 **#38529802797 SUCCESS**，通过真实 HTML锚点、三个SVG原图、非游戏截图标识、JS语法和最新版本签名SHA一致性检查。随后继续补充独立 `site-content-qa.yml` 与官网维护规范 `README.md`，增加开发失败/未发布标记，拒绝把CI或概念美术当成用户手机成品；后续每次 `docs/DEVELOPMENT_LOG.md` 有实际变动会自动镜像到官网。GitHub Pages 最新部署可能因同一分钟内连续提交而依次排队/取消旧运行，最终应以最新成功Pages构建和手机访问为准，不伪称已在用户手机浏览器打开确认。",
       "source_status": "source-main-development"
     },
     {
-      "id": "dev-014-e64ed2d9d2",
+      "id": "dev-015-e64ed2d9d2",
       "title": "2026-10-14 — Work 交付引擎显示层：响应式 HUD 与清晨山谷氛围（PR #9，待 GPT-6 全量验收发布）",
       "date": "2026-10-14",
       "body": "用户明确将游戏引擎/UI框架分配给 Work，并要求高度雾、冷雾暖阳、层次云、树冠/门洞光束和自然光照。**本次已写出并接入 Godot main 的真实源码，尚未发布 APK/PCK，也没有手机画面合格结论。** 分支 `work/hud-atmosphere-0.1`，代码 commit `59fdd87b2a5a956098b75c8d1c627cce5f83b23c`，基线 `d4e2534a9c10fcf524191a596f26b2bf9680ddc1`；PR [内部开发仓库链接]）。理由、API、文件、已测/未测和 GPT-6 步骤见 PR 内 `docs/HUD_ATMOSPHERE_HANDOFF.md`。\n\n- **UI框架真实接入** `scripts/ui/game_hud.gd`：以短边720为设计尺寸，统一墨绿/米白/金线主题、简短村落时钟、左摇杆/右交互，门/陶罐/饮水按可用性出现；原测试/更新等工具收进滚动菜单，设置滚动且有全屏遮罩。保留原物品、库存、门、视角、试穿和表情按钮的业务信号，不重建实体；代码是原生 Godot，不是独立网页。打开/关闭菜单均清空右手相机与摇杆捕获；`ancient_world_player.gd` 新增控制阻断，同时清除键盘/旧自动行走目标，保留重力与实体同步。\n- **氛围控制器真实接入** `scripts/rendering/valley_atmosphere.gd` 与 `shaders/atmosphere/` 四份 shader：清晨冷色指数+高度雾、外部缓漂雾片、双层大团云与向阳亮边/灰蓝底部、天空 ambient/reflection、暖太阳分层实时阴影；沿太阳斜射的交叉光片每0.3秒查询静态物理遮挡并截断，地面有柔边加色光斑，门洞光束必须门已打开。没有使用后处理 God Rays；光斑不是 GI、雾片不是局部体积雾，gap 坐标和无碰撞叶片/屋顶还须实际资产调校，不称任意遮挡已精确。\n- **诚实渲染能力分档**：安卓当前 GL Compatibility 默认 balanced（8雾片/5光束/80m阴影/3秒云辐照刷新）；economy 为3/2/48m/6秒；high 仅 Forward+ 真启用 SDFGI/SSAO/体积雾并注册静态地面/树/房屋，活动门排除静态缓存。兼容渲染请求 high 安全回退，不改原生 renderer。Compatibility 没有屏幕空间接触阴影，较紧 shadow bias 不能冒充该功能。正式白墙暖色反弹/檐下间接照明需后续实际 GI 路线证明。\n- **Lightmap正规入口** `tools/prepare_static_lightmap.gd` 在编辑器对所选静态chunk逐surface检查UV2；缺失直接拒绝，具备时创建真实LightmapGI/probes节点供正式Bake。当前没有完整村落 .lmbake 或纹理，不称烘焙完成。GPT-6负责生成UV2、区分静态/可变几何、真实烘焙/场景依赖导出，动态昼夜/门状态需单独验收。\n- **热更新生产入口** `update/patch_resources.json` 和 `tools/audit_exported_pck.py` 增加HUD/氛围/player脚本与四shader实际PCK索引要求；受保护更新器名单完全保留。本机偏好增加 `atmosphere_quality`，原世界存档/原默认横屏不变。PCK真实导出/老APK挂载仍待GPT-6，不能仅凭白名单说用户已更新。\n- **Work窄检查已通过**：真实Godot4.4.1 headless下 main 和Lightmap脚本 check-only；`tests/hud_atmosphere_smoke.gd` 验证1280×720/720×1280/1600×720操作安全范围、不重叠、设置滚动、模态阻断/捕获和键盘/自动行走清除、天空/高度雾绑定、昼夜光能、降档与预算；Python审计脚本语法通过。隔离项目没有整仓美术GLB，**没有跑完整main世界、GPU shader编译、安卓FPS/发热/刘海、Forward+效果或PCK/Pages**。按用户省token要求不重复GPT-6全量测试。\n\n**GPT-6接班无需等Work：** 合入PR并保留你同期角色/面捕工作 → 完整真实资产导入/quality_gate和上述smoke → 真实GL shader编译与清晨/正午/夜景三视角截图 → 真机横竖屏/刘海/滚动工具设置/多指手感/开关门及屋顶检查 → 调整真实gap markers/碰撞遮挡，确认雾不遮脸、光斑不穿墙/斜坡 → 记录standard/economy性能 → 正式签名PCK导出和实际索引审计、老#102/#141底座+存档身份回归 → latest.json及Pages成功证据入日志。只有跨renderer/引擎API/旧更新兼容架构难题再交Work；普通接入、测试、发布和美术位置自修。**本次交付不能替代真实Lightmap生产，也不能宣称高精美术已验收。**",
       "source_status": "source-main-development"
     },
     {
-      "id": "dev-015-b670d99605",
+      "id": "dev-016-b670d99605",
       "title": "2026-10-14 — 用户真机截图驱动的真实CMU身体动捕、28面部形变与真人面捕离线入口（v147候选）",
       "date": "2026-10-14",
       "body": "用户更新#146后上传手机实拍：玩家人物头面仍不精致、人物像机械木偶且手臂端起、衣服有穿插、地面大面积单色，询问有没有开源动捕/200万贴片级面部精细化/真人面部动捕。**用户真实反馈优先级高于代码绿色报告：官方艺术认证保持不通过，绝不能因为增加网格面数就宣称《凡人修仙传》品质。** 完整变更与客观限制归档 `docs/MOCAP_FACE_MOBILE_QUALITY.md`。\n\n此轮PR **#7** (`feat/mocap-face-performance-v147`)，主要真实文件：\n- `godot3d/tools/golden_master/intake_cmu_mocap.py` 校验 **CMU真实人体表演的02_01行走/02_03跑步、原始344/174帧BVH** 的仓库SHA和license（允许商业游戏使用，不得独立转售动作），随原官方要求保留源署名。真实速度采集120Hz，`retarget_cmu_motion.py` Blender将约19个对应骨旋转按rest pose重定向到现有25骨古风模型、降采24fps、不改变世界实体平移。原6动画保留，其中`walk/run`真正来自真人BVH，其余四段为手工WIP。曾发现Blender导出会重复载入原始BVH clip造成8段动画但实际游戏仍用旧跑步：CI确实曝光了`CMU_walk/CMU_run`额外track，已**删除原BVH动作并严禁不等于6个标准剪辑的GLB**；不能根据“BVH导入成功”冒充“游戏已经启用动捕”。\n- `sculpt_face_details.py`在官方CC0真人拓扑新建真实眼球/虹膜/瞳孔/上下眼睑/眉结构，实际建出**28个有非零POSITION顶点变形的面部BlendShapes**（眨眼/眉/张口/笑/皱眉等），仍未达到专业面捕精度；在`character_face_motion.gd`驱动真正Godot3D网格权重，游戏设置「**试穿动态高精人物（开发中）**」→「**表情测试：自然脸**」可依次查看微笑、讲话张口、惊讶、皱眉，待机自然眨眼为**纯程序演示非真人面捕**。\n- `capture_face_video.py` 可选安装官方Apache-2.0 MediaPipe + OpenCV，在用户明确授权的**本地真人脸视频**中检测478三维关键点、52原始表情系数，输出已支持28 morph的本地JSON时间流；原视频不上传不打包，不用Android相机权限。**目前未取得可录制的真人视频，不能称已完成实际真人面部捕捉镜头**。原始MediaPipe SDK许可与另行下载模型许可需分别遵守。\n- `validate_animated_glb.py`实际核查177个皮肤/服装/眼睛/头发网格均有正确骨骼蒙皮、GLB6段动作、实际存在28个POSITION变形targets、36张PBR贴图；Godot `animated_master_tryon_test.gd`真实导入并证实**左腿行走骨旋转改变、脸部微笑形态权重真的被设置，且原实体ID/存档不重复**。Godot Mesh BlendShape不是图片幻觉，都是同一模型的实体顶点。\n- GitHub CI `38503785199` **SUCCESS**：Blender真实GLB制作及源CMU重定向后再验证，日志 `PASS REAL GODOT ANIMATED MASTER: skinned_meshes=177/177, joint_count=25, clips=['carry_idle','carry_walk','idle','run','walk','work'], embedded_png=36, real_face_targets=[('body',28)], bytes=12220244; ART STILL UNAPPROVED` 以及 `PASS REAL ANIMATED USER TRYON: real Godot GLB, 25 joints, six clips, moving leg, stable world save; art WIP`；当前仍为PR候选等待合并/签名PCK。独立 near/far、Work factory、真实游戏帧回归同SHA **成功**。\n- 不让200万多边形/独立贴片直接实时在安卓绘制，需把离线百万面法线与肤质高频信息烘焙到压缩纹理，实际运行模型保留低面+28形变、多人远景48旧LOD，同时手游真机FPS待实测；本轮没有虚构百万面精细头雕的完成度。\n- 线上正式当前仍#146（本日志落笔时），**尚未发布新热更新#147**；唯有完整主线Android+PCK签名/老APK兼容/公开Pages成功后，才可向用户说“游戏已更新”，手机近景观感与脚底接地仍须其后测试。Android自身第一视角玩家手未制作到高精验收。",
       "source_status": "source-main-development"
     },
     {
-      "id": "dev-016-995683b3db",
+      "id": "dev-017-995683b3db",
       "title": "2026-10-14 — 用户强制要求热更新真实可动角色：已制作25骨六动作、可在游戏设置中试穿的国风母版WIP",
       "date": "2026-10-14",
       "body": "用户明确指出：**仅发送Blender/GLB文件无效，必须真实内容热更新到游戏里可观察，建模之外必须立即实现真正角色动作；不等待Work**。本轮切实创建`godot3d/tools/golden_master/rig_animate_master.py`，在MakeHuman官方授权的真实13,378四边面人体+独立交领/衣片/发束+10套PBR材质（30贴图）的Blender源上程序创建**25骨真人骨架**（头/颈/脊椎/肩/肘/手掌/手指/髋/大腿/小腿/足/脚趾/头发/衣摆），为全部**165个实体网格**绑定实际JOINTS_0/WEIGHTS_0且带动态蒙皮权重，生成真实Blender Animation Actions/NLA 6段：`idle`、`walk`、`run`、`carry_idle`、`carry_walk`、`work`（无根位移，不影响存档实体坐标）；还原交领/布料位置，保留右手持罐动画兼容骨名。GLB导出尺寸约9.22MB，真实**165个网格/225k三角/30张图片/25骨/6段每段75个动画通道**，模型仍是未精雕`UNAPPROVED`，应通过之后移动端性能测试优化远处绘制，不称电影级成品。\n\n增加`godot3d/scripts/characters/character_wip_tryon.gd` 加载这一真实GLB、必须检测Godot实际AnimationPlayer能识别六段剪辑；`main.gd`“**设置 · 横竖屏 → 试穿动态高精人物（开发中）**”按钮。用户主动点击后在第三人称直接**更换当前玩家真正3D人物模型，移动游戏现有摇杆即触发真人骨骼走/跑，站立待机，提物/工作六个已烘焙的动画剪辑**；点击“恢复原模型”原场景人物不销毁。维持同一个`player_entity_id`及原`WorldState`库存、任务、物品/建筑/存档、原48远景LOD。陶罐正拿在手上时拒绝切换模型，避免物品挂点丢失，必须先放下。**第一人称暂隐藏玩家身体、不是第一人称双手精品动画；近景品质仍待用户实际看图确认。**\n\n新增`godot3d/tests/animated_master_tryon_test.gd`：真实Godot导入GLB，非假视频，验证动画控制器能切6种状态并**腿骨Transform发生实际变化**、RightHand手部socket命名以及 WorldState唯一ID/保存不被换模破坏。`godot3d/tools/golden_master/validate_animated_glb.py`检验GLB字节本体所有165个网格已绑骨且存在6×75动画channel。**GitHub Actions real Blender+Godot run `38500106591` SUCCESS**：日志原文 `PASS REAL GODOT ANIMATED MASTER: skinned_meshes=165/165, joint_count=25, clips=['carry_idle', 'carry_walk', 'idle', 'run', 'walk', 'work'], embedded_png=30, bytes=9221352; ART STILL UNAPPROVED`；`PASS REAL ANIMATED USER TRYON: real Godot GLB, 25 joints, six clips, moving leg, stable world save; art WIP`。前面两次GitHub失败分别因作者工作区所有.blend被Godot扫描造成导入超时、CI YAML误把换行写成字面`\\\\n`，已通过 workshop/.gdignore+正确shell换行修复，真实CI最终绿。\n\n已同步修改**真正的安卓原生与热更新生产流水线** `.github/workflows/godot-3d-android.yml`：自动拉取固定CC0源、Blender真正雕刻+蒙皮+6动作、在正式Godot4.4.1导入之前把WIP GLB复制到`res://assets/production/characters/golden_master/animated_wip/Canglan_XianxiaMale_Animated_TRYON.glb`；失败不签APK/PCK。现有`update/patch_resources.json`完整列出新WIP脚本+GLB，`tools/audit_exported_pck.py`核对真实PCK索引包含编译脚本和GLB.import，防止源码提交但更新看不见；`quality_gate.sh`在模型实际存在时必须过Godot动画测试。**本条写入时独立分支仍未合入main、官网latest.json暂仍#145，没有发布成功证据，不应告诉用户手机已经收到新内容**。下一步必须真正完成：将该分支PR#6合入main触发原固定签名安卓+RSA/PCK全流程、实际核对xinyanshuo官方latest.json revision递增和Pages正式部署，再让用户游戏内检查更新进入场景点按钮。即便技术交付成功，真实手机体验、UI按钮可点、帧率/面部审美仍需手机上反馈。",
       "source_status": "source-main-development"
     },
     {
-      "id": "dev-017-3ac6f76b2a",
+      "id": "dev-018-3ac6f76b2a",
       "title": "2026-10-14 — 用户要求由GPT-6不等Work真实雕刻人物；Aholo反塑料路线落实为有UV/真实PBR的可编辑3D产物",
       "date": "2026-10-14",
       "body": "用户不接受之前误用AI绘图代替真正的3D人物建模，并再次明确**不用等待Work额度，GPT-6自行制作实际可编辑高精母版**。最新还分享抖音《王国遗迹》的`https://v.douyin.com/8UbQLHX8Ndg/`，询问能否学其使用Aholo迭代消除“塑料感”的做法。由于本环境无法直接看短链视频全文，不得宣称逐字知悉作者具体流程；已经依据Aholo官网核实两种能力：Lux3D可生成3D资产、Reality/SpatialGen基于3DGS可重建空间，但`PLY/SPZ`高斯场景**不能直接当成可以穿衣绑骨的Godot humanoid GLB**。具可行性的独立生产原则和后续须用户审美验收的项目规范写入`docs/AHOLO_ITERATIVE_ANTI_PLASTIC_3D.md`。\n\n实际 GitHub PR #6 独立分支 **完成可编辑3D实体**（非图像生成）：`godot3d/tools/golden_master/sculpt_xianxia_master.py`从已验证CC0 MakeHuman真实人体`13,378`四边面结构起步，程序雕刻独立有厚度层叠交领汉服、衣领缝边、真多片衣摆、不同袖口、腰带挂绳、卷头发发束/冠饰、靴子；脚本在Blender4真实运行输出`.blend`及`.glb`。早前无PBR第一代run `38496987842` SUCCESS，得到165实际网格/10材质但**0张纹理和0骨骼动作**，不合格“高精人物”仍为WIP。随后另做`bake_anti_plastic_pbr.py`，生成12个独立材质的贴图，区分皮肤/粗布/绸缎/头发/皮革/金属/玉的织纹、微法线、高低粗糙度，不再统一平滑塑料。将烘焙后的实际PNG作为**Blender图像贴图节点**用于BaseColor、Roughness和Normal；所有程序化裁片提供UV，头发/缝线curve转真实GLB网格，不假设Blender材质程序噪点导出能在Godot保留。\n\n第一次带PBR GitHub CI run `38497382138` 因 Blender没有将并列脚本目录加入Python sys.path而失败，直接解包失败artifact抓到`ModuleNotFoundError: bake_anti_plastic_pbr`；已实修，**最终run `38497714091` SUCCESS**，artifacts ID **`11864638260`** 已真下载到本次对话的`/mnt/data/Canglan_Real3D_AntiPlastic_Master_WIP.zip`。进一步用本地Python实际解包 GLB 2.0 JSON 得到真实**6,517,964字节、165网格、165节点、30张内嵌图片、30纹理、10套不同PBR材料全部具备baseColorTexture+metallicRoughnessTexture+normalTexture、165份mesh primitive全部TEXCOORD_0**；`Canglan_XianxiaMale_MasterSculpt_WIP.blend`真实可编辑4,968,464字节，可直接交给Godot测试/Blender近景查看。本次UI只需链接GLB/BLEND，不把二维图当成3D交付。\n\n**必须保持真实性：目前此3D文件只是有真人拓扑和基础国风服饰的真资产WIP。它依然0 bones / 0 animations，真人面部眼睛、皮肤SSS/发际线手工精雕、布料物理穿模/权重、站走跑第一人称实际体验、精细纹理艺术质量、Android原生FPS尚未完成；没有通过用户视觉审核。线上游戏APP绝未载入这份角色，`approved_catalog.json`坚持`approved=false`，也没有发布新的APK/PCK；之前48人物继续当远景。** 下一轮优先在Godot真实导入这个`.glb`做局部特写，修细节/性能，再完成骨骼蒙皮及六动作，不声称靠增加纹理就已达到动画电影美术水平。",
       "source_status": "source-main-development"
     },
     {
-      "id": "dev-018-24a0dfeb1a",
+      "id": "dev-019-24a0dfeb1a",
       "title": "2026-10-14 — 老刘GPT6/Godot视频同作者复盘：真实四视角游戏录像式截图管线跑通，汉字豆腐块原因实测修复",
       "date": "2026-10-14",
       "body": "用户提供抖音短链 `https://v.douyin.com/hLNVQQBjB6E/` 要求学习同作者3D游戏案例，并反馈“上次图下载失败”。本环境**无法直接打开抖音短链完整播放**；已验证B站同标题视频 `https://www.bilibili.com/video/BV1Waty6TE7h/` 与作者本人在 `https://pulucat.com/zh/videos/gpt6-godot-3d-horror/` 发布的**同一实验文字复盘**；学习内容见 `docs/LAOLIU_GPT6_3D_VIDEO_LESSONS.md`，不是假装逐帧观看。作者确认的做法：先合理体块/镜头、再Blender雕琢精细结构、灯光氛围、自己录实际运行画面、找授权人物与匹配骨骼；而自己AI直接捏写实人“结果三毛+踢正步”、动画重定向厨师抽动。这充分支持本项目放弃“高面圆柱就够精美”的假方案。另一篇作者首手建筑+Rodin精细物件+Blender减面/烘焙实践进一步提醒细薄构件可被错误减面破坏，不能套一条万能生成器：`https://pulucat.com/zh/videos/laoliu-ai-old-arcade-3d-scene/`。\n\n**本轮已真正开发完整的游戏视觉截图QA系统**（依然在PR#6独立草案分支，未合并）：`godot3d/tests/real_game_visual_review_capture.gd`在完整`main.tscn`真实Godot渲染窗口内依次选择斜俯视村庄/放大、第三人称、第一人称，输出各1280×720真实OpenGL游戏画面和摄像机/当前角色数/艺术状态JSON，不生成假的概念图；`godot3d/tools/qa_visual_frames.py`检查实际四图都非空、具有颜色信息、4个镜头不同，拒绝dummy/黑屏的“成功”；`.github/workflows/real-game-frames.yml`使用Godot4.4.1 Xvfb+Mesa LLVMPipe真实窗口并保存图片artifact供美术质量人工评估。首次CI run `38494786867`真正抓到第一张实际画面后，Godot脚本通过String(Variant)取图名触发运行错误（捕获了证据、不假称成功），已修正用`str()`并复测：**run `38495113611` SUCCESS**，Godot真实连续4张图全部生成、QA图像变化与相机实际视图PASS，artifact `11863630520`。\n\n**最关键的真实图片反馈：** 模型依旧是球形树、积木村屋、程序化衣装，构图为空旷草地，距离用户所要求的高品质国风大场景相差很远；更发现全部中文HUD文字变成**豆腐方块**，即之前的纯headless检查漏掉的严重UI问题。已在`godot3d/scripts/main.gd`新增系统中文字体`SystemFont`优选`Noto Sans CJK SC`/Noto Sans SC等，`ThemeDB.fallback_font`与全Control/Label3D字体；真实CI电脑须安装`fonts-noto-cjk`系统字体（不把受版权约束字体源文件传给玩家）。初次源码改造但无系统字体的run `38495380086`画面**仍方块**，明确记录未成功；最终安装OS系统字体后的run **`38495544505` SUCCESS**：真实截图的`切换视角`、`设置·横竖屏`、`开门`、`交互`、`左手移动·右手转向`中文已正确显示！artifact `11862544333` 有4张已修复中文的实际Windows风格OpenGL实物画面。此测试是在Linux runner安装免费许可字体完成，**手机厂商Android字体发现机制不稳定**，尚未手机实测，不能声称所有安卓手机已修。\n\n**未解决/下步**：该实际游戏 screenshot 也反映近中远素材仍然不够好（房屋缺砖瓦/PBR、树木为球、主视图太空、近景NPC头衣不精致）；必须依老刘方案优先建立1座精品村屋场景和一个高质量有授权的人物模型，结构/材质分开生产，渲染4机位截图比较，而不能因为此UI/截图流水线QA SUCCESS就上线所谓“精品艺术”。仍维持`approved_catalog.json: approved=false`、Work Issue#5真实骨骼汉服母版任务、原48模型远景留存，未构建新版真实手机APK、不修改官方资源发布。\n\n**用户上次的下载失败已绕开大ZIP**：原Blender真实人体/面部两张静态截图已合为 `/mnt/data/canglan_reference_inline.jpg`（约35KB）；四机位实际游戏QA拼图 `/mnt/data/canglan_real_four_views_inline.jpg`（约69KB）和中文修复前后实际单帧 `/mnt/data/canglan_real_game_ui_cjk_inline.jpg`（约41KB），可聊天直接内联显示，备用下载链接为精准sandbox实际文件，禁止凭空创造不存在的路径。",
       "source_status": "source-main-development"
     },
     {
-      "id": "dev-019-35af53f702",
+      "id": "dev-020-35af53f702",
       "title": "2026-10-14 — 下一步实做：官方CC0真人拓扑黄金母版工程/照片真实产出，远景旧模未删、近景仍封闸",
       "date": "2026-10-14",
       "body": "用户在完成像素级远景LOD技术后要求“下一步”。本轮没有继续做大面数玩具，而是经外部官方源许可核对，实际从MakeHuman/MPFB2**官方CC0人体模型**建立第一次真正真人结构可编辑金样输入（**不能把人体裸底稿说成成品仙侠人物**）。源 `makehumancommunity/mpfb2` commit `3af0cd5a2ffba072e93a34e5f6f494fdc4813ddf` / `src/mpfb/data/3dobjs/base.obj`，Git blob SHA `d26635e9326e3cca30778fd7b9c00062b03cce09`，实际SHA256 `8e761e6624b8f54536409135d1636da63b32486a90d4897f84e121d144f6fb4c`。原文件为19,158顶点/18,486 quad face/21,334UV，但额外带139个给MakeHuman自己计算用的辅助头发/关节/裙子helper组。首次GitHub Actions `38493246783` 完成了全模型镜头，但**实际图片暴露辅助发片挡住脸**，不能用于审美评价。\n\n已实际修改Blender4.0 OBJ导入为`use_split_groups=True`，强制取OBJ `g body` 最大人体结构、排除技术helper，并锁定1.7m真实尺度、smoothing法线、可编辑源`.blend`、正文GLB基底、全身/头部两张相同光照中性照片，源文件和许可/commit/SHA写入可追踪`anatomy_reference_manifest.json`。**纠正后的最终GitHub Actions run `38493784100` SUCCESS**，真实Blender日志 `PASS MAKEHUMAN_CC0_ANATOMY_ONLY 13380 13378 reference_has_NO_COSTUME_NO_ANIMATION_NOT_PLAYER_APPROVED`，artifact **`11863396266`** 实物包括约2.16MB可编辑 `MPFB_CC0_BASE_TOPOLOGY_REFERENCE.blend`、626KB仅研究用GLB、1.75MB真OBJ、两张实际Clay人体照片及SHA追踪数据。真实头部图片经逐图检查已**不再被技术遮罩覆盖**，可辨面型、鼻梁、嘴唇、耳结构，比旧圆柱头具有可信脸部拓扑；**但眼眶仍空洞、没有头发、真人皮肤PBR、眉眼、汉服、骨架动作，也未经用户美术评价，绝不发布为高精版**。\n\n新增`godot3d/tools/golden_master/intake_mpfb_reference.py`、`prepare_anatomy_reference.py`、`.github/workflows/golden-master-reference.yml`，均在独立PR#6草案分支。官方许可证证据：`https://github.com/makehumancommunity/mpfb2/blob/3af0cd5a2ffba072e93a34e5f6f494fdc4813ddf/LICENSE.ASSETS.md`（CC0仅为核心数据资产，MPFB程序逻辑遵GPL，且第三方/作者创作服装需要分别审版权）。源程序设计为重复无变化的上游固定pin，Blender和PNG生成仅属于**设计资料**，新人体裸模并未进入正式游戏、PCK或APK。可重建且无“随手下载未经许可的Meshy人物”混入。\n\n新增`golden_master/audit_golden_master.py`对未审核高精角色保持不发布；对拟准入HQ的模型要求GLB和可编辑BLEND文件双SHA256、许可证说明、真人可见面部/骨骼蒙皮/6动作/UV和独立PBR纹理、8张实际不同视图截图及明示reviewer，缺失即阻止内容。实际`golden-master-reference.yml`已附负向测试：伪造`approved=true`但无八类证据必失败。`quality_gate.sh`现在调用该检测（允许approved=false、禁止假高模）；`prepare_content_export.py`在审核通过以后**自动追加新HQ GLB到已签名PCK资源清单**，`audit_exported_pck.py`检查真实PCK字节索引确实包含批准GLB，并继续保留全部48份远景旧GLB和安全更新器黑名单，避免Work交高模后被遗漏。结构性代码仍需将来合入、在正式Android工作流上完整验证。\n\n已把实际可下载Blender底座、真实照片和授权信息交接给 **Work issue #5**，明确Work下一件事：在此可编辑真实人体上做原创半写实国风成年男性农人近景**脸部完整眼球/眉睫、束发发髻、手足、裁片交领内外衣/裙摆及法线/粗糙度、合法素材、真实动画绑定**，交付截图和可用Godot GLB；再由GPT6负责安装包、第一人称手臂与近远景一致性。当前GitHub源码分支只做技术与来源准备，**不准将人体裸体稿/圆柱人物称为完成高精人物**。正式网站最新APK/PCK维持现有已发版本，不因草案动作自动上新。",
       "source_status": "source-main-development"
     },
     {
-      "id": "dev-020-e6b7caa58f",
+      "id": "dev-021-e6b7caa58f",
       "title": "2026-10-14 — 远景旧模/近景新母版分级的真实Godot CI已通过，仍未发布HQ模型",
       "date": "2026-10-14",
       "body": "针对上一条用户新确认的远景复用/高精近景策略，新增PR **#6** `[内部开发仓库链接] 为**draft且不自动发布**。独立GitHub Actions `Canglan Near/Far Actor Visual LOD QA` run **`38492636875` SUCCESS**：实际从旧源码生成 **16人×3LOD=48GLB**，且`approved_catalog.json`断言 approved=false、entries=[]，**不会把旧低品质几何伪装成优质近景**；Godot4.4.1官方引擎真实导入并检查 `main.gd` parser，执行`character_visual_lod_test.gd`通过，日志原文：\n\n`PASS CHARACTER SCREEN LOD: actual 3 GLB tiers, stable entity/clicks/save/animation; near art explicitly NOT APPROVED`\n\n`PASS Godot screen LOD: 48 old resources preserved, close-up acceptance still blocked`\n\n由GitHub代码及CI证据可确认：真实远中近旧GLB切换、12%抖动滞回、Actor永久点击区域/实体ID/存档外观稳定、旧动画控制器只驱动当前Rig和真实资源卸载**在headless引擎回归测试通过**；独立 Work原人物工厂Pilot回归 **run `38492636809` SUCCESS**。未测到手机上视角切级闪烁或规模性能，也没有对人脸/衣服的新高精美术做出完成判定。正式线上APK与PCK均未因这份草案发布改变；待 Work 提交经许可和审美批准的黄金人/汉服资产后才能验收近景、第一人称手臂与真正HQ二态切换。分支尚未合入main，未发布任何新APK或PCK。",
       "source_status": "source-main-development"
     },
     {
-      "id": "dev-021-14f5d9379e",
+      "id": "dev-022-14f5d9379e",
       "title": "2026-10-14 — 用户确认远景沿用旧角色、近景/放大/第一人称必须高精；开始独立黄金母版切换体系",
       "date": "2026-10-14",
       "body": "用户明确修正美术目标：既有 Work 圆柱人物**保留**供远景大量NPC使用；接近镜头、缩放放大、NPC面对第一人称、角色特写必须达到原创半写实高品质国风仙侠动画级别（《凡人修仙传》仅为品质参考，不复制原作品的人物/模型）。以前高多边形但仍圆柱的PR#4维持draft、不得冒充已达到要求。已正式建立 `docs/HIGH_FIDELITY_XIANXIA_CHARACTER_STANDARD.md`，区分FAR/MEDIUM旧模与NEAR/CINEMATIC黄金母版，规定专业人体、真实五官、汉服服装裁片、面部/动作/手部/材质、第一人称手臂及人工视觉审核。\n\n实际创建独立开发分支 `feat/approved-near-legacy-far-lod`，没有修改现有正式官网APK或PCK：`character_visual_quality_policy.gd` 采用真实摄像机屏幕像素高度选择四档、12%滞回，远景/中景继续旧LOD2/LOD1、近景/特写目标新的黄金母版；`character_visual_lod_host.gd` 将NPC原实体/碰撞点击体/实体代码标签留在不可变Anchor上，仅更换一个GLB视觉Rig且刷新AnimationPlayer；`character_golden_master_view.gd` 只承认具备人工review、至少8张覆盖正侧背/脸手/动作/FPS证据、且Godot真实已导入的专门黄金模型，不能自动把旧LODO标记“高精”；`approved_catalog.json` 目前明确**approved=false/entries=[]**，因此当下近景仍显示技术预览旧LODO，不会伪称精美。第一人称自身原模型继续隐藏，专用高质量手部/袖子系统需母版建好才可交付。\n\n`godot3d/scripts/main.gd` 已接入周期性按像素换装LOD的NPC宿主，更新运动控制器引用并限定每次最多2个GLB切换；保存的人物`visual_profile_id`、WorldState职业/库存/实体ID不变；点击体、Label挂Anchor不随着GLB变体消失。`character_visual_lod_test.gd` 覆盖实际Godot三档GLB载入与切换、animation驱动、回收旧GLB、点击体、存档唯一身份以及未经批准不能自称HQ；新增独立`character-visual-tiers.yml`构建48个原角色并在**官方Godot4.4.1**导入主脚本和真实测试。完整内容PCK白名单/审计增加新脚本和未批准黄金目录，防止未来热更新漏资源。**新增CI结果仍待核实，未测安卓手机性能、未产出金样或新APK/PCK，不把代码就绪误称最终美术**。\n\nWork的P0美术交接 Issue #5（已有源问题）已更新：先交一名真正精致原创成年男性农人黄金母版和完整衣装/脸手/可编辑Blender源、版权、骨骼六动画/真实截图；待用户批准1个后扩到女性和其他装束，不批量复制未通过审美的模型。目标面数是性能预算而非画质评价，旧批量资源**绝不删除**。",
       "source_status": "source-main-development"
     },
     {
-      "id": "dev-022-415d287ef7",
+      "id": "dev-023-415d287ef7",
       "title": "2026-10-14 — 新版同签名横屏APK v141与Work全48模型PCK #141正式上官网，Pages全部SUCCESS",
       "date": "2026-10-14",
       "body": "**这一次不是重新上传旧v102，而是真正新构建并验收的原生Android APK + Work人物资产。** 完整 Godot native QA #134 / `38487594333` SUCCESS；Android真正打包 #141 / `38487595131` 的 `android` job **SUCCESS**，官方工作流输出：\n- `GENERATED 16 characters, 48 GLBs`（8职业服装/16变体/三级LOD；素材是基础程序化人物，不是精修成品）；\n- `PASS test_character_factory_pilot`，真正Godot导入/六动作/右手持物挂点/外观ID存档闭环测试已通过；\n- `QUALITY GATE PASSED`，全脚本/主场景门禁；`PERMANENT_ANDROID_CERT_PIN_MATCH=true`，新原生包同原v102固定证书SHA256 `353c65d2bdde16509b33c976e9bed615013080b071629cfbf7fdeb43e4217057`；\n- `SAFE_EXPORT_CONTENTS` 显式确认包括角色工厂2脚本、`catalog.json`、首批农人/樵夫/工匠/守卫实际导入GLB，**并保留受保护更新器不打入PCK**；\n- `PASS ORIGINAL_APK_1102_VS_NEW_PCK`，在原始v102基础工程真实挂载补丁后可实例化地形/玩家/相机/HUD；新内容PCK已加RSA签名。\n\n原自动官网发布job首次因`apksigner`输出兼容性和`aapt2 v37 xmltree --file`输出形式差异拒绝发布（阻止错误交付，非APK构建失败）；完整根因见同工作流日志。随后修正`stage_verified_native_apk.py`的证书校验与真实二进制`screenOrientation=0`提取，**无需重建原有#141包**，通过专项验证复用发布工作流 `38488433467`（第3次）**SUCCESS**。公开仓库 `160701541-cell/xinyanshuo` 提交 **`9010b43e35b4ee223748a35dacb66971cd72fa83`**，实际新增约38MB `android-preview/base/Canglan-AncientWorld-v0.2.0-dev.141-Stable-Signed-ARM64.apk`，官网 `android-preview/base-latest.json` 正式指向 **v0.2.0-dev.141 / Android versionCode1141**。RSA资源更新`android-preview/latest.json`已经提升到 **#141**，大小3,841,408字节、SHA256 `2e6722c4681fee5771d3d5f8ed5d2f24c03f4d1dfa88085425ebce9526a2a898`，继续最低兼容旧Android Code1102。\n\n**实物文件核验**：从官方成功Android job artifact `11859209362` 下载实际APK并解包于 `/mnt/data/Canglan-v0.2.0-dev.141-Stable-Signed-ARM64.apk`，大小 **38,133,128字节**，APK ZIP CRC全部通过，包含二进制AndroidManifest/ARM64 Godot SO，SHA256=`fe6de929032d781127afd5d622d63893a56d41602e0b7d600421d73fbf8b3b2b`；本地 Git blob SHA `ce6ce5b06ba466fa07c03174b6386f274aaafc1d` 与**公开GitHub新增APK的实际Git blob完全一致**，这是真正内容一致性验证，不仅是网页元数据。新版APK经public发布代码调用`aapt2`校验其真实Manifest包含`screenOrientation=0`，不是依靠源码声称横屏。公开 xinyanshuo Pages 新版部署 workflow **`38488473014` 三个job build/report-build-status/deploy 全部 SUCCESS**。当前环境直接匿名HTTP GET Pages受限，尚未取得手机浏览器或安卓真机画质/左右摇杆/多人动作实际反馈，不能虚称已实机验收。\n\n**下载安装方式**：首次用户从原官网同域下载安装v141；已装原v102的玩家**覆盖安装同包名同签名v141**，禁止卸载以防损失存档；升级后普通兼容内容继续通过签名PCK OTA #141。PR#3中的全部8职业衣装已生成并打包可调用，**实际村落仍仅原四名村民+玩家**，其视图使用对应衣装族谱，绝未凭模型生成新居民/职业/库存。原专业美术/布料碰撞/高级脚底IK/万人场景未完成，用户手机截图才是画面验收证据。",
       "source_status": "source-main-development"
     },
     {
-      "id": "dev-023-5fd52b1ad6",
+      "id": "dev-024-5fd52b1ad6",
       "title": "2026-10-14 — Work八职业集成后的Godot完整代码门禁#134已SUCCESS，原生APK#141待验收",
       "date": "2026-10-14",
       "body": "复核 Github Actions最新真实状态：提交 `7a68cbd44279fc0f496a49e854036bebf17c86eb` 对应 **Native QA #134 / run `38487594333` SUCCESS**，确定前次`thigh_l`骨骼识别回归已解决，并完成整套代码/游戏场景回归（仍非手机美术验收）。同一提交的 **Android ARM64 新基包 #141 / run `38487595131` IN_PROGRESS**，正在真正引入建筑/人物素材；新原生APK编译、固定证书、横屏AndroidManifest检查、Work人物导出PCK，以及公开官网 `base-latest.json` 和RSA更新 `latest.json` 递增尚未给出成功证据。**禁止把网页现有v102当新包发给用户，也不能把主线已合入当成手机已更新。**",
       "source_status": "source-main-development"
     },
     {
-      "id": "dev-024-5d6d865cda",
+      "id": "dev-025-5d6d865cda",
       "title": "2026-10-14 — 新APK集成真实QA失败已定位并修复：_side调用传参丢失_l后缀",
       "date": "2026-10-14",
       "body": "新一轮主线 `b864d865` 已实触发 Godot native QA run `38487279788` (#133)，结果 **FAILED**；已读取实际任务日志而非臆测：唯一显示的质量门禁失败为 `FAIL test_humanoid_motion (exit=124)`，最直接断言 `CC0 thigh_l bone classification regression`。原因已定位为虽然`_side`已能识别`_l/_r`，调用者`bone_role`却先将骨名中的下划线删掉，再把`normalized`传给`_side`，因此仍丢失后缀。主线提交 **`7a68cbd44279fc0f496a49e854036bebf17c86eb`** 已改为`_side(name)`，保留原名分隔符，并保留`thigh_l/thigh_r/calf_l/upperarm_r`回归测试；这是确证的增量修复，**再次QA成功之前不得宣称已发布新版 APK**。#140 Android构建来自修复前的`b864d865`，即使已经运行也不能当最新版；后续优先验证修复提交触发的新版完整质量门禁和永久签名。",
       "source_status": "source-main-development"
     },
     {
-      "id": "dev-025-eb589cc822",
+      "id": "dev-026-eb589cc822",
       "title": "2026-10-14 — Work PR #3真正合入main；新版横屏同签名APK+48人物资源构建已启动",
       "date": "2026-10-14",
       "body": "用户明确要求**不是再上传旧v102，而是把Work新内容实际整合并交付新APK**。本轮通过双亲Git合并提交 `b864d8657684f5affe438ad3a3933e01f694e13c`，Work人物PR #3现已标记 merged，避免PR分支与main互相遗漏、且保留原主线官网APK更新代码及日志。完整加入8种角色服装模板、16变体×3LOD共48GLB生成源、17骨蒙皮和六动作、`character_factory_view.gd`、`character_factory_motion.gd`。新Android构建在Godot导入**之前**真正生成48个GLB，PCK资源闭包显式纳入48个GLB、两套新脚本及catalog JSON；`audit_exported_pck.py`要求编译脚本、服装资源、目录实际存在，缺失不签名。\n\n`main.gd`当前对**原存档玩家**采用guard短衣外观模板，对村民农夫/厨师/挑水工/樵夫显式绑定farmer/artisan/farmer/woodcutter视觉衣装；**职业、真实人口、资源库存、独立实体ID都不变**，外观`visual_profile_id`继续由原WorldState序列化保存。持物使用真正右手骨点，旧HumanoidMotion与Work AnimationPlayer不会同时写同一骨骼；其余文士、医者、官员、商人等模板已打包可供后续NPC调用，不代表世界已经产生这些职业的人。职业外观是程序化美术底座，不等于高精度验收。\n\n已从已取消的Android #138原始Job日志精确定位现有阻塞：已导入的65骨CC0人体实际骨骼叫`thigh_l`、`calf_l`、`upperarm_r`，旧`character_locomotion.gd::_side`在识别左右之前删掉了`_l/_r`，导致`has_walk_rig()`必然失败并且测试脚本assert后挂住；本轮修复保留后缀检测，增加这四类真实GLB骨骼名回归测试，保留既有跨种类骨架兼容。该修改尚待Godot CI实际通过。\n\n新增`stage_verified_native_apk.py`，在现有`xinyanshuo`网站**原有PCK发布job**中从同一Android构建下载真正新版APK，经`apksigner`确认与v102签名证书pin一致、`aapt2`检查真实AndroidManifest原生`screenOrientation=landscape(0)`以及包名、versionCode=1000+run_number后，才把新APK文件、独立`base-latest.json`与现有已签名PCK/latest.json**同一公共仓库提交**。任何门禁失败不得更新官网。旧v102文件仍可溯源但不会顶替新版入口。手机用户必须原包覆盖安装、绝不卸载清空存档。\n\n本条记录时，主分支提交已触发最新 **Native QA #133 / run `38487279788`** 与 **Android APK #140 / run `38487279825`**，两条工作流均**IN_PROGRESS**。尚未有新版APK artifact，更未核验新APK证书、manifest、页面上的base-latest版本及真机效果，不许宣称官网已经替换v102；严格区分“主线已合入”“自动化尚在运行”“官网发行尚未完成”。后续以真实 Actions失败日志修复并确认已签名APK与实际资源/公开版本才交付下载。",
       "source_status": "source-main-development"
     },
     {
-      "id": "dev-026-f9d5e424b4",
+      "id": "dev-027-f9d5e424b4",
       "title": "2026-10-14 — 同站点旧版长期APK实际上传成功（公有仓库实物哈希核验）",
       "date": "2026-10-14",
       "body": "用户建议复用已经运行的公开 Pages 更新站而不是新造APK渠道，本轮已实际落实。私有仓库 GitHub Actions 将原构建 `38460428013` 中经过永久签名和SHA固定的原 v102 APK 上传到公开 `160701541-cell/xinyanshuo`，公有仓库新提交 **`c9a7782dd6de4e627794e73456315dd402ea2526`**，新增 **`android-preview/base/Canglan-AncientWorld-v0.2.0-dev.102-Stable-Signed-ARM64.apk`**（34,537,791字节）和独立 `android-preview/base-latest.json`；官网首页已同步可依据元数据展示“下载 Android APK”的入口。原有 `android-preview/latest.json` **仍是签名PCK资源修订117**，没有改变更新器的客户端协议、公钥与存档。\n\n**实物校验不是仅声称构建成功**：GitHub公开仓库中上载APK的Git blob SHA=`11290febd040edc04f91162ba76e40744cd191bc`，本轮从真实原始构建 artifact 下载的APK用本地 `git hash-object` 得到完全相同的 Git blob SHA；本地APK的SHA256=`9f4d85c93e6a0d88826a49dcb1d0e63f5aa1de4db9ef39a01a68e8cb6b4fe7d2`，与仓库固定证书信任文件保持一致。官网使用相同 Pages 域名和独立base-latest.json管理APK，资源PCK通道保持不动。公开源仓库的最新提交和APK Git对象均已核查；本执行环境匿名GitHub Pages域名DNS解析受限，**未声称公网CDN HTTP 200或手机浏览器直接下载验收完成**，玩家可直接打开官网下载验证。\n\n注意此时公开的是**旧版 v102 技术基础安装包**，其原生 AndroidManifest 已查明锁竖屏，横屏黑边尚未修复。已有 v102 的用户不要卸载/重装；真正新版横屏包仍需Android构建/证书和手机验收后，在同一个公开站升级APK元数据及下载对象。",
       "source_status": "source-main-development"
     },
     {
-      "id": "dev-027-11d30f8247",
+      "id": "dev-028-11d30f8247",
       "title": "2026-10-14 — 复用已打通的 xinyanshuo 公共通道发布原长期 APK（源码/工作流已提交）",
       "date": "2026-10-14",
       "body": "用户指出无需新建独立托管渠道：现有 `xinyanshuo` 官网及签名PCK `android-preview/latest.json` 已可用，完全可以在同域下增加一个 APK。此判断正确；此前将“新横屏APK尚未验收”与“旧v102是否能公开下载”混为一谈。无需等待新横屏版才开放**清楚标注已知竖屏限制**的原v102安装包。\n\n本轮已通过GitHub受权下载首个长期固定签名原生构建 run `38460428013` artifact `11845986175`，将包内 `canglan-3d-debug.apk` 真正解压并以 SHA256 验证，得到 **34,537,791 bytes**，实际 `9f4d85c93e6a0d88826a49dcb1d0e63f5aa1de4db9ef39a01a68e8cb6b4fe7d2`，与仓库固定信任元数据完全相同；本轮没有重新签名、更换包名或修改原APK。检出的本地可下载副本名称 `Canglan-v0.2.0-dev.102-Stable-Signed-ARM64.apk`，仅本对话附件，不代表公共CDN已上线。\n\n实际代码提交：\n- `site/xinyanshuo/index.html` 增“下载 Android APK”入口和警告区；`site.js` 仅查询**同域另一个** `android-preview/base-latest.json`（非签名PCK `latest.json`），核验版本、包名、下载文件路径、固定签名证书元数据并在元数据出现后才显示下载按钮；`style.css` 保证未确认发布前按钮真隐藏。\n- 新增 `.github/workflows/publish-stable-base-apk.yml`，监听自身文件提交并可手动dispatch，直接从原官方固定签名run下载APK，强制校验固定 SHA256、APK ZIP 完整性与 apksigner 证书pin，借现有 `CANGLAN_SITE_PUBLISH_TOKEN` 将原字节APK上传到**同一个公开xinyanshuo仓库/Pages**：`android-preview/base/Canglan-AncientWorld-v0.2.0-dev.102-Stable-Signed-ARM64.apk`；同步官网模板，并生成独立 `android-preview/base-latest.json`。即使将来基础APK升级也不修改游戏现有PCK发现、RSA签名或 `latest.json #117`。\n\n此记录时只确认**网页源代码与发布GitHub Actions工作流已推送**，还不能证明该工作流已成功、APK已出现在公开站或匿名手机下载成功。必须核验public仓库是否有实物APK及bin哈希，再核验Pages构建与匿名HTTP整包。原v102确定有原生竖屏锁定、横屏黑边问题，公开文件只能标“长期签名技术测试基包 v102”，不得伪装为已修复横屏的新正式包。已装的用户不要卸载或重装旧包，下一次同签名横屏APK才需要覆盖升级。",
       "source_status": "source-main-development"
     },
     {
-      "id": "dev-028-06fc893397",
+      "id": "dev-029-06fc893397",
       "title": "2026-10-14 — 官网长期基础APK下载缺失核验与下一步阻塞（已查证，未发布）",
       "date": "2026-10-14",
       "body": "本轮经 GitHub 仓库实查：公开 `160701541-cell/xinyanshuo` 官网的 `index.html` 仅有“查看世界更新”锚点，并明确写着“长期基础 APK 尚未正式发布”；`site.js` 只读取 `android-preview/latest.json` 显示签名 PCK 状态，没有 APK 下载 URL/按钮，也没有 APK 静态发行文件。当前公开 `latest.json` revision **117**、最低安卓版本码1102，对应的是**资源补丁，不是基础 APK**。官网不能直接下载APK的第一原因是**尚未建设并上线公开APK发布入口及文件**，而非已有公开APK链接失效。站点外部HTTPS本轮无法从当前工作环境直接访问；事实来自公开GitHub源仓库，不虚称外网实测。\n\n初代长期固定签名 APK **v102/versionCode1102** 的 GitHub Actions run `38460428013` / Artifact `11845986175` 仍可在**私有仓库登录后**下载，Artifact `Canglan-Ancient2.5D-ARM64-102-Debug-APK` 有效至 **2026-10-27 20:11 UTC**，不是公开网站文件。既有日志校验安装包 SHA256 `9f4d85c93e6a0d88826a49dcb1d0e63f5aa1de4db9ef39a01a68e8cb6b4fe7d2` 和固定签名，但已发现其真实 AndroidManifest 锁 portrait，不能冒充“横屏问题已修复”的新正式包。手机用户已经装此 APK 时不必重装旧版，继续保留数据。\n\n最新横屏APK工作流 `38482921700`（#138）现已**CANCELLED**，停在 `Import authored GLB and verify playable Chinese meshes`；QA #132 成功不等于APK导出成功，#138没有 Android 安装包 artifact、没有证书与二进制 Manifest 新版验收。2026-10-14 Work 新交付 **PR #3** 为人物生产模块0.1：8职业外观、16变体×3 LOD=48 GLB、17骨和6动画，仍仅模型生成/结构自检，未完成Godot实际导入或真机验收。GPT-6在PR工作分支开始接入一位真实农人和导入测试，但**分支代码≠手机升级**。\n\n**正确下步**：优先确保新 Android pipeline 完成，并验证同 applicationId、原签名 pin、原版 v102 PCK兼容和**APK内真正的AndroidManifest横屏值**；随后将经校验的新版原生 APK 发布到公开可持久下载的 GitHub Release 或官网托管，并在官网添加真正的下载安装入口和SHA256信息，不要直接将14天后过期的私有Actions artifact链接伪装成官网长期链接。已装v102用户必须“覆盖安装”，禁止引导卸载清存档。人物PR单独按测试门禁推进。",
       "source_status": "source-main-development"
     },
     {
-      "id": "dev-029-80ca8bf100",
+      "id": "dev-030-80ca8bf100",
       "title": "2026-10-14 — Work 人物批量生产模块0.1已上传，交GPT-6导入/动作验收",
       "date": "2026-10-14",
       "body": "用户截图仍为张臂裸色人物，明确要求职业差异和批量生产、改善僵硬动作。交付 **PR #3**：[内部开发仓库链接] ，分支 `work/character-factory-0.1`，提交 `2a53880f5043365d8df26ef7859629313df540ef`。先读分支 `docs/CHARACTER_FACTORY_HANDOFF.md`，勿在main找尚未合入的新文件。\n\n新增Python标准库GLB生成器、8职业服装外观模板与配置、17关节蒙皮、idle/walk/run/carry_idle/carry_walk/work六动作；Godot视图工厂沿真实entity ID绑定外观，动作驱动按真实速度切换/过渡，不另造人物或库存。已生成16个身高/体型/肤色变体×3LOD=48GLB，完整压缩资产在分支 `artifacts/character_factory_0_1_assets.zip`（约1.6MB），一条命令可重建。当前main和手机人物尚未替换。\n\n按既定分工，Work仅做生成/GLB结构最小自检：生成成功、容器总长/访问器范围、17骨skin与六动作存在。**未做Godot导入/手机动画/性能/视觉验收**。这仍是程序化风格底座，面部/汉服材质、专业动作、手指、脚底IK、长衣摆避让未完成；work是通用姿态，不冒充所有职业劳动。\n\nGPT-6负责下一步：读取PR源码和交接 → 实际导入一位农人 → 替换旧HumanoidMotion（禁止双驱动）→ 穿衣行走/停止/持罐/真实存档闭环 → 修复发现的穿插与动画问题 → 扩职业 → 完整PCK资源及新脚本依赖/JSON导出/原v102门禁验证 → 合入签名热更新。失败不发布，不能把48文件当成美术完成。此记录为仓库交接，不表示另一会话已阅读执行。",
       "source_status": "source-main-development"
     },
     {
-      "id": "dev-030-b5606eec07",
+      "id": "dev-031-b5606eec07",
       "title": "2026-10-14 — 原生黑边根因获得二进制证据（不是猜测）",
       "date": "2026-10-14",
       "body": "直接打开曾交付玩家的 **`Canglan-AncientWorld-v0.2.0-dev.102-Stable-Signed-ARM64.apk`** 中实际编译 AndroidManifest.xml（二进制 AXML，不是代码仓库中的配置），枚举 `com.godot.game.GodotApp` 的 9 项 Activity attributes，实际结果：\n`screenOrientation 0x00000001 type16` → Android native portrait。旧 v102 应用的确在清单里锁竖屏，正好解释横放手机时游戏仅剩一条纵向窄区域、两侧大量纯黑。另见 `resizeableActivity=1`，但并不能把 portrait Activity 在外部横屏内正常铺满。\n\n此为**从已经交付的真实用户基础 APK 实物中独立核验**，进一步明确：单独签名 PCK #117 能恢复脚本/模型，**但无法修改 Android APK manifest**。新原生包（当前 #138 运行中）必须写 `screenOrientation=0` / landscape，并以原长期签名和相同 applicationId 覆盖安装。用户不得卸载清空存档。后续真机验收仍需检查新包二进制的 AndroidManifest 再要求用户覆盖安装，Godot 代码门禁绿色不能替代这一项。",
       "source_status": "source-main-development"
     },
     {
-      "id": "dev-031-b7f2021522",
+      "id": "dev-032-b7f2021522",
       "title": "2026-10-14 — GPT-6 横屏与双手触控 native QA 最终通过（安卓同签名构建进行中）",
       "date": "2026-10-14",
       "body": "修复上轮手工测试里的两处断言问题后，Godot 官方 4.4.1 测试工作流 **`38482921672` / 第132次 native QA，SUCCESS**（关联 gameplay commit `24161d8a5269...`）。在实际 job 日志中已独立确认：\n- `PASS test_entity_codes_prefs`：原有物资 ID / 移动端显示偏好迁移正常；\n- `PASS test_touch_look_router`：左摇杆与右手拖镜头互不占指纹、右侧双指缩放、拖动不冒充点选；\n- `PASS test_mobile_landscape_hud`：真正实例化主场景，左侧摇杆、右侧「交互」、目标准星、折叠工具均存在；\n- `PASS test_village_next_day`：NPC 在第1日24:00后进入第2天，ID 不变、不产生免费资源；\n- `PASS scene_world`：实际地面/玩家/Camera3D/UI 主场景 headless 能进入；\n- 完整工作流输出 `QUALITY GATE PASSED (code/scene checks only; NOT an art-quality or phone-rendering certification)`。\n\n以上确认**代码层的完整本地逻辑门禁过关**，包括此前 Work 合并 PR #2 的 HTTP 下载回归；但 **Android APK #138 工作流 `38482921700` 仍进行中**，当前处于美术 GLB 导入/后续 Android 构建流程。该运行结束前不写 APK 已正式可安装、不写 PCK 已发布。即使 Android 构建 SUCCESS，也必须让玩家把**同固定签名、同包名 APK 覆盖安装而不是卸载**，才能真机验证竖向窄框/黑边是否已经修复。下一步取 #138 CI 运行日志与 artifact 验证 `STABLE_USER_SECRET`、原版 v102 上的 PCK 真场景 smoke、Pages 升级 revision，再给用户下载入口和双手实测步骤。",
       "source_status": "source-main-development"
     },
     {
-      "id": "dev-032-3b4c26a89b",
+      "id": "dev-033-3b4c26a89b",
       "title": "2026-10-14 — GPT-6：横屏/左摇杆右滑动/显式交互代码已交付 GitHub，等待 CI 和手机复测",
       "date": "2026-10-14",
       "body": "**实际玩家截图复核**：v117 真实世界已经恢复渲染，但游戏仍挤在手机横屏中间的竖向窄区域，留有巨大黑边；旧原生 v102 APK 的方向不能仅靠 PCK 修改。NPC 在24:00仍全部 sleeping；鼠标/单指触控与镜头旋转/世界点击互相抢事件，右侧 UI 拥挤。美术仍未通过。\n\n**本次已修改并提交到 `main` 的具体文件**（代码已提交 ≠ 真机成功）：\n- `scripts/touch_look_router.gd`：右手独立指纹追踪、左半屏不会触发摄像机、12px 拖动阈值、右手双指缩放、任何拖动和短触都不会触发世界 `_pick()`，测试 `tests/touch_look_router_test.gd`。\n- `scripts/main.gd`：左下摇杆继续移动、右半屏滑动左右转头和上下俯仰，新增明确的右手「交互」按键和瞄准准星；收纳开发工具（更新、观察村落、捏脸、时间）到可展开「更多」菜单。移动设备忽略合成鼠标重复点击。手指在 UI 上松开也能清除视角捕获，PC 右键拖动同样可调相机。\n- `scripts/camera_modes.gd`：第一/第三人称真实水平和俯仰角度、第一人称视野缩放记录；保留斜俯视自由缩放。\n- `scripts/client_preferences.gd`：新玩家默认第三人称+横屏，先前主动选择的视角保持不变；`ancient_touch_joystick.gd` 增抗抖死区与移动端去重。\n- `scripts/village_day_simulation.gd`：保留原人、原资源、原身份码，跨过 `24:00` 能开启下一天并继续作息，而不是永久僵死；旧存档保留 version=1，新加可选 `day_number`。专门 `village_next_day_test.gd` 回归测试。\n- `project.godot`：1280×720 横屏默认、`stretch/aspect=\"expand\"`；要用**同一签名同一包名的新安卓 APK 覆盖安装**才能修复旧 v102 原生窗口方向。\n- `update/patch_resources.json`、`tools/audit_exported_pck.py`：热更脚本必须打进 PCK，补齐 NPC 跨日/左右手输入脚本，继续阻止覆盖内置安全更新器；`tools/quality_gate.sh` 增触控和实际 UI 场景 smoke。\n- `docs/WORK_HANDOFF.md`：可供 Work 和后续 GPT-6 使用的精确交接文件，含阶段、路径、用户截图结论、发布边界和下一步；双方按 `docs/WORK_GPT6_DIVISION.md` 分工，Work 下载器 PR #2 已并入主线。\n\n**已知测试失败和处理**：早期 native QA 在改默认第三人称后，错误把“非法配置的安全回退”也期待第三人称，已修复 `entity_code_and_settings_test.gd`；`mobile_landscape_hud_smoke_test.gd` 错误按自动生成节点名找 `Camera3D`，现用实际 `game.camera`，对应提交 `24161d8a5269...`。这些仅是 QA fixture 问题。最新待验收 native QA `38482921672`、Android 真横屏 APK 构建 `38482921700`，在记录这一轮代码时**不能写 PASS**。旧 Android #122/#137 已通过隔离动作请求取消，防止较旧修订压过新 UI。不可将本轮源码完成等同 `latest.json` 更新、同签名原生 APK 交付，更不能等同手机 PUBG 级手感验收。\n\n**后续顺序**：核验 native QA 全过 → 原 v102 APK 上 PCK 真场景启动测试 + PCK 签名与稳定 APK 证书 pin → 确认公开 `latest.json` 修订 → 交付同包名同固定签名的 APK 覆盖旧 v102，保留存档 → 用户手机测试真正横屏铺满、左移动+右转头、屏幕交互防误触、NPC 跨日；画质、球树、NPC动作仍另开美术专项。",
       "source_status": "source-main-development"
     },
     {
-      "id": "dev-033-0cbc46e5c4",
+      "id": "dev-034-0cbc46e5c4",
       "title": "2026-10-14 — 用户要求明确分工，减少重复消耗",
       "date": "2026-10-14",
       "body": "规则见 `docs/WORK_GPT6_DIVISION.md`：GPT-6负责日常生产及Work交付后的测试、集成、打包、发布；Work按需负责架构、复用工具与复杂阻塞。写明了原因、介入条件和交接格式。Work默认不重复完整测试或轮询CI，未测项如实交给GPT-6，必要发布门禁保留。PR #2后续验证与APK集成交由GPT-6。本条是仓库交接，不表示另一会话已阅读。",
       "source_status": "source-main-development"
     },
     {
-      "id": "dev-034-fe87a998a5",
+      "id": "dev-035-fe87a998a5",
       "title": "2026-10-14 — 用户明确交付规则：完成即同步 GitHub，兼容内容走热更新",
       "date": "2026-10-14",
       "body": "用户要求“做好了就要同步到github，热更新”。后续开发完成并通过必要验证后直接同步主仓库；兼容游戏资源/脚本通过现有签名 PCK 和发布门禁上线，并核对公开 latest.json 的修订号，不能把仅上传分支/PR说成已热更新。涉及受保护更新器、原生方向或引擎的变更仍须同签名同包名 APK，不能绕过补丁保护。每次记录提交、测试、发布结果和真机未验收项。\n\n本轮 PR #2 已实际合入 main，合并提交 `69da3f77758bfabf3f14a1ea72850281afdd22a4`。本地下载器10项真实HTTP回归通过。合并自动触发 native QA `38482262757`（查询时运行中）、Android `38482262786`（查询时等待中）；尚未宣布构建或发布成功。公开更新清单查询仍为117，本次更新器修复只会进入下一基础APK。",
       "source_status": "source-main-development"
     },
     {
-      "id": "dev-035-a50d3557ee",
+      "id": "dev-036-a50d3557ee",
       "title": "2026-10-14 — Work：更新器下载故障处理与真实 HTTP 回归（待合入下一基础 APK）",
       "date": "2026-10-14",
       "body": "已读取最新工作日志与主线：v102 固定签名、用户连续 OTA 105/107、117 救援恢复世界均已有记录；当前默认横屏/竖屏设置、左右手触控是新的 P0。此次专注 APK 内更新器，基于 `73e917e1a15dc52782a6abe3e0701ed6a436dbad`，不重复实现已上线 OTA，也不修改正在迭代的 main/camera/触控代码。\n\n修改 `godot3d/scripts/update_bootstrap.gd`：下载时锁定进入游戏/回退，阻止检查重复启动，离开页面取消 HTTP 请求；接收数据按已签名包大小限制下载量；206 必须精确匹配起点、终点与总长度，200 仅允许首次完整包；分块写入检查实际落盘长度和错误，失败保留旧版；修正“区块已验证”的误导文案，仍需最终 RSA/SHA256 校验才安装。原有签名信任锚、存档和发布地址不变。\n\n新增 `tests/update_download_test.gd` 与 `tools/test_update_download.py`，已用官方 Godot 4.4.1 真正发起本地 HTTP 请求，10个案例通过：首块、续传偏移、错误总长、错误起点、首次200整包、续传200拒绝、短包、超大响应、断线、404；另测下载中不能切走界面、结束恢复按钮。首轮测试自身直接free节点触发信号释放报错，改queue_free并等待一帧后再次执行，无 ERROR，记录在 `docs/validation/ota_download_2026-10-14.log`。已加入 quality_gate.sh。\n\n**边界**：本轮不是 Android 手机/公网/断电/磁盘满端到端验收，没有构建新 APK、没有发布新 PCK。更新器属于受保护基础安装包，必须随下一份同签名、同包名 APK 发布，禁止塞进 PCK 绕过资源保护。当前手机117不因本提交改变。GPT-6 合入时保留横屏与左右触控最新改动，执行完整 QA/原v102补丁兼容门禁后出原生包；手机升级后再验收下载故障恢复。",
       "source_status": "source-main-development"
     },
     {
-      "id": "dev-036-58f4e0971d",
+      "id": "dev-037-58f4e0971d",
       "title": "2026-10-14 — 新一轮正式任务交接：战术手游式左右手操作 + 真横屏原生 APK（开始前已记录，勿误写已完成）",
       "date": "2026-10-14",
       "body": "**现有完成成果（有实际验收的事实）**：固定签名首装 Android 基础包 v102；玩家已在手机实际成功通过游戏内 OTA 连续升级 v105、v107；Godot Android 游戏世界具真实资源和村民等持续状态，玩家可移动、摄像机已有俯视缩放功能；业务公开实体码 `NPC-HX` / `GT-HX` / `FZ-HX`，三种摄像模式选项和骨骼动画原型已提交；v111 的缺失跨APK依赖产生空白后，签名救援 PCK **#117** 已部署：CI `38476310106` 在**原 v102 基础工程**中通过地形/玩家/相机/UI 存在性门禁、GitHub Pages workflow `38476431330` SUCCESS。用户新发截图确认 **真实世界画面已经恢复**，可见屋子/门/树木/NPC/实体编号/左摇杆/游戏按钮。此为视觉“重新有场景”验收，并不证明玩法操作和美术过关。\n\n**用户本轮真机截图中明确的新 P0**：手机处于横向屏幕，但实际 Godot 游戏仍被约束在中央靠右的**纵向狭窄渲染区域**，剩余大量纯黑边，画面暗；屋顶、树冠、门廊、姓名字小且遮挡严重；左手触控和右侧滑动/点击常冲突；右侧多个按钮拥挤，体验远不及常规《和平精英》/吃鸡式自由观察。截图 HUD 仍显示本机 APK `0.2.0-dev.102`，这是**原生APK代码版本**而不是 PCK revision，故不能仅据 HUD 判定 v117 没安装。\n\n**职责边界与本次实施目标（本条记录创建时尚未交付）**：\n1. 做**原生真正横屏的稳定签名 APK**：旧安装包是 v102 竖屏 Android Manifest，光替换 GDScript / PCK 无法改变 AndroidActivity 原生方向限制；Android 构建须坚持**相同长期签名密钥、相同 applicationId**，允许覆盖安装保留存档，默认 Landscape，内部可选 Portrait，安全兼容包验证不降低。\n2. 改真正的 Android 双指/双手触控：**左侧摇杆指纹 ID 独立捕获**负责连续移动，**右半屏单指拖拽**水平/垂直改变第一/第三人称镜头朝向，俯视可选择旋转/平移；触控轻点和拖动必须用位置与阈值区分，禁止右侧拖镜头误触“走到地面/拾取陶罐”；**双指缩放**保留，但不偷走左摇杆指纹；UI 触摸必须由 Control 消费；屏幕尺寸/横竖切换要重布局，按钮不得覆盖视野中心。\n3. 替换拥挤文字型按钮为横屏紧凑动作快捷区、右手“交互”按键，调试工具移到可展开面板；相机焦点恢复、视角切换、NPC 状态显示不应阻碍操作。\n4. 原有 PCK 签名、SHA256、增量下载、旧 v102 基包回归、实体 ID 及所有世界数据**必须保留**。不得随意删改 `user://village_day1_state.json` 存档。\n5. 给触屏路由编写可自动测试的双手同时操作、误触抑制、竖横屏坐标等行为回归；native QA/PCK QA 必须列出成功/失败和真实原因；直到用户手机验收，**不能声称 PUBG 级手感或已解决真机黑边**。\n6. 本轮体验迭代会用**现有 GitHub 原工程与 Work 交接文档**持续推进，文档须说明每次已改文件、实际测试、未完成、下一步；不以一个会话的“完成”替代用户实测。\n\n**已明确的工程技术原因**：旧 v102 manifest 仍默认 portrait；即使已有 `window/handheld/orientation=0` 新工程设置，用户的实际 APP 二进制不会被 v117 PCK 改写。右半屏拖动在 `main.gd::_unhandled_input` 中目前统一调用 `_pan_camera()`，并与 `_pick()` 和左摇杆 GUI 触控混杂，缺少多指所有权、明确交互模式及滑动与点击状态机。必须分别从原生屏幕方向和输入路由修复，而不是用“放大 UI”遮掩。",
       "source_status": "source-main-development"
     },
     {
-      "id": "dev-037-13586bb352",
+      "id": "dev-038-13586bb352",
       "title": "2026-10-14 — 救援已部署之后的永久防复发门禁与老版作业隔离",
       "date": "2026-10-14",
       "body": "**额外防护**：`godot3d/tests/legacy_base_ota_smoke.gd` 已单独纳入仓库，以便未来每次发布新脚本 PCK 前，自动在**最初 v102（versionCode=1102）** 的游戏代码环境加载新的补丁并实际创建地形、玩家、镜头和 UI。修改 `.github/workflows/godot-3d-android.yml`（提交 `43e1ccc1810e...`）：PCK 导出前从原始基包扫描所有新 script preload 依赖闭包，真正导出之后、签名之前运行旧版启动 smoke；如果玩家原 APK 空白，CI 自动 FAIL，坚决禁止推送版本更高的错误补丁。\n\n**隔离旧作业**：先前 Android 工作流 #118 `38471780326` 使用尚未引入旧 APK 兼容回归测试的老提交，可能在未来发布更高修订覆盖刚修复的 #117。已新增专用隔离 workflow `.github/workflows/quarantine-unsafe-pck-runs.yml`，运行 `38476800552` SUCCESS：GitHub API 对 #118 返回取消请求 `202`（命令记录 `CANCELLED_UNSAFE_PUBLISH_CANDIDATE`），#120 当时已经 CANCELLED，因而避免过期构建继续发布。GitHub Cancel 响应可能异步生效：在 GitHub UI 真正显示 CANCELLED 之前，不谎称完全停止。\n\n**最后公开核验**：`xinyanshuo` 公开 `latest.json` 已为 **revision 117**、PCK **204640 B**、SHA256 `8935d4278e2c805e8270e39364299fdf68b1cdce819123ebc8348a6b88da2c68`；Pages 运行 `38476431330` 的 build/deploy/report 均 SUCCESS。待用户手机实际更新 #117 后观察是否能重新看到实体世界，不能把无头 GitHub CI 复现当成安卓 GPU 与旋屏实机验收。",
       "source_status": "source-main-development"
     },
     {
-      "id": "dev-038-ada7ea1327",
+      "id": "dev-039-ada7ea1327",
       "title": "2026-10-14 — P0 纯蓝灰空屏：首个 v102 基础 APK 上的完整场景修复验证通过，v117 紧急 PCK 正式发布",
       "date": "2026-10-14",
       "body": "**用户现场截图事故**：游戏仅见 RGB(171,194,200) 蓝灰底色、黑边和局部裁切 UI，无人物/建筑/地形。该颜色与 Godot 的默认 clear color 一致。调查已证明旧 v111 已发布 PCK 的资源索引只有新版 `scripts/main.gdc` 而缺少新版所引用的 `client_preferences.gdc`、`entity_codes.gdc`、`camera_modes.gdc`、`character_locomotion.gdc`、`world_state.gdc`。新版全量项目上的构建通过不等于原 v102 APK 能运行新增脚本；这是本次最直接的技术根因证据（手机错误日志尚未采集，因此不强称唯一原因）。\n\n**修复代码**：`godot3d/scripts/main.gd` 移除旧 APK 全局脚本类注册表中不存在的新类型注解，保留脚本显式 preload；新增 `godot3d/tools/verify_first_apk_pck_dependencies.py` 与 `.github/workflows/xinyanshuo-p0-rescue.yml`，严格比对最初固定签名基础 APK 源提交 `f6260384802d3773df9ae566d84d5b54b62725f9` 和 PCK 内容白名单，确保七个必备脚本在补丁中，而非只有新主场景。严禁包含 `update_mount` / `update_bootstrap` / 公钥 / `build_info` 等不可热替换安全验证器。用户存档未参与这些变更，也未要求卸载或清除数据。\n\n**失败与修复**：首次紧急 CI `38476113874` 因未预建 PCK 文件输出目录而失败。已修正创建 `source/godot3d/build` 后，第二次 CI **`38476310106` SUCCESS**。日志关键证据：\n- `PASS BASE_1102_REQUIRED_SCRIPT_CLOSURE`，列出 `main`、`world_state`、`entity_codes`、`client_preferences`、`camera_modes`、`character_locomotion`、`world_partition` 共 7 个真正打入 PCK 的编译脚本。\n- `PASS IMMUTABLE_UPDATE_BOOTSTRAP_SCRIPT_IS_NOT_IN_PCK`。\n- **`PASS LEGACY_APK_1102_PCK117_REAL_MAIN_SCENE: terrain + player + camera + HUD`**：在 GitHub Actions 独立检出**最初 v102 基包源代码**并加载新导出 PCK，运行 Godot 4.4.1、真正实例化 `res://scenes/main.tscn` 运行多帧，验证 3D 地形、真实玩家节点、相机和界面全部创建成功；不是只执行新项目 smoke。\n- `MANIFEST ... revision=117 sha256=8935d4278e2c805e8270e39364299fdf68b1cdce819123ebc8348a6b88da2c68 signed=True`。\n- `SIGNED_RESUCE_PCK117_PUBLICATION_SUCCESS`：新 `canglan-content-rev-117.pck` **204,640 字节**、兼容 APK 最低 versionCode **1102**，RSA 签名并公钥核验，通过只写内容的跨仓库发布流程上传到 `160701541-cell/xinyanshuo` 公共 Pages。\n- Pages workflow **`38476431330` SUCCESS**：build/report-build-status/deploy 全部成功；最新公开 `latest.json` 预期 revision 117。\n\n**仍未完成**：用户手机尚未实测 v111→v117 补丁安装后是否确实恢复世界/横竖屏；PCK 不能修改最初基础 APK 的 AndroidManifest，旋转黑边若仍在必须以**相同固定签名**的新 Android APK 专门解决，不能伪称 PCK 一定修复。继续通过真机画面截图与玩家反馈验收。当前仍不对人物动画/国风美术做无依据承诺。",
       "source_status": "source-main-development"
     },
     {
-      "id": "dev-039-81d6441b4d",
+      "id": "dev-040-81d6441b4d",
       "title": "2026-10-14 — P0 真机“纯浅蓝灰背景”事故：确认 v111 PCK 缺少新脚本依赖，启动救援发布",
       "date": "2026-10-14",
       "body": "**用户实机截图**：实际手机运行《苍岚》时画面几乎全部是 `RGB(171,194,200)` 浅蓝灰，顶部/底部出现黑边，右侧与中央没有地图、NPC、角色、操作 UI；左边仅残留一条被裁切的灰色圆角区域。截图本身还不能唯一确定用户当前安装的 PCK 具体版次或 Android 屏幕方向，但空白色恰好与 Godot 工程设置 `environment/defaults/default_clear_color=Color(0.67, 0.76, 0.79)` 相符，说明不能把这当美术效果或正常游戏。**严禁向用户声称已经手机验收。**\n\n**检查发现可复现的打包缺陷**：已经发布的 `canglan-content-rev-111.pck` 实体包离线解析文件索引，确认包含 `scripts/main.gdc`，但**没有** `scripts/entity_codes.gdc`、`camera_modes.gdc`、`client_preferences.gdc`、`character_locomotion.gdc`、`world_state.gdc`；对应源提交 `b2a2458e` 的 PCK 白名单仅有 `main.gd` 与陶罐 GLB，新版 `main.gd` 明确 `preload` 了旧长期签名 APK v102 不具备的新增脚本。这是重大 OTA 跨 APK 资源闭包错误：**在新项目上编译/运行通过，并不代表新 PCK 能在老手机 APK 上运行**。本次浅蓝空白与此故障高度吻合（尚缺手机日志逐项印证）。\n\n**已经完成修补措施**：\n- `main.gd` 移除仅在新项目才有的全局 `class_name CanglanClientPreferences/CanglanHumanoidMotion` 的静态类型依赖；用脚本预加载对象动态实例化，避免旧版APK的全局类注册表不认识新类型。\n- `verify_first_apk_pck_dependencies.py`：对比最初稳定基包源码 `f6260384802d...` 与当前 PCK 资源白名单，发现预加载脚本不在旧 APK、也不在 PCK 时**立即失败**，不可签名。\n- 新独立 `xinyanshuo-p0-rescue.yml`：把**7 个新版脚本**（`main/world_state/entity_codes/client_preferences/camera_modes/character_locomotion/world_partition`）编入**紧急完整脚本资源包** #117；不改不可更新的安全公钥/更新器；扫描真实导出 PCK 索引，使用**最初 v102 工程**安装新 PCK 后 headless 初始化主场景，验证地形、实体玩家、相机和操作 UI 真正出现后才允许 RSA 加签并上传 Pages。\n- 紧急 GitHub Actions workflow `38476113874` **已启动，当前运行中；尚未宣布签名/发布成功，不应让用户声称安装修复完成**。\n\n**恢复要求**：切勿要求用户卸载游戏或删除 `user://` 存档；待 #117 PCK 真正经过旧版APK兼容性测试并发布后，玩家通过原安全更新器在线下载补丁，再验证横屏/竖屏显示、实体地面、人物、操作界面和存档内容。若确证 APK 自身 AndroidManifest 固定了竖屏，需要以**同一持久签名**单独升级原生 APK，不能假装 PCK 能改变 Android manifest。发布后仍需玩家手机截图做最终验收。",
       "source_status": "source-main-development"
     },
     {
-      "id": "dev-040-1053699b42",
+      "id": "dev-041-1053699b42",
       "title": "2026-10-14 — 真机反馈驱动：横屏默认/竖屏设置、NPC 骨骼步态、独立 ID、第一/第三视角、实体阔叶树（进行中）",
       "date": "2026-10-14",
       "body": "**真机明确反馈**（仅反馈，不当成已修复）：用户报告 v107 **人物可以真实移动**，但“双脚滑行并未走路、双手一直张开；NPC 全挤屋里像僵尸；美术太丑”。用户喜欢已经实现的任意视角缩放，要求**默认横屏，竖屏可在设置切换**，支持俯视/第三/第一人称，并要求任何实体及 NPC 都有带职业之外稳定的可视识别码，例如 `GT-HX-00001023`。对未来数万公里实体世界、多人战争观战有明确愿景。\n\n**本轮真正改动的代码和测试**：\n- `godot3d/project.godot`：原生 Android 下一个安装包默认从 720×1280 竖屏调整为 **1280×720 横屏**、`window/handheld/orientation=0`；当前玩家已经安装的 v102 基包 Manifest 不能被 PCK 强行永久替换，已补 `DisplayServer.screen_set_orientation` 在进入游戏时动态旋转。竖屏选项在游戏里可随时选，并独立持久化于 `user://canglan_device_settings.json`，绝不覆盖世界存档。\n- `camera_modes.gd` 与 `main.gd`：原正交斜俯视捏合缩放保留，新增真正的第三人称跟随透视、第一人称真人眼高透视（隐藏玩家本地网格）；双指捏合/滚轮/拖动与相机偏转。游戏内“切换视角”和“设置 · 横竖屏”选择器均已接线。\n- `character_locomotion.gd`：用实际 `Skeleton3D` 骨架控制双腿/小腿/脚的交替运动，并由上臂和前臂骨 rest 方向估算“手臂自然下垂”，右手携带陶罐时姿态略异；这是**程序驱动过渡动画**，未达动作捕捉级别，最终需要正式汉服人物模型与专业动画。发现 mock 骨架左右上臂初始姿态未改变导致 QA fail，提交 `dedacd8b` 增加保底姿势后 native full QA `38471522252` **SUCCESS**。\n- `main.gd`：NPC 视图每帧朝 `VillageDaySimulation` 真实状态的位置插值移动，并驱动骨骼，NPC 模型增选中碰撞、头顶姓名+编码，角色实体依旧在世界数据层。新游戏仅初始化在**早上07:00**让四名村民开始实际劳作，旧存档不会私自变更时间；不再每帧直接瞬移 54m。仍存在逻辑分钟坐标与局部可视化插值的短暂差异，未宣称完成精确逐帧 AI 物理。\n- `entity_codes.gd` + `world_state.gd`：原本永久 `actor_...`/`item_...`/`resource_...` 的存档主键、物料账本、工单、财产归属全部保持原样，额外分配单调且与老存档兼容的 `NPC-HX-...`、`GT-HX-...`、`FZ-HX-...`、`MN-HX-...`、`SM-HX-...`、`ZY-HX-...`、`WP-HX-...` 公开实体码；旧存档在读取时确定性补齐。测试版默认显示 NPC、房屋、树木、器物的头顶编号，55m 外渐隐/隐藏，设置可关闭。\n- `tools/build_valley_tree_mesh.py` 使用 Blender 生成有真实树干、枝桠和 3D 叶片三角面（不再三个圆球冠）的阔叶树 `broadleaf_tree.glb`；`main.gd` 将现有 `living_tree` 资源主键绑定 GLB 和实体树干碰撞；Android CI 增实导入/骨骼测试 `real_tree_art_test.gd`、`chinese_art_assets_test.gd`；缺少模型仅在技术预览使用明确警告的旧占位，不冒充美术成品。**现有瓦屋、地貌、角色五官和服装仍很粗糙，未经美术验收**。\n- `world_partition.gd`：单纯实现支持负坐标的 256m×256m 单元索引与不同距离模拟政策；上万公里实景分区流式加载与万人战场 MultiMesh/层次化 AI 尚未实现。详细工程路线见 `docs/LANDSCAPE_NPC_ID_CAMERA_BATTLE_PLAN_2026-10-14.md`。\n- 自动 QA 新增身份/旧存档测试 `entity_code_and_settings_test.gd`、`first_third_camera_test.gd`、`character_locomotion_test.gd`。Android OTA `patch_resources.json` 加入所有脚本与树木 GLB，并在 `audit_exported_pck.py` 强制检查内容齐备、绝不覆盖资源更新信任锚。保留原 `xinyanshuo` 自动签名发布通道。\n\n**实际核验 / 待测**：提交 `a91c05b471c2` 对应 native QA `38471780339` **SUCCESS**。Android ARM64 原生打包与有真实 CC0 人物 + Blender 树木的 QA 为 #118 workflow `38471780326`，**记录时 IN_PROGRESS**；未知是否可以上架最新 PCK、不能提前报告签名发布/真机成功。用户手机目前可靠版本仍是通过真机验收的 #107。等待 Android CI 导出成功后，才能交付新在线资源版，让玩家检查横屏/步态/NPC/视角/编号和视觉改变；否则先修构建问题。",
       "source_status": "source-main-development"
     },
     {
-      "id": "dev-041-8c4c5b24d5",
+      "id": "dev-042-8c4c5b24d5",
       "title": "2026-10-14 — 首次真实 Android 手机 OTA 验收：玩家连续升级 #105 → #107 均成功",
       "date": "2026-10-14",
       "body": "**手机端用户亲自反馈**：用户已实际在《苍岚·人生世界》游戏内成功安装资源修订 **#105**，随后再次成功升级 **#107**；同时此前已用 Android 手机浏览器完整读取过公开 `latest.json`，也表示网页版资源下载成功。这是本项目首次得到玩家明确反馈的 **“首个基础 APK → 无需重新下载安装包，游戏内连续更新两次”** 真机端到端证据，已经超越仅靠 GitHub CI 绿灯的技术检查。\n\n**事实分层**：\n- ✅ 玩家报告：游戏内检查/下载/安装 #105 成功；随后 #107 也成功，且没有要求再次安装 APK。\n- ✅ 可独立复核：GitHub `xinyanshuo` 公开 `latest.json` 现为 revision=107（SHA256 `93ffb9007753cbd90c47ceba2ed1e7b99c11945f74e61c159ae5c4f94ff95385`，PCK 124864 字节）；`38467067655` Android QA、真实 PCK 文件目录安全审计、稳定签名证书 pin、SignedPCK 发布均 SUCCESS；`38468243556` GitHub Pages 部署 SUCCESS。\n- ⚠️ 尚未分开测量：高延迟/断网断点续传、安装前断电/补丁损坏回退、存档跨脚本升级兼容性、原生引擎 APK 同签名覆盖升级、自动扫描提示体验和长期频繁更新。此前独立无凭据 runner 匿名 HTTP 检查失败系其网络超时，不再作为“用户手机无法访问”的证据；用户手机端更新成功已有明确反馈。\n- ⚠️ #105 是添加 PCK 导出保护白名单审计**之前**的历史版本；#107 已经对 PCK 内容实施导出后检查并确保不可更改的更新器验证脚本未混入。玩家应继续使用 #107 或后续通过门禁的安全版，不应回装 #105。\n- ⚠️ 本次用户只确认更新功能成功；不等于之前报告的**地面显示、人物真实移动、模型画质、国风建筑、NPC 行为和触屏适配**通过了手机验收。这些仍是游戏内容开发和 P0 修复的独立重点。\n\n**开发决策**：固定签名基包与 `xinyanshuo` 的 OTA 通路可以作为后续模型、地形、NPC、脚本内容更新的日常交付手段。后续普通游戏资源/兼容脚本默认走**已签名的 Godot PCK**，仅当需要更新 Godot 引擎/Android 原生组件/权限时才通过同一永久证书发布新版 APK。开发日志所有 QA、发布、真机情况均需分别记录，不再要求玩家为了每次物品或地形更新反复下载安装包。",
       "source_status": "source-main-development"
     },
     {
-      "id": "dev-042-e4fd427de2",
+      "id": "dev-043-e4fd427de2",
       "title": "2026-10-14 — v107 签名资源安全审计、公开发布和 Pages 部署全部通过；等待实机 OTA 验收",
       "date": "2026-10-14",
       "body": "用户首次在自己的手机浏览器访问 `https://160701541-cell.github.io/xinyanshuo/android-preview/latest.json` 并回传 **revision=105**、最低原生版本 **1102**、SHA256、资源包大小、PCK URL 和 RSA signature 完整 JSON，证明**用户手机能匿名读取公开更新清单**（但尚未证明能完整下载 PCK）。后来安全审计发现部分导出 PCK 包含 `scripts/update_mount.gdc`，这类用于游戏内替换资源的包不应覆盖安装包内固定的验证器。\n\n为修正，新增 `godot3d/tools/audit_exported_pck.py`，CI 将 `UpdateMount` autoload **仅在 PCK 构建阶段临时排除**、APK 导出使用原始可信工程，然后扫描真实 PCK 文件索引以拒绝受保护的更新器资源。最终 Android workflow **#107 / 38467067655 SUCCESS**，发行公钥/Android 固定签名仍与第一个 APK code 1102 匹配，日志记录：\n- `VERSION_STAMP name=0.2.0-dev.107 code=1107 sha=92a57e8b6bcb`\n- `PERMANENT_ANDROID_CERT_PIN_MATCH=true`\n- `PCK_EXPORT_BOOTSTRAP_AUTOLOAD_DISABLED=true`\n- `SAFE_EXPORT_CONTENTS ... protected updater resources absent`\n- `MANIFEST ... revision=107 sha256=93ffb9007753cbd90c47ceba2ed1e7b99c11945f74e61c159ae5c4f94ff95385 signed=True`。\n\n**正式发布证据**：#107 的 `Publish signed PCK to xinyanshuo Pages` job SUCCESS；公开 `160701541-cell/xinyanshuo` 仓库目前 `latest.json` **revision=107**，`canglan-content-rev-107.pck` 大小 **124864 bytes**，SHA256 `93ffb9007753cbd90c47ceba2ed1e7b99c11945f74e61c159ae5c4f94ff95385`，基础 Android 兼容码仍 `1102`；Pages 部署 workflow **38468243556 SUCCESS**。此前 #104/#105 PCK 仍留在历史目录供溯源，但客户端只通过签名的 latest.json 发现 #107。\n\n**验证边界**：此前独立 GitHub Actions 匿名网络下载的 workflow `38466318604` 与 `38466368440` FAILED；首轮签名消息转义曾出错，修正后还是遇到网络超时。用户手机能打开 #105 JSON 是一个关键成功事实，但**用户尚未确认能匿名下载完整 PCK，更未真机运行 v102 基包验证安装、回退、存档及可见 HUD 变化**。先用手机访问 #107 `latest.json` 和 PCK 链接，然后在固定签名 APK v102 中测试更新；不应将纯 CI 成功当作真机交付。画质/触控/地面 P0 仍未进行用户实机验收。",
       "source_status": "source-main-development"
     },
     {
-      "id": "dev-043-93150f7c8e",
+      "id": "dev-044-93150f7c8e",
       "title": "2026-10-14 — xinyanshuo 真正收到已签名 PCK，Pages 部署完成（外部网络/Android 手机验收仍失败或未测）",
       "date": "2026-10-14",
       "body": "**用户授权实测**：用户把 `CANGLAN_ENABLE_OTA_RELEASES=true` 加到私有 GitHub Actions Variables；重新触发独立发布 workflow `38465865790`，两个 job（readiness、Publish signed PCK v104）**SUCCESS**。此前 `38465396267` 检测到网站 PAT Secret 存在但发布变量未启用（跳过），本次成功证明变量与 PAT 的实际跨仓库写权限均已生效。\n\n**公开网站现有可核验文件**：成功在 `160701541-cell/xinyanshuo` Public 仓库建立 `android-preview/canglan-content-rev-104.pck` 与 `latest.json`。后续私人 Android CI #105 也在启用的同一发布通道发布 #105；在本次检查时 `latest.json` 指向 revision **105**，PCK 源文件 **136,432 bytes**，manifest SHA256 `1ff801a2e4a8c6de3b71ba9695e5a99971c543d833537c3e4c077ed0e723d68f`，最低可更新的初始 APK `versionCode=1102`。GitHub Pages #105 部署 workflow `38467445248` 全部 **SUCCESS**（静态网站已部署）。\n\n**独立安全校验**：从 GitHub 私有 CI artifact `Canglan-Signed-OTA-v104.zip` 提取真实 PCK、manifest，独立检查 ZIP CRC、长度 136432 字节、SHA256 `cb6a49aabdc0fff15689b8c977b88f4b4cb13bb6345130764dfe8c28a98dd72e`，使用与安装包一致的**公钥**在离线 OpenSSL 中对完整规范化 manifest 验证得到 `Verified OK`。签名私钥未公开/未写入代码仓库。\n\n**外部匿名 HTTP 仍未验收**：为防止错误宣称公网下载可用，新建 `.github/workflows/xinyanshuo-public-download-verify.yml` 从 **无 GitHub 凭证**的 runner 实际请求主页、latest.json、PCK，并验证 RSA、SHA256、HTTP Range。运行 `38466318604` 和 `38466368440` **FAILED**：首轮签名串转义问题已修正，后续多次遇到 GitHub Pages HTTPS read timeout。因此虽 GitHub Pages Actions 部署与公共仓库资源上传成功，**尚无“手机从官网可正常下载、断点续传”的外部证据**。须以用户手机 HTTPS 打开 `latest.json` 并在 v102 APK 内检查更新作为下一轮验收。不得说用户已经成功在游戏内更新。\n\n**额外工程发现与修补**：通过独立解析真实 Godot #104 PCK 文件索引，发现即便只导出模型 + `main.gd`，Godot Export 会**自动包含 `scripts/update_mount.gdc`**（由 `project.godot` autoload 机制引入），违背“不可覆盖更新器”约束；新增 `godot3d/tools/audit_exported_pck.py` 实际检查 PCK 文件目录中的受保护文件，并修改 Android PCK 专用导出临时配置，在**已签名 APK 正式导出完毕之后**，仅在 PCK 导出时移除 `UpdateMount` autoload，随后恢复工程文件。最新 CI 构建 #107（`38467067655`）已启动，**本条日志写入时尚未完成，不得标 PASS**。如果导出脚本索引含保护文件，审计强制 FAIL，不能再签署不合格内容。\n\n**下一步真机基准**：使用已经 verified stable signer 的 `v0.2.0-dev.102`（`versionCode=1102`）进行第一次安装，随后在游戏内测试联网检查、PCK下载、HUD 文案、真实存档、断网回退。请勿覆盖原有随机签名包而忽略存档损失风险；旧测试签名与新固定签名不兼容时先备份。当前整体国风画质和移动 P0 问题仍未因此解决。",
       "source_status": "source-main-development"
     },
     {
-      "id": "dev-044-7795b6150d",
+      "id": "dev-045-7795b6150d",
       "title": "2026-10-14 — 用户新增 xinyanshuo 跨仓库发布令牌，CI 已核验存在；仅差 Actions Variable 开关",
       "date": "2026-10-14",
       "body": "新增 `.github/workflows/xinyanshuo-first-publish.yml`（提交 `752586e860930b7ad69f7a4e4212db763c610112`），可直接复用此前 **已 QA PASS / 已 RSA 签名** 的 Android 构建 `38462231924` （#104）产出 `Canglan-ContentPCK-104`，由 `publish_xinyanshuo_release.py` 重新校验固定官网、RSA 签名、SHA256、版本递增后将公开站点的 `latest.json` 与 PCK 同一 git 提交推送，不需要重复构建 Android APK。\n\n**实测证据**：新工作流运行 `38465396267`，readiness=SUCCESS，控制台输出 `XINYANSHUO_PUBLISH_SECRET=PRESENT`、`OTA_RELEASE_SWITCH=NOT_ENABLED`；因此 `Publish signed PCK v104 to public xinyanshuo Pages` job **SKIPPED**，当前尚未真正跨仓库发布，不能宣称游戏内更新已上线。未打印任何 token 值，也没有改动公开 Pages 的签名资源；这些信号只证明密钥存在，不证明 PAT 确实有公仓库写权限。\n\n**需要用户完成最后一个 UI 动作**：在**私有** `canglan-world` → Settings → Secrets and variables → Actions → **Variables** → New repository variable，Name `CANGLAN_ENABLE_OTA_RELEASES`，Value `true`。然后重跑 `xinyanshuo First Verified PCK Release` 工作流（workflow_dispatch）。提交的发布代码会在公开站点首次签名 OTA 成功后再做匿名 HTTPS 检测和手机校验。为避免重复创建 key，不需要再重新生成六个 Secrets。",
       "source_status": "source-main-development"
     },
     {
-      "id": "dev-045-cadfc33d74",
+      "id": "dev-046-cadfc33d74",
       "title": "2026-10-14 — 固定签名与跨版本 PCK 已签署成功；公网自动发布尚需一次授权",
       "date": "2026-10-14",
       "body": "**基包已核验**：Godot/Android #102 `38460428013` SUCCESS，版本 `0.2.0-dev.102` / `versionCode=1102`，SHA256 `9f4d85c93e6a0d88826a49dcb1d0e63f5aa1de4db9ef39a01a68e8cb6b4fe7d2`；签名 cert SHA256 `353c65d2bdde16509b33c976e9bed615013080b071629cfbf7fdeb43e4217057`，由真实 Github Secrets 稳定密钥构建并与导出 APK 证书核对一致。实际 APK 位置 `/mnt/data/Canglan-AncientWorld-v0.2.0-dev.102-Stable-Signed-ARM64.apk`。现有旧随机签名预览 APK 不能直接覆盖安装，卸载可能丢失旧手机内部存档。\n\n**后续更新包已核验**：源提交 `6456feaf9a14e3a1dccb8e5e6666c8998e0e5767` 的 QA `38461332341` SUCCESS，Android 构建 `38461332357` (#103) SUCCESS；CI 输出 `PERMANENT_ANDROID_CERT_PIN_MATCH=true`、`CANGLAN_PINNED_BASE_CODE=1102`、`signed=True`。已经打包并提取独立 PCK `canglan-content-rev-103.pck`，实际大小 136,432 bytes，SHA256 `aca5cf06fea2d278bc6dbf1daf58984f9327bf8c8805a418aa7227415051b456`，签署清单 `canglan-update-manifest.json` revision=103，最低兼容 Android code=1102，pack URL 锁定 `https://160701541-cell.github.io/xinyanshuo/android-preview/canglan-content-rev-103.pck`，内容包括 Work 陶罐模型和将 HUD 文案改为“心魇说 · 苍岚·人生世界”的脚本；PCK ZIP CRC 与 SHA256 检查通过。下载 ZIP `/mnt/data/Canglan-Signed-OTA-PCK-103.zip`。这是**已签名的构建产物**，但目前只在私有 Actions Artifacts，并未发布到 Pages，因此手机不会看到可更新资源。\n\n**自动化部署代码**：提交 `688aff87015a3f46afe7ee97caff99bbb2dbd33f` 新增 CI 的 `publish_signed_content` job：从同一次 GitHub Actions 的签名 PCK Artifact 下载，单独签名/固定 URL/SHA256/递增版本验证成功后，使用官方 checkout 将公开 `xinyanshuo` repo 的资源文件与 `latest.json` 一次性提交至 Pages。默认不发布：需用户在私有项目 Actions Secrets 新建仅授权公开 `xinyanshuo` 仓库 Contents Read/Write 的 `CANGLAN_SITE_PUBLISH_TOKEN`，并将 Actions Variable `CANGLAN_ENABLE_OTA_RELEASES` 设置为 `true`。这两项尚未配置，且 GitHub 连接器不能代设；用户启用后下一次经过所有 QA 的 Android build 才会自动上线签名补丁。\n\n**体验尚待测试**：以上是 CI/打包/证书/资源内容校验成功，尚未证明普通手机实际能下载、断网续传并看到 HUD 变化，存档保护与真机移动/地面/国风画质仍应单独验收。Godot/Android 原生引擎升级仍必须下发同签名的新版 APK。",
       "source_status": "source-main-development"
     },
     {
-      "id": "dev-046-dd706ed351",
+      "id": "dev-047-dd706ed351",
       "title": "2026-10-14 — Android 永久签名真实生效，首次固定基包 versionCode=1102",
       "date": "2026-10-14",
       "body": "**首个 GitHub Secrets 实测结果**：用户设置五项 GitHub Actions Secrets 后，提交 `f6260384802d3773df9ae566d84d5b54b62725f9` 触发 Android build run **38460428013 / #102**，GitHub Actions 成功，记录 `APK_SIGNING_MODE=STABLE_USER_SECRET`、`PERMANENT_ANDROID_SIGNATURE_VERIFIED sha256=353c65d2bdde16509b33c976e9bed615013080b071629cfbf7fdeb43e4217057`，导出 APK 与保存在 Secrets 的 keystore 公钥证书一致。这是实际工作流的确认，不是只根据用户填了密钥就猜测。原生 APK versionName `0.2.0-dev.102`、versionCode **1102**，源 SHA `f6260384802d`；已从 run artifact `11845986175` 提取并通过 APK ZIP CRC、AndroidManifest.xml、arm64 Godot 库检查。文件 `/mnt/data/Canglan-AncientWorld-v0.2.0-dev.102-Stable-Signed-ARM64.apk` 大小 **34,537,791 bytes**，文件 SHA256 `9f4d85c93e6a0d88826a49dcb1d0e63f5aa1de4db9ef39a01a68e8cb6b4fe7d2`。\n\n**同次构建 PCK 尚未上线**：当时还未锁定首次固定 APK 的最低兼容码，PCK 发布清单 `signed=False`，仅为 UNSIGNED 模板，不会传给手机、不会上传到 `xinyanshuo` 公开站。\n\n**本次已提交防回退和下一轮 OTA 试验**：新增 `godot3d/update/stable_base_identity.json` 固定应用包名、版本码 `1102`、首个 APK 证书 SHA256 指纹；以后 CI 如出现随机签名/不同证书就直接失败，防止一时疏忽造成 Android 不能覆盖安装。PCK 构建自动采用固定兼容码 `1102`，无需用户额外填 GitHub Variable，仍由现有第五项 Secret 作 RSA 签名且对应 APK 内固定公钥。下一版把 `res://scripts/main.gd` 一并作为 PCK 内容，仅变更一处可见主 HUD 文案为 `心魇说 · 苍岚·人生世界`，用于证明安装 v102 后能仅下载 PCK 更新脚本而无需重装 APK；真正手机下载仍需将签名 PCK+latest.json 部署到公开站并验收。**改后下一版构建结果待核实**。\n\n**风险**：v102 是可以签名复用的**技术基础测试包**，不是用户已通过画面/移动/人物/场景体验验收的最终游戏。旧随机签名包通常不能原地覆盖 v102；卸载旧包可能清空 Android 应用内部存档，必须提醒用户先备份重要数据。以后升级 Godot/Android 原生组件仍可能需要 APK。",
       "source_status": "source-main-development"
     },
     {
-      "id": "dev-047-1852565057",
+      "id": "dev-048-1852565057",
       "title": "2026-10-14 — xinyanshuo GitHub Pages 成功部署，官网已由 GitHub 验证发布",
       "date": "2026-10-14",
       "body": "**实时部署确认**：公开仓库 `160701541-cell/xinyanshuo` 返回 `has_pages=true`，Pages workflow `38456820899` 全部 **SUCCESS**，包括 `build`、`deploy`、`report-build-status`；部署日志明确 `Evaluated environment url: https://160701541-cell.github.io/xinyanshuo/`，对应先前上线提交 `de3ef429629a87416a6164afde2c958e4da98bb1`。公开站点现有首页、样式、JS、图标、.nojekyll，源码仓库继续 Private。网页独立网络抓取在当前工具环境受限，故**GitHub Pages 的部署成功已确认，用户端匿名浏览器渲染仍需实测**。\n\n**实际网站维护**：更新公共站点 README 记录启用状态，提交 `16e1f8bf`；新增公开 `android-preview/README.md`，提交 `fc87378c`，明确 `latest.json` 暂不创建，避免无签名更新清单引发危险下载或错误升级。公开站点不含游戏私有代码、API token、签名私钥、Android keystore。\n\n**密钥完整性本地验证（只验证不披露密钥）**：先前为私有仓库准备的 `Canglan_Updater_GitHub_Secrets_KEEP_SECRET.txt` 中包含五项 GitHub Actions Secrets；Android JKS 可用且别名匹配，PCK 私钥导出的公钥与 `godot3d/update/update_signer_public.pem`、`update_channel.gd` 中已内嵌公钥一致。**这些 Secrets 尚未通过 GitHub API 设置**（当前连接器不支持 Actions Secrets 管理），使用本地生成的测试期密钥长期发行前需用户自行备份。\n\n**明确待完成**：待在私有游戏仓库 GitHub Actions 配置五项签名 Secrets 与首次永久签名 APK 兼容 versionCode；构建首个**固定 Android 签名**基础安装包；在公共站点发布第一个经过独立签名和真实 SHA-256 验证的 PCK 并让 Android 手机实际下载/应用/续传/回退。暂**不能**宣称“一次安装后游戏内自动更新”已在真机端到端实现。",
       "source_status": "source-main-development"
     },
     {
-      "id": "dev-048-509bc17bc8",
+      "id": "dev-049-509bc17bc8",
       "title": "2026-10-14 — 心魇说公开网站资源已真实上传（GitHub Pages 尚需启用）",
       "date": "2026-10-14",
       "body": "用户为 `160701541-cell/xinyanshuo` 开放 GitHub App 访问之后，重新核验安装：该仓库为 **Public**，且已出现在 `list_repositories` 的授权可写名单。首次 `create_file` 实际成功，以 `index.html` 初始化此前空仓库，提交 `ccecd6efb0e1c0c95b3e210b16c22ef630538490`；随后从私有工程 `site/xinyanshuo/` 取出并真实提交首页、样式、JS、图标、`.nojekyll` 及公开 README 至新仓库 `main`，提交 **`de3ef429629a87416a6164afde2c958e4da98bb1`**。\n\n**实际验证**：公开 GitHub 仓库 Contents API 列出以上 **6 个文件**，index.html、style.css、site.js 均完整；只有网站静态文件被上传，未推送游戏源代码、签名密钥或未签名 PCK。原源码仓库仍为 Private。预定 Pages 地址为 `https://160701541-cell.github.io/xinyanshuo/`，更新清单为 `https://160701541-cell.github.io/xinyanshuo/android-preview/latest.json`。\n\n**阻塞项**：此时新仓库尚无 Pages 构建/部署运行记录，尝试公网访问 URL 未获可访问页面；GitHub App 不提供 GitHub Pages 的启用设置，因此需要用户在新站点仓库的 **Settings → Pages → Build and deployment → Deploy from a branch → main → /(root) → Save** 开启一次。**没有发布 `android-preview/latest.json`：必须等正式 PCK+RSA 签名和固定 Android 签名齐备才可公开游戏补丁。** 当前也未生成经过真机 OTA 测试的永久基础 APK。若 Pages 生效后需再次确认真实 200 响应才能宣称上线。",
       "source_status": "source-main-development"
     },
     {
-      "id": "dev-049-965c384931",
+      "id": "dev-050-965c384931",
       "title": "2026-10-14 — 心魇说 xinyanshuo 更新站模板和固定入口",
       "date": "2026-10-14",
       "body": "**体验修正**：`977490d5` 修复新域名尚未启用或设备无网络时停留在更新屏幕的问题：自动转入离线游戏，玩家手动打开更新菜单时则保留“重试检查”操作。更新后 CI 结果待复核。\\n\\n\n\n新增 `site/xinyanshuo/` 响应式中文官网静态资源、`docs/XINYANSHUO_SITE_SETUP.md`，将 APK 默认检查地址指定为 `https://160701541-cell.github.io/xinyanshuo/android-preview/latest.json`。新增 `publish_xinyanshuo_release.py` 及安全测试验证 RSA 签名、资源包大小、SHA256、版本与来源，加入质量门禁。Godot 测试已成功（run 38453707658）；Android 本轮构建待复核。\n\n**未完成**：`160701541-cell/xinyanshuo` 公开仓库尚不存在，因此 Pages 站点不在线；持久 APK 签名与真实 PCK 发布配置仍需 GitHub 仓库所有者授权后操作，不应宣称玩家已能在线升级。",
       "source_status": "source-main-development"
     },
     {
-      "id": "dev-050-0192cc57d6",
+      "id": "dev-051-0192cc57d6",
       "title": "2026-10-14 — 真实 PCK 自更新器技术验收：Godot 测试与 ARM64 APK/PCK 构建成功，线上发布尚未开通",
       "date": "2026-10-14",
       "body": "**为什么开发**：用户要求**第一次安装一个基础 APK，以后在游戏内部自动检查、下载、验证并应用大多数内容更新**。不能以构建新APK反复人工重装当解决方案。\n\n**此次完成代码**：`godot3d/scripts/update_mount.gd`、`update_protocol.gd`、`update_channel.gd`、`update_bootstrap.gd`、`scenes/update_bootstrap.tscn`，以及 `sign_pck_release.py`、`prepare_content_export.py`、`configure_update_channel.py`、`test_sign_pck_release.py`、两条 Android/Godot 测试流水线等。启动时先验证并加载 PCK 再进世界；玩家中文更新页显示进度，HTTPS 1MiB 分块续传、SHA256+固定 RSA 公钥验签、版本兼容判断，启动失败回退上一补丁；游戏现有存档独立。安卓导出开启 INTERNET 权限、游戏内有更新按钮。PCK 仅包含显式允许资源，不能更换固定验证器/签名公钥。\n\n**失败定位与实际修复**：首轮自动质量门禁出现 `String.is_valid_url()` 不存在、QA 下单例标识符解析失败、RSA签名消息少一字段、Godot JSON 把 `size_bytes=1024` 浮点解析成 `1024.0` 致 OpenSSL 跨语言验签失败，均已逐项在代码修复并保留失败测试记录；之后通过线上导出试验验证 Godot 资源包选取规则，修复预设值从错误的 `selected_resources` 改为官方 `resources`，防止误把整套工程打入更新包。\n\n**已验证**：\n- 游戏代码提交 `d58cc7cd8041fcd2a86e6fa98fec55a3118a4425` 的独立原生 QA 运行 `38451001934` **SUCCESS**：真实 PCKPack 加载、Godot RSA-3072 对 OpenSSL/ Python 离线签名验签、恶意文本/摘要被篡改拒绝、Python 签署器回归、所有原游戏脚本/场景测试均已通过。Godot CI 成功不代表手机上真实断网/续传体验已验收。\n- 同提交 Android CI `38451001842` **SUCCESS**：`VERSION_STAMP name=0.2.0-dev.96 code=1096 sha=d58cc7cd8041`；安卓版 `Canglan-Ancient2.5D-ARM64-96-Debug-APK` artifact `11840282981` 已提取原生 APK `/mnt/data/Canglan-AncientWorld-v0.2.0-dev.96-Updater-Preview-ARM64.apk`：**34,537,791 bytes**，SHA256 `132db7c1924ce4a5278611ac2253d7443125e79625147a7369a3274bcd69f13a`，ZIP CRC检查 PASS。\n- PCK 导出产物 `Canglan-ContentPCK-96` artifact `11840437581`，实际 `canglan-content-rev-96.pck` **45,168 bytes** SHA256 `e00b5890d1fe9849d152bdacae4a115c3c00bcd010282faf9da2f1577bedd602`，指定唯一 Work 陶罐 `pot_00_lod0.glb`；manifest 内 `_not_a_release=UNSIGNED_DEVELOPER_TEMPLATE_DO_NOT_HOST`，这不是可给手机使用的已签名线上补丁。\n\n**最重要的真实未完成项**：CI 日志明确 `UPDATE_FEED: DISABLED (no public HTTPS server configured)`、`APK_SIGNING_MODE=EPHEMERAL_TEST_ONLY`、`signed=False`。因此这个 **v0.2.0-dev.96 是可运行的自更新器技术预览，不是已具备公网 OTA 的永久安装包**！本轮没有公开可匿名下载的 HTTPS 域名/对象存储，没有把 5 项需保密的 GitHub Actions Secrets + 3 项可公开 Variables 配入仓库，旧 v0.2.0-dev.82 当然无法自动更新为包含新启动器的 APK。必须先把**稳定Android签名与公网更新清单地址**配置好，重新构建首次长期基础包并让用户安装一次，再通过发布一版新签名 PCK 在真实 Android 上验证“只需游戏内更新”；引擎和 APK 原生插件更新仍须 Android 安装新基础包。详见 `docs/IN_GAME_UPDATER_DEPLOYMENT.md`。不合格的模型画质、原地转圈等用户真机问题未以此功能被解决。",
       "source_status": "source-main-development"
     },
     {
-      "id": "dev-051-3b63961ca5",
+      "id": "dev-052-3b63961ca5",
       "title": "2026-10-14 — PCK 更新启动器第一阶段（仍须配置公开服务器与稳定签名）",
       "date": "2026-10-14",
       "body": "根据“安装一次，游戏内更新”的明确需求，此轮新增 APK 级不可绕过的启动器（`update_mount.gd` 提前挂载补丁、`update_bootstrap.tscn` 与 `update_bootstrap.gd` 中文更新界面）；离线可以继续游戏，已配置公开 HTTPS 地址后可远程检查签名版本、1MiB Range 分块续传、比对文件大小及 SHA256、RSA-3072 签名核验、原子版本切换、启动失败自动回退上一资源包；全程不修改旧玩家存档。普通 Godot PCK 支持脚本/场景/模型等资源，安卓引擎与系统权限升级仍需 APK。\n\n**已完成代码**：`update_protocol.gd` 定义严格 SHA256/RSA 签名信任协议和兼容范围；`update_channel.gd` 内置仅公钥，不包含私钥；`sign_pck_release.py` 用离线私钥 OpenSSL 签署发布清单；`prepare_content_export.py` 强制阻止补丁覆盖更新器/bootstrap/build_info/包设置；`configure_update_channel.py` 从 GitHub Actions 公开变量注入 HTTPS feed；新 Godot 安全回归用真实 PCKPacker 加载带签名补丁，Python 回归测试恶意改版及无效私钥。安卓导出开启 `permissions/internet=true`；游戏内增“检查更新”按钮。\n\n**Android 签名**：更新 APK 构建流程支持 `CANGLAN_ANDROID_KEYSTORE_B64` 等 Secrets 的稳定身份签名；未提供则仍使用**每构建一次变化的临时调试签名**并警告，不可误称未来原生APK无损覆盖。PCK 内容本身不受 APK 签名限制，但必须验证 RSA 信任链。\n\n**发布流程**：CI 自动导出只含指定 Work 陶罐 GLB 的 `CanglanContentPatch` PCK 和签名/未签名预览清单，私钥和公网发布地址配置齐全时方能签名。GitHub **游戏源码私有仓库**中的 Actions Artifacts 不能直接当匿名玩家公开下载源。必须另设可匿名访问的 HTTPS 对象存储/CDN，并上传 `*.pck` 与签名的 `latest.json`，将其 HTTPS 清单地址通过 CI 变量编入**下一次长期有效基础 APK**。\n\n**本次尚未完成**：尚未配置/验证用户自有公开 HTTPS 更新地址及稳定 APK 密钥的 GitHub Secrets；未从任何公网端点自动下载真实正式资源或在用户手机实机复测。因此本次是可独立测试的更新器底座，**绝不声称现有 v0.2.0-dev.82 已经具备在线热更新能力**。初期 PCK 为兼容资源整包、非真正文件差分；引擎及插件升级仍需基础APK更新。保留所有失败 CI、修正日志、最终构建结论。",
       "source_status": "source-main-development"
     },
     {
-      "id": "dev-052-bf38b50e83",
+      "id": "dev-053-bf38b50e83",
       "title": "2026-10-14 — Work 陶罐 Godot 接入 v0.2.0-dev.82：真实安卓构建已通过，待手机验收",
       "date": "2026-10-14",
       "body": "**实际代码**：`e5da525bb240e0c4dd9f8b7096dff4158184b13e`（从 Work 草稿 PR #1 仅抽取 pot_00 三档真实GLB，接入 Godot 世界陶罐拾取、归属/借用权限、3份水有限汲取、饮水消耗、放置和完整存档）、`f959d14e86e462aa6cf586b1cf0c871629f104ed`（持有物跟随实际手骨位置同步世界实体坐标，拒绝虚假瞬移）。Work 的 Dart 代码未接到 Godot，PR #1 仍为独立 Draft，未被误合并。\n\n**自动验证**：提交 `f959d14e` 对应 Godot 全量 CI `38445187553` **SUCCESS**；新陶罐权威物料测试 `test_pot_cycle` 和真实GLB+骨骼附着测试 `test_work_pot_glb` 均 PASS；包括其余所有质量门禁，依然只是代码/资源导入检查。\n\n**Android APK**：Actions Run `38445187416` **SUCCESS**，构建前真实版本盖印记录 `VERSION_STAMP name=0.2.0-dev.82 code=1082 sha=f959d14e86e4`。APK Artifact `11838028795`，名称 `Canglan-Ancient2.5D-ARM64-82-Debug-APK`；已下载 ZIP 并实地 CRC 全部通过，从中提取可供安装的 `/mnt/data/Canglan-AncientWorld-2.5D-v0.2.0-dev.82-ARM64-Test.apk`，大小 **34,507,887 bytes**，SHA256 `7c5e86a7d486cdc254002ff0efa98db1aa1280200c172431ede194b3b9a6f2b8`，含 AndroidManifest/classes.dex/arm64-v8a libc++_shared/libgodot_android。Android 导出是独立调试签名，可能和旧测试包签名冲突；包名 `org.canglan.ancient25d.preview` 不变。\n\n**仍然不得谎报**：用户真实手机的地面/运动/触控是否彻底修复未知；Work 陶罐 GLB 的美术等级远未通过用户参考图验收；水源位于既有模拟地点（距民居约200米），没有额外凭空生成井口。建筑/植被/正式角色动画/美术精度、完整生产系统未达标。本轮未真机安装，欢迎实测反馈；一旦出现失败优先修P0，不盲目堆新功能。",
       "source_status": "source-main-development"
     },
     {
-      "id": "dev-053-1a46afdd1b",
+      "id": "dev-054-1a46afdd1b",
       "title": "2026-10-14 — 陶罐实体位置同步修正（跟随人物手骨，防瞬移）",
       "date": "2026-10-14",
       "body": "在整合初始提交 `e5da525b` 自动测试时复核到实体持有物位置一致性：拾取时从原地点更新到人物位置，持有时每帧由 `BoneAttachment3D` 可见位置同步权威世界中的陶罐坐标；明确拒绝超3米或非有限数坐标，不向长期台账写每帧流水。修正文件：`world_state.gd`、`main.gd`、`pot_world_cycle_test.gd`；若不修会出现物品在手上但实体坐标仍停在旧地点。状态仍需本次新提交与CI实际确认。",
       "source_status": "source-main-development"
     },
     {
-      "id": "dev-054-2bcebef1d3",
+      "id": "dev-055-2bcebef1d3",
       "title": "2026-10-14 — Work 0.2 草稿 PR 中抽取真实陶罐接入 Godot 实体闭环（首个小步）",
       "date": "2026-10-14",
       "body": "**来源及兼容性**：已完整检查 Work 的 `work/engine-0.2-handoff` 分支、`docs/ENGINE_0_2_GODOT_HANDOFF.md` 及 PR #1。PR 为 **draft**，GitHub API 拒绝直接合并（405）；本轮**没有合并或修改 Work 分支**，仅引用其中 `pot_00_lod0/lod1/lod2.glb` 已存在 Git blob 复制到主线 `godot3d/assets/production/props/`；保留 Godot 唯一世界实体权威与玩家控制器，未把不能直接运行的 Dart 核心接成第二套状态。\n\n**实际代码集成**：\n- `world_visual_binding.gd`：既有经过真实制陶配方的 `ceramic_pot` 世界实体统一绑定 Work 陶罐资产 ID `pot_00` 对应的米制 GLB，非一次性虚构物品。三个 LOD 源资产全存仓库，本轮先按 LOD0 导入/呈现；切换远距动态 LOD 尚未做。\n- `world_state.gd`：手工制成陶罐保留原始物权/原料工单/稳定 ID；匠人显式授予已有家庭使用权；玩家按距离拿起（借用不等于所有权转移）、携带、放下；只有实际接近有限泉水源才能汲入最多 3 份水，汲水移动实物水库存进入陶罐，饮用从罐内真实扣除；操作记台账并经 `serialize/restore` 恢复。不生成重复器皿或水。\n- `ancient_pot_visual.gd`：优先将陶罐真正挂在 `Skeleton3D` 人物右手 `BoneAttachment3D`；未找到合适骨骼时显式使用临时挂载节点，不能称已完成人物手持动画。放下后归还地面场景并恢复选取碰撞。\n- `main.gd`：靠近陶罐显示拾取，持有时放下与汲水/饮用动作；轻点陶罐可取，过远可先点地行走；保存后一体恢复玩家、物品、泉水状态。继续默认竖屏。\n- 新增 `pot_world_cycle_test.gd` 和 `work_pot_art_test.gd`，加入 `quality_gate.sh`。后者强制验证真实 Work GLB 经 Godot PackedScene 导入并有实际 MeshInstance3D 和人物手部绑定，不把占位圆柱算完成。\n\n**客观限制**：未实现拿锄头耕田、完整手持动画、复杂遮挡、真实居所美术验收、装满后陶罐倾倒运动、五指抓握，也未重做球形树与 UI。首次用户报告的地面/移动问题仍须通过新 APK **真机**确认。所有“已编码/测试/打包/手机验证”必须分别记录。\n\n**下一步**：核查提交后的 GitHub CI（Godot QA + 安卓新版本），失败即修；待成功后提供版号递增的新测试包，让用户实际验收陶罐拿取和村落移动。",
       "source_status": "source-main-development"
     },
     {
-      "id": "dev-055-b7ae805bac",
+      "id": "dev-056-b7ae805bac",
       "title": "2026-10-14 — 实机反馈后首个递增版号的 Android 故障验证包（非视觉验收）",
       "date": "2026-10-14",
       "body": "**本次已经实际成功打包/解压**：提交 `317a2f4e8a23b1836078bb3bb880218507535a80`，独立 Godot 测试 `38440219684`；Android CI 运行 `38440219780` **SUCCESS**（使用已更正的版本测试阈值）。对应 `Canglan-Ancient2.5D-ARM64-80-Debug-APK`，Artifact ID `11834637524`，ZIP 实际存放 `canglan-3d-debug.apk`；真实提取文件 `/mnt/data/Canglan-AncientWorld-2.5D-v0.2.0-dev.80-ARM64-Test.apk`，**34,441,184 bytes**，SHA-256 `eea23444bb36dbb6e9cd62b2a26b1251d7ea5cf8a2ed74e48577306f8aa1e54c`，ZIP CRC 全部通过，AndroidManifest/classes.dex/ARM64原生库齐备。\n\n**真实 Android 版本号**：`versionName=0.2.0-dev.80`，`versionCode=1080`；CI 在 Godot 导出之前通过 `tools/stamp_android_version.py` 写进 `export_presets.cfg` 和游戏内 `build_info.gd`，不是仅重命名安装包。后续按 Android 工作流 `run_number` 自动递增。\n\n**新包名警告**：`org.canglan.ancient25d.preview` 是独立应用标识，旧版 `org.canglan.world3d.preview` 不会被覆盖；新的测试签名每轮随机，下一次覆盖升级仍需安装稳定调试签名密钥，不能承诺无损升级。\n\n**测试边界**：修正了“世界地表不可见/可能漏碰撞”“玩家站立旋转不走”相关渲染与运动代码并通过真实网格的 Godot 物理行走测试；用户手机是否真能正常走、屏幕地面是否完整显示，**尚未确认**。此版本主要为运动BUG复验，截图中球形树、断墙、空地与调试UI仍是**用户明确不认可的美术问题**，不准拿此包冒充画质大升级。",
       "source_status": "source-main-development"
     },
     {
-      "id": "dev-056-7d52e0519a",
+      "id": "dev-057-7d52e0519a",
       "title": "2026-10-14 — 用户实机截图否决现有美术和运动体验；首次强制版本升级/真地面门禁",
       "date": "2026-10-14",
       "body": "**用户实测证据**：实际安装包的手机截图显示：世界背景大片暗蓝灰色空白，地表几乎看不到；相较真实古代开放世界只有孤立一屋、若干悬浮墙段、程序球形树；大量调试按钮和英文状态；用户明确报告“人只能转圈走不了”。此为**真机验收失败**，严禁以此前 Godot CI SUCCESS 或 33 MB APK 假装核心玩法/画质可用。用户还指出每次发包都沿用 `version/code=1`、`version/name=\"0.1.0\"`，属事实错误。\n\n**本次针对性修复（本条之后提交，CI 后复核）**：\n- 地表模型强制双面可见/碰撞：`valley_terrain_500.gd` 显式 `cull_mode=CULL_DISABLED`，`create_ground_collision()` 设置 `ConcavePolygonShape3D.backface_collision=true`，增设真实网格自检。过去只有一个假 Box 地面移动单测，无法覆盖“实机地下为空”。\n- `ancient_world_player.gd`：玩家坠落到地面以下时回退至最近有效地面位置；只有发生实际水平位移才转动人物外观模型，不再旋转角色碰撞本体制造原地打转的错觉。\n- `main.gd`：加载可见玩家模型时命名为 `HeroVisual`，使用一致的真实地面碰撞；APP 顶端必须显示该 APK 实际代码版本。\n- Android 导出 `export_presets.cfg` 不再是 `0.1.0/code=1`；恢复独立国风2.5D产品名和 **新的测试包 ID** `org.canglan.ancient25d.preview`，避免直接撞上原来随机签名的旧测试包。旧包的游戏数据不会自动迁移；后续升级仍须管理持久签名，不能声称仅改版号就解决了签名问题。\n- `tools/stamp_android_version.py` 每次 GitHub Actions Android Build 用 `GITHUB_RUN_NUMBER` 自动给实际 APK 生成严格递增 `versionCode=1000+run_number` 与 `versionName=0.2.0-dev.<run_number>`，同时写入 `scripts/build_info.gd` 在游戏顶部可见。新增 `tests/build_version_test.gd`。\n- `tests/real_ground_movement_test.gd` 不再用假地板，改以真实 1km 网格、物理射线、真实 CharacterBody3D 行走、坠落检测成为强制质量门禁。截图中的程序化树和孤立墙段仍是未达标资产，不假称已美术重做。\n\n**Godot 测试与构建复盘**：提交 `be1ca184` 的独立 Godot QA `38439449716` **SUCCESS**（真实地面行走与版本测试通过）。但同代码的 Android 构建 `38439449639` **FAILURE**：包版号确已正确盖印 `0.2.0-dev.79/code=1079`，Android 全部其他测试通过，新增版本测试却错误要求 `CODE >= 1080`，导致 100 秒断言超时而阻止导出。这是**测试阈值错误**，不允许声称 APK 已成功；已提交 `317a2f4` 将阈值修正为 `>=1001`，待重新构建及用户实机复测。\n\n**尚未验收**：此次地面双面渲染/物理保护能否在用户实际 Android 设备解决错误，需新包安装和对照截图；人物模型视效、地表材质、完整古村落与正式美术距离目标仍极远。若失败须停止功能堆叠，优先修基本地面与运动。",
       "source_status": "source-main-development"
     },
     {
-      "id": "dev-057-2cde07d487",
+      "id": "dev-058-2cde07d487",
       "title": "2026-10-14 — 可供用户安卓实测的首轮“进屋/开门” APK 已打包交付",
       "date": "2026-10-14",
       "body": "**Android 打包确认（已核验，而非推测）**：\n- 对应**游戏代码**提交 `d6541984f3a0b849a8d58130b01fe1007138be72` 的 GitHub Actions `38437366366`：`Canglan Godot 3D Android ARM64 Preview` CI **SUCCESS**，含实际 GLB 中国建筑及带 65 骨骼人体资源导入、完整 Godot 质量门禁、安卓导出以及 artifact 上传成功。\n- 修复后独立 Godot 自动化测试 `38437366528` **SUCCESS**（包括本轮新门禁/室内遮挡相关测试）。\n- 安装包工件名称 `Canglan-Godot3D-ARM64-Debug-APK`，Artifact ID `11832654812`，原始 ZIP 内 `canglan-3d-debug.apk`。已通过 GitHub 连接器下载，提取给用户：`/mnt/data/Canglan-2.5D-Android-ARM64-Debug-Test.apk`。\n- APK 字节数：`34432489`；SHA-256：`04f38cee3f28b735d94ffd35168f80e12644622c3e9459c8cb186bb2aeece792`；ZIP 内部CRC检测 **PASS**，原生 ARM64 Godot 库和必要的 AndroidManifest/classes.dex 存在。\n- **真实约束**：此包是经自动编译和结构检查的 2.5D **技术测试版**。未在用户手机上安装、没有真实操作录屏或 FPS 记录，不能称“真机通过”或美术达标。\n- **已知历史遗留**：Android 包标识仍为 `org.canglan.world3d.preview`、启动图标下显示 `Canglan 3D Preview`，这是旧项目导出配置的技术命名，不意味着正式游戏目标改变，**必须在后续版本改为2.5D名称**。每次 GitHub CI 都创建独立随机调试签名，若用户装过同一包名的旧测试APK，新包可能因签名冲突提示不能安装；卸载旧包会删除其本地数据，先提醒用户备份，后续须改为稳定调试密钥/可签名的长期测试通道。\n- 请用户优先实测启动是否闪退、摇杆与点地移动、接近木门后开/关门、室内外屋顶遮挡、退出重进后门与玩家位置是否存档，提供崩溃截图以便复现定位。",
       "source_status": "source-main-development"
     },
     {
-      "id": "dev-058-b134966643",
+      "id": "dev-059-b134966643",
       "title": "2026-10-14 — 下一阶段实做：古代民居真实门禁、室内视野、实体溯源（待CI复核）",
       "date": "2026-10-14",
       "body": "**开发依据**：用户要求持续推进，按“古代版《僵尸毁灭工程》”和“一屋+500米+4人一天”的既定验收任务进入房屋内部。Godot 世界实体系统与2.5D摄像机均保留。\n\n**本次实际代码**：\n- `godot3d/scripts/world_state.gd`：新增 `ensure_house_door`（从已支付房屋配方的已安装木梁组件取得稳定子实体与来源，重复载入不凭空产生第二扇门）及 `set_house_door_open`（强制角色距离，开关动作入台账，状态可存档）。\n- `godot3d/scripts/ancient_house_access.gd`：房屋四周实墙、开关房门实际物理阻挡、独立门口命中区、进屋隐藏屋顶和迎面墙/出屋恢复；将门状态同步至成对实际木门合页。\n- `godot3d/tools/build_cc0_vernacular_house.py`：原创/CC0拼装的现有国风房屋GLB，木门板、木纹雕饰和门环分组到真实 `DoorHingeLeft/Right` 合页空节点，能够旋转真实几何；不把装饰粒子冒充真实开门。\n- `godot3d/scripts/main.gd`：启动时复原同一门实体，玩家靠近可用触屏“开门/关门”按钮，也可轻点门；切换结果即刻存档；室内根据玩家位置自动去屋顶/迎面墙遮挡，保留真正的碰撞实墙。\n- 新增 `godot3d/tests/house_access_test.gd`，并加强 `godot3d/tests/world_state_test.gd`、`chinese_art_assets_test.gd` 以及 `godot3d/tools/quality_gate.sh` 的自动门禁。\n\n**严格未达标项**：房屋外观仍是美术开发中的GLB，室内家具摆位/家具碰撞尚需精调；开门仅旋转成套门板，不是完整过门NPC寻路/脚步IK；Android真机加载、进出屋流畅度、模型对齐与参考图画质均待实际验收。此阶段绝不宣称“完整精美村落已完成”。\n\n**实际 CI 复盘（2026-10-14）**：\n- 首次提交 `d9c1255f` 的 Godot 世界测试运行 `38436981808` **失败**，其余全部已执行测试通过，`house_access_test.gd:64` 断言失败且脚本超时。根因：测试手动把人物位置移回屋外后，未同步权威 `WorldState.entities[actor][\"position\"]`，门系统正确拒绝了台账位置太远的关门操作；并非门运行时逻辑静默通过。\n- 修复提交 `d6541984` 在测试中同步世界角色坐标后再要求关门。其 Godot 全部质量门禁运行 `38437366528` **SUCCESS**，包括门来源/实体/动画合页/室内遮挡/存档测试；这不是用户手机美术验收。\n- 安卓构建：修复版 CI `38437366366` 已触发；写入日志时尚未确认成功。上一版 `38435845214` Android 构建曾 SUCCESS，**不可作为本轮门/室内新代码成功打包的证据**。",
       "source_status": "source-main-development"
     },
     {
-      "id": "dev-059-cd7181a05c",
+      "id": "dev-060-cd7181a05c",
       "title": "2026-10-14 — 下一步实做：实体玩家自由移动 / 触屏摇杆（非美术完成）",
       "date": "2026-10-14",
       "body": "**代码交付**：`godot3d/scripts/ancient_world_player.gd`（CharacterBody3D、重力/滑动、WASD/方向键、按2.5D镜头方向移动、点地直线移动、500米范围、实时写入持久化玩家实体位置）；`godot3d/scripts/ancient_touch_joystick.gd`（真实触屏方向摇杆，控制触点隔离，松开归零）；`godot3d/scripts/main.gd`（恢复既有玩家或创建一次性世界角色、绑定现有骨骼预览人体GLB、绑定摇杆、点地行走、镜头跟随/定位、定期保存、与已有村民模拟共存）；`godot3d/tests/player_movement_test.gd` 与质量门禁新增实物移动/边界/存档验证。现有可点击建筑碰撞暂设为查询层，不再把整个房屋体积挡成不可走通的巨大实心方块。\n\n**真实边界**：本轮为**行走与世界记录原型**，尚无合格步行动画、真实门窗模型交互、房间门洞的精确碰撞、寻路避障、古代 UI 艺术/真机操控验收。当前点地行走是直线，不得称已实现《僵尸毁灭工程》级寻路。手指摇杆和角色没有实际手机画面验收前不可标完成。\n\n**验证记录（已核验）**：代码提交 `bf7bbe91` 对应独立 Godot 质量门禁运行 `38435845273` **SUCCESS**，包括新增玩家实体运动、摇杆、边界和存档测试。Android APK 运行 `38435845214` 在本次记录时仍处于构建中，**尚不能宣称本次版本安装包成功或真机画质达标**。",
       "source_status": "source-main-development"
     },
     {
-      "id": "dev-060-1757b4903b",
+      "id": "dev-061-1757b4903b",
       "title": "2026-10-14 — 新玩法定位：古代版《僵尸毁灭工程》式系统性世界（最新补充）",
       "date": "2026-10-14",
       "body": "**用户原话**：“我的游戏世界类似于僵尸毁灭工程那样，只不过他那是末世，我这是古代。”\n\n**正式解释**：借鉴《僵尸毁灭工程》的斜俯视2.5D探索、连续可进入的房屋、海量具状态的可交互物件、持续的生活/环境模拟、资源与行动代价及世界存档；不是要做僵尸、末世换皮或照搬其版权资产。游戏本体是古代架空社会：田地、村落、乡里、城镇、商路、官府、生产、交易、社会关系、生态与时间推演。详细验收与边界已写入 `docs/WORLD_VISION_ANCIENT_PZ_25D_2026-10-14.md`（提交 `eb1486a0`）。\n\n**研发准则**：玩家必须在可行走的同一张地图中实际使用门、房屋、农具、灶台、容器与自然资源；以实体ID/物料账本驱动动画和可见世界，不靠纯UI数字或点击一键生成。NPC有自己的生活与经济行为。优先做“一屋+500米+四人一天”，再扩村、县、商路和各国。\n\n### 本次实际代码工作（2026-10-14，提交 `53983513`）\n- `godot3d/scripts/main.gd`：游戏内固定斜俯视正交2.5D，撤掉自由3D按钮及旧镜头偏好；单指拖动为平移地面视野，双指捏合为缩放，鼠标右键拖动/滚轮亦支持；镜头限制在500米区域，触碰选取射线延至3000米，应用内明确显示是技术预览。\n- `godot3d/scripts/world_camera_style.gd`：新增正交相机屏幕像素到地面平移的坐标换算和半径边界约束。\n- `godot3d/tests/world_camera_style_test.gd`：补充地图平移方向、平面性和500米边界检测。\n- `godot3d/tools/quality_gate.sh`：将此前存在但未执行的摄像机测试正式纳入每次CI质量门禁。\n- `godot3d/project.godot`：更新APP内部标题及项目描述为国风2.5D预览。\n- 本次只动了5个文件；**没有实现玩家角色走路/寻路、开门进屋、PZ式家具拾取、正式UI或美术验收**，不得误称“古代版《僵尸毁灭工程》已经做好”。\n\n**验证状态**：工作代码已提交，自动化测试运行 `38434224809`、Android构建 `38434224734` 已启动；写日志时均尚未证实完成。完整真机测试与用户画面验收尚未执行。若CI出现失败需继续修复，不能交付失败包。\n\n**下一项最高优先级**：实现玩家真实可控移动（优先竖屏操控）、角色与地面/建筑碰撞、门/屋顶遮挡与可进入室内，再做自然资源采集/携带/储存闭环，并对比用户国风参考图提升真实美术细节。\n\n### 2026-10-14 — 2.5D 摄像机测试首次 CI 故障与修复\n\n- 首次新摄像机 CI（运行 `38434224809`）**实际失败**：`world_camera_style_test.gd` 在 `SceneTree._initialize` 时调用 `Camera3D.look_at` 与 `global_transform`，节点还没进入场景树，Godot 报 `Node not inside tree`，测试断言失败且超时。其他脚本解析/世界台账/人物/村落/地形测试均通过，失败集中在新增镜头测试本身。\n- 已提交修复 `0ef7dbf`：通过 `call_deferred(\"_run_test\")` 在场景树初始化后才运行 2.5D 镜头断言。\n- 修复后独立测试运行 `38434604949`：**SUCCESS**（GitHub Actions 已实际确认）；安卓 APK 运行 `38434604881` 目前仍处于排队/构建等待，**尚未成功产出这一修复版本的安装包**。旧版 APK 不能冒充新版本的验收。",
       "source_status": "source-main-development"
     },
     {
-      "id": "dev-061-ea2a32bfc6",
+      "id": "dev-062-ea2a32bfc6",
       "title": "2026-10-14 — 用户最新纠正：正式游戏视觉方向是国风 2.5D（优先适用）",
       "date": "2026-10-14",
       "body": "**用户原话：**“不是3d，是2.5d”“不是有开发日志吗？为啥不看”。此条是新的明确需求，覆盖本日志和旧交接文件中互相冲突的“必须做 3D 而不能 2.5D”视觉表述。历史条目为事实存档，不可作为推翻最新指令的理由。\n\n### 固定方向与实现边界\n- **交付视觉：精美国风立体 2.5D 手游。** 斜俯视/正交镜头、可信体积、前后遮挡、精细光影和手绘国风质感；以用户给出的古村落、院落、青瓦木构、人物生活画面为实际视觉验收基准。**不可再把“自由视角 3D 手游”称为正式产品目标。**\n- 2.5D 是玩家看到的镜头与画面风格，**不意味着必须销毁已有 Godot 三维网格、骨骼、物料和实体系统**；它们可作为实现 2.5D 画面的底层技术。现有 `godot3d/scripts/world_camera_style.gd` 已将 `DIMENSIONAL_25D` 设为 `DEFAULT_STYLE`，具有正交投影代码。不得把底层引擎类型误报成最终视觉风格。\n- 房屋、门窗、地形、树木、人物、动物和道具不得是无交互背景或敷衍纸片。万物实体 ID、原料—采集—制造—消耗—存档台账、NPC 真实活动，以及默认竖屏/设置切换横屏要求继续生效。\n- **先以“一栋完整民居 + 周边 500 米 + 4 名村民真实生活 24 小时”验收区为开发核心**；高品质场景、人形外观、动作、交互、寻路、存档、真机画面达标后再扩展规模。文字与调试控件不等于正式游戏 UI。\n- 2026-10-13 的最新 Android CI 成功，只能证明某次工程构建；**不证明 2.5D 视觉、国风美术或手机游戏体验通过验收**。不得把程序粗模、人物捏脸逻辑参数和 CI 绿色冒充成品。\n- 后续开发者/副手每次开工**先读本日志最新条目、`docs/ONE_HOUSE_500M_ONE_DAY_ACCEPTANCE.md`、`docs/REQUIRED_ENTITY_MATERIAL_CRAFTING_WORLD.md`**，再检查真实仓库与构建记录。回复用户前必须区分“代码存在 / 已通过自动测试 / APK 成功 / 真机及视觉已验收”四种状态。\n\n### 本次检查与更新\n- 已核对 GitHub 私有仓库近期提交、`godot3d/scripts/world_camera_style.gd`、一屋 500 米验收文件和世界实体规范。\n- 本次仅纠正交接与视觉路线叙述；**未修改游戏运行代码、未重新编译 APK，也未获得用户对最终画质的验收**。\n> 版本约束：此日志记录用户硬性要求、代码实况、验证状态、待办和验收结果。任何协作者（GPT-6、Work、其他开发者）不得用口头承诺代替实际提交，不得用原型冒充达到标准的游戏。仓库必须保持 Private。",
       "source_status": "source-main-development"
     },
     {
-      "id": "dev-062-108c4ebd09",
+      "id": "dev-063-108c4ebd09",
       "title": "2026-10-13 — 用户确认：高品质国风 3D 人物是硬性验收门槛",
       "date": "2026-10-13",
       "body": "### 一、不可降级的正式标准（用户已确认“就这样，写进开发日志里，必须按照标准做不能敷衍”）\n1. **美术目标**：以《燕云十六声》的人物视觉品质为参考目标，制作原创或合法授权的高精度国风 3D 人物资产；不能把程序方块、粗糙低模、2.5D、纸片人或只改参数的占位角色称为达标。\n2. **完整三维人物**：真实人体结构、完整 3D 网格、精细脸部、皮肤/毛发材质、自然光照、近景与全身观察。质量以用户实际截图和真机效果验收，不能只用参数数量判断品质。\n3. **几百项外貌控制**：头面部、身体各区域有数百项独立、可保存的逻辑调节参数，使用 Morph Targets / Blend Shapes、骨骼及修正形变来驱动**连续网格**；不应强行拆成数百个独立绘制网格导致接缝、穿模和移动端性能问题。必须实现实时可见的真实几何形变，不接受只有数值没有形变的假捏脸。\n4. **开局捏脸**：玩家创建人物时必须有 3D 实时捏脸界面，可旋转/缩放，调节五官、脸型、身材、肤色、发型等，含重置、预设、保存/读档；调整前后模型必须实际变化，人物进入游戏后保持一致。\n5. **NPC 差异化**：NPC 使用相同的人物系统，支持年龄、地域、遗传、体型、皮肤细节、生活经历、非对称性等合理约束，避免重复脸及随机形变造成的畸形。参数相异不等于肉眼能辨认，必须通过实际多人同屏画面对比验收。\n6. **骨骼和动作**：完整 Skeleton3D / 蒙皮 / 动画系统；支持自然行走、跑步、转身、停步、坐卧、劳作、拿取、互动、表情与动作衔接。需要动画状态机/混合、脚步接地、手部抓握和物品交互，不得只有僵硬循环动画。服饰随骨骼和动作正确变化，避免明显穿模。\n7. **服装、发型、头饰与配件**：与人体外貌系统分开，采用可替换的模块化装备和分层穿戴；每一件服饰/头饰/鞋帽/玉佩/工具都是有唯一 ID、材料、制作工艺、品质、磨损、归属与来源的**真实世界实体**。不可在换装时凭空产生物品。\n8. **身份与气质**：NPC 第一印象受衣着材质、做工、整洁、磨损、头饰、携带物、姿态、步态、目光和行为影响；别人猜测的身份与真实身份分离，支持伪装和误判。气质必须落实到动作、表情和社交行为，而非纯文字标签。\n9. **万物皆实体**：人物身体结构参数、骨骼/蒙皮与世界物品实体不是同一个概念；衣服等可独立拥有、制造、穿戴、转移的物品是实体，面部形变参数是角色实体内部数据。保持物料来源、制造、运输、劳动、库存、耐久、维修、拆解及存档的真实一致性。详见 docs/REQUIRED_ENTITY_MATERIAL_CRAFTING_WORLD.md。\n10. **移动端标准**：目标是 Android 手机原生 3D；默认竖屏，设置中切换横屏；必须通过实际设备性能、显存、加载时间、动画流畅度和触控操作验收。可用 LOD、合批、GPU 蒙皮和分级角色精度优化，但不得把“性能优化”作为永久降低近景主角画质的借口。\n\n### 二、人物开发的强制顺序\n1. 建立**一名**可在引擎中旋转、近距离观察的高品质原创国风 3D 人物模型（含合规素材来源及美术验收）。\n2. 完成标准人体骨架、蒙皮、面部 Blend Shapes / Morph Targets，保证变形不破面、不穿帮。\n3. 开发开局 3D 捏脸 UI，实际实时驱动网格；支持存档和恢复。\n4. 接入自然动作、表情、动画混合、手部互动与工具抓握。\n5. 接入发型、衣服、鞋帽、头饰和配件的实体装备系统，以及衣着影响社会认知的机制。\n6. 扩展 NPC 差异化生成，展示至少数十名不同年龄/体型/外貌/衣着 NPC 的近景和同屏对比。\n7. 实际 Android APK 真机性能与画质验收；验收通过后再大规模扩展。\n\n### 三、当前实际代码与真实进度（不得夸大）\n- 已存在 Godot 4 原生 3D 工程、实体物料生产系统和自动化测试。既有 Godot 3D 测试曾在 GitHub Actions 通过，但这不等于人物美术达标。\n- 已存在 godot3d/scripts/character_identity.gd，包含数百项**逻辑外貌参数**、性格/气质数据、装备槽与物品来源校验的代码原型。\n- **未完成**：高精度人物 3D 资产、骨骼绑定与实际动作、面部形变网格及映射、开局捏脸界面、服饰真实网格、NPC 大规模可辨识差异化、服饰物理、真机人物画质/帧率验收。\n- 明确禁止将 character_identity.gd 中的参数数量宣称为“几百个可用捏脸部位已经完成”。没有实际高精度模型、形变和 UI 就不能这么说。\n\n### 四、验收清单（每个版本必须记录实际结果）\n- [ ] 同一基础模型生成至少 20 张肉眼明显不同、无明显畸形的面孔；保存/重载后完全一致。\n- [ ] 玩家开局在手机上实时调节五官/体型，镜头近景可观察到网格形变。\n- [ ] 标准骨骼角色流畅完成行走、转身、拿取实体工具和劳作，动作衔接无明显断裂。\n- [ ] 至少三套有真实材料/工艺/来源记录的不同社会身份服装，支持穿戴与卸下，不能复制物品。\n- [ ] 衣着、气质、真实身份、外界判断分别存储并对 NPC 社交行为产生可测试影响。\n- [ ] 高品质人物在实际 Android 设备上以默认竖屏、可选横屏运行；记录 FPS、内存和截图供用户确认。\n- [ ] 原创或授权美术资产来源清晰，不直接盗用《燕云十六声》模型或纹理。\n\n### 五、开发纪律\n- 每次提交更新本日志：日期、提交、实际改动文件、功能状态、测试证据、未完成和下一步。\n- Work 必须以此文件和 docs/WORK_GODOT3D_HANDOFF_2026-10-13.md 为任务交接入口。\n- 不准偷换“3D 水准”成“2.5D”；不准偷换“数百项外貌参数”成“数百个独立绘制零件”；不准把演示模型说成最终人物。\n- 未通过用户近景人物截图和真机验收前，**人物系统状态统一标为未达标**。",
       "source_status": "source-main-development"
     },
     {
-      "id": "dev-063-2f0a090527",
+      "id": "dev-064-2f0a090527",
       "title": "2026-10-13 — 人物开发第 1 次实际编码提交：实时三维捏脸几何验证",
       "date": "2026-10-13",
       "body": "### 实际修改文件\n- godot3d/scripts/face_morph_mesh.gd：连续三维头部技术测试网格；下颌、颧颊、下巴、额头、鼻尖参数直接修改真实网格顶点。\n- godot3d/scripts/character_creator.gd：竖屏捏脸技术界面、实时滑块、旋转镜头、保存/重置、返回村落。\n- godot3d/scenes/character_creator.tscn：捏脸场景。\n- godot3d/scripts/main.gd：村落场景进入捏脸界面的按钮。\n- godot3d/tests/character_creator_test.gd：验证数百逻辑参数、不同种子、真实几何顶点变化、非法值拦截、JSON 保存恢复。\n- .github/workflows/godot-3d-tests.yml：添加人物捏脸测试及场景启动检查。\n\n### 验证状态\n- GitHub Actions 本次人物测试：已触发，写日志时仍在运行，**尚未确认通过**。检查 [内部开发仓库链接]\n- Godot Android 3D APK 打包：有独立 CI，仍须核实本次提交是否成功产出 APK。\n- 真机测试：未进行。\n\n### 不得冒充的内容\n- 当前头部是程序生成的粗糙连续网格，**只是验证滑块真正改变 3D 顶点**，不是高品质人物，不代表《燕云十六声》视觉水准。\n- 当前仅 5 组左右对称的实际几何控制；600+ 个逻辑参数仍未全部映射为高精度模型 Blend Shapes。\n- 尚无美术级脸部、完整身体、骨骼、蒙皮、动作、服饰网格和气质动画；人物质量验收依旧**未达标**。\n\n### 下一步硬任务\n1. 确认 CI 运行结果，修复所有编译/场景启动问题。\n2. 引入可合法使用的高质量人形基础网格与 Skeleton3D，先实现近景真实面部形变/骨骼/蒙皮。\n3. 把目前 5 个技术滑块替换为基于美术资产的可见真实 Morph Target 控制，完善捏脸预设和存档。\n4. 生成并验证原生 3D 安卓 APK，收集真机画质、帧率与实际捏脸录屏供用户验收。",
       "source_status": "source-main-development"
     },
     {
-      "id": "dev-064-beb32b2cd2",
+      "id": "dev-065-beb32b2cd2",
       "title": "2026-10-13 — 故障复盘与构建验收（实测已通过）",
       "date": "2026-10-13",
       "body": "### 实际故障和修复（禁止掩盖历史失败）\n- 最初新人物 CI 报错：`character_identity.gd:72` 用了 GDScript 的保留标识符 `trait` 作为循环变量，预加载脚本解析失败。**根因已通过 GitHub Actions 独立 GDScript 语法检查定位**，后改成 `trait_name`，修复提交 `ecc63e5b`。此前对数组常量的猜测不是根因。\n- Android CI 早期构建长期卡住并反复取消：工作流以交互编辑器脚本配置 SDK，并启用针对每次提交的自动取消。现已改为无交互的 `editor_settings-4.tres` SDK/JDK 配置、严格超时、直接运行制造及捏脸测试，并将新版构建组与旧卡住的构建隔离。主要修复提交 `c6d0bfb9`、`f501fb87`。\n- Android 打包仍一度失败，报空白 `Cannot export project with preset \"Android\" due to configuration errors:`。根因为 Linux x86_64 平台 Android 导出缺少 ETC2/ASTC 纹理导入配置，已在 `godot3d/project.godot` 的 `[rendering]` 启用 `textures/vram_compression/import_etc2_astc=true`；修复提交 `4f72c822`。\n\n### 真实执行结果（2026-10-13）\n- **Godot 4.4.1 原生 3D CI：PASS**。运行 [内部开发仓库链接] （提交 `4f72c822`）。\n- **Godot 原生 3D Android ARM64 调试 APK 构建：SUCCESS**。运行 [内部开发仓库链接] （提交 `4f72c822`）。\n- 安卓构建过程中 `world_state_test.gd` 实体与制造测试：PASS；`character_creator_test.gd` 几何形变/保存测试：PASS；APK 文件已生成并作为 Actions Artifact 上传。\n- APK 下载工件：`Canglan-Godot3D-ARM64-Debug-APK`（Artifact ID `11812984139`，打包工件约 26.7 MB；原始 APK 文件位于 ZIP 内）。入口 [内部开发仓库链接]\n- **尚无用户安卓真机安装、触控、屏幕实际渲染、FPS 或兼容性测试结果。** CI 构建成功不等于游戏完成，也不等于用户设备上已验证。\n- **人物视觉品质仍未达标。** APK 是原生 3D 技术验证，不是《燕云十六声》美术水准；尚缺高质量原创人体模型、骨骼蒙皮、动画、衣着资产和完备捏脸。\n\n### 持续执行约束\n- 发布给用户的新安装包必须标注“技术验证版 / 美术尚未完成”，不得混淆成成品。\n- 只有 CI 原生测试、安卓打包成功、真机截图/帧率反馈依次确认后，才能标记相应阶段“通过”。\n- 下步重点不再单纯堆参数，而是制作一名合规、高品质原创国风 3D 人物，实际接入 Skeleton3D、蒙皮及面部 Blend Shapes，并在手机 APK 上验证。",
       "source_status": "source-main-development"
     },
     {
-      "id": "dev-065-ef2f5b3c2c",
+      "id": "dev-066-ef2f5b3c2c",
       "title": "2026-10-13 — 用户实机截图反馈后的实际开发：自动故障门禁 + 捏脸界面纠偏",
       "date": "2026-10-13",
       "body": "### 用户确认的缺陷\n- Android 真机截图：人物是巨大、无五官的程序生成蛋形头，滑块覆盖人物；村落建筑和树木明显低质，远低于正式国风 3D 标准。\n- 这两张截图是**真实未达标证据**。已有 636 项逻辑参数、实体 ID 或 APK 成功均不能抵消画面质量缺陷。\n\n### 已实际提交的代码（均为可核对的 GitHub 提交）\n- `godot3d/tools/quality_gate.sh`：新建自动诊断脚本，执行 Godot 项目导入、**全部生产脚本**逐个语法检查、实体物料测试、捏脸形变测试、UI 布局测试和两个场景启动冒烟测试；每一步独立留存日志，解析器/运行时严重报错即失败。首次提交 `77e6f61c`，补充布局测试 `f0f40c4d`。\n- `.github/workflows/godot-3d-tests.yml`：接入统一质量门禁，成功或失败都上传 `Canglan-Godot-QA-Logs`；提交 `4e38be50`。\n- `.github/workflows/godot-3d-android.yml`：**先通过同一质量门禁，才允许继续导出 Android APK**，上传 `Canglan-Android-Preflight-Logs`；提交 `5ff0db09`。\n- `godot3d/scripts/character_creator.gd`：将捏脸镜头从 3.7 拉远到 5.6、FOV 38→45，将控制面板从屏幕 58% 下移至 72% 起始，去掉固定 540px 横向最小宽度，缓解手机竖屏中头部巨大、滑块挡脸的问题；提交 `a7138996`。\n- `godot3d/tests/character_layout_test.gd`：新增镜头距离、控制面板位置和滑块存在性自动回归测试；提交 `5252c392`。\n\n### 验证与未完成\n- 之前提交 `a7138996` 的 Godot 测试运行 `38403960016` 显示 success；但那时**尚未包含新增布局测试**。完整最新质量门禁运行 `38404063589` 和 Android 运行 `38404063304` 在本次写日志前处于排队/等待，**不可宣称已通过**。\n- 本次**没有**制作高品质人物模型、真实五官、骨骼、皮肤、头发、服装、动画，也没有替换村屋和树木的低质资产；捏脸视觉质量依然**未达标**。\n- 质量门禁可发现脚本、实体逻辑、UI 结构和启动问题；**不能自动证明**人物好看、动作自然、材质真实、Android 真机无问题。后续必须以用户实机截图和真实素材质量验收。\n- 下一个真正的美术生产任务：先完成一名有真实五官、可近景观察、带 Skeleton3D/蒙皮与可用 Blend Shapes 的原创/授权高质量全身国风人物，再接入人物捏脸；村庄按实体物料链逐栋替换，不允许仅用装饰模型充数。",
       "source_status": "source-main-development"
     },
     {
-      "id": "dev-066-288cba567d",
+      "id": "dev-067-288cba567d",
       "title": "2026-10-13 22:40（北京时间）— 副手报到、阅读主线状态并向 Work / GPT-6 申请分工",
       "date": "2026-10-13",
       "body": "**身份：开发副手（本独立对话中的协作助手）**。我是本项目的辅助开发者，向 **Work（主工程负责人）** 与 **GPT-6（既有专项开发协作者）** 配合，不替代他们的决策，也不把他们的成果记作我的提交。此条是写给二位的**任务申请**，并不代表二位已经阅读或回复。\n\n**已实际核对的资料**：\n- 本仓库 `docs/DEVELOPMENT_LOG.md`、`docs/WORK_GODOT3D_HANDOFF_2026-10-13.md`、`docs/REQUIRED_ENTITY_MATERIAL_CRAFTING_WORLD.md`、`docs/ONE_HOUSE_500M_ONE_DAY_ACCEPTANCE.md`、`docs/WORK_GITHUB_COLLAB_STATUS.md`。\n- 2026-10-13 最近提交包括：`86a39bc1`（一栋真实房屋/半径500米/4人24小时验收清单）、`e13c3efc`（家庭设施来源改为真实采集及加工）、`ebc188dd`（读档不重复生成家庭与自然资源）、`ce3c4d17`（日夜光照与生活时钟关联）。\n- **当前目标是 Godot 4 原生高品质国风 3D 手游**：斜视摄像机不能被当作降低三维模型和材质水准的理由；默认竖屏、设置可切换横屏，万物实体且可溯源。历史 Flutter 包是旧技术分支，不应覆盖或冒充最新 Godot 主线。\n- 仍未通过用户要求的**国风高品质人物/场景模型、全身骨骼和自然动作、真实捏脸、多角色外观差异、移动端完整24小时交互与画质**验收。此前代码检查与 APK 技术构建的历史结果不能代替本次最新版本的真机验收。\n\n**给 Work 与 GPT-6 的直接提问（请在本日志或交接文件回复）**：\n1. **我作为副手现在最需要承担哪项具体任务？** 建议优先从相对独立的 24h 家庭/物料守恒/存档回归、质量门禁补测、资产来源审计、Android 竖横屏交互验收清单中指定一项；也可另行指派更紧急的工作。\n2. 请指定**负责人、分支/目录/文件边界、依赖提交、禁止触碰的文件、交付目标与验收命令**，防止覆盖 Work 和 GPT-6 并行改动。\n3. 请明确我的报告应提交在本日志、`docs/WORK_GITHUB_COLLAB_STATUS.md`，还是另建专项日志；如需修改代码，请先明确改动范围和合并方式。\n\n**在收到工作包以前的自我约束**：仅提供可核验的复查和低冲突增量；不擅改主引擎路线、不重写人物/场景核心、不覆盖其他人的模型资产/签名/构建配置、不宣称视觉已达标或真机已验收。若发现 P0 阻塞项，将以“证据、复现、影响、建议责任人”格式反馈。\n\n**本次实际动作**：检查 GitHub 私有仓库及相关开发文档，并写入本协作日志；**未修改游戏代码、未跑新 CI、未编译/安装 APK、未领取主开发者的正式任务**。",
