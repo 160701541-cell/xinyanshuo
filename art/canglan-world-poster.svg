@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 1697" role="img" aria-labelledby="t d">
+<title id="t">《苍岚·人生世界》原创世界观概念海报</title><desc id="d">青绿与暖金色的群山、江河、古代村镇、商路和孤身旅人，表达每个生命都有自己的命运。本图为概念美术，并非游戏实机截图。</desc>
+<defs>
+<linearGradient id="sky" x2=".2" y2="1"><stop stop-color="#071d27"/><stop offset=".42" stop-color="#30545a"/><stop offset=".76" stop-color="#b89a78"/><stop offset="1" stop-color="#1a3430"/></linearGradient>
+<linearGradient id="gold" x2="0" y2="1"><stop stop-color="#f5e6bd"/><stop offset=".6" stop-color="#d5b782"/><stop offset="1" stop-color="#9e7141"/></linearGradient>
+<linearGradient id="river" x2=".3" y2="1"><stop stop-color="#d6c2a0"/><stop offset=".5" stop-color="#87afb0"/><stop offset="1" stop-color="#193b42"/></linearGradient>
+<linearGradient id="veil" x2="0" y2="1"><stop stop-color="#071922" stop-opacity=".82"/><stop offset=".3" stop-color="#0b2830" stop-opacity="0"/><stop offset=".73" stop-color="#061d24" stop-opacity=".02"/><stop offset="1" stop-color="#07151b" stop-opacity=".98"/></linearGradient>
+<radialGradient id="sun"><stop stop-color="#fff9d6" stop-opacity=".98"/><stop offset=".35" stop-color="#f8dca4" stop-opacity=".5"/><stop offset="1" stop-color="#ffe1ae" stop-opacity="0"/></radialGradient>
+<filter id="mist"><feGaussianBlur stdDeviation="24"/></filter>
+<filter id="grain"><feTurbulence type="fractalNoise" baseFrequency=".57" numOctaves="3" seed="5"/><feColorMatrix type="saturate" values="0"/><feComponentTransfer><feFuncA type="linear" slope=".06"/></feComponentTransfer></filter>
+<g id="pine"><path d="M0 0L-9 48h17Z" fill="#102b2b"/><path d="M-1 12L-41 106h74z" fill="#143c39"/><path d="M0 48L-55 145h108Z" fill="#163a34"/><path d="M-4 110v62h9v-62z" fill="#0a2929"/></g>
+<g id="house"><path d="M-86 1L0-35 91 1 69 10H-69Z" fill="#111c22"/><path d="M-69 11H70V86H-69Z" fill="#aa8063"/><path d="M-55 22H55V85H-55Z" fill="#75543d"/><path d="M-16 29H19V86H-16Z" fill="#1c302d"/><path d="M-86 1L0-35 91 1" stroke="#c6a97e" stroke-width="4" fill="none"/><path d="M-60 20V88M-33 20V88M44 20V88" stroke="#d1a57a" stroke-width="6"/><path d="M-66 86H69" stroke="#191d23" stroke-width="6"/></g>
+</defs>
+<path fill="url(#sky)" d="M0 0h1200v1697H0z"/>
+<circle cx="880" cy="545" r="330" fill="url(#sun)"/><circle cx="882" cy="546" r="69" fill="#ffe5b8" opacity=".72"/>
+<path d="M0 685l135-185 87 69 141-271 95 117 138-231 123 169 101-130 106 164 119-89 155 203v300H0Z" fill="#314d54" opacity=".44"/>
+<path d="M0 824L84 635 173 713 306 425l83 187 129-157 115 143 119-218 154 207 126-157 168 222v222H0Z" fill="#385a57" opacity=".64"/>
+<path d="M0 948l122-183 145 71 173-211 93 158 87-102 92 79 108-194 125 173 100-83 165 171v340H0Z" fill="#254a45"/>
+<path d="M-60 985q260-183 455 4t413-76q183-115 455-11v350H0Z" fill="#3a655c" opacity=".64"/>
+<path d="M0 972Q304 944 584 979T1200 964v170Q868 1006 582 1059T0 1097Z" fill="#d4e3d8" opacity=".15" filter="url(#mist)"/>
+<path d="M648 934Q937 913 984 1063T703 1364q-126 155 39 333H383q192-230 139-339-113-230 73-317Z" fill="url(#river)" opacity=".88"/>
+<path d="M673 1007q208 61 96 247-52 90-86 144M713 1067q138 74 36 207" stroke="#fff0c7" fill="none" stroke-width="5" opacity=".24"/>
+<path d="M0 1009Q252 875 494 996L591 1697H0Z" fill="#213f36"/>
+<path d="M1200 1003Q1015 908 875 1008L822 1697H1200Z" fill="#233d32"/>
+<g opacity=".8"><use href="#house" transform="translate(320 968) scale(.66)"/><use href="#house" transform="translate(215 1016) scale(.54)"/><use href="#house" transform="translate(415 1029) scale(.56)"/><use href="#house" transform="translate(1020 970) scale(.7)"/><use href="#house" transform="translate(914 1044) scale(.57)"/></g>
+<g><use href="#pine" transform="translate(74 1010) scale(2.4)"/><use href="#pine" transform="translate(1171 972) scale(2.6)"/><use href="#pine" transform="translate(1119 1123) scale(1.7)"/><use href="#pine" transform="translate(110 1284) scale(1.6)"/><use href="#pine" transform="translate(287 1128) scale(.9)"/><use href="#pine" transform="translate(993 1132) scale(.9)"/></g>
+<path d="M0 1289q198-47 329 36t192 98q77 49 148-7-155 135-349 7-182-92-320-27Z" fill="#b59d74" opacity=".42"/>
+<path d="M475 1590q36-144 49-221 15-82 32-150 1-47 27-70 27 9 27 38 24 37 20 78l17 110 66 218Z" fill="#0c191c"/>
+<circle cx="588" cy="1140" r="21" fill="#111c1d"/><path d="M574 1128q-25-58-8-76 36-36 49 48-12 8-41 28Z" fill="#0d1b1b"/>
+<path d="M546 1213l-28 18-17 181 62 52 46-45-19-197Z" fill="#153c40"/><path d="M595 1207l39 8 65 194-29 34-59-70Z" fill="#285d5a"/><path d="M539 1246q59 28 96-3" stroke="#ccb48c" stroke-width="7" opacity=".9" fill="none"/>
+<path d="M637 1238l85-199" stroke="#6a4f38" stroke-width="11"/><path d="M719 1016l22-39" stroke="#c6b087" stroke-width="4"/>
+<path d="M52 61H1148V1630H52Z" fill="none" stroke="#dfc79a" stroke-opacity=".4" stroke-width="2"/>
+<path d="M78 86h150M972 86h150M78 1598h150M972 1598h150" stroke="#dfc79a" stroke-opacity=".8" stroke-width="2"/>
+<rect width="1200" height="1697" fill="url(#veil)"/>
+<text x="600" y="183" text-anchor="middle" fill="#efe7cf" font-size="109" letter-spacing="24" font-family="'Noto Serif CJK SC','Songti SC',serif">苍岚</text>
+<text x="600" y="267" text-anchor="middle" fill="#d5b580" font-size="40" letter-spacing="19" font-family="'Noto Serif CJK SC','Songti SC',serif">人 生 世 界</text>
+<path d="M420 294h360" stroke="#c6a371" opacity=".6"/>
+<text x="600" y="1504" text-anchor="middle" fill="#f3e9cc" font-size="35" letter-spacing="11" font-family="'Noto Serif CJK SC','Songti SC',serif">一人一命 · 一城一生</text>
+<text x="600" y="1558" text-anchor="middle" fill="#cdb990" font-size="22" letter-spacing="5" font-family="'Noto Serif CJK SC','Songti SC',serif">山川万里，众生自有来路</text>
+<text x="87" y="1671" fill="#d1b68a" font-size="17" letter-spacing="3">世界观美术概念 · 非实际游戏画面</text>
+<rect width="1200" height="1697" filter="url(#grain)" opacity=".55"/>
+</svg>
