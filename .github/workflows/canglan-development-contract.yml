@@ -115,6 +115,7 @@ jobs:
           mkdir -p game-source/godot-craft-smoke/data game-source/godot-craft-smoke/scripts
           cp game-source/data/craft/material_graph.v1.json game-source/godot-craft-smoke/data/material_graph.v1.json
           cp game-source/godot3d/scripts/crafting/craft_catalog_reader.gd game-source/godot-craft-smoke/scripts/craft_catalog_reader.gd
+          cp game-source/godot3d/scripts/crafting/craft_codex_panel.gd game-source/godot-craft-smoke/scripts/craft_codex_panel.gd
       - name: Run actual Godot 4.4.1 read-only catalog script and reject parse errors
         shell: bash
         run: |
@@ -128,11 +129,26 @@ jobs:
           if grep -E 'SCRIPT ERROR:|Parse Error:|Assertion failed|ERROR:|FAILED' godot-crafting-smoke.log; then
             exit 1
           fi
+      - name: Verify real Godot UI search, material stages, unlocks and close
+        shell: bash
+        run: |
+          set -euo pipefail
+          timeout 90s /tmp/canglan-godot/Godot_v4.4.1-stable_linux.x86_64 \
+            --headless --path game-source/godot-craft-smoke \
+            --script res://tests/interactive_codex_smoke.gd \
+            > godot-codex-ui-smoke.log 2>&1 || { cat godot-codex-ui-smoke.log; exit 1; }
+          cat godot-codex-ui-smoke.log
+          grep -Fq 'PASS_GODOT_4_4_1_INTERACTIVE_CRAFT_CODEX_READ_ONLY' godot-codex-ui-smoke.log
+          if grep -E 'SCRIPT ERROR:|Parse Error:|Assertion failed|ERROR:|FAILED' godot-codex-ui-smoke.log; then
+            exit 1
+          fi
       - name: Upload real Godot smoke evidence
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: canglan-godot-isolated-item-graph-runtime-log
-          path: godot-crafting-smoke.log
+          path: |
+            godot-crafting-smoke.log
+            godot-codex-ui-smoke.log
           retention-days: 7
           if-no-files-found: ignore
