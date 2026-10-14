@@ -94,6 +94,17 @@ class CraftGraph:
             integer(item.get('mass_g'), 1, 1000000000, f'{key}:mass')
             require(type(item.get('origin')) is str and item['origin'].strip(),
                     f'{key}:origin')
+        # Snapshot of real Work registry: the on-world log currently weighs
+        # 40 kg and existing timber_beam weighs 20 kg. Never silently shrink
+        # the same inventory unit to make new recipes feel cheap.
+        legacy=self.document.get('compatibility',{})
+        require(type(legacy) is dict and legacy.get('required_existing_mass_g')
+                == {'log':40000} and legacy.get('related_existing_units')
+                == {'timber_beam':20000},
+                'legacy_mass_contract_mismatch')
+        require(self.items['log']['mass_g']==40000
+                and self.items['timber_beam_standard']['mass_g']==20000,
+                'material_mass_incompatible_with_original_world')
         for key, research in self.research.items():
             integer(research.get('work_minutes'), 1, 1000000,
                     f'{key}:research_time')
