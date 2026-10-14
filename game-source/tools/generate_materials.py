@@ -1,5 +1,9 @@
 #!/usr/bin/env python3
-"""Original deterministic P1 Chinese architectural material studies; not final art."""
+"""Deterministic original P1 surface prototypes. Not production-approved art.
+
+All outputs are periodic, 8-bit RGB maps. Real roof construction must use
+geometry; these maps are a supporting micro-surface, not fake model detail.
+"""
 import argparse
 import hashlib
 import json
@@ -9,65 +13,112 @@ import struct
 import zlib
 
 SIZE = 256
+CHANNELS = ('albedo', 'normal', 'roughness')
+
 
 def png_rgb(path, pixels, size=SIZE):
-    assert len(pixels) == size * size * 3
+    if len(pixels) != size * size * 3:
+        raise ValueError('RGB pixel count does not match requested PNG dimensions')
     def chunk(tag, data):
-        return struct.pack('>I', len(data)) + tag + data + struct.pack('>I', zlib.crc32(tag + data) & 0xffffffff)
-    raw = b''.join(b'\x00' + pixels[y*size*3:(y+1)*size*3] for y in range(size))
-    path.write_bytes(b'\x89PNG\r\n\x1a\n' + chunk(b'IHDR', struct.pack('>IIBBBBB', size, size, 8, 2, 0, 0, 0)) + chunk(b'IDAT', zlib.compress(raw, 9)) + chunk(b'IEND', b''))
+        return (struct.pack('>I', len(data)) + tag + data
+                + struct.pack('>I', zlib.crc32(tag + data) & 0xffffffff))
+    raw = b''.join(b'\0' + pixels[y * size * 3:(y + 1) * size * 3]
+                   for y in range(size))
+    path.write_bytes(b'\x89PNG\r\n\x1a\n'
+                     + chunk(b'IHDR', struct.pack('>IIBBBBB', size, size, 8, 2, 0, 0, 0))
+                     + chunk(b'IDAT', zlib.compress(raw, 9))
+                     + chunk(b'IEND', b''))
 
-def noise(x, y, seed):
-    n = (x * 374761393 + y * 668265263 + seed * 1442695041) & 0xffffffff
+
+def lattice_hash(x, y, seed):
+    n = (x * 374761393 + y * 668265263 + seed * 2246822519) & 0xffffffff
     n = ((n ^ (n >> 13)) * 1274126177) & 0xffffffff
     return ((n ^ (n >> 16)) & 65535) / 65535.0
 
-def shade(material, x, y):
-    theta = 2 * math.pi * x / SIZE
-    phi = 2 * math.pi * y / SIZE
+
+def periodic_noise(x, y, cells, seed):
+    """Continuous periodic value noise; no random pixel-block seams."""
+    a, b = x * cells / SIZE, y * cells / SIZE
+    i, j = math.floor(a), math.floor(b)
+    u, v = a - i, b - j
+    u, v = u*u*(3-2*u), v*v*(3-2*v)
+    def h(dx, dy):
+        return lattice_hash((i + dx) % cells, (j + dy) % cells, seed)
+    return ((h(0, 0)*(1-u) + h(1, 0)*u)*(1-v)
+            + (h(0, 1)*(1-u) + h(1, 1)*u)*v)
+
+
+def clamp8(value):
+    return min(255, max(0, round(value)))
+
+
+def surface(material, x, y):
+    broad = periodic_noise(x, y, 4, 31)
+    grain = periodic_noise(x, y, 16, 71)
+    pores = periodic_noise(x, y, 32, 107)
+    variation = (broad-.5)*2
+    micro = (grain-.5)*2
     if material == 'qing_tile':
-        wave = math.cos(theta * 8)
-        mortar = min(1.0, max(0., (wave + .74) * 12.))
-        height = .44 + .36 * wave * mortar + .08 * math.sin(phi * 4)
-        grain = (noise(x//4, y//4, 29) - .5) * 10
-        color = (72 + 22 * height + grain, 91 + 18 * height + grain, 95 + 19 * height + grain)
-        rough = 181 + 24 * (1 - height)
+        ridge = (0.5 + 0.5*math.cos(math.tau*8*x/SIZE)) ** 1.4
+        height = .20 + .44*ridge + .105*variation + .048*micro
+        pigment = 14*variation + 6*micro + 4*(pores-.5)
+        color = (78 + 12*ridge + pigment, 96 + 11*ridge + pigment,
+                 100 + 12*ridge + pigment)
+        rough = 190 + 13*(1-ridge) + 9*variation + 6*micro
+    elif material == 'ivory_plaster':
+        height = .22 + .16*variation + .055*micro + .025*(pores-.5)
+        pigment = 7*variation + 4*micro + 3*(pores-.5)
+        color = (216 + pigment, 210 + pigment, 196 + pigment)
+        rough = 215 + 10*variation + 4*micro
     else:
-        height = (.08 * math.sin(theta * 12) * math.sin(phi * 15)
-                  + .04 * math.cos(theta * 27 + phi * 9))
-        grain = (noise(x//3, y//3, 41) - .5) * 9
-        color = (215 + 13 * height + grain, 211 + 12 * height + grain, 197 + 13 * height + grain)
-        rough = 216 + 18 * height
-    return tuple(max(0, min(255, round(v))) for v in color), height, max(0, min(255, round(rough)))
+        raise ValueError('Unexpected material name')
+    return tuple(clamp8(v) for v in color), height, clamp8(rough)
+
 
 def build(output):
     output.mkdir(parents=True, exist_ok=True)
-    manifest = {'schema': 1, 'status': 'prototype_unapproved', 'resolution': [SIZE, SIZE], 'materials': {}}
-    for key in ('ivory_plaster', 'qing_tile'):
-        height = [[shade(key, x, y)[1] for x in range(SIZE)] for y in range(SIZE)]
-        pixels = {'albedo': bytearray(), 'normal': bytearray(), 'roughness': bytearray()}
+    manifest = {
+        'schema': 2,
+        'status': 'prototype_unapproved',
+        'license': 'original_project_generated_no_external_assets',
+        'resolution': [SIZE, SIZE],
+        'color_space': {'albedo': 'sRGB', 'normal': 'linear', 'roughness': 'linear'},
+        'normal_convention': 'tangent_space_opengl_y_positive',
+        'materials': {},
+    }
+    for name in ('ivory_plaster', 'qing_tile'):
+        data = [[surface(name, x, y) for x in range(SIZE)] for y in range(SIZE)]
+        maps = {key: bytearray() for key in CHANNELS}
         for y in range(SIZE):
             for x in range(SIZE):
-                color, _, rough = shade(key, x, y)
-                dx = (height[y][(x+1)%SIZE] - height[y][(x-1)%SIZE]) * .9
-                dy = (height[(y+1)%SIZE][x] - height[(y-1)%SIZE][x]) * .9
-                inv = 1. / math.sqrt(dx*dx + dy*dy + 1)
-                normal = tuple(round((v * inv * .5 + .5) * 255) for v in (-dx, -dy, 1.))
-                pixels['albedo'].extend(color)
-                pixels['normal'].extend(normal)
-                pixels['roughness'].extend((rough,)*3)
-        files = {}
-        for channel, buf in pixels.items():
-            path = output / f'{key}_{channel}.png'
-            png_rgb(path, bytes(buf))
-            files[channel] = {'path': path.name, 'sha256': hashlib.sha256(path.read_bytes()).hexdigest()}
-        manifest['materials'][key] = files
-    (output / 'manifest.json').write_text(json.dumps(manifest, indent=2, ensure_ascii=False) + '\n', encoding='utf-8')
+                color, _, rough = data[y][x]
+                dx = (data[y][(x+1) % SIZE][1] - data[y][(x-1) % SIZE][1]) * 1.45
+                dy = (data[(y+1) % SIZE][x][1] - data[(y-1) % SIZE][x][1]) * 1.45
+                inv = 1.0 / math.sqrt(1.0 + dx*dx + dy*dy)
+                normal = (clamp8((-dx*inv*.5+.5)*255),
+                          clamp8((-dy*inv*.5+.5)*255),
+                          clamp8((inv*.5+.5)*255))
+                maps['albedo'].extend(color)
+                maps['normal'].extend(normal)
+                maps['roughness'].extend((rough, rough, rough))
+        entries = {}
+        for channel, buf in maps.items():
+            p = output / f'{name}_{channel}.png'
+            png_rgb(p, buf)
+            entries[channel] = {'path': p.name,
+                                'sha256': hashlib.sha256(p.read_bytes()).hexdigest(),
+                                'bytes': p.stat().st_size}
+        manifest['materials'][name] = entries
+    (output / 'manifest.json').write_text(
+        json.dumps(manifest, indent=2, ensure_ascii=False) + '\n', encoding='utf-8')
     return manifest
+
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--output', type=Path, default=Path('game-source/godot3d/assets/materials/p1'))
+    parser.add_argument('--output', type=Path,
+                        default=Path('game-source/godot3d/assets/materials/p1'))
     args = parser.parse_args()
-    info = build(args.output)
-    print(f"P1 prototypes: {len(info['materials'])} material sets, {len(info['materials'])*3} PNGs, {SIZE}x{SIZE}; NOT art-approved")
+    result = build(args.output)
+    print(f"GENERATED {len(result['materials']) * 3} original maps; "
+          'not art-approved, not signed for Android release')
