@@ -94,3 +94,12 @@
 - **真正的引擎解析**：新增只读Godot 4.4.1 GDScript目录桥接器`game-source/godot3d/scripts/crafting/craft_catalog_reader.gd`，并用隔离微工程验证资源图谱查询、研究/图纸门禁、物料预算；**不是原主游戏UI/工单完成**。
 - **最终公开真实QA结果**：[GitHub Actions #38646840315](https://github.com/160701541-cell/xinyanshuo/actions/runs/38646840315)结论**success**：原料工艺图17项、数据调教16项、单品生产合同8项，合计41项真实Python测试全部通过；另有实际Godot 4.4.1无渲染器隔离图谱脚本运行PASS。对应机器可读报告及Godot运行日志已上传GitHub工件，报告仍显式`release_approved=false`。早期CI曾抓到脚本语法错误及错误的物料反例质量，已修正后重新全部通过；不删测试求绿灯。
 - **严禁混淆阶段**：S/U（公共架构+真实自动测试）通过；独立Godot数据只读I=部分通过；原游戏`WorldState`工单与实际图纸界面、玩家研发解锁、国漫美术与Android设备验证/正式签名R **均未完成**。官网正式基包仍APK176、热更新#167。用户手机此刻不会出现“新物品树”。后续按一个墙段的真实资源→原料加工→图纸研究→施工工人→可视化→存档完整闭环才可标注正式游戏通过。
+
+## 2026-10-15 — 用户休息前续研：原游戏真实工艺谱入口候选
+
+- 在公开仓库新增 `game-source/godot3d/scripts/crafting/craft_codex_panel.gd`（commit `4f2a509`）：真正Godot4.4.1 Control UI，支持24类物品搜索、按原料/半成品/组件过滤、生产/用途配方和研究/图纸/工坊/库存缺口，默认纯只读，不可免费解锁或制造。
+- 在私有游戏仓库**隔离分支** `feat/craft-codex-20261015`（未合并main）真实写入同源资源图谱、只读Reader、可交互UI，并向原 Godot `scripts/main.gd`「工具/更多」菜单增添工艺谱按钮。打开和关闭调用已有HUD触摸取消入口，并仅从原始`WorldState.inventories[player_entity_id]`读取库存；默认知识为空防旧档获得免费配方。对应新增入口提交`c11b5d7`，交接`docs/CRAFT_CODEX_WORK_HANDOFF_20261015.md`。
+- **严禁混淆状态**：这是原游戏**源码候选入口**，未在Work分支最新主场景验证、未通过旧档字节/Android/人眼验收、未包含在正式签名PCK，**用户手机仍看不到**。
+- **实际CI**：公开`game-source/godot-craft-smoke/tests/interactive_codex_smoke.gd`加入查询/筛选/解锁显示/关闭测试。第一次[#38648567503](https://github.com/160701541-cell/xinyanshuo/actions/runs/38648567503)失败是测试脚本把`Panel`作为常量名遮挡Godot内置Panel，已经修复；第二次[#38648754706](https://github.com/160701541-cell/xinyanshuo/actions/runs/38648754706)失败是测试误以为“青瓦”只会命中瓦片一条，实际还应命中“青瓦屋面模块”，已经严格保留真实搜索逻辑并修正反例。第三次[#38648915175](https://github.com/160701541-cell/xinyanshuo/actions/runs/38648915175)等待最终真实报告；不能提前标PASS。
+- **付费Actions治理**：曾暂建私库draft PR#18用于Work交接，但PR触发旧有私人`pull_request`与`pull_request_target`工作流失败和消耗资源。**已立即关闭PR#18**、保留私有候选代码分支，停止PR触发；后续只在公开仓库跑隔离QA，不能再打开私人PR或推送触发旧Actions，直至迁移成功。
+- **开发方式**：真实代码/失败测试/恢复验证/工作日志均记录，绝不删测试求绿灯；下一步优先让隔离Godot UI跑通，再将按钮差异无冲突地移入Work最新世界，以用户实际手机为最终标准。
