@@ -1,0 +1,31 @@
+name: Verify playable official APK + PCK (public, read-only)
+on:
+  push:
+    branches: [main]
+    paths:
+      - android-preview/base-latest.json
+      - android-preview/latest.json
+      - data/apk-download-mirror.json
+      - data/updates.json
+      - game-source/tools/verify_official_android_release.py
+      - .github/workflows/verify-official-game-release.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  verify-release:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify actual APK/PCK bytes and download-channel consistency
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 game-source/tools/verify_official_android_release.py . /tmp/canglan-game-release-audit.json
+      - name: Upload truthful release evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: canglan-official-published-release-audit
+          path: /tmp/canglan-game-release-audit.json
+          retention-days: 7
