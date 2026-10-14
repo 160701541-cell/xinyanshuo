@@ -14,7 +14,30 @@ from pathlib import Path
 import re
 
 SHA = re.compile(r'^[0-9a-f]{40}$')
-SHA256 = re.compile(r'^[0-9a-f]{64}
+SHA256 = re.compile(r'^[0-9a-f]{64}$')
+
+# Immutable QA floors: JSON tuning suggestions may improve these, never relax.
+QUALITY_FLOORS = {
+    'visual': {'missing_meshes': ('max', 0),
+               'floating_foundations': ('max', 0),
+               'roof_coverage_fraction': ('min', 0.25),
+               'roof_tile_legibility_faults': ('max', 0),
+               'material_stretch_faults': ('max', 0)},
+    'controls': {'input_conflicts': ('max', 0),
+                 'touch_to_feedback_p95_ms': ('max', 100),
+                 'camera_obstruction_frames': ('max', 0),
+                 'movement_foot_sliding_faults': ('max', 0)},
+    'logic': {'entity_id_collisions': ('max', 0),
+              'inventory_balance_faults': ('max', 0),
+              'save_recovery_faults': ('max', 0),
+              'recipe_mass_faults': ('max', 0),
+              'unearned_unlocks': ('max', 0)},
+    'performance': {'fps_p05': ('min', 30),
+                    'frame_p95_ms': ('max', 33.34),
+                    'draw_calls_p95': ('max', 200),
+                    'triangle_count_p95': ('max', 150000),
+                    'crashes': ('max', 0)},
+}
 
 class TuneError(ValueError):
     pass
