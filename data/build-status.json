@@ -4,6 +4,17 @@
   "source": "GitHub Actions workflow_run events (not API polling)",
   "runs": [
     {
+      "id": 38604387403,
+      "workflow": "Canglan P0-G3 true construction 3D catalog and labor-led survey OTA",
+      "scope": "Work开发分支",
+      "branch": "work/p0g3-site-materials",
+      "status": "queued",
+      "conclusion": null,
+      "created_utc": "2026-10-14T17:10:29Z",
+      "last_event_utc": "2026-10-14T17:10:29Z",
+      "run_url": "https://github.com/160701541-cell/canglan-world/actions/runs/38604387403"
+    },
+    {
       "id": 38604343200,
       "workflow": "Canglan P0-G3 true construction 3D catalog and labor-led survey OTA",
       "scope": "Work开发分支",
@@ -266,17 +277,6 @@
       "created_utc": "2026-10-14T11:37:44Z",
       "last_event_utc": "2026-10-14T11:48:14Z",
       "run_url": "https://github.com/160701541-cell/canglan-world/actions/runs/38557908369"
-    },
-    {
-      "id": 38557786681,
-      "workflow": "Canglan Native 3D Terrain Android ARM64 Preview",
-      "scope": "正式Android构建",
-      "branch": "main",
-      "status": "completed",
-      "conclusion": "cancelled",
-      "created_utc": "2026-10-14T11:36:42Z",
-      "last_event_utc": "2026-10-14T11:38:39Z",
-      "run_url": "https://github.com/160701541-cell/canglan-world/actions/runs/38557786681"
     }
   ],
   "pull_requests": [
@@ -311,5 +311,5 @@
     "pck_revision": 167,
     "pck_sha256": "0b1577e774f22959939a7befd0d7b183765f217d5e75683ac46b973207ac5b8e"
   },
-  "observed_at_utc": "2026-10-14T17:10:10Z"
+  "observed_at_utc": "2026-10-14T17:10:29Z"
 }
