@@ -287,7 +287,7 @@
       "scope": "Work开发分支",
       "state": "open",
       "draft": true,
-      "last_event_utc": "2026-10-14T17:51:44Z",
+      "last_event_utc": "2026-10-14T18:06:27Z",
       "pr_url": "https://github.com/160701541-cell/canglan-world/pull/16"
     },
     {
@@ -311,5 +311,5 @@
     "pck_revision": 167,
     "pck_sha256": "0b1577e774f22959939a7befd0d7b183765f217d5e75683ac46b973207ac5b8e"
   },
-  "observed_at_utc": "2026-10-14T18:05:01Z"
+  "observed_at_utc": "2026-10-14T18:06:27Z"
 }
