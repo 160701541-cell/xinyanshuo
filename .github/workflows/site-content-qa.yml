@@ -11,6 +11,13 @@ on:
       - data/**
       - android-preview/latest.json
       - .github/workflows/site-content-qa.yml
+  pull_request:
+    paths:
+      - index.html
+      - site.js
+      - style.css
+      - art/**
+      - .github/workflows/site-content-qa.yml
   workflow_dispatch:
 
 permissions:
