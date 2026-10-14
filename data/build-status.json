@@ -1,7 +1,7 @@
 {
   "schema": 1,
   "channel": "canglan-build-observer",
-  "source": "Verified official Android run + verified recent development QA; subsequent statuses delivered by GitHub Actions workflow_run events, not API polling",
+  "source": "GitHub Actions workflow_run events (not API polling)",
   "runs": [
     {
       "id": 38545713846,
@@ -59,6 +59,7 @@
       "run_url": "https://github.com/160701541-cell/canglan-world/actions/runs/38545050078"
     }
   ],
+  "pull_requests": [],
   "signed_release": {
     "apk_published": true,
     "pck_published": true,
