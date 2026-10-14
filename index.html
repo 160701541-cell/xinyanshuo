@@ -40,7 +40,10 @@
           <div class="observer-card"><span>公开签名 APK · 实际文件核验</span><strong id="build-apk-state">正在校验已发布的安装包…</strong><small id="build-apk-note">只有文件大小、SHA256、固定证书均符合才显示已发布</small></div>
           <div class="observer-card"><span>构建事件状态</span><strong id="build-workflow-state">等待工作流事件同步…</strong><small id="build-workflow-note">通过 GitHub Actions 事件自动推送，无GitHub REST API定时轮询</small></div>
         </div>
+        <h3 class="observer-subheading">最近的构建与测试</h3>
         <div id="build-observer-rows" class="observer-runs" aria-live="polite"><p class="loading-copy">读取最近构建状态…</p></div>
+        <h3 class="observer-subheading">GPT-6 / Work 代码提交与 PR 进度</h3>
+        <div id="build-observer-prs" class="observer-runs" aria-live="polite"><p class="loading-copy">等待实际提交/PR事件…</p></div>
         <p class="records-note" id="build-observer-sync" role="status" aria-live="polite">此处显示真实构建任务及最后事件时间；若事件过期，将明确标为待确认。</p>
       </div>
     </section>
