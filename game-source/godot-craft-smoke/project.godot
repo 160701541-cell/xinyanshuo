@@ -1,0 +1,7 @@
+config_version=5
+[application]
+config/name="Canglan public isolated crafting read-model QA"
+run/main_scene=""
+[rendering]
+renderer/rendering_method="gl_compatibility"
+renderer/rendering_method.mobile="gl_compatibility"
