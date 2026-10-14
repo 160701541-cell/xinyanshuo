@@ -23,7 +23,7 @@ func _run_actual_ui() -> void:
 		return
 	ui.search_box.text = "青瓦"
 	ui._refresh_items()
-	if ui.item_buttons.size() != 1 or not ui.item_buttons.has("qing_roof_tile"):
+	if ui.item_buttons.size() != 2 or not ui.item_buttons.has("qing_roof_tile") or not ui.item_buttons.has("roof_module"):
 		_die(ui, "UI_SEARCH_INCORRECT")
 		return
 	ui.search_box.text = ""
