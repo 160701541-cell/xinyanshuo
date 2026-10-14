@@ -1,0 +1,77 @@
+name: Canglan Android APK - alternate GitHub Releases download
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/canglan-apk-release-mirror.yml"
+      - "android-preview/base-latest.json"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: canglan-apk-release-mirror
+  cancel-in-progress: false
+
+jobs:
+  mirror:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify published APK against pinned metadata
+        id: verify
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import hashlib, json, os, pathlib, zipfile
+          d = json.loads(pathlib.Path("android-preview/base-latest.json").read_text(encoding="utf-8"))
+          assert d["channel"] == "android-preview-base-apk"
+          assert d["package_name"] == "org.canglan.ancient25d.preview"
+          assert d["signature_cert_sha256"] == "353c65d2bdde16509b33c976e9bed615013080b071629cfbf7fdeb43e4217057"
+          assert int(d["version_code"]) >= 1153
+          name = d["file"]
+          assert name.startswith("android-preview/base/Canglan-AncientWorld-v") and name.endswith("-Stable-Signed-ARM64.apk")
+          assert ".." not in name and "\\\\" not in name
+          path = pathlib.Path(name)
+          assert path.is_file() and path.stat().st_size == d["size_bytes"], "APK missing or wrong length"
+          sha = hashlib.file_digest(path.open("rb"), "sha256").hexdigest()
+          assert sha == d["sha256"], "APK hash mismatch: refuse to mirror"
+          with zipfile.ZipFile(path) as apk:
+              assert apk.testzip() is None
+              assert any(p.startswith("lib/arm64-v8a/") for p in apk.namelist())
+          tag = "canglan-v" + d["version_name"]
+          with open(os.environ["GITHUB_OUTPUT"], "a") as o:
+              o.write(f"apk={name}\n")
+              o.write(f"tag={tag}\n")
+              o.write(f"version={d['version_name']}\n")
+              o.write(f"sha256={sha}\n")
+          print("VERIFIED_PUBLIC_RELEASE_APK", tag, d["size_bytes"], sha)
+          PY
+      - name: Publish alternate direct download through GitHub Releases
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          TAG: ${{ steps.verify.outputs.tag }}
+          APK: ${{ steps.verify.outputs.apk }}
+          VERSION: ${{ steps.verify.outputs.version }}
+          SHA256: ${{ steps.verify.outputs.sha256 }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            echo "Release exists; checking whether the exact APK asset already exists."
+            present="$(gh release view "$TAG" --json assets --jq '.assets[].name')"
+            if printf '%s\n' "$present" | grep -Fxq "$(basename "$APK")"; then
+              echo "SIGNED_APK_RELEASE_MIRROR_ALREADY_EXISTS tag=$TAG"
+              exit 0
+            fi
+            gh release upload "$TAG" "$APK"
+          else
+            gh release create "$TAG" "$APK" --title "苍岚·人生世界 Android $VERSION" --notes "同证书 Android ARM64 覆盖安装包；勿卸载旧版。SHA256: $SHA256。GitHub Releases 是官网 GitHub Pages 之外的备用下载渠道。"
+          fi
+          echo "SIGNED_APK_RELEASE_MIRROR_READY tag=$TAG"
+          gh release view "$TAG" --json url,assets --jq '{url: .url, assets: [.assets[] | {name: .name, size: .size}]}'
