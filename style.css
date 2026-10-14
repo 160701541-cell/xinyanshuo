@@ -238,3 +238,5 @@ body:before{content:"";position:fixed;z-index:-1;inset:0;pointer-events:none;bac
   .observer-card>strong{font-size:19px}
   #build-observer-title{font-size:clamp(31px,7.4vw,45px)}
 }
+
+.observer-subheading{margin:28px 0 13px;font-family:"Songti SC","Noto Serif SC","SimSun",serif;font-size:20px;font-weight:500;color:#edd8ae;letter-spacing:1.6px}
