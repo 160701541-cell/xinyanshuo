@@ -96,10 +96,10 @@
       "workflow": "Canglan Native 3D Terrain Android ARM64 Preview",
       "scope": "正式Android构建",
       "branch": "main",
-      "status": "in_progress",
-      "conclusion": null,
+      "status": "completed",
+      "conclusion": "success",
       "created_utc": "2026-10-14T17:53:04Z",
-      "last_event_utc": "2026-10-14T17:54:31Z",
+      "last_event_utc": "2026-10-14T18:03:47Z",
       "run_url": "https://github.com/160701541-cell/canglan-world/actions/runs/38610437520"
     },
     {
@@ -304,12 +304,12 @@
   "signed_release": {
     "apk_published": true,
     "pck_published": true,
-    "apk_version": "0.2.0-dev.165",
-    "apk_code": 1165,
-    "apk_sha256": "9e0a2fb215775579f7e96c3975925cb17f456e82df93f5d850ebceb30a0131d4",
-    "apk_file": "android-preview/base/Canglan-AncientWorld-v0.2.0-dev.165-Stable-Signed-ARM64.apk",
+    "apk_version": "0.2.0-dev.176",
+    "apk_code": 1176,
+    "apk_sha256": "3cef8894246ddd4c481c48abfc99a55008f82be17885706f2cbd060b9ed21a7a",
+    "apk_file": "android-preview/base/Canglan-AncientWorld-v0.2.0-dev.176-Stable-Signed-ARM64.apk",
     "pck_revision": 167,
     "pck_sha256": "0b1577e774f22959939a7befd0d7b183765f217d5e75683ac46b973207ac5b8e"
   },
-  "observed_at_utc": "2026-10-14T18:03:14Z"
+  "observed_at_utc": "2026-10-14T18:03:47Z"
 }
