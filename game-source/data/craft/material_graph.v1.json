@@ -45,7 +45,7 @@
       "id": "log",
       "name": "原木",
       "stage": "raw",
-      "mass_g": 8000,
+      "mass_g": 40000,
       "origin": "existing_world_harvest"
     },
     {
@@ -150,21 +150,21 @@
       "id": "timber_beam_standard",
       "name": "结构木梁",
       "stage": "intermediate",
-      "mass_g": 6000,
+      "mass_g": 20000,
       "origin": "saw_standard_beam"
     },
     {
       "id": "wood_scrap",
       "name": "木屑余料",
       "stage": "byproduct",
-      "mass_g": 2000,
+      "mass_g": 20000,
       "origin": "saw_standard_beam"
     },
     {
       "id": "roof_module",
       "name": "青瓦屋面模块",
       "stage": "construction",
-      "mass_g": 15800,
+      "mass_g": 43800,
       "origin": "assemble_roof_module"
     },
     {
@@ -567,5 +567,16 @@
       },
       "energy_kj": 0
     }
-  ]
+  ],
+  "compatibility": {
+    "legacy_world_source": "canglan-world/godot3d/scripts/construction/physical_material_registry.gd",
+    "audited_on": "2026-10-15",
+    "required_existing_mass_g": {
+      "log": 40000
+    },
+    "related_existing_units": {
+      "timber_beam": 20000
+    },
+    "notes": "No existing WorldState.RECIPES entries overwritten; new beam ID is distinct until migrated."
+  }
 }
