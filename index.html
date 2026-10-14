@@ -4,12 +4,13 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="color-scheme" content="dark">
-  <meta name="theme-color" content="#102522">
-  <meta name="description" content="心魇说 xinyanshuo · 苍岚·人生世界。国风2.5D古代生活世界，游戏更新和正式发布信息。">
+  <meta name="theme-color" content="#10191d">
+  <meta name="description" content="《苍岚·人生世界》独立游戏官方网站：国风古代生活开放世界、原创概念海报、自动同步的真实开发日志、正式签名版本更新记录与Android下载。">
   <meta property="og:title" content="心魇说 · xinyanshuo">
   <meta property="og:description" content="苍岚·人生世界 — 一次安装基础包，之后在游戏内更新世界。">
   <meta property="og:type" content="website">
-  <title>心魇说 · xinyanshuo | 苍岚·人生世界</title>
+  <meta property="og:image" content="https://160701541-cell.github.io/xinyanshuo/art/canglan-world-poster.svg">
+  <title>苍岚 · 人生世界 | 心魇说游戏官网 · 概念海报与实时开发日志</title>
   <link rel="stylesheet" href="style.css">
   <link rel="icon" href="favicon.svg" type="image/svg+xml">
 </head>
@@ -17,21 +18,47 @@
   <div class="grain" aria-hidden="true"></div>
   <header class="topbar wrap">
     <a class="brand" href="./" aria-label="心魇说首页"><span class="seal">心</span><span class="brand-copy">心魇说<small>xinyanshuo</small></span></a>
-    <nav><a href="#world">世界</a><a href="#updates">更新</a><a href="#about">说明</a></nav>
+    <nav aria-label="网站导航"><a href="#world">世界</a><a href="#concept">概念美术</a><a href="#devlog">开发日志</a><a href="#changelog">更新日志</a><a href="#download">下载</a><a href="#community">官方群</a></nav>
   </header>
   <main>
     <section class="hero wrap" id="world">
       <div class="eyebrow"><span class="dot"></span> CANGLAN · WORLD IN DEVELOPMENT</div>
-      <h1>世界不止于<br><em>一方天地。</em></h1>
-      <p class="lead">苍岚 · 人生世界</p>
-      <p class="intro">一个仍在塑造中的国风 2.5D 古代生活世界。山川、村落、人物与万物，不该只是背景，而应拥有自己的存在与变化。</p>
-      <div class="hero-actions"><a class="action primary" href="#download">下载 Android APK <span aria-hidden="true">↓</span></a><a class="action muted" href="#updates">查看世界更新</a></div>
-      <div class="aside-note">开发阶段 · 游戏画面与玩法尚未达到最终品质</div>
-      <div class="mountain" aria-hidden="true"><span></span><span></span><span></span></div>
+      <h1>苍岚<span class="hero-subtitle">人生世界</span><em>这一世，<br>你想成为怎样的人？</em></h1>
+      <p class="lead">苍生有命 · 山河有生</p>
+      <p class="intro">这不是一段围绕主角展开的故事。山河万里，城镇万千，农人、商旅、侠客、将士和每一个无名之人，都有自己的一生。</p>
+      <div class="hero-actions"><a class="action primary" href="#download">下载 Android APK <span aria-hidden="true">↓</span></a><a class="action muted" href="#devlog">查看真实开发进度</a><a class="action muted" href="#concept">最终美术愿景</a><a class="action muted" href="#community">加入官方测试群</a></div>
+      <div class="aside-note">VISION / 概念艺术展现的是我们的最终追求。试玩版本仍在持续开发。</div>
+      <div class="hero-vision-backdrop" aria-hidden="true"></div>
+    </section>
+
+    <section class="art-section" id="concept" aria-labelledby="concept-title">
+      <div class="wrap">
+        <div class="small-title">THE WORLD WE ARE BUILDING · 美术愿景</div>
+        <h2 id="concept-title">山河万里，<br>众生各有一生。</h2>
+        <p class="section-lead">概念海报就是官网主角。目标是如同国风CG仙侠动画般的山河城镇、人物皮肤和衣料表现、万千鲜活NPC。这些海报和氛围摄影是长期美术目标，不是现阶段实机画质的完成证明。</p>
+        <div class="world-vision-notes" aria-label="苍岚世界最终画风五大主题">
+          <a href="#concept"><small>CANGLAN · LIVING CITIES</small><strong>城镇市井</strong><small>屋舍千家 · 灯火人间</small></a>
+          <a href="#concept"><small>CANGLAN · REAL GEOGRAPHY</small><strong>山川河流</strong><small>地貌、气候、水系与生态</small></a>
+          <a href="#concept"><small>CANGLAN · HUMAN LIVES</small><strong>众生百态</strong><small>每个人都有身份与命运</small></a>
+          <a href="#concept"><small>CANGLAN · SIX KINGDOMS</small><strong>六国纷争</strong><small>战乱与代价，自有因果</small></a>
+          <a href="#concept"><small>CANGLAN · CULTIVATION</small><strong>修行体系</strong><small>凡人起步 · 百业可行</small></a>
+        </div>
+        <div class="concept-grid">
+          <figure class="concept-poster">
+            <img src="./art/canglan-world-poster.svg" alt="原创《苍岚》竖幅世界观海报：山河村落与独行旅人，一人一命、一城一生" loading="lazy" width="600" height="848">
+            <figcaption><strong>一人一命 · 一城一生</strong><span>世界观海报</span></figcaption>
+          </figure>
+          <div class="concept-scenes">
+            <figure><img src="./art/canglan-village-concept.svg" alt="原创村落概念：瓦房、溪流、田地和各自生活的村民" loading="lazy" width="1200" height="680"><figcaption><strong>万家灯火，各有生计</strong><span>村镇、商队、田野与生活</span></figcaption></figure>
+            <figure><img src="./art/canglan-frontier-concept.svg" alt="原创边关概念：雪岭、城关、远行商队与守军" loading="lazy" width="1200" height="680"><figcaption><strong>山河辽阔，万里同行</strong><span>边关、贸易、风雪与地理生态</span></figcaption></figure>
+          </div>
+        </div>
+        <p class="concept-disclaimer"><strong>重要说明：</strong>本栏目包含原创排版概念海报、国风气氛参考及经授权的摄影素材，不是Godot实机截图，不代表这些场景、人物或画质已经制作完成。真实可玩效果以安装包与实际游戏画面为准。</p>
+      </div>
     </section>
     <section class="updates" id="updates">
       <div class="wrap two-col">
-        <div><div class="small-title">WORLD UPDATES</div><h2>一个基础包，<br>世界持续生长。</h2><p class="copy">未来普通模型、地形、场景、配置及兼容的游戏脚本将通过游戏内安全下载的资源补丁更新；Godot 引擎和 Android 原生组件升级仍可能需要更新安装包。</p></div>
+        <div><div class="small-title">WORLD UPDATES</div><h2>一个基础包，<br>世界持续生长。</h2><p class="copy">目前已开通正式签名的游戏内内容热更新：兼容的模型、场景、配置和脚本可通过安全资源补丁更新；涉及 Godot 引擎或 Android 原生组件的变更仍需同证书覆盖安装新 APK。正式更新与开发草案请分别查看下方更新日志和工作日志。</p></div>
         <div class="update-card">
           <div class="card-top"><span>Android · 更新频道</span><span id="status-badge" class="badge pending">尚未开放</span></div>
           <h3 id="release-title">更新服务准备中</h3>
@@ -41,13 +68,44 @@
         </div>
       </div>
     </section>
+
+    <section class="public-records wrap" id="devlog" aria-labelledby="devlog-title">
+      <div class="log-heading"><div><div class="small-title">DEVELOPMENT LOG · SOURCE-SYNCED</div><h2 id="devlog-title">真实的开发过程，<br>公开给你看。</h2><p class="section-lead">官网自动同步项目正式工作日志：已完成、失败、待处理都如实保留。记录来自源码主分支，测试成功不等于已经正式发布或通过玩家审美验收。</p></div><div class="sync-mark"><span class="pulse" aria-hidden="true"></span><strong id="development-sync">正在加载正式开发日志…</strong><small>主分支变更自动同步 · 页面约每60秒检查新记录</small></div></div>
+      <div id="development-list" class="log-list" aria-live="polite"><p class="loading-copy">正在读取已发布的工作日志。请稍候。</p></div>
+      <div class="log-bottom"><span id="development-count">尚未载入记录</span><button class="log-load-more" id="development-more" type="button" hidden>展开更早的日志</button></div>
+    </section>
+    <section class="release-history" id="changelog" aria-labelledby="changelog-title">
+      <div class="wrap">
+        <div class="small-title">SIGNED GAME RELEASES · VERIFIED HISTORY</div><h2 id="changelog-title">游戏更新日志</h2>
+        <p class="section-lead">只列入真实发布的签名更新，不把开发中的人物、美术草案或尚未通过的功能冒充正式内容。最新版本直接读取官方RSA签名清单。</p>
+        <div class="history-grid" id="release-history" aria-live="polite"><p class="loading-copy">正在读取正式发布记录…</p></div>
+        <p class="records-note" id="release-sync">正式更新以游戏内数字签名、SHA-256和兼容性校验为准；网页仅供查询。</p>
+      </div>
+    </section>
+
+    <section class="community-section" id="community" aria-labelledby="community-title">
+      <div class="wrap">
+        <div class="small-title">OFFICIAL COMMUNITY · 心魇说</div>
+        <h2 id="community-title">来见证这个世界，<br>从第一步走到山河万里。</h2>
+        <p class="section-lead">游戏测试反馈、版本体验、人物建模、动作BUG和开发方向，都欢迎来官方测试群交流。</p>
+        <div class="community-grid">
+          <a class="community-card community-primary" href="https://qun.qq.com/universal-share/share?ac=1&amp;authKey=LGgPDIPK3JJz3nd3IIs2DFBemnNWMTXyYxLeoi%2B%2BSFdBuxl1dZ2XjRBA9alKZAT2&amp;busi_data=eyJncm91cENvZGUiOiIxMTI1MDUwODM2IiwidG9rZW4iOiJoR0ZFYXZvRlltNXB3bUE4SWxrVTdqTHg5aitjMDFNVDNzdnpsZXFucmNiSkJ1bGdWQnVERGdnYUJ5b0hXMWMxIiwidWluIjoiMTYwNzAxNTQxIn0%3D&amp;data=NBgmgSGn50AALvrefUqsQVbwZdZHw40aBO8oNpi9yzqqpQ6iYtenCn1yI_2_8hayI18wQwm1RzEiBSL1GPrGWg&amp;svctype=4&amp;tempid=h5_group_info" target="_blank" rel="noopener noreferrer">
+            <span class="community-icon" aria-hidden="true">群</span><span class="community-type">QQ GROUP · 官方测试群</span><strong>心魇说官方测试群</strong><span class="community-info">玩家测试 · 开发反馈 · 版本交流</span><span class="community-cta">点击加入 QQ 群 ↗</span>
+          </a>
+          <div class="community-card"><span class="community-icon" aria-hidden="true">Q</span><span class="community-type">CONTACT · QQ</span><strong>160701541</strong><span class="community-info">心魇说 · 个人QQ</span><div class="community-actions"><a class="community-cta" href="https://wpa.qq.com/msgrd?v=3&amp;uin=160701541&amp;site=qq&amp;menu=yes" target="_blank" rel="noopener noreferrer">发起 QQ 会话 ↗</a><button id="copy-qq" type="button" data-copy="160701541">复制QQ号</button></div></div>
+          <a class="community-card" href="https://www.douyin.com/search/xys160701541" target="_blank" rel="noopener noreferrer"><span class="community-icon" aria-hidden="true">抖</span><span class="community-type">DOUYIN · 短视频</span><strong>xys160701541</strong><span class="community-info">抖音号 · 开发幕后与游戏动态</span><span class="community-cta">在抖音搜索该账号 ↗</span></a>
+        </div>
+        <p class="community-note">QQ群使用你提供的官方邀请链接；QQ会话受客户端兼容性影响，复制号码也可以添加。抖音目前是账号搜索入口，尚未获取经验证的直达主页地址。</p>
+      </div>
+    </section>
+
     <section class="features wrap" id="about">
       <div class="small-title">BUILT FOR A LIVING WORLD</div>
       <div class="feature-grid"><article><span class="index">01</span><h3>真实世界</h3><p>不靠堆砌 UI 描述世界，而让地形、建筑和物品在同一个空间里相互影响。</p></article><article><span class="index">02</span><h3>独立生命</h3><p>NPC、物资和时间有独立状态与因果，不因玩家存在而失去真实逻辑。</p></article><article><span class="index">03</span><h3>安全演进</h3><p>代码与密钥不在公共发布站，发布的资源先经验证才能进入玩家世界。</p></article></div>
-      <div class="notice" id="download"><strong>Android 基础 APK · 独立于游戏内资源更新</strong><p id="apk-download-status" role="status" aria-live="polite">正在查询已校验的基础安装包。若尚未发布，下载按钮不会出现。</p><a id="apk-download-link" class="action primary" href="#" download hidden>下载已签名 Android APK</a><p id="apk-hash" class="download-checksum"></p><p>当前已知旧版 v102 使用原长期签名，但原生屏幕方向锁定竖屏；新版横屏 APK 仍需单独构建与实机验收。已安装 v102 的玩家不必重新安装；今后升级基础包应使用同签名覆盖安装，勿卸载清空存档。兼容的游戏内容仍可在应用内检查更新。</p></div>
+      <div class="notice" id="download"><strong>Android 基础 APK · 独立于游戏内资源更新</strong><p id="apk-download-status" role="status" aria-live="polite">正在查询已校验的基础安装包。若尚未发布，下载按钮不会出现。</p><a id="apk-download-link" class="action primary" href="#" download hidden>下载已签名 Android APK</a><p id="apk-hash" class="download-checksum"></p><p>当前已发布同签名 Android 横屏基础包及独立内容补丁；已安装旧版的玩家可在游戏内检查可兼容的热更新。升级 APK 请同签名覆盖安装，勿先卸载以免清除本地存档。游戏画质和操作效果仍以实机测试为准；网页显示版本信息不替代游戏本身的 RSA 验签。</p></div>
     </section>
   </main>
-  <footer class="footer"><div class="wrap"><span>心魇说 · xinyanshuo</span><span>苍岚·人生世界 © <span id="year">2026</span></span></div></footer>
+  <footer class="footer"><div class="wrap"><span>心魇说 · xinyanshuo</span><span>苍岚·人生世界 © <span id="year">2026</span> · 官网开发日志自动同步 · 概念美术非游戏截图</span></div></footer>
   <script src="site.js" defer></script>
 </body>
 </html>
