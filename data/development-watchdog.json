@@ -5,13 +5,13 @@
   "reason": "WORKFLOW_AWAITING_RESULT",
   "meaning": "GitHub workflow health only; not ChatGPT internal thinking health",
   "evidence": {
-    "id": 38615704577,
-    "branch": "work/p0g3-site-materials",
+    "id": 38616072447,
+    "branch": "release/in-game-apk-installer",
     "workflow": "Canglan Native 3D Terrain Android ARM64 Preview",
-    "status": "queued",
+    "status": "in_progress",
     "conclusion": null,
-    "last_event_utc": "2026-10-14T18:30:14Z",
-    "run_url": "https://github.com/160701541-cell/canglan-world/actions/runs/38615704577"
+    "last_event_utc": "2026-10-14T18:33:15Z",
+    "run_url": "https://github.com/160701541-cell/canglan-world/actions/runs/38616072447"
   },
   "recovery": {
     "checkpoint": "docs/WORK_RESUME_CHECKPOINT.json",
@@ -19,5 +19,5 @@
     "instruction": "Read last SHA, CI outcome and next action. Resume without overriding Work."
   },
   "threshold_minutes": 90,
-  "checked_at_utc": "2026-10-14T18:31:20+00:00"
+  "checked_at_utc": "2026-10-14T18:33:56+00:00"
 }
