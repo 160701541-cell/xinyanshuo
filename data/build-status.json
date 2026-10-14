@@ -8,10 +8,10 @@
       "workflow": "Canglan Character Factory Pilot QA",
       "scope": "Work开发分支",
       "branch": "work/p0g3-site-materials",
-      "status": "in_progress",
-      "conclusion": null,
+      "status": "completed",
+      "conclusion": "success",
       "created_utc": "2026-10-14T15:21:06Z",
-      "last_event_utc": "2026-10-14T15:21:12Z",
+      "last_event_utc": "2026-10-14T15:21:36Z",
       "run_url": "https://github.com/160701541-cell/canglan-world/actions/runs/38588538142"
     },
     {
@@ -245,5 +245,5 @@
     "pck_revision": 166,
     "pck_sha256": "3b6d91664559ac1cbd8b38354000a2bae2f7e82f02de458cd5d815708c99e307"
   },
-  "observed_at_utc": "2026-10-14T15:21:12Z"
+  "observed_at_utc": "2026-10-14T15:21:36Z"
 }
