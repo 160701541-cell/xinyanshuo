@@ -5,6 +5,8 @@ on:
     paths:
       - "game-source/data/craft/**"
       - "game-source/data/tuning/**"
+      - "game-source/godot3d/scripts/crafting/**"
+      - "game-source/godot-craft-smoke/**"
       - "game-source/tools/craft_graph.py"
       - "game-source/tools/test_craft_graph.py"
       - "game-source/tools/tune_data.py"
@@ -61,3 +63,57 @@ jobs:
             engineering-readiness-report.json
           retention-days: 7
           if-no-files-found: error
+
+  isolated-real-godot-reader:
+    runs-on: ubuntu-latest
+    needs: craft-and-tuning-quality
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Fetch official fixed Godot 4.4.1 binary for real GDScript runtime check
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl -fLsS --retry 3 --connect-timeout 20 --max-time 240 --proto '=https' --tlsv1.2 \
+            -o /tmp/godot-4.4.1.zip \
+            https://github.com/godotengine/godot/releases/download/4.4.1-stable/Godot_v4.4.1-stable_linux.x86_64.zip
+          python3 - <<'PY'
+          from pathlib import Path
+          import zipfile
+          archive=Path('/tmp/godot-4.4.1.zip')
+          assert archive.stat().st_size > 10000000, 'unexpectedly small engine archive'
+          with zipfile.ZipFile(archive) as z:
+              assert z.testzip() is None, 'invalid engine download'
+              assert len(z.namelist())==1 and z.namelist()[0]=='Godot_v4.4.1-stable_linux.x86_64'
+              z.extractall('/tmp/canglan-godot')
+          PY
+          chmod +x /tmp/canglan-godot/Godot_v4.4.1-stable_linux.x86_64
+          /tmp/canglan-godot/Godot_v4.4.1-stable_linux.x86_64 --headless --version | grep '^4.4.1'
+      - name: Build isolated catalog QA fixture (never a substitute for original main game)
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p game-source/godot-craft-smoke/data game-source/godot-craft-smoke/scripts
+          cp game-source/data/craft/material_graph.v1.json game-source/godot-craft-smoke/data/material_graph.v1.json
+          cp game-source/godot3d/scripts/crafting/craft_catalog_reader.gd game-source/godot-craft-smoke/scripts/craft_catalog_reader.gd
+      - name: Run actual Godot 4.4.1 read-only catalog script and reject parse errors
+        shell: bash
+        run: |
+          set -euo pipefail
+          timeout 90s /tmp/canglan-godot/Godot_v4.4.1-stable_linux.x86_64 \
+            --headless --path game-source/godot-craft-smoke \
+            --script res://tests/readonly_graph_smoke.gd \
+            > godot-crafting-smoke.log 2>&1 || { cat godot-crafting-smoke.log; exit 1; }
+          cat godot-crafting-smoke.log
+          grep -Fq 'PASS_GODOT_4_4_1_ISOLATED_ITEM_GRAPH_READONLY' godot-crafting-smoke.log
+          if grep -E 'SCRIPT ERROR:|Parse Error:|Assertion failed|ERROR:|FAILED' godot-crafting-smoke.log; then
+            exit 1
+          fi
+      - name: Upload real Godot smoke evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: canglan-godot-isolated-item-graph-runtime-log
+          path: godot-crafting-smoke.log
+          retention-days: 7
+          if-no-files-found: ignore
