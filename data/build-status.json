@@ -19,10 +19,10 @@
       "workflow": "Canglan Native 3D Terrain Android ARM64 Preview",
       "scope": "Work开发分支",
       "branch": "work/p0g3-site-materials",
-      "status": "queued",
-      "conclusion": null,
+      "status": "completed",
+      "conclusion": "failure",
       "created_utc": "2026-10-14T17:42:04Z",
-      "last_event_utc": "2026-10-14T17:42:04Z",
+      "last_event_utc": "2026-10-14T17:46:55Z",
       "run_url": "https://github.com/160701541-cell/canglan-world/actions/runs/38608875479"
     },
     {
@@ -311,5 +311,5 @@
     "pck_revision": 167,
     "pck_sha256": "0b1577e774f22959939a7befd0d7b183765f217d5e75683ac46b973207ac5b8e"
   },
-  "observed_at_utc": "2026-10-14T17:43:35Z"
+  "observed_at_utc": "2026-10-14T17:46:55Z"
 }
