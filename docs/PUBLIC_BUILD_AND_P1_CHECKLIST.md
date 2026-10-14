@@ -75,3 +75,12 @@
 - **立即可供用户测试的最后签名APK**：`v0.2.0-dev.176`、`code1176`；[GitHub Releases备用下载](https://github.com/160701541-cell/xinyanshuo/releases/download/canglan-v0.2.0-dev.176/Canglan-AncientWorld-v0.2.0-dev.176-Stable-Signed-ARM64.apk)。资源更新渠道`revision167`。这个下载不会包含本轮的白墙/青瓦P1新增代码。
 - **正式新热更新门禁**：以APK176为基线，候选资源revision须至少**177**（且高于实际安装版本），保持原RSA签名；必须先原Godot主场景导入、主世界实体与存档回归、PCK资源索引验证、签名检查、官网字节核验，最后手机更新。未经这个流程不修改`latest.json`；当前并无可以诚实宣布的rev177。
 - 现有私库Actions无runner步骤且公开仓库缺已审计原项目/签名Secret，阻断正式新版本。本轮没有重启私有付费Actions，也没有生成冒名新安装包。仅实际核查最后可安装基包和建立真实包验收工作流。
+
+## 2026-10-15 QA独立硬门禁执行结果
+
+- 已真实修改生成器（93dc977）：周期连续材质代替色块式噪声，明确贴图颜色空间和法线约定；不称成品。
+- 独立审计器（ecae2b3）直接检查PNG字节、CRC、zlib像素、哈希、尺寸、色板、平铺接缝、法线向量、粗糙度和白名单；不靠生成器自己给自己打分。
+- 变异回归测试（4a27e6c）共12项，包含故意篡改后能真正阻断的平面贴图、法线翻转、PNG损坏、接缝、路径绕过及伪造批准。
+- [真实公开QA构建#38643860617](https://github.com/160701541-cell/xinyanshuo/actions/runs/38643860617) PASS；job 116125782923实际日志显示12 tests OK，PNG独立审计与工件上传PASS。这里只代表技术QA。
+- [执行规范](ENGINEERING_QA_RELEASE_POLICY.md)已入库；[人工视觉复审](P1_MATERIAL_ART_REVIEW_20261015.md)主动将现有材质列为ART FAIL（青瓦仍像柔和条带，白墙过于平滑，欠真实构件/近景细节）。技术通过绝不代替Godot实景、Android和人工审美。
+- 本轮未新发APK/PCK，当前手机版本仍以APK176及PCK167为公开基线；原游戏迁移、主世界集成、RSA签名和手机负载仍BLOCKED。
