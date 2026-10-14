@@ -66,3 +66,12 @@
 - 公开Actions实际触发：[run #38641955771](https://github.com/160701541-cell/xinyanshuo/actions/runs/38641955771)，首次检查状态 **in_progress**，截至记录时尚没有绿灯或可领取工件证据。
 - 此处只打包可安全公开的P1素材试验；正式手机尚不能安装。因为公开仓库缺完整已审计Godot工程与原RSA热更新签名，不能把这种zip伪装成可签名PCK。没有更改旧官网`latest.json`（167）、旧APK（176）或者客户端存档；P0/G0原有院落仍待真正游戏整合和客户端验收。
 - 迁移任务M05、M06、M07仍阻塞正式发布；禁止把此次公开素材QA写为“游戏已更新”。
+
+## 2026-10-15 游戏内测试前：真实公开发行包完整性门禁
+
+- 用户要求只交付已具备验证证据的功能、先整合测试再手机验收。现有完整游戏仍由私库`canglan-world`的Godot主工程维护；公开`xinyanshuo/game-source`目前**不是可独立构建的原游戏**。不能把独立材质ZIP作为签名PCK安装。
+- **已通过**：公开P1材质ZIP构建 [#38641955771](https://github.com/160701541-cell/xinyanshuo/actions/runs/38641955771) 最终`success`，产物`canglan-p1-materials-UNAPPROVED`存在，大小133114字节。仅证明原始PNG生成/离线验收合格，不等于美术和手机集成。
+- **已执行**：新增公开真实发行包完整性CI工作流`.github/workflows/verify-official-game-release.yml`；读取`base-latest.json`和`latest.json`，计算已发布73MB APK与PCK167真实字节SHA256、长度，检查APK ZIP结构；拒绝对新版发布作虚假成功声明。工作流提交`dbcb12128c5149d24820ae3950ce75f5fc0c368c`，检查执行 [#38642647667](https://github.com/160701541-cell/xinyanshuo/actions/runs/38642647667)，记录时仍在运行。
+- **立即可供用户测试的最后签名APK**：`v0.2.0-dev.176`、`code1176`；[GitHub Releases备用下载](https://github.com/160701541-cell/xinyanshuo/releases/download/canglan-v0.2.0-dev.176/Canglan-AncientWorld-v0.2.0-dev.176-Stable-Signed-ARM64.apk)。资源更新渠道`revision167`。这个下载不会包含本轮的白墙/青瓦P1新增代码。
+- **正式新热更新门禁**：以APK176为基线，候选资源revision须至少**177**（且高于实际安装版本），保持原RSA签名；必须先原Godot主场景导入、主世界实体与存档回归、PCK资源索引验证、签名检查、官网字节核验，最后手机更新。未经这个流程不修改`latest.json`；当前并无可以诚实宣布的rev177。
+- 现有私库Actions无runner步骤且公开仓库缺已审计原项目/签名Secret，阻断正式新版本。本轮没有重启私有付费Actions，也没有生成冒名新安装包。仅实际核查最后可安装基包和建立真实包验收工作流。
