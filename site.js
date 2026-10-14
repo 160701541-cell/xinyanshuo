@@ -30,42 +30,90 @@
     setTimeout(() => { copyQQ.textContent = original; }, 2800);
   });
 
-  // The public website hosts APK + signed PCK independently, under the SAME
-  // GitHub Pages origin. Never feed the APK manifest to the PCK update parser.
+  // The game site is the SINGLE user-facing APK download entry. GitHub Releases
+  // and Pages are transport routes behind that SAME site, not new project sites.
+  // Static HTML already carries a verified v165 fallback even if JS or JSON fails.
+  // APK and PCK are separate channels with different signatures and compatibility.
   const apkStatus = document.getElementById('apk-download-status');
   const apkButton = document.getElementById('apk-download-link');
+  const apkBackup = document.getElementById('apk-download-backup');
+  const apkCopy = document.getElementById('apk-copy-link');
   const apkHash = document.getElementById('apk-hash');
+  let bestApkUrl = apkButton.href;
+
+  if (apkCopy) apkCopy.addEventListener('click', async () => {
+    const old = apkCopy.textContent;
+    try {
+      await navigator.clipboard.writeText(bestApkUrl);
+      apkCopy.textContent = '已复制，粘贴到系统浏览器';
+    } catch (_) {
+      const input = document.createElement('textarea');
+      input.value = bestApkUrl;
+      input.style.position = 'fixed';
+      input.style.opacity = '0';
+      document.body.appendChild(input);
+      input.select();
+      const ok = document.execCommand('copy');
+      input.remove();
+      apkCopy.textContent = ok ? '已复制，粘贴到系统浏览器' : '请长按下载按钮复制地址';
+    }
+    setTimeout(() => { apkCopy.textContent = old; }, 4000);
+  });
+
   fetch('./android-preview/base-latest.json', { cache: 'no-store' })
-    .then(r => { if (!r.ok) throw new Error('APK not published'); return r.json(); })
+    .then(r => { if (!r.ok) throw new Error('APK manifest unavailable'); return r.json(); })
     .then(d => {
-      // Only allow same-site, explicitly namespaced APK files.
       if (d.schema !== 1 || d.channel !== 'android-preview-base-apk' ||
           !Number.isSafeInteger(d.version_code) || d.version_code < 1102 ||
           d.package_name !== 'org.canglan.ancient25d.preview' ||
           typeof d.file !== 'string' ||
-          !/^android-preview\/base\/[A-Za-z0-9._-]+\.apk$/.test(d.file) ||
+          !/^android-preview\\/base\\/[A-Za-z0-9._-]+\\.apk$/.test(d.file) ||
           typeof d.sha256 !== 'string' || !/^[a-f0-9]{64}$/.test(d.sha256) ||
           !Number.isSafeInteger(d.size_bytes) || d.size_bytes <= 10000000 ||
-          typeof d.signature_cert_sha256 !== 'string' ||
           d.signature_cert_sha256 !== '353c65d2bdde16509b33c976e9bed615013080b071629cfbf7fdeb43e4217057') {
-        throw new Error('Invalid base APK metadata');
+        throw new Error('Invalid APK release metadata');
       }
-      apkButton.href = './' + d.file;
-      apkButton.download = d.file.split('/').pop();
-      apkButton.hidden = false;
+      const officialUrl = new URL('./' + d.file, window.location.href).href;
+      const fileName = d.file.split('/').pop();
       const mib = (d.size_bytes / 1048576).toFixed(1);
-      apkButton.textContent = '下载 Android 基础 APK (' + mib + ' MB)';
+      // Standard navigation, NOT a download attribute: this works better in
+      // Android webviews, Android Chrome and cross-origin release redirects.
+      apkButton.removeAttribute('download');
+      apkButton.href = officialUrl;
+      apkButton.textContent = '下载 APK v' + d.version_name + '（官网直连）';
+      apkBackup.href = officialUrl;
+      apkBackup.textContent = '官网直连 · 线路 B';
+      bestApkUrl = officialUrl;
       const landscape = d.orientation === 'landscape_native_manifest_verified';
-      apkStatus.textContent = '固定签名 Android APK v' + d.version_name +
-        ' · Android code ' + d.version_code +
-        (landscape
-          ? '。原生横屏已通过安装包清单验证，手机实际操作/美术仍待测试。'
-          : '。注意：旧版原生锁定竖屏，新横屏包尚未取代它。');
-      apkHash.textContent = '文件 SHA-256：' + d.sha256;
+      apkStatus.textContent = '已校验发布 v' + d.version_name + ' · ' + mib + ' MB · Android code ' +
+        d.version_code + (landscape ? ' · 原生横屏' : '') +
+        '。下方提供两条下载线路，始终保留官网直连。';
+      apkHash.textContent = '安装包 SHA-256：' + d.sha256;
+
+      // GitHub Releases is mirrored ONLY AFTER verified bytes/size on server.
+      // Fail closed against a stale or off-domain JSON, retain direct Pages URL.
+      fetch('./data/apk-download-mirror.json', { cache: 'no-store' })
+        .then(r => { if (!r.ok) throw new Error('No current mirror'); return r.json(); })
+        .then(m => {
+          if (m.schema !== 1 || m.mirror !== 'github_releases' ||
+              m.filename !== fileName || m.sha256 !== d.sha256 ||
+              m.size_bytes !== d.size_bytes ||
+              typeof m.download_url !== 'string' ||
+              !/^https:\\/\\/github\\.com\\/160701541-cell\\/xinyanshuo\\/releases\\/download\\/canglan-v[0-9A-Za-z.-]+\\/Canglan-AncientWorld-v[0-9A-Za-z.-]+-Stable-Signed-ARM64\\.apk$/.test(m.download_url) ||
+              !m.download_url.endsWith('/' + fileName)) return;
+          apkButton.href = m.download_url;
+          apkButton.textContent = '下载 APK v' + d.version_name + '（线路 A · 推荐）';
+          apkBackup.href = officialUrl;
+          apkBackup.textContent = '线路 B · 官网直连';
+          bestApkUrl = m.download_url;
+        })
+        .catch(() => { /* Official direct download remains fully usable. */ });
     })
     .catch(() => {
-      apkStatus.textContent = '基础 APK 暂未通过公开发布校验。请勿下载不明来源安装包。';
-      apkButton.hidden = true;
+      // DO NOT hide the user-facing download buttons because metadata refresh
+      // failed; the static HTML contains the last SHA-verified published version.
+      apkStatus.textContent = '线上最新版本查询失败：下方保留已验证的 v165 下载入口。';
+      apkHash.textContent = '备用 v165 SHA-256：9e0a2fb215775579f7e96c3975925cb17f456e82df93f5d850ebceb30a0131d4';
     });
 
   // Display-only metadata. Cryptographic verification is ALWAYS performed
