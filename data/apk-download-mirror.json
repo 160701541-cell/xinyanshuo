@@ -1,0 +1,10 @@
+{
+  "schema": 1,
+  "mirror": "github_releases",
+  "source": "official_release_asset_verified_by_github_cli",
+  "tag": "canglan-v0.2.0-dev.165",
+  "filename": "Canglan-AncientWorld-v0.2.0-dev.165-Stable-Signed-ARM64.apk",
+  "size_bytes": 73062723,
+  "sha256": "9e0a2fb215775579f7e96c3975925cb17f456e82df93f5d850ebceb30a0131d4",
+  "download_url": "https://github.com/160701541-cell/xinyanshuo/releases/download/canglan-v0.2.0-dev.165/Canglan-AncientWorld-v0.2.0-dev.165-Stable-Signed-ARM64.apk"
+}
