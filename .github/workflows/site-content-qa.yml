@@ -1,0 +1,78 @@
+name: Official Site — Public Logs, Poster and Release Integrity
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - index.html
+      - site.js
+      - style.css
+      - art/**
+      - data/**
+      - android-preview/latest.json
+      - .github/workflows/site-content-qa.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: public-site-quality-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  site-integrity:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: JavaScript parse test
+        run: node --check site.js
+      - name: Static HTML, signed changelog and 3 original concept art checks
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json,re,xml.etree.ElementTree as ET
+          from html.parser import HTMLParser
+          from pathlib import Path
+          class Page(HTMLParser):
+              def __init__(self):super().__init__();self.ids=set();self.images=[]
+              def handle_starttag(self,tag,attrs):
+                  a=dict(attrs)
+                  if 'id' in a:self.ids.add(a['id'])
+                  if tag=='img':self.images.append(a)
+          page=Page()
+          page.feed(Path('index.html').read_text(encoding='utf8'))
+          for anchor in ('concept','devlog','development-list','development-sync',
+                         'changelog','release-history','release-sync','download',
+                         'apk-download-link','updates'):
+              assert anchor in page.ids,anchor
+          files=['art/canglan-world-poster.svg','art/canglan-village-concept.svg',
+                 'art/canglan-frontier-concept.svg']
+          for f in files:
+              p=Path(f)
+              assert p.exists() and p.stat().st_size>2000
+              root=ET.parse(f).getroot()
+              assert root.tag.endswith('svg')
+              assert any(v.get('src')=='./'+f and v.get('alt') for v in page.images)
+              assert '非游戏实机' in p.read_text(encoding='utf8') or '非实际游戏画面' in p.read_text(encoding='utf8')
+          a=json.loads(Path('data/development.json').read_text(encoding='utf8'))
+          b=json.loads(Path('data/updates.json').read_text(encoding='utf8'))
+          latest=json.loads(Path('android-preview/latest.json').read_text(encoding='utf8'))
+          assert a['schema']==1 and a['channel']=='public-development-log'
+          assert len(a['entries'])>5 and all(x['title'] and x['body'] for x in a['entries'])
+          assert b['schema']==1 and b['channel']=='signed-releases'
+          assert len(b['entries'])>0
+          assert latest['channel']=='android-preview' and len(latest['signature'])>=128
+          assert b['entries'][0]['revision']==latest['revision']
+          assert b['entries'][0]['sha256']==latest['sha256']
+          for row in b['entries']:
+              assert re.fullmatch('[0-9a-f]{64}',row['sha256'])
+              assert row['status']=='signed_release'
+          for forbidden in ['-----BEGIN PRIVATE KEY-----','github_pat_','ghp_']:
+              assert forbidden not in json.dumps(a),f'PRIVATE_LOG_LEAK: {forbidden}'
+          print('PASS REAL OFFICIAL DEVLOG',len(a['entries']))
+          print('PASS SIGNED GAME RELEASE HISTORY',len(b['entries']),'latest',latest['revision'])
+          print('PASS 3 CLEARLY LABELED ORIGINAL NON-GAMEPLAY CONCEPT IMAGES')
+          PY
