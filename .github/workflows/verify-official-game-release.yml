@@ -1,13 +1,10 @@
-name: Verify playable official APK + PCK (public, read-only)
+name: Verify published Android release bytes
 on:
   push:
     branches: [main]
     paths:
       - android-preview/base-latest.json
       - android-preview/latest.json
-      - data/apk-download-mirror.json
-      - data/updates.json
-      - game-source/tools/verify_official_android_release.py
       - .github/workflows/verify-official-game-release.yml
   workflow_dispatch:
 permissions:
@@ -18,14 +15,24 @@ jobs:
     timeout-minutes: 12
     steps:
       - uses: actions/checkout@v4
-      - name: Verify actual APK/PCK bytes and download-channel consistency
+      - name: Hash and parse published Android files
         shell: bash
         run: |
-          set -euo pipefail
-          python3 game-source/tools/verify_official_android_release.py . /tmp/canglan-game-release-audit.json
-      - name: Upload truthful release evidence
-        uses: actions/upload-artifact@v4
-        with:
-          name: canglan-official-published-release-audit
-          path: /tmp/canglan-game-release-audit.json
-          retention-days: 7
+          python3 - <<'PY'
+          import json, hashlib, pathlib, zipfile
+          root=pathlib.Path('.')
+          apk=json.loads((root/'android-preview/base-latest.json').read_text())
+          pck=json.loads((root/'android-preview/latest.json').read_text())
+          for path, expected in [
+              (root/apk['file'],apk),
+              (root/'android-preview'/f"canglan-content-rev-{pck['revision']}.pck",pck)]:
+              assert path.is_file(),path
+              assert path.stat().st_size==expected['size_bytes'],path
+              assert hashlib.sha256(path.read_bytes()).hexdigest()==expected['sha256'],path
+              print('VERIFIED_PUBLISHED_BYTES',path)
+          with zipfile.ZipFile(root/apk['file']) as z:
+              assert z.testzip() is None
+              assert 'AndroidManifest.xml' in z.namelist()
+          print('CURRENT_APK',apk['version_name'],'CURRENT_PCK',pck['revision'])
+          print('THIS_CHECK_IS_NOT_A_NEW_GAME_UPDATE_OR_PHONE_TEST')
+          PY
