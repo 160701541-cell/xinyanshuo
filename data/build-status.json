@@ -1,0 +1,17 @@
+{
+  "schema": 1,
+  "channel": "canglan-build-observer",
+  "source": "GitHub Actions workflow_run events (not API polling)",
+  "runs": [],
+  "signed_release": {
+    "apk_published": true,
+    "pck_published": true,
+    "apk_version": "0.2.0-dev.153",
+    "apk_code": 1153,
+    "apk_sha256": "aa1a9ed20e69b23624455b596fb5f0163526be85415c2145bc3fb093d7504fa1",
+    "apk_file": "android-preview/base/Canglan-AncientWorld-v0.2.0-dev.153-Stable-Signed-ARM64.apk",
+    "pck_revision": 149,
+    "pck_sha256": "09861b6d6165b55971986227479ac448ecfc05338a8ca7498e42462769860a8d"
+  },
+  "observed_at_utc": null
+}
