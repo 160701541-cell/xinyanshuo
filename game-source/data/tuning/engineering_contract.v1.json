@@ -1,0 +1,200 @@
+{
+  "schema": 1,
+  "version": "0.1.0",
+  "release_status": "not_approved",
+  "project": "苍岚·人生世界",
+  "engine": "Godot 4.4.1 + Terrain3D",
+  "scope": "10m_courtyard_and_material_vertical_slice",
+  "policy": {
+    "unknown_evidence": "BLOCK",
+    "synthetic_evidence": "BLOCK_FOR_RELEASE",
+    "art_approval": "HUMAN_REQUIRED",
+    "save_and_provenance": "INVARIANT",
+    "max_single_adjustment_fraction": 0.1,
+    "device_min_duration_seconds": 900
+  },
+  "gates": {
+    "visual": {
+      "require_source": "godot_real",
+      "metrics": {
+        "missing_meshes": {
+          "max": 0
+        },
+        "floating_foundations": {
+          "max": 0
+        },
+        "roof_coverage_fraction": {
+          "min": 0.25
+        },
+        "roof_tile_legibility_faults": {
+          "max": 0
+        },
+        "material_stretch_faults": {
+          "max": 0
+        }
+      },
+      "manual_approval_required": true
+    },
+    "controls": {
+      "require_source": "android_real",
+      "metrics": {
+        "input_conflicts": {
+          "max": 0
+        },
+        "touch_to_feedback_p95_ms": {
+          "max": 100
+        },
+        "camera_obstruction_frames": {
+          "max": 0
+        },
+        "movement_foot_sliding_faults": {
+          "max": 0
+        }
+      }
+    },
+    "logic": {
+      "require_source": "godot_real",
+      "metrics": {
+        "entity_id_collisions": {
+          "max": 0
+        },
+        "inventory_balance_faults": {
+          "max": 0
+        },
+        "save_recovery_faults": {
+          "max": 0
+        },
+        "recipe_mass_faults": {
+          "max": 0
+        },
+        "unearned_unlocks": {
+          "max": 0
+        }
+      }
+    },
+    "performance": {
+      "require_source": "android_real",
+      "metrics": {
+        "fps_p05": {
+          "min": 30
+        },
+        "frame_p95_ms": {
+          "max": 33.34
+        },
+        "draw_calls_p95": {
+          "max": 200
+        },
+        "triangle_count_p95": {
+          "max": 150000
+        },
+        "crashes": {
+          "max": 0
+        }
+      },
+      "sample_seconds": 900
+    }
+  },
+  "tuning_parameters": {
+    "render.exposure_bias": {
+      "value": 0,
+      "min": -0.6,
+      "max": 0.6,
+      "step": 0.04,
+      "unit": "ev",
+      "requires": [
+        "visual"
+      ],
+      "direction": "human_review"
+    },
+    "render.tile_normal_strength": {
+      "value": 0.85,
+      "min": 0.35,
+      "max": 1.2,
+      "step": 0.05,
+      "unit": "factor",
+      "requires": [
+        "visual"
+      ],
+      "direction": "human_review"
+    },
+    "render.lod_distance_m": {
+      "value": 140,
+      "min": 35,
+      "max": 180,
+      "step": 5,
+      "unit": "metres",
+      "requires": [
+        "performance"
+      ],
+      "direction": "decrease_if_over_budget"
+    },
+    "render.vegetation_density": {
+      "value": 0.75,
+      "min": 0.4,
+      "max": 1,
+      "step": 0.05,
+      "unit": "factor",
+      "requires": [
+        "performance",
+        "visual"
+      ],
+      "direction": "decrease_if_over_budget"
+    },
+    "render.particle_budget": {
+      "value": 260,
+      "min": 80,
+      "max": 800,
+      "step": 20,
+      "unit": "particles",
+      "requires": [
+        "performance"
+      ],
+      "direction": "decrease_if_over_budget"
+    },
+    "controls.camera_sensitivity": {
+      "value": 0.48,
+      "min": 0.16,
+      "max": 0.85,
+      "step": 0.02,
+      "unit": "normalized",
+      "requires": [
+        "controls"
+      ],
+      "direction": "human_review"
+    },
+    "controls.joystick_deadzone": {
+      "value": 0.12,
+      "min": 0.06,
+      "max": 0.22,
+      "step": 0.01,
+      "unit": "fraction",
+      "requires": [
+        "controls"
+      ],
+      "direction": "human_review"
+    },
+    "controls.right_touch_zone_start": {
+      "value": 0.52,
+      "min": 0.48,
+      "max": 0.72,
+      "step": 0.02,
+      "unit": "screen_fraction",
+      "requires": [
+        "controls"
+      ],
+      "direction": "increase_if_conflict"
+    },
+    "logic.simulation_tier": {
+      "value": 1,
+      "min": 0,
+      "max": 3,
+      "step": 1,
+      "unit": "tier",
+      "requires": [
+        "logic",
+        "performance"
+      ],
+      "direction": "human_review"
+    }
+  }
+}
