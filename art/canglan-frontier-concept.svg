@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 680" role="img" aria-labelledby="t d"><title id="t">《苍岚·人生世界》万里边关概念图</title><desc id="d">高山雪岭、边关商路、驼队和守军，原创世界观美术，不是现有游戏实机画面。</desc><defs><linearGradient id="sky" x2="0" y2="1"><stop stop-color="#192c40"/><stop offset=".6" stop-color="#79909a"/><stop offset="1" stop-color="#d2b6a0"/></linearGradient><linearGradient id="wall" x2="0" y2="1"><stop stop-color="#84948c"/><stop offset="1" stop-color="#32403e"/></linearGradient><linearGradient id="ground" x2="0" y2="1"><stop stop-color="#809184"/><stop offset="1" stop-color="#3e5548"/></linearGradient><g id="tower"><path d="M-52-85h104V42h-104z" fill="#60685f" stroke="#2e3b40" stroke-width="5"/><path d="M-74-85 0-124 72-85 55-73H-55Z" fill="#1d2b33" stroke="#e7d1aa" stroke-width="3"/><path d="M-34-42h67v52h-67z" fill="#1b252a"/><path d="M-55 44h110" stroke="#dfc49a" stroke-width="5"/></g></defs>
+<rect width="1200" height="680" fill="url(#sky)"/><circle cx="853" cy="201" r="78" fill="#f6dbbc" opacity=".55"/>
+<path d="M0 354 103 238 214 292 360 70 503 290 620 119 757 278 919 90 1046 230 1200 134v330H0Z" fill="#9aabb0"/>
+<path d="M0 389 103 238 214 292 360 70 503 290 620 119 757 278 919 90 1046 230 1200 134v18l-154 118-127-112-151 223-138-149-117 176-144-202-145 178-108-57-110 159Z" fill="#d9ddd1" opacity=".91"/>
+<path d="M0 450l170-160 105 83 130-146 130 139 134-98 133 158 170-153 228 145v262H0Z" fill="#465d5e"/>
+<path d="M0 535q262-100 452-49T1200 434v246H0Z" fill="url(#ground)"/>
+<path d="M0 639Q441 487 693 560T1200 553v127H0Z" fill="#9d9079"/>
+<path d="M-30 523l97-26 262 25 58-53 303 42 77-47 459 30v32l-455-20-80 61-320-25-46 46L35 549Z" fill="url(#wall)" stroke="#252f35" stroke-width="8"/>
+<g><use href="#tower" transform="translate(192 497) scale(1.14)"/><use href="#tower" transform="translate(684 483) scale(.94)"/><use href="#tower" transform="translate(985 487) scale(.87)"/></g>
+<path d="M241 680q130-94 285-78t395 24" fill="none" stroke="#c5ae88" stroke-width="27" opacity=".4"/>
+<g fill="#1e292b"><path d="M680 614l13-15 22 0 11 23-7 4-8-14-19 2-13 17-5-3Z"/><circle cx="688" cy="602" r="5"/><path d="M730 624l13-16 22 1 11 23-8 4-6-14-20 1-14 14-6-5Z"/><circle cx="735" cy="615" r="5"/><circle cx="641" cy="597" r="7"/><path d="M637 605l-8 38h31l-9-38Z"/></g>
+<path d="M635 571L640 482" stroke="#191e21" stroke-width="5"/><path d="M642 492l59 12-61 31Z" fill="#ac6349"/>
+<path d="M19 19H1181V661H19Z" fill="none" stroke="#f5e9c7" stroke-width="2" opacity=".5"/>
+<rect x="29" y="29" width="429" height="69" fill="#111e28" opacity=".87"/><text x="52" y="76" font-family="Noto Serif CJK SC,Songti SC,serif" font-size="31" letter-spacing="4" fill="#f3e5c2">山河辽阔 · 众生自有归途</text>
+<rect x="794" y="606" width="380" height="46" fill="#121f26" opacity=".83"/><text x="813" y="637" font-family="Noto Sans CJK SC,sans-serif" font-size="17" letter-spacing="2" fill="#e0ccaa">原创边关概念 · 非游戏实机</text>
+</svg>
