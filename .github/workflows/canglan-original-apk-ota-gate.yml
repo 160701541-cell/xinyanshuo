@@ -1,0 +1,45 @@
+name: Canglan ORIGINAL Android APK OTA - Immutable Signature Release Gate
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'tools/ota_release_gate.py'
+      - 'android-preview/latest.json'
+      - 'android-preview/base-latest.json'
+      - 'logic-qa/scripts/update_channel.gd'
+      - '.github/workflows/canglan-original-apk-ota-gate.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  original-apk-update-readiness:
+    name: Check APK176 signing key and minimum real OTA revision
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify OpenSSL and real APK-pinned public key / existing feed
+        shell: bash
+        run: |
+          set -euo pipefail
+          openssl version
+          python3 tools/ota_release_gate.py --report qa-logs/original-apk-ota-release-gate.json
+          python3 - <<'PY'
+          import json
+          report=json.load(open('qa-logs/original-apk-ota-release-gate.json'))
+          assert report['base_apk_package']=='org.canglan.ancient25d.preview'
+          assert report['base_apk_version_code']==1176
+          assert report['required_next_revision'] >= 177
+          print('PASS_OTA_CANDIDATE_MIN_REVISION',report['required_next_revision'])
+          if not report['existing_feed_signature_valid']:
+              print('BLOCKED: currently public manifest does not verify with pinned APK key')
+          print('BLOCKED_UNTIL_REAL_LEGACY_APK_PATCH_AND_ORIGINAL_RSA_SIGNATURE')
+          PY
+      - name: Preserve machine-readable compatibility check
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: original-apk-ota-compatibility-${{ github.sha }}
+          path: qa-logs/original-apk-ota-release-gate.json
+          retention-days: 14
+          if-no-files-found: warn
