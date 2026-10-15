@@ -10,7 +10,9 @@
     },
     "scripts/touch_look_router.gd": {
       "source_path": "godot3d/scripts/touch_look_router.gd",
-      "source_blob_sha1": "0d5e0d0925eb50bf75fd0bd0631ab2ccf34aa831"
+      "source_blob_sha1": "0d5e0d0925eb50bf75fd0bd0631ab2ccf34aa831",
+      "review_status": "candidate_fix_not_yet_backported",
+      "current_public_blob_sha1": "ffab3e452d29923f3a4a36444113d35cb0d75d1a"
     },
     "scripts/character_locomotion.gd": {
       "source_path": "godot3d/scripts/character_locomotion.gd",
@@ -22,7 +24,9 @@
     },
     "tests/touch_look_router_test.gd": {
       "source_path": "godot3d/tests/touch_look_router_test.gd",
-      "source_blob_sha1": "7b5948a67067a5ba63a69aac96ae2408d749e67e"
+      "source_blob_sha1": "7b5948a67067a5ba63a69aac96ae2408d749e67e",
+      "review_status": "candidate_regression_not_yet_backported",
+      "current_public_blob_sha1": "c9aa55b1cd1b473d61b0a6b2c6faec8945708d39"
     },
     "tests/character_locomotion_test.gd": {
       "source_path": "godot3d/tests/character_locomotion_test.gd",
