@@ -5,6 +5,7 @@ on:
     paths:
       - 'tools/asset_factory/worldx_godot_bridge.py'
       - 'tools/asset_factory/worldx_npc_import.py'
+      - 'tools/asset_factory/worldx_hotspot_import.py'
       - 'logic-qa/tools/verify_worldx_npc_content.gd'
       - 'game-source/apk176-ota177-candidate/**'
       - 'logic-qa/tools/build_apk176_hd2d_overlay.gd'
@@ -39,6 +40,11 @@ jobs:
           python3 tools/asset_factory/worldx_godot_bridge.py \
             --source /tmp/WorldX/library/worlds \
             --out qa-stage/ota177/hd2d/worldx --limit 8 --map-only
+          python3 tools/asset_factory/worldx_hotspot_import.py \
+            --source /tmp/WorldX/library/worlds \
+            --manifest qa-stage/ota177/hd2d/worldx/manifest.json \
+            --out qa-stage/ota177/hd2d/worldx
+          test -s qa-stage/ota177/hd2d/worldx/zones_000.json
           python3 tools/asset_factory/worldx_npc_import.py \
             --source /tmp/WorldX/library/worlds \
             --out qa-stage/ota177/hd2d/worldx/npcs --limit 6
@@ -68,6 +74,7 @@ jobs:
           target=game-source/apk176-ota177-candidate/hd2d/worldx
           mkdir -p "$target"
           cp qa-stage/ota177/hd2d/worldx/*.png "$target/"
+          cp qa-stage/ota177/hd2d/worldx/zones_*.json "$target/"
           cp qa-stage/ota177/hd2d/worldx/manifest.json "$target/manifest.json"
           mkdir -p "$target/npcs"
           cp qa-stage/ota177/hd2d/worldx/npcs/*.png "$target/npcs/"
@@ -126,6 +133,7 @@ jobs:
           grep -Fq 'HD2D_OTA_INDEX_ENTRY hd2d/worldx/worldx_000.png' qa-results/worldx-pck-index.log
           grep -Fq 'HD2D_OTA_INDEX_ENTRY hd2d/worldx/npcs/npc_00.png' qa-results/worldx-pck-index.log
           grep -Fq 'HD2D_OTA_INDEX_ENTRY hd2d/worldx/npcs/npcs.json' qa-results/worldx-pck-index.log
+          grep -Fq 'HD2D_OTA_INDEX_ENTRY hd2d/worldx/zones_000.json' qa-results/worldx-pck-index.log
       - name: Run actual WorldX 2D asset and animated NPC instantiation QA
         shell: bash
         env:
@@ -170,6 +178,7 @@ jobs:
             qa-stage/ota177/hd2d/worldx/npcs/*.png
             qa-stage/ota177/hd2d/worldx/npcs/npcs.json
             qa-stage/ota177/hd2d/worldx/manifest.json
+            qa-stage/ota177/hd2d/worldx/zones_*.json
           retention-days: 14
           compression-level: 0
           if-no-files-found: warn
