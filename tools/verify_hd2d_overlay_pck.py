@@ -23,7 +23,7 @@ def names_only(raw):
         length=struct.unpack_from("<I",raw,position)[0]
         position+=4
         if not 1<=length<=1024:raise ValueError("Invalid PCK path length")
-        name=raw[position:position+length].split(b"\\x00",1)[0].decode("utf-8","strict")
+        name=raw[position:position+length].split(bytes([0]),1)[0].decode("utf-8","strict")
         position+=length+36
         if name in result:raise ValueError("Duplicate PCK resource")
         result.add(name)
