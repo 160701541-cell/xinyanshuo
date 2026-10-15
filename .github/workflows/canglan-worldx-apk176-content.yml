@@ -13,6 +13,9 @@ on:
       - 'tools/verify_hd2d_overlay_pck.py'
       - '.github/workflows/canglan-worldx-apk176-content.yml'
   workflow_dispatch:
+concurrency:
+  group: canglan-worldx-original-game-main
+  cancel-in-progress: true
 permissions:
   contents: write
 jobs:
