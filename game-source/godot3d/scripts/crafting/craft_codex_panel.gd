@@ -11,6 +11,23 @@ const DIM := Color("#a9b6ab")
 const LINK := Color("#9ccec0")
 const BLOCKED := Color("#ddad98")
 const FILTERS := ["全部", "原料", "半成品", "成品与组件"]
+const STAGE_NAMES := {
+	"raw":"天然原料", "intermediate":"半成品", "product":"制成品",
+	"byproduct":"工序副产物", "construction":"建筑组件"
+}
+const STATION_NAMES := {
+	"mixing_tub":"混料槽", "settling_tank":"淘泥沉淀池", "sieve":"筛具",
+	"brick_mould":"制砖模具", "kiln":"烧制窑炉", "tile_mould":"瓦坯模具",
+	"slaking_pit":"石灰消解池", "plaster_mixer":"灰泥搅拌台",
+	"ramming_frame":"夯土模架", "sawbench":"木作锯台",
+	"construction_site":"营造工地"
+}
+const NATURAL_ORIGINS := {
+	"natural:clay_bed":"黏土地层", "natural:river_bank":"河岸砂土",
+	"natural:well_or_river":"水井或河道", "harvested_wood":"木料采集",
+	"natural:quarry":"石灰岩矿层", "existing_world_harvest":"林业采伐",
+	"agriculture":"农作物副产物"
+}
 var db = Reader.new()
 var search_box: LineEdit
 var filter_button: OptionButton
@@ -87,6 +104,36 @@ func set_world_view(research_ids: Array[String], blueprint_ids: Array[String],
 	inventory_snapshot = stock.duplicate(true)
 	if not selected_item_id.is_empty() and db.items.has(selected_item_id):
 		select_item(selected_item_id)
+
+func _station_name(code: String) -> String:
+	return String(STATION_NAMES.get(code, "专用工坊：" + code))
+
+func _origin_name(code: String) -> String:
+	if db.recipes.has(code):
+		return "通过「%s」工序加工" % String(db.recipes[code].get("name", code))
+	return String(NATURAL_ORIGINS.get(code, "需要实地查验来源：" + code))
+
+func _missing_description(missing: Array, recipe: Dictionary) -> String:
+	var descriptions: Array[String] = []
+	for entry in missing:
+		var detail: String = String(entry)
+		if detail.begins_with("blueprint:"):
+			var key := detail.trim_prefix("blueprint:")
+			descriptions.append("未获得图纸「%s」" % String(db.blueprints.get(key, {}).get("name", key)))
+		elif detail.begins_with("research:"):
+			var key := detail.trim_prefix("research:")
+			descriptions.append("尚未研究「%s」" % String(db.research.get(key, {}).get("name", key)))
+		elif detail.begins_with("station:"):
+			descriptions.append("缺少设备「%s」" % _station_name(detail.trim_prefix("station:")))
+		elif detail.begins_with("stock:"):
+			var key := detail.trim_prefix("stock:")
+			var needed: int = int(recipe.get("inputs", {}).get(key, 0))
+			var owned: int = int(inventory_snapshot.get(key, 0))
+			descriptions.append("缺少「%s」%d份（现有%d份）" %
+				[_material_name(key), max(0, needed - owned), owned])
+		else:
+			descriptions.append("系统限制：" + detail)
+	return "；".join(descriptions)
 
 func _heading(value: String, size: int, color: Color = TEXT) -> Label:
 	var node := Label.new()
@@ -223,7 +270,8 @@ func _refresh_items() -> void:
 			continue
 		var btn := Button.new()
 		btn.name = "Item_" + String(key)
-		btn.text = "%s  ·  %s" % [String(item.get("name", key)), String(key)]
+		btn.text = "%s  ·  %s" % [String(item.get("name", key)), String(STAGE_NAMES.get(item.get("stage", ""), "材料"))]
+		btn.tooltip_text = "可追溯类型编号：" + String(key)
 		btn.alignment = HORIZONTAL_ALIGNMENT_LEFT
 		btn.custom_minimum_size.y = 53
 		btn.add_theme_font_size_override("font_size", 16)
@@ -258,8 +306,8 @@ func select_item(item_id: String) -> void:
 	var lines: Array[String] = []
 	lines.append("[color=#d9c397][font_size=28]%s[/font_size][/color]" % label)
 	lines.append("[color=#a9b6ab]编号：%s  |  类型：%s  |  单位质量：%d g[/color]" %
-		[item_id, String(item.get("stage","?")), int(item.get("mass_g",0))])
-	lines.append("\n[color=#9ccec0]来源 / 采集[/color]\n" + String(item.get("origin", "?")))
+		[item_id, String(STAGE_NAMES.get(item.get("stage",""),"未分类")), int(item.get("mass_g",0))])
+	lines.append("\n[color=#9ccec0]来源 / 采集[/color]\n" + _origin_name(String(item.get("origin", "?"))))
 	var makers: Array[String] = db.producers_of(item_id)
 	lines.append("\n[color=#d9c397][font_size=20]生产它的工序（%d）[/font_size][/color]" % makers.size())
 	if makers.is_empty():
@@ -268,14 +316,14 @@ func select_item(item_id: String) -> void:
 		var r: Dictionary = db.recipes[rid]
 		var verdict: Dictionary = db.inspect_recipe(rid, acquired_research,
 			acquired_blueprints, nearby_stations, inventory_snapshot)
-		var state := "[color=#9ccec0]可申请工单[/color]" if verdict.get("ok", false) else "[color=#ddad98]条件不足 · 尚不能生产[/color]"
+		var state := "[color=#9ccec0]前置条件齐备（仅预览，不开放生产）[/color]" if verdict.get("ok", false) else "[color=#ddad98]条件不足 · 尚不能生产[/color]"
 		lines.append("\n[b]%s[/b]  %s" % [String(r["name"]), state])
 		lines.append("投料：%s" % _format_items(r["inputs"]))
 		lines.append("产出：%s" % _format_items(r["outputs"]))
 		lines.append("设备：%s  ·  工时：%d分钟  ·  损耗：%dg" %
-			[String(r["station"]), int(r["work_minutes"]), int(r["loss_g"])])
+			[_station_name(String(r["station"])), int(r["work_minutes"]), int(r["loss_g"])])
 		if not verdict.get("ok", false):
-			lines.append("[color=#ddad98]尚缺：%s[/color]" % "、".join(verdict["missing"]))
+			lines.append("[color=#ddad98]尚缺：%s[/color]" % _missing_description(verdict["missing"], r))
 	var uses: Array[String] = db.consumers_of(item_id)
 	lines.append("\n[color=#d9c397][font_size=20]可参与的后续制作（%d）[/font_size][/color]" % uses.size())
 	if uses.is_empty():
