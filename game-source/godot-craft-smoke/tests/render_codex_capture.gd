@@ -12,6 +12,8 @@ func _capture() -> void:
 		await process_frame
 	await RenderingServer.frame_post_draw
 	var frame: Image = root.get_texture().get_image()
+	print("REAL_WINDOW_SIZE=",root.size, " VIEWPORT_SIZE=",root.get_visible_rect().size,
+		" CAPTURED_IMAGE_SIZE=",Vector2i(frame.get_width(),frame.get_height()) if frame != null else Vector2i.ZERO)
 	if frame == null or frame.get_width() != 1280 or frame.get_height() != 720:
 		printerr("BAD_GODOT_FRAME")
 		quit(4)
