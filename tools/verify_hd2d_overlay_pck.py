@@ -12,6 +12,7 @@ REQUIRED={"scenes/main.tscn.remap","scenes/main_hd2d_ota177.tscn",
 OPTIONAL={"hd2d/worldx/npcs/npcs.json"}
 OPTIONAL.update("hd2d/worldx/worldx_%03d.png"%i for i in range(8))
 OPTIONAL.update("hd2d/worldx/zones_%03d.json"%i for i in range(8))
+OPTIONAL.update("hd2d/worldx/nav_%03d.json"%i for i in range(8))
 OPTIONAL.update("hd2d/worldx/npcs/npc_%02d.png"%i for i in range(16))
 
 def names_only(raw):
@@ -34,7 +35,7 @@ def verify(path):
     raw=path.read_bytes()
     paths=names_only(raw)
     if not REQUIRED.issubset(paths) or not paths.issubset(REQUIRED|OPTIONAL):
-        raise ValueError("Missing base assets or unauthorized PCK entries")
+        raise ValueError(f"Missing base resources {REQUIRED-paths}, unauthorized entries {paths-(REQUIRED|OPTIONAL)}")
     npc="hd2d/worldx/npcs/npcs.json"
     if npc in paths and not "hd2d/worldx/npcs/npc_00.png" in paths:
         raise ValueError("NPC manifest without character sprite")
