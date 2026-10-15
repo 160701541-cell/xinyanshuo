@@ -70,3 +70,11 @@
 - 在公开仓库创建 Godot 4.4 HD2D 独立工程 `game-source/hd2d-world/`：`project.godot`、`scenes/village.tscn`、`scripts/village.gd`。它通过官网已有图集绘制交互式候选村落场景，能移动镜头、缩放、切换昼夜；历史图集尚未通过正式QA。提交：`8711de0`、`d29e0cf`、`c46eb47`。
 - **边界**：公开仓库的此 Godot 子工程不等于已安装旧APK的完整源码，未发布签名APK/PCK；当前无法声明手机游戏已收到该场景。不得修改原有正式签名更新清单或假冒安卓发布成功。
 - 实际下一步：只在本公开仓库完善独立 PNG、场景和 CI，确认可公开构建的签名渠道，再交付可安装的 APK。
+
+## CAC-0014 · 仅公开仓库 Godot HD2D 安卓现场验收包（2026-10-16）
+- 开发仓库：仅 `160701541-cell/xinyanshuo`；独立 Godot 4.4.1 项目 `game-source/hd2d-world/`。没有改动私人旧工程或既有 `android-preview/latest.json`。
+- 真实验收：公共 Godot 场景运行、Camera2D/状态HUD/缩放测试和已上传候选图集 HTTPS 检测 **PASS**，Godot QA run `38815270438`。该验收不是 Android 真机或正式素材画质验收。
+- Android CI：`.github/workflows/canglan-public-hd2d-android.yml`，固定官方 Godot 4.4.1 + Android ARM64 debug 导出，独立包名 `com.xinyanshuo.canglan.hd2dqa`，原生导出和ZIP完整性检查通过；run `38815560663` **SUCCESS**，发布操作 **SUCCESS**。
+- 实际可下载公开预发布：`https://github.com/160701541-cell/xinyanshuo/releases/tag/hd2d-qa-fadcbae76718`；APK 26964157 bytes；SHA256 `30484fe914935f916a54e5e49bad382b649bace5d1fe7f79674091cf5cb4cc27`。
+- 官网 `index.html` 新增单独“HD2D安卓测试版”入口，不混同正式《苍岚》APK。用户**不能用该测试包覆盖原有游戏**，因为它使用独立包名/CI临时调试签名；不改变原版存档及官方OTA。
+- **未完成且不能宣称完成**：10月16日聊天生成的青楼、宗门大殿、草房小院、城门等高清PNG尚未实际上传到此公开仓库；场景仍采用4x5历史候选图集，非高质量独立正式素材；安卓真机美术与性能尚未验收。
