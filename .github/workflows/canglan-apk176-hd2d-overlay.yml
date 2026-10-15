@@ -94,6 +94,10 @@ jobs:
           }
           cat qa-results/hd2d-existing-script-load.log
           grep -Fq 'PASS_APK176_HD2D_OVERLAY_MOUNT_AND_CANONICAL_MAIN_SCENE' qa-results/hd2d-existing-script-load.log
+          if grep -Eq 'SCRIPT ERROR:|Parse Error:|ERROR: Failed to load script' qa-results/hd2d-existing-script-load.log; then
+            echo '::error::Original game scripted scene failed class resolution; release QA BLOCKED'
+            exit 1
+          fi
       - name: Preserve QA candidate and evidence - NEVER modify the public live feed
         if: always()
         uses: actions/upload-artifact@v4
