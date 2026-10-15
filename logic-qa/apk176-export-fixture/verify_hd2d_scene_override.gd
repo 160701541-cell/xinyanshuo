@@ -14,6 +14,7 @@ func _initialize() -> void:
 		return
 	for resource in ["res://scenes/main.tscn.remap", "res://scenes/main_hd2d_ota177.tscn",
 			"res://scripts/hd2d_original_overlay_ota177.gd",
+			"res://scripts/hd2d_stone_road.gd",
 			"res://hd2d/atlas_village_ota177.jpg"]:
 		if not FileAccess.file_exists(resource):
 			printerr("FAIL: candidate missing ",resource)
@@ -30,6 +31,11 @@ func _initialize() -> void:
 	if scene == null:
 		printerr("FAIL: live overlay scene cannot be loaded with APK176 compiled script")
 		quit(6)
+		return
+	var paving = load("res://scripts/hd2d_stone_road.gd")
+	if paving == null or not paving.edges_match(paving.make_image()):
+		printerr("FAIL: native stone paving not seamless")
+		quit(9)
 		return
 	print("PASS_APK176_HD2D_OVERLAY_MOUNT_AND_CANONICAL_MAIN_SCENE (NOT PHONE QA)")
 	quit(0)
