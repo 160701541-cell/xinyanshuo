@@ -1,0 +1,107 @@
+name: Canglan ORIGINAL APK176 HD2D Overlay - PCK Bytecode Gate (No Fake Release)
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'game-source/apk176-ota177-candidate/**'
+      - 'logic-qa/tools/build_apk176_hd2d_overlay.gd'
+      - 'logic-qa/apk176-export-fixture/verify_hd2d_scene_override.gd'
+      - 'tools/verify_hd2d_overlay_pck.py'
+      - '.github/workflows/canglan-apk176-hd2d-overlay.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  public-ota-candidate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 16
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify original APK176 and staging inputs
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 tools/audit_apk176_hd2d_hooks.py --out qa-results/apk176-hd2d-entrypoints.json
+          mkdir -p qa-stage/ota177/hd2d qa-stage/ota177/scenes qa-stage/ota177/scripts
+          cp game-source/apk176-ota177-candidate/scenes/* qa-stage/ota177/scenes/
+          cp game-source/apk176-ota177-candidate/scripts/* qa-stage/ota177/scripts/
+          cp art-source/hd2d/batch-20261016/01_village_props_atlas_preview.jpg qa-stage/ota177/hd2d/atlas_village_ota177.jpg
+          python3 - <<'PY'
+          from pathlib import Path
+          s=Path("qa-stage/ota177/scenes/main_hd2d_ota177.tscn").read_text()
+          assert 'res://scripts/main.gd' in s
+          assert 'res://scripts/hd2d_original_overlay_ota177.gd' in s
+          assert '[node name="Canglan3D" type="Node3D"]' in s
+          print('PASS_ORIGINAL_MAIN_ROOT_SCRIPT_PRESERVED')
+          PY
+      - name: Extract real APK176 compiled game script and remaps (CI only)
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json, pathlib, zipfile
+          m=json.load(open("android-preview/base-latest.json"))
+          dest=pathlib.Path("logic-qa/apk176-export-fixture")
+          with zipfile.ZipFile(m["file"]) as apk:
+              for p in ("assets/scripts/main.gdc","assets/scripts/main.gd.remap",
+                        "assets/scenes/main.tscn.remap"):
+                  assert p in apk.namelist(),p
+                  target=dest / p.removeprefix("assets/")
+                  target.parent.mkdir(parents=True,exist_ok=True)
+                  target.write_bytes(apk.read(p))
+                  print("VERIFIED_REAL_APK176_BYTECODE",p,len(apk.read(p)))
+              for p in apk.namelist():
+                  if p.startswith("assets/scripts/") and p.endswith((".gdc",".gd.remap")):
+                      dest.joinpath(p.removeprefix("assets/")).parent.mkdir(parents=True,exist_ok=True)
+                      dest.joinpath(p.removeprefix("assets/")).write_bytes(apk.read(p))
+          PY
+      - name: Install real Godot 4.4.1 Linux editor
+        run: |
+          set -euo pipefail
+          curl -fL --retry 3 --connect-timeout 25 \
+            https://github.com/godotengine/godot/releases/download/4.4.1-stable/Godot_v4.4.1-stable_linux.x86_64.zip -o /tmp/godot.zip
+          unzip -q /tmp/godot.zip -d /tmp
+          chmod +x /tmp/Godot_v4.4.1-stable_linux.x86_64
+      - name: Build 4-resource ORIGINAL game entrypoint PCK, UNSIGNED
+        shell: bash
+        env:
+          CANGLAN_QA_PCK_PATH: ${{ github.workspace }}/qa-results/canglan-content-rev-177-UNSIGNED-QA-ONLY.pck
+          CANGLAN_OTA_STAGE_DIR: ${{ github.workspace }}/qa-stage/ota177
+        run: |
+          set -euo pipefail
+          GODOT=/tmp/Godot_v4.4.1-stable_linux.x86_64
+          timeout 75s "$GODOT" --headless --editor --path logic-qa --import > qa-results/hd2d-import.log 2>&1
+          timeout 75s "$GODOT" --headless --path logic-qa --script res://tools/build_apk176_hd2d_overlay.gd > qa-results/hd2d-pack.log 2>&1 || {
+            cat qa-results/hd2d-pack.log; exit 1;
+          }
+          cat qa-results/hd2d-pack.log
+          grep -Fq 'PASS ORIGINAL APK176 HD2D CANDIDATE PCK BUILT' qa-results/hd2d-pack.log
+          python3 tools/verify_hd2d_overlay_pck.py "$CANGLAN_QA_PCK_PATH" > qa-results/hd2d-pck-index.log 2>&1 || {
+            cat qa-results/hd2d-pck-index.log; exit 1;
+          }
+          cat qa-results/hd2d-pck-index.log
+      - name: Prove candidate loads with original APK176 compiled main
+        shell: bash
+        env:
+          CANGLAN_QA_PCK_PATH: ${{ github.workspace }}/qa-results/canglan-content-rev-177-UNSIGNED-QA-ONLY.pck
+        run: |
+          set -euo pipefail
+          GODOT=/tmp/Godot_v4.4.1-stable_linux.x86_64
+          timeout 75s "$GODOT" --headless --path logic-qa/apk176-export-fixture \
+            --script res://verify_hd2d_scene_override.gd > qa-results/hd2d-existing-script-load.log 2>&1 || {
+            cat qa-results/hd2d-existing-script-load.log; exit 1;
+          }
+          cat qa-results/hd2d-existing-script-load.log
+          grep -Fq 'PASS_APK176_HD2D_OVERLAY_MOUNT_AND_SCENE_RESOURCE' qa-results/hd2d-existing-script-load.log
+      - name: Preserve QA candidate and evidence - NEVER modify the public live feed
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: NOT-FOR-PHONE-HD2D-ORIGINAL-APK176-CANDIDATE-${{ github.sha }}
+          path: |
+            qa-results/*.json
+            qa-results/*.log
+            qa-results/*UNSIGNED-QA-ONLY.pck
+          retention-days: 7
+          compression-level: 0
+          if-no-files-found: warn
