@@ -84,7 +84,12 @@ jobs:
           set -euo pipefail
           mkdir -p qa-logs
           GODOT=/tmp/godot-editor/Godot_v4.4.1-stable_linux.x86_64
-          "$GODOT" --headless --path game-source/hd2d-world \
+          echo "Installed Godot export templates:"
+          ls -lh "$HOME/.local/share/godot/export_templates/4.4.1.stable/" | head -n 25
+          echo "Android tooling:"
+          ls -lh "$ANDROID_SDK_ROOT/platform-tools/adb" "$ANDROID_SDK_ROOT/build-tools/35.0.0/aapt2"
+          echo "Exporting with --verbose for exact root-cause evidence"
+          "$GODOT" --verbose --headless --path game-source/hd2d-world \
             --export-debug 'Android HD2D QA' "$GITHUB_WORKSPACE/qa-logs/Canglan-HD2D-public-ARM64-debug.apk" \
             > qa-logs/export.log 2>&1 || {
             cat qa-logs/export.log; exit 1;
