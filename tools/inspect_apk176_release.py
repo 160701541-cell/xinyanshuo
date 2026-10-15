@@ -93,7 +93,10 @@ def run():
                         if start == b"GDPC":
                             result["godot_pack_detected"] = True
             if not result["godot_pack_detected"]:
-                raise ValueError("APK176 Godot pack layout unresolved; inspect assets_sample and candidate signatures")
+                print("APK_ASSETS_SAMPLE", json.dumps(result["assets_sample"], ensure_ascii=False))
+                print("APK_PACK_CANDIDATES", json.dumps(result["apk_pack_candidates"], ensure_ascii=False))
+                print("APK_FILENAMES_FIRST", json.dumps(names[:70], ensure_ascii=False))
+                raise ValueError("APK176 Godot pack layout unresolved; release blocked")
             print("PASS_APK176_GODOT_PACK_FOUND")
     finally:
         OUTPUT.write_text(json.dumps(result, ensure_ascii=False, indent=2) + "\n", "utf-8")
