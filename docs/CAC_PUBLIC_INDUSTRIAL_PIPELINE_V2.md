@@ -54,3 +54,10 @@
 - 工序保留输入manifest、原始图、SHA256追踪；在独立输出目录形成 `scene_candidate.png`、512图标候选、浅色/深色双底视觉预览、`candidate_manifest.json`，所有输出标记 `UNAPPROVED` 并要求人工检查光晕、透视、邻格、结构等。若源候选含伪造批准标记则拒绝。
 - 新增 `test_candidate_cutout.py` 覆盖白/黑背景、alpha保真、彩色背景不一致、空图拒绝、完整清单到实际PNG、路径越界、覆盖保护和伪审核，共9项。本地容器已执行此新模块的9项单元测试，全部PASS；**仅合成测试夹具，并非真实《苍岚》美术样张通过**。
 - 新增 `.github/workflows/canglan-asset-factory-qa.yml`，GitHub推送时运行整个asset_factory的unittest并生成2个真实任务的dry-run QA记录；云端结果需要单独确认。未接ComfyUI模型服务、未新增批准图像、未Godot真机场景集成。
+
+
+## 10. CAC-0006 真实源图反证审计（2026-10-16）
+- 新增 `tools/asset_factory/atlas_reality_audit.py` 与 `test_atlas_reality_audit.py`，用真实源图、图集坐标和严格alpha判定，生成独立未批准裁切候选以及可追溯审计JSON。伪alpha需要显式 `--flatten-ambiguous-alpha`，不能悄悄把RGBA当真透明。
+- 实际取得用户历史《苍岚》1536×1024素材图鉴作为本地输入，并复现20格裁切：5件仅能产生透明候选，15件因背景/裁断风险阻断；真人/模型视觉核对20件均仍含多状态、文字或低原生分辨率等问题。**0件获生产批准**。
+- 完整证据见 `docs/CAC_REAL_ATLAS_AUDIT_20261016.md`，已在当前会话交付ZIP；源图仍在用户历史素材库，不自动上传未批准图片到公开仓库。
+- 本地联合单元测试12/12 PASS，GitHub CI尚无实际运行结果；Godot及手机发布均未通过。
