@@ -23,9 +23,10 @@ func _initialize() -> void:
 		quit(3)
 		return
 	var source_list: Dictionary = FILES.duplicate()
-	var worldx_png: String = base.path_join("hd2d/worldx/worldx_000.png")
-	if FileAccess.file_exists(worldx_png):
-		source_list["res://hd2d/worldx/worldx_000.png"] = "hd2d/worldx/worldx_000.png"
+	for i in range(8):
+		var rel: String = "hd2d/worldx/worldx_%03d.png" % i
+		if FileAccess.file_exists(base.path_join(rel)):
+			source_list["res://" + rel] = rel
 	for target in source_list:
 		var src: String = base.path_join(source_list[target])
 		if not FileAccess.file_exists(src):
