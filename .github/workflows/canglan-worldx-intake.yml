@@ -1,0 +1,64 @@
+name: WorldX open-source intake for Canglan (MIT, read-only)
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/canglan-worldx-intake.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  download-review:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - name: Download exact upstream source and verify MIT license
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/worldx /tmp/out
+          git clone --depth 1 https://github.com/YGYOOO/WorldX.git /tmp/worldx/WorldX
+          cd /tmp/worldx/WorldX
+          git rev-parse HEAD | tee /tmp/out/WORLDX_UPSTREAM_COMMIT.txt
+          grep -Fqx 'MIT License' <(head -n 1 LICENSE)
+          test -s package-lock.json
+          test -s README.md
+          test -s client/package.json
+          test -s server/package.json
+          test -s orchestrator/package.json
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          root=Path("/tmp/worldx/WorldX")
+          package=json.loads((root/"package.json").read_text())
+          assert package["name"] == "worldx"
+          assert ">=22.13" in package["engines"]["node"]
+          assert not (root/".env").exists(), "Never bundle a configured API key"
+          (Path("/tmp/out")/"INTAKE_REVIEW.json").write_text(json.dumps({
+            "upstream": "https://github.com/YGYOOO/WorldX",
+            "commit": (Path("/tmp/out")/"WORLDX_UPSTREAM_COMMIT.txt").read_text().strip(),
+            "license": "MIT",
+            "status": "Downloaded upstream source; NOT installed into Canglan Godot",
+            "stack": "Node/React/Phaser JS, not a drop-in Godot 3D module",
+            "api_keys_required_for_generation_and_simulation": True,
+            "walkable_3d_video_components_not_claimed_open_source": True
+          }, ensure_ascii=False, indent=2)+"\n")
+          PY
+          cd /tmp/worldx
+          zip -q -r /tmp/out/WorldX-MIT-upstream-source.zip WorldX -x '*/.git/*' '*/node_modules/*' '*/.env' '*/.env.*'
+          (cd /tmp/out && sha256sum WorldX-MIT-upstream-source.zip > WorldX-MIT-upstream-source.sha256)
+          echo 'PASS WORLDX OFFICIAL MIT SOURCE DOWNLOADED AND PACKED'
+      - name: Make original source available as downloadable GitHub Actions artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: WorldX-MIT-source-for-Canglan-review
+          path: |
+            /tmp/out/WorldX-MIT-upstream-source.zip
+            /tmp/out/WorldX-MIT-upstream-source.sha256
+            /tmp/out/WORLDX_UPSTREAM_COMMIT.txt
+            /tmp/out/INTAKE_REVIEW.json
+          retention-days: 14
+          if-no-files-found: error
