@@ -14,6 +14,11 @@ bpy.ops.wm.read_factory_settings(use_empty=True)
 bpy.ops.import_scene.gltf(filepath=str(house_path.resolve()))
 meshes=[o for o in bpy.context.scene.objects if o.type=="MESH"]
 assert meshes, "No real Chinese building meshes"
+# Same FBX author-units -> Godot metres conversion as WorldVisualBinding.
+for obj in bpy.context.scene.objects:
+    if obj.type != "CAMERA" and obj.type != "LIGHT":
+        obj.scale *= 0.1
+bpy.context.view_layer.update()
 for o in meshes:
     o.select_set(True)
 bpy.context.view_layer.objects.active=meshes[0]
