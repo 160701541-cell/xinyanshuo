@@ -12,6 +12,8 @@ var dragging := false
 var touches: Dictionary = {}
 var _background: ColorRect
 var _status: Label
+var _day_tint: ColorRect
+var _is_night := false
 
 func _ready() -> void:
 	layer = 61
@@ -20,7 +22,7 @@ func _ready() -> void:
 
 func _build_visual() -> void:
 	panel = Control.new()
-	panel.name = "HD2DPlaytest"
+	panel.name = "HD2DInGameVillage"
 	panel.set_anchors_preset(Control.PRESET_FULL_RECT)
 	panel.mouse_filter = Control.MOUSE_FILTER_PASS
 	add_child(panel)
@@ -51,6 +53,16 @@ func _build_visual() -> void:
 	note.text = "这是游戏内临时对照场景，原世界仍在运行，存档不变"
 	gui.add_child(note)
 	_load_atlas()
+	_day_tint = ColorRect.new()
+	_day_tint.name = "DayNightLighting"
+	_day_tint.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_day_tint.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_day_tint.color = Color(0.08,0.14,0.28,0.0)
+	panel.add_child(_day_tint)
+	var lighting := Button.new()
+	lighting.text = "昼夜切换"
+	lighting.pressed.connect(_toggle_day_night)
+	gui.add_child(lighting)
 	_update_art_transform()
 
 func _add_road() -> void:
@@ -58,17 +70,24 @@ func _add_road() -> void:
 	grass.color = Color("#68835a")
 	grass.polygon = PackedVector2Array([Vector2(-400,-400),Vector2(2400,-400),Vector2(2400,1500),Vector2(-400,1500)])
 	art_world.add_child(grass)
-	var stone := Polygon2D.new()
-	stone.color = Color("#b4a991")
-	stone.polygon = PackedVector2Array([Vector2(-200,540),Vector2(2000,540),Vector2(2000,760),Vector2(-200,760)])
-	art_world.add_child(stone)
-	for i in range(34):
-		var line := Line2D.new()
-		line.default_color = Color("#716d60", 0.42)
-		line.width = 3.0
-		var x := -120.0 + float(i)*66.0
-		line.points = PackedVector2Array([Vector2(x,540),Vector2(x-38,760)])
-		art_world.add_child(line)
+	# Reuse the native 256px seamless paving generator inside the ORIGINAL
+	# APK176 overlay. This replaces the flat mock road and diagonal lines.
+	var paving = load("res://scripts/hd2d_stone_road.gd")
+	if paving == null:
+		push_error("HD2D paving generator unavailable")
+		return
+	var road_texture: Texture2D = paving.make_texture()
+	var road := Node2D.new()
+	road.name = "StoneRoad_14Tiles"
+	art_world.add_child(road)
+	for col in range(7):
+		for row in range(2):
+			var tile := Sprite2D.new()
+			tile.name = "Stone_%02d_%02d" % [col,row]
+			tile.texture = road_texture
+			tile.centered = false
+			tile.position = Vector2(-120.0 + float(col * 256), 500.0 + float(row * 256))
+			road.add_child(tile)
 
 func _load_atlas() -> void:
 	if not FileAccess.file_exists(TILE_PATH):
@@ -100,10 +119,16 @@ func _load_atlas() -> void:
 		art_world.add_child(sprite)
 	_status.text = "已在原游戏资源包中显示村镇素材；拖动移动，双指缩放"
 
+func _toggle_day_night() -> void:
+	_is_night = not _is_night
+	_day_tint.color = Color(0.08,0.14,0.28,0.48 if _is_night else 0.0)
+	_status.text = "夜间" if _is_night else "白天"
+
 func _set_visible(show: bool) -> void:
 	active = show
 	_background.visible = show
 	art_world.visible = show
+	_day_tint.visible = show
 	# Preserve an always-available return/re-open action without intercepting
 	# touches on the original 3D game when HD2D is hidden.
 	panel.mouse_filter = Control.MOUSE_FILTER_PASS if show else Control.MOUSE_FILTER_IGNORE
