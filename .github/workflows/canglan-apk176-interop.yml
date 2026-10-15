@@ -13,6 +13,7 @@ on:
       - 'logic-qa/scripts/update_protocol.gd'
       - 'logic-qa/scripts/update_channel.gd'
       - 'logic-qa/tools/sign_pck_release.py'
+      - 'logic-qa/tools/audit_tiny_ota_pck.py'
       - '.github/workflows/canglan-apk176-interop.yml'
       - 'android-preview/base-latest.json'
       - 'android-preview/latest.json'
@@ -70,6 +71,14 @@ jobs:
           timeout 60s "$GODOT" --headless --path logic-qa \
             --script res://tools/build_touch_overlay.gd > qa-results/apk176-qa-pack.log 2>&1
           grep -Fq 'PASS CANG LAN TEST PACK GENERATED' qa-results/apk176-qa-pack.log
+          python3 logic-qa/tools/audit_tiny_ota_pck.py "$CANGLAN_QA_PCK_PATH" \
+            > qa-results/ota177-exact-entry-audit.log 2>&1 || {
+              cat qa-results/ota177-exact-entry-audit.log
+              echo "::error::PCK contains unreviewed entries or has an invalid Godot index"
+              exit 1
+            }
+          cat qa-results/ota177-exact-entry-audit.log
+          grep -Fq 'PASS OTA177 EXACT THREE RESOURCE PCK' qa-results/ota177-exact-entry-audit.log
           # Temporary key proves Python/OpenSSL and original Godot's exact
           # signing protocol work together. It is NOT the permanent game key.
           # Never upload or print temporary private keys or claim this pack
