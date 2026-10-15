@@ -48,7 +48,7 @@ jobs:
           }, ensure_ascii=False, indent=2)+"\n")
           PY
           cd /tmp/worldx
-          zip -q -r /tmp/out/WorldX-MIT-upstream-source.zip WorldX -x '*/.git/*' '*/node_modules/*' '*/.env' '*/.env.*'
+          zip -q -r /tmp/out/WorldX-MIT-upstream-source.zip WorldX -x '*/.git/*' '*/node_modules/*' '*/.env' '*/.env.local' '*/.env.production'
           (cd /tmp/out && sha256sum WorldX-MIT-upstream-source.zip > WorldX-MIT-upstream-source.sha256)
           echo 'PASS WORLDX OFFICIAL MIT SOURCE DOWNLOADED AND PACKED'
       - name: Make original source available as downloadable GitHub Actions artifact
