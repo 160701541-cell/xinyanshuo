@@ -170,6 +170,15 @@ jobs:
             sudo apt-get update -qq
             sudo DEBIAN_FRONTEND=noninteractive apt-get install -y -qq xvfb libgl1-mesa-dri
           fi
+          # The first real frame exposed missing CJK glyphs (tofu squares).
+          # Install open CJK face in the *runner only*. Never ship system font
+          # binaries as repository or user download artifacts.
+          if ! fc-match -f '%{family}\\n' 'Noto Sans CJK SC' | grep -q 'Noto Sans CJK'; then
+            sudo apt-get update -qq
+            sudo DEBIAN_FRONTEND=noninteractive apt-get install -y -qq fonts-noto-cjk
+            fc-cache -f >/dev/null
+          fi
+          fc-match -f 'CJK_RENDER_FACE=%{family}\\n' 'Noto Sans CJK SC'
           LIBGL_ALWAYS_SOFTWARE=1 xvfb-run -a -s "-screen 0 1280x720x24" \
             timeout 90s /tmp/canglan-godot/Godot_v4.4.1-stable_linux.x86_64 \
             --rendering-method gl_compatibility --rendering-driver opengl3 \
