@@ -1,0 +1,10 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/main.gd" id="1"]
+[ext_resource type="Script" path="res://scripts/hd2d_original_overlay_ota177.gd" id="2"]
+
+[node name="Canglan3D" type="Node3D"]
+script = ExtResource("1")
+
+[node name="HD2DArtAcceptance" type="CanvasLayer" parent="."]
+script = ExtResource("2")
