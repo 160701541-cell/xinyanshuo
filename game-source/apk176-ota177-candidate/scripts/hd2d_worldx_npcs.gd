@@ -6,11 +6,17 @@ signal character_selected(id: String, name: String, description: String)
 var elapsed := 0.0
 var actors: Array[AnimatedSprite2D] = []
 var directions: Array[float] = []
+var nav_lines: Array[String] = []
+var nav_width := 0
+var nav_height := 0
+var wander_targets: Array[Vector2] = []
+var next_decision := 0.0
 var character_data: Array[Dictionary] = []
 var rng := RandomNumberGenerator.new()
 
 func _ready() -> void:
 	rng.seed = 160701541
+	_load_worldx_navigation()
 	var meta_path := DIR + "npcs.json"
 	if not FileAccess.file_exists(meta_path):
 		push_warning("WorldX NPC atlas manifest unavailable")
@@ -27,17 +33,80 @@ func _ready() -> void:
 		var sprite: AnimatedSprite2D = _make_actor(cfg)
 		if sprite == null:
 			continue
-		sprite.position = Vector2(240.0 + float(i % 4) * 260.0, 320.0 + float(i / 4) * 230.0)
+		sprite.position = _choose_spawn_point(i)
 		sprite.scale = Vector2(0.72, 0.72)
 		add_child(sprite)
 		actors.append(sprite)
 		character_data.append(cfg)
 		directions.append(1.0 if (i % 2 == 0) else -1.0)
+		wander_targets.append(sprite.position)
 		if sprite.sprite_frames.has_animation("walk-down"):
 			sprite.play("walk-down")
 		else:
 			sprite.play("idle-front")
 	print("WORLDX_NPCS_LOADED ",actors.size())
+
+func _load_worldx_navigation() -> void:
+	var nav_path := "res://hd2d/worldx/nav_000.json"
+	if not FileAccess.file_exists(nav_path):
+		push_warning("WorldX walkability grid missing; NPCs use fixed positions")
+		return
+	var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string(nav_path))
+	if not (parsed is Dictionary):
+		return
+	nav_width = int(parsed.get("width", 0))
+	nav_height = int(parsed.get("height", 0))
+	var cells: Variant = parsed.get("cells",[])
+	if nav_width < 10 or nav_height < 10 or not (cells is Array) or cells.size() != nav_height:
+		nav_width = 0
+		nav_height = 0
+		return
+	for row in cells:
+		if str(row).length() != nav_width:
+			nav_lines.clear()
+			nav_width = 0
+			nav_height = 0
+			return
+		nav_lines.append(str(row))
+
+func _walkable_at(col: int, row: int) -> bool:
+	if col < 0 or row < 0 or col >= nav_width or row >= nav_height:
+		return false
+	return nav_lines[row].substr(col,1) == "0"
+
+func _pixel_at(col: int,row: int) -> Vector2:
+	return Vector2((float(col)+0.5)*1280.0 / float(nav_width),
+		(float(row)+0.5)*715.0 / float(nav_height))
+
+func _choose_spawn_point(index: int) -> Vector2:
+	if nav_width == 0 or nav_height == 0:
+		return Vector2(160.0+float(index%3)*280.0,200.0+float(index/3)*190.0)
+	var candidates: Array[Vector2i] = []
+	for row in range(2,nav_height-2,3):
+		for col in range(2,nav_width-2,3):
+			if _walkable_at(col,row):
+				candidates.append(Vector2i(col,row))
+	if candidates.is_empty():
+		return Vector2(240.0+float(index)*20.0,350.0)
+	var idx := mini(index*(candidates.size()/6),candidates.size()-1)
+	var point := candidates[idx]
+	return _pixel_at(point.x,point.y)
+
+func _new_walk_target(old: Vector2) -> Vector2:
+	if nav_width == 0 or nav_height == 0:
+		return old
+	var col := clampi(int(old.x * float(nav_width)/1280.0),0,nav_width-1)
+	var row := clampi(int(old.y * float(nav_height)/715.0),0,nav_height-1)
+	var neighbours := [Vector2i(col+1,row),Vector2i(col-1,row),
+		Vector2i(col,row+1),Vector2i(col,row-1)]
+	var valid: Array[Vector2i] = []
+	for cell in neighbours:
+		if _walkable_at(cell.x,cell.y):
+			valid.append(cell)
+	if valid.is_empty():
+		return old
+	var target := valid[rng.randi_range(0,valid.size()-1)]
+	return _pixel_at(target.x,target.y)
 
 func _make_actor(cfg: Dictionary) -> AnimatedSprite2D:
 	var path: String = DIR + str(cfg.get("sheet", ""))
@@ -81,14 +150,28 @@ func _make_actor(cfg: Dictionary) -> AnimatedSprite2D:
 
 func _process(delta: float) -> void:
 	elapsed += delta
+	next_decision -= delta
+	if next_decision <= 0.0:
+		next_decision = 1.25
+		for i in range(actors.size()):
+			wander_targets[i] = _new_walk_target(actors[i].position)
 	for i in range(actors.size()):
 		var actor := actors[i]
-		actor.position.x += delta * directions[i] * 12.0
-		if elapsed > 4.0:
-			directions[i] = -directions[i]
-			actor.flip_h = directions[i] < 0.0
-	if elapsed > 4.0:
-		elapsed = 0.0
+		var distance: Vector2 = wander_targets[i] - actor.position
+		if distance.length() > 1.0:
+			actor.position = actor.position.move_toward(wander_targets[i], 28.0*delta)
+			if absf(distance.x)>absf(distance.y):
+				actor.flip_h = distance.x > 0.0
+				if actor.animation != "walk-left":
+					actor.play("walk-left")
+			elif distance.y < 0.0:
+				if actor.animation != "walk-up":
+					actor.play("walk-up")
+			else:
+				if actor.animation != "walk-down":
+					actor.play("walk-down")
+		elif actor.sprite_frames.has_animation("idle-front") and actor.animation != "idle-front":
+			actor.play("idle-front")
 
 func _unhandled_input(event: InputEvent) -> void:
 	var pointer: Vector2
