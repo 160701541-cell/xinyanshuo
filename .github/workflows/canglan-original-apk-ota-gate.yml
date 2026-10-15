@@ -4,6 +4,7 @@ on:
     branches: [main]
     paths:
       - 'tools/ota_release_gate.py'
+      - 'tools/test_ota_release_gate.py'
       - 'android-preview/latest.json'
       - 'android-preview/base-latest.json'
       - 'logic-qa/scripts/update_channel.gd'
@@ -18,6 +19,11 @@ jobs:
     timeout-minutes: 8
     steps:
       - uses: actions/checkout@v4
+      - name: Prove RSA tamper rejection and original APK version floor
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m unittest tools.test_ota_release_gate -v
       - name: Verify OpenSSL and real APK-pinned public key / existing feed
         shell: bash
         run: |
