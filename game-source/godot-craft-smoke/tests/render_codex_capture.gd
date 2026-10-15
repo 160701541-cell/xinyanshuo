@@ -14,6 +14,12 @@ func _capture() -> void:
 	root.add_child(frame_viewport)
 	var ui: Control = CodexUI.new()
 	ui.source_path = "res://data/material_graph.v1.json"
+	# The CI runner explicitly installs the licensed operating-system CJK face.
+	# Never attach a Latin-only font and pass unreadable tofu squares as art QA.
+	var face := SystemFont.new()
+	face.font_names = PackedStringArray(["Noto Sans CJK SC", "Noto Sans SC"])
+	face.allow_system_fallback = true
+	ui.set_ui_font(face)
 	frame_viewport.add_child(ui)
 	ui.select_item("qing_roof_tile")
 	for i in range(5):
