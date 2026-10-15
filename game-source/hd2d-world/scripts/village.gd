@@ -18,6 +18,7 @@ var _night := false
 
 func _ready() -> void:
 	_camera = Camera2D.new()
+	_camera.name = "Camera2D"
 	_camera.position = WORLD_SIZE * 0.5
 	_camera.zoom = Vector2(0.8, 0.8)
 	add_child(_camera)
