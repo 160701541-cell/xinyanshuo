@@ -62,7 +62,11 @@ jobs:
           for module in entity_codes touch_look_router character_locomotion two_thumb_input village_trade_gameplay hd2d_actor_visual; do
             timeout 120s "$GODOT" --headless --path logic-qa \
               --script "res://tests/${module}_test.gd" \
-              > "qa-results/${module}.log" 2>&1
+              > "qa-results/${module}.log" 2>&1 || {
+                cat "qa-results/${module}.log"
+                echo "BLOCKED: Godot script crashed in ${module}"
+                exit 1
+              }
             cat "qa-results/${module}.log"
             grep -Fq "${markers[$module]}" "qa-results/${module}.log"
             if grep -Eq 'SCRIPT ERROR:|Parse Error:|Parser Error:|Assertion failed|Failed to load script' "qa-results/${module}.log"; then
