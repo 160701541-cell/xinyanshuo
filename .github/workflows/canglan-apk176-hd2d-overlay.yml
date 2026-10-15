@@ -92,7 +92,7 @@ jobs:
             cat qa-results/hd2d-existing-script-load.log; exit 1;
           }
           cat qa-results/hd2d-existing-script-load.log
-          grep -Fq 'PASS_APK176_HD2D_OVERLAY_MOUNT_AND_SCENE_RESOURCE' qa-results/hd2d-existing-script-load.log
+          grep -Fq 'PASS_APK176_HD2D_OVERLAY_MOUNT_AND_CANONICAL_MAIN_SCENE' qa-results/hd2d-existing-script-load.log
       - name: Preserve QA candidate and evidence - NEVER modify the public live feed
         if: always()
         uses: actions/upload-artifact@v4
