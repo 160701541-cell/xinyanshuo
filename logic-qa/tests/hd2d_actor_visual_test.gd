@@ -24,7 +24,7 @@ func _verify() -> void:
 		assert(actor.sprite.pixel_size * float(actor.sprite.texture.get_height()) < 1.75)
 		assert(actor.sprite.no_depth_test == false, "Sprites must respect 3D depth")
 		assert(actor.foot_shadow.position.y < 0.03)
-		var old := actor.sprite.position.y
+		var old: float = float(actor.sprite.position.y)
 		actor.update_motion(0.1, 3.0)
 		assert(actor.sprite.position.y >= old)
 		actor.update_motion(0.1, 0.0)
