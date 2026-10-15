@@ -1,0 +1,43 @@
+name: Canglan 2D Animated Sprite Candidate License Intake (Free Public)
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/canglan-animated-sprite-intake.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  get-cc0-animated-person:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download original CC0 samurai 4-direction walk animation
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p qa-sprite
+          curl --fail --location --retry 2 --max-time 60 'https://opengameart.org/sites/default/files/samurai_sprites.zip' -o qa-sprite/CC0-sebshady-samurai-source.zip
+          python3 - <<'PY'
+          from pathlib import Path
+          import zipfile,hashlib,json
+          p=Path('qa-sprite/CC0-sebshady-samurai-source.zip')
+          assert 5000 < p.stat().st_size < 1000000
+          with zipfile.ZipFile(p) as z:
+              files=[{'path':i.filename, 'bytes':i.file_size} for i in z.infolist()]
+              assert all(not i['path'].startswith('/') and '..' not in i['path'].split('/') for i in files)
+              assert sum(i['bytes'] for i in files)<5000000
+          (p.parent/'source-list.json').write_text(json.dumps({'license':'CC0 on OpenGameArt author page', 'author':'sebshady', 'landing':'https://opengameart.org/content/samurai-sprites','sha256':hashlib.sha256(p.read_bytes()).hexdigest(),'files':files},indent=2))
+          print('PASS_CC0_ANIMATED_SPRITE_ARCHIVE',files)
+          PY
+      - name: Save actual sprite sheet for visual and animation audit
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: CC0-Samurai-Actual-4Direction-Walk-Source
+          path: qa-sprite/
+          if-no-files-found: warn
+          retention-days: 14
