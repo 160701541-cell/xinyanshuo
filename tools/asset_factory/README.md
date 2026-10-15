@@ -45,9 +45,9 @@ python tools/asset_factory/industrial_pipeline.py --workflow YOUR_COMFY_API_WORK
 ## CAC-0002 候选独立PNG机器审核（新工序）
 裁切之后运行：
 
-\`\`\`sh
+```sh
 python tools/asset_factory/audit_candidates.py --input ./candidate_output
 python -m unittest discover -s tools/asset_factory -p 'test_audit_candidates.py'
-\`\`\`
+```
 
-输出 \`candidate_output/technical_qa.json\`，缺失图、路径越界、伪批准、不透明整底、边缘触碰或分辨率不足时返回失败。它是保守的机器门禁：复杂影子、标签、残底、邻格、机位和风格不能自动认可，必须继续人工检查；任何通过项仍非正式可用素材，不能自动导入Godot。
+输出 `candidate_output/technical_qa.json`，缺失图、路径越界、伪批准、不透明整底、边缘触碰或分辨率不足时返回失败。它是保守的机器门禁：复杂影子、标签、残底、邻格、机位和风格不能自动认可，必须继续人工检查；任何通过项仍非正式可用素材，不能自动导入Godot。
