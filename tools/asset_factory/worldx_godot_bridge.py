@@ -61,6 +61,7 @@ if __name__=="__main__":
     ap.add_argument("--source",type=pathlib.Path,required=True)
     ap.add_argument("--out",type=pathlib.Path,required=True)
     ap.add_argument("--limit",type=int,default=12)
+    ap.add_argument("--map-only",action="store_true")
     args=ap.parse_args()
     assert 1<=args.limit<=64
     convert(args.source,args.out,args.limit,args.map_only)
