@@ -54,6 +54,10 @@ func move(index: int, point: Vector2) -> Dictionary:
 		return {}
 	if hands.size() > 1:
 		return {}
+	# After a two-finger pinch, suppress one-finger look until both fingers
+	# are released. Otherwise the surviving finger jerks the camera.
+	if zooming:
+		return {}
 	if bool(state["dragged"]):
 		return {"action": "look", "delta": point - before}
 	return {}
