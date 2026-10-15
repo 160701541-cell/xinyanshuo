@@ -185,6 +185,19 @@ if len(roof_meshes) < 35:
     raise RuntimeError("CC0 Chinese roof lost authored structural details")
 lowest_roof_z = min((ob.matrix_world @ Vector(corner)).z
                     for ob in roof_meshes for corner in ob.bound_box)
+highest_roof_z = max((ob.matrix_world @ Vector(corner)).z
+                     for ob in roof_meshes for corner in ob.bound_box)
+# Chinese pavilion source contains high decorative apex/structural elements.
+# An ordinary village house roof cannot be 20 metres above 3m walls.
+# Uniformly compress *only roof vertical dimension*, preserve sculpted tiles.
+roof_rise = highest_roof_z - lowest_roof_z
+if roof_rise <= 0.01:
+    raise RuntimeError("Missing physical roof thickness")
+if roof_rise > 19.0:
+    roof.scale.z *= 16.0 / roof_rise
+    bpy.context.view_layer.update()
+    lowest_roof_z = min((ob.matrix_world @ Vector(corner)).z
+                        for ob in roof_meshes for corner in ob.bound_box)
 target_eave_z = 31.5
 correction = target_eave_z - lowest_roof_z
 if abs(correction) > 45:
@@ -195,6 +208,11 @@ aligned_roof_z = min((ob.matrix_world @ Vector(corner)).z
                      for ob in roof_meshes for corner in ob.bound_box)
 if abs(aligned_roof_z - target_eave_z) > 0.15:
     raise RuntimeError("Chinese roof remains detached from wall ceiling")
+top_roof_z = max((ob.matrix_world @ Vector(corner)).z
+                 for ob in roof_meshes for corner in ob.bound_box)
+if top_roof_z > 50.5:
+    raise RuntimeError("Village roof height exceeds 5m after correction")
+
 print("PASS_CHINESE_ROOF_REAL_WALL_CONTACT",
       "source_eave_z=",round(lowest_roof_z,2),"translation=",round(correction,2),
       "aligned_eave_z=",round(aligned_roof_z,2),flush=True)
