@@ -8,6 +8,13 @@
   "public_note": "开发工作日志不是签名游戏更新日志；未发布功能可能写在这里。隐去密钥与内部配置。",
   "entries": [
     {
+      "id": "dev-20261015-real-godot-codex-visual-validation",
+      "date": "2026-10-15",
+      "title": "工艺谱真实引擎画面验收：中文方框缺陷定位、修复与复验",
+      "body": "公开Godot 4.4.1 OpenGL流水线实际产生了1280×720原始UI截图。首帧发现所有中文呈方框，不予视觉通过；随后增加CJK字体主题、中文物资分类、研究与图纸缺口及工坊名称展示，明确仅为配方预览不能生产。更新后的实际渲染截图确认中文可读。公开GitHub Actions #38675867870 结果SUCCESS，包括41项自动生产/图谱检查、10项恶意目录拒绝、UI交互与真实像素截图。这里只能证明独立桌面Godot UI的局部视觉/技术成果，正式游戏整合、Android设备、美术整体水准和签名发布均未通过；原APK176/PCK167未更新。",
+      "source_status": "public-engineering-and-real-frame-verified_android-release-blocked"
+    },
+    {
       "id": "dev-20261015-production-contract-craftgraph",
       "title": "2026-10-15 — 先建立工艺级开发标准与数据调教器，启动可研究/图纸解锁的原料制造超图",
       "date": "2026-10-15",
