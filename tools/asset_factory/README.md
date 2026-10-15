@@ -59,3 +59,15 @@ python -m unittest discover -s tools/asset_factory -p 'test_audit_candidates.py'
 
 ## CAC-0004 从需求规格到真实模型待办队列
 `python tools/asset_factory/starter_village_jobs.py --batch 2 --family terrain` 生成独立 `starter_village_jobs.json`；随后可用 `python tools/asset_factory/industrial_pipeline.py --jobs tools/asset_factory/starter_village_jobs.json --dry-run` 核查任务。没有真实ComfyUI工作流，不能实际生成PNG；真实推理需添加 `--workflow YOUR_COMFY_API_WORKFLOW.json --url http://127.0.0.1:8188`。该转换支持所有类别，每件携带来源需求ID、目标游戏图/图标路径与未批准状态；现有工厂的图像产物路径仍需后续审核导出映射，不能误认为自动入库。运行测试：`python -m unittest discover -s tools/asset_factory -p 'test_starter_village_jobs.py'`。
+
+
+## CAC-0005 实际候选清底与双背景人工复核预览
+适用于**边缘背景颜色大体一致、主体未触画布边界**的拼版裁切候选PNG。先使用原 `atlas_factory.py` 产出 `candidate_output`，再执行：
+
+```sh
+python tools/asset_factory/candidate_cutout.py --input ./candidate_output --out ./cleaned_output
+python tools/asset_factory/audit_candidates.py --input ./cleaned_output
+python -m unittest discover -s tools/asset_factory -p 'test_*.py' -v
+```
+
+每件独立输出 `scene_candidate.png`、`icon_candidate.png`、`visual_review_preview.png`（浅色与深色底检查），目录清单记录来源与图像SHA256及清底算法指标。拒绝复杂纹理、边框沾色、主体触边及不明确底色；拒绝项按 `BLOCKED` 留在清单中，**不自动通过**。二值边缘清底仍可能留下发丝/植被光晕或损失接近背景的细节，必须人工复核；技术审核通过也绝不自动上架游戏。地形铺片允许触碰边界，不适用该孤立精灵的边缘判据，应另建拼缝QA。本地合成图夹具9项测试通过，不等于正式高清美术通过。
