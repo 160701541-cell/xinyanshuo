@@ -48,6 +48,7 @@ func _initialize() -> void:
 		return
 	var controller: Node2D = npc_script.new()
 	get_root().add_child(controller)
+	await process_frame
 	if controller.actors.size() < 5:
 		printerr("FAIL_WORLDX_CONTENT: sprites did not instantiate")
 		quit(10)
