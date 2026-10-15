@@ -24,10 +24,12 @@ func _initialize() -> void:
 		printerr("FAIL: original scene entrypoint did not point to new scene")
 		quit(5)
 		return
-	var scene := ResourceLoader.load("res://scenes/main_hd2d_ota177.tscn") as PackedScene
+	# The real installed client loads the canonical path. A versioned scene
+	# that loads by itself proves nothing unless the OLD path is redirected.
+	var scene := ResourceLoader.load("res://scenes/main.tscn") as PackedScene
 	if scene == null:
 		printerr("FAIL: live overlay scene cannot be loaded with APK176 compiled script")
 		quit(6)
 		return
-	print("PASS_APK176_HD2D_OVERLAY_MOUNT_AND_SCENE_RESOURCE (NOT PHONE QA)")
+	print("PASS_APK176_HD2D_OVERLAY_MOUNT_AND_CANONICAL_MAIN_SCENE (NOT PHONE QA)")
 	quit(0)
