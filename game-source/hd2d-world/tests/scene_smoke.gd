@@ -9,8 +9,10 @@ func _run() -> void:
 	assert(packed is PackedScene, "Missing actual Godot scene")
 	var stage := (packed as PackedScene).instantiate()
 	assert(stage is Node2D, "HD2D scene must be a 2D world")
+	print("SCENE_SCRIPT:", stage.get_script())
 	root.add_child(stage)
 	await process_frame
+	print("SCENE_READY:",stage.is_node_ready(), " children:",stage.get_children())
 	assert(stage.get_node_or_null("Camera2D") != null, "Camera2D missing")
 	var camera := stage.get_node_or_null("Camera2D") as Camera2D
 	assert(camera.is_current(), "No active camera")
