@@ -40,3 +40,14 @@ python tools/asset_factory/industrial_pipeline.py --workflow YOUR_COMFY_API_WORK
 `GENERATED -> CROPPED_CANDIDATE -> BACKGROUND_CLEANUP -> TECH_QA -> VISUAL_REVIEW -> APPROVED_HASH_LOCKED -> GODOT_IMPORTED -> ENGINE_TESTED -> MOBILE_RELEASED`。
 
 同名文件或缩略图不能证明已完成生产上线；每一阶段记录源输入、脚本版本、处理参数、输出哈希和复核人。
+
+
+## CAC-0002 候选独立PNG机器审核（新工序）
+裁切之后运行：
+
+\`\`\`sh
+python tools/asset_factory/audit_candidates.py --input ./candidate_output
+python -m unittest discover -s tools/asset_factory -p 'test_audit_candidates.py'
+\`\`\`
+
+输出 \`candidate_output/technical_qa.json\`，缺失图、路径越界、伪批准、不透明整底、边缘触碰或分辨率不足时返回失败。它是保守的机器门禁：复杂影子、标签、残底、邻格、机位和风格不能自动认可，必须继续人工检查；任何通过项仍非正式可用素材，不能自动导入Godot。
