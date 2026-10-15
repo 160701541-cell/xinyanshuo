@@ -78,6 +78,9 @@ bpy.context.scene.camera=camera
 # Face actor plane toward the camera yaw.
 actor.rotation_euler[2]=(camera.location.xy-actor.location.xy).angle_signed(Vector((0,-1))) if False else math.atan2(camera.location.y-actor.location.y,camera.location.x-actor.location.x) + math.pi/2
 world=bpy.context.scene.world
+if world == None:
+    world=bpy.data.worlds.new('CanglanNeutralArtReviewWorld')
+    bpy.context.scene.world=world
 world.color=(0.66,0.73,0.78)
 scene=bpy.context.scene
 scene.render.engine="BLENDER_EEVEE_NEXT" if "BLENDER_EEVEE_NEXT" in {i.identifier for i in bpy.types.RenderSettings.bl_rna.properties['engine'].enum_items} else "BLENDER_EEVEE"
