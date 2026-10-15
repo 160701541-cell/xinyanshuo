@@ -72,12 +72,12 @@ jobs:
                   assert data.startswith(bytes.fromhex('89504e470d0a1a0a'))
                   assert len(data)<500000
                   (out/dest).write_bytes(data)
-                  (out/(dest+'.base64')).write_text(base64.b64encode(data).decode('ascii')+'\\n')
+                  (out/(dest+'.base64')).write_text(base64.b64encode(data).decode('ascii')+'\n')
                   report[dest]={'source':source, 'sha256':hashlib.sha256(data).hexdigest(), 'bytes':len(data)}
           (out/'SOURCE_CC0.json').write_text(json.dumps({
              'creator':'nessava','source_url':'https://opengameart.org/content/ancient-chinese-character-pack-1',
              'license':'CC0', 'intake_status':'reference art NOT HD-2D visual QA accepted',
-             'assets':report}, indent=2)+'\\n')
+             'assets':report}, indent=2)+'\n')
           print('PASS_CC0_AUTHENTIC_HAN_PNG_EXTRACTED',report)
           PY
           git config user.name "canglan-licensed-art-bot"
