@@ -1,0 +1,61 @@
+name: Canglan - Real Godot Entity Identity QA (Free Public Runner)
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'logic-qa/**'
+      - '.github/workflows/canglan-logic-qa.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: canglan-real-logic-qa-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  audited-entity-codes:
+    name: Godot 4.4.1 isolated module QA (NOT full game)
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - name: Checkout actual committed module
+        uses: actions/checkout@v4
+      - name: Download official Godot 4.4.1 for free Linux runner
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl --fail --location --retry 3 --connect-timeout 20 \
+            'https://github.com/godotengine/godot/releases/download/4.4.1-stable/Godot_v4.4.1-stable_linux.x86_64.zip' \
+            --output /tmp/canglan-godot.zip
+          unzip -q /tmp/canglan-godot.zip -d /tmp
+          chmod +x /tmp/Godot_v4.4.1-stable_linux.x86_64
+          /tmp/Godot_v4.4.1-stable_linux.x86_64 --version
+      - name: Run real GDScript regression in engine
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p qa-results
+          GODOT=/tmp/Godot_v4.4.1-stable_linux.x86_64
+          "$GODOT" --headless --editor --path logic-qa --import \
+            > qa-results/import.log 2>&1
+          timeout 120s "$GODOT" --headless --path logic-qa \
+            --script res://tests/entity_codes_test.gd \
+            > qa-results/entity_codes.log 2>&1
+          cat qa-results/entity_codes.log
+          grep -Fq 'PASS CANG LAN ENTITY CODES REAL GODOT' qa-results/entity_codes.log
+          if grep -Eq 'SCRIPT ERROR:|Parse Error:|Parser Error:|Assertion failed|Failed to load script' qa-results/import.log qa-results/entity_codes.log; then
+            echo 'BLOCKED: Godot reported script or import errors'
+            exit 1
+          fi
+          echo 'PASS: only audited entity identity module, not full game QA'
+      - name: Save evidence even when QA fails
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: canglan-entity-codes-qa-${{ github.sha }}
+          path: qa-results/
+          if-no-files-found: warn
+          retention-days: 7
