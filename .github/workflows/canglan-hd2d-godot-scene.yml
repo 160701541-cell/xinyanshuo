@@ -1,0 +1,76 @@
+name: Canglan Public HD2D - Godot Engine Scene QA
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'game-source/hd2d-world/**'
+      - '.github/workflows/canglan-hd2d-godot-scene.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: canglan-hd2d-godot-scene-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  public-hd2d-scene:
+    name: Real Godot 4.4.1 scene startup, input, remote candidate QA
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Godot 4.4.1
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl -fL --retry 3 --connect-timeout 20 \
+            https://github.com/godotengine/godot/releases/download/4.4.1-stable/Godot_v4.4.1-stable_linux.x86_64.zip \
+            -o /tmp/godot.zip
+          unzip -q /tmp/godot.zip -d /tmp
+          chmod +x /tmp/Godot_v4.4.1-stable_linux.x86_64
+          /tmp/Godot_v4.4.1-stable_linux.x86_64 --version
+      - name: Import and statically parse complete PUBLIC HD2D project
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p qa-logs
+          timeout 90s /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless --editor \
+            --path game-source/hd2d-world --import > qa-logs/godot-import.log 2>&1 || {
+            cat qa-logs/godot-import.log; exit 1;
+          }
+          if grep -Eq 'SCRIPT ERROR:|Parse Error:|Parser Error:|Failed to load script' qa-logs/godot-import.log; then
+            cat qa-logs/godot-import.log; exit 1;
+          fi
+      - name: Run real in-engine scene startup smoke
+        shell: bash
+        run: |
+          set -euo pipefail
+          timeout 45s /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless \
+            --path game-source/hd2d-world --script res://tests/scene_smoke.gd \
+            > qa-logs/scene-smoke.log 2>&1 || { cat qa-logs/scene-smoke.log; exit 1; }
+          cat qa-logs/scene-smoke.log
+          grep -Fq 'PASS PUBLIC HD2D GODOT SCENE STARTUP' qa-logs/scene-smoke.log
+          if grep -Eq 'SCRIPT ERROR:|Parse Error:|Parser Error:|Assertion failed|Failed to load script' qa-logs/scene-smoke.log; then
+            exit 1
+          fi
+      - name: Verify candidate art URL used by in-game renderer
+        shell: bash
+        run: |
+          set -euo pipefail
+          URL='https://160701541-cell.github.io/xinyanshuo/art-source/hd2d/batch-20261016/01_village_props_atlas_preview.jpg'
+          curl -fL --retry 3 --connect-timeout 15 --max-time 45 "$URL" -o qa-logs/atlas-source.jpg
+          python3 - <<'PY'
+          import pathlib, struct
+          p=pathlib.Path('qa-logs/atlas-source.jpg')
+          data=p.read_bytes()
+          assert len(data)>50000 and len(data)<3000000, 'Wrong atlas file size'
+          assert data[:3]==b'\xff\xd8\xff', 'Not a JPEG'
+          print('PASS_PUBLIC_REMOTE_ART_SOURCE',len(data),'bytes')
+          PY
+      - name: Preserve exact QA evidence (not APK proof)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: hd2d-scene-QA-${{ github.sha }}
+          path: qa-logs/
+          retention-days: 7
+          if-no-files-found: warn
