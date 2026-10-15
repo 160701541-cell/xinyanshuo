@@ -41,6 +41,16 @@ func _card_color(color: Color, radius: int = 10) -> StyleBoxFlat:
 	box.content_margin_bottom = 10.0
 	return box
 
+## The real game injects its already-configured CJK SystemFont. An explicit
+## Theme default avoids Android vendors falling back to the Latin/tofu face.
+## This does not license or embed any OS font in distributed APK assets.
+func set_ui_font(face: Font) -> void:
+	if face == null:
+		return
+	var skin := Theme.new()
+	skin.default_font = face
+	theme = skin
+
 func _ready() -> void:
 	name = "CraftCodexPanel"
 	mouse_filter = Control.MOUSE_FILTER_STOP
