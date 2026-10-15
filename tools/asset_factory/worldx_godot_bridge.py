@@ -44,7 +44,7 @@ def convert(root:pathlib.Path, out:pathlib.Path, limit:int, map_only:bool=False)
     for idx,p in enumerate(selected):
         with Image.open(p) as img:
             img=ImageOps.exif_transpose(img)
-            img.thumbnail((1024,1024),Image.Resampling.LANCZOS)
+            img.thumbnail((2048,2048),Image.Resampling.LANCZOS)
             img=img.convert("RGBA")
             name=f"worldx_{idx:03}.png"
             dst=out/name
