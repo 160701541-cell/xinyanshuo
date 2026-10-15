@@ -45,3 +45,31 @@ jobs:
             echo 'Hub download did not succeed; no Unity Editor installed or started.'
           fi
           exit 0
+
+      - name: Try actual official Unity Hub APT package install and headless launch
+        run: |
+          set +e
+          echo '== Official Unity APT metadata =='
+          curl -sSIL --max-time 20 https://hub.unity3d.com/linux/repos/deb/dists/stable/InRelease | head -n 12
+          echo '== Install official Unity Hub repository =='
+          curl -fsSL --max-time 30 https://hub.unity3d.com/linux/keys/public | gpg --dearmor -o /tmp/unity-apt-key.gpg
+          echo "KEY_FETCH_STATUS=$?"
+          if [ -s /tmp/unity-apt-key.gpg ]; then
+            sudo cp /tmp/unity-apt-key.gpg /usr/share/keyrings/unityhub.gpg
+            echo 'deb [signed-by=/usr/share/keyrings/unityhub.gpg] https://hub.unity3d.com/linux/repos/deb stable main' | sudo tee /etc/apt/sources.list.d/unityhub.list
+            sudo apt-get update -qq -o Acquire::Retries=1
+            echo "APT_UPDATE_EXIT=$?"
+            apt-cache policy unityhub | head -n 15
+            sudo DEBIAN_FRONTEND=noninteractive timeout 180 apt-get install -y -qq unityhub
+            echo "UNITYHUB_APT_INSTALL_EXIT=$?"
+            command -v unityhub || true
+            if command -v unityhub >/dev/null; then
+              timeout 30 xvfb-run -a unityhub --headless help >/tmp/unityhub_launch.log 2>&1
+              echo "UNITYHUB_HEADLESS_EXIT=$?"
+              head -n 35 /tmp/unityhub_launch.log
+              timeout 20 xvfb-run -a unityhub --version >/tmp/unityhub_version.log 2>&1
+              echo "UNITYHUB_VERSION_EXIT=$?"
+              head -n 15 /tmp/unityhub_version.log
+            fi
+          fi
+          exit 0
