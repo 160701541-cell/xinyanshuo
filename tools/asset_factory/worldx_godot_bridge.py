@@ -30,7 +30,7 @@ def find_images(root:pathlib.Path):
         except (OSError,ValueError):
             continue
         found.append(p)
-    return sorted(found)
+    return sorted(found, key=lambda p:(0 if "map" in p.parts else 1, "sprite" in p.name.lower(), str(p)))
 def convert(root:pathlib.Path, out:pathlib.Path, limit:int):
     root=root.resolve();out.mkdir(parents=True,exist_ok=True)
     candidates=find_images(root)
