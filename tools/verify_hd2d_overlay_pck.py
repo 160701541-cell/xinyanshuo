@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Fail-closed inspection of APK176 HD2D MAIN SCENE candidate, never publish."""
 import sys
+import struct
 from pathlib import Path
 ROOT=Path(__file__).resolve().parents[1]
 sys.path.insert(0,str(ROOT/"logic-qa/tools"))
@@ -16,7 +17,7 @@ def verify(path:Path):
     raw=path.read_bytes()
     optional="hd2d/worldx/worldx_000.png"
     # WorldX is optional for old candidate builds, mandatory for WorldX build.
-    if b"hd2d/worldx/worldx_000.png" in raw[:min(len(raw),1600)]:
+    if len(raw) >= 0x64 and struct.unpack_from("<I",raw,0x60)[0] == 6:
         pck.ALLOWED.add(optional)
     entries=pck.read_index(raw)
     assert {x["name"] for x in entries}==pck.ALLOWED
