@@ -15,13 +15,15 @@ pck.ALLOWED={
 }
 def verify(path:Path):
     raw=path.read_bytes()
-    optional="hd2d/worldx/worldx_000.png"
-    # WorldX is optional for old candidate builds, mandatory for WorldX build.
-    if len(raw) >= 0x64 and struct.unpack_from("<I",raw,0x60)[0] == 6:
-        pck.ALLOWED.add(optional)
+    # Exact canonical resource names: five original-game assets and up to
+    # eight sequential WorldX map PNGs. Never allow arbitrary script paths.
+    n=struct.unpack_from("<I",raw,0x60)[0]
+    assert 5<=n<=13, f"Unexpected PCK resource count {n}"
+    for i in range(n-5):
+        pck.ALLOWED.add("hd2d/worldx/worldx_%03d.png"%i)
     entries=pck.read_index(raw)
     assert {x["name"] for x in entries}==pck.ALLOWED
-    assert path.stat().st_size<12_000_000,"candidate unexpectedly large"
+    assert path.stat().st_size<32_000_000,"candidate unexpectedly large"
     print("PASS_APK176_HD2D_RESOURCE_PCK_INDEX",len(entries))
     for entry in entries:
         print("HD2D_OTA_INDEX_ENTRY",entry["name"],entry["size"],entry["sha256"])
