@@ -54,7 +54,7 @@ def read_index(raw: bytes) -> list[dict]:
             raise ValueError("noncanonical PCK resource path")
         if file_flags != 0:
             raise ValueError("encrypted/removal PCK resource not allowed")
-        if not 1 <= size <= 1_000_000 or ofs + size > len(raw) - file_base:
+        if not 1 <= size <= 8_000_000 or ofs + size > len(raw) - file_base:
             raise ValueError("PCK file outside data boundaries")
         payload = raw[file_base+ofs:file_base+ofs+size]
         if hashlib.md5(payload).digest() != md5:
