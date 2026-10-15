@@ -48,8 +48,9 @@ jobs:
             [touch_look_router]='PASS combat touch router:'
             [character_locomotion]='PASS: humanoid rig relaxes arms'
             [two_thumb_input]='PASS CANG LAN SIMULTANEOUS TWO THUMB TOUCH'
+            [village_trade_gameplay]='PASS CANGLAN PLAYABLE VILLAGE TRADE:'
           )
-          for module in entity_codes touch_look_router character_locomotion two_thumb_input; do
+          for module in entity_codes touch_look_router character_locomotion two_thumb_input village_trade_gameplay; do
             timeout 120s "$GODOT" --headless --path logic-qa \
               --script "res://tests/${module}_test.gd" \
               > "qa-results/${module}.log" 2>&1
