@@ -41,7 +41,12 @@ func _valid_id(value: Variant) -> bool:
 	return true
 
 func _nonnegative_int(value: Variant) -> bool:
-	return value is int and value >= 0 and value <= 1000000000
+	# Godot 4.4 JSON.parse_string decodes integer JSON tokens as floats.
+	# Require exact integral values, do not silently truncate a fraction.
+	if not (value is int or value is float):
+		return false
+	var amount: float = float(value)
+	return amount >= 0.0 and amount <= 1000000000.0 and floor(amount) == amount
 
 func _positive_int(value: Variant) -> bool:
 	return _nonnegative_int(value) and value > 0
