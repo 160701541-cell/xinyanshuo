@@ -59,3 +59,8 @@
 - 提交 `tools/asset_factory/cac_0010_independent_jobs.py` (`cd94acbf13f3b321cc881883b2fa44e7ec46e846`) 和 `cac_0010_seed_catalog.json` (`15b7032c8dfbcd672a21fe7ecb66f8b117215400`)；将桃树8态、民居5态、灯笼3态、水井3态拆成19个独立待生成任务。
 - 生产约束：每件单独构图、12%安全边距、原生1024×1024母版、统一3/4视角和光照、状态唯一ID；任务默认PENDING_GENERATION/approved=false、最多3次尝试。示例：`python tools/asset_factory/cac_0010_independent_jobs.py --catalog tools/asset_factory/cac_0010_seed_catalog.json --out /tmp/cac0010_jobs.json`。
 - **本轮实际完成源码与种子目录上传；尚未连接生成服务，未实际生图或运行测试，0件新母版、0件视觉批准、0件游戏集成。**
+
+## CAC-0012 · 官网素材图集站内查看（2026-10-16）
+- 实际提交：`65d91e783cc68beefc2ebd1ae61e1fc6e0fbafe5`。
+- `hd2d-production-board.html` 接入四组已有候选图集的同页切换和放大/横向滚动检查，提供原图直达；手机无需在多个独立图片标签间跳转。
+- 状态：**网页功能已提交，尚未进行浏览器实机验收**。候选图集未通过独立PNG/裁切/分辨率QA，正式合格素材依然为0；此次未新增游戏贴图，也未修改APK。
