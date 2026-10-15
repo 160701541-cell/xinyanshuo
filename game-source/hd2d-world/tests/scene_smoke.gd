@@ -19,7 +19,7 @@ func _run() -> void:
 	assert(status is Label, "Status HUD missing")
 	# The atlas downloads asynchronously. We test initialization and the
 	# actual published remote file separately in CI, never assume loaded.
-	stage._zoom(1.2)
+	stage.call("_zoom", 1.2)
 	assert(camera.zoom.x > 0.8, "Zoom handler did not work")
 	print("PASS PUBLIC HD2D GODOT SCENE STARTUP: camera, HUD, pan/zoom contract")
 	stage.queue_free()
