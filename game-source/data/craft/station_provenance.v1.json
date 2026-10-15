@@ -1,0 +1,52 @@
+{
+  "schema": 1,
+  "status": "preproduction_facility_provenance_no_grants",
+  "world_authority": "existing_WorldState_only",
+  "facilities": [
+    {
+      "station": "mixing_tub",
+      "prototype_entity": "ceramic_pot",
+      "required_state": "placed",
+      "requires_owned_crafted_entity": true,
+      "recipe_permissions": [
+        "hand_mix_clay"
+      ],
+      "real_physical_fit_review": "BLOCKED",
+      "notes": "陶罐是否适合混合3千克泥水须真实容量与动画审查。"
+    },
+    {
+      "station": "sieve",
+      "prototype_entity": null,
+      "required_state": "placed",
+      "requires_owned_crafted_entity": true,
+      "recipe_permissions": [
+        "sand_wash"
+      ],
+      "real_physical_fit_review": "BLOCKED"
+    },
+    {
+      "station": "settling_tank",
+      "prototype_entity": null,
+      "required_state": "placed",
+      "requires_owned_crafted_entity": true,
+      "recipe_permissions": [
+        "clay_settling"
+      ],
+      "real_physical_fit_review": "BLOCKED"
+    },
+    {
+      "station": "kiln",
+      "prototype_entity": null,
+      "required_state": "placed",
+      "requires_owned_crafted_entity": true,
+      "recipe_permissions": [
+        "kiln_brick",
+        "fire_roof_tile",
+        "burn_lime"
+      ],
+      "real_physical_fit_review": "BLOCKED"
+    }
+  ],
+  "unlisted_station_policy": "BLOCKED",
+  "compatibility": "No new station can be fabricated by writing directly to WorldState.entities; require a source recipe, placed location, ownership and tracked inventory."
+}
