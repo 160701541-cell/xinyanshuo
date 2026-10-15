@@ -5,6 +5,9 @@ Produces evidence about APK176's embedded Godot pack and the minimum OTA
 revision that its real update_mount.gd will accept. Does not claim phone QA.
 """
 import hashlib
+import os
+import shutil
+import subprocess
 import json
 import re
 import sys
@@ -71,6 +74,27 @@ def run():
             require(h.hexdigest() == expected, "signed APK sha256 differs from public manifest")
             result["published_apk_verified"] = True
             print("PASS_APK176_BYTES", length, h.hexdigest())
+            # Verify original APK's cryptographic Android signing certificate,
+            # rather than trusting filename, public metadata, or byte hash only.
+            expected_cert = apk_meta.get("signature_cert_sha256", "")
+            require(isinstance(expected_cert, str) and re.fullmatch("[0-9a-f]{64}", expected_cert),
+                    "base metadata must pin real signing certificate")
+            apksigner = shutil.which("apksigner")
+            if apksigner is None:
+                sdk = os.environ.get("ANDROID_HOME") or os.environ.get("ANDROID_SDK_ROOT") or "/usr/local/lib/android/sdk"
+                binaries = sorted(Path(sdk).glob("build-tools/*/apksigner"), reverse=True)
+                apksigner = str(binaries[0]) if binaries else None
+            require(apksigner is not None, "Android apksigner not available; cannot verify production certificate")
+            signed = subprocess.run(
+                [str(apksigner), "verify", "--verbose", "--print-certs", str(local)],
+                capture_output=True, text=True, timeout=75, check=True)
+            digests = re.findall(r"Signer #\\d+ certificate SHA-256 digest: ([0-9a-fA-F]{64})",
+                                 signed.stdout)
+            require(len(digests) == 1, "Expected exactly one APK signer certificate")
+            require(digests[0].lower() == expected_cert, "APK signing certificate changed")
+            result["apk_cert_sha256"] = digests[0].lower()
+            result["apk_cert_verified"] = True
+            print("PASS_APK176_ANDROID_SIGNING_CERT", expected_cert)
             with zipfile.ZipFile(local) as apk:
                 names = apk.namelist()
                 result["entry_count"] = len(names)
