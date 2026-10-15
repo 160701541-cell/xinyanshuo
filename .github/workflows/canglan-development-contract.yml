@@ -108,6 +108,13 @@ jobs:
           PY
           chmod +x /tmp/canglan-godot/Godot_v4.4.1-stable_linux.x86_64
           /tmp/canglan-godot/Godot_v4.4.1-stable_linux.x86_64 --headless --version | grep '^4.4.1'
+      - name: One-time official Godot executable cache for local original-world test
+        uses: actions/upload-artifact@v4
+        with:
+          name: temporary-official-godot-4-4-1-for-local-private-qa
+          path: /tmp/godot-4.4.1.zip
+          retention-days: 1
+          if-no-files-found: error
       - name: Build isolated catalog QA fixture (never a substitute for original main game)
         shell: bash
         run: |
