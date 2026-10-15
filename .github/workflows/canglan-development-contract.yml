@@ -155,6 +155,32 @@ jobs:
           if grep -E 'SCRIPT ERROR:|Parse Error:|Assertion failed|ERROR:|FAIL_ADVERSARIAL' godot-crafting-adversarial.log; then
             exit 1
           fi
+      - name: Capture actual 1280x720 Godot OpenGL craft UI image
+        shell: bash
+        run: |
+          set -euo pipefail
+          if ! command -v xvfb-run >/dev/null; then
+            sudo apt-get update -qq
+            sudo DEBIAN_FRONTEND=noninteractive apt-get install -y -qq xvfb libgl1-mesa-dri
+          fi
+          LIBGL_ALWAYS_SOFTWARE=1 xvfb-run -a -s "-screen 0 1280x720x24" \
+            timeout 90s /tmp/canglan-godot/Godot_v4.4.1-stable_linux.x86_64 \
+            --rendering-method gl_compatibility --rendering-driver opengl3 \
+            --path game-source/godot-craft-smoke \
+            --script res://tests/render_codex_capture.gd \
+            > godot-real-frame-capture.log 2>&1 || { cat godot-real-frame-capture.log; exit 1; }
+          cat godot-real-frame-capture.log
+          grep -Fq 'GODOT_FRAME_REAL_1280_720_CAPTURED_DESKTOP_ONLY' godot-real-frame-capture.log
+          python3 - <<'PY'
+          from pathlib import Path
+          import struct
+          image=Path('game-source/godot-craft-smoke/godot-craft-real-frame.png')
+          assert image.is_file() and image.stat().st_size > 6000, 'Blank or missing real Godot UI capture'
+          raw=image.read_bytes()
+          assert raw[:8]==b'\x89PNG\r\n\x1a\n'
+          assert struct.unpack('>II',raw[16:24])==(1280,720)
+          print('VERIFIED_REAL_GODOT_FRAME',image.stat().st_size,'bytes')
+          PY
       - name: Upload real Godot smoke evidence
         if: always()
         uses: actions/upload-artifact@v4
@@ -164,5 +190,7 @@ jobs:
             godot-crafting-smoke.log
             godot-codex-ui-smoke.log
             godot-crafting-adversarial.log
+            godot-real-frame-capture.log
+            game-source/godot-craft-smoke/godot-craft-real-frame.png
           retention-days: 7
           if-no-files-found: ignore
