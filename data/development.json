@@ -8,6 +8,13 @@
   "public_note": "开发工作日志不是签名游戏更新日志；未发布功能可能写在这里。隐去密钥与内部配置。",
   "entries": [
     {
+      "id": "dev-20261015-work-aligned-craft-source-ownership",
+      "date": "2026-10-15",
+      "title": "Work基底工艺开发：真实河水入陶罐，扣料和退料保留产权",
+      "body": "已在Work主线的独立叠加分支接入工艺谱、世界制造工单与5项新Godot测试。淘泥需工人在真实泉水处汲水装入有制造来源的陶罐，制作时从罐内扣水、从工人库存扣泥，停工取消则将水退回罐。原Work分支未被修改；私有工程新增测试、Android实机及签名包仍未验收，不宣称已经可玩。",
+      "source_status": "work-overlay-unverified_not-released"
+    },
+    {
       "id": "dev-20261015-first-paid-mixing-vertical-slice-candidate",
       "date": "2026-10-15",
       "title": "物品树开始接入原世界工单：三单位陶器试验台、工时与存档回滚",
