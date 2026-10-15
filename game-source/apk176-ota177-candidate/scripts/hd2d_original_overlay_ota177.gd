@@ -18,6 +18,7 @@ var dragging := false
 var touches: Dictionary = {}
 var _background: ColorRect
 var _status: Label
+var _interaction_actions: HBoxContainer
 var _day_tint: ColorRect
 var _is_night := false
 
