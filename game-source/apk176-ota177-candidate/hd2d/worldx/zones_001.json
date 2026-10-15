@@ -1,0 +1,68 @@
+{
+  "source_map": "world_2026-04-19T17-12-41/map/06-background.png",
+  "image": "worldx_001.png",
+  "image_size": [
+    1024,
+    572
+  ],
+  "zones": [
+    {
+      "id": "central_plaza",
+      "name": "Central Plaza",
+      "description": "Open public space at the village core with the grand hero statue as its centerpiece.",
+      "kind": "region",
+      "rect": [
+        413.8,
+        190.7,
+        196.5,
+        202.6
+      ],
+      "actions": [
+        {
+          "id": "admire_hero_statue",
+          "name": "Admire Hero Statue",
+          "description": "Stand in front of the statue and look at the hero's carved likeness."
+        }
+      ]
+    },
+    {
+      "id": "blacksmith_forge",
+      "name": "Blacksmith's Forge",
+      "description": "West-side workshop where the blacksmith once forged the hero's legendary sword, now makes household cutlery.",
+      "kind": "region",
+      "rect": [
+        139.9,
+        186.9,
+        181.6,
+        168.3
+      ],
+      "actions": [
+        {
+          "id": "browse_handmade_spoons",
+          "name": "Browse Handmade Spoons",
+          "description": "Look at the neatly stacked, well-crafted spoons the blacksmith has made."
+        }
+      ]
+    },
+    {
+      "id": "healer_cottage",
+      "name": "Healer's Cottage",
+      "description": "East-side small cottage where the healer once treated wounded adventurers, now sits mostly unused.",
+      "kind": "region",
+      "rect": [
+        717.4,
+        186.9,
+        199.4,
+        156.4
+      ],
+      "actions": [
+        {
+          "id": "browse_herb_shelves",
+          "name": "Browse Herb Shelves",
+          "description": "Look at the neatly arranged dried medicinal herbs on the shelves."
+        }
+      ]
+    }
+  ],
+  "economy_effects_applied": false
+}
