@@ -4,6 +4,9 @@ extends CanvasLayer
 ## Revisions must be signed by the permanent original APK RSA key.
 const TILE_PATH := "res://hd2d/atlas_village_ota177.jpg"
 const WORLDX_TERRAIN := "res://hd2d/worldx/worldx_000.png"
+const WORLDX_TERRAIN_ALT := "res://hd2d/worldx/worldx_001.png"
+var worldx_map_sprite: Sprite2D
+var alt_map := false
 var panel: Control
 var art_world: Node2D
 var cam_offset := Vector2(0.0, 0.0)
@@ -55,6 +58,11 @@ func _build_visual() -> void:
 	note.text = "这是游戏内临时对照场景，原世界仍在运行，存档不变"
 	gui.add_child(note)
 	_load_atlas()
+	_add_worldx_npcs()
+	var worldx_switch := Button.new()
+	worldx_switch.text = "切换 WorldX 地图区"
+	worldx_switch.pressed.connect(_toggle_worldx_map)
+	gui.add_child(worldx_switch)
 	_day_tint = ColorRect.new()
 	_day_tint.name = "DayNightLighting"
 	_day_tint.set_anchors_preset(Control.PRESET_FULL_RECT)
@@ -87,12 +95,31 @@ func _add_worldx_surface() -> void:
 	tile.position = Vector2(120.0, 70.0)
 	tile.scale = Vector2(1.25, 1.25)
 	art_world.add_child(tile)
+	worldx_map_sprite = tile
+
+func _toggle_worldx_map() -> void:
+	var path := WORLDX_TERRAIN_ALT if not alt_map else WORLDX_TERRAIN
+	if not FileAccess.file_exists(path):
+		return
+	var im := Image.new()
+	if im.load_png_from_buffer(FileAccess.get_file_as_bytes(path)) != OK:
+		return
+	worldx_map_sprite.texture = ImageTexture.create_from_image(im)
+	alt_map = not alt_map
+
+func _add_worldx_npcs() -> void:
+	if not FileAccess.file_exists("res://hd2d/worldx/npcs/npcs.json"):
+		return
+	var npc_class: Script = load("res://scripts/hd2d_worldx_npcs.gd")
+	if npc_class == null:
+		push_error("WorldX NPC animation controller could not load")
+		return
+	var npc_layer := Node2D.new()
+	npc_layer.name = "WorldXInWorldNPCs"
+	npc_layer.set_script(npc_class)
+	art_world.add_child(npc_layer)
 
 func _add_road() -> void:
-	var grass := Polygon2D.new()
-	grass.color = Color("#68835a")
-	grass.polygon = PackedVector2Array([Vector2(-400,-400),Vector2(2400,-400),Vector2(2400,1500),Vector2(-400,1500)])
-	art_world.add_child(grass)
 	# Reuse the native 256px seamless paving generator inside the ORIGINAL
 	# APK176 overlay. This replaces the flat mock road and diagonal lines.
 	var paving = load("res://scripts/hd2d_stone_road.gd")
