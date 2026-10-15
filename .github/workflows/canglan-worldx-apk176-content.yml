@@ -4,6 +4,8 @@ on:
     branches: [main]
     paths:
       - 'tools/asset_factory/worldx_godot_bridge.py'
+      - 'tools/asset_factory/worldx_npc_import.py'
+      - 'logic-qa/tools/verify_worldx_npc_content.gd'
       - 'game-source/apk176-ota177-candidate/**'
       - 'logic-qa/tools/build_apk176_hd2d_overlay.gd'
       - 'tools/verify_hd2d_overlay_pck.py'
