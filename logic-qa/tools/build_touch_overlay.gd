@@ -25,6 +25,20 @@ func _initialize() -> void:
 		printerr("FAIL: cannot add router into PCK ", result)
 		quit(5)
 		return
+	# Installed APK176 exports the old script as .gdc with an existing
+	# .gd.remap. A PCK containing only .gd does NOT beat that mapping.
+	# Include a new versioned source path plus a remap redirect; actual
+	# exported-bytecode test MUST prove this works before considering release.
+	for mapping in [
+		{"target": "res://scripts/touch_look_router_ota177.gd", "source": file},
+		{"target": "res://scripts/touch_look_router.gd.remap", 
+			"source": ProjectSettings.globalize_path("res://tools/ota177_touch_router.remap")},
+	]:
+		result = writer.add_file(mapping["target"], mapping["source"])
+		if result != OK:
+			printerr("FAIL: cannot add OTA remap fixture ", mapping["target"], " result=", result)
+			quit(7)
+			return
 	result = writer.flush()
 	if result != OK:
 		printerr("FAIL: PCK flush ", result)
