@@ -1,0 +1,11 @@
+; Legacy-world logic QA sandbox — NOT the complete Android game.
+; Mirror source from audited canglan-world branch; no Android keys, player saves or proprietary assets.
+config_version=5
+
+[application]
+config/name="Canglan Legacy World Logic QA Sandbox"
+run/main_scene=""
+
+[rendering]
+renderer/rendering_method="gl_compatibility"
+renderer/rendering_method.gl_compatibility="gl_compatibility"
