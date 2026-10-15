@@ -1,0 +1,47 @@
+name: Unity Editor Download and Launch Feasibility Probe
+on:
+  push:
+    paths:
+      - '.github/workflows/canglan-unity-runtime-probe.yml'
+  workflow_dispatch:
+jobs:
+  unity-probe:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 12
+    steps:
+      - name: Probe Unity binaries and machine
+        run: |
+          set +e
+          echo '== OS / space =='
+          uname -a
+          df -h .
+          free -h
+          echo '== Existing Unity binaries =='
+          command -v unity-editor || true
+          command -v unityhub || true
+          echo '== Unity distribution HTTP availability =='
+          for url in https://public-cdn.cloud.unity3d.com/hub/prod/UnityHub.AppImage https://download.unity3d.com/download_unity/ https://hub.unity3d.com/linux/repos/deb/stable; do
+            echo "PROBE_URL: $url"
+            curl -L -I --retry 1 --max-time 20 -sS -o /dev/null -w 'http_code=%{http_code} bytes=%{size_download} remote_ip=%{remote_ip}\n' "$url" || true
+          done
+          echo '== Container image distribution =='
+          docker manifest inspect unityci/editor:ubuntu-2022.3.62f1-base >/tmp/unity_manifest.json 2>/tmp/unity_manifest.err
+          echo "unityci/editor manifest_exit=$?"
+          head -c 200 /tmp/unity_manifest.err || true
+      - name: Try downloading official Unity Hub Linux distribution
+        run: |
+          set +e
+          curl --location --fail --retry 1 --max-time 120 -o /tmp/UnityHub.AppImage https://public-cdn.cloud.unity3d.com/hub/prod/UnityHub.AppImage
+          result=$?
+          echo "HUB_DOWNLOAD_EXIT=$result"
+          if [ "$result" -eq 0 ]; then
+            echo "HUB_FILE_BYTES=$(stat -c%s /tmp/UnityHub.AppImage)"
+            file /tmp/UnityHub.AppImage
+            chmod +x /tmp/UnityHub.AppImage
+            timeout 20 /tmp/UnityHub.AppImage --version >/tmp/hub_out.log 2>&1
+            echo "HUB_VERSION_EXIT=$?"
+            head -n 40 /tmp/hub_out.log
+          else
+            echo 'Hub download did not succeed; no Unity Editor installed or started.'
+          fi
+          exit 0
