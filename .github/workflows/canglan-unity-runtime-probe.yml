@@ -90,3 +90,22 @@ jobs:
           echo '== Disk usage =='
           du -sh "$HOME/Unity" 2>/dev/null || true
           exit 0
+
+      - name: Install confirmed available Unity 6 editor and check executable
+        run: |
+          set +e
+          echo '== Attempt currently listed Unity 6 Editor 6000.3.26f1 =='
+          timeout 145 xvfb-run -a unityhub --headless install --version 6000.3.26f1 > /tmp/editor6_install.log 2>&1
+          echo "EDITOR6_INSTALL_EXIT=$?"
+          tail -n 75 /tmp/editor6_install.log
+          echo '== Check editor binary and report version if present =='
+          find "$HOME/Unity" /opt/unity /opt/unityhub -maxdepth 6 -type f -name Unity -print 2>/dev/null | head -n 12
+          UNITY_EXE=$(find "$HOME/Unity" -maxdepth 6 -type f -name Unity -print -quit 2>/dev/null)
+          if [ -n "$UNITY_EXE" ]; then
+            timeout 30 xvfb-run -a "$UNITY_EXE" -batchmode -nographics -quit -logFile /tmp/unity_editor_launch.log
+            echo "EDITOR6_LAUNCH_EXIT=$?"
+            tail -n 70 /tmp/unity_editor_launch.log
+          else
+            echo 'EDITOR6_LAUNCH_NOT_ATTEMPTED_NO_EXECUTABLE'
+          fi
+          exit 0
