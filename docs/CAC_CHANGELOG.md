@@ -115,3 +115,11 @@
 - 原版 APK176 PCK打包器已支持上述WorldX图和原游戏HD2D覆盖层，最终生成**7条**资源内容（若2张图均正常导入；以每次CI索引实测为准）；Godot PCK索引通过。实际WorldX任务 `38822623646` 在GitHub生成并把两张图真实推送到 `main`，不能把仅上传Actions Artifact当作发布。
 - **QA反证阻塞**：从真实 APK176 导出 `main.gdc` 与 `main.scn` 后，Godot的最小CI夹具因缺少原游戏全局类注册，打印 `CanglanValleyAtmosphere`、`CanglanGameHUD`、`WorldState` 等脚本Parse Error；因此 **不能判定原游戏完整启动成功**。已将 WorldX QA 改为解析出错即失败，并修复传统PCK QA过去的假绿色；这些失败是已发现缺口而非可交付实机版本。
 - **手机交付状态：未发布**。正式更新订阅仍为rev167。后续必须解决原导出主场景执行与正式发布通道，再把独立高清楼宇而非旧JPG图鉴导入后发布新版正式APK/PCK。
+
+## CAC-0019 · WorldX MIT实际地图/NPC/交互/寻路内容导入原版《苍岚》（2026-10-16）
+- 工作仓库**仅**公开 `160701541-cell/xinyanshuo`；官方样例来源 `YGYOOO/WorldX` MIT，承认上游样例美术并保留来源哈希，不冒充原创AI画作。
+- 真实游戏工程目录 `game-source/apk176-ota177-candidate/hd2d/worldx/` 已推送两张 WorldX 地图图像（流程已提高到2048px最大长边）、六张完整NPC逐帧动画 spritesheet 和 `npcs/npcs.json`（6列×5行，每NPC至少三方向行走）；中国历史样例人物包括王掌柜、李半仙，第二地图是西方奇幻示例，不得冒充中国风高清成品。
+- 新增地图交互区域 `zones_000/001.json`：来自 WorldX 原始 `06-elements-scaled.json`、`06-regions-scaled.json`，按实际贴图分辨率重投影。每场景3个真实命名交互点；覆盖层新增点击选择区域、交互按钮展示和真实NPC名字/描述；尚不写入游戏库存和存档，不能谎称已经实现经营效果。
+- 新增 `tools/asset_factory/worldx_nav_import.py` 处理 WorldX 实际 `05-walkable-grid.json`，压缩344×192网格为86×48，固定 `0=可通行,1=不可通行`。两场景分别有2043/1474个可行走网格。与NPC控制器寻路接入，限制人物只在真实道路网格上选点/游荡，不再穿墙直线横移。
+- 已有WorldX独立内容Godot QA成功实证：`PASS_WORLDX_REAL_GAME_ASSETS maps=2 NPCs=6 walk_frames=36 clickable_hotspots=3`（之前包含交互点测试）；本轮进一步新增导航碰撞点验证，待CI结果；**完整原APK主场景QA仍受导出class_name全局注册缺失阻断，正式APK/热更新没有发布。**
+- 构建脚本 `logic-qa/tools/build_apk176_hd2d_overlay.gd` 合并场景脚本、地图、6NPC、商铺热点、寻路网格至原版内容PCK候选，并由 `tools/verify_hd2d_overlay_pck.py` 以官方PCK索引核对MD5/路径。Actions资产工厂新增全流程；启用单一并发组，防止多轮同时提交同一公开仓库，所有成品必须经真实资源验证，不将红色QA伪称手机已更新。
