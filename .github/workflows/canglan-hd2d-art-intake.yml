@@ -8,7 +8,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   source-evaluation:
@@ -51,6 +51,42 @@ jobs:
           print('PASS_CC0_CHINESE_ART_ARCHIVE_UNPACKED_AND_LISTED',len(found))
           print(json.dumps(found, ensure_ascii=False, indent=2)[:14000])
           PY
+      - name: Publish two verified CC0 original PNG images for visual review
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import base64, hashlib, json, zipfile
+          from pathlib import Path
+          archive=Path('qa-art/ancient-chinese-cc0-original.zip')
+          out=Path('hd2d-assets/reference')
+          out.mkdir(parents=True,exist_ok=True)
+          mapping={
+             'han_male.png':'Ancient Chinese Characters Pack 1/Han/Han Male Whole.png',
+             'han_female.png':'Ancient Chinese Characters Pack 1/Han/Han Female Whole.png'
+          }
+          report={}
+          with zipfile.ZipFile(archive) as z:
+              for dest,source in mapping.items():
+                  data=z.read(source)
+                  assert data.startswith(bytes.fromhex('89504e470d0a1a0a'))
+                  assert len(data)<500000
+                  (out/dest).write_bytes(data)
+                  (out/(dest+'.base64')).write_text(base64.b64encode(data).decode('ascii')+'\\n')
+                  report[dest]={'source':source, 'sha256':hashlib.sha256(data).hexdigest(), 'bytes':len(data)}
+          (out/'SOURCE_CC0.json').write_text(json.dumps({
+             'creator':'nessava','source_url':'https://opengameart.org/content/ancient-chinese-character-pack-1',
+             'license':'CC0', 'intake_status':'reference art NOT HD-2D visual QA accepted',
+             'assets':report}, indent=2)+'\\n')
+          print('PASS_CC0_AUTHENTIC_HAN_PNG_EXTRACTED',report)
+          PY
+          git config user.name "canglan-licensed-art-bot"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add hd2d-assets/reference/
+          if ! git diff --cached --quiet; then
+            git commit -m "art(reference): preserve original CC0 Han 2D figure PNGs and audit SHA"
+            git push origin HEAD:main
+          fi
       - name: Retain original source for an artist review; no auto-import into APK
         if: always()
         uses: actions/upload-artifact@v4
