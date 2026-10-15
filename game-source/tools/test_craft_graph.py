@@ -4,6 +4,9 @@ import json
 from pathlib import Path
 import unittest
 from craft_graph import CatalogError, CraftGraph
+# Fold the separate physical-station anti-cheat suite into the established
+# material graph CI without changing proprietary game build workflows.
+from test_station_contract import StationProvenanceTests
 
 CATALOG = (Path(__file__).resolve().parent.parent
            / 'data/craft/material_graph.v1.json')
