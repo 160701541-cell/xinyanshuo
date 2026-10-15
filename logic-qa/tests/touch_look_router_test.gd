@@ -19,8 +19,8 @@ func _initialize() -> void:
 	var pinch: Dictionary = r.move(4, Vector2(1160,420))
 	assert(pinch["action"] == "zoom" and pinch["factor"] < 1.0, "Two right fingers pinch to zoom")
 	assert(r.end(4,Vector2(1160,420),5.1)["action"] == "end")
-	assert(r.move(3,Vector2(851,420))["action"] == "look" or r.is_looking(),
-		"After pinch only right-hand ownership remains")
+	assert(r.move(3,Vector2(851,420)).is_empty(),
+		"Remaining finger after pinch must not jerk camera into look mode")
 	r.end(3,Vector2(850,420),5.15)
 	assert(not r.is_looking())
 	var portrait := Vector2(720,1280)
