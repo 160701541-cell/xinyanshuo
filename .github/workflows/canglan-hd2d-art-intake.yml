@@ -1,0 +1,55 @@
+name: Canglan HD2D Chinese Sprite Art Intake (Free Public)
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/canglan-hd2d-art-intake.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  source-evaluation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download author-published CC0 Chinese characters (reference only)
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p qa-art
+          curl --fail --location --retry 2 --max-time 120 'https://opengameart.org/sites/default/files/Ancient%20Chinese%20Characters%20Pack%201.zip' -o qa-art/ancient-chinese-cc0-original.zip
+          test "$(stat -c%s qa-art/ancient-chinese-cc0-original.zip)" -ge 1000000
+          test "$(stat -c%s qa-art/ancient-chinese-cc0-original.zip)" -le 15000000
+          sha256sum qa-art/ancient-chinese-cc0-original.zip | tee qa-art/source.sha256
+          python3 - <<'PY'
+          import json, zipfile
+          from pathlib import Path
+          p=Path('qa-art/ancient-chinese-cc0-original.zip')
+          with zipfile.ZipFile(p) as z:
+              found=[]
+              total=0
+              for entry in z.infolist():
+                  n=entry.filename.replace('\\', '/')
+                  if n.startswith('/') or '..' in n.split('/'):
+                      raise ValueError('unsafe ZIP paths')
+                  total+=entry.file_size
+                  if total>80000000:
+                      raise ValueError('zip bomb')
+                  found.append({'name': n, 'size': entry.file_size})
+              assert len(found)>=8
+          Path('qa-art/art-list.json').write_text(json.dumps(found, indent=2, ensure_ascii=False))
+          print('PASS_CC0_CHINESE_ART_ARCHIVE_UNPACKED_AND_LISTED',len(found))
+          print(json.dumps(found, ensure_ascii=False, indent=2)[:14000])
+          PY
+      - name: Retain original source for an artist review; no auto-import into APK
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: Canglan-Chinese-CC0-Figure-Originals-For-Art-Review
+          path: qa-art/
+          retention-days: 14
+          if-no-files-found: warn
