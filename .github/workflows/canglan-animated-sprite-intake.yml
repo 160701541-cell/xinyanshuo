@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   get-cc0-animated-person:
@@ -33,6 +33,58 @@ jobs:
           (p.parent/'source-list.json').write_text(json.dumps({'license':'CC0 on OpenGameArt author page', 'author':'sebshady', 'landing':'https://opengameart.org/content/samurai-sprites','sha256':hashlib.sha256(p.read_bytes()).hexdigest(),'files':files},indent=2))
           print('PASS_CC0_ANIMATED_SPRITE_ARCHIVE',files)
           PY
+      - name: Extract transparent 3-frame x 4-direction animations, keep original license
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m pip install --quiet --break-system-packages Pillow
+          python3 - <<'PY'
+          from PIL import Image
+          from pathlib import Path
+          from io import BytesIO
+          import zipfile,hashlib,base64,colorsys,json
+          with zipfile.ZipFile('qa-sprite/CC0-sebshady-samurai-source.zip') as z:
+              image=Image.open(BytesIO(z.read('samurai.png'))).convert('RGBA')
+          assert image.size==(288,480),image.size
+          # Original author supplied 48px tiles, 3 walking frames x 4 directions.
+          base=image.crop((0,0,48*3,48*4))
+          out=Path('hd2d-assets/animated')
+          out.mkdir(parents=True,exist_ok=True)
+          hues={'hero':0.52,'farmer':0.28,'woodsman':0.10,'merchant':0.77}
+          manifests={}
+          for role,hue in hues.items():
+              sprite=base.copy()
+              pix=sprite.load()
+              for y in range(sprite.height):
+                  for x in range(sprite.width):
+                      r,g,b,a=pix[x,y]
+                      if a==0:
+                          continue
+                      h,ss,v=colorsys.rgb_to_hsv(r/255,g/255,b/255)
+                      # Change only blue robe pixels, not skin/hair/metal.
+                      if 0.48<h<0.64 and ss>0.18 and v>0.15:
+                          nr,ng,nb=colorsys.hsv_to_rgb(hue,ss,max(.05,v))
+                          pix[x,y]=(round(nr*255),round(ng*255),round(nb*255),a)
+              path=out/(role+'_walk.png')
+              sprite.save(path)
+              blob=path.read_bytes()
+              (out/(path.name+'.base64')).write_text(base64.b64encode(blob).decode('ascii')+'\\n')
+              manifests[path.name]={'sha256':hashlib.sha256(blob).hexdigest(),'bytes':len(blob),
+                                    'frame_px':[48,48],'columns':3,'rows':4}
+          (out/'SOURCE_CC0.json').write_text(json.dumps({
+            'upstream':'https://opengameart.org/content/samurai-sprites',
+            'author':'sebshady','license':'CC0','conversion':'crop walking 3x4 48x48, hue-recolor clothing only',
+            'visual_status':'source for working animation, NOT final Chinese HD2D art',
+            'assets':manifests},indent=2)+'\\n')
+          print('PASS_CC0_4DIRECTION_WALK_ASSETS',manifests)
+          PY
+          git config user.name "canglan-licensed-art-bot"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add hd2d-assets/animated/
+          if ! git diff --cached --quiet; then
+            git commit -m "art(reference): transparent CC0 4-way 2D animation extracted and role-palette variants"
+            git push origin HEAD:main
+          fi
       - name: Save actual sprite sheet for visual and animation audit
         if: always()
         uses: actions/upload-artifact@v4
