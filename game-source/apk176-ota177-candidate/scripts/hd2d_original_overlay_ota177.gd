@@ -98,7 +98,7 @@ func _add_worldx_surface() -> void:
 	tile.centered = false
 	tile.texture = tex
 	tile.position = Vector2(120.0, 70.0)
-	tile.scale = Vector2(1.25, 1.25)
+	tile.scale = Vector2(1280.0 / float(image.get_width()), 715.0 / float(image.get_height()))
 	art_world.add_child(tile)
 	worldx_map_sprite = tile
 	hotspot_labels = Node2D.new()
@@ -114,6 +114,7 @@ func _toggle_worldx_map() -> void:
 	if im.load_png_from_buffer(FileAccess.get_file_as_bytes(path)) != OK:
 		return
 	worldx_map_sprite.texture = ImageTexture.create_from_image(im)
+	worldx_map_sprite.scale = Vector2(1280.0 / float(im.get_width()), 715.0 / float(im.get_height()))
 	alt_map = not alt_map
 	_set_worldx_zones(1 if alt_map else 0)
 
