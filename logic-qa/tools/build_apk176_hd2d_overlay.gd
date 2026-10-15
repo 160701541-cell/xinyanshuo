@@ -6,6 +6,7 @@ const FILES := {
 	"res://scenes/main.tscn.remap": "scenes/main.tscn.remap",
 	"res://scenes/main_hd2d_ota177.tscn": "scenes/main_hd2d_ota177.tscn",
 	"res://scripts/hd2d_original_overlay_ota177.gd": "scripts/hd2d_original_overlay_ota177.gd",
+	"res://scripts/hd2d_stone_road.gd": "scripts/hd2d_stone_road.gd",
 	"res://hd2d/atlas_village_ota177.jpg": "hd2d/atlas_village_ota177.jpg"
 }
 
@@ -36,5 +37,5 @@ func _initialize() -> void:
 		printerr("BLOCKED: PCK flush failed")
 		quit(6)
 		return
-	print("PASS ORIGINAL APK176 HD2D CANDIDATE PCK BUILT: FOUR FILES, NOT SIGNED")
+	print("PASS ORIGINAL APK176 HD2D CANDIDATE PCK BUILT: FIVE FILES, NOT SIGNED")
 	quit(0)
