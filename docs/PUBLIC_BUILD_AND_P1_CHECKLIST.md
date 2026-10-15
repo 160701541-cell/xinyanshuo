@@ -110,3 +110,7 @@
 - `tools/station_contract.py` 检查每道工序的工坊对应性、实体产权、合法摆放及冒充审美批准，并附8项故意篡改设备/权限的反例测试；已纳入原有公开图谱质量流水线。
 - [实际GitHub CI #38676906522](https://github.com/160701541-cell/xinyanshuo/actions/runs/38676906522) 已真实 **SUCCESS**：图谱与设备26项、工程调教16项、逐物品合同8项，共50项Python测试通过；独立Godot 4.4.1界面/非法工艺拒绝/1280×720真实桌面渲染通过。**真实手机世界、实体工坊、工单原子结算与新APK/PCK依旧没有通过。**
 - 复核发现旧 `WorldState.start_job` 部分工序只检查工具名称，不检查实物设备，故新工业系统不得直接复制旧漏洞。需先落地可制造的合法设备实体，然后才允许将`原料→半成品`写入现有WorldState事务。
+
+## 2026-10-15 — 工坊实体防作弊门禁（下一步）
+
+已加入 `game-source/data/craft/station_provenance.v1.json`、`tools/station_contract.py` 与8项设备来源反例测试，检查工坊与配方对应、合法实体和产权，未建造的窑炉等设备保持 BLOCKED，不能靠字符串直接生产。公开 Actions #38676906522 已成功：50项Python合同测试以及独立Godot 4.4.1运行/真实桌面截图通过。原WorldState部分旧工序只核验工具名称，仍需补真正的工坊实体与权威工单。没有新的Android发布。
