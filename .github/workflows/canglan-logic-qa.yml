@@ -35,6 +35,14 @@ jobs:
           unzip -q /tmp/canglan-godot.zip -d /tmp
           chmod +x /tmp/Godot_v4.4.1-stable_linux.x86_64
           /tmp/Godot_v4.4.1-stable_linux.x86_64 --version
+      - name: Stage untouched artist CC0 sprites in exact in-game resource paths
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p logic-qa/assets/production/hd2d
+          cp hd2d-assets/reference/han_male.png logic-qa/assets/production/hd2d/han_male.png
+          cp hd2d-assets/reference/han_female.png logic-qa/assets/production/hd2d/han_female.png
+          sha256sum logic-qa/assets/production/hd2d/*.png
       - name: Run real GDScript regression in engine
         shell: bash
         run: |
@@ -49,8 +57,9 @@ jobs:
             [character_locomotion]='PASS: humanoid rig relaxes arms'
             [two_thumb_input]='PASS CANG LAN SIMULTANEOUS TWO THUMB TOUCH'
             [village_trade_gameplay]='PASS CANGLAN PLAYABLE VILLAGE TRADE:'
+            [hd2d_actor_visual]='PASS CANGLAN ACTUAL CC0 HAN SPRITE3D:'
           )
-          for module in entity_codes touch_look_router character_locomotion two_thumb_input village_trade_gameplay; do
+          for module in entity_codes touch_look_router character_locomotion two_thumb_input village_trade_gameplay hd2d_actor_visual; do
             timeout 120s "$GODOT" --headless --path logic-qa \
               --script "res://tests/${module}_test.gd" \
               > "qa-results/${module}.log" 2>&1
@@ -65,7 +74,7 @@ jobs:
             echo 'BLOCKED: Godot resource import failed'
             exit 1
           fi
-          echo 'PASS: 4 real Godot test suites (identity, right-look, skeletal walking, simultaneous two-thumb control), NOT full game QA'
+          echo 'PASS: real Godot module regressions including HD2D source PNG; NOT full-game Android QA'
       - name: Build and independently mount unsigned test-only Godot PCK
         shell: bash
         env:
