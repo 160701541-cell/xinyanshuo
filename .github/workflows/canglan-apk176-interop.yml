@@ -9,6 +9,10 @@ on:
       - 'logic-qa/tools/ota177_touch_router.remap'
       - 'logic-qa/scripts/touch_look_router.gd'
       - 'logic-qa/apk176-export-fixture/**'
+      - 'logic-qa/tests/update_protocol_signing_test.gd'
+      - 'logic-qa/scripts/update_protocol.gd'
+      - 'logic-qa/scripts/update_channel.gd'
+      - 'logic-qa/tools/sign_pck_release.py'
       - '.github/workflows/canglan-apk176-interop.yml'
       - 'android-preview/base-latest.json'
       - 'android-preview/latest.json'
@@ -66,6 +70,36 @@ jobs:
           timeout 60s "$GODOT" --headless --path logic-qa \
             --script res://tools/build_touch_overlay.gd > qa-results/apk176-qa-pack.log 2>&1
           grep -Fq 'PASS CANG LAN TEST PACK GENERATED' qa-results/apk176-qa-pack.log
+          # Temporary key proves Python/OpenSSL and original Godot's exact
+          # signing protocol work together. It is NOT the permanent game key.
+          # Never upload or print temporary private keys or claim this pack
+          # can be installed by APK176 with its baked-in real public key.
+          TEST_PRIVATE="$RUNNER_TEMP/canglan-qa-only-private.pem"
+          TEST_PUBLIC="$RUNNER_TEMP/canglan-qa-only-public.pem"
+          export CANGLAN_QA_MANIFEST_PATH="$RUNNER_TEMP/canglan-qa-only-manifest.json"
+          export CANGLAN_QA_TEST_PUBLIC_KEY="$TEST_PUBLIC"
+          openssl genpkey -algorithm RSA -pkeyopt rsa_keygen_bits:3072 \
+            -out "$TEST_PRIVATE" > /dev/null 2>&1
+          openssl pkey -in "$TEST_PRIVATE" -pubout -out "$TEST_PUBLIC" > /dev/null 2>&1
+          CANGLAN_UPDATE_MIN_BINARY_CODE=1102 \
+            python3 logic-qa/tools/sign_pck_release.py \
+            --pack "$CANGLAN_QA_PCK_PATH" --revision 177 \
+            --minimum-android-code 1102 --maximum-android-code 2147483000 \
+            --pack-url 'https://160701541-cell.github.io/xinyanshuo/android-preview/canglan-content-rev-177.pck' \
+            --notes 'QA-only; ephemeral signing key; never publish' \
+            --private-key "$TEST_PRIVATE" --public-key "$TEST_PUBLIC" \
+            --output "$CANGLAN_QA_MANIFEST_PATH" \
+            > qa-results/qa-only-signature-generation.log 2>&1
+          timeout 90s "$GODOT" --headless --path logic-qa \
+            --script res://tests/update_protocol_signing_test.gd \
+            > qa-results/qa-only-real-godot-rsa-verification.log 2>&1 || {
+              cat qa-results/qa-only-real-godot-rsa-verification.log
+              echo "::error::Godot production RSA signature protocol or actual PCK byte verification failed"
+              exit 1
+            }
+          cat qa-results/qa-only-real-godot-rsa-verification.log
+          grep -Fq 'PASS REAL PYTHON-OPENSSL GODOT OTA SIGNATURE + PCK BYTES' \
+            qa-results/qa-only-real-godot-rsa-verification.log
           timeout 90s "$GODOT" --headless --path logic-qa/apk176-export-fixture \
             --script res://verify_real_apk_script.gd > qa-results/apk176-export-override.log 2>&1 || {
               cat qa-results/apk176-export-override.log
