@@ -7,6 +7,8 @@ const WORLDX_TERRAIN := "res://hd2d/worldx/worldx_000.png"
 const WORLDX_TERRAIN_ALT := "res://hd2d/worldx/worldx_001.png"
 var worldx_map_sprite: Sprite2D
 var alt_map := false
+var worldx_hotspots: Array[Dictionary] = []
+var hotspot_labels: Node2D
 var panel: Control
 var art_world: Node2D
 var cam_offset := Vector2(0.0, 0.0)
@@ -96,6 +98,10 @@ func _add_worldx_surface() -> void:
 	tile.scale = Vector2(1.25, 1.25)
 	art_world.add_child(tile)
 	worldx_map_sprite = tile
+	hotspot_labels = Node2D.new()
+	hotspot_labels.name = "WorldXInteractiveShops"
+	art_world.add_child(hotspot_labels)
+	_set_worldx_zones(0)
 
 func _toggle_worldx_map() -> void:
 	var path := WORLDX_TERRAIN_ALT if not alt_map else WORLDX_TERRAIN
@@ -106,6 +112,59 @@ func _toggle_worldx_map() -> void:
 		return
 	worldx_map_sprite.texture = ImageTexture.create_from_image(im)
 	alt_map = not alt_map
+	_set_worldx_zones(1 if alt_map else 0)
+
+func _set_worldx_zones(index: int) -> void:
+	worldx_hotspots.clear()
+	if hotspot_labels == null:
+		return
+	for marker in hotspot_labels.get_children():
+		marker.queue_free()
+	var json_path := "res://hd2d/worldx/zones_%03d.json" % index
+	if not FileAccess.file_exists(json_path):
+		return
+	var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string(json_path))
+	if not (parsed is Dictionary):
+		return
+	var zones: Variant = parsed.get("zones",[])
+	if not (zones is Array):
+		return
+	for zone in zones:
+		if not (zone is Dictionary):
+			continue
+		var bounds: Array = zone.get("rect",[])
+		if bounds.size() != 4:
+			continue
+		var position2 := Vector2(float(bounds[0]) + float(bounds[2])*0.5,
+				float(bounds[1]) + float(bounds[3])*0.5)
+		var marker := Label.new()
+		marker.text = "◆ " + str(zone.get("name","区域"))
+		marker.position = worldx_map_sprite.position + position2*worldx_map_sprite.scale
+		marker.add_theme_font_size_override("font_size",19)
+		marker.add_theme_color_override("font_color",Color("#f6df9e"))
+		marker.add_theme_color_override("font_shadow_color",Color("#1c2422"))
+		marker.add_theme_constant_override("shadow_offset_x",1)
+		marker.add_theme_constant_override("shadow_offset_y",1)
+		marker.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		hotspot_labels.add_child(marker)
+		worldx_hotspots.append({"rect":Rect2(worldx_map_sprite.position+
+			Vector2(float(bounds[0]),float(bounds[1]))*worldx_map_sprite.scale,
+			Vector2(float(bounds[2]),float(bounds[3]))*worldx_map_sprite.scale),
+			"name":str(zone.get("name","区域")),
+			"description":str(zone.get("description","")),
+			"actions":zone.get("actions",[])})
+
+func _worldx_interact(pointer: Vector2) -> bool:
+	var map_pointer: Vector2 = art_world.to_local(pointer)
+	for zone in worldx_hotspots:
+		if zone["rect"].has_point(map_pointer):
+			var available := PackedStringArray()
+			for action in zone["actions"]:
+				available.append(str(action.get("name","")))
+			_status.text = str(zone["name"]) + "：" + str(zone["description"]) + (
+					" | 可交互：" + "、".join(available) if available.size()>0 else "")
+			return true
+	return false
 
 func _add_worldx_npcs() -> void:
 	if not FileAccess.file_exists("res://hd2d/worldx/npcs/npcs.json"):
@@ -204,6 +263,14 @@ func _update_art_transform() -> void:
 func _unhandled_input(event: InputEvent) -> void:
 	if not active:
 		return
+	if event is InputEventScreenTouch and event.pressed:
+		if _worldx_interact(event.position):
+			get_viewport().set_input_as_handled()
+			return
+	elif event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
+		if _worldx_interact(event.position):
+			get_viewport().set_input_as_handled()
+			return
 	if event is InputEventScreenDrag:
 		cam_offset += event.relative
 		_update_art_transform()
