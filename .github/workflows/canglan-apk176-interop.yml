@@ -123,6 +123,21 @@ jobs:
             exit 1
           fi
           echo 'PASS isolated real APK176 bytecode overlay QA; RSA signing and Android-phone QA still required'
+          sha256sum "$CANGLAN_QA_PCK_PATH" > qa-results/unsigned-ota177-qa-only.sha256
+      - name: Save checked unsigned 3-file PCK candidate for independent private signing gate
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: NOT-FOR-PHONE-unsigned-apk176-ota177-QA-${{ github.sha }}
+          path: |
+            qa-results/unsigned-apk176-interop-QA-ONLY.pck
+            qa-results/unsigned-ota177-qa-only.sha256
+            qa-results/ota177-exact-entry-audit.log
+            qa-results/qa-only-real-godot-rsa-verification.log
+            qa-results/apk176-export-override.log
+          if-no-files-found: error
+          retention-days: 7
+          compression-level: 0
       - name: Preserve inspection proof (never upload the signed APK itself)
         if: always()
         uses: actions/upload-artifact@v4
