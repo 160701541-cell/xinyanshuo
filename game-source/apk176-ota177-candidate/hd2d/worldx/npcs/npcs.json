@@ -1,0 +1,242 @@
+{
+  "source": "https://github.com/YGYOOO/WorldX",
+  "license": "MIT",
+  "source_world": "world_2026-04-19T08-31-24",
+  "characters": [
+    {
+      "id": "char_1776587555212",
+      "name": "王掌柜",
+      "description": "当铺掌柜，头戴灰色软巾，穿藏青色粗布长袍，腰间挂着铜制钥匙串，手上戴着玉扳指。",
+      "sheet": "npc_00.png",
+      "frame_width": 170,
+      "frame_height": 204,
+      "columns": 6,
+      "rows": 5,
+      "animations": {
+        "walk-left": {
+          "start": 0,
+          "end": 5,
+          "frameRate": 8
+        },
+        "walk-down": {
+          "start": 6,
+          "end": 11,
+          "frameRate": 8
+        },
+        "walk-up": {
+          "start": 12,
+          "end": 17,
+          "frameRate": 8
+        },
+        "idle-front": {
+          "frame": 18
+        },
+        "idle-back": {
+          "frame": 19
+        },
+        "idle-left": {
+          "frame": 20
+        }
+      },
+      "sha256": "2dd85a05c461753b62c58a1b67add03611c376089bfc032f14bc3b7d17dec9d5",
+      "origin": "world_2026-04-19T08-31-24/characters/char_1776587555212/spritesheet.png",
+      "source_metadata": "world_2026-04-19T08-31-24/characters/char_1776587555212/metadata.json"
+    },
+    {
+      "id": "char_1776587577456",
+      "name": "李半仙",
+      "description": "算命先生，头戴黑色方巾，穿灰蓝色道袍，留山羊胡，手里握着拂尘。",
+      "sheet": "npc_01.png",
+      "frame_width": 170,
+      "frame_height": 204,
+      "columns": 6,
+      "rows": 5,
+      "animations": {
+        "walk-left": {
+          "start": 0,
+          "end": 5,
+          "frameRate": 8
+        },
+        "walk-down": {
+          "start": 6,
+          "end": 11,
+          "frameRate": 8
+        },
+        "walk-up": {
+          "start": 12,
+          "end": 17,
+          "frameRate": 8
+        },
+        "idle-front": {
+          "frame": 18
+        },
+        "idle-back": {
+          "frame": 19
+        },
+        "idle-left": {
+          "frame": 20
+        }
+      },
+      "sha256": "85de26e581ff69692a77d6912942e25a2627161512e92c4f9eca2a74ccb91299",
+      "origin": "world_2026-04-19T08-31-24/characters/char_1776587577456/spritesheet.png",
+      "source_metadata": "world_2026-04-19T08-31-24/characters/char_1776587577456/metadata.json"
+    },
+    {
+      "id": "char_1776587596844",
+      "name": "苏捕头",
+      "description": "女捕快，头戴黑色捕快帽，穿藏青色捕快公服，腰间挂着佩刀，束着高马尾，脚蹬黑布靴。",
+      "sheet": "npc_02.png",
+      "frame_width": 170,
+      "frame_height": 204,
+      "columns": 6,
+      "rows": 5,
+      "animations": {
+        "walk-left": {
+          "start": 0,
+          "end": 5,
+          "frameRate": 8
+        },
+        "walk-down": {
+          "start": 6,
+          "end": 11,
+          "frameRate": 8
+        },
+        "walk-up": {
+          "start": 12,
+          "end": 17,
+          "frameRate": 8
+        },
+        "idle-front": {
+          "frame": 18
+        },
+        "idle-back": {
+          "frame": 19
+        },
+        "idle-left": {
+          "frame": 20
+        }
+      },
+      "sha256": "5d0a7f97d02a82c8035d64c4a40b671512f4c48fb2e15502c76fa9ca3038ee45",
+      "origin": "world_2026-04-19T08-31-24/characters/char_1776587596844/spritesheet.png",
+      "source_metadata": "world_2026-04-19T08-31-24/characters/char_1776587596844/metadata.json"
+    },
+    {
+      "id": "char_1776587617698",
+      "name": "陈阿狗",
+      "description": "小偷，穿灰黑色粗布短打，衣着质朴，腰间挂着一个布包袱，看上去和普通市井百姓没有区别。",
+      "sheet": "npc_03.png",
+      "frame_width": 170,
+      "frame_height": 204,
+      "columns": 6,
+      "rows": 5,
+      "animations": {
+        "walk-left": {
+          "start": 0,
+          "end": 5,
+          "frameRate": 8
+        },
+        "walk-down": {
+          "start": 6,
+          "end": 11,
+          "frameRate": 8
+        },
+        "walk-up": {
+          "start": 12,
+          "end": 17,
+          "frameRate": 8
+        },
+        "idle-front": {
+          "frame": 18
+        },
+        "idle-back": {
+          "frame": 19
+        },
+        "idle-left": {
+          "frame": 20
+        }
+      },
+      "sha256": "be1a9f6b550bd3e5268ca473853b94f0d89739de81382f8b92702fb4a5b58453",
+      "origin": "world_2026-04-19T08-31-24/characters/char_1776587617698/spritesheet.png",
+      "source_metadata": "world_2026-04-19T08-31-24/characters/char_1776587617698/metadata.json"
+    },
+    {
+      "id": "char_1776587634160",
+      "name": "张老醉",
+      "description": "酒鬼，头发凌乱，穿洗得发白的蓝色短打，身上满是酒渍，手里拿着一个旧酒葫芦。",
+      "sheet": "npc_04.png",
+      "frame_width": 170,
+      "frame_height": 204,
+      "columns": 6,
+      "rows": 5,
+      "animations": {
+        "walk-left": {
+          "start": 0,
+          "end": 5,
+          "frameRate": 8
+        },
+        "walk-down": {
+          "start": 6,
+          "end": 11,
+          "frameRate": 8
+        },
+        "walk-up": {
+          "start": 12,
+          "end": 17,
+          "frameRate": 8
+        },
+        "idle-front": {
+          "frame": 18
+        },
+        "idle-back": {
+          "frame": 19
+        },
+        "idle-left": {
+          "frame": 20
+        }
+      },
+      "sha256": "8ef8439367d189945b16bbeadc0344acfb66ca493d4c0bf6d8e91e6b373ae4c2",
+      "origin": "world_2026-04-19T08-31-24/characters/char_1776587634160/spritesheet.png",
+      "source_metadata": "world_2026-04-19T08-31-24/characters/char_1776587634160/metadata.json"
+    },
+    {
+      "id": "char_1776587650050",
+      "name": "林小夏",
+      "description": "留着飘逸的长发，穿现代白色连衣裙，背着白色帆布包，手里拿着智能手机，衣着与古人完全不同。",
+      "sheet": "npc_05.png",
+      "frame_width": 170,
+      "frame_height": 204,
+      "columns": 6,
+      "rows": 5,
+      "animations": {
+        "walk-left": {
+          "start": 0,
+          "end": 5,
+          "frameRate": 8
+        },
+        "walk-down": {
+          "start": 6,
+          "end": 11,
+          "frameRate": 8
+        },
+        "walk-up": {
+          "start": 12,
+          "end": 17,
+          "frameRate": 8
+        },
+        "idle-front": {
+          "frame": 18
+        },
+        "idle-back": {
+          "frame": 19
+        },
+        "idle-left": {
+          "frame": 20
+        }
+      },
+      "sha256": "2e5c8e537c0e41ce985d457227e734a02bab58ac9e68bf8935a8c75572cdd9f7",
+      "origin": "world_2026-04-19T08-31-24/characters/char_1776587650050/spritesheet.png",
+      "source_metadata": "world_2026-04-19T08-31-24/characters/char_1776587650050/metadata.json"
+    }
+  ],
+  "visual_qa": "CANDIDATE"
+}
