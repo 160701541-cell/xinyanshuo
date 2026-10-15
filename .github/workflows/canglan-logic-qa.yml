@@ -42,6 +42,9 @@ jobs:
           mkdir -p logic-qa/assets/production/hd2d
           cp hd2d-assets/reference/han_male.png logic-qa/assets/production/hd2d/han_male.png
           cp hd2d-assets/reference/han_female.png logic-qa/assets/production/hd2d/han_female.png
+          for role in hero farmer woodsman merchant; do
+            cp "hd2d-assets/animated/${role}_walk.png" "logic-qa/assets/production/hd2d/${role}_walk.png"
+          done
           sha256sum logic-qa/assets/production/hd2d/*.png
       - name: Run real GDScript regression in engine
         shell: bash
