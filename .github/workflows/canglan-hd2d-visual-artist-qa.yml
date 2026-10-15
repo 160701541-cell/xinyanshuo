@@ -1,0 +1,68 @@
+name: Canglan Real CC0 Chinese Building & 2D Person Scene Review (Public Free)
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'asset-tools/hd2d/**'
+      - '.github/workflows/canglan-hd2d-visual-artist-qa.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  licensed-3d-building-and-2d-actor:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - name: Retrieve exact official CC0 model source archives and check SHA256
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 asset-tools/hd2d/fetch_cc0_chinese_art.py | tee art-sources.log
+      - name: Install free Blender renderer
+        shell: bash
+        run: |
+          sudo apt-get update -qq
+          sudo DEBIAN_FRONTEND=noninteractive apt-get install -y blender
+          blender --version | head -n 2
+      - name: Convert actual licensed architecture FBX to Godot-compatible GLB
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p qa-art/models
+          blender -b -noaudio --python asset-tools/hd2d/blender_import_chinese_art.py -- \
+            asset-tools/build/asset_intake qa-art/models \
+            > qa-art/convert.log 2>&1 || { tail -n 90 qa-art/convert.log; exit 1; }
+          tail -n 30 qa-art/convert.log
+          test -s qa-art/models/chinese_pavilion.glb
+          test -s qa-art/models/chinese_garden_wall_collection.glb
+          blender -b -noaudio --python asset-tools/hd2d/build_cc0_vernacular_house.py -- \
+            qa-art/models/chinese_pavilion.glb qa-art/models/mud_house.glb \
+            > qa-art/house-build.log 2>&1 || { tail -n 90 qa-art/house-build.log; exit 1; }
+          tail -n 25 qa-art/house-build.log
+          test -s qa-art/models/mud_house.glb
+          sha256sum qa-art/models/*.glb > qa-art/art-glb.sha256
+          echo 'PASS_CC0_CHINESE_GLBS_ACTUALLY_CONVERTED'
+      - name: Render neutral real-model-plus-actual-2D-figure review image
+        shell: bash
+        run: |
+          set -euo pipefail
+          blender -b -noaudio --python asset-tools/hd2d/render_house_review.py -- \
+            qa-art/models/mud_house.glb hd2d-assets/reference/han_male.png qa-art/godot-art-review-3d-scene-2d-figure.png \
+            > qa-art/render.log 2>&1 || { tail -n 100 qa-art/render.log; exit 1; }
+          grep -Fq 'PASS_REAL_CC0_CHINESE_BUILDING_AND_2D_PERSON_REVIEW_FRAME' qa-art/render.log
+          test -s qa-art/godot-art-review-3d-scene-2d-figure.png
+          echo 'PASS_LICENSED_3D_CHINESE_HOUSE_2D_PERSON_SCREENSHOT_BUT_NOT_A_PLAYABLE_GAME'
+      - name: Keep GLBs, source SHA and real Blender review screenshot
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: Chinese-HD2D-CC0-Actual-Architecture-Model-And-Review
+          path: |
+            qa-art/
+            asset-tools/build/asset_intake/intake.json
+            art-sources.log
+          if-no-files-found: warn
+          retention-days: 14
