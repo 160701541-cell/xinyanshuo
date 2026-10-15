@@ -7,6 +7,7 @@ const FILES := {
 	"res://scenes/main_hd2d_ota177.tscn": "scenes/main_hd2d_ota177.tscn",
 	"res://scripts/hd2d_original_overlay_ota177.gd": "scripts/hd2d_original_overlay_ota177.gd",
 	"res://scripts/hd2d_stone_road.gd": "scripts/hd2d_stone_road.gd",
+	"res://scripts/hd2d_worldx_npcs.gd": "scripts/hd2d_worldx_npcs.gd",
 	"res://hd2d/atlas_village_ota177.jpg": "hd2d/atlas_village_ota177.jpg"
 }
 
@@ -27,6 +28,13 @@ func _initialize() -> void:
 		var rel: String = "hd2d/worldx/worldx_%03d.png" % i
 		if FileAccess.file_exists(base.path_join(rel)):
 			source_list["res://" + rel] = rel
+	var npc_manifest: String = base.path_join("hd2d/worldx/npcs/npcs.json")
+	if FileAccess.file_exists(npc_manifest):
+		source_list["res://hd2d/worldx/npcs/npcs.json"] = "hd2d/worldx/npcs/npcs.json"
+		for i in range(16):
+			var rel: String = "hd2d/worldx/npcs/npc_%02d.png" % i
+			if FileAccess.file_exists(base.path_join(rel)):
+				source_list["res://" + rel] = rel
 	for target in source_list:
 		var src: String = base.path_join(source_list[target])
 		if not FileAccess.file_exists(src):
@@ -42,5 +50,5 @@ func _initialize() -> void:
 		printerr("BLOCKED: PCK flush failed")
 		quit(6)
 		return
-	print("PASS ORIGINAL APK176 HD2D CANDIDATE PCK BUILT: FIVE OR SIX FILES, NOT SIGNED")
+	print("PASS ORIGINAL APK176 HD2D CANDIDATE PCK BUILT: REAL WORLDX RASTER AND NPC ASSETS, NOT SIGNED")
 	quit(0)
