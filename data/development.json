@@ -7,6 +7,7 @@
   "synced_at": "2026-10-14T19:49:23Z",
   "public_note": "开发工作日志不是签名游戏更新日志；未发布功能可能写在这里。隐去密钥与内部配置。",
   "entries": [
+    {"id":"dev-20261015-first-inworld-clay-qa","date":"2026-10-15","title":"可交互河岸黏土与工艺工单进入Work候选","body":"已提交有限泥源场景、采泥操作与陶罐混料按钮。原字节源码在独立Godot4.4.1测试中通过17项采集测试、338项贴地3D几何测试；16项Work源代码交互约束审查通过。尚未跑原完整游戏/安卓，未发布。","source_status":"isolated-Godot-pass_full-game-blocked"},
     {
       "id": "dev-20261015-work-aligned-craft-source-ownership",
       "date": "2026-10-15",
