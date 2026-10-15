@@ -31,9 +31,11 @@ def find_images(root:pathlib.Path):
             continue
         found.append(p)
     return sorted(found, key=lambda p:(0 if "map" in p.parts else 1, "sprite" in p.name.lower(), str(p)))
-def convert(root:pathlib.Path, out:pathlib.Path, limit:int):
+def convert(root:pathlib.Path, out:pathlib.Path, limit:int, map_only:bool=False):
     root=root.resolve();out.mkdir(parents=True,exist_ok=True)
     candidates=find_images(root)
+    if map_only:
+        candidates=[p for p in candidates if "map" in p.parts]
     if not candidates:
         raise ValueError("WorldX input has NO real raster assets; refusing synthetic or fake results")
     selected=candidates[:limit]
@@ -61,4 +63,4 @@ if __name__=="__main__":
     ap.add_argument("--limit",type=int,default=12)
     args=ap.parse_args()
     assert 1<=args.limit<=64
-    convert(args.source,args.out,args.limit)
+    convert(args.source,args.out,args.limit,args.map_only)
