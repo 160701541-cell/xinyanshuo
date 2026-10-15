@@ -17,7 +17,7 @@ concurrency:
 
 jobs:
   audited-modules:
-    name: Godot 4.4.1 input, locomotion and identity QA (NOT full game)
+    name: Godot 4.4.1 two-thumb input, locomotion and identity QA (NOT full game)
     runs-on: ubuntu-latest
     timeout-minutes: 12
     steps:
@@ -45,8 +45,9 @@ jobs:
             [entity_codes]='PASS CANG LAN ENTITY CODES REAL GODOT'
             [touch_look_router]='PASS combat touch router:'
             [character_locomotion]='PASS: humanoid rig relaxes arms'
+            [two_thumb_input]='PASS CANG LAN SIMULTANEOUS TWO THUMB TOUCH'
           )
-          for module in entity_codes touch_look_router character_locomotion; do
+          for module in entity_codes touch_look_router character_locomotion two_thumb_input; do
             timeout 120s "$GODOT" --headless --path logic-qa \
               --script "res://tests/${module}_test.gd" \
               > "qa-results/${module}.log" 2>&1
@@ -61,7 +62,7 @@ jobs:
             echo 'BLOCKED: Godot resource import failed'
             exit 1
           fi
-          echo 'PASS: 3 audited real game modules (identity, touch control, skeletal walk), NOT full game QA'
+          echo 'PASS: 4 real Godot test suites (identity, right-look, skeletal walking, simultaneous two-thumb control), NOT full game QA'
       - name: Save evidence even when QA fails
         if: always()
         uses: actions/upload-artifact@v4
