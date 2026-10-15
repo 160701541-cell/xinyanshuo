@@ -135,5 +135,16 @@ class GraphTests(unittest.TestCase):
                   'station':'table','unlock':{'mode':'known'}})
             self.change(mutate)
 
+    def test_real_workstation_provenance_contract_is_fail_closed(self):
+        from station_contract import inspect
+        source = CATALOG.parent / 'station_provenance.v1.json'
+        data = json.loads(source.read_text(encoding='utf-8'))
+        report = inspect(self.graph, data)
+        self.assertEqual(report['worldstate_station_grants'], 0)
+        self.assertEqual(report['unrealized_facility_types'], report['facility_types'])
+        self.assertFalse(report['release_approved'])
+        for facility in report['facility_review'].values():
+            self.assertTrue(facility['state'].startswith('BLOCKED'))
+
 if __name__=='__main__':
     unittest.main()
