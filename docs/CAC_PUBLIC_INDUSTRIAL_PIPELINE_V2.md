@@ -34,3 +34,10 @@
 - 新增 `tools/asset_factory/audit_candidates.py`：读取候选清单，核验唯一ID、候选状态、相对路径安全、文件存在、RGBA PNG、最小像素尺寸、透明通道、边缘触碰、SHA256，输出 `technical_qa.json` 并在不合格时返回非零退出码。
 - `TECH_ONLY_PASS` 仅代表候选基础技术检查通过；无法证明没有残底、邻格、文字、透视错误及风格不统一，仍必须人工视觉审核；始终保持 `production_approved_count=0`。
 - 回归用例 `tools/asset_factory/test_audit_candidates.py` 涵盖正常候选、纯不透明、触边、路径逃逸和伪造批准；真实拼版/模型/Godot/Android仍须单独留证。
+
+
+## 7. CAC-0003 新手村缺口补齐：完整需求树（2026-10-16）
+- 新增 `tools/asset_factory/starter_village_catalog.py`，将地形/建筑/建筑拆件/植被/生活道具/NPC/装备纳入统一稳定原型ID与具体状态/动作方向的任务图。独立世界PNG与同原型背包图标各有明确目标路径；门开关、灯笼亮灭、树木四季、建筑受损和8方向角色动作均列入。
+- 新增 `test_starter_village_catalog.py` 约束ID唯一性、类别覆盖、状态一致性，以及所有新条目保持 `SPEC_ONLY` 未批准，防止规格冒充交付素材。
+- 执行方式：`python tools/asset_factory/starter_village_catalog.py`；`python -m unittest discover -s tools/asset_factory -p 'test_starter_village_catalog.py'`。**尚未取得本轮运行日志，测试PENDING**。
+- 此步骤只补齐需求/产线输入数据结构，**没有生成任何PNG、人物动画、Godot场景或Android补丁**；所有视觉/导入/实机门禁继续BLOCKED。必须以真实素材、运行报告和真机证据逐级放行。
