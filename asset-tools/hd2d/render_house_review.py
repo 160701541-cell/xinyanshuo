@@ -73,7 +73,11 @@ camera=bpy.context.object
 look=center-Vector((0,0,dims.z*.15))
 camera.rotation_euler=(look-camera.location).to_track_quat("-Z","Y").to_euler()
 camera.data.type="ORTHO"
-camera.data.ortho_scale=max(dims.x,dims.y)*2.0
+# Include *height*, not just plan footprint. Otherwise long glTF hierarchy
+# bounds crop the roof/building offscreen while still producing a green CI.
+camera.data.ortho_scale=max(dims.x * 2.3, dims.y * 2.3, dims.z * 1.85)
+print("REVIEW_CAMERA_BOUNDS", [round(v,2) for v in dims],
+      "ortho=", round(camera.data.ortho_scale,2))
 bpy.context.scene.camera=camera
 # Face actor plane toward the camera yaw.
 actor.rotation_euler[2]=(camera.location.xy-actor.location.xy).angle_signed(Vector((0,-1))) if False else math.atan2(camera.location.y-actor.location.y,camera.location.x-actor.location.x) + math.pi/2
