@@ -88,7 +88,7 @@ def run():
             signed = subprocess.run(
                 [str(apksigner), "verify", "--verbose", "--print-certs", str(local)],
                 capture_output=True, text=True, timeout=75, check=True)
-            digests = re.findall(r"Signer #\\d+ certificate SHA-256 digest: ([0-9a-fA-F]{64})",
+            digests = re.findall(r"Signer #\d+ certificate SHA-256 digest: ([0-9a-fA-F]{64})",
                                  signed.stdout)
             require(len(digests) == 1, "Expected exactly one APK signer certificate")
             require(digests[0].lower() == expected_cert, "APK signing certificate changed")
