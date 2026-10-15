@@ -41,6 +41,12 @@ jobs:
                       raise ValueError('zip bomb')
                   found.append({'name': n, 'size': entry.file_size})
               assert len(found)>=8
+              import struct
+              for ent in z.infolist():
+                  if ent.filename.endswith('.png') and '/Han/' in ent.filename and not ent.filename.startswith('__MACOSX/'):
+                      png=z.read(ent)
+                      dims=struct.unpack('>II',png[16:24]) if png[:8]==bytes.fromhex('89504e470d0a1a0a') else (0,0)
+                      print('HAN_PNG',ent.filename,dims, 'PNG_BYTES',len(png))
           Path('qa-art/art-list.json').write_text(json.dumps(found, indent=2, ensure_ascii=False))
           print('PASS_CC0_CHINESE_ART_ARCHIVE_UNPACKED_AND_LISTED',len(found))
           print(json.dumps(found, ensure_ascii=False, indent=2)[:14000])
