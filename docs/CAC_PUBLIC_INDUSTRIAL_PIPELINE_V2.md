@@ -47,3 +47,10 @@
 - 新增 `tools/asset_factory/starter_village_jobs.py`，把 `starter_village_catalog.py` 中的每一状态/角色方向需求转换为现有 `industrial_pipeline.py` 接受的 ComfyUI job 结构，独立写入 `starter_village_jobs.json`，不覆盖既有 `jobs.json`。
 - 新增 `test_starter_village_jobs.py` 测试队列覆盖、批次过滤、状态和未批准保护。命令：`python tools/asset_factory/starter_village_jobs.py --batch 2 --family terrain`；`python tools/asset_factory/industrial_pipeline.py --jobs tools/asset_factory/starter_village_jobs.json --dry-run`。只有安装并实际运行本地ComfyUI模型/API工作流后才能真正出图。
 - 新增步骤均保留 `PENDING_GENERATION / UNAPPROVED`。当前没有执行证据或GPU模型工作流，图像产量仍是零（本工序）；不能将生成队列声称为合格素材。
+
+
+## 9. CAC-0005 真实候选图清底工序与CI（2026-10-16）
+- 新增 `tools/asset_factory/candidate_cutout.py`：对实际传入的拼版裁切PNG进行保守清底；**只处理边缘均匀纯色背景**，拒绝四角明显不一致、主体触边、前景不明/背景占比异常的输入，已有透明通道原样保留；不使用插值伪装原生高清，也不冒充精细发丝/树叶抠图。
+- 工序保留输入manifest、原始图、SHA256追踪；在独立输出目录形成 `scene_candidate.png`、512图标候选、浅色/深色双底视觉预览、`candidate_manifest.json`，所有输出标记 `UNAPPROVED` 并要求人工检查光晕、透视、邻格、结构等。若源候选含伪造批准标记则拒绝。
+- 新增 `test_candidate_cutout.py` 覆盖白/黑背景、alpha保真、彩色背景不一致、空图拒绝、完整清单到实际PNG、路径越界、覆盖保护和伪审核，共9项。本地容器已执行此新模块的9项单元测试，全部PASS；**仅合成测试夹具，并非真实《苍岚》美术样张通过**。
+- 新增 `.github/workflows/canglan-asset-factory-qa.yml`，GitHub推送时运行整个asset_factory的unittest并生成2个真实任务的dry-run QA记录；云端结果需要单独确认。未接ComfyUI模型服务、未新增批准图像、未Godot真机场景集成。
