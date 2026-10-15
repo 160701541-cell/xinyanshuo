@@ -177,6 +177,28 @@ for i in range(22):
 cube("StoneDoorStep",(0,-32.4,1.0),(20,9.5,2.0),stone_light)
 cube("WornWoodThreshold",(0,-28.3,3.2),(19,3.6,2.4),timber)
 
+# CRITICAL visual fit: eaves must physically meet the frame, not float
+# 0.5-1m above the house because the source pavilion uses another origin.
+bpy.context.view_layer.update()
+roof_meshes = [ob for ob in roof.children_recursive if ob.type == "MESH"]
+if len(roof_meshes) < 35:
+    raise RuntimeError("CC0 Chinese roof lost authored structural details")
+lowest_roof_z = min((ob.matrix_world @ Vector(corner)).z
+                    for ob in roof_meshes for corner in ob.bound_box)
+target_eave_z = 31.5
+correction = target_eave_z - lowest_roof_z
+if abs(correction) > 45:
+    raise RuntimeError("Roof placement correction exceeds safe author units")
+roof.location.z += correction
+bpy.context.view_layer.update()
+aligned_roof_z = min((ob.matrix_world @ Vector(corner)).z
+                     for ob in roof_meshes for corner in ob.bound_box)
+if abs(aligned_roof_z - target_eave_z) > 0.15:
+    raise RuntimeError("Chinese roof remains detached from wall ceiling")
+print("PASS_CHINESE_ROOF_REAL_WALL_CONTACT",
+      "source_eave_z=",round(lowest_roof_z,2),"translation=",round(correction,2),
+      "aligned_eave_z=",round(aligned_roof_z,2),flush=True)
+
 outfile=target
 bpy.ops.export_scene.gltf(filepath=str(outfile),export_format="GLB",
                           use_selection=False,export_apply=True)
