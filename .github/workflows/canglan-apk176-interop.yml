@@ -5,6 +5,10 @@ on:
     branches: [main]
     paths:
       - 'tools/inspect_apk176_release.py'
+      - 'logic-qa/tools/build_touch_overlay.gd'
+      - 'logic-qa/tools/ota177_touch_router.remap'
+      - 'logic-qa/scripts/touch_look_router.gd'
+      - 'logic-qa/apk176-export-fixture/**'
       - '.github/workflows/canglan-apk176-interop.yml'
       - 'android-preview/base-latest.json'
       - 'android-preview/latest.json'
