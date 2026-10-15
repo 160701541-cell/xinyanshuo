@@ -3,6 +3,7 @@ extends CanvasLayer
 ## genuine world root, NOT a standalone APK, and never changes player saves.
 ## Revisions must be signed by the permanent original APK RSA key.
 const TILE_PATH := "res://hd2d/atlas_village_ota177.jpg"
+const WORLDX_TERRAIN := "res://hd2d/worldx/worldx_000.png"
 var panel: Control
 var art_world: Node2D
 var cam_offset := Vector2(0.0, 0.0)
@@ -34,6 +35,7 @@ func _build_visual() -> void:
 	art_world = Node2D.new()
 	art_world.name = "HD2DArtwork"
 	panel.add_child(art_world)
+	_add_worldx_surface()
 	_add_road()
 	var gui := VBoxContainer.new()
 	gui.position = Vector2(18.0, 16.0)
@@ -64,6 +66,27 @@ func _build_visual() -> void:
 	lighting.pressed.connect(_toggle_day_night)
 	gui.add_child(lighting)
 	_update_art_transform()
+
+func _add_worldx_surface() -> void:
+	# Reuse ACTUAL raster images from the MIT WorldX sample world.
+	# Never pretend this texture is independently authored Godot content.
+	if not FileAccess.file_exists(WORLDX_TERRAIN):
+		push_warning("WorldX raster absent: original landscape fallback")
+		return
+	var image := Image.new()
+	if image.load_png_from_buffer(FileAccess.get_file_as_bytes(WORLDX_TERRAIN)) != OK:
+		push_error("WorldX terrain image decode error")
+		return
+	var tex := ImageTexture.create_from_image(image)
+	if tex == null:
+		return
+	var tile := Sprite2D.new()
+	tile.name = "WorldXImportedWorldRaster"
+	tile.centered = false
+	tile.texture = tex
+	tile.position = Vector2(120.0, 70.0)
+	tile.scale = Vector2(1.25, 1.25)
+	art_world.add_child(tile)
 
 func _add_road() -> void:
 	var grass := Polygon2D.new()
