@@ -5,10 +5,10 @@
       "source": "world_2026-04-19T08-31-24/map/06-background.png",
       "target": "worldx_000.png",
       "size": [
-        1024,
-        572
+        2048,
+        1143
       ],
-      "sha256": "0fc33ceed80b13acac901c68b7b3c24d2d71f31bea92f5457d5e9f3aba688af3",
+      "sha256": "352124cc72e79196f1415be4d1b3857da979b138681394df85ac3462506f580d",
       "provenance": "real MIT WorldX pixels, max 2048 long edge, no invented imagery",
       "godot_path": "res://hd2d/worldx/worldx_000.png"
     },
@@ -16,10 +16,10 @@
       "source": "world_2026-04-19T17-12-41/map/06-background.png",
       "target": "worldx_001.png",
       "size": [
-        1024,
-        572
+        2048,
+        1143
       ],
-      "sha256": "204c2cb5338295388952c98ea0aea7b2605731e29bf7db5ba5c15ef425a350cc",
+      "sha256": "6ef7f103b029fa669bf3352b425dbdb1aa42d07a0899a1c6c9b5dbb58175e77b",
       "provenance": "real MIT WorldX pixels, max 2048 long edge, no invented imagery",
       "godot_path": "res://hd2d/worldx/worldx_001.png"
     }

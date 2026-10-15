@@ -2,8 +2,8 @@
   "source_map": "world_2026-04-19T17-12-41/map/06-background.png",
   "image": "worldx_001.png",
   "image_size": [
-    1024,
-    572
+    2048,
+    1143
   ],
   "zones": [
     {
@@ -12,10 +12,10 @@
       "description": "Open public space at the village core with the grand hero statue as its centerpiece.",
       "kind": "region",
       "rect": [
-        413.8,
-        190.7,
-        196.5,
-        202.6
+        827.5,
+        381.0,
+        392.9,
+        404.8
       ],
       "actions": [
         {
@@ -31,10 +31,10 @@
       "description": "West-side workshop where the blacksmith once forged the hero's legendary sword, now makes household cutlery.",
       "kind": "region",
       "rect": [
-        139.9,
-        186.9,
-        181.6,
-        168.3
+        279.8,
+        373.6,
+        363.2,
+        336.4
       ],
       "actions": [
         {
@@ -50,10 +50,10 @@
       "description": "East-side small cottage where the healer once treated wounded adventurers, now sits mostly unused.",
       "kind": "region",
       "rect": [
-        717.4,
-        186.9,
-        199.4,
-        156.4
+        1434.8,
+        373.6,
+        398.9,
+        312.5
       ],
       "actions": [
         {
