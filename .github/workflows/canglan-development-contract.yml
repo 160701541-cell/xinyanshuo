@@ -152,7 +152,14 @@ jobs:
             > godot-crafting-adversarial.log 2>&1 || { cat godot-crafting-adversarial.log; exit 1; }
           cat godot-crafting-adversarial.log
           grep -Fq 'PASS_GODOT_4_4_1_FAIL_CLOSED_CRAFT_CATALOG_10_CORRUPTIONS' godot-crafting-adversarial.log
-          if grep -E 'SCRIPT ERROR:|Parse Error:|Assertion failed|ERROR:|FAIL_ADVERSARIAL' godot-crafting-adversarial.log; then
+          # One deliberately malformed JSON fixture must produce the known Godot
+          # parser diagnostic. Whitelist that exact expected diagnostic ONLY;
+          # any other engine error or assertion remains a CI failure.
+          if grep -E 'SCRIPT ERROR:|Parse Error:|Assertion failed|FAIL_ADVERSARIAL' godot-crafting-adversarial.log; then
+            exit 1
+          fi
+          test "$(grep -c '^ERROR: Parse JSON failed\.' godot-crafting-adversarial.log)" -eq 1
+          if grep '^ERROR:' godot-crafting-adversarial.log | grep -v '^ERROR: Parse JSON failed\.'; then
             exit 1
           fi
       - name: Capture actual 1280x720 Godot OpenGL craft UI image
