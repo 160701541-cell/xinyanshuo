@@ -1,0 +1,56 @@
+name: Canglan APK176 - Real Published Binary and OTA Revision Check (Free)
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'tools/inspect_apk176_release.py'
+      - '.github/workflows/canglan-apk176-interop.yml'
+      - 'android-preview/base-latest.json'
+      - 'android-preview/latest.json'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: canglan-apk176-interop-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  signed-base-inspection:
+    name: Verify real APK176 bytes, Godot pack layout, update revision (NOT phone QA)
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - name: Inspect actual HTTPS-distributed APK (no private tokens)
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p qa-results
+          python3 tools/inspect_apk176_release.py > qa-results/apk176-execution.log 2>&1 || {
+            cat qa-results/apk176-execution.log
+            echo "::error::Actual published APK identity / embedded pack inspection failed; do not ship."
+            exit 1
+          }
+          cat qa-results/apk176-execution.log
+          python3 - <<'PY'
+          import json
+          result = json.load(open("qa-results/apk176-inspection.json"))
+          assert result["published_apk_verified"] is True, "APK byte hash unverified"
+          assert result["godot_pack_detected"] is True, "No real Godot pack identified"
+          assert result["minimum_acceptable_next_pck"] > result["apk_code"] - 1000
+          print("PASS_REAL_PUBLISHED_APK176_BYTES_AND_PACK; minimum OTA revision",
+                result["minimum_acceptable_next_pck"])
+          PY
+      - name: Preserve inspection proof (never upload the signed APK itself)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: published-apk176-byte-inspection-${{ github.sha }}
+          path: |
+            qa-results/apk176-execution.log
+            qa-results/apk176-inspection.json
+          if-no-files-found: warn
+          retention-days: 7
