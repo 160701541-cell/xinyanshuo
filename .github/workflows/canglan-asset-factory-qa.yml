@@ -1,0 +1,59 @@
+name: Canglan HD2D Asset Factory - Candidate QA
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'tools/asset_factory/**'
+      - '.github/workflows/canglan-asset-factory-qa.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: canglan-hd2d-asset-factory-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  candidate-source-qa:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install pixel-processing dependency
+        run: python -m pip install 'Pillow>=10,<13'
+      - name: Compile all asset pipeline modules
+        run: python -m compileall -q tools/asset_factory
+      - name: Run candidate, catalog, and safety regressions
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m unittest discover -s tools/asset_factory -p 'test_*.py' -v 2>&1 | tee asset-factory-tests.log
+      - name: Produce two genuinely scheduled, NOT generated, tile jobs
+        shell: bash
+        run: |
+          set -euo pipefail
+          python tools/asset_factory/starter_village_jobs.py --family terrain --batch 2 --out /tmp/canglan-first-two-jobs.json
+          python tools/asset_factory/industrial_pipeline.py --jobs /tmp/canglan-first-two-jobs.json --dry-run > asset-factory-dryrun.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          jobs=json.loads(Path('/tmp/canglan-first-two-jobs.json').read_text())
+          results=json.loads(Path('tools/asset_factory/run_report.json').read_text())
+          assert len(jobs)==len(results)==2
+          assert all(j['quality_gate']=='UNAPPROVED' for j in jobs)
+          assert all(r['status']=='PENDING_GENERATION' for r in results)
+          assert not any(r['status'] in ('APPROVED','RELEASED') for r in results)
+          print('PASS: 2 generation jobs queued, 0 PNG generated, 0 approved')
+          PY
+      - name: Archive source-only QA evidence (NOT game art)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: canglan-asset-factory-source-qa-${{ github.sha }}
+          path: |
+            asset-factory-tests.log
+            asset-factory-dryrun.json
+            tools/asset_factory/run_report.json
+          retention-days: 7
+          if-no-files-found: warn
