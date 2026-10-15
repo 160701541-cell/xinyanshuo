@@ -51,7 +51,7 @@ def convert(root:pathlib.Path, out:pathlib.Path, limit:int, map_only:bool=False)
             img.save(dst,optimize=True)
             manifest["assets"].append({"source":str(p.relative_to(root)),"target":name,
                 "size":list(img.size),"sha256":hashlib.sha256(dst.read_bytes()).hexdigest(),
-                "provenance":"copied pixels from WorldX raster, scaled if necessary",
+                "provenance":"real MIT WorldX pixels, max 2048 long edge, no invented imagery",
                 "godot_path":f"res://hd2d/worldx/{name}"})
     (out/"manifest.json").write_text(json.dumps(manifest,ensure_ascii=False,indent=2)+"\n")
     print(f"PASS_WORLDX_ACTUAL_RASTER_IMPORT count={len(manifest['assets'])}")
