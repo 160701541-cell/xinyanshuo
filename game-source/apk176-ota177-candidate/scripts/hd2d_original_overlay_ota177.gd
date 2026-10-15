@@ -51,7 +51,10 @@ func _build_visual() -> void:
 	gui.add_child(header)
 	_status = Label.new()
 	_status.text = "读取资源补丁中的村镇贴图……"
-	gui.add_child(_status)
+		gui.add_child(_status)
+	_interaction_actions = HBoxContainer.new()
+	_interaction_actions.name = "WorldXSceneActions"
+	gui.add_child(_interaction_actions)
 	var switch := Button.new()
 	switch.text = "返回原世界 / 重新打开 HD2D"
 	switch.pressed.connect(func(): _set_visible(not active))
@@ -161,10 +164,24 @@ func _worldx_interact(pointer: Vector2) -> bool:
 			var available := PackedStringArray()
 			for action in zone["actions"]:
 				available.append(str(action.get("name","")))
-			_status.text = str(zone["name"]) + "：" + str(zone["description"]) + (
-					" | 可交互：" + "、".join(available) if available.size()>0 else "")
+			_status.text = str(zone["name"]) + "：" + str(zone["description"])
+			_show_worldx_actions(zone["actions"])
 			return true
 	return false
+
+func _show_worldx_actions(actions: Array) -> void:
+	if _interaction_actions == null:
+		return
+	for old in _interaction_actions.get_children():
+		old.queue_free()
+	for action in actions:
+		if not (action is Dictionary):
+			continue
+		var control := Button.new()
+		control.text = str(action.get("name","查看"))
+		var desc := str(action.get("description",""))
+		control.pressed.connect(func(): _status.text = control.text + "：" + desc)
+		_interaction_actions.add_child(control)
 
 func _add_worldx_npcs() -> void:
 	if not FileAccess.file_exists("res://hd2d/worldx/npcs/npcs.json"):
