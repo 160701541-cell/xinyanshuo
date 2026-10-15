@@ -51,7 +51,7 @@ func _build_visual() -> void:
 	gui.add_child(header)
 	_status = Label.new()
 	_status.text = "读取资源补丁中的村镇贴图……"
-		gui.add_child(_status)
+	gui.add_child(_status)
 	_interaction_actions = HBoxContainer.new()
 	_interaction_actions.name = "WorldXSceneActions"
 	gui.add_child(_interaction_actions)
