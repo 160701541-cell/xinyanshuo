@@ -17,7 +17,7 @@ OPTIONAL.update("hd2d/worldx/npcs/npc_%02d.png"%i for i in range(16))
 def names_only(raw):
     if raw[:4]!=b"GDPC":raise ValueError("No Godot PCK header")
     count=struct.unpack_from("<I",raw,0x60)[0]
-    if not 6<=count<=39:raise ValueError("Unbounded resource count")
+    if not 6<=count<=47:raise ValueError("Unbounded resource count")
     position=0x64
     result=set()
     for _ in range(count):
