@@ -24,12 +24,33 @@ static func prefix(kind: String) -> String:
 
 static func make(canonical_id: String, kind: String, region: String = REGION) -> String:
 	# canonical id is actor_000100, resource_000002, item_000023 or door_...
-	var suffix: String = canonical_id.get_slice("_", 1)
-	if not suffix.is_valid_int() or int(suffix) <= 0:
+	# _new_id() assigns a monotonic global number. Do not silently drop
+	# trailing canonical components or accept a signed / overlong number,
+	# as that can generate ambiguous public IDs for distinct entities.
+	var parts: PackedStringArray = canonical_id.split("_")
+	if parts.size() != 2 or parts[0].is_empty():
 		return ""
-	if region.is_empty() or region.length() > 12:
+	var canonical_prefix: String = parts[0]
+	for index in range(canonical_prefix.length()):
+		var cp: int = canonical_prefix.unicode_at(index)
+		if not ((cp >= 97 and cp <= 122) or (cp >= 48 and cp <= 57)):
+			return ""
+	var suffix: String = parts[1]
+	if suffix.is_empty() or suffix.length() > 8:
 		return ""
-	return "%s-%s-%08d" % [prefix(kind), region, int(suffix)]
+	for index in range(suffix.length()):
+		var digit: int = suffix.unicode_at(index)
+		if digit < 48 or digit > 57:
+			return ""
+	var serial: int = int(suffix)
+	if serial <= 0 or region.is_empty() or region.length() > 12:
+		return ""
+	for index in range(region.length()):
+		var ch: int = region.unicode_at(index)
+		var permitted: bool = (ch >= 65 and ch <= 90) or (ch >= 97 and ch <= 122) or (ch >= 48 and ch <= 57) or ch == 45 or ch == 95
+		if not permitted:
+			return ""
+	return "%s-%s-%08d" % [prefix(kind), region, serial]
 
 static func code_of(entity: Dictionary) -> String:
 	if not String(entity.get("public_code", "")).is_empty():
