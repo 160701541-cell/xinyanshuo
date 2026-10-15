@@ -108,3 +108,10 @@
 - GitHub Artifact：`NOT-FOR-PHONE-HD2D-ORIGINAL-APK176-CANDIDATE-` 开头的 QA PCK 与日志。**这是 unsigned candidate；不是可供手机安装的签名补丁**。
 - 原RSA密钥状况经 Actions 机密配置探测 `38819279400` 明确：已检查四个候选 Actions Secret 名称，配置数量 **0**，与 APK 原公钥匹配的签名能力 **FALSE**。这不是签名算法失败，而是当前公开仓库没有配置可用的**原密钥**，不能伪造。正式 `android-preview/latest.json` 仍保持 `rev167`；合法下一版最低 `rev177`。
 - **仍未完成**：原安装包的Android实机运行验证；高清青楼、客栈、宗门大殿、草房小院独立PNG替换（当前PCK仍使用公开旧候选图集）；RSA原私钥的安全注入与最终签名PCK发布。未达成前禁止宣传游戏手机已更新。
+
+## CAC-0018 · WorldX真图像已直接写入原版《苍岚》公开游戏素材目录（2026-10-16）
+- 本次不是只写规划：新增可执行 `tools/asset_factory/worldx_godot_bridge.py` 及正式 Actions 工序 `.github/workflows/canglan-worldx-apk176-content.yml`。从 WorldX 官方MIT源库真实样例 `library/worlds/**/map/*.png` 导入地图图像并转换为Godot读取的PNG，禁止将角色sheet混成地图纹理，记录每图来源、尺寸、SHA256；没有调用AI生成接口，不冒称新AI作品。
+- **实际写入公开仓库源文件**：`game-source/apk176-ota177-candidate/hd2d/worldx/worldx_000.png`（1,196,876字节）、`worldx_001.png`（954,094字节），以及 `manifest.json`、`UPSTREAM_LICENSE_AND_PROVENANCE.txt`。上游地图真实可用PNG只有2张，不能虚称已产出8张。WorldX复用入口增加到原游戏HD2D覆盖层 `scripts/hd2d_original_overlay_ota177.gd`。
+- 原版 APK176 PCK打包器已支持上述WorldX图和原游戏HD2D覆盖层，最终生成**7条**资源内容（若2张图均正常导入；以每次CI索引实测为准）；Godot PCK索引通过。实际WorldX任务 `38822623646` 在GitHub生成并把两张图真实推送到 `main`，不能把仅上传Actions Artifact当作发布。
+- **QA反证阻塞**：从真实 APK176 导出 `main.gdc` 与 `main.scn` 后，Godot的最小CI夹具因缺少原游戏全局类注册，打印 `CanglanValleyAtmosphere`、`CanglanGameHUD`、`WorldState` 等脚本Parse Error；因此 **不能判定原游戏完整启动成功**。已将 WorldX QA 改为解析出错即失败，并修复传统PCK QA过去的假绿色；这些失败是已发现缺口而非可交付实机版本。
+- **手机交付状态：未发布**。正式更新订阅仍为rev167。后续必须解决原导出主场景执行与正式发布通道，再把独立高清楼宇而非旧JPG图鉴导入后发布新版正式APK/PCK。
