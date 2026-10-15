@@ -7,8 +7,11 @@ func _initialize() -> void:
 		printerr("FAIL_OVERLAY: PCK file absent")
 		quit(2)
 		return
-	if ResourceLoader.exists("res://scripts/touch_look_router.gd"):
-		printerr("FAIL_OVERLAY: dirty test project already has the script")
+	# The installed/base project deliberately has a stale implementation.
+	# No ResourceLoader.load() before mounting: production UpdateMount also
+	# loads the signed pack during autoload initialization.
+	if not FileAccess.file_exists("res://scripts/touch_look_router.gd"):
+		printerr("FAIL_OVERLAY: missing deliberately stale base fixture")
 		quit(3)
 		return
 	if not ProjectSettings.load_resource_pack(pack, true):
@@ -29,5 +32,5 @@ func _initialize() -> void:
 		printerr("FAIL_OVERLAY: mounted script did not produce expected look")
 		quit(7)
 		return
-	print("PASS CANG LAN CLEAN-PROJECT PCK MOUNT (UNSIGNED QA, NOT APK INTEROP)")
+	print("PASS CANG LAN TEST PCK OVERRIDES STALE BASE SCRIPT (UNSIGNED QA, NOT APK INTEROP)")
 	quit(0)
