@@ -103,3 +103,10 @@
 - **实际CI**：公开`game-source/godot-craft-smoke/tests/interactive_codex_smoke.gd`加入查询/筛选/解锁显示/关闭测试。第一次[#38648567503](https://github.com/160701541-cell/xinyanshuo/actions/runs/38648567503)失败是测试脚本把`Panel`作为常量名遮挡Godot内置Panel，已经修复；第二次[#38648754706](https://github.com/160701541-cell/xinyanshuo/actions/runs/38648754706)失败是测试误以为“青瓦”只会命中瓦片一条，实际还应命中“青瓦屋面模块”，已经严格保留真实搜索逻辑并修正反例。第三次[#38648915175](https://github.com/160701541-cell/xinyanshuo/actions/runs/38648915175)等待最终真实报告；不能提前标PASS。
 - **付费Actions治理**：曾暂建私库draft PR#18用于Work交接，但PR触发旧有私人`pull_request`与`pull_request_target`工作流失败和消耗资源。**已立即关闭PR#18**、保留私有候选代码分支，停止PR触发；后续只在公开仓库跑隔离QA，不能再打开私人PR或推送触发旧Actions，直至迁移成功。
 - **开发方式**：真实代码/失败测试/恢复验证/工作日志均记录，绝不删测试求绿灯；下一步优先让隔离Godot UI跑通，再将按钮差异无冲突地移入Work最新世界，以用户实际手机为最终标准。
+
+## 2026-10-15 — 首个真实工坊工序前的防作弊门禁
+
+- 已新增版本化工坊实体来源候选 `game-source/data/craft/station_provenance.v1.json`；声明试验性混料容器、淘泥沉淀池、筛具、窑炉的设备/工序对应关系，**全部未通过真实产权/物理制造/美术审查，保持BLOCKED**。未登记工坊不能免费出现。
+- `tools/station_contract.py` 检查每道工序的工坊对应性、实体产权、合法摆放及冒充审美批准，并附8项故意篡改设备/权限的反例测试；已纳入原有公开图谱质量流水线。
+- [实际GitHub CI #38676906522](https://github.com/160701541-cell/xinyanshuo/actions/runs/38676906522) 已真实 **SUCCESS**：图谱与设备26项、工程调教16项、逐物品合同8项，共50项Python测试通过；独立Godot 4.4.1界面/非法工艺拒绝/1280×720真实桌面渲染通过。**真实手机世界、实体工坊、工单原子结算与新APK/PCK依旧没有通过。**
+- 复核发现旧 `WorldState.start_job` 部分工序只检查工具名称，不检查实物设备，故新工业系统不得直接复制旧漏洞。需先落地可制造的合法设备实体，然后才允许将`原料→半成品`写入现有WorldState事务。
