@@ -1,0 +1,42 @@
+name: Canglan PCK177 Site Gate Unit QA (Public Free Python)
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'logic-qa/release-gate/**'
+      - '.github/workflows/canglan-release-gate-qa.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  release-gate-regressions:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    steps:
+      - uses: actions/checkout@v4
+      - name: Execute actual copied candidate publisher guard regressions
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p qa-results
+          python3 -m unittest discover -s logic-qa/release-gate \
+            -p 'test_site_ota177_release_gate.py' -v \
+            > qa-results/release-gate-python.log 2>&1 || {
+              cat qa-results/release-gate-python.log
+              exit 1
+            }
+          cat qa-results/release-gate-python.log
+          grep -q 'Ran 6 tests' qa-results/release-gate-python.log
+          grep -q '^OK$' qa-results/release-gate-python.log
+          echo 'PASS: candidate site publisher gates only; no real RSA key and no OTA publication'
+      - name: Retain logs even on failure
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-gate-unit-log-${{ github.sha }}
+          path: qa-results/release-gate-python.log
+          if-no-files-found: warn
+          retention-days: 7
