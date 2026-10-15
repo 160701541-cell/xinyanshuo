@@ -124,6 +124,23 @@ jobs:
           grep -Fq 'HD2D_OTA_INDEX_ENTRY hd2d/worldx/worldx_000.png' qa-results/worldx-pck-index.log
           grep -Fq 'HD2D_OTA_INDEX_ENTRY hd2d/worldx/npcs/npc_00.png' qa-results/worldx-pck-index.log
           grep -Fq 'HD2D_OTA_INDEX_ENTRY hd2d/worldx/npcs/npcs.json' qa-results/worldx-pck-index.log
+      - name: Run actual WorldX 2D asset and animated NPC instantiation QA
+        shell: bash
+        env:
+          CANGLAN_QA_PCK_PATH: ${{ github.workspace }}/qa-results/canglan-rev177-worldx-UNSIGNED-QA-ONLY.pck
+        run: |
+          set -euo pipefail
+          timeout 75s /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless \
+            --path logic-qa --script res://tools/verify_worldx_npc_content.gd > qa-results/worldx-npc-runtime.log 2>&1 || {
+            cat qa-results/worldx-npc-runtime.log
+            exit 1
+          }
+          cat qa-results/worldx-npc-runtime.log
+          grep -Fq 'PASS_WORLDX_REAL_GAME_ASSETS' qa-results/worldx-npc-runtime.log
+          if grep -Eq 'SCRIPT ERROR:|Parse Error:|ERROR: Failed to load script' qa-results/worldx-npc-runtime.log; then
+            echo '::error::WorldX NPC script failed Godot QA'
+            exit 1
+          fi
       - name: Load original compiled main game with new WorldX texture PCK
         shell: bash
         env:
