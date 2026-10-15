@@ -22,8 +22,12 @@ func _initialize() -> void:
 		printerr("BLOCKED: cannot create PCK")
 		quit(3)
 		return
-	for target in FILES:
-		var src: String = base.path_join(FILES[target])
+	var source_list: Dictionary = FILES.duplicate()
+	var worldx_png: String = base.path_join("hd2d/worldx/worldx_000.png")
+	if FileAccess.file_exists(worldx_png):
+		source_list["res://hd2d/worldx/worldx_000.png"] = "hd2d/worldx/worldx_000.png"
+	for target in source_list:
+		var src: String = base.path_join(source_list[target])
 		if not FileAccess.file_exists(src):
 			printerr("BLOCKED: missing OTA asset ", src)
 			quit(4)
@@ -37,5 +41,5 @@ func _initialize() -> void:
 		printerr("BLOCKED: PCK flush failed")
 		quit(6)
 		return
-	print("PASS ORIGINAL APK176 HD2D CANDIDATE PCK BUILT: FIVE FILES, NOT SIGNED")
+	print("PASS ORIGINAL APK176 HD2D CANDIDATE PCK BUILT: FIVE OR SIX FILES, NOT SIGNED")
 	quit(0)
