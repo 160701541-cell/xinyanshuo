@@ -41,3 +41,9 @@
 - 新增 `test_starter_village_catalog.py` 约束ID唯一性、类别覆盖、状态一致性，以及所有新条目保持 `SPEC_ONLY` 未批准，防止规格冒充交付素材。
 - 执行方式：`python tools/asset_factory/starter_village_catalog.py`；`python -m unittest discover -s tools/asset_factory -p 'test_starter_village_catalog.py'`。**尚未取得本轮运行日志，测试PENDING**。
 - 此步骤只补齐需求/产线输入数据结构，**没有生成任何PNG、人物动画、Godot场景或Android补丁**；所有视觉/导入/实机门禁继续BLOCKED。必须以真实素材、运行报告和真机证据逐级放行。
+
+
+## 8. CAC-0004 需求树接入批量生成队列（2026-10-16）
+- 新增 `tools/asset_factory/starter_village_jobs.py`，把 `starter_village_catalog.py` 中的每一状态/角色方向需求转换为现有 `industrial_pipeline.py` 接受的 ComfyUI job 结构，独立写入 `starter_village_jobs.json`，不覆盖既有 `jobs.json`。
+- 新增 `test_starter_village_jobs.py` 测试队列覆盖、批次过滤、状态和未批准保护。命令：`python tools/asset_factory/starter_village_jobs.py --batch 2 --family terrain`；`python tools/asset_factory/industrial_pipeline.py --jobs tools/asset_factory/starter_village_jobs.json --dry-run`。只有安装并实际运行本地ComfyUI模型/API工作流后才能真正出图。
+- 新增步骤均保留 `PENDING_GENERATION / UNAPPROVED`。当前没有执行证据或GPU模型工作流，图像产量仍是零（本工序）；不能将生成队列声称为合格素材。
