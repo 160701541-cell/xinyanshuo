@@ -95,7 +95,11 @@ def run():
             if not result["godot_pack_detected"]:
                 print("APK_ASSETS_SAMPLE", json.dumps(result["assets_sample"], ensure_ascii=False))
                 print("APK_PACK_CANDIDATES", json.dumps(result["apk_pack_candidates"], ensure_ascii=False))
-                print("APK_FILENAMES_FIRST", json.dumps(names[:70], ensure_ascii=False))
+                print("APK_CONTROL_AND_BOOTSTRAP_ENTRIES", json.dumps(
+                    [n for n in names if any(term in n.lower() for term in
+                    ("touch_look", "build_info", "update_mount", "update_protocol",
+                     "project.binary", "project.godot", "androidmanifest"))], ensure_ascii=False)) 
+                print("APK_SCRIPT_ASSET_COUNT", sum(n.startswith("assets/scripts/") for n in names))
                 raise ValueError("APK176 Godot pack layout unresolved; release blocked")
             print("PASS_APK176_GODOT_PACK_FOUND")
     finally:
