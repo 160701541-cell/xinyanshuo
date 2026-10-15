@@ -3,6 +3,7 @@ extends Node2D
 ## These are QA candidates downloaded from the already public art library.
 ## No coupling to the inaccessible/private legacy game, APK, or signing keys.
 
+const Paving = preload("res://scripts/stone_road.gd")
 const ATLAS_URL := "https://160701541-cell.github.io/xinyanshuo/art-source/hd2d/batch-20261016/01_village_props_atlas_preview.jpg"
 const WORLD_SIZE := Vector2(1600.0, 1000.0)
 const OBJECTS := [
@@ -15,6 +16,7 @@ const OBJECTS := [
 var _camera: Camera2D
 var _status: Label
 var _night := false
+var _night_layer: ColorRect
 
 func _ready() -> void:
 	_camera = Camera2D.new()
@@ -35,13 +37,25 @@ func _create_scene() -> void:
 		Vector2(0.0, WORLD_SIZE.y)
 	])
 	add_child(ground)
-	var road := Polygon2D.new()
-	road.color = Color("#a99c88")
-	road.polygon = PackedVector2Array([
-		Vector2(0.0, 520.0), Vector2(1600.0, 520.0),
-		Vector2(1600.0, 660.0), Vector2(0.0, 660.0)
-	])
-	add_child(road)
+	# Actual repeatable native texture, not an atlas illustration posing as tiles.
+	# Same 256px texture is shared by every segment; edge colors join pixel-perfect.
+	var paving_texture: Texture2D = Paving.make_texture()
+	var road_group := Node2D.new()
+	road_group.name = "SeamlessStoneRoad"
+	add_child(road_group)
+	for col in range(7):
+		for row in range(2):
+			var segment := Sprite2D.new()
+			segment.name = "Paving_%02d_%02d" % [col, row]
+			segment.centered = false
+			segment.texture = paving_texture
+			segment.position = Vector2(float(col * Paving.SIZE), float(515 + row * Paving.SIZE))
+			road_group.add_child(segment)
+	var shoulder := Line2D.new()
+	shoulder.width = 12.0
+	shoulder.default_color = Color("#4f5545")
+	shoulder.points = PackedVector2Array([Vector2(0.0, 508.0), Vector2(1600.0, 508.0)])
+	add_child(shoulder)
 
 func _create_hud() -> void:
 	var ui := CanvasLayer.new()
@@ -63,7 +77,7 @@ func _create_hud() -> void:
 	)
 	column.add_child(toggle)
 	var note := Label.new()
-	note.text = "旧图集候选 · 尚未通过独立PNG质量验收 / 尚未发布APK"
+	note.text = "石砖路：程序生成真无缝纹理；其余图集候选未通过美术QA"
 	column.add_child(note)
 
 func _download_atlas() -> void:
