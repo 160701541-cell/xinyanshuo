@@ -117,7 +117,13 @@ func _add_worldx_npcs() -> void:
 	var npc_layer := Node2D.new()
 	npc_layer.name = "WorldXInWorldNPCs"
 	npc_layer.set_script(npc_class)
+	if npc_layer.has_signal("character_selected"):
+		npc_layer.character_selected.connect(_on_worldx_npc_selected)
 	art_world.add_child(npc_layer)
+
+func _on_worldx_npc_selected(_id: String, npc_name: String, description: String) -> void:
+	if _status != null:
+		_status.text = npc_name + "：" + description
 
 func _add_road() -> void:
 	# Reuse the native 256px seamless paving generator inside the ORIGINAL
