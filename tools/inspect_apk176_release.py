@@ -124,6 +124,17 @@ def run():
                         remap = entry.read(4096).decode("utf-8", errors="replace")
                     require("touch_look_router.gdc" in remap, "Android compiled script remap target missing")
                     result["touch_router_remap"] = remap.strip()[:350]
+                    # Written ONLY into the ephemeral runner's existing QA
+                    # fixture. No decoded APK binary is committed or uploaded.
+                    target_dir = Path("logic-qa/apk176-export-fixture/scripts")
+                    target_dir.mkdir(parents=True, exist_ok=True)
+                    for basename in ("touch_look_router.gdc", "touch_look_router.gd.remap"):
+                        member_name = "assets/scripts/" + basename
+                        member_info = apk.getinfo(member_name)
+                        require(0 < member_info.file_size < 2_000_000,
+                                "unexpected signed APK compiled script length")
+                        (target_dir / basename).write_bytes(apk.read(member_name))
+                    result["ephemeral_apk176_bytecode_fixture"] = True
                 result["godot_payload_detected"] = bool(
                     result["godot_pack_detected"] or result["godot_asset_tree_detected"]
                 )
