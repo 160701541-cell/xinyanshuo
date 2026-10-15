@@ -13,7 +13,9 @@ permissions:
 
 concurrency:
   group: canglan-real-logic-qa-${{ github.ref }}
-  cancel-in-progress: true
+  # Continuous development must not cancel an already-running regression.
+  # Keep one running plus the newest pending run; intermediate pushes coalesce.
+  cancel-in-progress: false
 
 jobs:
   audited-modules:
