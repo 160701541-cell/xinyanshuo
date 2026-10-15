@@ -90,6 +90,11 @@ def run():
                 capture_output=True, text=True, timeout=75, check=True)
             digests = re.findall(r"Signer #\d+ certificate SHA-256 digest: ([0-9a-fA-F]{64})",
                                  signed.stdout)
+            if len(digests) != 1:
+                print("APKSIGNER_CERTIFICATE_DIAGNOSTICS", json.dumps(
+                    [line.strip() for line in signed.stdout.splitlines()
+                     if "certificate" in line.lower() or "signer" in line.lower()][:25],
+                    ensure_ascii=False))
             require(len(digests) == 1, "Expected exactly one APK signer certificate")
             require(digests[0].lower() == expected_cert, "APK signing certificate changed")
             result["apk_cert_sha256"] = digests[0].lower()
