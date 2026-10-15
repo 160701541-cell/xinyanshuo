@@ -1,4 +1,4 @@
-name: Canglan - Real Godot Entity Identity QA (Free Public Runner)
+name: Canglan - Real Gameplay Logic QA (Free Public Runner)
 
 on:
   push:
@@ -16,8 +16,8 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  audited-entity-codes:
-    name: Godot 4.4.1 isolated module QA (NOT full game)
+  audited-modules:
+    name: Godot 4.4.1 input, locomotion and identity QA (NOT full game)
     runs-on: ubuntu-latest
     timeout-minutes: 12
     steps:
@@ -41,16 +41,27 @@ jobs:
           GODOT=/tmp/Godot_v4.4.1-stable_linux.x86_64
           "$GODOT" --headless --editor --path logic-qa --import \
             > qa-results/import.log 2>&1
-          timeout 120s "$GODOT" --headless --path logic-qa \
-            --script res://tests/entity_codes_test.gd \
-            > qa-results/entity_codes.log 2>&1
-          cat qa-results/entity_codes.log
-          grep -Fq 'PASS CANG LAN ENTITY CODES REAL GODOT' qa-results/entity_codes.log
-          if grep -Eq 'SCRIPT ERROR:|Parse Error:|Parser Error:|Assertion failed|Failed to load script' qa-results/import.log qa-results/entity_codes.log; then
-            echo 'BLOCKED: Godot reported script or import errors'
+          declare -A markers=(
+            [entity_codes]='PASS CANG LAN ENTITY CODES REAL GODOT'
+            [touch_look_router]='PASS combat touch router:'
+            [character_locomotion]='PASS: humanoid rig relaxes arms'
+          )
+          for module in entity_codes touch_look_router character_locomotion; do
+            timeout 120s "$GODOT" --headless --path logic-qa \
+              --script "res://tests/${module}_test.gd" \
+              > "qa-results/${module}.log" 2>&1
+            cat "qa-results/${module}.log"
+            grep -Fq "${markers[$module]}" "qa-results/${module}.log"
+            if grep -Eq 'SCRIPT ERROR:|Parse Error:|Parser Error:|Assertion failed|Failed to load script' "qa-results/${module}.log"; then
+              echo "BLOCKED: Godot reported errors in $module"
+              exit 1
+            fi
+          done
+          if grep -Eq 'SCRIPT ERROR:|Parse Error:|Parser Error:|Assertion failed|Failed to load script' qa-results/import.log; then
+            echo 'BLOCKED: Godot resource import failed'
             exit 1
           fi
-          echo 'PASS: only audited entity identity module, not full game QA'
+          echo 'PASS: 3 audited real game modules (identity, touch control, skeletal walk), NOT full game QA'
       - name: Save evidence even when QA fails
         if: always()
         uses: actions/upload-artifact@v4
