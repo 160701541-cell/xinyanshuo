@@ -16,7 +16,7 @@ meshes=[o for o in bpy.context.scene.objects if o.type=="MESH"]
 assert meshes, "No real Chinese building meshes"
 # Same FBX author-units -> Godot metres conversion as WorldVisualBinding.
 for obj in bpy.context.scene.objects:
-    if obj.type != "CAMERA" and obj.type != "LIGHT":
+    if obj.parent is None and obj.type != "CAMERA" and obj.type != "LIGHT":
         obj.scale *= 0.1
 bpy.context.view_layer.update()
 for o in meshes:
