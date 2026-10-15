@@ -1,0 +1,32 @@
+{
+  "schema": 1,
+  "source_repository": "160701541-cell/canglan-world",
+  "source_branch": "main",
+  "scope": "isolated_logic_qa_not_full_game",
+  "modules": {
+    "scripts/entity_codes.gd": {
+      "source_path": "godot3d/scripts/entity_codes.gd",
+      "source_blob_sha1": "7d82d7de396208c799d4e5bac23741d1d436a71e"
+    },
+    "scripts/touch_look_router.gd": {
+      "source_path": "godot3d/scripts/touch_look_router.gd",
+      "source_blob_sha1": "0d5e0d0925eb50bf75fd0bd0631ab2ccf34aa831"
+    },
+    "scripts/character_locomotion.gd": {
+      "source_path": "godot3d/scripts/character_locomotion.gd",
+      "source_blob_sha1": "11fb7e431afea0dcf0f19a011bd64dce7a96d605"
+    },
+    "scripts/ancient_touch_joystick.gd": {
+      "source_path": "godot3d/scripts/ancient_touch_joystick.gd",
+      "source_blob_sha1": "cd7541119a1c9ce189204d51a3db060be3b6c887"
+    },
+    "tests/touch_look_router_test.gd": {
+      "source_path": "godot3d/tests/touch_look_router_test.gd",
+      "source_blob_sha1": "7b5948a67067a5ba63a69aac96ae2408d749e67e"
+    },
+    "tests/character_locomotion_test.gd": {
+      "source_path": "godot3d/tests/character_locomotion_test.gd",
+      "source_blob_sha1": "f1c66754b7eeecc342e9c2a085e973c62156b7a0"
+    }
+  }
+}
