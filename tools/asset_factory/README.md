@@ -71,3 +71,7 @@ python -m unittest discover -s tools/asset_factory -p 'test_*.py' -v
 ```
 
 每件独立输出 `scene_candidate.png`、`icon_candidate.png`、`visual_review_preview.png`（浅色与深色底检查），目录清单记录来源与图像SHA256及清底算法指标。拒绝复杂纹理、边框沾色、主体触边及不明确底色；拒绝项按 `BLOCKED` 留在清单中，**不自动通过**。二值边缘清底仍可能留下发丝/植被光晕或损失接近背景的细节，必须人工复核；技术审核通过也绝不自动上架游戏。地形铺片允许触碰边界，不适用该孤立精灵的边缘判据，应另建拼缝QA。本地合成图夹具9项测试通过，不等于正式高清美术通过。
+
+
+## CAC-0006 已用真正图鉴完成第一次20格反证审计
+独立审计脚本 `atlas_reality_audit.py` 从**真实拼版PNG**逐格裁切、检查异常alpha，默认不允许把图鉴中不透明但数值255以下的半透明背景当成真透明底。已人工确认图鉴需诊断性剥离alpha时，才可加 `--flatten-ambiguous-alpha`；它仅把现存RGB像素用于分析，**不是精细抠图**。不合格候选返回非零；5/20技术清底候选、15/20阻断，人工复核20/20未达到完整独立高清可用标准。详见 `docs/CAC_REAL_ATLAS_AUDIT_20261016.md`。本地测试 `python -m unittest discover -s tools/asset_factory -p 'test_*.py' -v` 中已单独运行新工序12项合成测试全部通过；仓库全测试和CI状态仍需独立核验。
