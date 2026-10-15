@@ -85,7 +85,7 @@ jobs:
             --script res://verify_overlay.gd \
             > qa-results/test-pack-mount.log 2>&1
           cat qa-results/test-pack-mount.log
-          grep -Fq 'PASS CANG LAN CLEAN-PROJECT PCK MOUNT' qa-results/test-pack-mount.log
+          grep -Fq 'PASS CANG LAN TEST PCK OVERRIDES STALE BASE SCRIPT' qa-results/test-pack-mount.log
           if grep -Eq 'SCRIPT ERROR:|Parse Error:|Parser Error:|Assertion failed|Failed to load script' qa-results/test-pack-build.log qa-results/test-pack-mount.log; then
             echo 'BLOCKED: packed GDScript did not execute cleanly'
             exit 1
