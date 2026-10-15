@@ -29,9 +29,9 @@ jobs:
           python3 - <<'PY'
           from pathlib import Path
           s=Path("qa-stage/ota177/scenes/main_hd2d_ota177.tscn").read_text()
-          assert 'res://scripts/main.gd' in s
+          assert 'res://.godot/exported/133200997/export-3ad5c15c4f3250da0cc7c1af1770d85f-main.scn' in s
           assert 'res://scripts/hd2d_original_overlay_ota177.gd' in s
-          assert '[node name="Canglan3D" type="Node3D"]' in s
+          assert 'instance=ExtResource("1")' in s
           print('PASS_ORIGINAL_MAIN_ROOT_SCRIPT_PRESERVED')
           PY
       - name: Extract real APK176 compiled game script and remaps (CI only)
@@ -44,7 +44,8 @@ jobs:
           dest=pathlib.Path("logic-qa/apk176-export-fixture")
           with zipfile.ZipFile(m["file"]) as apk:
               for p in ("assets/scripts/main.gdc","assets/scripts/main.gd.remap",
-                        "assets/scenes/main.tscn.remap"):
+                        "assets/scenes/main.tscn.remap",
+                        "assets/.godot/exported/133200997/export-3ad5c15c4f3250da0cc7c1af1770d85f-main.scn"):
                   assert p in apk.namelist(),p
                   target=dest / p.removeprefix("assets/")
                   target.parent.mkdir(parents=True,exist_ok=True)
