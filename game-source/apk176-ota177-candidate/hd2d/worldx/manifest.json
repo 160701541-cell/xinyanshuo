@@ -1,0 +1,29 @@
+{
+  "source": "WorldX output raster images / YGYOOO/WorldX MIT pipeline",
+  "assets": [
+    {
+      "source": "world_2026-04-19T08-31-24/map/06-background.png",
+      "target": "worldx_000.png",
+      "size": [
+        1024,
+        572
+      ],
+      "sha256": "0fc33ceed80b13acac901c68b7b3c24d2d71f31bea92f5457d5e9f3aba688af3",
+      "provenance": "copied pixels from WorldX raster, scaled if necessary",
+      "godot_path": "res://hd2d/worldx/worldx_000.png"
+    },
+    {
+      "source": "world_2026-04-19T17-12-41/map/06-background.png",
+      "target": "worldx_001.png",
+      "size": [
+        1024,
+        572
+      ],
+      "sha256": "204c2cb5338295388952c98ea0aea7b2605731e29bf7db5ba5c15ef425a350cc",
+      "provenance": "copied pixels from WorldX raster, scaled if necessary",
+      "godot_path": "res://hd2d/worldx/worldx_001.png"
+    }
+  ],
+  "generation_claim": false,
+  "review_status": "CANDIDATE_NOT_VISUALLY_APPROVED"
+}
