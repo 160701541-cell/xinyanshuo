@@ -123,3 +123,9 @@
 - 新增 `tools/asset_factory/worldx_nav_import.py` 处理 WorldX 实际 `05-walkable-grid.json`，压缩344×192网格为86×48，固定 `0=可通行,1=不可通行`。两场景分别有2043/1474个可行走网格。与NPC控制器寻路接入，限制人物只在真实道路网格上选点/游荡，不再穿墙直线横移。
 - 已有WorldX独立内容Godot QA成功实证：`PASS_WORLDX_REAL_GAME_ASSETS maps=2 NPCs=6 walk_frames=36 clickable_hotspots=3`（之前包含交互点测试）；本轮进一步新增导航碰撞点验证，待CI结果；**完整原APK主场景QA仍受导出class_name全局注册缺失阻断，正式APK/热更新没有发布。**
 - 构建脚本 `logic-qa/tools/build_apk176_hd2d_overlay.gd` 合并场景脚本、地图、6NPC、商铺热点、寻路网格至原版内容PCK候选，并由 `tools/verify_hd2d_overlay_pck.py` 以官方PCK索引核对MD5/路径。Actions资产工厂新增全流程；启用单一并发组，防止多轮同时提交同一公开仓库，所有成品必须经真实资源验证，不将红色QA伪称手机已更新。
+
+### CAC-0019 实际最新验收增量（CI run 38825337850）
+- 已确证`worldx_000.png`、`worldx_001.png`转换后为 **2048×1143**，已更新原游戏公开仓库内真实PNG及哈希来源清单（上一轮1024×572已被新版本替换）。
+- GitHub Actions生产的**原版APK176场景PCK候选共19个实际资源**，包含2张HD地图、6张人物动画表、2个商铺交互JSON、2个实际通行网格JSON、NPC元数据与原版场景资源；索引SHA/MD5检查通过。
+- Godot 4.4.1实测 `PASS_WORLDX_REAL_GAME_ASSETS maps=2 NPCs=6 walk_frames=36 clickable_hotspots=3`。同时验证NPC出生位置必须在WorldX通行网格、且地图/商铺控件运行。
+- **总体CI保持失败而不是假绿**：完整原导出APK `main.gdc` 在最小原二进制fixture仍然缺少真实Godot全局类注册（例如`WorldState`）；因此尚无法宣布安装包可安全热更新，也没有发布`latest.json`。
