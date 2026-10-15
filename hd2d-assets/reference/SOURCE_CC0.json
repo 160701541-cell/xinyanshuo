@@ -1,0 +1,18 @@
+{
+  "creator": "nessava",
+  "source_url": "https://opengameart.org/content/ancient-chinese-character-pack-1",
+  "license": "CC0",
+  "intake_status": "reference art NOT HD-2D visual QA accepted",
+  "assets": {
+    "han_male.png": {
+      "source": "Ancient Chinese Characters Pack 1/Han/Han Male Whole.png",
+      "sha256": "f248badd4c41ae9bcfe70d6cbfd314f6edacb20b7794992461c0be2252ae716e",
+      "bytes": 207042
+    },
+    "han_female.png": {
+      "source": "Ancient Chinese Characters Pack 1/Han/Han Female Whole.png",
+      "sha256": "1c45656db748e93e89b82e3c912565448c1e5ee91f4b843e1f0d8568e5455cd4",
+      "bytes": 129126
+    }
+  }
+}\n
