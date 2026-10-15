@@ -8,6 +8,13 @@
   "public_note": "开发工作日志不是签名游戏更新日志；未发布功能可能写在这里。隐去密钥与内部配置。",
   "entries": [
     {
+      "id": "dev-20261015-first-paid-mixing-vertical-slice-candidate",
+      "date": "2026-10-15",
+      "title": "物品树开始接入原世界工单：三单位陶器试验台、工时与存档回滚",
+      "body": "已在私有原游戏候选分支 feat/craft-codex-20261015 提交初步工艺工单服务和原WorldState时间系统对接；用原游戏已存在的付费陶罐、3单位容积规则和实体GLB，设计单批淘泥试验台的来源核查（不赠送设备）。新增开工锁料、每工坊单订单、实体零件预留、制造来源账本、设备离岗阻断、停工恢复、取消后仅退款一次、存档恢复/12分钟成品唯一编号的原游戏测试。原WorldState旧配方部分只校验tool字符串，旧烧陶窑仍须实体化治理。因此这是工程候选而非正式产线。原游戏新增测试尚未在完整私有工程执行；公开Godot 4.4.1及50项工程自动测试此前通过，不得混称私有测试通过。未合并Work主线，手机APK/PCK没有更新。",
+      "source_status": "private-branch-code-candidate_unverified-original-game-and-android"
+    },
+    {
       "id": "dev-20261015-real-godot-codex-visual-validation",
       "date": "2026-10-15",
       "title": "工艺谱真实引擎画面验收：中文方框缺陷定位、修复与复验",
