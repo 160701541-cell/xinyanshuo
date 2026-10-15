@@ -99,3 +99,12 @@
 - 运行 `38817871503` 加入真实篡改拒绝回归：签名、SHA、发布URL修改应拒绝（日志与最终状态以Actions为准）。
 - **P0实质阻塞**：公开仓库没有完整旧版APK已导出的所有脚本/主场景可编辑版本，不能确认新HD2D场景可在原游戏中显示；缺少公开Actions中可验证的原RSA私钥签名通道。私钥不能上传/提交到GitHub源代码；仅能通过合法密钥存储/机密配置进行签名。
 - 因此 **没有** 发布任何伪造 `rev177` PCK，也没有修改正式 `android-preview/latest.json`。后续需在公开仓库提供经过授权的原场景对接层和原签名能力，随后创建可视补丁、运行 APK176 真实覆盖回归，再发布签名 PCK；任何缺项必须阻断发布。
+
+## CAC-0017 · 原APK176主场景PCK替换打通（2026-10-16）
+- **只操作公开仓库** `160701541-cell/xinyanshuo`。本轮没有再发布独立APK，也未修改原正式更新清单。
+- 下载/校验公开仓库内真实 APK176（sha256固定）并检查原安装包中编译脚本，确认根场景资源 `assets/scenes/main.tscn.remap`、旧主游戏脚本 `assets/scripts/main.gdc`（158404字节）与 `assets/scripts/main.gd.remap` 同时存在。真实 APK176 审计 run `38818638902`、`38818751480` 成功。
+- `game-source/apk176-ota177-candidate/` 新增 **不是独立App** 的场景替换资源：覆盖旧 `res://scenes/main.tscn.remap`，新增 `main_hd2d_ota177.tscn`，保留旧 `res://scripts/main.gd` 主游戏入口，增加能切换返回旧世界的 CanvasLayer HD2D 场景以及候选图集。
+- `logic-qa/tools/build_apk176_hd2d_overlay.gd` 将 **四个真实资源** 制成 GitHub Actions 构建的完整 Godot PCK；审计校验压缩包索引、源图 SHA、路径与MD5。真实旧APK `.gdc`、`.gd.remap` 均临时从已签名 APK 解压进入 QA 环境，测试加载**客户端原规范场景路径 `res://scenes/main.tscn`**，而非仅检查候选新场景。run `38819379300` **SUCCESS**。早期 run `38819105401` 亦成功，但最终以更严格路径校验为准。
+- GitHub Artifact：`NOT-FOR-PHONE-HD2D-ORIGINAL-APK176-CANDIDATE-` 开头的 QA PCK 与日志。**这是 unsigned candidate；不是可供手机安装的签名补丁**。
+- 原RSA密钥状况经 Actions 机密配置探测 `38819279400` 明确：已检查四个候选 Actions Secret 名称，配置数量 **0**，与 APK 原公钥匹配的签名能力 **FALSE**。这不是签名算法失败，而是当前公开仓库没有配置可用的**原密钥**，不能伪造。正式 `android-preview/latest.json` 仍保持 `rev167`；合法下一版最低 `rev177`。
+- **仍未完成**：原安装包的Android实机运行验证；高清青楼、客栈、宗门大殿、草房小院独立PNG替换（当前PCK仍使用公开旧候选图集）；RSA原私钥的安全注入与最终签名PCK发布。未达成前禁止宣传游戏手机已更新。
