@@ -15,7 +15,7 @@ func _run() -> void:
 	var camera := stage.get_node_or_null("Camera2D") as Camera2D
 	assert(camera.is_current(), "No active camera")
 	assert(camera.zoom.x > 0.0 and camera.zoom.x < 2.0, "Bad mobile zoom")
-	var status := stage.get("_status")
+	var status: Variant = stage.get("_status")
 	assert(status is Label, "Status HUD missing")
 	# The atlas downloads asynchronously. We test initialization and the
 	# actual published remote file separately in CI, never assume loaded.
