@@ -3,8 +3,16 @@ class_name CanglanHD2DActor
 ## 3D world coordinates + an authentic 2D sprite; never creates actors,
 ## inventory, collision or a second simulation. This is an optional VIEW.
 ## Source art metadata is held beside each imported PNG.
-const HERO_IMAGE := "res://assets/production/hd2d/han_male.png"
-const CITIZEN_IMAGE := "res://assets/production/hd2d/han_female.png"
+const HERO_IMAGE := "res://assets/production/hd2d/hero_walk.png"
+const CITIZEN_IMAGE := "res://assets/production/hd2d/farmer_walk.png"
+const ROLE_SHEETS := {
+	"farmer": "res://assets/production/hd2d/farmer_walk.png",
+	"wood_gatherer": "res://assets/production/hd2d/woodsman_walk.png",
+	"water_carrier": "res://assets/production/hd2d/merchant_walk.png",
+	"cook": "res://assets/production/hd2d/merchant_walk.png"
+}
+const FRAMES_PER_DIRECTION: int = 3
+const DIRECTION_ROWS: int = 4
 
 var sprite: Sprite3D
 var foot_shadow: MeshInstance3D
@@ -12,6 +20,8 @@ var sprite_height: float = 1.72
 var is_moving: bool = false
 var motion_phase: float = 0.0
 var actor_id: String = ""
+var direction_row: int = 0
+var anim_clock: float = 0.0
 
 static func has_authored_sprite(is_player: bool) -> bool:
 	var image_path: String = HERO_IMAGE if is_player else CITIZEN_IMAGE
@@ -20,7 +30,8 @@ static func has_authored_sprite(is_player: bool) -> bool:
 static func create_for(entity: Dictionary, is_player: bool = false) -> CanglanHD2DActor:
 	if not entity.has("id"):
 		return null
-	var image_path: String = HERO_IMAGE if is_player else CITIZEN_IMAGE
+	var image_path: String = HERO_IMAGE if is_player else String(ROLE_SHEETS.get(
+		String(entity.get("social_role", "")), CITIZEN_IMAGE))
 	if not ResourceLoader.exists(image_path, "Texture2D"):
 		return null
 	var img: Resource = load(image_path)
@@ -41,7 +52,11 @@ func _attach_visual(texture: Texture2D) -> void:
 	sprite = Sprite3D.new()
 	sprite.name = "CameraFacing2DPerson"
 	sprite.texture = texture
-	sprite.pixel_size = sprite_height / float(h)
+	# Production-oriented 3-column × 4-direction CC0 walking sheet.
+	sprite.hframes = FRAMES_PER_DIRECTION
+	sprite.vframes = DIRECTION_ROWS
+	sprite.frame = 1
+	sprite.pixel_size = sprite_height / float(h / DIRECTION_ROWS)
 	sprite.position = Vector3(0, sprite_height * 0.5, 0)
 	sprite.billboard = BaseMaterial3D.BILLBOARD_FIXED_Y
 	sprite.shaded = true
@@ -64,13 +79,26 @@ func _attach_visual(texture: Texture2D) -> void:
 	foot_shadow.material_override = material
 	add_child(foot_shadow)
 
+func set_world_direction(world_displacement: Vector3) -> void:
+	# World X/Z directions are independent of render billboard rotation.
+	if absf(world_displacement.x) < 0.001 and absf(world_displacement.z) < 0.001:
+		return
+	if absf(world_displacement.x) > absf(world_displacement.z):
+		direction_row = 2 if world_displacement.x > 0.0 else 1
+	else:
+		direction_row = 0 if world_displacement.z > 0.0 else 3
+
+
 func update_motion(delta: float, metres_per_second: float) -> void:
-	# Only tiny vertical character motion is synthetic. Real 2D art animation
-	# will replace this after approved frame-sheet intake (not claimed yet).
 	is_moving = metres_per_second > 0.1
 	if is_moving:
+		anim_clock += delta * clampf(metres_per_second * 2.5, 3.0, 9.0)
 		motion_phase += delta * minf(metres_per_second * 8.0, 25.0)
 	else:
+		anim_clock = 0.0
 		motion_phase = 0.0
 	if sprite != null:
-		sprite.position.y = sprite_height * 0.5 + (absf(sin(motion_phase)) * 0.03 if is_moving else 0.0)
+		# Uses actual author-painted walking frames (not coordinate wobble alone).
+		var step_index: int = int(floor(anim_clock)) % FRAMES_PER_DIRECTION if is_moving else 1
+		sprite.frame = direction_row * FRAMES_PER_DIRECTION + step_index
+		sprite.position.y = sprite_height * 0.5 + (absf(sin(motion_phase)) * 0.02 if is_moving else 0.0)
