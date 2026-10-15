@@ -1,0 +1,48 @@
+name: Canglan Public Source - Godot Strict QA (Free Runner)
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'game-source/**'
+      - '.github/workflows/canglan-public-qa.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: canglan-public-qa-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  godot-qa:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - name: Ensure reviewed public game source exists
+        run: |
+          set -euo pipefail
+          test -f game-source/godot3d/project.godot || { echo 'BLOCKED: reviewed public source not yet mirrored; website is not full game source'; exit 2; }
+          test -f game-source/godot3d/tools/quality_gate.sh || { echo 'BLOCKED: full QA script absent'; exit 2; }
+      - name: Install Godot 4.4.1 (free standard Linux runner)
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl -fL --retry 3 https://github.com/godotengine/godot/releases/download/4.4.1-stable/Godot_v4.4.1-stable_linux.x86_64.zip -o /tmp/godot.zip
+          unzip -q /tmp/godot.zip -d /tmp
+          chmod +x /tmp/Godot_v4.4.1-stable_linux.x86_64
+          /tmp/Godot_v4.4.1-stable_linux.x86_64 --version
+      - name: Full strict QA (no bypass)
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd game-source
+          GODOT_BIN=/tmp/Godot_v4.4.1-stable_linux.x86_64 QA_LOG_DIR="$GITHUB_WORKSPACE/qa-logs" bash godot3d/tools/quality_gate.sh
+      - name: Upload QA evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: canglan-strict-qa-${{ github.sha }}
+          path: qa-logs/
+          if-no-files-found: warn
+          retention-days: 7
+# The public source QA is not a release job. Signing keys MUST NEVER be committed.
+# Auto publish requires a separately audited signed PCK packager and client verification.
