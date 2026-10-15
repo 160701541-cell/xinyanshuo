@@ -36,7 +36,7 @@ def run():
     path = apk_meta.get("file", "")
     expected = apk_meta.get("sha256", "")
     expected_size = apk_meta.get("size_bytes")
-    require(isinstance(path, str) and re.fullmatch(r"android-preview/base/[A-Za-z0-9_.-]+\\.apk", path), "untrusted APK file path")
+    require(isinstance(path, str) and re.fullmatch(r"android-preview/base/[A-Za-z0-9_.-]+[.]apk", path), "untrusted APK file path")
     require(isinstance(expected, str) and re.fullmatch("[0-9a-f]{64}", expected), "bad advertised APK SHA256")
     require(type(expected_size) is int and 10_000_000 <= expected_size <= 200_000_000, "unrealistic APK size")
     result = {
