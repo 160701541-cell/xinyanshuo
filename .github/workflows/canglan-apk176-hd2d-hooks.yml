@@ -1,0 +1,37 @@
+name: Canglan APK176 Real HD2D Entrypoint Investigation
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'tools/audit_apk176_hd2d_hooks.py'
+      - '.github/workflows/canglan-apk176-hd2d-hooks.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  inspect-real-signed-apk:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - name: Audit the EXACT released signed APK176 asset tree
+        run: |
+          set -euo pipefail
+          python3 tools/audit_apk176_hd2d_hooks.py
+          python3 - <<'PY'
+          import json
+          r=json.load(open("qa-results/apk176-hd2d-entrypoints.json"))
+          assert r["apk_verified"] and r["version_code"]==1176
+          assert r["next_usable_revision"]==177
+          assert r["main_entrypoint"]["assets/scripts/main.gdc"]["exists"]
+          assert r["can_activate_new_hd2d_scene_by_additive_pck_alone"] is False
+          print("PASS_REAL_APK176_MAIN_GAME_RESOURCE_INDEX")
+          PY
+      - name: Retain auditable report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: apk176-real-main-scene-hd2d-hooks-${{ github.sha }}
+          path: qa-results/apk176-hd2d-entrypoints.json
+          if-no-files-found: warn
+          retention-days: 14
