@@ -25,6 +25,9 @@ func _initialize() -> void:
 		return
 	var source_list: Dictionary = FILES.duplicate()
 	for i in range(8):
+		var zone_rel: String = "hd2d/worldx/zones_%03d.json" % i
+		if FileAccess.file_exists(base.path_join(zone_rel)):
+			source_list["res://" + zone_rel] = zone_rel
 		var rel: String = "hd2d/worldx/worldx_%03d.png" % i
 		if FileAccess.file_exists(base.path_join(rel)):
 			source_list["res://" + rel] = rel
