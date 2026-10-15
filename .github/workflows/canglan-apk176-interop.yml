@@ -39,9 +39,9 @@ jobs:
           import json
           result = json.load(open("qa-results/apk176-inspection.json"))
           assert result["published_apk_verified"] is True, "APK byte hash unverified"
-          assert result["godot_pack_detected"] is True, "No real Godot pack identified"
+          assert result["godot_payload_detected"] is True, "No authentic Godot APK resource tree or pack identified"
           assert result["minimum_acceptable_next_pck"] > result["apk_code"] - 1000
-          print("PASS_REAL_PUBLISHED_APK176_BYTES_AND_PACK; minimum OTA revision",
+          print("PASS_REAL_PUBLISHED_APK176_BYTES_AND_EXPORTED_RESOURCES; minimum OTA revision",
                 result["minimum_acceptable_next_pck"])
           PY
       - name: Preserve inspection proof (never upload the signed APK itself)
