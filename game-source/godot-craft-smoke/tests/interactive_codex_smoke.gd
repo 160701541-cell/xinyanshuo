@@ -39,7 +39,7 @@ func _run_actual_ui() -> void:
 		_die(ui, "UI_ITEM_NAVIGATION_INCORRECT")
 		return
 	var text_value: String = ui.detail_rich.get_parsed_text()
-	if not text_value.contains("烧青瓦") or not text_value.contains("条件不足"):
+	if not text_value.contains("烧青瓦") or not text_value.contains("条件不足") or not text_value.contains("未获得图纸") or not text_value.contains("尚未研究"):
 		_die(ui, "UI_LOCKED_RECIPE_NOT_EXPLAINED")
 		return
 	var snapshot_before: Dictionary = ui.get_snapshot()
@@ -49,7 +49,7 @@ func _run_actual_ui() -> void:
 	ui.set_world_view(actual_research, actual_blueprints, actual_stations,
 		{"tile_blank":1,"firewood":1})
 	var unlocked_text: String = ui.detail_rich.get_parsed_text()
-	if not unlocked_text.contains("可申请工单"):
+	if not unlocked_text.contains("前置条件齐备（仅预览"):
 		_die(ui, "UI_UNLOCKED_RECIPE_NOT_IN_VIEW")
 		return
 	if ui.get_snapshot()["item_count"] != snapshot_before["item_count"]:
