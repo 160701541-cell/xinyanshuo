@@ -44,6 +44,38 @@ jobs:
           print("PASS_REAL_PUBLISHED_APK176_BYTES_AND_EXPORTED_RESOURCES; minimum OTA revision",
                 result["minimum_acceptable_next_pck"])
           PY
+      - name: Run actual Godot 4.4.1 compiled APK176 script remap / PCK override regression
+        shell: bash
+        env:
+          CANGLAN_QA_PCK_PATH: ${{ github.workspace }}/qa-results/unsigned-apk176-interop-QA-ONLY.pck
+        run: |
+          set -euo pipefail
+          curl --fail --location --retry 3 --connect-timeout 20 \
+            https://github.com/godotengine/godot/releases/download/4.4.1-stable/Godot_v4.4.1-stable_linux.x86_64.zip \
+            -o /tmp/canglan-real-apk-godot.zip
+          unzip -q /tmp/canglan-real-apk-godot.zip -d /tmp
+          chmod +x /tmp/Godot_v4.4.1-stable_linux.x86_64
+          GODOT=/tmp/Godot_v4.4.1-stable_linux.x86_64
+          test -s logic-qa/apk176-export-fixture/scripts/touch_look_router.gdc
+          test -s logic-qa/apk176-export-fixture/scripts/touch_look_router.gd.remap
+          timeout 60s "$GODOT" --headless --editor --path logic-qa --import > qa-results/apk176-qa-import.log 2>&1
+          timeout 60s "$GODOT" --headless --path logic-qa \
+            --script res://tools/build_touch_overlay.gd > qa-results/apk176-qa-pack.log 2>&1
+          grep -Fq 'PASS CANG LAN TEST PACK GENERATED' qa-results/apk176-qa-pack.log
+          timeout 90s "$GODOT" --headless --path logic-qa/apk176-export-fixture \
+            --script res://verify_real_apk_script.gd > qa-results/apk176-export-override.log 2>&1 || {
+              cat qa-results/apk176-export-override.log
+              echo "::error::Real APK176 exported .gdc may override candidate PCK or be unreadable; block OTA."
+              exit 1
+            }
+          cat qa-results/apk176-export-override.log
+          grep -Fq 'PASS CANG LAN EXPORTED APK176 GDC REMAP OVERLAID BY TEST PCK' qa-results/apk176-export-override.log
+          if grep -Eq 'SCRIPT ERROR:|Parse Error:|Parser Error:|Assertion failed|Failed to load script' \
+            qa-results/apk176-qa-import.log qa-results/apk176-qa-pack.log qa-results/apk176-export-override.log; then
+            echo "::error::Godot reported script error in APK176 bytecode interop test"
+            exit 1
+          fi
+          echo 'PASS isolated real APK176 bytecode overlay QA; RSA signing and Android-phone QA still required'
       - name: Preserve inspection proof (never upload the signed APK itself)
         if: always()
         uses: actions/upload-artifact@v4
@@ -52,5 +84,6 @@ jobs:
           path: |
             qa-results/apk176-execution.log
             qa-results/apk176-inspection.json
+            qa-results/*.log
           if-no-files-found: warn
           retention-days: 7
