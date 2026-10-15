@@ -49,6 +49,17 @@ func _initialize() -> void:
 	var controller: Node2D = npc_script.new()
 	get_root().add_child(controller)
 	await process_frame
+	if controller.nav_width < 20 or controller.nav_height < 20:
+		printerr("FAIL_WORLDX_CONTENT: real WorldX walkable grid not loaded")
+		quit(17)
+		return
+	for actor in controller.actors:
+		var col: int = clampi(int(actor.position.x * float(controller.nav_width) / 1280.0), 0, controller.nav_width-1)
+		var row: int = clampi(int(actor.position.y * float(controller.nav_height) / 715.0), 0, controller.nav_height-1)
+		if not controller._walkable_at(col,row):
+			printerr("FAIL_WORLDX_CONTENT: NPC spawned on collision tile")
+			quit(18)
+			return
 	if controller.actors.size() < 5:
 		printerr("FAIL_WORLDX_CONTENT: sprites did not instantiate")
 		quit(10)
