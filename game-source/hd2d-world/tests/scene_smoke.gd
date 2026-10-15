@@ -21,8 +21,17 @@ func _run() -> void:
 	assert(status is Label, "Status HUD missing")
 	# The atlas downloads asynchronously. We test initialization and the
 	# actual published remote file separately in CI, never assume loaded.
+	# Regression for the requested connectable stone brick road.
+	var paving := load("res://scripts/stone_road.gd")
+	assert(paving != null, "Stone road generator missing")
+	var road_image: Image = paving.make_image()
+	assert(road_image.get_width() == 256 and road_image.get_height() == 256, "Wrong paving texture dimensions")
+	assert(paving.edges_match(road_image), "Stone road edges will show seams")
+	var joined: Node = stage.get_node_or_null("SeamlessStoneRoad")
+	assert(joined != null, "Road not assembled in real scene")
+	assert(joined.get_child_count() == 14, "Expected 14 connected road segments")
 	stage.call("_zoom", 1.2)
 	assert(camera.zoom.x > 0.8, "Zoom handler did not work")
-	print("PASS PUBLIC HD2D GODOT SCENE STARTUP: camera, HUD, pan/zoom contract")
+	print("PASS PUBLIC HD2D GODOT SCENE STARTUP: camera, HUD, seamless road QA, pan/zoom contract")
 	stage.queue_free()
 	quit(0)
