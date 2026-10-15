@@ -29,10 +29,11 @@ func _run() -> void:
 	var manifest: Dictionary = parsed
 	var pubkey: String = FileAccess.get_file_as_string(public_key_path)
 	check(manifest.get("revision", 0) == 177, "revision must be 177, NOT obsolete 168")
-	check(manifest.get("minimum_android_code", 0) <= 1176, "old APK176 excluded by minimum code")
+	check(manifest.get("minimum_android_code", 0) == 1176, "tiny OTA must be APK176+ only, never legacy bases")
 	check(manifest.get("maximum_android_code", 0) >= 1176, "old APK176 excluded by maximum code")
 	check(1176 - 1000 == 176 and int(manifest.get("revision", 0)) > 176, "APK176 immutable revision floor not passed")
 	check(Protocol.safe_manifest(manifest, 1176, pubkey), "production Godot Crypto must verify Python/OpenSSL signing")
+	check(not Protocol.safe_manifest(manifest, 1165, pubkey), "older APK165 must reject a tiny noncumulative PCK177")
 	check(Protocol.matches_pack(manifest, pack_path, 1176, pubkey), "signed sha256 and PCK bytes must match")
 	check(not Protocol.safe_manifest(manifest, 1176, Channel.PUBLIC_KEY_PEM),
 		"release APK key MUST refuse a temporary test-only signature")
