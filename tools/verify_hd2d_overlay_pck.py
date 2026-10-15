@@ -11,12 +11,13 @@ REQUIRED={"scenes/main.tscn.remap","scenes/main_hd2d_ota177.tscn",
 "scripts/hd2d_worldx_npcs.gd","hd2d/atlas_village_ota177.jpg"}
 OPTIONAL={"hd2d/worldx/npcs/npcs.json"}
 OPTIONAL.update("hd2d/worldx/worldx_%03d.png"%i for i in range(8))
+OPTIONAL.update("hd2d/worldx/zones_%03d.json"%i for i in range(8))
 OPTIONAL.update("hd2d/worldx/npcs/npc_%02d.png"%i for i in range(16))
 
 def names_only(raw):
     if raw[:4]!=b"GDPC":raise ValueError("No Godot PCK header")
     count=struct.unpack_from("<I",raw,0x60)[0]
-    if not 6<=count<=31:raise ValueError("Unbounded resource count")
+    if not 6<=count<=39:raise ValueError("Unbounded resource count")
     position=0x64
     result=set()
     for _ in range(count):
