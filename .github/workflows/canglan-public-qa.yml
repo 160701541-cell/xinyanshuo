@@ -1,9 +1,9 @@
-name: Canglan Public Source - Godot Strict QA (Free Runner)
+name: Canglan Legacy Full Source - Godot Strict QA (Separate From HD2D)
 on:
   push:
     branches: [main]
     paths:
-      - 'game-source/**'
+      - 'game-source/godot3d/**'
 permissions:
   contents: read
 concurrency:
