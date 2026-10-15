@@ -28,3 +28,9 @@
 - 公开仓库已存在 `tools/asset_factory/atlas_factory.py`、`atlas_layout.json`、`industrial_pipeline.py`、`make_jobs.py` 和相应说明，已有候选裁切流程。
 - 本协议完成后，旧私库不再接受新的《苍岚》开发上传。公开仓库的现有质量/签名安全门禁仍然生效。
 - **未声称**已生成全量高质量透明PNG、完成批量视觉审核、实际Godot导入或更新手机。下一步先让候选裁切输出通过实际独立PNG边缘QA，再推进同源图标、公开仓库批次提交和真机验证。
+
+
+## 6. CAC-0002 候选透明边缘机器审核（2026-10-16）
+- 新增 `tools/asset_factory/audit_candidates.py`：读取候选清单，核验唯一ID、候选状态、相对路径安全、文件存在、RGBA PNG、最小像素尺寸、透明通道、边缘触碰、SHA256，输出 `technical_qa.json` 并在不合格时返回非零退出码。
+- `TECH_ONLY_PASS` 仅代表候选基础技术检查通过；无法证明没有残底、邻格、文字、透视错误及风格不统一，仍必须人工视觉审核；始终保持 `production_approved_count=0`。
+- 回归用例 `tools/asset_factory/test_audit_candidates.py` 涵盖正常候选、纯不透明、触边、路径逃逸和伪造批准；真实拼版/模型/Godot/Android仍须单独留证。
