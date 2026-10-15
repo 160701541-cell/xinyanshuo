@@ -51,3 +51,7 @@ python -m unittest discover -s tools/asset_factory -p 'test_audit_candidates.py'
 ```
 
 输出 `candidate_output/technical_qa.json`，缺失图、路径越界、伪批准、不透明整底、边缘触碰或分辨率不足时返回失败。它是保守的机器门禁：复杂影子、标签、残底、邻格、机位和风格不能自动认可，必须继续人工检查；任何通过项仍非正式可用素材，不能自动导入Godot。
+
+
+## 新手村素材缺口订单生成（CAC-0003）
+`python tools/asset_factory/starter_village_catalog.py` 生成 `tools/asset_factory/starter_village_demand.json` 规格清单，不生成图像。清单包含基础地形、建筑、建筑拆件、植被、道具、人物和装备，并显式要求角色8方向动作、建筑受损状态、开关门、点灭灯笼、树木四季；每个需求独立world PNG路径，图标同原型引用。运行 `python -m unittest discover -s tools/asset_factory -p 'test_starter_village_catalog.py'` 可进行回归核验。所有条目默认 SPEC_ONLY；不能将需求清单视为已经入库的素材。
