@@ -68,5 +68,23 @@ func _initialize() -> void:
 		printerr("FAIL_WORLDX_CONTENT: 2 real maps required")
 		quit(13)
 		return
-	print("PASS_WORLDX_REAL_GAME_ASSETS maps=",maps," NPCs=",controller.actors.size()," walk_frames=",total_frames)
+	var overlay_script: Script = load("res://scripts/hd2d_original_overlay_ota177.gd")
+	if overlay_script == null:
+		printerr("FAIL_WORLDX_CONTENT: main HD2D world script cannot compile")
+		quit(14)
+		return
+	var overlay: CanvasLayer = overlay_script.new()
+	get_root().add_child(overlay)
+	await process_frame
+	if overlay.worldx_map_sprite == null or overlay.worldx_hotspots.size() < 1:
+		printerr("FAIL_WORLDX_CONTENT: WorldX map and clickable shops did not appear")
+		quit(15)
+		return
+	overlay._toggle_worldx_map()
+	if not overlay.alt_map:
+		printerr("FAIL_WORLDX_CONTENT: second map switch failed")
+		quit(16)
+		return
+	print("PASS_WORLDX_REAL_GAME_ASSETS maps=",maps," NPCs=",controller.actors.size(),
+		" walk_frames=",total_frames," clickable_hotspots=",overlay.worldx_hotspots.size())
 	quit(0)
