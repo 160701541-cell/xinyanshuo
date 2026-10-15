@@ -2,9 +2,11 @@ extends Node2D
 ## WorldX NPC demonstration inside the old installed Canglan game scene.
 ## Real imported frame timing and sheets, no fake painted stick figures.
 const DIR := "res://hd2d/worldx/npcs/"
+signal character_selected(id: String, name: String, description: String)
 var elapsed := 0.0
 var actors: Array[AnimatedSprite2D] = []
 var directions: Array[float] = []
+var character_data: Array[Dictionary] = []
 var rng := RandomNumberGenerator.new()
 
 func _ready() -> void:
@@ -29,6 +31,7 @@ func _ready() -> void:
 		sprite.scale = Vector2(0.72, 0.72)
 		add_child(sprite)
 		actors.append(sprite)
+		character_data.append(cfg)
 		directions.append(1.0 if (i % 2 == 0) else -1.0)
 		if sprite.sprite_frames.has_animation("walk-down"):
 			sprite.play("walk-down")
@@ -86,3 +89,24 @@ func _process(delta: float) -> void:
 			actor.flip_h = directions[i] < 0.0
 	if elapsed > 4.0:
 		elapsed = 0.0
+
+func _unhandled_input(event: InputEvent) -> void:
+	var pointer: Vector2
+	if event is InputEventScreenTouch and event.pressed:
+		pointer = event.position
+	elif event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT and event.pressed:
+		pointer = event.position
+	else:
+		return
+	var local: Vector2 = to_local(pointer)
+	var selected := -1
+	var min_distance := 82.0
+	for i in range(actors.size()):
+		var distance: float = actors[i].position.distance_to(local)
+		if distance < min_distance:
+			selected = i
+			min_distance = distance
+	if selected >= 0:
+		var cfg := character_data[selected]
+		character_selected.emit(str(cfg.get("id","")),str(cfg.get("name","旅人")),str(cfg.get("description","")))
+		get_viewport().set_input_as_handled()
