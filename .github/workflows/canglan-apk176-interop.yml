@@ -90,10 +90,10 @@ jobs:
           openssl genpkey -algorithm RSA -pkeyopt rsa_keygen_bits:3072 \
             -out "$TEST_PRIVATE" > /dev/null 2>&1
           openssl pkey -in "$TEST_PRIVATE" -pubout -out "$TEST_PUBLIC" > /dev/null 2>&1
-          CANGLAN_UPDATE_MIN_BINARY_CODE=1102 \
+          CANGLAN_UPDATE_MIN_BINARY_CODE=1176 \
             python3 logic-qa/tools/sign_pck_release.py \
             --pack "$CANGLAN_QA_PCK_PATH" --revision 177 \
-            --minimum-android-code 1102 --maximum-android-code 2147483000 \
+            --minimum-android-code 1176 --maximum-android-code 2147483000 \
             --pack-url 'https://160701541-cell.github.io/xinyanshuo/android-preview/canglan-content-rev-177.pck' \
             --notes 'QA-only; ephemeral signing key; never publish' \
             --private-key "$TEST_PRIVATE" --public-key "$TEST_PUBLIC" \
