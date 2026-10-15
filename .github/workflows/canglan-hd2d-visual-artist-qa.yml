@@ -49,10 +49,10 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          LIBGL_ALWAYS_SOFTWARE=1 xvfb-run -a blender -b -noaudio --python asset-tools/hd2d/render_house_review.py -- \
-            qa-art/models/chinese_pavilion.glb hd2d-assets/reference/han_male.png qa-art/godot-art-review-3d-scene-2d-figure.png \
+          LIBGL_ALWAYS_SOFTWARE=1 xvfb-run -a blender -b -noaudio --python asset-tools/hd2d/render_village_courtyard.py -- \
+            qa-art/models/courtyard_moon_gate.glb qa-art/models/courtyard_wall_section.glb qa-art/models/courtyard_flower_window.glb hd2d-assets/reference/han_male.png qa-art/godot-art-review-3d-scene-2d-figure.png \
             > qa-art/render.log 2>&1 || { tail -n 100 qa-art/render.log; exit 1; }
-          grep -Fq 'PASS_REAL_CC0_CHINESE_BUILDING_AND_2D_PERSON_REVIEW_FRAME' qa-art/render.log
+          grep -Fq 'PASS_REAL_CC0_CHINESE_COURTYARD_3D_WITH_2D_ACTORS_RENDERED' qa-art/render.log
           test -s qa-art/godot-art-review-3d-scene-2d-figure.png
           echo 'PASS_LICENSED_3D_CHINESE_HOUSE_2D_PERSON_SCREENSHOT_BUT_NOT_A_PLAYABLE_GAME'
       - name: Keep GLBs, source SHA and real Blender review screenshot
