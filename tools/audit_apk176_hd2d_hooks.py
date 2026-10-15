@@ -60,6 +60,7 @@ def main():
     print("PASS_APK176_ENTRYPOINT_AUDIT",result["scene_count"],result["script_count"],"revision_floor",result["next_usable_revision"])
     print("GAME_ENTRYPOINT",json.dumps(result["main_entrypoint"],ensure_ascii=False))
     print("HD2D_REFERENCES",json.dumps(result["existing_hd2d_entries"][:25],ensure_ascii=False))
+    print("ORIGINAL_SCENE_REMAPS",json.dumps(result["compiled_remaps"],ensure_ascii=False))
     print("BLOCKED_UNTIL_ENTRYPOINT_OVERRIDE_AND_REAL_SIGNING_KEY")
 
 if __name__=="__main__":
