@@ -73,3 +73,20 @@ jobs:
             fi
           fi
           exit 0
+
+      - name: Verify Unity Editor discovery and try unattended editor installation
+        run: |
+          set +e
+          echo '== Enumerate official Unity Editor releases =='
+          timeout 30 xvfb-run -a unityhub --headless editors --releases > /tmp/editors.log 2>&1
+          echo "EDITOR_RELEASE_DISCOVERY_EXIT=$?"
+          tail -n 35 /tmp/editors.log
+          echo '== Attempt install Unity Editor 2022.3.62f1 (time-limited 110 seconds) =='
+          timeout 110 xvfb-run -a unityhub --headless install --version 2022.3.62f1 > /tmp/editor_install.log 2>&1
+          echo "EDITOR_INSTALL_EXIT=$?"
+          tail -n 65 /tmp/editor_install.log
+          echo '== Installed editor binaries =='
+          find "$HOME/Unity" -maxdepth 6 -type f -name Unity -print 2>/dev/null | head -n 6
+          echo '== Disk usage =='
+          du -sh "$HOME/Unity" 2>/dev/null || true
+          exit 0
