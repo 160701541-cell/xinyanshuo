@@ -142,6 +142,19 @@ jobs:
           if grep -E 'SCRIPT ERROR:|Parse Error:|Assertion failed|ERROR:|FAILED' godot-codex-ui-smoke.log; then
             exit 1
           fi
+      - name: Fail closed on 10 adversarial crafting-catalog corruptions in actual Godot
+        shell: bash
+        run: |
+          set -euo pipefail
+          timeout 90s /tmp/canglan-godot/Godot_v4.4.1-stable_linux.x86_64 \
+            --headless --path game-source/godot-craft-smoke \
+            --script res://tests/strict_catalog_smoke.gd \
+            > godot-crafting-adversarial.log 2>&1 || { cat godot-crafting-adversarial.log; exit 1; }
+          cat godot-crafting-adversarial.log
+          grep -Fq 'PASS_GODOT_4_4_1_FAIL_CLOSED_CRAFT_CATALOG_10_CORRUPTIONS' godot-crafting-adversarial.log
+          if grep -E 'SCRIPT ERROR:|Parse Error:|Assertion failed|ERROR:|FAIL_ADVERSARIAL' godot-crafting-adversarial.log; then
+            exit 1
+          fi
       - name: Upload real Godot smoke evidence
         if: always()
         uses: actions/upload-artifact@v4
@@ -150,5 +163,6 @@ jobs:
           path: |
             godot-crafting-smoke.log
             godot-codex-ui-smoke.log
+            godot-crafting-adversarial.log
           retention-days: 7
           if-no-files-found: ignore
