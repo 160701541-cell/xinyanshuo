@@ -55,3 +55,7 @@ python -m unittest discover -s tools/asset_factory -p 'test_audit_candidates.py'
 
 ## 新手村素材缺口订单生成（CAC-0003）
 `python tools/asset_factory/starter_village_catalog.py` 生成 `tools/asset_factory/starter_village_demand.json` 规格清单，不生成图像。清单包含基础地形、建筑、建筑拆件、植被、道具、人物和装备，并显式要求角色8方向动作、建筑受损状态、开关门、点灭灯笼、树木四季；每个需求独立world PNG路径，图标同原型引用。运行 `python -m unittest discover -s tools/asset_factory -p 'test_starter_village_catalog.py'` 可进行回归核验。所有条目默认 SPEC_ONLY；不能将需求清单视为已经入库的素材。
+
+
+## CAC-0004 从需求规格到真实模型待办队列
+`python tools/asset_factory/starter_village_jobs.py --batch 2 --family terrain` 生成独立 `starter_village_jobs.json`；随后可用 `python tools/asset_factory/industrial_pipeline.py --jobs tools/asset_factory/starter_village_jobs.json --dry-run` 核查任务。没有真实ComfyUI工作流，不能实际生成PNG；真实推理需添加 `--workflow YOUR_COMFY_API_WORKFLOW.json --url http://127.0.0.1:8188`。该转换支持所有类别，每件携带来源需求ID、目标游戏图/图标路径与未批准状态；现有工厂的图像产物路径仍需后续审核导出映射，不能误认为自动入库。运行测试：`python -m unittest discover -s tools/asset_factory -p 'test_starter_village_jobs.py'`。
