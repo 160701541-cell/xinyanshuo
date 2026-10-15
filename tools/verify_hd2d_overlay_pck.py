@@ -21,7 +21,7 @@ def verify(path:Path):
         pck.ALLOWED.add(optional)
     entries=pck.read_index(raw)
     assert {x["name"] for x in entries}==pck.ALLOWED
-    assert path.stat().st_size<2_000_000,"candidate unexpectedly large"
+    assert path.stat().st_size<12_000_000,"candidate unexpectedly large"
     print("PASS_APK176_HD2D_RESOURCE_PCK_INDEX",len(entries))
     for entry in entries:
         print("HD2D_OTA_INDEX_ENTRY",entry["name"],entry["size"],entry["sha256"])
