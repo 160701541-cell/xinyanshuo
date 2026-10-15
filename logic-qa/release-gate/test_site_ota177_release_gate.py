@@ -46,7 +46,8 @@ class SiteReleaseRevisionTests(unittest.TestCase):
 
     def attempt(self, revision, min_code=1102, max_code=2147483000):
         manifest = {"revision": revision, "minimum_android_code": min_code,
-                    "maximum_android_code": max_code, "sha256": hashlib.sha256(self.pack.read_bytes()).hexdigest()}
+                    "maximum_android_code": max_code, "size_bytes": self.pack.stat().st_size,
+                    "sha256": hashlib.sha256(self.pack.read_bytes()).hexdigest()}
         with patch.object(module, "verify_signed", return_value=manifest):
             return module.stage_site(self.template, self.checkout, self.pack,
                                      self.manifest, self.public)
