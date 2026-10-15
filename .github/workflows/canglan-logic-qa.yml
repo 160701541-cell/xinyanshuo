@@ -65,6 +65,34 @@ jobs:
             exit 1
           fi
           echo 'PASS: 4 real Godot test suites (identity, right-look, skeletal walking, simultaneous two-thumb control), NOT full game QA'
+      - name: Build and independently mount unsigned test-only Godot PCK
+        shell: bash
+        env:
+          CANGLAN_QA_PCK_PATH: ${{ github.workspace }}/qa-results/unsigned-touch-router-QA-ONLY.pck
+        run: |
+          set -euo pipefail
+          mkdir -p qa-results
+          GODOT=/tmp/Godot_v4.4.1-stable_linux.x86_64
+          timeout 90s "$GODOT" --headless --path logic-qa \
+            --script res://tools/build_touch_overlay.gd \
+            > qa-results/test-pack-build.log 2>&1
+          cat qa-results/test-pack-build.log
+          grep -Fq 'PASS CANG LAN TEST PACK GENERATED' qa-results/test-pack-build.log
+          test -s "$CANGLAN_QA_PCK_PATH"
+          # A clean project has no loose router script. If the virtual pack mount
+          # fails, stop CI; never infer Android/OTA release compatibility.
+          timeout 90s "$GODOT" --headless --path logic-qa/pack-mount \
+            --script res://verify_overlay.gd \
+            > qa-results/test-pack-mount.log 2>&1
+          cat qa-results/test-pack-mount.log
+          grep -Fq 'PASS CANG LAN CLEAN-PROJECT PCK MOUNT' qa-results/test-pack-mount.log
+          if grep -Eq 'SCRIPT ERROR:|Parse Error:|Parser Error:|Assertion failed|Failed to load script' qa-results/test-pack-build.log qa-results/test-pack-mount.log; then
+            echo 'BLOCKED: packed GDScript did not execute cleanly'
+            exit 1
+          fi
+          sha256sum "$CANGLAN_QA_PCK_PATH" > qa-results/unsigned-test-pck.sha256
+          echo 'PASS TEST-ONLY PCK. Signing, native APK and player save verification remain blocked.'
+
       - name: Save evidence even when QA fails
         if: always()
         uses: actions/upload-artifact@v4
