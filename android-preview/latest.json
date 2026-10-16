@@ -1,12 +1,12 @@
 {
   "schema": 1,
   "channel": "android-preview",
-  "revision": 179,
+  "revision": 180,
   "minimum_android_code": 1176,
   "maximum_android_code": 1176,
-  "sha256": "b1317883b1f884264b6a4a6e063683c2fb0cb324d13c81003564a8ff84a6a4e1",
-  "size_bytes": 21066816,
-  "pack_url": "https://160701541-cell.github.io/xinyanshuo/android-preview/canglan-content-rev-179.pck",
-  "notes": "苍岚原版：可返回旧世界的Kenney CC0真3D树林与矿石预览（非完整NPC新世界）",
-  "signature": "gfbBkBzPx9d8ymCMnUj+bK2a9TIilqFKdMhu78PGvg7bhhuH21vktan3uP8SiyXWSWeuC4U0EK5FZ6M19gnscoCfxq6zg5UZiz5aeySEURXkAVbeua0gu2Xw6OM3nyVHK+Vo0JbYHCNr65ZFGrJ0d7nu19Hhaegmw+WTRr5/3LtxxKOUHyVJXb5UpD8mQQvGNZA0o8TYQi4b4iN2u8X4AZrNPGst0VJjX3fOVV5mF6QVWoyFdjPQwQvquRElZU6aiiYhfUsBK1zDae9d0YJpVds026jsO1TRCGKILlcm8Xyg5l2FK7hWh+AWe510hqR5dzNWifU9GpKndJBvQcAipyJmNCmou6HQ+6m7H6r3SR4TAe1TmRqjgrkbFs0h+0+WugTqlfzijAy/1VB1KMtxzro/Ox99g1kYSjSDC+ub34noApniqYxhhybgZqYlZ8fMgAskhaxUHPpZ7jnFVt3ZViRnub9PI/4U+U+E/HNnA9tPJbvPf4pn+IhxtMOFo0Tm"
+  "sha256": "4a1fdcdc84785734ba6a4ddda51e209c07547ea9b19582f87ff3be1b93e732b7",
+  "size_bytes": 21577696,
+  "pack_url": "https://160701541-cell.github.io/xinyanshuo/android-preview/canglan-content-rev-180.pck",
+  "notes": "苍岚原版：可返回旧世界的真实NPC采集搬运、守恒物资、Kenney/Quaternius CC0工地分阶段施工测试（非完整生活世界）",
+  "signature": "GUI94zQLiGKQ451GyVVRNPmK2WnmB5z27diVd5wqwgGaZyco+qzRGFbE89gN7zBrGco/i6aRTCv13ueEJUXgQ9A1mVDVCn/yTmUs7b8OpBy3LtrnhW7bsWf5WwrGCYnKyUV6D1S3ruxTL1EBCsX5UHpX9KU4L5nxXyNXBbrPwyrmxN6SX0szCJJv8vaZtcysJrAixPc06y9kWQzILgc7yAd1v7AbFndq0L6apnaLtBwfLiigpYdsg2OMU/l2hoOcUq16Joo3h54iWvC+3VCJiARpVHF8xoXn6oYx7jitjXamA69eyhupkBokP+Us7Vmqw95Nzjo159z0Qxv8tk76+7PDODbAuIo3bb2HnF/B7m5TvAnJWu/jeCO7Np+RqCmGq/O9T1df7BYF/PZWM0QGuJVHkHgaibVfYaSdCHBcSHlQO+vef6g2noYSCO9iFxjRQz7yEhh50oyP3SOmObitiSvzbpYdU/rO4nuZOOj3jP/qtAolmOOIsw5wVSmXjhwC"
 }
