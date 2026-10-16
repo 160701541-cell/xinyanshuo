@@ -34,6 +34,18 @@ func _run() -> void:
 	assert(int(sim.get("natural_nodes")["tree1"]["remaining"]) == 0)
 	assert(not sim.call("gather_to_actor", "wood1", "tree1"))
 	assert(sim.call("get_available_resource_nodes", "v1", "tree").is_empty())
+	# Legacy farm UI must no longer credit grain before the worker delivers.
+	assert(sim.call("register_field", "field1", "v1"))
+	assert(sim.call("register_resource_position", "field1", Vector3(3, 0, 4)))
+	var grain_before: int = int(sim.get("villages")["v1"]["stock"]["grain"])
+	assert(sim.call("harvest_field", "v1", "field1", "farmer1"))
+	assert(int(sim.get("villages")["v1"]["stock"]["grain"]) == grain_before,
+		"Legacy harvest instantly minted grain in village warehouse")
+	assert(int(sim.get("carried_by_actor")["farmer1"]["amount"]) == 5)
+	assert(not sim.call("harvest_field", "v1", "field1", "farmer1"))
+	assert(sim.call("deliver_carried", "farmer1"))
+	assert(int(sim.get("villages")["v1"]["stock"]["grain"]) == grain_before + 5)
+	assert(not sim.call("deliver_carried", "farmer1"))
 	# A rich vein has a larger finite reserve and replenishes slowly.
 	assert(sim.call("register_rich_mineral_vein", "vein1", "v1", "stone",
 		Vector3(12, 0, 8), 12000))
