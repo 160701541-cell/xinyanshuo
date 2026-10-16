@@ -9,6 +9,7 @@ var directions: Array[float] = []
 var nav_lines: Array[String] = []
 var nav_width := 0
 var nav_height := 0
+var nav_map_index := 0
 var wander_targets: Array[Vector2] = []
 var next_decision := 0.0
 var character_data: Array[Dictionary] = []
@@ -46,28 +47,45 @@ func _ready() -> void:
 			sprite.play("idle-front")
 	print("WORLDX_NPCS_LOADED ",actors.size())
 
-func _load_worldx_navigation() -> void:
-	var nav_path := "res://hd2d/worldx/nav_000.json"
+func _load_worldx_navigation(index: int = 0) -> bool:
+	# Each WorldX scene has a different actual collision grid. Never let
+	# NPCs keep navigating grid000 after the user selects grid001.
+	if index < 0 or index > 7:
+		return false
+	var nav_path := "res://hd2d/worldx/nav_%03d.json" % index
 	if not FileAccess.file_exists(nav_path):
-		push_warning("WorldX walkability grid missing; NPCs use fixed positions")
-		return
+		push_warning("WorldX walkability grid unavailable: " + nav_path)
+		return false
 	var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string(nav_path))
 	if not (parsed is Dictionary):
-		return
-	nav_width = int(parsed.get("width", 0))
-	nav_height = int(parsed.get("height", 0))
-	var cells: Variant = parsed.get("cells",[])
-	if nav_width < 10 or nav_height < 10 or not (cells is Array) or cells.size() != nav_height:
-		nav_width = 0
-		nav_height = 0
-		return
-	for row in cells:
-		if str(row).length() != nav_width:
-			nav_lines.clear()
-			nav_width = 0
-			nav_height = 0
-			return
-		nav_lines.append(str(row))
+		return false
+	var width: int = int(parsed.get("width", 0))
+	var height: int = int(parsed.get("height", 0))
+	var rows: Variant = parsed.get("cells",[])
+	if width < 10 or height < 10 or not (rows is Array) or rows.size() != height:
+		return false
+	var next_lines: Array[String] = []
+	for row in rows:
+		var line := str(row)
+		if line.length() != width or (line.count("0") + line.count("1")) != width:
+			return false
+		next_lines.append(line)
+	# Commit only a validated complete grid, so errors cannot leave
+	# an NPC navigating half of the previous map.
+	nav_width = width
+	nav_height = height
+	nav_lines = next_lines
+	nav_map_index = index
+	return true
+
+func set_map_index(index: int) -> bool:
+	if not _load_worldx_navigation(index):
+		return false
+	for i in range(actors.size()):
+		var point := _choose_spawn_point(i)
+		actors[i].position = point
+		wander_targets[i] = point
+	return true
 
 func _walkable_at(col: int, row: int) -> bool:
 	if col < 0 or row < 0 or col >= nav_width or row >= nav_height:
