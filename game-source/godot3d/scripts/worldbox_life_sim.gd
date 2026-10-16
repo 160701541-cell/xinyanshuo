@@ -20,6 +20,9 @@ func start(seed: int = 20261016) -> void:
 	villages.clear()
 	citizens.clear()
 	event_log.clear()
+	natural_nodes.clear()
+	carried_by_actor.clear()
+	harvested_fields.clear()
 	# Raw resources and crafted construction materials persist as independent stock.
 
 func create_village(code: String, initial: Dictionary = {}) -> bool:
@@ -221,19 +224,14 @@ func _citizen_work(person: Dictionary) -> void:
 	var action: String = ""
 	var amount: int = 0
 	if job == "farmer" and int(villages[town]["fields"])>0:
-		if not harvested_fields.is_empty():
-			person["schedule"]="waiting_for_harvest"
-			return
-		amount = 2+_rng.randi_range(0,2)
-		action="grain"
+		# Field yield must be harvested from an authored field node and carried.
+		# Never credit village grain directly from a simulation tick.
+		person["schedule"]="waiting_for_field_job"
+		return
 	elif job in ["woodcutter","quarryman"]:
-		# Only physical gather_to_actor -> deliver_carried may mint these resources
-		# when authored finite world nodes exist. Never fabricate timber in time tick.
-		if not natural_nodes.is_empty():
-			person["schedule"]="looking_for_worksite"
-			return
-		amount = 2+_rng.randi_range(0,1) if job=="woodcutter" else 1+_rng.randi_range(0,1)
-		action="wood" if job=="woodcutter" else "stone"
+		# Wood/stone must come from finite natural nodes via actor inventory.
+		person["schedule"]="looking_for_worksite"
+		return
 	elif job == "potter":
 		if _spend(town,{"clay":2,"wood":1}):
 			_add_stock(town,"coin",3)
@@ -248,13 +246,7 @@ func _citizen_work(person: Dictionary) -> void:
 			person["schedule"]="cook"
 			person["energy"]=maxi(0,int(person["energy"])-8)
 		return
-	if not action.is_empty():
-		_add_stock(town,action,amount)
-		_journal(town,"gather_"+action,amount,person["id"])
-		person["energy"]=maxi(0,int(person["energy"])-6)
-		person["schedule"]="work"
-	else:
-		person["schedule"]="idle"
+	person["schedule"]="idle"
 
 func _eat(person: Dictionary) -> void:
 	var town: String = person["village_id"]
