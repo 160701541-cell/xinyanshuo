@@ -680,3 +680,10 @@ Godot 4.4.1对从**原签名Android APK176**提取的实际`update_protocol.gdc`
 检查`autonomous_village_director.gd`发现此前去掉BoxMesh后仍保留两处直接访问`natural_art[node_id]`，会在采集资源耗尽或交货后触发无效字典索引。提交`89c3c442b30f401ff7ae22ae11d6cde310d65cb7`：改为安全可选视觉节点访问，NPC在资源耗尽时进入`waiting_resource`而非反复向空节点寻路；调度器每次轮询预先存在的可用节点，按ID稳定选择新资源；矿脉/树木恢复后可重新派工。**前提：世界生成器必须先登记资源位置，尚未完成场景集成。**
 
 新增真实Godot 4.4.1 GitHub Actions回归工作流`.github/workflows/canglan-resource-conservation-qa.yml`，提交`57a6fb0fec153c8d54d4a3ba0eda7fac92020c0c`，执行1000 tick无凭空产出、资源耗尽、重复交货、矿脉恢复和树木再生测试。**工作流已提交，但本次尚未核验CI运行结果；不写QA通过。** 原APK176正式rev178仍未改变，未手机验收。
+
+
+## 2026-10-17 / ECO-005-WORLD-SEEDING / 资源在NPC派工前真实进入模拟地图
+
+提交`10dfe9b933426ee76e571a80edafc0cad84642b7`新增`game-source/godot3d/scripts/world_resource_seeder.gd`：使用世界种子确定性创建16棵可恢复树木、10处普通石点、6处黏土点（其中一处大型矿脉）、7块农田，绑定真实地形高度、固定实体ID、有限库存及恢复规则。大型矿脉12000最大储量；树木48小时/1单位且24小时休养。新增测试`c5e9a44f3d6f7f6ae4cefb47ec234517bcbfe1c5`，检查节点数量、位置和同种子可重复生成。提交`b74dd0f8cdec4657ee1a4bd9147e47d85e61562c`修改`world_main.gd`，**在NPC调度器setup之前**执行资源播种；并把硬编码Qwen3 UI标题改为玩家自行选择模型。提交`6dfeaa8015f9689eb497cd3930313aeaeede8689`更新Godot CI同时跑守恒与世界播种测试，并添加pipefail。
+
+**关键限制**：当前完成的是权威模拟层真实坐标/储量/派工前播种，尚未将每个资源点绑定到授权3D资产渲染节点，不能说手机中已经能看见完整森林/矿区；地形/道路空间避让仍为初步规则，尚需碰撞与导航验证。CI本轮未读取实际运行结果，标记PENDING。未生成原版签名PCK，原版仍rev178。
