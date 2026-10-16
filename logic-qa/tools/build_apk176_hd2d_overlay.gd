@@ -8,6 +8,7 @@ const FILES := {
 	"res://scripts/hd2d_original_overlay_ota177.gd": "scripts/hd2d_original_overlay_ota177.gd",
 	"res://scripts/hd2d_stone_road.gd": "scripts/hd2d_stone_road.gd",
 	"res://scripts/hd2d_worldx_npcs.gd": "scripts/hd2d_worldx_npcs.gd",
+	"res://scripts/hd2d_house_portal.gd": "scripts/hd2d_house_portal.gd",
 	"res://hd2d/atlas_village_ota177.jpg": "hd2d/atlas_village_ota177.jpg"
 }
 
@@ -32,6 +33,10 @@ func _initialize() -> void:
 		if FileAccess.file_exists(base.path_join(zone_rel)):
 			source_list["res://" + zone_rel] = zone_rel
 		var rel: String = "hd2d/worldx/worldx_%03d.png" % i
+		if FileAccess.file_exists(base.path_join(rel)):
+			source_list["res://" + rel] = rel
+	for file in ["main_house_v3_source.png", "main_house_interior.png"]:
+		var rel: String = "hd2d/courtyard/" + file
 		if FileAccess.file_exists(base.path_join(rel)):
 			source_list["res://" + rel] = rel
 	var npc_manifest: String = base.path_join("hd2d/worldx/npcs/npcs.json")
