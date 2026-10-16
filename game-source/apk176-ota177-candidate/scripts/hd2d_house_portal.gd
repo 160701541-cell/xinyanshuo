@@ -135,6 +135,9 @@ func _build_interior() -> void:
 	# Do not inherit a shifted Control transform from the overlay; source of
 	# half-screen blank bronze in actual Godot rendered verification frames.
 	_room.top_level = true
+	# Original WorldX NPCs use z_index=6 and were painted over the
+	# interior background. The interior must be a separate topmost scene.
+	_room.z_index = 40
 	_room.position = Vector2.ZERO
 	add_child(_room)
 	_room.set_anchors_preset(Control.PRESET_TOP_LEFT)
@@ -222,6 +225,7 @@ func enter_building() -> void:
 	transition_count += 1
 	current_spawn = inside_spawn
 	_outdoor_art.visible = false
+	_world.visible = false # Do not show outdoor NPCs through the room.
 	_room.visible = true
 	_open_button.visible = false
 	if _status != null:
@@ -235,6 +239,7 @@ func exit_building() -> void:
 	transition_count += 1
 	current_spawn = outside_spawn
 	_outdoor_art.visible = true
+	_world.visible = true
 	_room.visible = false
 	_open_button.visible = true
 	_player_marker.position = outside_spawn
@@ -244,4 +249,6 @@ func exit_building() -> void:
 
 func set_overlay_visible(active: bool) -> void:
 	visible = active
+	if _world != null:
+		_world.visible = active and not inside
 	# Keep interior state while temporarily viewing the original world.
