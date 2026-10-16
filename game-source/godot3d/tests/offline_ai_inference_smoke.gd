@@ -22,8 +22,8 @@ func _run() -> void:
 	)
 	service.inference_failed.connect(func(reason: String) -> void: failure=reason)
 	var started: bool = false
-	for counter in range(3300):
-		await process_frame
+	for counter in range(850):
+		await create_timer(0.15).timeout
 		var status: String = String(service.get("stage"))
 		if status=="unavailable":
 			printerr("OFFLINE_AI_QA_BLOCKED:",service.get("info"))
