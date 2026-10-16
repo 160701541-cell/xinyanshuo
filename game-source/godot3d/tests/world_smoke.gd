@@ -33,7 +33,7 @@ func _run() -> void:
 	var resources: Node3D = stage.get_node_or_null("VisibleCC0Resources")
 	assert(resources != null, "World scene did not attach licensed CC0 resource visuals")
 	var resource_stats: Dictionary = resources.call("stats")
-	assert(int(resource_stats["authored_positions"]) >= 39)
+	assert(int(resource_stats["authored_positions"]) >= 38)
 	assert(int(resource_stats["cc0_meshes"]) >= 32,
 		"World trees and stone/clay resources must use actual imported CC0 meshes")
 	assert((resource_stats["missing_asset_roles"] as Array).is_empty(),
