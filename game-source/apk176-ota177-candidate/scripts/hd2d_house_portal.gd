@@ -16,6 +16,7 @@ var inside_spawn := Vector2(600.0, 680.0)
 var current_spawn := Vector2.ZERO
 var _world: Node2D
 var _room: Control
+var _room_sprite: Sprite2D
 var _open_button: Button
 var _exit_button: Button
 var _status: Label
@@ -46,6 +47,7 @@ func _process(_delta: float) -> void:
 			for part in _room.get_children():
 				if part is TextureRect or part is ColorRect:
 					part.size = desired
+		_sync_room_sprite()
 
 func install(world: Node2D, status: Label) -> void:
 	_world = world
@@ -57,6 +59,21 @@ func install(world: Node2D, status: Label) -> void:
 	_build_interior()
 	_build_entrance_controls()
 	current_spawn = outside_spawn
+
+func _sync_room_sprite() -> void:
+	if _room_sprite == null or _room_sprite.texture == null or _room == null:
+		return
+	var tex_size: Vector2 = _room_sprite.texture.get_size()
+	if tex_size.x < 1.0 or tex_size.y < 1.0:
+		return
+	var room_size: Vector2 = _room.size
+	if room_size.x < 1.0 or room_size.y < 1.0:
+		return
+	# Scale the original image uniformly: no clipping, invisible furniture,
+	# distorted 2D geometry, or implicit TextureRect stretch surprises.
+	var s := minf(room_size.x / tex_size.x, room_size.y / tex_size.y)
+	_room_sprite.scale = Vector2(s, s)
+	_room_sprite.position = room_size * 0.5
 
 func _read_texture(path: String) -> Texture2D:
 	if not FileAccess.file_exists(path):
@@ -125,14 +142,13 @@ func _build_interior() -> void:
 	floor.size = _room.size
 	var tex := _read_texture(INTERIOR)
 	if tex != null:
-		var art := TextureRect.new()
-		art.name = "WorldXKolorsInteriorCandidate"
-		art.texture = tex
-		art.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-		art.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-		_room.add_child(art)
-		art.set_anchors_preset(Control.PRESET_TOP_LEFT)
-		art.size = _room.size
+		_room_sprite = Sprite2D.new()
+		_room_sprite.name = "WorldXKolorsInteriorCandidate"
+		_room_sprite.texture = tex
+		_room_sprite.centered = true
+		_room_sprite.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
+		_room.add_child(_room_sprite)
+		_sync_room_sprite()
 		_inside_image_present = true
 	else:
 		# Functional, deliberately marked placeholder, never considered art QA.
