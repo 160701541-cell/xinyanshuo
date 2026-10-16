@@ -176,7 +176,7 @@ func ask_npc_intent(entity_id: String, profession: String,
 	_update("thinking","离线AI根据NPC真实需要思考选择……")
 	native.call("request_reply",entity_id,persona,
 		"从你的实际饥饿、精力、职业和工地进度选择一件合理的下一步行为。只返回ACTION=xxx。",
-		48)
+		48,true)
 	return true
 
 func ask_npc(entity_id: String, role_name: String, player_text: String,
