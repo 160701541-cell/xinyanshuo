@@ -20,12 +20,12 @@ def decode_private_secret(value: str) -> bytes:
     if not raw:
         raise ValueError("empty secret")
     if raw.startswith("-----BEGIN "):
-        return (raw.replace("\\\\n","\\n").rstrip()+"\\n").encode("utf-8")
-    compact=re.sub(r"\\s+","",raw)
+        return (raw.replace("\\n","\n").rstrip()+"\n").encode("utf-8")
+    compact=re.sub(r"\s+","",raw)
     decoded=base64.b64decode(compact,validate=True)
     if not decoded.startswith(b"-----BEGIN "):
         raise ValueError("content signing secret is not a PEM-formatted RSA key")
-    return decoded.rstrip()+b"\\n"
+    return decoded.rstrip()+b"\n"
 
 
 def pub_der(input_bytes: bytes, is_private: bool) -> bytes:
