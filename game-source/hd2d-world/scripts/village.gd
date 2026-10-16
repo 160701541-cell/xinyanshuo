@@ -1,136 +1,245 @@
 extends Node2D
-## Independent HD2D test inside the PUBLIC xinyanshuo repository only.
-## These are QA candidates downloaded from the already public art library.
-## No coupling to the inaccessible/private legacy game, APK, or signing keys.
-
+## CAC-PROC-001: no atlas/network. Actual code-built outdoor streets AND interiors.
+## Public independent QA project; not the legacy signed Android game.
+const City = preload("res://scripts/procedural_city.gd")
+const Interior = preload("res://scripts/procedural_interior.gd")
 const Paving = preload("res://scripts/stone_road.gd")
-const ATLAS_URL := "https://160701541-cell.github.io/xinyanshuo/art-source/hd2d/batch-20261016/01_village_props_atlas_preview.jpg"
-const WORLD_SIZE := Vector2(1600.0, 1000.0)
-const OBJECTS := [
-	{"name": "村落建筑候选", "x": 300.0, "y": 240.0, "col": 0, "row": 0},
-	{"name": "村口建筑候选", "x": 830.0, "y": 240.0, "col": 1, "row": 0},
-	{"name": "村落井台候选", "x": 420.0, "y": 700.0, "col": 0, "row": 1},
-	{"name": "村落设施候选", "x": 900.0, "y": 700.0, "col": 1, "row": 1}
-]
+const WORLD_SIZE := Vector2(3960.0,2680.0)
 
 var _camera: Camera2D
+var _city: Node2D
+var _interior: Node2D
 var _status: Label
-var _night := false
-var _night_layer: ColorRect
+var _enter_button: Button
+var _leave_button: Button
+var _night: bool = false
+var _season: int = 0
+var _inside: bool = false
+var _selected: Node2D
+var _dragged: bool = false
+var _pointer_start := Vector2.ZERO
+var _return_position := Vector2.ZERO
+var _return_zoom := Vector2.ONE
 
 func _ready() -> void:
+	_city = City.new()
+	_city.name = "ProceduralCity"
+	add_child(_city)
+	_make_paving()
+	_interior = Interior.new()
+	_interior.name = "ProceduralInterior"
+	_interior.position = Vector2(4650.0,720.0)
+	_interior.visible = false
+	add_child(_interior)
 	_camera = Camera2D.new()
 	_camera.name = "Camera2D"
-	_camera.position = WORLD_SIZE * 0.5
-	_camera.zoom = Vector2(0.8, 0.8)
+	_camera.position = Vector2(1580.0,880.0)
+	_camera.zoom = Vector2(0.85,0.85)
 	add_child(_camera)
 	_camera.make_current()
-	_create_scene()
 	_create_hud()
-	_download_atlas()
+	_refresh_status()
 
-func _create_scene() -> void:
-	var ground := Polygon2D.new()
-	ground.color = Color("#628059")
-	ground.polygon = PackedVector2Array([
-		Vector2.ZERO, Vector2(WORLD_SIZE.x, 0.0), WORLD_SIZE,
-		Vector2(0.0, WORLD_SIZE.y)
-	])
-	add_child(ground)
-	# Actual repeatable native texture, not an atlas illustration posing as tiles.
-	# Same 256px texture is shared by every segment; edge colors join pixel-perfect.
-	var paving_texture: Texture2D = Paving.make_texture()
-	var road_group := Node2D.new()
-	road_group.name = "SeamlessStoneRoad"
-	add_child(road_group)
+func _make_paving() -> void:
+	# Shared original 256px program texture, independent from any JPEG atlas.
+	var road: Node2D = Node2D.new()
+	road.name = "SeamlessStoneRoad"
+	road.position = Vector2(1290,2010)
+	_city.add_child(road)
+	var tex: Texture2D = Paving.make_texture()
 	for col in range(7):
 		for row in range(2):
-			var segment := Sprite2D.new()
-			segment.name = "Paving_%02d_%02d" % [col, row]
-			segment.centered = false
-			segment.texture = paving_texture
-			segment.position = Vector2(float(col * Paving.SIZE), float(515 + row * Paving.SIZE))
-			road_group.add_child(segment)
-	var shoulder := Line2D.new()
-	shoulder.width = 12.0
-	shoulder.default_color = Color("#4f5545")
-	shoulder.points = PackedVector2Array([Vector2(0.0, 508.0), Vector2(1600.0, 508.0)])
-	add_child(shoulder)
+			var sprite: Sprite2D = Sprite2D.new()
+			sprite.name = "Paving_%02d_%02d" % [col,row]
+			sprite.centered = false
+			sprite.texture = tex
+			sprite.position = Vector2(float(col*Paving.SIZE),float(row*Paving.SIZE))
+			road.add_child(sprite)
 
 func _create_hud() -> void:
-	var ui := CanvasLayer.new()
-	add_child(ui)
-	var column := VBoxContainer.new()
-	column.position = Vector2(18.0, 16.0)
-	ui.add_child(column)
-	var header := Label.new()
-	header.text = "苍岚 · 公开HD2D场景验收"
-	column.add_child(header)
+	var layer: CanvasLayer = CanvasLayer.new()
+	layer.name = "HUD"
+	add_child(layer)
+	var panel: PanelContainer = PanelContainer.new()
+	panel.position = Vector2(15,14)
+	layer.add_child(panel)
+	var stack: VBoxContainer = VBoxContainer.new()
+	panel.add_child(stack)
+	var header: Label = Label.new()
+	header.text = "苍岚 · 程序化 HD2D 城镇"
+	stack.add_child(header)
 	_status = Label.new()
-	_status.text = "正在读取公开候选素材……"
-	column.add_child(_status)
-	var toggle := Button.new()
-	toggle.text = "昼夜切换"
-	toggle.pressed.connect(func() -> void:
-		_night = not _night
-		modulate = Color("#617196") if _night else Color.WHITE
-	)
-	column.add_child(toggle)
-	var note := Label.new()
-	note.text = "石砖路：程序生成真无缝纹理；其余图集候选未通过美术QA"
-	column.add_child(note)
+	_status.text = "正在建立城镇……"
+	stack.add_child(_status)
+	var actions: HBoxContainer = HBoxContainer.new()
+	stack.add_child(actions)
+	var day_btn: Button = Button.new()
+	day_btn.text = "昼夜"
+	day_btn.pressed.connect(_toggle_night)
+	actions.add_child(day_btn)
+	var season_btn: Button = Button.new()
+	season_btn.text = "四季"
+	season_btn.pressed.connect(_cycle_season)
+	actions.add_child(season_btn)
+	var layout_btn: Button = Button.new()
+	layout_btn.text = "新布局"
+	layout_btn.pressed.connect(_regenerate)
+	actions.add_child(layout_btn)
+	var controls: HBoxContainer = HBoxContainer.new()
+	stack.add_child(controls)
+	_enter_button = Button.new()
+	_enter_button.text = "开门进入"
+	_enter_button.disabled = true
+	_enter_button.pressed.connect(_enter_selected)
+	controls.add_child(_enter_button)
+	_leave_button = Button.new()
+	_leave_button.text = "返回街道"
+	_leave_button.visible = false
+	_leave_button.pressed.connect(_leave_interior)
+	controls.add_child(_leave_button)
+	var damage_btn: Button = Button.new()
+	damage_btn.text = "建筑受损测试"
+	damage_btn.pressed.connect(_cycle_damage)
+	controls.add_child(damage_btn)
+	var help: Label = Label.new()
+	help.text = "拖动移动视角 · 滚轮/双指缩放 · 点建筑选择"
+	stack.add_child(help)
 
-func _download_atlas() -> void:
-	var request := HTTPRequest.new()
-	request.timeout = 20.0
-	request.body_size_limit = 3000000
-	add_child(request)
-	request.request_completed.connect(_on_atlas_loaded)
-	if request.request(ATLAS_URL) != OK:
-		_status.text = "图集下载请求失败"
+func _refresh_status() -> void:
+	if _status == null:
+		return
+	if _inside:
+		_status.text = "室内：" + String(_interior.get("source_building_id")) + " · 独立家具：" + str(_interior.get("furnishings").size())
+		return
+	var counts: Dictionary = _city.call("counts")
+	var s: String = "%d院落 / %d建筑 / %d独立道具" % [int(counts["plots"]),int(counts["buildings"]),int(counts["props"])]
+	if _selected != null:
+		s += "\n选中：" + String(_selected.get("entity_id")) + " · " + String(_selected.get("kind"))
+	_status.text = s
 
-func _on_atlas_loaded(result: int, code: int, _headers: PackedStringArray, bytes: PackedByteArray) -> void:
-	if result != HTTPRequest.RESULT_SUCCESS or code != 200 or bytes.size() > 3000000:
-		_status.text = "图集下载失败：请检查网络"
+func _toggle_night() -> void:
+	_night = not _night
+	_city.call("set_night",_night)
+	_city.modulate = Color("#8794ac") if _night else Color.WHITE
+	if _inside and _selected != null:
+		_interior.call("open_for",_selected,_night)
+	_refresh_status()
+
+func _cycle_season() -> void:
+	_season = (_season+1)%4
+	_city.call("set_season",_season)
+	_refresh_status()
+
+func _regenerate() -> void:
+	if _inside:
+		_leave_interior()
+	_selected = null
+	_enter_button.disabled = true
+	var next_seed: int = int(_city.get("world_seed"))+1
+	_city.call("generate",next_seed)
+	_city.call("set_night",_night)
+	_city.call("set_season",_season)
+	_refresh_status()
+
+func _cycle_damage() -> void:
+	if _selected == null or _inside:
 		return
-	var image := Image.new()
-	if image.load_jpg_from_buffer(bytes) != OK:
-		_status.text = "图集解码失败"
+	var next: int = (int(_selected.get("damage"))+1)%3
+	_selected.call("set_damage",next)
+	if next == 2:
+		_enter_button.disabled = true
+	else:
+		_enter_button.disabled = false
+	_refresh_status()
+
+func _select_building(building: Node2D) -> void:
+	_selected = building
+	_city.call("set_selected",building)
+	_enter_button.disabled = (building == null or int(building.get("damage")) == 2) if building != null else true
+	_refresh_status()
+
+func _try_tap(screen_point: Vector2) -> void:
+	if _inside:
 		return
-	var tex := ImageTexture.create_from_image(image)
-	var cell_width: int = image.get_width() / 4
-	var cell_height: int = image.get_height() / 5
-	for entry in OBJECTS:
-		var region := AtlasTexture.new()
-		region.atlas = tex
-		region.region = Rect2(
-			int(entry["col"]) * cell_width, int(entry["row"]) * cell_height,
-			cell_width, cell_height
-		)
-		var sprite := Sprite2D.new()
-		sprite.texture = region
-		sprite.position = Vector2(float(entry["x"]), float(entry["y"]))
-		sprite.scale = Vector2(1.6, 1.6)
-		add_child(sprite)
-		var caption := Label.new()
-		caption.text = String(entry["name"])
-		caption.position = sprite.position + Vector2(-65.0, float(cell_height))
-		add_child(caption)
-	_status.text = "已显示 %d 个候选资源；仍需替换为独立游戏贴图" % OBJECTS.size()
+	var at: Vector2 = get_canvas_transform().affine_inverse()*screen_point
+	var hit: Node2D = _city.call("find_door",at,50.0)
+	if hit == null:
+		var all: Array[Node2D] = _city.get("buildings")
+		for i in range(all.size()-1,-1,-1):
+			var b: Node2D = all[i]
+			var area: Rect2 = b.call("footprint")
+			if area.has_point(at):
+				hit = b
+				break
+	if hit != null:
+		_select_building(hit)
+		# First tap selects; deliberate button press opens room to avoid pan/tap collisions.
+	else:
+		_select_building(null)
+
+func _enter_selected() -> void:
+	if _selected == null or int(_selected.get("damage")) == 2 or _inside:
+		return
+	_selected.call("toggle_door")
+	_return_position = _camera.position
+	_return_zoom = _camera.zoom
+	_interior.call("open_for",_selected,_night)
+	_city.visible = false
+	_interior.visible = true
+	_inside = true
+	_camera.position = _interior.position
+	_camera.zoom = Vector2(0.92,0.92)
+	_enter_button.visible = false
+	_leave_button.visible = true
+	_refresh_status()
+
+func _leave_interior() -> void:
+	if not _inside:
+		return
+	_city.visible = true
+	_interior.visible = false
+	_inside = false
+	_camera.position = _return_position
+	_camera.zoom = _return_zoom
+	_enter_button.visible = true
+	_enter_button.disabled = (_selected == null or int(_selected.get("damage")) == 2)
+	_leave_button.visible = false
+	_refresh_status()
 
 func _unhandled_input(event: InputEvent) -> void:
-	if event is InputEventScreenDrag:
-		_camera.position -= event.relative / _camera.zoom.x
-	elif event is InputEventMouseMotion and Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT):
-		_camera.position -= event.relative / _camera.zoom.x
+	if event is InputEventScreenTouch:
+		if event.pressed:
+			_pointer_start = event.position
+			_dragged = false
+		elif not _dragged:
+			_try_tap(event.position)
+	elif event is InputEventScreenDrag and not _inside:
+		_dragged = true
+		_pan(event.relative)
+	elif event is InputEventMouseButton:
+		if event.button_index == MOUSE_BUTTON_LEFT:
+			if event.pressed:
+				_pointer_start = event.position
+				_dragged = false
+			elif not _dragged:
+				_try_tap(event.position)
+		elif event.pressed and event.button_index == MOUSE_BUTTON_WHEEL_UP:
+			_zoom(1.12)
+		elif event.pressed and event.button_index == MOUSE_BUTTON_WHEEL_DOWN:
+			_zoom(1.0/1.12)
+	elif event is InputEventMouseMotion and Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT) and not _inside:
+		if event.position.distance_to(_pointer_start)>8.0:
+			_dragged = true
+		if _dragged:
+			_pan(event.relative)
 	elif event is InputEventMagnifyGesture:
 		_zoom(event.factor)
-	elif event is InputEventMouseButton and event.pressed:
-		if event.button_index == MOUSE_BUTTON_WHEEL_UP:
-			_zoom(1.1)
-		elif event.button_index == MOUSE_BUTTON_WHEEL_DOWN:
-			_zoom(1.0 / 1.1)
+
+func _pan(relative: Vector2) -> void:
+	_camera.position -= relative / _camera.zoom.x
+	_camera.position.x = clampf(_camera.position.x,0.0,WORLD_SIZE.x)
+	_camera.position.y = clampf(_camera.position.y,0.0,WORLD_SIZE.y)
 
 func _zoom(multiplier: float) -> void:
-	var value := clampf(_camera.zoom.x * multiplier, 0.45, 1.8)
-	_camera.zoom = Vector2(value, value)
+	var value: float = clampf(_camera.zoom.x*multiplier,0.48,1.65)
+	_camera.zoom = Vector2(value,value)
