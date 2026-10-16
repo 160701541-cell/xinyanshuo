@@ -35,7 +35,7 @@ func _initialize() -> void:
 		var rel: String = "hd2d/worldx/worldx_%03d.png" % i
 		if FileAccess.file_exists(base.path_join(rel)):
 			source_list["res://" + rel] = rel
-	for file in ["main_house_v3_source.png", "main_house_interior.png"]:
+	for file in ["main_house_v3_source.png", "main_house_interior.png", "main_house_isolated_edge04.png"]:
 		var rel: String = "hd2d/courtyard/" + file
 		if FileAccess.file_exists(base.path_join(rel)):
 			source_list["res://" + rel] = rel
