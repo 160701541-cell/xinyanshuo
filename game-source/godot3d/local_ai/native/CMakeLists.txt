@@ -24,7 +24,10 @@ FetchContent_MakeAvailable(godotcpp llama_source)
 add_library(canglan_ai SHARED
   canglan_local_llm.cpp register_types.cpp)
 target_include_directories(canglan_ai PRIVATE ${llama_source_SOURCE_DIR}/include)
-target_link_libraries(canglan_ai PRIVATE godot-cpp llama)
+if(NOT TARGET godot::cpp)
+  message(FATAL_ERROR "Pinned godot-cpp 4.4 bindings did not configure")
+endif()
+target_link_libraries(canglan_ai PRIVATE godot::cpp llama)
 set_target_properties(canglan_ai PROPERTIES
   PREFIX "lib"
   LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/stage")
