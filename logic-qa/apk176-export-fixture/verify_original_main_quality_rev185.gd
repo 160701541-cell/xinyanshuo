@@ -82,7 +82,7 @@ func _run() -> void:
     return
   # The entire point of this version is that static Kenney GLBs must NO
   # LONGER create one independently rendered MeshInstance3D per tree/stone.
-  var drawn_parts: Array[Node] = world.find_children("*", "MultiMeshInstance3D", true, false)
+  var drawn_parts: Array[Node] = world.find_children("ActualKenneyBatch_*", "MultiMeshInstance3D", true, false)
   var batch: Dictionary = first.get("kenney_batch",{})
   if int(first.get("palette_roles",0)) != 5:
     _fail(12, "KENNEY_MAIN_PALETTE_MUST_HAVE_EXACTLY_FIVE_SWATCHES")
