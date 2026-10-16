@@ -13,7 +13,7 @@ func _run() -> void:
 	var director: Node3D = stage.get("autonomous_director")
 	assert(director!=null and sim!=null)
 	var jobs: Dictionary = director.get("assignments")
-	assert(jobs.size()==8, "NPC autonomous director must bind eight 3D actors")
+	assert(jobs.size()==10, "NPC autonomous director must bind eight finite miners and two field workers")
 	var first_id: String = String(jobs.keys()[0])
 	var job: Dictionary = jobs[first_id]
 	var actor: Node3D = job["citizen"]
