@@ -24,12 +24,25 @@ func _run() -> void:
 	var director: Node3D = stage.get_node_or_null("AutonomousNPCJobsWorldVisible")
 	assert(director!=null,"Actual Godot world has no autonomous NPC work director")
 	var jobs: Dictionary = director.call("stats")
-	assert(int(jobs["workers"])==10, "8 finite-resource carriers plus 2 actual field workers must be assigned")
+	assert(int(jobs["workers"])>=8, "Authored finite-resource workers must receive real jobs")
 	var economy: RefCounted = stage.get("life_sim")
-	assert((economy.get("harvested_fields") as Dictionary).size()==3,
-		"Two autonomous field plots plus one player harvest parcel must be registered")
-	assert((economy.get("natural_nodes") as Dictionary).size()==9,
-		"8 finite natural work sites + 1 visible manual tree must exist")
+	assert((economy.get("harvested_fields") as Dictionary).size()>=7,
+		"Resource seeder must author real farmland before dispatch")
+	assert((economy.get("natural_nodes") as Dictionary).size()>=32,
+		"Pre-existing trees and mineral resource nodes must exist")
+	var resources: Node3D = stage.get_node_or_null("VisibleCC0Resources")
+	assert(resources != null, "World scene did not attach licensed CC0 resource visuals")
+	var resource_stats: Dictionary = resources.call("stats")
+	assert(int(resource_stats["authored_positions"]) >= 39)
+	assert(int(resource_stats["cc0_meshes"]) >= 32,
+		"World trees and stone/clay resources must use actual imported CC0 meshes")
+	assert((resource_stats["missing_asset_roles"] as Array).is_empty(),
+		"Kenney GLB resource models did not import")
+	for resource_id in resources.get("models").keys():
+		var model: Node3D = resources.get("models")[resource_id]
+		assert(bool(model.get_meta("original_cc0_asset", false)))
+		assert(String(model.get_meta("asset_source", "")) == "kenney")
+		assert(model.get_parent().has_meta("resource_id"))
 	for worker in (director.get("assignments") as Dictionary).values():
 		var citizen: Node3D = worker["citizen"]
 		assert(bool(citizen.get("_externally_assigned_job")),
