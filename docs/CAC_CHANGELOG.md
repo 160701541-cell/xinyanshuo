@@ -182,3 +182,6 @@
 - 这与前述**原游戏PackedScene可成功装载**是两种不同层级测试：`PackedScene`装载PASS ≠ 主场景完整实例化/每个底层3D引擎功能PASS。**不推测Linux缺失自动等于手机Android缺失**；需要验证原版Android GDExtension发布物或兼容Linux测试插件，不得用假的Node替代原生Terrain3D以制造绿色结果。
 - 纠正测试输出：将易误导的打印改为 `OBSERVED_APK176_MAIN_INSTANCE_WITH_PORTAL_AND_IMAGES_PENDING_ENGINE_ERROR_AUDIT`，只有所有引擎错误检查清零后CI才打印最终 `PASS_APK176_ACTUAL_MAIN_INSTANTIATED_NO_ENGINE_ERRORS_WITH_REAL_HOUSE`。
 - **当前真实状态**：组件功能QA绿色，原APK main资源装载QA绿色，完整原游戏实例化QA红色，永久签名密钥无可用证据，手机原版更新仍未发布。
+
+## WorldX真实参考图试样probe01（2026-10-16）
+纠正batch03画风偏离：不再用纯文本冒充参考图控制。保持WorldX+Kolors，将已有院落原图以base64写入真实image请求字段，SHA锁为44d116addb17c5aa5a1f6c7edc85d44132fefdc0eb52ae422b63cc0b71060e3f。只做一张厢房候选、一次生成请求、无重试，模型是否真正有效利用参考图仍必须视觉比对。原图不改，正式发布清单不改。本地Node测试1/1 PASS、脚本语法检查PASS；云端出图待运行。API依据https://docs.siliconflow.cn/docs/api/images-generations-post ，不把HTTP成功等同于画风达标。

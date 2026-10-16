@@ -84,3 +84,6 @@ python -m unittest discover -s tools/asset_factory -p 'test_*.py' -v
 
 ## WorldX batch03
 入口 `canglan-worldx-props-batch03.yml`：六件道具，固定WorldX上游版本，直接使用无依赖原生prompt loader，不再安装无关生成器依赖。每件一次、顺序调用、无重试；请求记录与所有成功候选保留，全部GENERATED_UNAPPROVED。`node --test tools/asset_factory/test_worldx_props_batch03.mjs` 检查订单与隔离约束。原生1024，不放大冒充高清；带字样后续需独立修补，带背景不自动批准。
+
+## WorldX参考图probe01
+工作流canglan-worldx-reference-probe01.yml运行单件厢房验证。脚本worldx_style_reference_probe01.mjs校验已有院落原图SHA并以data URL传入Kolors的image字段，固定seed，保留prompt/来源哈希/图像/请求记录。默认一次、不重试，参考作用仍待视觉比较。`node --test tools/asset_factory/test_worldx_style_reference_probe01.mjs`检查真实image字段与单请求规格。
