@@ -109,3 +109,7 @@ python -m unittest discover -s tools/asset_factory -p 'test_*.py' -v
 预期 `PASS PUBLIC HD2D GODOT SCENE STARTUP`，失败即阻断测试APK。可在图形界面打开对应 `project.godot` 实际查看院落、建筑、门、室内、四季昼夜，而非只看统计数量。所有新图形保持 `VISUAL_UNAPPROVED`；现有签名原手机游戏不自动收到这些场景。
 
 **规范约束**：程序化建筑是场景节点，物品/灯笼/井台/树木/家具必须各自持有稳定ID，不应烘成不可交互的背景。建造成本、库存、研究、施工和破坏持久化仍需原游戏权威数据系统接入；本独立测试场景不免费发放实体。
+
+## 2026-10-16 执行方向变更：HD2D 停止，新的纯3D源码主线生效
+
+根据用户最新明确指令，之前 CAC-PROC-001 高清 2D 候选视觉方案 **SUPERSEDED / READ-ONLY**；旧图鉴继续保留溯源但**不再是必须完成的开发步骤**。正式转向 `game-source/godot3d/` 的 Godot 4.4 原生 3D，程序化地形/砖石/木构/建筑/独立物件/真正三维NPC替身的公开工程。新 Python 可复制的38件 GLB 资产生成功能在 `game-source/godot3d/tools/generate_glb_pack.py`，Godot 程序化场景入口在 `game-source/godot3d/scenes/main.tscn`，质量门禁在 `tools/audit_public_3d.py` 和 `game-source/godot3d/tools/quality_gate.sh`。面向原正式Android游戏的导入和签名仍未通过，不应将旧2D技术测试进度冒充3D已发布。
