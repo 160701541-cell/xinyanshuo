@@ -35,7 +35,7 @@ func _run() -> void:
 	var panel: Node = window.get_node_or_null("CC0PreviewInterface")
 	var viewport: SubViewport = panel.get_node_or_null(
 		"ActualReal3DViewportContainer/Actual3DRenderingViewport") if panel != null else null
-	if viewport == null or viewport.world_3d == null:
+	if viewport == null or viewport.get_world_3d() == null:
 		_fail(7, "no_real_Godot_3d_renderer")
 		return
 	var scene_3d: Node3D = viewport.get_node_or_null("LicensedKenneyWorld")
