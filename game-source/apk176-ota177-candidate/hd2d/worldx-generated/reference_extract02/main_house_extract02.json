@@ -1,0 +1,17 @@
+{
+  "id": "main_house_extract02",
+  "batch": "worldx-props-reference_extract02",
+  "model": "Qwen/Qwen-Image-Edit-2509",
+  "pipeline": "WorldX native prompt loader + SiliconFlow",
+  "file": "main_house_extract02.png",
+  "sha256": "03e737ba472397797b73e1cc11a16eab9334e490cc2826701793d8f119b71ca0",
+  "upstream_commit": "edb4976de5963457dfbf5d2171355270a4ca1e79",
+  "status": "GENERATED_UNAPPROVED",
+  "reference_image_sent": true,
+  "reference_sha256": "44d116addb17c5aa5a1f6c7edc85d44132fefdc0eb52ae422b63cc0b71060e3f",
+  "reference_effectiveness": "REQUIRES_VISUAL_VERIFICATION",
+  "style_control": "source_image_extraction_edit_NOT_style_approved",
+  "transparency": "NOT_CLEANED",
+  "license_status": "PROVIDER_TERMS_REVIEW_REQUIRED",
+  "run_url": "https://github.com/160701541-cell/xinyanshuo/actions/runs/38879539515"
+}
