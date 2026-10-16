@@ -4,15 +4,20 @@ extends SceneTree
 ## No standalone APK and NO automatic website publication.
 const FILES := {
 	"res://scenes/main.tscn.remap": "scenes/main_rev180.tscn.remap",
-	"res://scenes/main_original_3d_preview_rev179.tscn": "scenes/main_original_3d_preview_rev179.tscn",
+	"res://scenes/main_original_autonomous_rev180.tscn": "scenes/main_original_autonomous_rev180.tscn",
 	"res://scripts/hd2d_original_overlay_ota177.gd": "scripts/hd2d_original_overlay_ota177.gd",
 	"res://scripts/hd2d_stone_road.gd": "scripts/hd2d_stone_road.gd",
 	"res://scripts/hd2d_worldx_npcs.gd": "scripts/hd2d_worldx_npcs.gd",
 	"res://scripts/hd2d_house_portal.gd": "scripts/hd2d_house_portal.gd",
 	"res://scripts/apk176_living_resource_world_rev180.gd": "scripts/apk176_living_resource_world_rev180.gd",
 	"res://canglan_rev180/worldbox_life_sim.gd": "canglan_rev180/worldbox_life_sim.gd",
-	"res://canglan_rev179/kenney_tree_oak.glb": "canglan_rev179/kenney_tree_oak.glb",
-	"res://canglan_rev179/kenney_rocks_small.glb": "canglan_rev179/kenney_rocks_small.glb",
+	"res://canglan_rev180/tree_oak.glb": "canglan_rev180/tree_oak.glb",
+	"res://canglan_rev180/rocks_small.glb": "canglan_rev180/rocks_small.glb",
+	"res://canglan_rev180/tree_log.glb": "canglan_rev180/tree_log.glb",
+	"res://canglan_rev180/wood_fence.glb": "canglan_rev180/wood_fence.glb",
+	"res://canglan_rev180/stone_steps.glb": "canglan_rev180/stone_steps.glb",
+	"res://canglan_rev180/wood_door.glb": "canglan_rev180/wood_door.glb",
+	"res://canglan_rev180/animated_knight.glb": "canglan_rev180/animated_knight.glb",
 	"res://Textures/colormap.png": "Textures/colormap.png",
 	"res://hd2d/atlas_village_ota177.jpg": "hd2d/atlas_village_ota177.jpg"
 }
@@ -45,21 +50,21 @@ func _initialize() -> void:
 				files["res://" + rel] = rel
 	var writer := PCKPacker.new()
 	if writer.pck_start(destination) != OK:
-		printerr("BLOCKED_REV179_CANNOT_OPEN_PACK")
+		printerr("BLOCKED_REV180_CANNOT_OPEN_PACK")
 		quit(3)
 		return
 	for target in files:
 		var path: String = source_dir.path_join(files[target])
 		if not FileAccess.file_exists(path):
-			printerr("BLOCKED_REV179_MISSING_ORIGINAL_OR_CC0_RESOURCE ", path)
+			printerr("BLOCKED_REV180_MISSING_ORIGINAL_OR_CC0_RESOURCE ", path)
 			quit(4)
 			return
 		if writer.add_file(target, path) != OK:
-			printerr("BLOCKED_REV179_FAILED_PACK_RESOURCE ", target)
+			printerr("BLOCKED_REV180_FAILED_PACK_RESOURCE ", target)
 			quit(5)
 			return
 	if writer.flush() != OK:
-		printerr("BLOCKED_REV179_PCK_FLUSH_FAILED")
+		printerr("BLOCKED_REV180_PCK_FLUSH_FAILED")
 		quit(6)
 		return
 	print("PASS_APK176_REV180_LIVING_3D_AUTONOMOUS_PCK_BUILT_UNSIGNED")
