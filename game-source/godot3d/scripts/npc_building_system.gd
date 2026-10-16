@@ -4,6 +4,7 @@ extends Node3D
 ## structural parts IN THE REAL 3D WORLD. No finished-house art generation.
 ## Navigation still uses the existing prototype steering, NOT obstacle-aware navmesh.
 const TOWN := "CL-HX-VILLAGE-0001"
+const CC0Bridge = preload("res://scripts/cc0_asset_bridge.gd")
 const FreeCC0 = preload("res://scripts/cc0_asset_bridge.gd")
 const YARD := Vector3(2.0, 0.4, 40.0)
 const WORKSHOP_LOCATION := Vector3(39.0, 0.35, 43.0)
@@ -59,6 +60,39 @@ func _mesh_piece(parent: Node3D,label: String,pos: Vector3,shape: Vector3,
 			mat.texture_filter = BaseMaterial3D.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
 	part.material_override = mat
 	parent.add_child(part)
+	# Existing real CC0 modular parts replace the temporary handmade render
+	# ONLY AFTER this named NPC has delivered stock and completed this stage.
+	# Free meshes have NO effect on bill, collision authority or build timer.
+	var reusable: String = ""
+	if label.begins_with("NPCBuilt"):
+		reusable="plaster_wall"
+	elif label.begins_with("NPCLaidRoofSlope"):
+		reusable="clay_tiled_roof"
+	elif label.begins_with("NPCSetTimberPost"):
+		reusable="wood_fence"
+	elif label=="ActuallyBuiltStoneFoundation":
+		reusable="stone_steps"
+	elif label=="RawTimberMaterial":
+		reusable="tree_log"
+	elif label=="StoneMaterial":
+		reusable="stone_cluster"
+	if not reusable.is_empty() and CC0Bridge.is_installed(reusable):
+		var imported: Node3D = CC0Bridge.instantiate_asset(reusable,part,Vector3.ZERO)
+		if imported!=null:
+			# Preserve the part's persistent semantic name for save/QA.
+			# A third-party model is VISUAL ONLY; no completed prefab city.
+			part.mesh=null
+			part.set_meta("visual_source","EXISTING_KENNEY_OR_QUATERNIUS_CC0")
+			part.set_meta("cc0_part_key",reusable)
+			# Conservative bounded size fit: prevents 100m/unseen vendor scales.
+			var mesh_nodes: Array[Node] = imported.find_children("*","MeshInstance3D",true,false)
+			if not mesh_nodes.is_empty():
+				var native: MeshInstance3D = mesh_nodes[0] as MeshInstance3D
+				if native.mesh!=null:
+					var bound: Vector3 = native.mesh.get_aabb().size
+					imported.scale=Vector3(clampf(shape.x/maxf(bound.x,0.1),0.15,2.0),
+						clampf(shape.y/maxf(bound.y,0.1),0.15,2.0),
+						clampf(shape.z/maxf(bound.z,0.1),0.15,2.0))
 	return part
 
 func setup(world_sim: RefCounted, citizens: Array[Node3D]) -> void:
