@@ -5,6 +5,7 @@ on:
     paths:
       - 'android-preview/latest.json'
       - 'android-preview/canglan-content-rev-*.pck'
+      - 'tools/verify_original_current_ota_http.py'
       - '.github/workflows/canglan-official-pages-ota-deploy.yml'
   workflow_dispatch:
 permissions:
@@ -61,12 +62,12 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          python3 tools/verify_original_rev179_live_http.py
+          python3 tools/verify_original_current_ota_http.py
       - name: Save CDN diagnostic, even on failure
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: Canglan-official-Pages-rev179-publish-and-HTTP-check
-          path: qa-results/rev179-public-http.json
+          path: qa-results/original-current-public-ota-http.json
           if-no-files-found: warn
           retention-days: 7
