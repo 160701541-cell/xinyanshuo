@@ -94,13 +94,13 @@ def stage(catalog_path: Path = CATALOG, destination: Path = OUTPUT) -> dict:
                "stage": "IMPORTED_CANDIDATE_PENDING_VISUAL_AND_PHONE_QA",
                "assets": [], "sources": []}
     for pack in catalog["sources"]:
-        if pack["id"] not in ("kenney", "quaternius") or pack["license"] != "CC0-1.0":
+        if pack["id"] not in ("kenney", "quaternius", "quaternius_humanoid", "quaternius_knight") or pack["license"] != "CC0-1.0":
             raise ValueError("Unapproved pack licensing or provenance")
         repo = pack["mirror_repository"]
         commit = pack["mirror_commit"]
         if not (len(commit) == 40 and all(c in "0123456789abcdef" for c in commit)):
             raise ValueError("Unpinned mirror source commit")
-        if repo not in ("shorepine/kenney", "J-Ponzo/gltf-medieval-village-megakit"):
+        if repo not in ("shorepine/kenney", "J-Ponzo/gltf-medieval-village-megakit",\n                        "programasweights/avatar", "ilrein/warptracker"):
             raise ValueError("Unknown mirror: "+repo)
         folder = destination / pack["id"]
         pack_assets = []
@@ -127,6 +127,12 @@ def stage(catalog_path: Path = CATALOG, destination: Path = OUTPUT) -> dict:
                                   "asset_license":"CC0-1.0"})
         summary["assets"].extend(
             [{"supplier":pack["id"],**entry} for entry in pack_assets])
+    # Ensure EVERY source and SHA passed before publishing any provenance.
+    assert any(a["supplier"] == "quaternius_humanoid" for a in summary["assets"])
+    assert any(a["supplier"] == "quaternius_knight" for a in summary["assets"])
+    summary["character_paths"] = catalog["import_plan"]["characters"]
+    summary["world_effect"] = "SCENERY_AND_NPC_APPEARANCE_ONLY; NO PREBUILT_VILLAGE"
+    summary["original_phone_signed_pck"] = "NOT_RELEASED"
     destination.mkdir(parents=True,exist_ok=True)
     (destination / "import_provenance.json").write_text(
         json.dumps(summary, indent=2, ensure_ascii=False)+"\n",encoding="utf-8")
