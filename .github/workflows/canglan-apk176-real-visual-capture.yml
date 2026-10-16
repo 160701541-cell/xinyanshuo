@@ -1,5 +1,9 @@
 name: Canglan TRUE Original APK176 - Visual Exterior Interior Screenshots
 on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/canglan-apk176-real-visual-capture.yml'
   workflow_run:
     workflows:
       - Canglan ACTUAL APK176 Main Live Instantiation - House Gate
@@ -13,7 +17,7 @@ concurrency:
   cancel-in-progress: true
 jobs:
   genuine-original-visual:
-    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
+    if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-24.04
     timeout-minutes: 12
     steps:
@@ -24,7 +28,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: Canglan-APK176-TRUE-MAIN-QA-rev178-UNSIGNED-NOT-FOR-PHONE
-          run-id: ${{ github.event.workflow_run.id || 38880877346 }}
+          run-id: ${{ github.event.workflow_run.id || 38887138760 }}
           github-token: ${{ github.token }}
           path: qa-results
       - name: Prove same original-game candidate SHA and restore actual APK resources
