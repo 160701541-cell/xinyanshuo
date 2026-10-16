@@ -16,6 +16,9 @@ concurrency:
   cancel-in-progress: true
 jobs:
   original-four-real-3d-facades:
+    # P0 user decision 2026-10-17: WorldX MAY MAKE MATERIALS ONLY.
+    # Prohibit four-facade/complete-building image pipeline, even on manual dispatch.
+    if: false
     runs-on: ubuntu-24.04
     timeout-minutes: 16
     steps:
