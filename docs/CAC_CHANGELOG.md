@@ -742,3 +742,12 @@ Godot 4.4.1对从**原签名Android APK176**提取的实际`update_protocol.gdc`
 用户继续要求优先进入手机原版游戏。本轮修改`.github/workflows/canglan-one-click-original-quick-view.yml`，提交`0964738c518cbfec44115c4c9e4659eb6d3ccd15`：保留手动`workflow_dispatch`，同时仅当**这个门禁工作流自身变更并提交main**时自动触发一次快速检查；其它开发提交不重复触发这个昂贵/无意义的发布检查。检查内容仍为原APK176发布身份、已签的官方更新清单固定公钥验证、原生产签名私钥是否注入及密钥匹配。缺原私钥绝不尝试发布，也不访问任何私有仓库。没有触发签名、修改manifest或者发APK。
 
 **执行证据边界**：GitHub已返回提交SHA。当前GitHub连接的`fetch_commit_workflow_runs`仅查询PR类运行，提交查询为空不能推断push作业成功/失败；网页查询也未取得可用日志。因此快速门禁的实际运行结论**未确认**，后续需读取公开Actions run/产出的`Canglan-original-quick-view-preflight-...`证据。完整3D旧APK176主场景兼容与原RSA签名仍是P0阻塞，正式rev178未修改，手机尚无新更新。
+
+
+## 2026-10-17 / REL-SIGNER-RECOVERED-004 / 原版RSA密钥恢复：真实GitHub重新验签PASS
+
+用户明确告知“密钥修复了的，可以直接发布”。本轮**实际重跑**公开仓库 GitHub Actions 之前失败的原APK176签名检查 job `117038701416`，重新运行产生 job `117176737579`，run `38920447159`。GitHub连接返回 rerun `success=true`，随后实际读取最新job结论 **`completed/success`**，读取新的作业日志包含：`original_signing_key_candidates_available=1`、`original_rsa_key_matches_apk176=true`、`safe_to_sign_original_ota=true`。**因此原版内容RSA签发能力此刻确认恢复**，旧日志中零密钥的阻塞已解除。未读取、打印、提交或持久化私钥。
+
+**不可直接用旧rev178发布脚本**：公开站`android-preview/latest.json`当前已是合法正式revision 178；`tools/publish_original_rev178_ota.py`写死`REVISION=178`、parent revision177、原rev178内容hash和固定老测试artifacts。重跑此工具会被正确拦截，不能产生含新3D资源的revision179。新3D项目`game-source/godot3d`尚未通过*原APK176导出资源的主场景*及手机验收，不能直接照搬成旧版签名PCK。下一步需产生**实际含可见3D资源/场景挂接的原版rev179候选**，跑原APK176场景及存档兼容QA，再对rev179具体PCK使用已经确认恢复的原RSA私钥签发、发行HTTPS并由手机验证。绝不重签rev178冒充新资源更新。
+
+**本轮状态**：RSA签名阻塞✅已解除（真实GitHub QA日志）；可发行rev179 PCK❌尚未构建和验收；正式latest.json未修改，手机仍rev178。只用公开仓库。
