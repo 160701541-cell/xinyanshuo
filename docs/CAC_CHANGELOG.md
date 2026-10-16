@@ -314,3 +314,10 @@ Godot 4.4.1对从**原签名Android APK176**提取的实际`update_protocol.gdc`
 - Android AI构建作业 `38901239340`：实际Qwen GGUF**从上游成功下载且通过SHA256校验**，实际 CMake/Linux 编译 llama.cpp 后在 GDExtension C++ 环节失败：`fatal error: godot_cpp/classes/node.hpp: No such file or directory`。根因是旧Godot 4.4 CMake 目标是 `godot::cpp`（别名 `godot-cpp.template_debug`），不是无头文件传播的裸 `godot-cpp` 链接文字。已经更改 CMake 真实target为 `godot::cpp` 并增加缺失时的 fail-closed 错误，提交 `8f20a0a8372490aed63d2f8bcb84e81eee6842aa`；另将头文件 `godot_cpp/variant/string.hpp` 显式包含，提交 `dfc46758f13a47c95e85d2ab21f00077e618ba85`。
 - 之前 Android Workflow YAML 曾在补包检查时出现重复段、破坏shell正则，已将 APK 导出后的剩余工作流区块全部重建并经GitHub识别执行，提交 `a5fbad6a59918a31f74e17b8819ccc4ac665fcb8`。
 - **结果边界：** 修复已经提交，不等于本轮重测通过。上述历史作业均为失败；修复后的严格场景QA运行 `38901820922`、Android AI+3D一体化APK运行 `38901821292` 已触发，当前需要读取它们的最终结果。没有成功的APK下载和手机实测；原APK、原签名与玩家存档均未修改。
+
+## 2026-10-16 / CAC-3D-005 / 按实测修复玩家碰撞检索与600+实物门禁
+
+- 严格Godot引擎真实运行工单 `38901820922` 显示，全部38个程序GLB生成成功、原世界身份/角色已在真实场景启动；实际计数：地形块25，真实建筑/院落80，NPC80，原版WorldState实体80，**独立道具627**，MultiMesh GPU实例**1025**。此前 `world_props 586 < 600` 的QA缺陷已被真实修复。
+- 此次未通过下一门槛：`tests/world_smoke.gd:97` 报 **Player has no physical character collider**。查代码：`_build_avatar()` 创建 `CollisionShape3D.new()` 并挂至 `CharacterBody3D`，但是程序化子节点未显式命名；测试的 `get_node_or_null("CollisionShape3D")` 因Godot自动命名找不到它。修复方案保留原有物理碰撞器，仅新增 `shape.name="CollisionShape3D"`，不将QA换成“存在即通过”的假判定。
+- 实际修复提交 `8376ccb6f05ccd694b74ba2bfbe93595dd9798cc`（先在 `fix/cac-3d-qa-collider-native-20261016` 修复，随后以预期父SHA的非强制fast-forward将该提交发布到 **公开main分支**）。
+- main最新严格3D实测任务 `38903246205` 与含本地Qwen/Android ARM64任务 `38903246208` 已由实际代码变更触发，尚无成功结果。**Android签名原版APK未被替换**，人物绑骨/国漫画质和手机性能仍未完成验收。
