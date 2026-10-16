@@ -25,6 +25,28 @@ func _run() -> void:
 	assert(int(before["terrain_chunks"])==25,"Actual terrain must be streamed into scene")
 	assert(int(before["buildings_and_yards"])==80,"Expected 60 houses and 20 3D courtyards")
 	assert(int(before["npc_ids"])==80,"80 individually created people required")
+	assert(int(before["original_world_actor_entities"])==80,
+		"Every visible NPC must exist in original WorldState")
+	var authoritative: RefCounted = stage.get("authoritative_world")
+	var world_entities: Dictionary = authoritative.get("entities")
+	assert(world_entities.size()==80,"Original game economy generated unwanted free props")
+	for npc in npcs.get_children():
+		var canonical: String = String(npc.get_meta("canonical_id",""))
+		assert(world_entities.has(canonical),"Render actor missing original canonical ID")
+		assert(npc.get_meta("entity_id")==world_entities[canonical].get("public_code"),
+			"Historical stable NPC public code mismatch")
+	var saved: Dictionary = authoritative.call("serialize")
+	var restored: RefCounted = load("res://scripts/world_state.gd").new()
+	restored.call("restore",saved)
+	assert((restored.get("entities") as Dictionary).size()==80,
+		"Original WorldState serialize/restore compatibility broken")
+	var first_canonical: String = String(npcs.get_child(0).get_meta("canonical_id"))
+	var inventory_count: int = (authoritative.get("inventories") as Dictionary).size()
+	var bridge: Script = load("res://scripts/world_state_bridge.gd")
+	assert(not bridge.sync_actor(authoritative,first_canonical,Vector3(9999,0,9999),1.0),
+		"Motion authority allowed teleportation")
+	assert((authoritative.get("inventories") as Dictionary).size()==inventory_count,
+		"Rendering is not allowed to create inventory" )
 	assert(int(before["world_props"])>=600,"Hundreds of independently addressed world props required")
 	assert(int(before["batched_instances"])>=600,"Actual MultiMesh draw batches must exist")
 	assert(stage.get("_inside")==false,"Startup must be outdoors")
