@@ -827,3 +827,12 @@ Godot 4.4.1对从**原签名Android APK176**提取的实际`update_protocol.gdc`
 已在唯一公开仓库增加`.github/workflows/canglan-official-pages-ota-deploy.yml`，提交`bd016185e145d73868f87050705abf13cc41a7fc`。此前rev179成功的是`git push origin main`，并未显式执行GitHub Pages官方`configure-pages → upload-pages-artifact → deploy-pages`。新工作流只上传网站可公开的静态根文件和`android-preview/`等前端所需目录（不把game-source、签名密钥或任何私有代码打成公开部署artifact），先验证候选PCK SHA-256/长度及原1176版本边界，完成真实Pages部署后立即从CDN获取文件并运行`tools/verify_original_rev179_live_http.py`，核对用户原游戏的固定RSA、公网manifest版本、PCK字节以及1MiB分段下载能力；不合格则记录json，**绝不声称手机更新完成**。
 
 注意GitHub Pages仓库设置必须允许**GitHub Actions为部署源**、且工作流要取得pages:write及id-token:write。当前仅确认GitHub工作流文件提交成功，仍需读取新的Actions运行/实际网页HTTP结果。若仓库Pages仍按Branch源工作，该发布工作流可能提示源配置错误；应以真实日志为准定位。旧rev179的正式签名PCK不需更改；手机端还未下载/验收。
+
+
+## 2026-10-17 / REL-OTA179-PAGES-SOURCE-REPAIR / 实际用户浏览器停在rev178：继续查Pages配置并修复部署源
+
+用户手机浏览器访问官方HTTPS`android-preview/latest.json`明确读到rev178，而公开main已包含通过原版RSA和Godot验收的rev179。故障指向**GitHub Pages发布/缓存**，不重签、不改游戏、不可报手机已成功。
+
+本轮实改`.github/workflows/canglan-official-pages-ota-deploy.yml`：`cdbc1e4039d9351376828d7b3f4d132fb2b2a819`加入对GitHub Pages官方REST元信息的读取，把source/build_type、安全HTTP状态、不含任何令牌的配置诊断存于`qa-results/rev179-pages-configuration.json`，并纳入Actions artifact；`1c899cd45dfa354581d32a736460c0ded7b1a70c`在检测到旧`build_type=legacy`时尝试通过公开仓库自身`pages:write`授权REST切换为`build_type=workflow`，若平台拒绝则给明确的Settings→Pages→Source=GitHub Actions阻塞提示。此流程之后会继续以官方Pages Artifact发布静态网站与rev179 PCK，再独立从实际CDN验证固定RSA、公网manifest、SHA及Range。保留原密钥与旧存档不动。
+
+**真实性声明**：本轮确认的仍只是代码已提交；当前GitHub集成未暴露按workflow名查询最新运行的操作，且当前容器无法解析github.io；尚无新工作流成功日志、Pages HTTP成功结果或手机实测。因此仍不能标记官网rev179已上线。用户可提供最新Official Website and APK176 OTA - Deploy to Pages运行URL，优先直接读取作业日志继续消除具体阻塞。
