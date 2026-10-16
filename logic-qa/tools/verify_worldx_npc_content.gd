@@ -64,6 +64,25 @@ func _initialize() -> void:
 		printerr("FAIL_WORLDX_CONTENT: sprites did not instantiate")
 		quit(10)
 		return
+	if not controller.set_map_index(1) or controller.nav_map_index != 1:
+		printerr("FAIL_WORLDX_CONTENT: map001 nav grid not switched")
+		quit(19)
+		return
+	for actor in controller.actors:
+		var col: int = clampi(int(actor.position.x * float(controller.nav_width) / 1280.0), 0, controller.nav_width-1)
+		var row: int = clampi(int(actor.position.y * float(controller.nav_height) / 715.0), 0, controller.nav_height-1)
+		if not controller._walkable_at(col,row):
+			printerr("FAIL_WORLDX_CONTENT: character on blocked cell AFTER map switch")
+			quit(20)
+			return
+	if controller.set_map_index(99) or controller.nav_map_index != 1:
+		printerr("FAIL_WORLDX_CONTENT: bad map index destroyed valid navigation")
+		quit(21)
+		return
+	if not controller.set_map_index(0) or controller.nav_map_index != 0:
+		printerr("FAIL_WORLDX_CONTENT: failed to return to original navigation grid")
+		quit(22)
+		return
 	var total_frames := 0
 	for actor in controller.actors:
 		if not actor.sprite_frames.has_animation("walk-down"):
