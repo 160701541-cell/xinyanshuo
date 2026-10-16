@@ -11,6 +11,7 @@ from pathlib import Path
 import numpy as np
 import trimesh
 from male_han_master_v2 import build_han_male, manifest as han_master_manifest
+from stage_existing_worldx_npcs import stage as stage_existing_npcs
 
 COLORS={
  "plaster":(211,203,180,255),"roof":(68,91,98,255),
@@ -176,6 +177,7 @@ def generate(out:Path,seed:int=20261016):
         manifest["models"].append({"path":rel,"sha256":hashlib.sha256(data).hexdigest(),
             "bytes":len(data),"bounds":[list(map(float,bounds[0])),list(map(float,bounds[1]))]})
     manifest["male_master"] = han_master_manifest()
+    manifest["existing_worldx_npc_sprites"] = stage_existing_npcs(out)
     (out/"manifest.json").write_text(json.dumps(manifest,ensure_ascii=False,indent=2)+"\n")
     return manifest
 if __name__=="__main__":
