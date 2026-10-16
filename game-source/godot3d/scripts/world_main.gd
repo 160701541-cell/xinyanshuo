@@ -585,6 +585,16 @@ func _process(delta: float) -> void:
 			if citizen.global_position.distance_squared_to(avatar.global_position)<190.0*190.0:
 				citizen.call("wake_near_player")
 	_refresh_status_throttled(delta)
+	npc_text_refresh_accum+=delta
+	if npc_text_refresh_accum>=0.6 and life_sim!=null:
+		npc_text_refresh_accum=0.0
+		var profiles: Dictionary = life_sim.get("citizens")
+		for npc in citizen_nodes:
+			if npc.global_position.distance_squared_to(avatar.global_position)<10000.0:
+				var code: String = String(npc.get_meta("entity_id",""))
+				if profiles.has(code):
+					npc.call("refresh_text_status",profiles[code])
+		_refresh_inspected_npc()
 	_update_camera(delta)
 	_hour = fmod(_hour+delta*0.0033,24.0)
 	# One authoritative, bounded economy tick per in-game hour;
@@ -699,6 +709,9 @@ func _select_from_ray(pointer: Vector2) -> void:
 	var body: Object = hit["collider"]
 	if body is Node and (body as Node).has_meta("entity_id"):
 		var key: String = String((body as Node).get_meta("entity_id"))
+		if npc_node_index.has(key):
+			_inspect_npc(key)
+			return
 		_selected = structures.get(key) as Node3D
 	_refresh_status()
 
