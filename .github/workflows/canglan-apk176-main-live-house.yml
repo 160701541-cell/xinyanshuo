@@ -67,6 +67,60 @@ jobs:
                       print('APK176_NATIVE_TERRAIN_ENTRY',n)
           print('PASS_APK_NATIVE_TERRAIN_DIAGNOSTIC')
           PY
+      - name: Recover exact-matching Terrain3D Linux QA plugin from trusted upstream releases
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import zipfile,json,pathlib,hashlib
+          src=pathlib.Path(json.loads(pathlib.Path('android-preview/base-latest.json').read_text())['file'])
+          with zipfile.ZipFile(src) as apk:
+              name='lib/arm64-v8a/libterrain.android.debug.arm64.so'
+              assert name in apk.namelist(), 'Actual APK176 Terrain3D Android native binary missing'
+              raw=apk.read(name)
+          pathlib.Path('/tmp/canglan-actual-android-terrain.so').write_bytes(raw)
+          print('APK176_REAL_ANDROID_TERRAIN_SHA256',hashlib.sha256(raw).hexdigest(),'size',len(raw))
+          PY
+          for version in v1.0.1-stable v1.0.2-stable; do
+            case "$version" in
+              v1.0.1-stable) archive=Terrain3D_v1.0.1.zip ;;
+              v1.0.2-stable) archive=Terrain3D_v1.0.2-stable.zip ;;
+            esac
+            if ! curl -fL --retry 2 --connect-timeout 15 --max-time 110 \
+              "https://github.com/TokisanGames/Terrain3D/releases/download/$version/$archive" -o /tmp/upstream-terrain.zip; then
+              echo "UPSTREAM_TERRAIN_DOWNLOAD_UNAVAILABLE $version"
+              continue
+            fi
+            if CANGLAN_TERRAIN_VERSION="$version" python3 - <<'PY'
+          import hashlib,os,zipfile,pathlib,sys
+          expected=hashlib.sha256(pathlib.Path('/tmp/canglan-actual-android-terrain.so').read_bytes()).hexdigest()
+          z=zipfile.ZipFile('/tmp/upstream-terrain.zip')
+          names=z.namelist()
+          android=[n for n in names if n.endswith('libterrain.android.debug.arm64.so')]
+          linux=[n for n in names if n.endswith('libterrain.linux.debug.x86_64.so')]
+          if not android or not linux:
+              print('TERRAIN_RELEASE_MISSING_PLATFORM_BINARY',os.environ['CANGLAN_TERRAIN_VERSION'])
+              sys.exit(2)
+          actual=hashlib.sha256(z.read(android[0])).hexdigest()
+          print('UPSTREAM_TERRAIN_ANDROID_SHA256',os.environ['CANGLAN_TERRAIN_VERSION'],actual)
+          if actual!=expected:
+              print('NO_PROVEN_SAME_PLUGIN_VERSION',os.environ['CANGLAN_TERRAIN_VERSION'])
+              sys.exit(2)
+          target=pathlib.Path('logic-qa/apk176-export-fixture/addons/terrain_3d/bin/libterrain.linux.debug.x86_64.so')
+          target.parent.mkdir(parents=True,exist_ok=True)
+          data=z.read(linux[0])
+          target.write_bytes(data)
+          print('PASS_EXACT_APK176_NATIVE_TERRAIN_VERSION_MATCHED_AND_LINUX_QA_LIBRARY_STAGED',
+                os.environ['CANGLAN_TERRAIN_VERSION'],'LinuxBytes',len(data))
+          PY
+            then
+              echo "MATCHED_NATIVE_TERRAIN_VERSION=$version" >> "$GITHUB_ENV"
+              break
+            fi
+          done
+          if [ -z "${MATCHED_NATIVE_TERRAIN_VERSION:-}" ] && ! grep -q '^MATCHED_NATIVE_TERRAIN_VERSION=' "$GITHUB_ENV"; then
+            echo 'BLOCKED: neither upstream release Android binary exactly matches APK176; no substitute DLL was injected'
+          fi
       - name: Install actual Godot 4.4.1 engine
         shell: bash
         run: |
