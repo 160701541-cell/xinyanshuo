@@ -22,6 +22,17 @@ func _run() -> void:
 	assert(int(stats["buildings"]) >= 50, "Too few truly instantiated buildings")
 	assert(int(stats["props"]) >= 100, "Props must exist as individual entities")
 	assert(int(stats["entities"]) == int(stats["buildings"])+int(stats["props"]), "Duplicate world entity IDs")
+	# Reuse Godot's native MIT implementations instead of shipping unvetted plugins.
+	var oss_stats: Dictionary = city.call("oss_component_stats")
+	assert(oss_stats.get("noise") == "Godot FastNoiseLite", "Native noise unavailable")
+	assert(oss_stats.get("navigation") == "Godot AStarGrid2D", "Native navigation unavailable")
+	assert(int(oss_stats["blocked_cells"]) > 100, "No real obstacle-aware A* map")
+	assert(not bool(city.call("walkable_at",Vector2(1500,2350))), "River falsely walkable")
+	var crossing: PackedVector2Array = city.call("navigation_path",Vector2(1050,2100),Vector2(1050,2610))
+	assert(crossing.size()>2, "Godot A* route over open bridge unavailable")
+	var biome_a: float = float(city.call("biome_at",Vector2(1587,347)))
+	assert(absf(biome_a) <= 1.0, "Noise sample outside expected range")
+
 	var road: Node = city.get_node_or_null("SeamlessStoneRoad")
 	assert(road != null and road.get_child_count() == 14, "Paving missing")
 	var img: Image = Paving.make_image()
@@ -57,6 +68,8 @@ func _run() -> void:
 	city.call("generate",1729)
 	var again: Dictionary = city.call("counts")
 	assert(again == stats, "Seeded regeneration not deterministic")
+	assert(is_equal_approx(float(city.call("biome_at",Vector2(1587,347))),biome_a),
+		"FastNoiseLite seed is not reproducible")
 	stage.call("_zoom",1.2)
 	assert(camera.zoom.x>0.9, "Camera zoom handler broken")
 	print("PASS PUBLIC HD2D GODOT SCENE STARTUP: procedural districts, 50+ buildings, 100+ entities, doors, damage, seasons, interior, paving, camera")
