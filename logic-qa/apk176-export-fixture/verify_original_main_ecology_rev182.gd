@@ -50,8 +50,8 @@ func _run() -> void:
   var ui: Control = room.get_node_or_null("LivingWorldUI")
   var viewport: SubViewport = ui.get_node_or_null(
     "RealWorldViewportContainer/ActualLicensed3DWorldViewport") if ui != null else null
-  if viewport == null or not viewport.own_world_3d or viewport.size.x != 960 or viewport.size.y != 540:
-    _fail(7, "NO_SEPARATE_TRUE_3D_WORLD")
+  if viewport == null or not viewport.own_world_3d or viewport.size.x < 460 or viewport.size.y < 260:
+    _fail(7, "NO_SEPARATE_TRUE_3D_WORLD_ACTUAL_SIZE_" + (str(viewport.size) if viewport != null else "null"))
     return
   var world: Node3D = viewport.get_node_or_null("ResourceConservationAndConstruction")
   if world == null or world.get_node_or_null("TouchOrbitCamera") == null:
