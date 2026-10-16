@@ -109,8 +109,9 @@ func _run() -> void:
 	var farmer_codes: Array[String] = []
 	var life: RefCounted = stage.get("life_sim")
 	for npc in npcs.get_children():
-		assert(String(npc.get_meta("art_status",""))=="TEXT_ONLY_BILLBOARD_IN_3D",
-			"Unapproved character model remained visible in gameplay-first text mode")
+		assert(String(npc.get_meta("art_status","")) in [
+			"TEXT_ONLY_BILLBOARD_IN_3D","REUSED_WORLDX_SPRITE_IN_REAL_3D"],
+			"Unapproved procedural mannequin visible instead of approved text/sprite placeholder")
 		var name_text: String = String(npc.get_meta("display_name",""))
 		assert(not name_text.is_empty(),"Individual NPC has no personal display name")
 		var marker: Node3D = npc.get_node_or_null("TextOnly_NPC_3D")
