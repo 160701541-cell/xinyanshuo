@@ -43,6 +43,9 @@ var avatar: CharacterBody3D
 var cam: Camera3D
 var sun: DirectionalLight3D
 var world_env: WorldEnvironment
+var ui_panel: PanelContainer
+var ui_toggle: Button
+var ui_scroller: ScrollContainer
 var ui_status: Label
 var ui_npc_details: Label
 var ui_farmer_a: Button
@@ -168,14 +171,14 @@ func _build_lighting() -> void:
 	env.sky = sky
 	env.ambient_light_source = Environment.AMBIENT_SOURCE_SKY
 	env.reflected_light_source = Environment.REFLECTION_SOURCE_BG
-	env.ambient_light_energy = 0.66
+	env.ambient_light_energy = 0.34
 	env.tonemap_mode = Environment.TONE_MAPPER_FILMIC
 	world_env.environment = env
 	sun = DirectionalLight3D.new()
 	sun.name = "TimeOfDaySun"
 	sun.rotation_degrees = Vector3(-58,-33,0)
 	sun.light_color = Color("#f7dfb9")
-	sun.light_energy = 1.15
+	sun.light_energy = 0.70
 	sun.shadow_enabled = true
 	sun.directional_shadow_max_distance = 72.0
 	add_child(sun)
@@ -344,11 +347,39 @@ func _create_interface() -> void:
 	var layer := CanvasLayer.new()
 	layer.name = "MobileUI"
 	add_child(layer)
-	var board := PanelContainer.new()
-	board.position = Vector2(16,13)
-	layer.add_child(board)
+	# Mobile-first layout: the world is playable without a giant always-open overlay.
+	ui_toggle = Button.new()
+	ui_toggle.name = "ToggleCompactHUD"
+	ui_toggle.text = "☰ 人物 / 玩法"
+	ui_toggle.position = Vector2(12,12)
+	ui_toggle.custom_minimum_size = Vector2(144,46)
+	ui_toggle.pressed.connect(_toggle_game_panel)
+	layer.add_child(ui_toggle)
+	ui_panel = PanelContainer.new()
+	ui_panel.name = "CollapsibleGamePanel"
+	ui_panel.position = Vector2(12,65)
+	ui_panel.visible = false
+	var backing := StyleBoxFlat.new()
+	backing.bg_color = Color(0.10,0.15,0.17,0.90)
+	backing.set_corner_radius_all(9)
+	backing.content_margin_left = 10.0
+	backing.content_margin_right = 10.0
+	backing.content_margin_top = 8.0
+	backing.content_margin_bottom = 8.0
+	ui_panel.add_theme_stylebox_override("panel",backing)
+	layer.add_child(ui_panel)
+	ui_scroller = ScrollContainer.new()
+	ui_scroller.name = "MobileGameplayScroll"
+	ui_scroller.custom_minimum_size = Vector2(420,0)
+	ui_scroller.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	ui_scroller.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	ui_panel.add_child(ui_scroller)
+	var viewport_height: float = get_viewport().get_visible_rect().size.y
+	ui_panel.custom_minimum_size = Vector2(440,minf(545.0,maxf(270.0,viewport_height-82.0)))
 	var stack := VBoxContainer.new()
-	board.add_child(stack)
+	stack.custom_minimum_size = Vector2(404,0)
+	stack.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	ui_scroller.add_child(stack)
 	var heading := Label.new()
 	heading.text = "苍岚·人生世界 | 开源3D世界工程"
 	stack.add_child(heading)
@@ -473,10 +504,21 @@ func _create_interface() -> void:
 	footer.text = "左半屏拖动行走 · 右半屏拖动视角 · WASD移动 · 鼠标右键转向"
 	stack.add_child(footer)
 
+func _toggle_game_panel() -> void:
+	if ui_panel==null:
+		return
+	ui_panel.visible = not ui_panel.visible
+	if ui_toggle!=null:
+		ui_toggle.text = "× 关闭信息" if ui_panel.visible else "☰ 人物 / 玩法"
+
 func _inspect_npc(actor_id: String) -> void:
 	if not npc_node_index.has(actor_id):
 		return
 	inspected_npc = actor_id
+	if ui_panel!=null:
+		ui_panel.visible = true
+		if ui_toggle!=null:
+			ui_toggle.text = "× 关闭信息"
 	for npc in citizen_nodes:
 		npc.call("select_text_marker",
 			String(npc.get_meta("entity_id",""))==actor_id)
@@ -639,11 +681,11 @@ func _refresh_light() -> void:
 	if sun == null:
 		return
 	var day: bool = _hour>=6.0 and _hour<=19.0
-	sun.light_energy = 1.15 if day else 0.07
+	sun.light_energy = 0.70 if day else 0.07
 	sun.light_color = Color("#f7dfb9") if day else Color("#8299bd")
 	sun.rotation_degrees.x = -65.0 if day else -12.0
 	var env: Environment = world_env.environment
-	env.ambient_light_energy = 0.65 if day else 0.20
+	env.ambient_light_energy = 0.34 if day else 0.16
 
 func _update_camera(delta: float) -> void:
 	if cam == null or avatar == null:
