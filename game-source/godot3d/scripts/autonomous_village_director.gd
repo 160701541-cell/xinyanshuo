@@ -16,42 +16,6 @@ var _last_homes: int = 22
 var _construction_visuals: int = 0
 var _has_started_house: bool = false
 
-func _mesh(kind: String,at: Vector3,scale3: Vector3,color: Color,
-		parent: Node3D) -> MeshInstance3D:
-	var result := MeshInstance3D.new()
-	result.name = kind
-	var shape := BoxMesh.new()
-	shape.size = scale3
-	result.mesh = shape
-	result.position = at
-	var mat := StandardMaterial3D.new()
-	mat.albedo_color = color
-	mat.roughness = 1.0
-	result.material_override = mat
-	parent.add_child(result)
-	return result
-
-func _make_node(id: String,point: Vector3,kind: String) -> Node3D:
-	var source := Node3D.new()
-	source.name = id
-	source.position = point
-	add_child(source)
-	if kind=="field":
-		for row in range(3):
-			for col in range(4):
-				_mesh("Rice_%d_%d" % [row,col],
-					Vector3(float(col)*.45-.65,.35,float(row)*.45-.5),
-					Vector3(.11,.67,.12),Color("#849b56"),source)
-	elif kind=="tree":
-		_mesh("TreeTrunk",Vector3(0,1.1,0),Vector3(.48,2.2,.48),
-			Color("#72533c"),source)
-		_mesh("TreeCrown",Vector3(0,2.7,0),Vector3(1.8,1.65,1.8),
-			Color("#65865c"),source)
-	else:
-		_mesh("FiniteQuarryStone",Vector3(0,.38,0),Vector3(1.3,.75,1.2),
-			Color("#8a8e89"),source)
-	return source
-
 func setup(sim: RefCounted, citizens: Array[Node3D]) -> void:
 	economy = sim
 	name = "AutonomousNPCJobsWorldVisible"
@@ -149,23 +113,13 @@ func _process(delta: float) -> void:
 	# Construction visualization is exclusively handled by NPCBuilding
 	# after real material production, physical delivery and named NPC labor.
 
-func _show_cargo(code: String, person: Node3D, kind: String) -> void:
-	_clear_cargo(code)
-	var cargo := Node3D.new()
-	cargo.name = "RealCarried_%s" % code.replace("-","_")
-	person.add_child(cargo)
-	_mesh("Physical_"+kind,Vector3(0,1.10,-.35),
-		Vector3(.65,.44,.65),
-		Color("#b5a064") if kind=="field" else (
-			Color("#805a3d") if kind=="tree" else Color("#93928a")),cargo)
-	cargo_art[code] = cargo
+func _show_cargo(code: String, _person: Node3D, _kind: String) -> void:
+	# The inventory load is authoritative; visual attachment awaits licensed
+	# CC0 carried-item assets, not placeholder BoxMesh geometry.
+	cargo_art.erase(code)
 
 func _clear_cargo(code: String) -> void:
-	if cargo_art.has(code):
-		var old: Node3D = cargo_art[code]
-		if is_instance_valid(old):
-			old.queue_free()
-		cargo_art.erase(code)
+	cargo_art.erase(code)
 
 func stats() -> Dictionary:
 	var working: int = 0
