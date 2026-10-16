@@ -58,7 +58,12 @@ def qa_proof(pack:Path, unsigned:Path, runtime:Path, root:Path) -> dict:
                 manifest.get("_not_a_release")=="UNSIGNED_DEVELOPER_TEMPLATE_DO_NOT_HOST"]):
         raise RuntimeError("BLOCKED: unsigned Godot QA manifest invalid or not rev178")
     log=runtime.read_text(encoding="utf-8")
-    if MAIN_MARKER not in log or ORIGINAL_SCENE_PASS not in log or any(
+    # The successful Godot runner writes the OBSERVED marker into this file.
+    # Its strict "PASS_APK176_ACTUAL_MAIN..." is a GitHub Actions shell
+    # echo AFTER the log is closed; requiring that line in the log was an
+    # impossible release condition. The release workflow separately checks
+    # that the real QA run conclusion is success.
+    if MAIN_MARKER not in log or any(
         bad in log for bad in ("SCRIPT ERROR:","Parse Error:","ERROR:","FAIL_APK176")
     ):
         raise RuntimeError("BLOCKED: authentic original compiled APK scene QA failed")
