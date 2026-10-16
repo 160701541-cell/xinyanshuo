@@ -33,6 +33,8 @@ jobs:
           mkdir -p qa-stage/ota177/{hd2d/worldx,hd2d/courtyard,scripts,scenes}
           cp game-source/apk176-ota177-candidate/scenes/* qa-stage/ota177/scenes/
           cp game-source/apk176-ota177-candidate/scripts/* qa-stage/ota177/scripts/
+          test -s game-source/apk176-ota177-candidate/hd2d/worldx-generated/source_edge04/main_house_edge04_candidate.png
+          cp game-source/apk176-ota177-candidate/hd2d/worldx-generated/source_edge04/main_house_edge04_candidate.png qa-stage/ota177/hd2d/courtyard/main_house_isolated_edge04.png
           if compgen -G "game-source/apk176-ota177-candidate/hd2d/courtyard/*.png" > /dev/null; then
             cp game-source/apk176-ota177-candidate/hd2d/courtyard/*.png qa-stage/ota177/hd2d/courtyard/
           fi
