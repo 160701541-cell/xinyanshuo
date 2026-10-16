@@ -181,7 +181,7 @@
       const summary = document.createElement('summary');
       addText(summary, 'span', 'log-date', String(item.date || '开发记录').slice(0, 12));
       addText(summary, 'span', 'log-title', String(item.title || '未命名开发记录').slice(0, 190));
-      addText(summary, 'span', 'log-tag', item.source_status === 'public-cac-procedural' ? '公开程序化研发' : '实际工作日志');
+      addText(summary, 'span', 'log-tag', item.source_status === 'public-cac-procedural' ? (item.id && item.id.includes('CAC-3D') ? '开源原生3D研发' : '历史HD2D工序') : '实际工作日志');
       details.appendChild(summary);
       addText(details, 'div', 'log-content', String(item.body || '暂无详细说明').slice(0, 10000));
       developmentList.appendChild(details);
@@ -213,7 +213,7 @@
       if (!res.ok) throw new Error('Public CAC changelog unavailable');
       const markdown = await res.text();
       if (markdown.length > 200000) throw new Error('Unexpected public changelog size');
-      const regex = /^##\s+(\d{4}-\d{2}-\d{2})\s*\/\s*(CAC-PROC-\d{3})\s*\/\s*(.+)$/gm;
+      const regex = /^##\s+(\d{4}-\d{2}-\d{2})\s*\/\s*(CAC-(?:PROC|3D)-\d{3})\s*\/\s*(.+)$/gm;
       const headers = Array.from(markdown.matchAll(regex)).slice(-24);
       publicEntries = headers.reverse().map(m => {
         const after = m.index + m[0].length;
