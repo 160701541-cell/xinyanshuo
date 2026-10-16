@@ -78,7 +78,7 @@ def verify(root: pathlib.Path):
     import hashlib
     for path,expected in original_blobs.items():
         data=(game/path).read_bytes()
-        git_blob=b"blob "+str(len(data)).encode()+b"\\x00"+data
+        git_blob=b"blob "+str(len(data)).encode()+b"\x00"+data
         assert hashlib.sha1(git_blob).hexdigest()==expected, f"Original compatibility module mutated: {path}"
     return {"status":"PASS_SOURCE_ONLY","policy":"CAC-3D-001",
         "files":len(REQUIRED),"native_components":len(ids),
