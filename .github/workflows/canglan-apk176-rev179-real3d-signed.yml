@@ -148,6 +148,22 @@ jobs:
           mkdir -p qa-stage/ota177/canglan_rev179 qa-results
           cp game-source/godot3d/assets/free_cc0/kenney/3d/nature/tree_oak.glb qa-stage/ota177/canglan_rev179/kenney_tree_oak.glb
           cp game-source/godot3d/assets/free_cc0/kenney/3d/castle/rocks-small.glb qa-stage/ota177/canglan_rev179/kenney_rocks_small.glb
+          # The original Kenney Castle Kit rock GLB contains an EXTERNAL
+          # res://Textures/colormap.png reference. Preserve its exact CC0 kit
+          # palette; a GLB alone is not a complete colored asset.
+          mkdir -p qa-stage/ota177/Textures
+          curl -fL --retry 3 --connect-timeout 20 --max-time 70 \
+            'https://raw.githubusercontent.com/shorepine/kenney/main/3d/castle/Textures/colormap.png' \
+            -o qa-stage/ota177/Textures/colormap.png
+          python3 - <<'PY'
+          from pathlib import Path
+          import struct
+          p=Path('qa-stage/ota177/Textures/colormap.png')
+          b=p.read_bytes()
+          assert b[:8]==bytes.fromhex('89504e470d0a1a0a'), 'The real Kenney source PNG is missing'
+          assert len(b)>128 and 0<struct.unpack_from('>I',b,16)[0]<=4096
+          print('PASS_LICENSED_KENNEY_CASTLE_COLORMAP_PRESENT',len(b))
+          PY
           timeout 75s /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless --editor --path logic-qa --import > qa-results/rev179-import.log 2>&1
           timeout 75s /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless --path logic-qa             --script res://tools/build_apk176_3d_preview.gd > qa-results/rev179-build.log 2>&1
           grep -Fq 'PASS_APK176_REAL_3D_CC0_PREVIEW_UNSIGN_PCK_BUILT_NO_RELEASE' qa-results/rev179-build.log
