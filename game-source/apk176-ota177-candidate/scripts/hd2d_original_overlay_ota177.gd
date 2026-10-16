@@ -23,6 +23,7 @@ var _background: ColorRect
 var _status: Label
 var _house_portal: Control
 var _original_world_toggle: Button
+var _gui: VBoxContainer
 var _interaction_actions: HBoxContainer
 var _day_tint: ColorRect
 var _is_night := false
@@ -51,6 +52,7 @@ func _build_visual() -> void:
 	if SHOW_LEGACY_QA_ASSETS:
 		_add_road()
 	var gui := VBoxContainer.new()
+	_gui = gui
 	gui.position = Vector2(18.0, 16.0)
 	panel.add_child(gui)
 	var header := Label.new()
@@ -295,6 +297,13 @@ func _set_visible(show: bool) -> void:
 	_status.text = "HD2D已打开" if show else "原游戏运行中"
 	if _original_world_toggle != null:
 		_original_world_toggle.text = "返回原世界" if show else "重新打开HD2D"
+	# When switching back, only the reopen button may capture touches.
+	# A parent panel with MOUSE_FILTER_IGNORE does NOT disable its children:
+	# the old world was still blocked by the hidden HD2D HUD buttons.
+	if _gui != null:
+		for hud: Control in _gui.get_children():
+			if hud != _original_world_toggle:
+				hud.visible = show
 
 func _update_art_transform() -> void:
 	if art_world == null:
