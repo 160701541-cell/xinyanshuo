@@ -850,3 +850,10 @@ Godot 4.4.1对从**原签名Android APK176**提取的实际`update_protocol.gdc`
 - 恢复后官方官网部署新run `38966857594` / job `117195356245` **completed/success**；日志明确`PASS_PAGES_SITE_CONTAINS_SIGNED_ORIGINAL_OTA 179`、`Reported success!`及`PASS_REV179_PUBLIC_HTTPS_RSA_SHA256_AND_RANGE`。**可确定远程正式官网已是rev179且可完整下载和断点续传**，不必重签补丁，不必切换Pages Source，也无需再跑Godot构建。
 
 **剩余唯一不可代替环节**：用户原已安装的Android APK176应用内点击检查更新并实测下载/装载，仍待现场结果。之前用户的浏览器看到178时，官网发布可能尚未完成，且文件声明`max-age=600`（最多10分钟公共缓存），不说明当前仍是178。可用手机浏览器带查询参数`?v=179`单独观察源站rev179；游戏固定manifest URL是否有额外Android HTTP缓存需以新一次原版应用内检查结果判断。无论如何，绝不可宣称手机验收通过。
+
+
+## 2026-10-17 / REV179-USER-ANDROID-SCREENSHOT / 首次真实APK176三维预览手机画面+专业美术/性能审计
+
+用户直接提交横屏《苍岚》手机截图：原APK176内显示真实Kenney树石3D预览场景、“返回原游戏”按钮，实测HUD瞬时`90 FPS / 90.0Hz / GPU 7.58ms / mobile-vulkan / Draw 417/200 / triangles 277931/150000`。**实机3D画面确认成功**，原版更新链条终于有实机可见证据；仍不能由截图推断旧存档无损、返回可用和长期性能通过。相机距离远、实体小、绿板地面/蓝灰天空大面积平涂、树石机械排列，无生活NPC、道路、院落，国风3D村庄G1质量严重不达标；Draw和三角面分别超过屏幕预算217次、127931面，即使单帧90fps，也不能声称性能达标。禁止将本技术预览当作G1/G2/G3游戏验收。
+
+新建完整实机QA文档`docs/QA_APK176_REV179_PHONE_ACCEPTANCE_20261017.md`，真实提交`5cc2c00efe10a6e6dd0f3f7913b2ed8e7e47307d`，逐项记录PASS/FAIL/未验证及下一批美术、性能、NPC资源守恒和原APK176签名OTA目标。未经用户要求未上传私人手机截图到公开仓库；日志只记可观察事实。**这次没有完成rev180发行**，仍需真实代码/模型增量、Godot与原版RSA/Pages和再次安卓实机验收。
