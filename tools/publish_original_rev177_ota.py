@@ -140,7 +140,7 @@ def main() -> None:
                                encoding="utf-8")
         verify_signed(sitepack, signed_path, public_path)
         stage_site(
-            template=root / "site/xinyanshuo", checkout=root,
+            template=root, checkout=root,
             pack=sitepack, manifest_file=signed_path,
             public_key=public_path,
         )
