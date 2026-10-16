@@ -1,12 +1,12 @@
 {
   "schema": 1,
   "channel": "android-preview",
-  "revision": 185,
+  "revision": 186,
   "minimum_android_code": 1176,
   "maximum_android_code": 1176,
-  "sha256": "04e33760b69a95186dbff7ab0e313568cef5d57d83e2ce9916992f759f9f106f",
-  "size_bytes": 21663616,
-  "pack_url": "https://160701541-cell.github.io/xinyanshuo/android-preview/canglan-content-rev-185.pck",
-  "notes": "苍岚原APK176：一加Ace5Pro三档手动画质，极致100%/4x、高档85%/2x默认、普通67%/无MSAA；独立原生UI、屏幕实测统计，修复触屏摇杆/点击资源、NPC埋地/巨大ID、真平滑土层与真实开挖。手机三档FPS待实测。",
-  "signature": "Nb2x0N9h9Hh71KzDQBAjkg3VZnvu/7G1NuW5qL3w4ObCY/P4wnMAwVQM/XkUA4S8CmH456jH6dTCAS49M9gbeoj/ZVWwn/UULOLRRkamDxN7rCio253/S/o/dskOND5EHbunmGP6UyxmJvrOklbbCJzrLL97nZmU+Nd2MPirO6AyYznMCVTOv1BcqZZAq/aoQvS4grVaO8p9J5V4icf+SLrga5V/whZtf58QcAMf0Ye2WuKHmJNO5r5v9sImH8uhF6devrslssOwQjfpPXvoKSn0GfkRDlkxnOCf/bwjX25J7qTDhthBS/cSIpo/T8agvn7rul7WV8IXIJuWaLr5hWk4FPIFSVml7oxE/2N+s6li2a0GZ/qoQgMn4n8yVOfhqPHUlEv+pWXi3xmiptTM8iaBe46xUHkPIJSMX5fq5rPW2ee8RifD+ESYTgHHeOAVWvVGbRD6iW/y1qWGYpkcNbfKAo/h14QdfDrpaVxmRKypyDKK0e5Q5hb9ajwbuaml"
+  "sha256": "16c636e2654efb8ead50cfe38e1ab27ac89f9c9cee72d4acb28f8cfb55f6a6ab",
+  "size_bytes": 21666016,
+  "pack_url": "https://160701541-cell.github.io/xinyanshuo/android-preview/canglan-content-rev-186.pck",
+  "notes": "苍岚原APK176：修复左侧树林也能点实体和独立GUI摇杆；三档手动画质：极致100%/4x 1500draw/150万面、高85%/2x默认800draw/60万面、普通67%/无MSAA 400draw/30万面，NPC骨骼/系统级ID、平滑泥土地层与可挖水岸。手机三档性能需真机数据。",
+  "signature": "a/fyDLYoLp/+pgk8IFZatAKvlj/Vpp6o/8YsGMDRSWuXl0At/A+Jt6O1jzumYyl5Uck1t2YGO90E0BV4iXQsgZo2DzOcpkfDVhJTVN/AGYOv0E2MZBLr9JXwCtqm9Dxs9GQ4GgH5tpafzNTVFuUgfN7BjkDnAnZJqqtmquJ0UhtromsyR5anrTeE0RHd2V9aQJ53TxlVkTgVQk87iTNT+b2jvuFfgAOJIa5AZBOE2ETWQlEREKb2vFMhuNxB6gv7dnY6SfiT7ll2aqKl5m7EqVn7NimfCDNtutc/R2jsI9RHXdPTLPCcPSHdCX8P7ciGMdD390a/8/80oIhs/RZqHS6kWl27f/BEZ+MBpFxEzYotGZY6WeNlYUHinacw+Hg6R4k3slfOWHn+ebzlyPONtPFGepJErdZ7+4KMHrx4fhMXUeU+Sb7cIDwC0d1jUDBap4IA0iKbEmR+P11ipdsQIkvhwf4beq392hLADkQuNTSiZim5NYKBfSSISX5BrZgY"
 }
