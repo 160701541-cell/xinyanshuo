@@ -1,0 +1,34 @@
+{
+  "qa": "PASS_STRUCTURAL_FOUR_FACADE_CANDIDATES_UNAPPROVED",
+  "source": "WorldX",
+  "building_id": "courtyard_main_hall",
+  "count": 4,
+  "sides": [
+    "front",
+    "back",
+    "left",
+    "right"
+  ],
+  "dimensions": {
+    "front": [
+      1024,
+      1024
+    ],
+    "back": [
+      1024,
+      1024
+    ],
+    "left": [
+      1024,
+      1024
+    ],
+    "right": [
+      1024,
+      1024
+    ]
+  },
+  "valid_png_jpg_and_hash": true,
+  "unique_images": true,
+  "style_and_correct_view": "PENDING_VISUAL_QA",
+  "released_to_original_apk": false
+}

@@ -1,0 +1,33 @@
+{
+  "schema": 1,
+  "building_id": "courtyard_main_hall",
+  "source": "WorldX",
+  "art_status": "GENERATED_UNAPPROVED",
+  "axes": "front=+Z,back=-Z,left=-X,right=+X",
+  "dimensions_meters": {
+    "width": 10,
+    "depth": 7,
+    "wall_height": 4
+  },
+  "user_goal": "four orthographic wall textures on real 3D walls; not HD2D scene",
+  "identical_building_across_views": "PENDING_VISUAL_APPROVAL",
+  "reference_sha256": "44d116addb17c5aa5a1f6c7edc85d44132fefdc0eb52ae422b63cc0b71060e3f",
+  "materials": {
+    "front": {
+      "file": "front.png",
+      "sha256": "275143d6db880e28a873be22655e06c0ee8397d4ad3b7f95e0092663730b2b24"
+    },
+    "back": {
+      "file": "back.png",
+      "sha256": "632ff2401d7a6c700ea79e95ef2987600ff9cc14544532ebbaea8b7512af4b07"
+    },
+    "left": {
+      "file": "left.png",
+      "sha256": "e161819c602992112f7862bda999adce2e9832cfa1bb4173e728219275611b49"
+    },
+    "right": {
+      "file": "right.png",
+      "sha256": "7342926c97b7470f4ec504bf2d52df6550308a0e2fe8d916dd51b498236623d3"
+    }
+  }
+}

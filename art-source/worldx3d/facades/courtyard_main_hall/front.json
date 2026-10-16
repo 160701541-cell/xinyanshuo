@@ -1,0 +1,23 @@
+{
+  "schema": 1,
+  "id": "front",
+  "building_id": "courtyard_main_hall",
+  "source": "WorldX",
+  "pipeline": "YGYOOO/WorldX actual prompt-loader + public GitHub SiliconFlow image edit API",
+  "worldx_commit": "edb4976de5963457dfbf5d2171355270a4ca1e79",
+  "model": "Qwen/Qwen-Image-Edit-2509",
+  "file": "front.png",
+  "sha256": "275143d6db880e28a873be22655e06c0ee8397d4ad3b7f95e0092663730b2b24",
+  "bytes": 772703,
+  "reference_sha256": "44d116addb17c5aa5a1f6c7edc85d44132fefdc0eb52ae422b63cc0b71060e3f",
+  "reference_file": "main_house_v3_source.png",
+  "reference_conditioned": true,
+  "source_art_approved": false,
+  "status": "GENERATED_UNAPPROVED",
+  "semantic_four_side_match": "REQUIRES_VISUAL_QA",
+  "material_status": "NOT_READY_FOR_OFFICIAL_OTA",
+  "no_text_watermark": "NOT_VISUALLY_VERIFIED",
+  "side": "front",
+  "art_id": "courtyard_main_hall",
+  "run_url": "https://github.com/160701541-cell/xinyanshuo/actions/runs/38943570817"
+}
