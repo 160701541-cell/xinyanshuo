@@ -24,6 +24,7 @@ var _status: Label
 var _house_portal: Control
 var _original_world_toggle: Button
 var _gui: VBoxContainer
+var _npc_layer: Node2D
 var _interaction_actions: HBoxContainer
 var _day_tint: ColorRect
 var _is_night := false
@@ -144,6 +145,8 @@ func _toggle_worldx_map() -> void:
 	worldx_map_sprite.scale = Vector2(1280.0 / float(im.get_width()), 715.0 / float(im.get_height()))
 	alt_map = not alt_map
 	_set_worldx_zones(1 if alt_map else 0)
+	if _npc_layer != null:
+		_npc_layer.set_map_index(1 if alt_map else 0)
 
 func _set_worldx_zones(index: int) -> void:
 	worldx_hotspots.clear()
@@ -224,6 +227,7 @@ func _add_worldx_npcs() -> void:
 	if npc_layer.has_signal("character_selected"):
 		npc_layer.connect("character_selected", Callable(self, "_on_worldx_npc_selected"))
 	art_world.add_child(npc_layer)
+	_npc_layer = npc_layer
 
 func _on_worldx_npc_selected(_id: String, npc_name: String, description: String) -> void:
 	if _status != null:
