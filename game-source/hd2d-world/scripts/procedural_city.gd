@@ -102,18 +102,18 @@ func _make_plot(col: int, row: int, c: Vector2, zone: String, id: String) -> voi
 
 func _spawn_building(kind: String, at: Vector2, id: String, size: float, variation: int) -> void:
 	var building: Node2D = Building.new()
-	building.setup(id,kind,size,variation)
+	building.call("setup",id,kind,size,variation)
 	building.position = at
-	building.set_night(night)
+	building.call("set_night",night)
 	buildings.append(building)
 	entity_index[id] = building
 	add_child(building)
 
 func _spawn_prop(kind: String, at: Vector2, id: String, variation: int, growth_stage: int = 2) -> void:
 	var prop: Node2D = Prop.new()
-	prop.setup(id,kind,variation)
-	prop.set_growth(growth_stage)
-	prop.update_weather(season,night)
+	prop.call("setup",id,kind,variation)
+	prop.call("set_growth",growth_stage)
+	prop.call("update_weather",season,night)
 	prop.position = at
 	props.append(prop)
 	entity_index[id] = prop
@@ -126,9 +126,10 @@ func find_door(at: Vector2, radius: float = 38.0) -> Node2D:
 	var best: Node2D = null
 	var best_dist: float = radius*radius
 	for b in buildings:
-		if b.damage == 2:
+		if int(b.get("damage")) == 2:
 			continue
-		var delta: Vector2 = b.door_world_position()-at
+		var door_pos: Vector2 = b.call("door_world_position")
+		var delta: Vector2 = door_pos-at
 		var dist: float = delta.length_squared()
 		if dist <= best_dist:
 			best_dist = dist
@@ -138,24 +139,24 @@ func find_door(at: Vector2, radius: float = 38.0) -> Node2D:
 func set_night(enabled: bool) -> void:
 	night = enabled
 	for b in buildings:
-		b.set_night(enabled)
+		b.call("set_night",enabled)
 	for p in props:
-		p.update_weather(season,enabled)
+		p.call("update_weather",season,enabled)
 	queue_redraw()
 
 func set_season(value: int) -> void:
 	season = posmod(value,4)
 	for p in props:
-		p.update_weather(season,night)
+		p.call("update_weather",season,night)
 	queue_redraw()
 
 func set_selected(building: Node2D) -> void:
 	for b in buildings:
-		if b.selected:
-			b.selected = false
+		if bool(b.get("selected")):
+			b.set("selected",false)
 			b.queue_redraw()
 	if building != null:
-		building.selected = true
+		building.set("selected",true)
 		building.queue_redraw()
 
 func counts() -> Dictionary:
