@@ -12,6 +12,7 @@ const LocalAI = preload("res://scripts/local_ai_service.gd")
 const LifeSim = preload("res://scripts/worldbox_life_sim.gd")
 const Worksites = preload("res://scripts/worldbox_visible_worksite.gd")
 const AutonomousDirector = preload("res://scripts/autonomous_village_director.gd")
+const NPCBuilding = preload("res://scripts/npc_building_system.gd")
 # Authentic earlier Canglan 3D economy/identity source has been audited and
 # safely migrated to the PUBLIC repository without any signing credentials.
 const OriginalWorldState = preload("res://scripts/world_state.gd")
@@ -25,6 +26,7 @@ var authoritative_world: RefCounted
 var life_sim: RefCounted
 var visible_worksite: Node3D
 var autonomous_director: Node3D
+var npc_building_system: Node3D
 var ui_auto: Label
 var ui_work_result: Label
 var _life_last_hour: int = 12
@@ -104,8 +106,11 @@ func _ready() -> void:
 	life_sim.call("create_village","CL-HX-VILLAGE-0001",
 		{"homes":22,"fields":7,"food":280,"grain":100,"water":90,
 		 "wood":85,"stone":45,"clay":30,"coin":12})
+	# The world must contain actual tradesmen with their own persistent IDs.
+	# WorldX generates reusable MATERIAL surface art, not prebuilt houses.
 	var work_roles := ["farmer","woodcutter","quarryman","cook","potter",
-		"farmer","farmer","cook","woodcutter","farmer"]
+		"farmer","farmer","cook","woodcutter","farmer",
+		"carpenter","mason","builder"]
 	for n in range(citizen_nodes.size()):
 		life_sim.call("add_citizen",
 			String(citizen_nodes[n].get_meta("entity_id","")),
@@ -126,6 +131,11 @@ func _ready() -> void:
 	autonomous_director = AutonomousDirector.new()
 	add_child(autonomous_director)
 	autonomous_director.call("setup",life_sim,citizen_nodes)
+	# New structures come from real craftsperson NPCs, carried materials and
+	# visible building stages, NOT a pre-rendered 2D/HD2D/4-facade background.
+	npc_building_system = NPCBuilding.new()
+	add_child(npc_building_system)
+	npc_building_system.call("setup",life_sim,citizen_nodes)
 	# The actual GGUF/llama.cpp service is part of the same 3D game process.
 	# When native binary or verified weights are missing it reports disabled,
 	# never returns scripted dialog disguised as AI.
@@ -381,7 +391,7 @@ func _create_interface() -> void:
 	stack.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	ui_scroller.add_child(stack)
 	var heading := Label.new()
-	heading.text = "苍岚·人生世界 | 开源3D世界工程"
+	heading.text = "苍岚·人生世界 | NPC自主建设真实3D世界"
 	stack.add_child(heading)
 	ui_status = Label.new()
 	ui_status.text = "构建场景中"
