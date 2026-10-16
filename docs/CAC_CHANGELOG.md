@@ -751,3 +751,8 @@ Godot 4.4.1对从**原签名Android APK176**提取的实际`update_protocol.gdc`
 **不可直接用旧rev178发布脚本**：公开站`android-preview/latest.json`当前已是合法正式revision 178；`tools/publish_original_rev178_ota.py`写死`REVISION=178`、parent revision177、原rev178内容hash和固定老测试artifacts。重跑此工具会被正确拦截，不能产生含新3D资源的revision179。新3D项目`game-source/godot3d`尚未通过*原APK176导出资源的主场景*及手机验收，不能直接照搬成旧版签名PCK。下一步需产生**实际含可见3D资源/场景挂接的原版rev179候选**，跑原APK176场景及存档兼容QA，再对rev179具体PCK使用已经确认恢复的原RSA私钥签发、发行HTTPS并由手机验证。绝不重签rev178冒充新资源更新。
 
 **本轮状态**：RSA签名阻塞✅已解除（真实GitHub QA日志）；可发行rev179 PCK❌尚未构建和验收；正式latest.json未修改，手机仍rev178。只用公开仓库。
+
+
+## 2026-10-17 / REL-NEXT-179 / 新增动态下一修订候选暂存器
+
+已经提交 `tools/stage_original_next_ota.py`，提交号 `cc0b78f5525a488b3f0b25f9a34f9d4b0f31087e`。相对原先写死rev178的发布器，此工具按当前已签署的公开latest.json计算下一修订，要求签名前出示PCK文件、未签署的原版APK176测试候选清单及运行日志；核验包名、1176版本、PCK哈希/长度、原签名、签署后使用APK176固定公钥重验。仅暂存到独立输出目录，**不会自动写官网latest.json、不自动发布、更不生成独立APK**。其`--original-qa-success`开关必须由调用工作流核查真实成功状态后提供，目前没有一条合格的rev179原APK176三维场景构建/启动流水线来调用它，因此目前只是发行候选工具，还不能上架。尚未取得新rev179可用PCK、运行日志、手机截图；原版仍rev178。注意旧rev178叠加HD2D资源不能当作用户要求的3D新内容发布，下一步必需真正的三维场景兼容验收。
