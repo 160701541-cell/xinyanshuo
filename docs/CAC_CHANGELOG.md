@@ -212,3 +212,16 @@
 - 现仍需核验新别名在**公开**仓库是否确有可用Secret；GitHub不同仓库的Secret默认互不共享，不得假定私有仓库有密钥就代表公开仓库有。
 - 若新公仓没有匹配密钥，后续需要用户批准**仅使用原私有仓库现成签名服务完成一次rev177签名**，或由用户将真正原RSA私钥安全地放进公开仓库的Actions Secrets（不要在聊天或源码传私钥）。不得自行换一把新RSA、换APK调试签名、卸载旧游戏或冒充手机已热更。
 - **正式更新状态**：仍以 `android-preview/latest.json` 实际字段及GitHub Pages远程可访问文件为唯一依据。未验证线上rev177之前一直显示 `BLOCKED_NOT_PUBLISHED`。
+
+## CAC-0022 · **原APK176用户可直接下载的正版RSA签名资源热更新 #177 已正式上线**（2026-10-16）
+
+本条是此日志此前「签名缺失」「没有真正更新」历史状态的**最新替代结论**；之前的CI失败记录保留供审计，但已经不再代表当前发布状态。
+
+1. **恢复真正原RSA签名能力，无新密钥替换**：从用户本人此前持有的备份凭据在受控本地环境完成旧密钥读取，以 OpenSSL 派生的公钥DER验证与已安装 APK176 内不可变公钥逐字节相同，随后仅签署可信资源清单。**原私钥、Android keystore、密码均未进入 GitHub、Actions、源代码、manifest、日志或下载产物；完成后受控工作目录中的私钥临时复制已清除，用户个人原文件保持不动。**公开仓库旧Secrets确为0，但不会再阻挡这次已完成的**一次性本地签名→GitHub安全验签入库**交付。
+2. **原游戏真实内容PCK**：采用 Godot 4.4.1 真实原版 APK176 主场景、正房室外/室内进出、WorldX资源验收通过的唯一 QA 构建 `38882131496`，绝非新建无关Demo。已发布的资源PCK长度 **20,361,696字节**（约19.4MiB），SHA-256 `af5e08020e7ae473a31ed2917839ea3544bdf3747b15790bcea49e46a54eb6f3`；签名manifest修订 **177**，严格限定Android **versionCode 1176**、包名 `org.canglan.ancient25d.preview`、官方HTTPS。
+3. **正式上线与服务端校验**：签名handoff `release-handoff/canglan-rev177-SIGNED-original-apk176.json` **只包含公开签名与哈希，没有私钥**。正式发布GitHub Actions [run 38884507811](https://github.com/160701541-cell/xinyanshuo/actions/runs/38884507811) 全部PASS，同一次Git提交添加 `android-preview/canglan-content-rev-177.pck` 并将 `android-preview/latest.json` 更新为177。独立外网HTTPS验证 [run 38884890631](https://github.com/160701541-cell/xinyanshuo/actions/runs/38884890631) 实际接收官网JSON确认原RSA签名且版本177、远端PCK整包哈希及长度完全一致，并验证安装包更新器必需的HTTP Range **206 Partial Content / 1,048,576字节**。输出 `PASS_REV177_NOW_DELIVERABLE_TO_INSTALLED_ORIGINAL_GAME`。至此**已正式推送到原游戏更新源**，不再只是PCK候选或空构建。
+4. **玩家操作**：保持已安装的APK176不变，打开手机《苍岚》进入 `苍岚·世界更新`，点击 `检查更新`，显示#177后点击 `下载安装资源补丁`。更新后进入原世界可体验受控HD2D/WorldX建筑图与正房室内进出候选；**无需下载另一款APK，更不可卸载旧游戏**。
+5. **QA分级保持诚实**：原游戏场景真实Godot引擎加载与屋内进出、资源签名、远端完整包SHA和CDN分块服务均通过；**尚无用户Android手机实际更新成功、加载画面与存档稳定的实机确认**。已发布的WorldX建筑为早期美术候选（场景与家具仍须优化，第一/第二/第三视角未完全落实）；本次发布意味着功能样板正式可供手机测试，不代表最终美术达标。
+6. **额外独立验证**：新增真正APK176编译器内`Crypto.verify`协议的Godot 4.4.1签名接受性测试。首次CI识别仅Linux测试夹具缺失Terrain3D本机GDExtension；已按用户APK中Android .so的SHA-256严格比对真实上游v1.0.2后恢复Linux同版插件，避免假造引擎错误、也不改动签名更新；本项最终结论以新的CI结果为准。
+
+对应官网可见版本条目同步进入 `data/updates.json` 与 `data/development.json`，历史旧数据保留。所有研发新内容下次再发，**不再修改rev177已经签名的PCK**；后续修订需使用更高revision和原有RSA签名链。
