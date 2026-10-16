@@ -5,6 +5,9 @@ on:
     branches: [main]
     paths:
       - 'tools/publish_original_rev178_ota.py'
+      - 'tools/diagnose_public_actions_scopes.py'
+      - 'tools/check_original_ota_secret.py'
+      - 'tools/publish_original_rev177_ota.py'
       - '.github/workflows/canglan-original-apk176-rev178-signed-ota.yml'
 permissions:
   contents: write
@@ -27,12 +30,31 @@ jobs:
       - uses: actions/checkout@v4
         with:
           persist-credentials: true
-      - name: Check original production signing key without exposing any secret
+      - name: Inspect PUBLIC repo Actions secret/environment scopes (metadata only)
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          python3 -m py_compile tools/diagnose_public_actions_scopes.py tools/check_original_ota_secret.py tools/publish_original_rev178_ota.py
+          python3 tools/diagnose_public_actions_scopes.py
+      - name: Diagnose exactly which signer aliases are injected and match APK176
+        shell: bash
+        env:
+          CANGLAN_ANDROID_KEYSTORE_B64: ${{ secrets.CANGLAN_ANDROID_KEYSTORE_B64 }}
+        run: |
+          set -euo pipefail
+          python3 tools/check_original_ota_secret.py
+          python3 tools/publish_original_rev178_ota.py --preflight
+      - name: Verify authentic APK176 full Godot QA run actually concluded SUCCESS
+        env:
+          GH_TOKEN: ${{ github.token }}
         shell: bash
         run: |
           set -euo pipefail
-          python3 -m py_compile tools/publish_original_rev178_ota.py
-          python3 tools/publish_original_rev178_ota.py --preflight
+          result="$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/38921298121" --jq '.conclusion')"
+          test "$result" = success || { echo "::error::Only a successful original main-scene QA run may be published"; exit 5; }
+          echo "PASS_SIGNED_OTA_SOURCE_REAL_APK176_GODOT_WORKFLOW_SUCCESS"
       - name: Retrieve the exact real-original-game Godot passing PCK rev178
         uses: actions/download-artifact@v4
         with:
@@ -93,5 +115,7 @@ jobs:
           name: original-installed-apk176-rev178-release-evidence
           path: |
             qa-results/real-rev178-signed-release-report.json
+            qa-results/public-only-ota-actions-scope.json
+            qa-results/original-apk176-signing-readiness.json
           if-no-files-found: warn
           retention-days: 14
