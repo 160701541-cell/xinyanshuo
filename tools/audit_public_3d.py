@@ -26,7 +26,7 @@ REQUIRED_CONTRACTS = {
     "scripts/world_state_bridge.gd": ["sync_actor", "actor_public_code"],
     "scripts/terrain_chunk.gd": ["SurfaceTool", "StaticBody3D", "create_trimesh_shape"],
     "scripts/building_factory.gd": ["ArrayMesh", "DoorHinge", "WallsCollision", "entity_id"],
-    "scripts/prop_factory.gd": ["MultiMeshInstance3D", "MultiMesh", "entity_id"],
+    "scripts/prop_factory.gd": ["MultiMeshInstance3D", "MultiMesh", "_entity(id,", "\"id\":id"],
     "scripts/npc_agent.gd": ["entity_id", "profession", "wake_near_player"],
     "scripts/interior_factory.gd": ["building_id", "IndependentFurniture"],
 }
