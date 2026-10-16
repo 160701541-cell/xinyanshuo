@@ -43,7 +43,7 @@ func _run() -> void:
   get_root().add_child(main)
   await process_frame
   await process_frame
-  var room: Node = main.get_node_or_null("CanglanAutonomousMaterialWorldRev180")
+  var room: Node = main.get_node_or_null("CanglanAutonomousEcologyWorldRev182")
   if room == null:
     _fail(6, "ORIGINAL_MAIN_MISSING_LIVING_WORLD")
     return
