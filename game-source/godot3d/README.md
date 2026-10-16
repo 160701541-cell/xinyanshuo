@@ -15,7 +15,7 @@
 
 ## 真正的独立 3D GLB 模型工厂（公开代码）
 
-`tools/generate_glb_pack.py` 使用开源 numpy + trimesh 将门窗、瓦面、木构等原生几何程序建模并导出可重复构建的**38份 glTF 2.0 .glb**：18 个建筑变种，10 个自然/生活物件，10 个NPC职业人体**建模候选**。导出时静态部件合并为低 draw call GLB；门扇交由游戏的运行时动态铰链，不烘成无法打开的贴图。AI图片、付费模型和商业素材 **0强制依赖**。
+`tools/generate_glb_pack.py` 使用开源 numpy + trimesh 将门窗、瓦面、木构等原生几何程序建模并导出可重复构建的**43份 glTF 2.0 .glb**：18 个建筑变种，10 个自然/生活物件，10 个旧NPC职业人体**建模候选**，以及5个共享身体结构和挂点的**男平民母版/职业服饰变体**。导出时静态部件合并为低 draw call GLB；门扇交由游戏的运行时动态铰链，不烘成无法打开的贴图。AI图片、付费模型和商业素材 **0强制依赖**。
 
 命令（Python 3.11+）：
 
@@ -49,3 +49,7 @@ godot --headless --path game-source/godot3d --script res://tests/world_smoke.gd
 ## 与以前真正的原生 3D 版本关系（2026-10-16）
 
 已查阅历史只读私有仓库 `godot3d/`：原来的 Godot 4.4 主场景含 `update_bootstrap.tscn`、Terrain3D、持久化 WorldState 和复杂 NPC/制造模块，但完整可授权安全迁移尚未完成。本公开3D工程已**逐字节复用并校验**三份原版源脚本：`scripts/world_state.gd`、`scripts/entity_codes.gd`、`scripts/terrain/heightfield.gd`，新80名NPC实际用原 `WorldState.create_actor` 注册并通过兼容桥验证位置与库存边界，地形高度使用原版500m城池/西北山地模型。这是原版数据与地貌的真实增量接入，而不是声称完整APK主场景已经搬完。原先旧版资源、角色骨骼、安装更新器和所有安全私钥继续未迁移，状态 BLOCKED/PENDING。
+
+## CAC-MALE-001 男平民母版 (新增)
+
+男平民先建立一套共享形体，区分村民/商贾/学徒/卫卒/书生五种低饱和古风服饰，由 `tools/male_civilian_master.py` 自动生成；其中商贾、学徒、卫卒、书生的NPC实例已经优先读取新GLB，保留其他职业的现有候选。见 `docs/CAC_MALE_NPC_MASTER_V1.md`。这批是未绑骨骼的技术候选，不能假称实机动画与最终画风通过。
