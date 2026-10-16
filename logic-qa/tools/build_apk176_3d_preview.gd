@@ -12,6 +12,7 @@ const FILES := {
 	"res://scripts/apk176_cc0_3d_preview.gd": "scripts/apk176_cc0_3d_preview.gd",
 	"res://canglan_rev179/kenney_tree_oak.glb": "canglan_rev179/kenney_tree_oak.glb",
 	"res://canglan_rev179/kenney_rocks_small.glb": "canglan_rev179/kenney_rocks_small.glb",
+	"res://Textures/colormap.png": "Textures/colormap.png",
 	"res://hd2d/atlas_village_ota177.jpg": "hd2d/atlas_village_ota177.jpg"
 }
 
