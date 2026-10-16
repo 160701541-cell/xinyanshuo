@@ -32,7 +32,8 @@ func seed_village(sim: RefCounted, rules: RefCounted,
 					sim.call("configure_resource_recovery", node_id, 12, 1, 48, 24)
 		if accepted:
 			placed[kind] += 1
-	# Reserve the seventh capacity slot for the interactive player worksite.\n\t# Farmland is an authored world entity and has a one-day growth cycle.
+	# Reserve the seventh capacity slot for the interactive player worksite.
+	# Farmland is an authored world entity and has a one-day growth cycle.
 	for i in range(6):
 		var x: float = -165.0 + float(i) * 7.0
 		var z: float = -205.0
