@@ -506,3 +506,20 @@ Godot 4.4.1对从**原签名Android APK176**提取的实际`update_protocol.gdc`
 - 这只说明本次公开仓库Actions Job中注入的候选值**没有与已安装APK176固定公钥匹配的签名密钥**；不意味着用户没配置其他类型的密钥、也不代表密钥不存在。Android APK keystore与OTA manifest RSA是不同用途，不能混用。程序从未输出私钥明文。
 - 官网正式OTA `android-preview/latest.json` 仍是rev177；没有rev178已签名/已发布的证据。禁止补签伪证书、绕过签名校验、以独立APK替代或要求重新安装。
 - 下一步必须在**同一个公开仓库**检查 Actions Secret 名称和值的实际注入范围及其与原版内置RSA公钥的匹配（不暴露内容），然后重试同一公开OTA workflow；无授权匹配私钥前不能把rev178当成正式更新。
+
+## 2026-10-16 / CAC-OTA-ROOTCAUSE-001 / 公开仓库实际深度排错——不是“用户没设置密钥”
+
+用户要求“那你倒是查啊”，本轮仅用公开仓库 `160701541-cell/xinyanshuo` 做真实可复现排障，而非反复空转同一个失败的发布任务。
+
+**实际查明的事实和证据：**
+1. 公开工作流 `38924521435`：使用GitHub Actions当前job的原版PCK签名Secret注入，经安全脚本分类后**五个原本在源码中声明的候选别名均返回 `NOT_INJECTED_IN_THIS_JOB`，不是“私钥已注入但公钥不匹配”**。相关别名：`CANGLAN_PCK_SIGNING_KEY_B64`、`CANGLAN_ORIGINAL_OTA_PRIVATE_KEY_PEM`、`CANGLAN_UPDATE_PRIVATE_KEY_PEM`、`CANGLAN_OTA_PRIVATE_KEY_PEM`、`CANGLAN_UPDATE_SIGNING_KEY_PEM`。这是对特定公开job注入情况的结论，不能推断用户没有在其他位置设置过密钥。
+2. 本job经 GitHub CLI 调用公开仓库 REST 查询，唯一可读取的现存环境名为 `github-pages`；`actions/secrets` 和 `actions/variables` 元数据API对 Actions 自带 `GITHUB_TOKEN` 返回权限不可读，**此结果不是仓库不存在对应Secret的证据**，只是 Actions token 没权限枚举Secret名称。
+3. 针对唯一现有环境 `github-pages` 单独做了真正环境级只读注入诊断，运行 `38924776815` 的 `existing-pages-environment-signing-probe` job 也证明**五个别名均未注入**，`CANGLAN_ANDROID_KEYSTORE_B64` 也未注入。环境名称是在公开仓库REST枚举得到，绝未尝试任何私有仓库。
+4. 同一 `38924776815` 的 `no-secret-genuine-rev178-artifact-qa` job **SUCCESS**。它实际下载了 `38921298121` 的旧版原主场景QA工件、调用`qa_proof` 验证PCK字节、原版RSA签名rev177父版本、APK176兼容范围、真实引擎加载日志及候选sha256，输出 `PASS_PUBLIC_APK176_REV178_AUTHENTIC_PCK_AND_LIVE_MAIN_PROOF_NO_SECRET_REQUIRED`。由此排除“rev178本身无法通过发布前资源/运行时审查”的先前未知项。
+5. 排障发现一个**独立的真实发布脚本逻辑BUG**：`tools/publish_original_rev178_ota.py` 错误地要求 Godot `live-main-room-runtime.log` 包含 `PASS_APK176_ACTUAL_MAIN_...`，但此句是工作流Shell在关闭日志文件后才echo出来，不可能出现于Godot日志文件。这意味着即使签名Secret注入成功也会被错误拦截。提交 `7b6aa5f1a739ea277b25e9b9295fd9b6548083b3` 修复错误条件，仍要求有效Godot运行成功标识、运行日志中零错误，并由发布Actions另行检查源CI实际`conclusion=success`；本轮`38924776815`已实证兼容QA通过。
+6. 修复秘钥格式适配：`tools/check_original_ota_secret.py`与共享`tools/publish_original_rev177_ota.py`已支持PEM、转义换行PEM和换行分组base64 PEM，诊断只报告是否注入/格式无效/公钥不同/公钥相符，**从不输出秘钥原文、长度或私钥指纹**。增加只访问公开仓库的Actions元数据安全诊断脚本`tools/diagnose_public_actions_scopes.py`；GitHub没有授权此Actions token读取Secret设置页面，本工具绝不越权。
+7. 停止浪费资源：`canglan-public-3d-android.yml`和`canglan-public-hd2d-android.yml`两条**独立APK**构建流水线取消每次推送自动构建、保留手工运行；旧版rev177发布工作流也停用自动推送触发，避免与rev178正式发布冲突或制造噪音。唯一正式交付目标仍是原游戏内签名热更新。
+
+**当前准确根因界定：** 原游戏rev178 QA资源、代码验证均可通过；当前这个公开仓库的普通主分支Actions job与现有`github-pages`环境job均**没有注入五个已声明的RSA签名Secret名称**，签名步骤无法执行。可能是配置别名不同、配置的密钥用途不同或所处的Secrets作用域与该job不重叠。由于 GitHub runner token 无权读取仓库Secret元数据，无法仅凭该token判定实际已设置的别名；也不能从签名公钥反推RSA私钥。
+
+**发布状态**：rev178尚未签名与推送，`android-preview/latest.json`仍是rev177；不得让玩家重装APK、不使用私有仓库、不绕过RSA。下一步唯一需解决的是合法签名Secret在允许的公开仓库CI中正确注入，复跑 `.github/workflows/canglan-original-apk176-rev178-signed-ota.yml`，最后必须真机更新验收。
