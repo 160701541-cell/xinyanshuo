@@ -12,5 +12,5 @@
 [node name="HD2DArtAcceptance" type="CanvasLayer" parent="."]
 script = ExtResource("2")
 
-[node name="CanglanAutonomousMaterialWorldRev180" type="CanvasLayer" parent="."]
+[node name="CanglanAutonomousEcologyWorldRev182" type="CanvasLayer" parent="."]
 script = ExtResource("3")
