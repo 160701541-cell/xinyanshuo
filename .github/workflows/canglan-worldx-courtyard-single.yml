@@ -1,6 +1,11 @@
 name: Canglan WorldX Courtyard Single Image
 on:
   workflow_dispatch:
+    inputs:
+      image_model:
+        description: '在硅基流动模型广场复制当前可调用的文生图模型ID（不得用已下线FLUX.1-schnell）'
+        required: true
+        type: string
 permissions:
   contents: read
 concurrency:
@@ -12,7 +17,7 @@ jobs:
     timeout-minutes: 15
     env:
       SILICONFLOW_API_KEY: ${{ secrets.SILICONFLOW_API_KEY }}
-      SILICONFLOW_IMAGE_MODEL: ${{ vars.SILICONFLOW_IMAGE_MODEL }}
+      SILICONFLOW_IMAGE_MODEL: ${{ inputs.image_model }}
       IMAGE_GEN_API_KEY: ${{ secrets.SILICONFLOW_API_KEY }}
       STEP1_MAX_RETRIES: "0"
       STEP1_GENERATE_TIMEOUT_MS: "150000"
@@ -23,6 +28,16 @@ jobs:
         run: |
           if [ -z "$SILICONFLOW_API_KEY" ]; then
             echo "::error::SILICONFLOW_API_KEY repository secret is not configured. No image was generated."
+            exit 1
+          fi
+      - name: Validate selected image model
+        run: |
+          if [ -z "$SILICONFLOW_IMAGE_MODEL" ]; then
+            echo '::error::Please provide image_model from the current SiliconFlow text-to-image model list.'
+            exit 1
+          fi
+          if [ "$SILICONFLOW_IMAGE_MODEL" = 'black-forest-labs/FLUX.1-schnell' ]; then
+            echo '::error::FLUX.1-schnell was discontinued on SiliconFlow; choose an active model.'
             exit 1
           fi
       - name: Checkout WorldX generator
@@ -44,7 +59,8 @@ jobs:
           node --input-type=module <<'NODE'
           import { writeFileSync } from 'node:fs';
           import { loadPrompt } from './map/src/utils/prompt-loader.mjs';
-          const model = process.env.SILICONFLOW_IMAGE_MODEL || 'black-forest-labs/FLUX.1-schnell';
+          const model = (process.env.SILICONFLOW_IMAGE_MODEL || '').trim();
+          if (!model) throw Error('Missing image_model input: choose an active text-to-image model from SiliconFlow model marketplace');
           const prompt = loadPrompt('step1-map-generation.md', {
             userPrompt: '苍岚高清国风四合院，单张独立建筑素材试样',
             additionalConstraints: '画风必须统一，不要像素风、Q版、90度俯视。',
@@ -52,7 +68,7 @@ jobs:
           const response = await fetch('https://api.siliconflow.cn/v1/images/generations', {
             method: 'POST',
             headers: {Authorization: 'Bearer ' + process.env.SILICONFLOW_API_KEY, 'Content-Type':'application/json'},
-            body: JSON.stringify({model, prompt, image_size:'1024x1024', batch_size:1, num_inference_steps:4}),
+            body: JSON.stringify({model, prompt, image_size:'1024x1024'}),
             signal: AbortSignal.timeout(150000)
           });
           const raw = await response.text();
