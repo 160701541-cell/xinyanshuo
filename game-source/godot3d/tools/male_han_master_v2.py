@@ -197,8 +197,7 @@ def export_pack(root):
           "bytes":len(data),"faces":len(merged.faces),
           "height_m":round(height,3)})
     (root/"male_han_v2_manifest.json").write_text(
-        json.dumps(m,ensure_ascii=False,indent=2)+"
-",encoding="utf-8")
+        json.dumps(m,ensure_ascii=False,indent=2)+"\\n",encoding="utf-8")
     return m
 
 if __name__=="__main__":
