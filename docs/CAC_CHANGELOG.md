@@ -476,3 +476,15 @@ Godot 4.4.1对从**原签名Android APK176**提取的实际`update_protocol.gdc`
 2. **修复原游戏现有素材场景**：`game-source/apk176-ota177-candidate/scripts/hd2d_worldx_npcs.gd` 新版本延用早前的WorldX PNG精灵动画，实际只创建5名历史人物；剔除第6个拿智能手机的现代服饰角色。5名NPC各有自己`entity_id`、独立年龄、饥饿、精力、心情、职业、个人库存字段、坐标和当前活动。每名NPC点选信息包含独立的ID/属性；维护原动画与地图通行逻辑，绝不是“商人×5”共享一个状态。同一APK176候选叠加场景本身已有`character_selected`点击交互，保持原游戏旧入口不变。注意这是原APK内HD2D叠加场景，不是把独立3D重建项目直接当作原游戏。
 3. **老APK176原工程检测**：原版`canglan-apk176-hd2d-overlay.yml`作业`38920761609`已真正SUCCESS：打出未签名的旧工程资源PCK并验证原签名安装包中编译主场景可覆盖加载；原版WorldX素材检测 `38920848620` 已触发。新版 `logic-qa/tools/verify_worldx_npc_content.gd` 新增强制校验5名不同ID、独立状态、禁现代手机角色。提交后另外开启`38921132853`真正还原APK176旧编译场景和Terrain3D插件进行启动/正房室内等全场景严苛验证。
 4. **正式上线状态明确仍为BLOCKED**：原游戏官网 `android-preview/latest.json` 仍是**已签rev177**；新候选revision178尚无原RSA签名密钥，未进入正式热更新频道。玩家原APK不需要下载、卸载或破坏存档。待严苛测试通过、合法生产私钥由授权安全途径在CI提供时，才能形成签名rev178+校验并推送官网；不能对用户称原游戏已经热更新。
+
+### CAC-ORIGINAL-OTA-178-PROGRESS / 本轮真实Godot执行完成结论
+
+前两轮因 `hd2d_worldx_npcs.gd` 点选资料代码多一个缩进而触发旧APK176 Godot真实测试 `SCRIPT ERROR: Parse Error: Expected statement, found "Indent" instead`；已以提交 `761ce72ec92799a9e1daf1c8ceab17ee9044bb1a` 纠正并恢复每人活动与位置写入。**没有通过删除严格断言绕过。**
+
+修复后原APK176三条真正QA作业**全部SUCCESS**：
+- `38921298132`：原APK编译主场景/脚本和Godot PCK装载认证：`PASS_APK176_HD2D_OVERLAY_MOUNT_AND_CANONICAL_MAIN_SCENE`。
+- `38921298121`：以旧APK176导出的编译主场景和真实Terrain3D插件启动、场景/正房室内真实加载，无引擎ERROR：`PASS_APK176_ACTUAL_MAIN_INSTANTIATED_NO_ENGINE_ERRORS_WITH_REAL_HOUSE`。生成rev178完整**未签**候选PCK `21,021,440` 字节，SHA-256 `4bf2e3e9e934a0bbdea97275b824317dbe6472b1782ee50a461673ffc4d93bdc`；原版固定RSA签名安全门明确**拒绝未签包**，没有发布。
+- `38921298024`：`PASS_WORLDX_REAL_GAME_ASSETS maps=2 NPCs=5 walk_frames=30 clickable_hotspots=3`；校验全部五个独立ID/年龄/精力/饥饿、可点击地图交互与旧APK场景PCK装载。
+- **原游戏热更新发布仍被硬性阻塞**：`38920447159` 已证明公开仓库Actions中原版签名密钥候选数量为0，无法使用APK176固定公钥认可的私钥签rev178。官网 `android-preview/latest.json` 仍然rev177，**没有热更新到手机**。不能把未签候选上传正式频道、不能复用旧签名、不能改固定公钥或让用户重装APK。
+
+这个阶段真正完成的是**原版APK176可加载的增量兼容PCK候选+严格本地引擎QA**，而非实际签名OTA交付；另一个独立原生3D工程虽有前轮Sprite3D美术接入，通过独立严格QA，但其包结构仍与APK176不兼容，不能以“原游戏3D功能已完全进入更新”为结论。
