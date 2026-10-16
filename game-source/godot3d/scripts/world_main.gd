@@ -10,6 +10,7 @@ const Citizen = preload("res://scripts/npc_agent.gd")
 const Interiors = preload("res://scripts/interior_factory.gd")
 const LocalAI = preload("res://scripts/local_ai_service.gd")
 const LifeSim = preload("res://scripts/worldbox_life_sim.gd")
+const Worksites = preload("res://scripts/worldbox_visible_worksite.gd")
 # Authentic earlier Canglan 3D economy/identity source has been audited and
 # safely migrated to the PUBLIC repository without any signing credentials.
 const OriginalWorldState = preload("res://scripts/world_state.gd")
@@ -21,6 +22,8 @@ var seed: int = 20261016
 var rules: RefCounted
 var authoritative_world: RefCounted
 var life_sim: RefCounted
+var visible_worksite: Node3D
+var ui_work_result: Label
 var _life_last_hour: int = 12
 var _life_day: int = 1
 var ui_life: Label
@@ -96,6 +99,13 @@ func _ready() -> void:
 			String(citizen_nodes[n].get_meta("entity_id","")),
 			"CL-HX-VILLAGE-0001",work_roles[n%work_roles.size()],20+n%42)
 	prop_root.call("build",rules,seed)
+	# One tangible gameplay loop: chop physical tree -> carrier walks to depot
+	# -> materials delivered -> paid house -> crops -> food -> eating.
+	visible_worksite = Worksites.new()
+	add_child(visible_worksite)
+	if not citizen_nodes.is_empty():
+		visible_worksite.call("setup",life_sim,
+			String(citizen_nodes[0].get_meta("entity_id","")))
 	# The actual GGUF/llama.cpp service is part of the same 3D game process.
 	# When native binary or verified weights are missing it reports disabled,
 	# never returns scripted dialog disguised as AI.
@@ -110,6 +120,20 @@ func _ready() -> void:
 	_update_camera(1.0)
 	_refresh_status()
 	print("CANGLAN_3D_WORLD_READY ",snapshot())
+
+func _on_worksite_action(method_name: String) -> void:
+	if visible_worksite==null:
+		return
+	var result: bool = bool(visible_worksite.call(method_name))
+	var events: Array = visible_worksite.get("steps")
+	if ui_work_result!=null:
+		if result and not events.is_empty():
+			ui_work_result.text = String(events.back())
+		elif method_name=="action_deliver":
+			ui_work_result.text = "木材还未送到村庄仓库，等搬运工走到仓库后再入库。"
+		else:
+			ui_work_result.text = "操作未达成：请检查材料、食物、农田复长和操作顺序。"
+	_refresh_status()
 
 func _build_lighting() -> void:
 	world_env = WorldEnvironment.new()
@@ -315,6 +339,30 @@ func _create_interface() -> void:
 	ui_life = Label.new()
 	ui_life.text = "村镇生活模拟：初始化中"
 	stack.add_child(ui_life)
+	var work_header := Label.new()
+	work_header.text = "生活闭环试玩 · 砍树→运输→建房→收粮→煮饭→进食"
+	stack.add_child(work_header)
+	var workflow := GridContainer.new()
+	workflow.columns = 3
+	stack.add_child(workflow)
+	for pair in [
+		["1.砍树","action_chop"],
+		["2.木材入库","action_deliver"],
+		["3.建房","action_build_house"],
+		["4.收粮","action_harvest"],
+		["5.煮饭","action_cook"],
+		["6.进食","action_eat"]]:
+		var btn := Button.new()
+		btn.text = String(pair[0])
+		btn.custom_minimum_size = Vector2(110,43)
+		var verb: String = String(pair[1])
+		btn.pressed.connect(_on_worksite_action.bind(verb))
+		workflow.add_child(btn)
+	ui_work_result = Label.new()
+	ui_work_result.text = "点击砍树：实体消失，工人搬木材回库；未运到仓库无法入库。"
+	ui_work_result.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	ui_work_result.custom_minimum_size = Vector2(360,0)
+	stack.add_child(ui_work_result)
 	var actions := HBoxContainer.new()
 	stack.add_child(actions)
 	var toggle_cam := Button.new()
