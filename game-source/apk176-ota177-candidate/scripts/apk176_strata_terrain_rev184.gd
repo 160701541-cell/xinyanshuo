@@ -31,7 +31,7 @@ var mesh_revisions: int = 0
 var river_enabled: bool = true
 
 func _ready() -> void:
-  name = "PhysicalExcavatableSoilStrata"
+  name = "PhysicalDeformable92mVillageStrata"
   for kind in STONE_COLORS:
     var mat := StandardMaterial3D.new()
     mat.albedo_color = STONE_COLORS[kind]
