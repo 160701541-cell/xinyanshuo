@@ -1,0 +1,85 @@
+name: Canglan ORIGINAL APK176 - WorldX 4 Physical 3D Facades QA (No HD2D)
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/canglan-original-worldx-four-facade-3d-qa.yml'
+      - 'game-source/apk176-ota179-candidate/**'
+      - 'game-source/apk176-ota177-candidate/scripts/worldx_four_face_3d.gd'
+      - 'logic-qa/tools/build_apk176_worldx3d_ota179.gd'
+      - 'logic-qa/tools/verify_apk176_worldx3d_fourface.gd'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: canglan-original-worldx4-3d-qa
+  cancel-in-progress: true
+jobs:
+  original-four-real-3d-facades:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 16
+    steps:
+      - uses: actions/checkout@v4
+      - name: Stage only real FOUR WorldX-generated images with the genuine APK176 candidate main
+        env:
+          CANGLAN_OTA_STAGE_DIR: ${{ github.workspace }}/qa-stage/ota179
+          CANGLAN_QA_PCK_PATH: ${{ github.workspace }}/qa-results/canglan-original-worldx3d-ota179-UNSIGNED-REVIEW.pck
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p qa-results qa-stage/ota179/{scenes,scripts,worldx3d/facades/courtyard_main_hall}
+          source_assets=art-source/worldx3d/facades/courtyard_main_hall
+          test -s "$source_assets/facades.json"
+          cp game-source/apk176-ota179-candidate/scenes/* qa-stage/ota179/scenes/
+          cp game-source/apk176-ota177-candidate/scripts/worldx_four_face_3d.gd qa-stage/ota179/scripts/
+          cp "$source_assets"/{facades.json,front.png,back.png,left.png,right.png} qa-stage/ota179/worldx3d/facades/courtyard_main_hall/
+          test -s qa-stage/ota179/scenes/main.tscn.remap
+          grep -Fq 'main_3d_worldx_ota179.tscn' qa-stage/ota179/scenes/main.tscn.remap
+          grep -Fq 'WorldXFourFacades3D' qa-stage/ota179/scenes/main_3d_worldx_ota179.tscn
+          if grep -E 'HD2DArtAcceptance|CanvasLayer|hd2d_original_overlay_ota177' qa-stage/ota179/scenes/main_3d_worldx_ota179.tscn; then
+            echo "::error::New main scene is STILL a full-screen HD2D overlay"
+            exit 10
+          fi
+          echo "PASS_GENUINE_APK176_ORIGINAL_MAIN_3D_ONLY_SCENE_STAGE"
+      - name: Install Godot 4.4.1 as in the REAL APK176
+        run: |
+          set -euo pipefail
+          curl -fL --retry 2 --connect-timeout 25 --max-time 130 https://github.com/godotengine/godot/releases/download/4.4.1-stable/Godot_v4.4.1-stable_linux.x86_64.zip -o /tmp/godot.zip
+          unzip -q /tmp/godot.zip -d /tmp
+          chmod +x /tmp/Godot_v4.4.1-stable_linux.x86_64
+      - name: Build unsigned original APK176-compatible 3D texture-only PCK candidate
+        env:
+          CANGLAN_OTA_STAGE_DIR: ${{ github.workspace }}/qa-stage/ota179
+          CANGLAN_QA_PCK_PATH: ${{ github.workspace }}/qa-results/canglan-original-worldx3d-ota179-UNSIGNED-REVIEW.pck
+        run: |
+          set -euo pipefail
+          timeout 85s /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless --path logic-qa --script res://tools/build_apk176_worldx3d_ota179.gd > qa-results/worldx3d-original-pck-build.log 2>&1 || {
+            cat qa-results/worldx3d-original-pck-build.log
+            exit 11
+          }
+          cat qa-results/worldx3d-original-pck-build.log
+          grep -Fq 'PASS_WORLDX3D_APK176_FOUR_FACES_PACKED_NO_HD2D' qa-results/worldx3d-original-pck-build.log
+      - name: RUN ACTUAL Godot 4.4 3D geometry and 4 WorldX textures (not screenshots)
+        env:
+          CANGLAN_QA_PCK_PATH: ${{ github.workspace }}/qa-results/canglan-original-worldx3d-ota179-UNSIGNED-REVIEW.pck
+        run: |
+          set -euo pipefail
+          timeout 110s /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless --path logic-qa --script res://tools/verify_apk176_worldx3d_fourface.gd > qa-results/worldx3d-real-mesh-runtime.log 2>&1 || {
+            cat qa-results/worldx3d-real-mesh-runtime.log
+            exit 12
+          }
+          cat qa-results/worldx3d-real-mesh-runtime.log
+          grep -Fq 'PASS_WORLDX_ORIGINAL_APK176_TRUE_3D_QUADS_4_DIRECTIONS' qa-results/worldx3d-real-mesh-runtime.log
+          if grep -Eq 'SCRIPT ERROR:|Parse Error:|ERROR:' qa-results/worldx3d-real-mesh-runtime.log; then
+            echo "::error::Godot 3D run had engine errors"
+            exit 13
+          fi
+          echo 'PASS_WORLDX_FOUR_FACE_3D_GODOT_RUNTIME_NOT_HD2D_UNAPPROVED'
+      - name: Save UNAPPROVED 3D PCK + reproducible Godot QA, NOT for phone release
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: Canglan-original-APK176-WorldX-FOUR-3D-Faces-UNSIGNED-REVIEW
+          path: qa-results/worldx3d-*.log
+          if-no-files-found: warn
+          retention-days: 14
