@@ -26,8 +26,8 @@ func _run() -> void:
 	var jobs: Dictionary = director.call("stats")
 	assert(int(jobs["workers"])==10, "8 finite-resource carriers plus 2 actual field workers must be assigned")
 	var economy: RefCounted = stage.get("life_sim")
-	assert((economy.get("harvested_fields") as Dictionary).size()==2,
-		"Two independently growing/harvestable farm plots must exist in the rendered 3D world")
+	assert((economy.get("harvested_fields") as Dictionary).size()==3,
+		"Two autonomous field plots plus one player harvest parcel must be registered")
 	assert((economy.get("natural_nodes") as Dictionary).size()==9,
 		"8 finite natural work sites + 1 visible manual tree must exist")
 	for worker in (director.get("assignments") as Dictionary).values():
