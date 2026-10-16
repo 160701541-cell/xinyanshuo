@@ -11,6 +11,7 @@ const Interiors = preload("res://scripts/interior_factory.gd")
 const LocalAI = preload("res://scripts/local_ai_service.gd")
 const LifeSim = preload("res://scripts/worldbox_life_sim.gd")
 const Worksites = preload("res://scripts/worldbox_visible_worksite.gd")
+const AutonomousDirector = preload("res://scripts/autonomous_village_director.gd")
 # Authentic earlier Canglan 3D economy/identity source has been audited and
 # safely migrated to the PUBLIC repository without any signing credentials.
 const OriginalWorldState = preload("res://scripts/world_state.gd")
@@ -23,6 +24,8 @@ var rules: RefCounted
 var authoritative_world: RefCounted
 var life_sim: RefCounted
 var visible_worksite: Node3D
+var autonomous_director: Node3D
+var ui_auto: Label
 var ui_work_result: Label
 var _life_last_hour: int = 12
 var _life_day: int = 1
@@ -106,6 +109,11 @@ func _ready() -> void:
 	if not citizen_nodes.is_empty():
 		visible_worksite.call("setup",life_sim,
 			String(citizen_nodes[0].get_meta("entity_id","")))
+	# Autonomous profession AI operates on original 3D NPC nodes, using
+	# finite physical world resources; the optional LLM never mints materials.
+	autonomous_director = AutonomousDirector.new()
+	add_child(autonomous_director)
+	autonomous_director.call("setup",life_sim,citizen_nodes)
 	# The actual GGUF/llama.cpp service is part of the same 3D game process.
 	# When native binary or verified weights are missing it reports disabled,
 	# never returns scripted dialog disguised as AI.
@@ -339,6 +347,9 @@ func _create_interface() -> void:
 	ui_life = Label.new()
 	ui_life.text = "村镇生活模拟：初始化中"
 	stack.add_child(ui_life)
+	ui_auto = Label.new()
+	ui_auto.text = "自主村民：等待工人出发……"
+	stack.add_child(ui_auto)
 	var work_header := Label.new()
 	work_header.text = "生活闭环试玩 · 砍树→运输→建房→收粮→煮饭→进食"
 	stack.add_child(work_header)
@@ -533,6 +544,11 @@ func _refresh_status_throttled(delta: float) -> void:
 	if t<=0.0:
 		set_meta("hud_time",0.5)
 		_refresh_status()
+		if autonomous_director!=null and ui_auto!=null:
+			var work: Dictionary = autonomous_director.call("stats")
+			ui_auto.text = "自主生产：%d名工人 / 采集%d次 / 实际运回%d次 / 新房%d / 林木余量%d" % [
+				int(work["workers"]),int(work["harvested"]),int(work["delivered"]),
+				int(work["new_houses_visible"]),int(work["remaining_trees"])]
 
 func _refresh_light() -> void:
 	if sun == null:
