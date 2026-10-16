@@ -10,7 +10,7 @@ permissions:
   contents: write
 concurrency:
   group: canglan-public-hd2d-android-${{ github.ref }}
-  cancel-in-progress: false
+  cancel-in-progress: true
 jobs:
   standalone-android-qa:
     name: Build independently installable HD2D QA APK (NOT original game)
@@ -133,7 +133,7 @@ jobs:
           gh release create "$TAG" "$APK" qa-logs/apk.sha256 \
             --repo "${GITHUB_REPOSITORY}" \
             --title "苍岚 HD2D 候选场景测试 · ${GITHUB_SHA:0:12}" \
-            --notes "这是公开仓库单独构建的Android ARM64测试APK，包名 com.xinyanshuo.canglan.hd2dqa，使用CI临时调试签名。不是既有《苍岚》正式APK的覆盖更新，也不是签名资源补丁。包含Godot村镇构图、图集候选预览、视角操作和昼夜色调。图片未通过最终美术QA。请勿卸载原游戏；如已安装其他版本的HD2D独立测试包，可能需先卸载该测试包。" \
+            --notes "这是公开仓库单独构建的Android ARM64测试APK，包名 com.xinyanshuo.canglan.hd2dqa，使用CI临时调试签名。不是既有《苍岚》正式APK的覆盖更新，也不是签名资源补丁。包含Godot程序化村镇（院落、可开门建筑、独立道具、四季、昼夜、室内）、视角操作。这是技术原型，视觉和手机实测尚待审核。请勿卸载原游戏；如已安装其他版本的HD2D独立测试包，可能需先卸载该测试包。" \
             --prerelease
           gh release view "$TAG" --repo "${GITHUB_REPOSITORY}" --json url --jq .url
       - name: Keep diagnostic logs on failure
