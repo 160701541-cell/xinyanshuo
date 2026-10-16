@@ -61,8 +61,12 @@ func _run() -> void:
 	if not bool(report.get("save_unchanged", false)):
 		_fail(11, "must_never_modify_original_game_save")
 		return
-	if scene.get_node_or_null("HD2DArtAcceptance") == null:
+	var old_layer: Node = scene.get_node_or_null("HD2DArtAcceptance")
+	if old_layer == null:
 		_fail(12, "previous_original_overlay_lost_during_update")
+		return
+	if bool(old_layer.get("active")):
+		_fail(17, "legacy_raster_overlay_must_not_hide_original_game_world")
 		return
 	window.call("_close_preview")
 	if panel.get_node("ActualReal3DViewportContainer").visible:
