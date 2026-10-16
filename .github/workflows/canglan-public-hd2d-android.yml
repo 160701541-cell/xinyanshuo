@@ -1,10 +1,6 @@
 name: Canglan PUBLIC HD2D Android ARM64 QA APK (NOT an OTA update)
+# Obsolete/standalone path: manual run only; do not replace installed-game OTA.
 on:
-  push:
-    branches: [main]
-    paths:
-      - 'game-source/hd2d-world/**'
-      - '.github/workflows/canglan-public-hd2d-android.yml'
   workflow_dispatch:
 permissions:
   contents: write
