@@ -818,3 +818,12 @@ Godot 4.4.1对从**原签名Android APK176**提取的实际`update_protocol.gdc`
 本轮重新读取**实际公开仓库** `android-preview/latest.json`，正式通道已由rev178推进为**rev179**，`minimum_android_code=maximum_android_code=1176`，包名仍受原APK176门禁约束。GitHub仓库存在`android-preview/canglan-content-rev-179.pck`，最新发行提交 `74ad36cda135aab71e209deb106a0a6e4a2ccb7a`，提交标题为`release(official): APK176 RSA signed real-3D CC0 preview rev179 [skip ci]`，说明上轮git non-fast-forward冲突修复后**PCK与manifest已真正提交正式main**。manifest: SHA-256 `b1317883b1f884264b6a4a6e063683c2fb0cb324d13c81003564a8ff84a6a4e1`；大小`21066816`字节；地址`https://160701541-cell.github.io/xinyanshuo/android-preview/canglan-content-rev-179.pck`。该SHA与上轮实际CI `38964273466` 的原版RSA验签成功、完整Godot QA成功的签署候选一致。**源码仓库的正式发布已经完成。**
 
 **严格界限**：本轮无法通过可用工具对GitHub Pages站点完成独立HTTP可达性与下载内容验证，尚无用户手机完成下载/装载的截图，不能冒充安卓实机验收完成。可立即请用户打开**原已安装的《苍岚》**内置更新器检查是否发现rev179（无需重装APK、勿清存档）。预期此次仅为可返回的Kenney CC0树木+石头3D预览，未实现完整NPC生态接管原版主世界。如手机仍检测不到rev179，下一优先级应审查Pages发布延时/缓存及客户端版本通道，而不是重复签发。
+
+
+## 2026-10-17 / OTA179-USER-BROWSER-SHOWS-178 / P0网页CDN未升级，补全真实Pages部署而不重签
+
+用户在**手机浏览器直接访问正式地址**确认显示`revision:178`，同时公开仓库main下`android-preview/latest.json`已经是`revision:179`且完整签名PCK rev179存在。这直接证明问题位于**源仓库到github.io网站的部署/缓存链**，暂时不应把问题归咎于手机版更新器，也不必重新签发PCK。
+
+已在唯一公开仓库增加`.github/workflows/canglan-official-pages-ota-deploy.yml`，提交`bd016185e145d73868f87050705abf13cc41a7fc`。此前rev179成功的是`git push origin main`，并未显式执行GitHub Pages官方`configure-pages → upload-pages-artifact → deploy-pages`。新工作流只上传网站可公开的静态根文件和`android-preview/`等前端所需目录（不把game-source、签名密钥或任何私有代码打成公开部署artifact），先验证候选PCK SHA-256/长度及原1176版本边界，完成真实Pages部署后立即从CDN获取文件并运行`tools/verify_original_rev179_live_http.py`，核对用户原游戏的固定RSA、公网manifest版本、PCK字节以及1MiB分段下载能力；不合格则记录json，**绝不声称手机更新完成**。
+
+注意GitHub Pages仓库设置必须允许**GitHub Actions为部署源**、且工作流要取得pages:write及id-token:write。当前仅确认GitHub工作流文件提交成功，仍需读取新的Actions运行/实际网页HTTP结果。若仓库Pages仍按Branch源工作，该发布工作流可能提示源配置错误；应以真实日志为准定位。旧rev179的正式签名PCK不需更改；手机端还未下载/验收。
