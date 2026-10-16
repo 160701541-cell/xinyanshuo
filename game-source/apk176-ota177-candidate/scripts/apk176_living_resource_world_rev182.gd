@@ -29,6 +29,7 @@ var npc_nameplates: Dictionary = {}
 var hill_zone: MeshInstance3D
 var _camera_focus := Vector3(0.0, 1.1, 10.0)
 var _current_focus_id: String = "CL-NPC-0182-03"
+var _follow_builder: bool = false
 var _geo_pushes: int = 0
 var world: Node3D
 var view: SubViewport
@@ -156,7 +157,7 @@ func _build_interface() -> void:
   var info_bg := PanelContainer.new()
   info_bg.name = "VillageStockAndWorkerHUD"
   info_bg.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_LEFT)
-  info_bg.position = Vector2(18, -170)
+  info_bg.position = Vector2(18, -188)
   info_bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
   ui.add_child(info_bg)
   status = Label.new()
@@ -193,6 +194,7 @@ func _focus_builder() -> void:
     return
   var character: Node3D = builder["node"]
   _camera_focus = character.position + Vector3(0.0,1.3,0)
+  _follow_builder = true
   _camera_distance = 12.5
   _update_camera()
 
@@ -308,6 +310,19 @@ func _make_workers() -> void:
       float(workers.size()-1)*2.7, 0, 0), 1.0)
     if character == null:
       continue
+    # Import asset native scale varies radically across GLB vendors.
+    # Measure the animated mesh itself and normalize actual real-world height.
+    _normalize_worker_height(character)
+    var label := Label3D.new()
+    label.name = "PersistentNamePlate_" + code
+    label.text = String(profile["name"]) + " · " + code
+    label.font_size = 44
+    label.pixel_size = 0.006
+    label.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+    label.no_depth_test = true
+    label.position = character.position + Vector3(0, 2.2, 0)
+    world.add_child(label)
+    npc_nameplates[code] = label
     var anim_nodes: Array[Node] = character.find_children("*", "AnimationPlayer", true, false)
     var walk_name := ""
     var idle_name := ""
@@ -563,6 +578,14 @@ func _process(delta: float) -> void:
       _move_builder(worker, delta)
     else:
       _move_gatherer(worker, delta)
+  for code in workers:
+    var actor: Node3D = workers[code]["node"]
+    if npc_nameplates.has(code):
+      (npc_nameplates[code] as Label3D).position = actor.position + Vector3(0,2.25,0)
+  if _follow_builder and workers.has(_current_focus_id):
+    var following: Node3D = workers[_current_focus_id]["node"]
+    _camera_focus = _camera_focus.lerp(following.position+Vector3(0,1.15,0),clampf(delta*3.5,0,1))
+    _update_camera()
   if _clock >= 0.5:
     _clock = 0.0
     _update_status()
@@ -608,7 +631,109 @@ func stats() -> Dictionary:
     "geological_years": eco.geology_years,
     "ridge_elevation_m": eco.geological_ridge_m,
     "visible_actor_labels": npc_nameplates.size(),
+    "worker_visual_heights_m": {
+      "woodcutter": float(workers["CL-NPC-0182-01"]["node"].get_meta("actor_visual_height_m",0.0)) if workers.has("CL-NPC-0182-01") else 0.0,
+      "quarryman": float(workers["CL-NPC-0182-02"]["node"].get_meta("actor_visual_height_m",0.0)) if workers.has("CL-NPC-0182-02") else 0.0,
+      "builder": float(workers["CL-NPC-0182-03"]["node"].get_meta("actor_visual_height_m",0.0)) if workers.has("CL-NPC-0182-03") else 0.0
+    },
     "not_whole_finished_house": true, "save_unchanged": true}
+
+
+func _visible_bounds(actor: Node3D) -> Vector2:
+  var smallest_y: float = INF
+  var largest_y: float = -INF
+  for child in actor.find_children("*","MeshInstance3D",true,false):
+    var part: MeshInstance3D = child as MeshInstance3D
+    if part.mesh == null:
+      continue
+    var bb: AABB = part.get_aabb()
+    for corner in range(8):
+      var point: Vector3 = part.to_global(bb.get_endpoint(corner))
+      smallest_y = minf(smallest_y,point.y)
+      largest_y = maxf(largest_y,point.y)
+  return Vector2(smallest_y,largest_y)
+
+func _normalize_worker_height(actor: Node3D) -> void:
+  var native: Vector2 = _visible_bounds(actor)
+  var measured: float = native.y-native.x
+  if measured <= 0.0001 or not is_finite(measured):
+    actor.set_meta("actor_visual_height_m",0.0)
+    return
+  actor.scale *= clampf(1.8/measured,0.01,100.0)
+  var new_bounds: Vector2 = _visible_bounds(actor)
+  # Character imported foot offsets must not sink behind ground or hover.
+  actor.position.y -= new_bounds.x
+  actor.set_meta("actor_visual_height_m",new_bounds.y-new_bounds.x)
+  actor.set_meta("actor_scale_normalized",true)
+
+func _refresh_ecology_meshes() -> void:
+  for id in eco.trees:
+    if not natural_meshes.has(id):
+      continue
+    var art: Node3D = natural_meshes[id]
+    if not is_instance_valid(art):
+      continue
+    var state: Dictionary = eco.trees[id]
+    if bool(state["planted"]):
+      var life: String = String(state["stage"])
+      var growth_scale: float = 0.10
+      if life == "sapling":
+        growth_scale = 0.20
+      elif life == "young_tree":
+        growth_scale = 0.65
+      elif life == "mature":
+        growth_scale = 1.65
+      art.scale = Vector3.ONE * growth_scale
+      art.visible = life != "stump"
+    else:
+      art.visible = int(sim.natural_nodes[id]["remaining"]) > 0
+  for id in eco.stone:
+    if not natural_meshes.has(id):
+      continue
+    var art: Node3D = natural_meshes[id]
+    var remaining: int = int(sim.natural_nodes[id]["remaining"])
+    art.visible = remaining > 0
+    var stage: String = String(eco.stone[id]["stage"])
+    if stage == "pebbles":
+      art.scale = Vector3.ONE * 0.19
+    elif stage == "small_rock":
+      art.scale = Vector3.ONE * 0.38
+    elif stage == "rock_cluster":
+      art.scale = Vector3.ONE * 0.72
+    elif remaining > 16:
+      art.scale = Vector3.ONE * 1.35
+
+func _rebuild_geological_ridge() -> void:
+  if hill_zone == null:
+    return
+  # A small procedural TERRAIN TILE, not a procedurally built model;
+  # a real full-world heightfield+LOD system is a separate engineering task.
+  var surface := SurfaceTool.new()
+  surface.begin(Mesh.PRIMITIVE_TRIANGLES)
+  var display_height: float = minf(55.0, eco.geological_ridge_m / 160.0)
+  for row in range(9):
+    for col in range(18):
+      var xl: float = -54.0+float(col)*6.0
+      var xr: float = xl+6.0
+      var zn: float = -35.0-float(row)*5.0
+      var zf: float = zn-5.0
+      var triangle := [
+        Vector2(xl,zn),Vector2(xr,zn),Vector2(xr,zf),
+        Vector2(xl,zn),Vector2(xr,zf),Vector2(xl,zf)]
+      for pos in triangle:
+        var width: float = maxf(0.0,1.0-absf(pos.x)/60.0)
+        var ridge: float = pow(width,1.3)*maxf(0.0,1.0-absf(pos.y+55.0)/27.0)
+        var height: float = -0.06+display_height*ridge
+        surface.set_uv(Vector2((pos.x+54.0)/108.0,(-pos.y-35.0)/45.0))
+        surface.add_vertex(Vector3(pos.x,height,pos.y))
+  surface.generate_normals()
+  hill_zone.mesh = surface.commit()
+  var material := StandardMaterial3D.new()
+  material.albedo_color = Color("#838e7b")
+  material.roughness = 1.0
+  hill_zone.material_override = material
+  hill_zone.set_meta("geological_height_m",eco.geological_ridge_m)
+  hill_zone.set_meta("preview_terrain_reduced_vertical_scale",true)
 
 func _exit_tree() -> void:
   # GLTFDocument.generate_scene produces freestanding Node3D templates.
