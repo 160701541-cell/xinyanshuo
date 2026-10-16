@@ -12,6 +12,7 @@ var _target := Vector3.ZERO
 var _walk_clock: float = 0.0
 var _decide_clock: float = 0.0
 var _body_visual: Node3D
+var _generated_role_visual: Node3D
 var _left_leg: Node3D
 var _right_leg: Node3D
 var _left_arm: Node3D
@@ -107,6 +108,22 @@ func _build_body(role: int) -> void:
 		else:
 			_right_arm = arm
 
+	# Prefer the actual 3D GLB exported by the open-source model factory.
+	# It is intentionally marked UNRIGGED; never claim skeletal walking,
+	# BlendShapes, or a production quality character until tested.
+	var model_file: String = "res://assets/generated/npc/role_%02d.glb" % posmod(role,10)
+	if ResourceLoader.exists(model_file):
+		var imported: Resource = load(model_file)
+		if imported is PackedScene:
+			var model: Node3D = (imported as PackedScene).instantiate()
+			for old_mesh in _body_visual.get_children():
+				old_mesh.visible = false
+			model.name = "GeneratedOccupationGLB_Unrigged"
+			_body_visual.add_child(model)
+			_generated_role_visual = model
+			set_meta("art_status","UNRIGGED_GENERATED_GLB_CANDIDATE")
+			set_meta("model_source",model_file)
+
 func _process(delta: float) -> void:
 	if _observer == null or rules == null:
 		return
@@ -130,6 +147,8 @@ func _process(delta: float) -> void:
 		position += direction * minf(delta_target.length(),delta*_movement_speed)
 		rotation.y = atan2(direction.x,direction.z)
 		_walk_clock += delta * 6.7
+		if _generated_role_visual != null:
+			_generated_role_visual.position.y = absf(sin(_walk_clock))*0.035
 		_left_leg.rotation.x = sin(_walk_clock)*0.42
 		_right_leg.rotation.x = -sin(_walk_clock)*0.42
 		_left_arm.rotation.x = -sin(_walk_clock)*0.35
@@ -140,6 +159,8 @@ func _process(delta: float) -> void:
 		_right_leg.rotation.x = lerpf(_right_leg.rotation.x,0,delta*5)
 		_left_arm.rotation.x = lerpf(_left_arm.rotation.x,0,delta*5)
 		_right_arm.rotation.x = lerpf(_right_arm.rotation.x,0,delta*5)
+		if _generated_role_visual != null:
+			_generated_role_visual.position.y = lerpf(_generated_role_visual.position.y,0.0,clampf(delta*6,0.0,1.0))
 		_citizen_state["task"] = "resting" if _is_resting else "waiting"
 	position.y = float(rules.call("height_at",position.x,position.z))
 
@@ -156,4 +177,4 @@ func wake_near_player() -> void:
 func status() -> Dictionary:
 	return {"id":entity_id,"profession":profession,"home":[home.x,home.y,home.z],
 			"goal":_citizen_state["goal"],"task":_citizen_state["task"],
-			"art_status":"PROCEDURAL_HUMANOID_PLACEHOLDER"}
+			"art_status":String(get_meta("art_status","PROCEDURAL_HUMANOID_PLACEHOLDER"))}
