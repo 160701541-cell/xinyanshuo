@@ -1,10 +1,6 @@
 name: Canglan PUBLIC native 3D ARM64 technical APK (NOT original signed game)
+# Obsolete/standalone path: manual run only; do not replace installed-game OTA.
 on:
-  push:
-    branches: [main]
-    paths:
-      - 'game-source/godot3d/**'
-      - '.github/workflows/canglan-public-3d-android.yml'
   workflow_dispatch:
 permissions:
   contents: write
