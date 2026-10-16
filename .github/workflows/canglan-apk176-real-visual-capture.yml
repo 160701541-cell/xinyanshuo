@@ -1,0 +1,125 @@
+name: Canglan TRUE Original APK176 - Visual Exterior Interior Screenshots
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/canglan-apk176-real-visual-capture.yml'
+      - 'logic-qa/apk176-export-fixture/capture_original_main_house.gd'
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: canglan-original-real-visual-qa
+  cancel-in-progress: true
+jobs:
+  genuine-original-visual:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - name: Reuse exact already-Godot-verified original-game PCK artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: Canglan-APK176-TRUE-MAIN-QA-rev177-UNSIGNED-NOT-FOR-PHONE
+          run-id: 38878434254
+          github-token: ${{ github.token }}
+          path: qa-results
+      - name: Prove same original-game candidate SHA and restore actual APK resources
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p qa-results/real-frame-capture
+          echo 'e69c34739a03bbcdb4e8b27aa4525d93b0999a3505f9da75922afc4479f4505c  qa-results/canglan-apk176-live-house-UNSIGNED.pck' | sha256sum -c -
+          python3 - <<'PY'
+          from pathlib import Path
+          import json,zipfile
+          src=Path(json.loads(Path('android-preview/base-latest.json').read_text())['file'])
+          dst=Path('logic-qa/apk176-export-fixture')
+          with zipfile.ZipFile(src) as apk:
+              for entry in apk.infolist():
+                  p=entry.filename
+                  if not p.startswith('assets/') or entry.is_dir() or p=='assets/project.godot':
+                      continue
+                  rel=Path(p[len('assets/'):])
+                  if rel.is_absolute() or '..' in rel.parts: raise SystemExit('unsafe path in genuine APK')
+                  dest=dst/rel
+                  dest.parent.mkdir(parents=True,exist_ok=True)
+                  dest.write_bytes(apk.read(entry))
+              android=apk.read('lib/arm64-v8a/libterrain.android.debug.arm64.so')
+          Path('/tmp/real-terrain-android.so').write_bytes(android)
+          print('PASS_REAL_APK176_EXPORTED_GODOT_SCENE_ASSETS_EXTRACTED')
+          PY
+      - name: Install verified EXACT matching Terrain3D Linux plugin from original APK upstream version
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl -fL --retry 2 --connect-timeout 15 --max-time 110 \
+            'https://github.com/TokisanGames/Terrain3D/releases/download/v1.0.2-stable/Terrain3D_v1.0.2-stable.zip' -o /tmp/terrain-release.zip
+          python3 - <<'PY'
+          import zipfile,hashlib,pathlib
+          original=hashlib.sha256(pathlib.Path('/tmp/real-terrain-android.so').read_bytes()).hexdigest()
+          assert original=='57488420ff5c15d1963109bb979b8ed7934c7980eb306c2023505ef60f2a6c94'
+          with zipfile.ZipFile('/tmp/terrain-release.zip') as z:
+              a=next(n for n in z.namelist() if n.endswith('libterrain.android.debug.arm64.so'))
+              l=next(n for n in z.namelist() if n.endswith('libterrain.linux.debug.x86_64.so'))
+              assert hashlib.sha256(z.read(a)).hexdigest()==original, 'Native plugin mismatch: refuse version substitution'
+              dest=pathlib.Path('logic-qa/apk176-export-fixture/addons/terrain_3d/bin/libterrain.linux.debug.x86_64.so')
+              dest.parent.mkdir(parents=True,exist_ok=True)
+              dest.write_bytes(z.read(l))
+          print('PASS_EXACT_ANDROID_TO_LINUX_TERRAIN3D_V1_0_2_GDEXTENSION_MATCH')
+          PY
+      - name: Install Godot 4.4.1 and CPU Vulkan visual rendering dependencies
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends xvfb libvulkan1 mesa-vulkan-drivers
+          curl -fL --retry 3 --connect-timeout 25 \
+            'https://github.com/godotengine/godot/releases/download/4.4.1-stable/Godot_v4.4.1-stable_linux.x86_64.zip' -o /tmp/godot.zip
+          unzip -q /tmp/godot.zip -d /tmp
+          chmod +x /tmp/Godot_v4.4.1-stable_linux.x86_64
+      - name: Render REAL original game two frames using Godot Xvfb and software Vulkan
+        shell: bash
+        env:
+          CANGLAN_QA_PCK_PATH: ${{ github.workspace }}/qa-results/canglan-apk176-live-house-UNSIGNED.pck
+          CANGLAN_SCREENSHOT_DIR: ${{ github.workspace }}/qa-results/real-frame-capture
+          LIBGL_ALWAYS_SOFTWARE: "1"
+        run: |
+          set -euo pipefail
+          icd="$(find /usr/share/vulkan/icd.d -maxdepth 1 -name '*lvp*.json' | head -n 1)"
+          if [ -n "$icd" ]; then export VK_DRIVER_FILES="$icd"; fi
+          timeout 90s xvfb-run -a -s '-screen 0 1280x720x24' \
+            /tmp/Godot_v4.4.1-stable_linux.x86_64 \
+            --path logic-qa/apk176-export-fixture \
+            --resolution 1280x720 \
+            --rendering-method mobile \
+            --rendering-driver vulkan \
+            --script res://capture_original_main_house.gd \
+            > qa-results/real-frame-capture/render.log 2>&1 || {
+              tail -100 qa-results/real-frame-capture/render.log; exit 1;
+            }
+          cat qa-results/real-frame-capture/render.log | tail -80
+          grep -Fq 'PASS_REAL_APK176_WORLDX_GAMEPLAY_SCREENSHOTS_RENDERED' qa-results/real-frame-capture/render.log
+          if grep -Eq 'SCRIPT ERROR:|Parse Error:|ERROR:|Failed loading resource' qa-results/real-frame-capture/render.log; then
+            echo '::error::Original visual render includes runtime errors; refuse screenshot QA';exit 1
+          fi
+          python3 - <<'PY'
+          import pathlib,struct
+          images=sorted(pathlib.Path('qa-results/real-frame-capture').glob('real_original_apk176_*.png'))
+          assert len(images)==2
+          for p in images:
+              raw=p.read_bytes()
+              assert raw.startswith(b'\x89PNG\r\n\x1a\n')
+              w,h=struct.unpack('>II',raw[16:24])
+              assert w>=800 and h>=480 and len(raw)>=45000,(p,w,h,len(raw))
+              print('PASS_ACTUAL_GODOT_FRAME_FILE',p.name,w,h,len(raw))
+          PY
+      - name: Publish genuine engine-rendered screenshots as review artifacts (NOT phone capture)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: Canglan-Original-APK176-TRUE-Godot-Outside-Inside-Frames
+          path: qa-results/real-frame-capture/
+          if-no-files-found: warn
+          retention-days: 14
