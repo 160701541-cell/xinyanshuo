@@ -119,10 +119,21 @@ jobs:
                       dst.parent.mkdir(parents=True,exist_ok=True)
                       dst.write_bytes(zip.read(p))
                   elif p in ("assets/scenes/main.tscn.remap",
+                            "assets/.godot/global_script_class_cache.cfg",
                             "assets/.godot/exported/133200997/export-3ad5c15c4f3250da0cc7c1af1770d85f-main.scn"):
                       dst=out / p[len("assets/"):]
                       dst.parent.mkdir(parents=True,exist_ok=True)
                       dst.write_bytes(zip.read(p))
+          PY
+          test -s logic-qa/apk176-export-fixture/.godot/global_script_class_cache.cfg
+          python3 - <<'PY'
+          from pathlib import Path
+          cache=Path("logic-qa/apk176-export-fixture/.godot/global_script_class_cache.cfg").read_text()
+          for name in ("CanglanValleyAtmosphere","CanglanGameHUD","AncientTouchJoystick",
+                       "WorldState","VillageDaySimulation","AncientWorldPlayer","AncientHouseAccess"):
+              if '"class": &"' + name + '"' not in cache:
+                  raise SystemExit("BLOCKED: real APK global script registry missing " + name)
+          print("PASS_EXACT_APK176_GLOBAL_CLASS_CACHE_FROM_SIGNED_APK", len(cache))
           PY
       - name: Install Godot 4.4.1 engine
         run: |
