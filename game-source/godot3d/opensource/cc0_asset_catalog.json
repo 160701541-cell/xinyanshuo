@@ -136,6 +136,42 @@
           "bytes": 4169
         }
       ]
+    },
+    {
+      "id": "quaternius_humanoid",
+      "creator": "Quaternius",
+      "license": "CC0-1.0",
+      "upstream_official": "https://quaternius.com/packs/universalbasecharacters.html",
+      "asset_page": "https://quaternius.itch.io/universal-base-characters",
+      "mirror_repository": "programasweights/avatar",
+      "mirror_commit": "ddd5fc34a445bcded3cf9836607aaeebc19a5c78",
+      "licensed_per_pack": true,
+      "mirror_notes": "Base Characters Standard humanoid skin/skeleton converted to GLB by third-party (no included animations); official Quaternius CC0 license; mirror ASSETS.md describes original file.",
+      "files": [
+        {
+          "path": "public/assets/character.glb",
+          "git_blob_sha1": "b3fd79533fdb9fcedd077744f7e120920eb6cc97",
+          "bytes": 741320
+        }
+      ]
+    },
+    {
+      "id": "quaternius_knight",
+      "creator": "Quaternius",
+      "license": "CC0-1.0",
+      "upstream_official": "https://quaternius.itch.io/lowpoly-animated-knight",
+      "asset_page": "https://quaternius.itch.io/lowpoly-animated-knight",
+      "mirror_repository": "ilrein/warptracker",
+      "mirror_commit": "71bbfbdfacd118196994b26da68eec1876d55c6b",
+      "licensed_per_pack": true,
+      "mirror_notes": "Quaternius low-poly animated knight CC0 packaged as binary glTF by downstream game project; source attribution in its ASSETS.md.",
+      "files": [
+        {
+          "path": "public/models/knight.glb",
+          "git_blob_sha1": "38000ded705d6f1eb02235d1b74f36ca9ac65703",
+          "bytes": 414452
+        }
+      ]
     }
   ],
   "import_plan": {
@@ -152,7 +188,13 @@
       "plaster_wall": "glTF/Wall_Plaster_Straight.gltf",
       "clay_tiled_roof": "glTF/Roof_2x4_RoundTile.gltf",
       "storage_crate": "glTF/Prop_Crate.gltf"
+    },
+    "characters": {
+      "civilian": "quaternius_humanoid/public/assets/character.glb",
+      "guard": "quaternius_knight/public/models/knight.glb"
     }
   },
-  "poly_pizza_policy": "No automatic import until EACH model license, creator, source URL and required attribution are recorded. CC-BY requires credits."
+  "poly_pizza_policy": "No automatic import until EACH model license, creator, source URL and required attribution are recorded. CC-BY requires credits.",
+  "model_selection_policy": "Prefer provided external CC0 skeletal/animation models. No procedural NPC mannequin or generative 3D models. Keep existing 2D WorldX as non-model fallback until motion QA is proven.",
+  "license_validation_note": "Kenney and Quaternius verify CC0 on original source pack page at time of import; Poly Pizza varies by per-model creator and may require CC-BY attribution; do not auto-import Poly Pizza."
 }
