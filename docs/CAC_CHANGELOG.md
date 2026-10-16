@@ -938,3 +938,8 @@ Godot 4.4.1对从**原签名Android APK176**提取的实际`update_protocol.gdc`
 - **仍待证据**：本轮正式Github源码及PCK已发，不代表官网CDN即时生效；需再次实测公开Pages实际HTTPS RSA+文件字节及客户端应用内加载。尤其**手机真实触控和帧率/发热、Draw≤200、原旧存档连续性并未由headless自动验证**，用户收到测试后才能标绿。由于恢复原生分辨率，若FPS下降要进一步优化材质合批/旧主场景多余渲染、场景遮挡/LOD，不能未告知就再降整屏分辨率。
 
 **明确未完成**：完整全球地形、高低地块流送/地质生长致喜马拉雅、三维体素洞穴、地下水渗透、湖泊真实流体、古代中式房屋材料齐套、全世界持久化与新玩家存档续载、复杂第一人称攻击/拾取UI。本轮是用户可移动可互动的**92m首个真实土层可挖村庄切片**，不能把它描述为完整大型古代修仙游戏。
+
+
+### rev184公网正式CDN闭环补充（2026-10-17）
+- GitHub Actions只读站点审计脚本`.github/workflows/canglan-rev184-real-pages-http-proof.yml`（初始`07ce279`，由真实作业`38978640782`揭示遗留了rev183硬编码断言，`f54811f`修正为严格rev184后再跑）。**成功Run`38978699481` / job`117234209097` `completed/success`**：真正公网`https://160701541-cell.github.io/xinyanshuo/android-preview/latest.json`回rev184，原APK176固定公钥RSA验签PASS，完整下载PCK恰好`21,638,048`字节且SHA-256`e2a366e11fcbc6daac70e3af74b72ed7c03b88e85e125ade7d4714d0322426a0`，请求1MiB Range返回HTTP 206；日志marker为`PASS_APK176_REAL_REV184_PUBLIC_PAGES_RSA_SHA256_HTTP_RANGE_PHONE_DOWNLOAD_READY`。CDN缓存头`max-age=600`。
+- 因此**原APK176真实构建签名与正式互联网资源下载已通过**；尚未得到用户手机rev184实际走动、双指缩放、第一视角、挖地基及水体截图，禁止写手机验收通过。手机无需重新下载安装包，不清除旧存档。
