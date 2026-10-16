@@ -456,3 +456,14 @@ Godot 4.4.1对从**原签名Android APK176**提取的实际`update_protocol.gdc`
 - `38916876513` **Godot Android debug APK实际构建+GitHub prerelease发布成功**。构建源SHA `ad5e421ba9b860177e9c385824bc9af9abd6e7f2`；独立测试包 `Canglan-3D-TextNPC-Playtest.apk` 实际上传大小28,238,730字节。
 - APK公开下载链接：`https://github.com/160701541-cell/xinyanshuo/releases/download/canglan-text3d-playtest-ad5e421ba9b8/Canglan-3D-TextNPC-Playtest.apk`。属于独立Godot debug APK，**不是用户原签名APK的覆盖热更新**。持续集成使用每次随机生成的调试签名，同包名的独立旧测试APK可能因签名变化无法直接覆盖安装；不得要求用户卸载原正式游戏。为避免数据损失，任何卸载先确认仅为独立测试应用且没有需要保留的本地测试存档。
 - 这份更新是在收到用户真实手机截图之后实际提交、真实Godot回归通过、构建成功的修正版。手机用户仍需目视复核UI缩放、触控、亮度和性能；CI的Mesa截图不是手机设备本身的验收。
+
+## 2026-10-16 / CAC-SPRITE-001 / 直接复用已经做过的世界盒子NPC素材，取消重新造低模人物
+
+**用户问“之前不是生成那么多角色吗？直接套用不会吗？”——正确答案是应当立即复用，不应该再次造圆柱人偶。** 代码及资源实际已提交；并非原版游戏的正式热更新。
+
+- 实地检索公开素材库 `game-source/apk176-ota177-candidate/hd2d/worldx/npcs/npcs.json` 和既存真实PNG：已有6张可动精灵表，每张170×204像素单帧、6列×5行、正面/背面/侧面行走、正反侧待机帧。MIT WorldX来源，可复用而无需重新绘制。
+- 其中5张符合古代世界视觉测试：`npc_00` 王掌柜（商户）、`npc_01` 李半仙（方巾书生/算命）、`npc_02` 苏捕头（捕快）、`npc_03` 陈阿狗（市井短打，农/匠通用测试）、`npc_04` 张老醉（餐饮/酒馆测试）。`npc_05` 林小夏**现代连衣裙+手机，禁止进入凡俗古代NPC资源集**。不能错误地把NPC图片里的王掌柜当作模拟世界里真实姓名，图片仅作可替换的外观模板。
+- 新增 `tools/stage_existing_worldx_npcs.py`：构建时读取已有素材，逐项校验PNG头、尺寸表结构及原文件SHA256，保留出处和MIT许可证，复制到Godot `assets/generated/npc/worldx/{merchant,scholar,guard,plain_civilian,tavern}.png`。实际通过 `tools/generate_glb_pack.py` 的批量生成环节导入，后续Godot资源扫描可加载，**不需要再次生成图片**。
+- `scripts/npc_agent.gd`：在已有80名可点选独立身份居民的世界节点直接新增Sprite3D；保留文字职业/独立姓名/三维空间、射线碰撞、经济/精力/饥饿/年龄/个人库存/工作移动；走路播放6帧精灵图、停步回到正确静态帧；无图时退回纯文字，不显示先前被否决的难看模型。职业与模板按实际生活职业映射：农夫/伐木/石工/陶工→朴素短打；厨师→酒馆类外观；商人/书生/卫卒→对应图。
+- `tests/world_smoke.gd` 新增资源存在时每个真实NPC必须有 `ReusedWorldXSprite3D` 及6×5动画帧、停步帧18和原本独立个人ID与状态标签的检查。
+- 所有提交进入公共Godot3D实验分支当前main，首轮真实严格CI `38919795797` 已触发等待Godot 4.4测试。**本轮未签原版RSA PCK、未修改原游戏OTA最新版Manifest，因此不能声称原版手机游戏已得到热更新。** 后续需要完成APK176兼容适配和原版OTA。
