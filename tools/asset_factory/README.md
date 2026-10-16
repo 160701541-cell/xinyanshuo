@@ -94,3 +94,6 @@ python -m unittest discover -s tools/asset_factory -p 'test_*.py' -v
 ## 原画像素提取（零模型调用）
 `python tools/asset_factory/extract_source_house.py --source game-source/apk176-ota177-candidate/hd2d/courtyard/main_house_v3_source.png --out OUTPUT`。
 锁定原院落SHA，对正房可见部分加轮廓alpha，输出532×537原生PNG、浅深底预览与JSON。运行时自动验证保留RGB逐像素一致；不重绘、不放大。工作流canglan-source-pixel-extract.yml真实复现输出并提交。手工轮廓仍待细修，被遮挡结构未恢复，不自动批准。
+
+## edge04 原像素边缘精修
+`python tools/asset_factory/refine_source_house.py --source game-source/apk176-ota177-candidate/hd2d/courtyard/main_house_v3_source.png --out OUTPUT`输出523×553 RGBA候选、深浅底预览与坐标报告。右上飞檐按原图曲线补描，收紧邻屋与台基地面污染；运行时逐像素核验RGB不变。工作流canglan-source-edge04.yml保存真实文件，无模型调用。不代表完整透明素材美术已批准或Godot已接入。

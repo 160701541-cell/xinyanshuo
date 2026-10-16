@@ -1,0 +1,31 @@
+name: Canglan source house edge04 refinement (zero model calls)
+on:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/canglan-source-edge04.yml']
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: canglan-source-edge04
+  cancel-in-progress: false
+jobs:
+  extract:
+    runs-on: ubuntu-24.04
+    env:
+      OUT: game-source/apk176-ota177-candidate/hd2d/worldx-generated/source_edge04
+    steps:
+      - uses: actions/checkout@v4
+      - run: python3 -m pip install --quiet pillow
+      - name: Extract original pixels, assert exact RGB and no upscale
+        run: python3 tools/asset_factory/refine_source_house.py --source game-source/apk176-ota177-candidate/hd2d/courtyard/main_house_v3_source.png --out "$OUT"
+      - name: Commit visible candidate and exact-pixel QA report
+        run: |
+          git config user.name 'canglan-actions'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add "$OUT"
+          if ! git diff --cached --quiet; then
+            git commit -m 'art: refine source house eaves and base alpha without changing RGB'
+            git pull --rebase origin main
+            git push origin HEAD:main
+          fi
