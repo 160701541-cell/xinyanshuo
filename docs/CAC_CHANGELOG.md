@@ -857,3 +857,26 @@ Godot 4.4.1对从**原签名Android APK176**提取的实际`update_protocol.gdc`
 用户直接提交横屏《苍岚》手机截图：原APK176内显示真实Kenney树石3D预览场景、“返回原游戏”按钮，实测HUD瞬时`90 FPS / 90.0Hz / GPU 7.58ms / mobile-vulkan / Draw 417/200 / triangles 277931/150000`。**实机3D画面确认成功**，原版更新链条终于有实机可见证据；仍不能由截图推断旧存档无损、返回可用和长期性能通过。相机距离远、实体小、绿板地面/蓝灰天空大面积平涂、树石机械排列，无生活NPC、道路、院落，国风3D村庄G1质量严重不达标；Draw和三角面分别超过屏幕预算217次、127931面，即使单帧90fps，也不能声称性能达标。禁止将本技术预览当作G1/G2/G3游戏验收。
 
 新建完整实机QA文档`docs/QA_APK176_REV179_PHONE_ACCEPTANCE_20261017.md`，真实提交`5cc2c00efe10a6e6dd0f3f7913b2ed8e7e47307d`，逐项记录PASS/FAIL/未验证及下一批美术、性能、NPC资源守恒和原APK176签名OTA目标。未经用户要求未上传私人手机截图到公开仓库；日志只记可观察事实。**这次没有完成rev180发行**，仍需真实代码/模型增量、Godot与原版RSA/Pages和再次安卓实机验收。
+
+
+## 2026-10-17 / APK176-REV180→181-REAL-NPC-MATERIAL-WORLD / 真正开发、原机Godot验收、RSA官网发布闭环
+
+**目标**：接续用户rev179真实安卓截图反馈，拒绝继续只是平地上摆树石。本批从已有`worldbox_life_sim.gd`守恒后端和正式许可素材出发，给**原已安装APK176**加入可观察到的职业劳动/库存/搬运/分阶段工地，保留“返回原游戏”和原存档。世界观美术大规模村庄仍未完成。
+
+### 真实代码增量
+- `game-source/apk176-ota177-candidate/scripts/apk176_living_resource_world_rev180.gd` 初始提交`0a6d36c`，含授权Kenney树石、木材、石阶、门及围栏+Quaternius已绑定动画骑士GLB，3名实名编号NPC（伐木/采石/施工）、21个不由劳动凭空生成的独立资源节点（12树9石）、0初始木石库存、有限采集→随身货物→真实步行到仓库→入库；分阶段有明确材料账单和工时。绿色整板的静态预览改为有土路/天空/自然散布的工作场景，可右侧拖动观察、返回原游戏。当前只是一块工作场景，不可宣传完整自治城市/多形态中式房屋。
+- 原版Main继续继承**APK176导出编译真实场景**`res://.godot/exported/133200997/export-3ad5c15c4f3250da0cc7c1af1770d85f-main.scn`。新的`main_original_autonomous_rev180.tscn`/`main_rev180.tscn.remap`由原签名OTA覆盖res://scenes/main.tscn.remap，切回原主场景可恢复隐藏的3D网格；旧存档不写入。
+- 真正7个既有商业CC0 GLB未自行建模：Kenney`tree_oak,rocks-small,tree-log,wall-narrow-wood-fence,stairs-stone,door`，Quaternius`knight`，保留原始Kenney共享`Textures/colormap.png`；逐二进制SHA对源文件，不用假模型。
+- `logic-qa/tools/build_apk176_autonomous_rev180.gd`、`tools/verify_apk176_rev180_3d_pck.py`、`logic-qa/apk176-export-fixture/verify_original_main_autonomous_rev180.gd`及`.github/workflows/canglan-apk176-rev180-autonomous-signed.yml`实现原APK176全资源继承、Godot4.4.1+精确Terrain3D v1.0.2运行、原房屋回归、内置签名私钥匹配、签名PCK自动发布。初始运行 `38968506995` 因Python PCK审计脚本错误转义换行而失败，已修复`bfccdb4`；运行`38968595121`真实Godot脚本所有模拟断言PASS，但headless退出时GLTF资源泄漏，已增加独立asset_sources免费释放`9132bd3`及QA显式销毁原场景`907728b`；旧版跑出的模拟统计含`3名有动画NPC、21节点、49次采集、49次入库、4阶段、13个真CC0构件`。渲染RID泄漏未被掩盖，真实清理后门禁才允许签名。
+- 实际rev180已由早完成的并发工作流提交至正式main，发布hash`4a1fdcdc84785734ba6a4ddda51e209c07547ea9b19582f87ff3be1b93e732b7`；但随后补上的**施工工必须返仓领料再运到工地**逻辑提交`29148fc`已在另一个通过原版Godot/RSA测试的发布流中，与已经先上线的rev180发生防覆写拦截（最后job失败，属于正确的冲突保护）。**绝不覆盖已发布签名的同一revision**。
+- 为完整送达真实体力搬运修复，单独生成**rev181**自足原游戏脚本/scene/PCK builder/PCK二进制审计/原版完整主场景Godot QA以及新签名Actions`.github/workflows/canglan-apk176-rev181-autonomous-signed.yml`，二进制不依赖旧rev180叠加。专门QA断言施工工必须走回仓库、把明确材料库存转为随身`carried_materials`并挂Kenney GLB材质，再步行抵达工地，才开始计时施工；缺货不出货、不造物。360模拟tick对木、石自然储量+仓库库存+随身库存+已支付建造阶段逐步核账，要求守恒与至少两个阶段真构件可见；抽查骨骼模型包含真实`Walking`动画，无动画拒绝上线。主界面可退回原世界/重新进入，保存旧世界脚本未改。
+
+### 官方发布闭环（真实运行结果）
+- 新rev181原机Godot/RSA发布Actions **run`38969085384` / job`117202723850`：completed/success**。工作流确认为APK176本体主场景；严格PCK文件校验7个授权GLB，尺寸`21,579,328`字节、SHA-256`beaa0b1e7ddea8d8fe43531912fa7a4cd234229bbd6d740e6f834142cc1bbc98`，原RSA验签PASS、原房屋回归PASS、施工真搬运+守恒QA PASS、正式main rev181发布PASS。**未重新安装APK**。
+- 因GitHub Actions内置`GITHUB_TOKEN`发布提交不会触发后继工作流，新增直接Pages工作流变更`ea7a8426`以实发官网；Pages部署**run`38969237906` / job`117203234041`：completed/success**，出现`PASS_PAGES_SITE_CONTAINS_SIGNED_ORIGINAL_OTA 181`、`Reported success!`、`PASS_CURRENT_ORIGINAL_APK176_PUBLIC_HTTPS_RSA_SHA256_AND_RANGE`。独立HTTPS公网下载完整同SHA的`21,579,328`字节，分段请求HTTP206，`Cache-Control: max-age=600`。`android-preview/latest.json`实读rev181，正式APK代码区间锁定1176。
+- 生产原安卓应用身份`org.canglan.ancient25d.preview`，内置固定公钥RSA；私钥仍只注入公开仓库Secrets，代码和网页无私钥。独立QA APK/HTML未作为用户交付。
+
+### 下一步验收与尚缺
+- **🟢 已用真实引擎验证**：原编译Main继承、3名有walking动画角色、21个自然节点→职业采集→搬运→入库→返仓领料→工地四阶段/守恒、原房屋回归、原RSA/PCK官网HTTPS发布rev181。
+- **🟡 安卓手机rev181实机仍未验收**：用户此前已用真实截图证实rev179可在旧APK176显示；rev181尚无用户现场截图/“返回原游戏”及旧存档恢复验收，不可声称手机rev181已更新。
+- **🔴 G1完整国风村庄及G2/G3仍不达标**：该切片仍以现成骑士动画代理职业NPC，工地是Kenney CC0构件的施工示范，屋顶/室内与完整中式民居、家庭经济、连续离线存档、真正本地AI推理尚未开发/验证。下一批必须批量使用已有许可的Quaternius中式可搭建屋顶/墙体等并做统一材质比例、NPC有本地下载AI入口和导航阻挡/触控、实际安卓连续性能与旧存档对比。禁止把这次工地片段冒充游戏完成。
