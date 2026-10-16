@@ -35,10 +35,17 @@ func initialize(source_by_role: Dictionary, palette: RefCounted) -> bool:
       var part: MeshInstance3D = node as MeshInstance3D
       if part.mesh == null:
         continue
-      var local: Transform3D = template.global_transform.affine_inverse() * part.global_transform
+      # GLTF templates are detached from the SceneTree; querying
+      # global_transform or get_path() here triggers engine errors.
+      # Compose local hierarchy transforms directly, up to this GLB root.
+      var local: Transform3D = Transform3D.IDENTITY
+      var cursor: Node3D = part
+      while cursor != null and cursor != template:
+        local = cursor.transform * local
+        cursor = cursor.get_parent() as Node3D
       var multimesh := MultiMesh.new()
       multimesh.transform_format = MultiMesh.TRANSFORM_3D
-      multimesh.mesh = palette.call("palettize_static_mesh", part.mesh, role, String(part.get_path()))
+      multimesh.mesh = palette.call("palettize_static_mesh", part.mesh, role, String(part.name))
       # Allocate exactly once. Each instance can be hidden using a zero
       # transform, without reallocation or making another draw call.
       multimesh.instance_count = int(MAX_CAPACITY[role])
