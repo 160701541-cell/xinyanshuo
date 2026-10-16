@@ -1,0 +1,15 @@
+{
+  "id": "herb_drying_rack",
+  "batch": "worldx-props-batch03",
+  "model": "Kwai-Kolors/Kolors",
+  "pipeline": "WorldX native prompt loader + SiliconFlow",
+  "file": "herb_drying_rack.png",
+  "sha256": "3e3368872a557d8243bcb4c39dad0409c9059c227fa423b3597787aa2aaf6ccf",
+  "upstream_commit": "edb4976de5963457dfbf5d2171355270a4ca1e79",
+  "status": "GENERATED_UNAPPROVED",
+  "reference_conditioning": false,
+  "style_control": "text_only_requires_visual_review",
+  "transparency": "NOT_CLEANED",
+  "license_status": "PROVIDER_TERMS_REVIEW_REQUIRED",
+  "run_url": "https://github.com/160701541-cell/xinyanshuo/actions/runs/38877143920"
+}

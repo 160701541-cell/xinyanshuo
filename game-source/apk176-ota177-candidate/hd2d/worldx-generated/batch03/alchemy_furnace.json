@@ -1,0 +1,15 @@
+{
+  "id": "alchemy_furnace",
+  "batch": "worldx-props-batch03",
+  "model": "Kwai-Kolors/Kolors",
+  "pipeline": "WorldX native prompt loader + SiliconFlow",
+  "file": "alchemy_furnace.png",
+  "sha256": "22f261a5c0b609263cd9db12c221ec96eea9e0266ff5ee93f8d71428c8673b11",
+  "upstream_commit": "edb4976de5963457dfbf5d2171355270a4ca1e79",
+  "status": "GENERATED_UNAPPROVED",
+  "reference_conditioning": false,
+  "style_control": "text_only_requires_visual_review",
+  "transparency": "NOT_CLEANED",
+  "license_status": "PROVIDER_TERMS_REVIEW_REQUIRED",
+  "run_url": "https://github.com/160701541-cell/xinyanshuo/actions/runs/38877143920"
+}

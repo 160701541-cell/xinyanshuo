@@ -1,0 +1,15 @@
+{
+  "id": "smith_workbench",
+  "batch": "worldx-props-batch03",
+  "model": "Kwai-Kolors/Kolors",
+  "pipeline": "WorldX native prompt loader + SiliconFlow",
+  "file": "smith_workbench.png",
+  "sha256": "3a566213a7168eb929f880127fb24f0b9e083e5ab6463c0d0728d18865f011d1",
+  "upstream_commit": "edb4976de5963457dfbf5d2171355270a4ca1e79",
+  "status": "GENERATED_UNAPPROVED",
+  "reference_conditioning": false,
+  "style_control": "text_only_requires_visual_review",
+  "transparency": "NOT_CLEANED",
+  "license_status": "PROVIDER_TERMS_REVIEW_REQUIRED",
+  "run_url": "https://github.com/160701541-cell/xinyanshuo/actions/runs/38877143920"
+}

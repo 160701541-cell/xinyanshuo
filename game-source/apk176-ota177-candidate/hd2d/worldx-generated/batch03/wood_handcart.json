@@ -1,0 +1,15 @@
+{
+  "id": "wood_handcart",
+  "batch": "worldx-props-batch03",
+  "model": "Kwai-Kolors/Kolors",
+  "pipeline": "WorldX native prompt loader + SiliconFlow",
+  "file": "wood_handcart.png",
+  "sha256": "d28d4a25b3ca7d4a01cb90881b1af05f9c88a55953bd8d78574f77d23b5faacc",
+  "upstream_commit": "edb4976de5963457dfbf5d2171355270a4ca1e79",
+  "status": "GENERATED_UNAPPROVED",
+  "reference_conditioning": false,
+  "style_control": "text_only_requires_visual_review",
+  "transparency": "NOT_CLEANED",
+  "license_status": "PROVIDER_TERMS_REVIEW_REQUIRED",
+  "run_url": "https://github.com/160701541-cell/xinyanshuo/actions/runs/38877143920"
+}

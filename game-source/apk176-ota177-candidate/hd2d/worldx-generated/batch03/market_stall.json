@@ -1,0 +1,15 @@
+{
+  "id": "market_stall",
+  "batch": "worldx-props-batch03",
+  "model": "Kwai-Kolors/Kolors",
+  "pipeline": "WorldX native prompt loader + SiliconFlow",
+  "file": "market_stall.png",
+  "sha256": "33d7183d3f31e59036550f292c84e986943ca09582b6825218d354d2d2d363b2",
+  "upstream_commit": "edb4976de5963457dfbf5d2171355270a4ca1e79",
+  "status": "GENERATED_UNAPPROVED",
+  "reference_conditioning": false,
+  "style_control": "text_only_requires_visual_review",
+  "transparency": "NOT_CLEANED",
+  "license_status": "PROVIDER_TERMS_REVIEW_REQUIRED",
+  "run_url": "https://github.com/160701541-cell/xinyanshuo/actions/runs/38877143920"
+}
