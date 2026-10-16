@@ -905,3 +905,18 @@ Godot 4.4.1对从**原签名Android APK176**提取的实际`update_protocol.gdc`
 - **🟢 真正发布完成**：rev182签名PCK+官网正式CDN真实可下载，手机原APK176理论上可经原更新器检测新版本；不需要用户重新安装APK。
 - **🟡 尚待用户rev182手机验收**：观察“看施工NPC”身高/脸面/Walk及表情、种子真实入库与幼苗、矿脉慢复露、远景地质快进，以及30FPS的GPU优化实际结果与返回原游戏/原存档连续性。此前用户两张图是rev181，不可冒充rev182通过。
 - **🔴 保留工程缺口**：真正适配国风的非骑士居民模型、独立工位与人物互动动画、生态系统世界持久化，实际全球高度场/山脉高程、地质物质量连续守恒、更多树种季节、相邻矿区共演化、手机长时间稳定FPS、实时第一/第三人称玩家控制及本地可下载AI尚未完成。该生态和地质演示并非完成的开放世界。
+
+
+## 2026-10-17 / APK176-REV183-FIVE-KENNEY-SWATCHES-MULTIMESH-SUN-ROADS / 真写仓库+实际原版签名PCK
+
+用户再次明确实际有GitHub写权限，要求立即在原游戏修改三项，并在手机每步说明验收：**(1) Kenney低多边形保持不换风格，主场景五种主材质色；(2) 同类模型合并为MultiMesh、实机Draw Call目标≤200；(3) 一盏方向光+移动端短距离阴影，左侧分组树林、右侧矿点、中间物流路**。本批实际使用已连接**唯一公开仓库** GitHub权限写入，纠正上一轮助手误称没有权限的问题；并非只提供开发单。
+
+实际提交：
+- `acf1916`：五色共用Kenney `visual_palette.gd`：grass`#86a17b`/soil`#b6a488`/leaf`#58978d`/wood`#9a704e`/stone`#8a8c9a`；基于现成许可GLB原网格将多表面材质关联五色，不制造新正式模型。
+- `0cea0cd`，修复`32da5c5`和`5d97b13`：`kenney_multimesh.gd`为树木、石头、已建木件、围栏、石阶、门类各自从现成GLB真实网格生成MultiMesh，变换代理与原生态ID/库存工作解耦，每0.1模拟秒同步实例矩阵；旧动画骑士独立继续动画，不强行合为僵尸静态实例。Kenney每个GLB可能有多Mesh/材质surface，不能宣称整个场景仅一draw。
+- `71f1a44`和`a90d058`/`dc9fa93`：原版`apk176_living_resource_world_rev183.gd`接入五色与合批、独立站点遗产仍是相同APK176编译主场景，原NPC身份、真实采集和工地守恒全部沿用；太阳`KenneySingleDirectionalSun`仅1盏，正交短距离阴影48m；左右分组自然树林和矿石、中心7m清晰运输走廊及左右土路，HUD仍是真性能计数器不伪造优化数据。植树禁堵路生态代码`7de73a2`。
+- 真原版PCK/入口场景`main_original_visual_rev183.tscn`、`main_rev183.tscn.remap`，`logic-qa/tools/build_apk176_visual_rev183.gd`、`logic-qa/apk176-export-fixture/verify_original_main_visual_rev183.gd`、`tools/verify_apk176_rev183_3d_pck.py`（逐七个CC0 GLB SHA+原入口继承、五色/真实MultiMesh/单太阳/通路/原NPC 360模拟、房屋回归门禁），签名自动工作流`.github/workflows/canglan-apk176-rev183-kenney-batch-signed.yml`。
+- **真实错误修复**：GitHub run`38976158812`首次检测GDScript自定义构造Transform3D错误标成`const`，`5d97b13`改为实例字段；run`38976256147`出现原本scene节点被`_ready`重命名成旧Rev182，`dc9fa93`修复对齐原版场景。本轮没有压下Godot报错假通过。
+- **真实完整通过**：GitHub run`38976345665` / job`117226600219` `completed/success`，原版编译Main真实Godot4.4.1/Terrain3D对应版本、原房屋回归、五色+真实MultiMesh+单太阳及树石通路全部受QA门禁、原RSA验签、PCK二进制SHA校验，正式Git main `android-preview/latest.json`已rev183；包`21,607,520`字节，SHA256 `5cccf09ed783638b2420f05986b4543c22d923d6289310ea6fe2c5e678e528a9`。原APK176/versionCode1176，无新APK且不写旧存档。
+
+**重要未验收**：**Draw Call≤200只作为手机上的硬验收目标，headless不能代表手机全项目真实 draw**。用户此前的截图rev182是`Draw645/200`。本批虽实际修改合批，却**不能在用户新实机截图前标“Draw≤200通过”**，包括方向光阴影有效性和FPS实机。官网真实CDN更新、手机游戏内rev183装载需另行独立检验；QA详细手机步骤`docs/QA_APK176_REV183_KENNEY_FIVE_SWATCH_BATCH_SHADOW.md`，提交`ea510c8`。以上是真正原版提交而非待执行计划。
