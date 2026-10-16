@@ -1,0 +1,75 @@
+{
+  "schema": 1,
+  "policy": "CAC-3D-001",
+  "project": "Canglan Godot 3D Android",
+  "license": "MIT",
+  "entries": [
+    {
+      "id": "godot",
+      "kind": "engine",
+      "status": "ACTIVE",
+      "version": "4.4.1",
+      "license": "MIT",
+      "source": "https://github.com/godotengine/godot",
+      "license_url": "https://godotengine.org/license/",
+      "used_by": [
+        "project.godot",
+        "scripts/world_main.gd",
+        "scripts/terrain_chunk.gd"
+      ]
+    },
+    {
+      "id": "fastnoiselite",
+      "kind": "bundled-engine-component",
+      "status": "ACTIVE",
+      "version": "4.4.1 built-in",
+      "license": "MIT",
+      "source": "https://github.com/Auburn/FastNoiseLite",
+      "license_url": "https://github.com/Auburn/FastNoiseLite/blob/master/LICENSE",
+      "used_by": [
+        "scripts/world_rules.gd"
+      ]
+    },
+    {
+      "id": "tokisan-terrain3d",
+      "kind": "proposed-gdextension",
+      "status": "CANDIDATE_NOT_IMPORTED",
+      "version": "1.0.2",
+      "license": "MIT",
+      "source": "https://github.com/TokisanGames/Terrain3D",
+      "license_url": "https://github.com/TokisanGames/Terrain3D/blob/main/LICENSE",
+      "used_by": [],
+      "notes": "Android compatible in upstream docs, requires separately approved ARM64 compatibility test; do not package yet."
+    },
+    {
+      "id": "kenney-assets",
+      "kind": "downloaded-model",
+      "status": "CANDIDATE_NOT_IMPORTED",
+      "version": "unselected",
+      "license": "CC0-1.0",
+      "source": "https://kenney.nl/assets",
+      "license_url": "https://kenney.nl/support",
+      "used_by": []
+    },
+    {
+      "id": "polyhaven",
+      "kind": "downloaded-material",
+      "status": "CANDIDATE_NOT_IMPORTED",
+      "version": "unselected",
+      "license": "CC0-1.0",
+      "source": "https://polyhaven.com",
+      "license_url": "https://polyhaven.com/license",
+      "used_by": []
+    },
+    {
+      "id": "ambientcg",
+      "kind": "downloaded-material",
+      "status": "CANDIDATE_NOT_IMPORTED",
+      "version": "unselected",
+      "license": "CC0-1.0",
+      "source": "https://ambientcg.com",
+      "license_url": "https://docs.ambientcg.com/license/",
+      "used_by": []
+    }
+  ]
+}
