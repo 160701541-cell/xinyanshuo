@@ -122,6 +122,17 @@ func _run() -> void:
 			"Touch target isn't tied to the individual NPC ID")
 		var code: String = String(npc.get_meta("entity_id",""))
 		assert(area.get_meta("entity_id")==code)
+		# Stage original artwork automatically from existing MIT WorldX library.
+		# Bitmap lives in true world-space Sprite3D, while identity/physics remain.
+		if ResourceLoader.exists("res://assets/generated/npc/worldx/plain_civilian.png"):
+			var old_visual: Sprite3D = npc.get_node_or_null("ReusedWorldXSprite3D")
+			assert(old_visual!=null,"Previously created role artwork not applied to 3D NPC")
+			assert(old_visual.texture!=null and old_visual.hframes==6
+				and old_visual.vframes==5 and old_visual.frame==18,
+				"WorldX spritesheet must animate 6x5 with correct idle frame")
+			assert(String(npc.get_meta("art_status"))=="REUSED_WORLDX_SPRITE_IN_REAL_3D")
+			assert(String(npc.get_meta("sprite_source","")).begins_with(
+				"res://assets/generated/npc/worldx/"))
 		assert((life.get("citizens") as Dictionary).has(code),
 			"NPC text marker has no live identity or state")
 		var state: Dictionary = life.get("citizens")[code]
