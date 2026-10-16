@@ -1,0 +1,35 @@
+name: Canglan APK176 Rev177 - REAL Public HTTPS and Phone Updater QA
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'tools/verify_original_rev177_live_http.py'
+      - '.github/workflows/canglan-apk176-rev177-public-http-qa.yml'
+      - 'android-preview/latest.json'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: canglan-rev177-public-https-qa
+  cancel-in-progress: true
+jobs:
+  verify-public-ota-is-downloadable:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify HTTPS LIVE signed manifest, entire PCK, 1 MiB Range response
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m py_compile tools/verify_original_rev177_live_http.py
+          python3 tools/verify_original_rev177_live_http.py --attempts 5 --wait-seconds 70
+      - name: Explain exact original Android game's update UX
+        if: success()
+        shell: bash
+        run: |
+          printf '%s\n' \
+            'PASS_REAL_SIGNED_REV177_ON_OFFICIAL_SITE' \
+            'For installed original APK176: open 苍岚·世界更新, tap 检查更新,' \
+            'then tap 下载安装资源补丁. DO NOT uninstall the game.' \
+            'The phone screen and in-app save state still need real user acceptance.'
