@@ -9,6 +9,7 @@ const Props = preload("res://scripts/prop_factory.gd")
 const Citizen = preload("res://scripts/npc_agent.gd")
 const Interiors = preload("res://scripts/interior_factory.gd")
 const LocalAI = preload("res://scripts/local_ai_service.gd")
+const LifeSim = preload("res://scripts/worldbox_life_sim.gd")
 # Authentic earlier Canglan 3D economy/identity source has been audited and
 # safely migrated to the PUBLIC repository without any signing credentials.
 const OriginalWorldState = preload("res://scripts/world_state.gd")
@@ -19,6 +20,10 @@ const VISIBLE_RADIUS: int = 2
 var seed: int = 20261016
 var rules: RefCounted
 var authoritative_world: RefCounted
+var life_sim: RefCounted
+var _life_last_hour: int = 12
+var _life_day: int = 1
+var ui_life: Label
 var building_factory: RefCounted
 var interior_factory: RefCounted
 var citizen_nodes: Array[Node3D] = []
@@ -78,6 +83,18 @@ func _ready() -> void:
 	_build_avatar()
 	_load_nearby_terrain()
 	_build_settlements()
+	# WorldBox-like real simulation continues regardless of local LLM availability.
+	life_sim = LifeSim.new()
+	life_sim.call("start",seed)
+	life_sim.call("create_village","CL-HX-VILLAGE-0001",
+		{"homes":22,"fields":7,"food":280,"grain":100,"water":90,
+		 "wood":85,"stone":45,"clay":30,"coin":12})
+	var work_roles := ["farmer","woodcutter","quarryman","cook","potter",
+		"farmer","farmer","cook","woodcutter","farmer"]
+	for n in range(citizen_nodes.size()):
+		life_sim.call("add_citizen",
+			String(citizen_nodes[n].get_meta("entity_id","")),
+			"CL-HX-VILLAGE-0001",work_roles[n%work_roles.size()],20+n%42)
 	prop_root.call("build",rules,seed)
 	# The actual GGUF/llama.cpp service is part of the same 3D game process.
 	# When native binary or verified weights are missing it reports disabled,
@@ -295,6 +312,9 @@ func _create_interface() -> void:
 	ui_status = Label.new()
 	ui_status.text = "构建场景中"
 	stack.add_child(ui_status)
+	ui_life = Label.new()
+	ui_life.text = "村镇生活模拟：初始化中"
+	stack.add_child(ui_life)
 	var actions := HBoxContainer.new()
 	stack.add_child(actions)
 	var toggle_cam := Button.new()
@@ -433,6 +453,20 @@ func _process(delta: float) -> void:
 	_refresh_status_throttled(delta)
 	_update_camera(delta)
 	_hour = fmod(_hour+delta*0.0033,24.0)
+	# One authoritative, bounded economy tick per in-game hour;
+	# visual crowds and NPC speech cannot create free stock.
+	var current_hour: int = int(_hour)
+	if current_hour != _life_last_hour and life_sim != null:
+		_life_last_hour = current_hour
+		life_sim.call("tick")
+		if ui_life != null:
+			var state: Dictionary = life_sim.call("get_world_summary")
+			var town: Dictionary = life_sim.get("villages")["CL-HX-VILLAGE-0001"]
+			var stock: Dictionary = town["stock"]
+			ui_life.text = "生活模拟 第%d日 %02d时 | 村民%d | 繁荣%d | 粮%d 木%d 石%d 食物%d" % [
+				int(state["day"]),int(state["hour"]),int(state["population"]),
+				int(state["average_prosperity"]),int(stock["grain"]),int(stock["wood"]),
+				int(stock["stone"]),int(stock["food"])]
 	_npc_clock -= delta
 	if _npc_clock < 0:
 		_npc_clock = 11.0
