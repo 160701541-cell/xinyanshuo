@@ -1,0 +1,169 @@
+name: Canglan PUBLIC native 3D ARM64 technical APK (NOT original signed game)
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'game-source/godot3d/**'
+      - '.github/workflows/canglan-public-3d-android.yml'
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: canglan-public-3d-android-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  standalone-android-qa:
+    name: Build independently installable 3D QA APK (NOT original game)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - name: Enforce OSS runtime licences and reject unverifiable asset imports
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 tools/verify_open_source_registry.py --root .
+          python3 -m unittest discover -s tools -p 'test_open_source_registry.py' -v
+          test -s game-source/godot3d/opensource/THIRD_PARTY_NOTICES.md
+          grep -Fq 'Godot Engine 4.4.1' game-source/godot3d/opensource/THIRD_PARTY_NOTICES.md
+          grep -Fq 'FastNoiseLite' game-source/godot3d/opensource/THIRD_PARTY_NOTICES.md
+
+      - name: Install Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Configure installed Android SDK
+        shell: bash
+        run: |
+          set -euo pipefail
+          sdk_root="${ANDROID_SDK_ROOT:-${ANDROID_HOME:-/usr/local/lib/android/sdk}}"
+          bin="$(find "$sdk_root/cmdline-tools" -type f -name sdkmanager | sort -V | tail -n 1)"
+          test -x "$bin"
+          echo "$(dirname "$bin")" >> "$GITHUB_PATH"
+          echo "ANDROID_SDK_ROOT=$sdk_root" >> "$GITHUB_ENV"
+          echo "ANDROID_HOME=$sdk_root" >> "$GITHUB_ENV"
+          "$bin" --sdk_root="$sdk_root" --install 'platform-tools' 'platforms;android-35' 'build-tools;35.0.0'
+      - name: Download pinned official Godot editor and Android templates
+        shell: bash
+        run: |
+          set -euo pipefail
+          base='https://github.com/godotengine/godot/releases/download/4.4.1-stable'
+          curl -fL --retry 3 --connect-timeout 25 "$base/Godot_v4.4.1-stable_linux.x86_64.zip" -o /tmp/godot.zip
+          curl -fL --retry 3 --connect-timeout 25 "$base/Godot_v4.4.1-stable_export_templates.tpz" -o /tmp/templates.tpz
+          mkdir -p /tmp/godot-editor /tmp/godot-templates
+          unzip -q /tmp/godot.zip -d /tmp/godot-editor
+          unzip -q /tmp/templates.tpz -d /tmp/godot-templates
+          mkdir -p "$HOME/.local/share/godot/export_templates/4.4.1.stable"
+          cp -a /tmp/godot-templates/templates/. "$HOME/.local/share/godot/export_templates/4.4.1.stable/"
+          chmod +x /tmp/godot-editor/Godot_v4.4.1-stable_linux.x86_64
+          /tmp/godot-editor/Godot_v4.4.1-stable_linux.x86_64 --version
+      - name: Provision ephemeral DEBUG identity (never overwrite existing game signature)
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$HOME/.android" "$HOME/.config/godot" qa-logs
+          keytool -genkeypair -keyalg RSA -keysize 2048 -validity 365 \
+            -keystore "$RUNNER_TEMP/godotcanglan-3d-qa-debug.keystore" -alias androiddebugkey \
+            -storepass android -keypass android -dname 'CN=Canglan 3D QA,O=Temporary CI,C=US'
+          cat > "$HOME/.config/godot/editor_settings-4.4.tres" <<EOF
+          [gd_resource type="EditorSettings" format=3]
+          [resource]
+          export/android/android_sdk_path = "$ANDROID_SDK_ROOT"
+          export/android/java_sdk_path = "$JAVA_HOME"
+          export/android/debug_keystore = "$RUNNER_TEMP/godotcanglan-3d-qa-debug.keystore"
+          export/android/debug_keystore_user = "androiddebugkey"
+          export/android/debug_keystore_pass = "android"
+          EOF
+          echo "GODOT_ANDROID_KEYSTORE_DEBUG_PATH=$RUNNER_TEMP/godotcanglan-3d-qa-debug.keystore" >> "$GITHUB_ENV"
+          echo "GODOT_ANDROID_KEYSTORE_DEBUG_USER=androiddebugkey" >> "$GITHUB_ENV"
+          echo "GODOT_ANDROID_KEYSTORE_DEBUG_PASSWORD=android" >> "$GITHUB_ENV"
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Build 38 open source GLBs and validate original 3D scene source
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 tools/audit_public_3d.py --root .
+          python -m pip install -r game-source/godot3d/tools/requirements-models.txt
+          python game-source/godot3d/tools/generate_glb_pack.py --out game-source/godot3d/assets/generated
+          python game-source/godot3d/tests/test_generated_glb.py --root game-source/godot3d/assets/generated
+      - name: Import real project before export
+        run: |
+          set -euo pipefail
+          GODOT=/tmp/godot-editor/Godot_v4.4.1-stable_linux.x86_64
+          "$GODOT" --headless --editor --path game-source/godot3d --import > qa-logs/import.log 2>&1 || {
+            cat qa-logs/import.log; exit 1;
+          }
+          if grep -Eq 'SCRIPT ERROR:|Parse Error:|Parser Error:|Failed to load script' qa-logs/import.log; then
+            cat qa-logs/import.log; exit 1;
+          fi
+      - name: Run real scene acceptance before releasing any APK
+        shell: bash
+        run: |
+          set -euo pipefail
+          GODOT=/tmp/godot-editor/Godot_v4.4.1-stable_linux.x86_64
+          timeout 35s "$GODOT" --headless --path game-source/godot3d \
+            --script res://tests/world_smoke.gd > qa-logs/scene-smoke.log 2>&1 || {
+            cat qa-logs/scene-smoke.log; exit 1;
+          }
+          cat qa-logs/scene-smoke.log
+          grep -Fq 'PASS PUBLIC CANGLAN 3D GODOT SCENE' qa-logs/scene-smoke.log
+      - name: Build public 3D debug APK
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p qa-logs
+          GODOT=/tmp/godot-editor/Godot_v4.4.1-stable_linux.x86_64
+          echo "Installed Godot export templates:"
+          ls -lh "$HOME/.local/share/godot/export_templates/4.4.1.stable/" | head -n 25
+          echo "Android tooling:"
+          ls -lh "$ANDROID_SDK_ROOT/platform-tools/adb" "$ANDROID_SDK_ROOT/build-tools/35.0.0/aapt2"
+          echo "Exporting with --verbose for exact root-cause evidence"
+          "$GODOT" --verbose --headless --path game-source/godot3d \
+            --export-debug 'Android 3D QA' "$GITHUB_WORKSPACE/qa-logs/Canglan-3D-public-ARM64-debug.apk" \
+            > qa-logs/export.log 2>&1 || {
+            cat qa-logs/export.log; exit 1;
+          }
+          test -s qa-logs/Canglan-3D-public-ARM64-debug.apk
+          unzip -t qa-logs/Canglan-3D-public-ARM64-debug.apk | tail -n 2
+          sha256sum qa-logs/Canglan-3D-public-ARM64-debug.apk > qa-logs/apk.sha256
+          cat qa-logs/apk.sha256
+          echo 'PASS: standalone PUBLIC 3D QA APK (not existing app OTA/signing identity)'
+      - name: Upload installable test APK ONLY on success
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: CANGLAN-standalone-3D-public-APK-${{ github.sha }}
+          path: |
+            qa-logs/Canglan-3D-public-ARM64-debug.apk
+            qa-logs/apk.sha256
+          if-no-files-found: error
+          retention-days: 14
+          compression-level: 0
+      - name: Publish independently installable 3D QA APK as prerelease
+        if: success()
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          TAG="godotcanglan-3d-qa-${GITHUB_SHA:0:12}"
+          APK="qa-logs/Canglan-3D-public-ARM64-debug.apk"
+          gh release create "$TAG" "$APK" qa-logs/apk.sha256 \
+            --repo "${GITHUB_REPOSITORY}" \
+            --title "苍岚 3D 候选场景测试 · ${GITHUB_SHA:0:12}" \
+            --notes "这是公开仓库单独构建的Android ARM64测试APK，包名 com.xinyanshuo.canglan.oss3dqa，使用CI临时调试签名。不是既有《苍岚》正式APK的覆盖更新，也不是签名资源补丁。包含完整独立 Godot 3D 技术试玩：程序化多块地形、约60幢建模建筑、80名程序化NPC、独立道具、房间、交互和第三人称视角；非正式APK覆盖更新，非最终美术效果。请勿卸载原游戏；如已安装其他版本的3D独立测试包，可能需先卸载该测试包。" \
+            --prerelease
+          gh release view "$TAG" --repo "${GITHUB_REPOSITORY}" --json url --jq .url
+      - name: Keep diagnostic logs on failure
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: godot3d-public-android-debug-export-logs-${{ github.sha }}
+          path: |
+            qa-logs/export.log
+            qa-logs/import.log
+          if-no-files-found: warn
+          retention-days: 7
