@@ -70,6 +70,36 @@
       "source": "https://ambientcg.com",
       "license_url": "https://docs.ambientcg.com/license/",
       "used_by": []
+    },
+    {
+      "id": "llama.cpp-cpu",
+      "kind": "runtime-library",
+      "status": "ACTIVE",
+      "version": "b6000",
+      "license": "MIT",
+      "source": "https://github.com/ggml-org/llama.cpp",
+      "license_url": "https://github.com/ggml-org/llama.cpp/blob/b6000/LICENSE",
+      "used_by": [
+        "local_ai/native/CMakeLists.txt",
+        "local_ai/native/canglan_local_llm.cpp",
+        "scripts/local_ai_service.gd"
+      ],
+      "notes": "Native source integrated in Android/Linux build scripts, but successful compiled and released ARM64 runtime only after CI and actual phone proof."
+    },
+    {
+      "id": "qwen3-0.6b-q4km",
+      "kind": "on-demand-build-model",
+      "status": "ACTIVE",
+      "version": "Qwen3-0.6B GGUF QuantFactory Q4_K_M",
+      "license": "Apache-2.0",
+      "source": "https://huggingface.co/QuantFactory/Qwen3-0.6B-GGUF/blob/main/Qwen3-0.6B.Q4_K_M.gguf",
+      "license_url": "https://huggingface.co/Qwen/Qwen3-0.6B",
+      "sha256": "7af3fdf842f87b24672f8a7f1dd50404043f0bfb71093ff91c31d2b49df4631d",
+      "used_by": [
+        "local_ai/model_manifest.json",
+        "scripts/local_ai_service.gd"
+      ],
+      "notes": "Source manifest is integrated; binary weights are never stored in git and are downloaded + hash verified by QA export. This does not imply Android runtime has been delivered."
     }
   ]
 }
