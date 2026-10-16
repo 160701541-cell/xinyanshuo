@@ -117,7 +117,9 @@ func _build_body(role: int) -> void:
 		if imported is PackedScene:
 			var model: Node3D = (imported as PackedScene).instantiate()
 			for old_mesh in _body_visual.get_children():
-				old_mesh.visible = false
+				var previous: Node3D = old_mesh as Node3D
+				if previous != null:
+					previous.visible = false
 			model.name = "GeneratedOccupationGLB_Unrigged"
 			_body_visual.add_child(model)
 			_generated_role_visual = model
