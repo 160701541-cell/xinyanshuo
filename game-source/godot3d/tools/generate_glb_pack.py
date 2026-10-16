@@ -27,6 +27,8 @@ def box(scene,name,pos,size,color):
     add(scene,name,g,color)
 def cylinder(scene,name,at,radius,height,color,segments=9):
     g=trimesh.creation.cylinder(radius=radius,height=height,sections=segments)
+    # trimesh procedural primitives grow along Z by default; Godot/glTF is Y-up.
+    g.apply_transform(trimesh.transformations.rotation_matrix(math.pi/2,(1,0,0)))
     g.apply_translation(at)
     add(scene,name,g,color)
 def roof(scene,name,w,d,eave,ridge):
@@ -82,6 +84,7 @@ def prop(kind,variant):
             cylinder(s,f"bamboo_{i}",((i-3)*0.32,1.5+0.05*i,0),0.05,3.0+0.1*i,"leaves")
     elif kind=="well":
         g=trimesh.creation.annulus(r_min=0.7,r_max=1.12,height=0.7,sections=16)
+        g.apply_transform(trimesh.transformations.rotation_matrix(math.pi/2,(1,0,0)))
         g.apply_translation((0,0.4,0))
         add(s,"stone_ring",g,"stone")
         for side in (-1,1):
