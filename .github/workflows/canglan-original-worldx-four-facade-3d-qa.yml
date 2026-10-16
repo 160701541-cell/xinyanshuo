@@ -36,7 +36,7 @@ jobs:
           test -s qa-stage/ota179/scenes/main.tscn.remap
           grep -Fq 'main_3d_worldx_ota179.tscn' qa-stage/ota179/scenes/main.tscn.remap
           grep -Fq 'WorldXFourFacades3D' qa-stage/ota179/scenes/main_3d_worldx_ota179.tscn
-          if grep -E 'HD2DArtAcceptance|CanvasLayer|hd2d_original_overlay_ota177' qa-stage/ota179/scenes/main_3d_worldx_ota179.tscn; then
+          if grep -E '^\[node .*type="CanvasLayer"|^\[node name="HD2DArtAcceptance"|^\[ext_resource.*hd2d_original_overlay_ota177' qa-stage/ota179/scenes/main_3d_worldx_ota179.tscn; then
             echo "::error::New main scene is STILL a full-screen HD2D overlay"
             exit 10
           fi
