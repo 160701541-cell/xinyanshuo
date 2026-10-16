@@ -10,10 +10,10 @@ permissions:
   contents: read
 concurrency:
   group: canglan-hd2d-godot-scene-${{ github.ref }}
-  cancel-in-progress: false
+  cancel-in-progress: true
 jobs:
   public-hd2d-scene:
-    name: Real Godot 4.4.1 scene startup, input, remote candidate QA
+    name: Real Godot 4.4.1 procedural scene, doors, state, interior QA
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
@@ -52,20 +52,19 @@ jobs:
           if grep -Eq 'SCRIPT ERROR:|Parse Error:|Parser Error:|Assertion failed|Failed to load script' qa-logs/scene-smoke.log; then
             exit 1
           fi
-      - name: Verify candidate art URL used by in-game renderer
+      - name: Ensure new scene is programmatic and offline
         shell: bash
         run: |
           set -euo pipefail
-          URL='https://160701541-cell.github.io/xinyanshuo/art-source/hd2d/batch-20261016/01_village_props_atlas_preview.jpg'
-          curl -fL --retry 3 --connect-timeout 15 --max-time 45 "$URL" -o qa-logs/atlas-source.jpg
-          python3 - <<'PY'
-          import pathlib, struct
-          p=pathlib.Path('qa-logs/atlas-source.jpg')
-          data=p.read_bytes()
-          assert len(data)>50000 and len(data)<3000000, 'Wrong atlas file size'
-          assert data[:3]==b'\xff\xd8\xff', 'Not a JPEG'
-          print('PASS_PUBLIC_REMOTE_ART_SOURCE',len(data),'bytes')
-          PY
+          test -f game-source/hd2d-world/scripts/procedural_building.gd
+          test -f game-source/hd2d-world/scripts/procedural_city.gd
+          test -f game-source/hd2d-world/scripts/procedural_interior.gd
+          test -f game-source/hd2d-world/scripts/procedural_prop.gd
+          if grep -Eq 'HTTPRequest\\.new|ATLAS_URL|load_jpg_from_buffer' game-source/hd2d-world/scripts/village.gd; then
+            echo 'BLOCKED: procedural scene must not depend on remote atlases'
+            exit 2
+          fi
+          echo 'PASS offline procedural scene source contract'
       - name: Preserve exact QA evidence (not APK proof)
         if: always()
         uses: actions/upload-artifact@v4
