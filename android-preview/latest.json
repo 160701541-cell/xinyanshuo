@@ -1,12 +1,12 @@
 {
   "schema": 1,
   "channel": "android-preview",
-  "revision": 177,
+  "revision": 178,
   "minimum_android_code": 1176,
   "maximum_android_code": 1176,
-  "sha256": "af5e08020e7ae473a31ed2917839ea3544bdf3747b15790bcea49e46a54eb6f3",
-  "size_bytes": 20361696,
-  "pack_url": "https://160701541-cell.github.io/xinyanshuo/android-preview/canglan-content-rev-177.pck",
-  "notes": "苍岚：WorldX新场景、国风正房与室内进出功能（测试更新）",
-  "signature": "UjR26/80Gpi/NPosPGnlUaZByyCZIIU72mHuXnhKJ5a9z80yeZzLMGu93OCg02++2deBicFd/ne/cAH5Gkhfzu4zDX8xWDf7HRlf3gFOdGuKD2zF4AjEWpk7FFG/3r/zgqc7a9mBi/jBTNcTa8l6ScVUr3h9vkIw//V2ugfSaCO0SDxiZGJLJRsEw9Wl03B2KnHepcgndupAbHD+eJYHyGUTQQUZ4hs4txnKWlqRdZx7dSi+BMOi2EnSz4nGzB3bCRTB+VBBTd5UTrsV4PP13Y27iQC+JKs5HrJxRWsywU6dRKDitKkMEkSAfYg8y99fKMI3UL8myzIXl8v9Sf2aRWAdRI8DDwiMOA81HIzvUvuQb5SBRMy3WoY1TFqKjwn2yeg9KZOwumF3qsFT3bOtG2C0lHct+LjreJaIQDViF4+YX4mebpsrCfnSbT/hHqbSdN7/Xt8KkeRrtO7mSJZ2Oj2ykexqLQTukU36d36IJmUAGu4X6DTbI2aVhH9T+k3M"
+  "sha256": "4bf2e3e9e934a0bbdea97275b824317dbe6472b1782ee50a461673ffc4d93bdc",
+  "size_bytes": 21021440,
+  "pack_url": "https://160701541-cell.github.io/xinyanshuo/android-preview/canglan-content-rev-178.pck",
+  "notes": "苍岚原游戏：既有WorldX古风NPC独立身份、状态与室内交互",
+  "signature": "R3i2TiLL9MimWeonLz/ZkHH4NoyT3AtaYEm1pMyBmDtMo3BCRhN0zsm7+HsyCxnZtBYuqgS+0lLbXXYD1Pc21gf3Rf2rHG/1LteaJx9nIykMqQ48ZYuNziPZSVnzNBORWueEsPEQieBK67xExgc57brkap6KbGU3F2uXbXecS+8YJhu0ERT9rD2hgyyOfjsfUFpn4Zd4hg404IMaoch5TSP439wJBHm66gjTFnJpav9oNl3Kdu98c/iii8TNGzYTglZbDttQIgbX1nBSmaUXr+Ei1fbof73hdjQdpsXuClVbRzqWeqlTiqcCM404Gn3ncJr11URqTNGZLZyM5y+RIbjrAzZdCTe2EaQYxozryBP5Y6kmIp4z+dzJEdsiek1nbmiVy4YSNz1TlkSeTWt/1MwIHfgHInkLQpff3Xbp9MJ81WySAQbjrM/dZ7LYxv7Ta9oERkl2b8lt9n9ino0A5tQWAJ9zaDrVZqo88yR0olaHPmVAE7r809kFRKfO3YQp"
 }
