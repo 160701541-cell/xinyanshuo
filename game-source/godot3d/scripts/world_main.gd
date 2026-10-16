@@ -8,11 +8,16 @@ const Buildings = preload("res://scripts/building_factory.gd")
 const Props = preload("res://scripts/prop_factory.gd")
 const Citizen = preload("res://scripts/npc_agent.gd")
 const Interiors = preload("res://scripts/interior_factory.gd")
+# Authentic earlier Canglan 3D economy/identity source has been audited and
+# safely migrated to the PUBLIC repository without any signing credentials.
+const OriginalWorldState = preload("res://scripts/world_state.gd")
+const OriginalWorldBridge = preload("res://scripts/world_state_bridge.gd")
 const CHUNK_SIZE: float = 96.0
 const VISIBLE_RADIUS: int = 2
 
 var seed: int = 20261016
 var rules: RefCounted
+var authoritative_world: RefCounted
 var building_factory: RefCounted
 var interior_factory: RefCounted
 var citizen_nodes: Array[Node3D] = []
@@ -46,6 +51,7 @@ var _hour: float = 12.0
 var _npc_clock: float = 0
 
 func _ready() -> void:
+	authoritative_world = OriginalWorldState.new()
 	rules = Rules.new()
 	rules.call("configure",seed)
 	building_factory = Buildings.new()
@@ -171,12 +177,17 @@ func _build_settlements() -> void:
 				settlement_root.add_child(building)
 				structures[home_id] = building
 			for n in range(4):
-				var id := "NPC-HX-%08d" % (ordinal*4+n+1)
 				var civil: Node3D = Citizen.new()
 				var x: float = center.x + float(n-2)*4.1
 				var z: float = center.z+8.4+float(n%2)*4.0
 				var y: float = float(rules.call("height_at",x,z))
-				civil.call("setup",id,(ordinal+n)%10,Vector3(x,y,z),rules,avatar)
+				var spawn := Vector3(x,y,z)
+				var canonical_id: String = authoritative_world.call("create_actor",
+					"苍岚居民%03d" % (ordinal*4+n+1),spawn)
+				var id: String = OriginalWorldBridge.actor_public_code(authoritative_world,canonical_id)
+				assert(not id.is_empty(),"Original WorldState identity generator failed")
+				civil.call("setup",id,(ordinal+n)%10,spawn,rules,avatar)
+				civil.set_meta("canonical_id",canonical_id)
 				npc_root.add_child(civil)
 				citizen_nodes.append(civil)
 	_make_streets()
@@ -343,6 +354,10 @@ func _process(delta: float) -> void:
 		_npc_clock = 11.0
 		for citizen in citizen_nodes:
 			citizen.call("set_hour",_hour)
+			var canonical_id: String = String(citizen.get_meta("canonical_id",""))
+			if not canonical_id.is_empty():
+				OriginalWorldBridge.sync_actor(authoritative_world,canonical_id,
+					citizen.global_position,11.0)
 		_refresh_light()
 
 func _refresh_status_throttled(delta: float) -> void:
@@ -500,6 +515,7 @@ func snapshot() -> Dictionary:
 	var prop_stats: Dictionary = prop_root.call("stats") if prop_root != null else {}
 	return {"source":"PUBLIC_GODOT3D","seed":seed,"terrain_chunks":chunk_nodes.size(),
 		"buildings_and_yards":structures.size(),"npc_ids":citizen_nodes.size(),
+		"original_world_actor_entities":OriginalWorldBridge.identity_count(authoritative_world),
 		"world_props":int(prop_stats.get("independent_prop_ids",0)),
 		"batched_instances":int(prop_stats.get("visible_mesh_instances",0)),
 		"inside":_inside,"license":"MIT engine; original procedural geometry",
