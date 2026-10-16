@@ -943,3 +943,25 @@ Godot 4.4.1对从**原签名Android APK176**提取的实际`update_protocol.gdc`
 ### rev184公网正式CDN闭环补充（2026-10-17）
 - GitHub Actions只读站点审计脚本`.github/workflows/canglan-rev184-real-pages-http-proof.yml`（初始`07ce279`，由真实作业`38978640782`揭示遗留了rev183硬编码断言，`f54811f`修正为严格rev184后再跑）。**成功Run`38978699481` / job`117234209097` `completed/success`**：真正公网`https://160701541-cell.github.io/xinyanshuo/android-preview/latest.json`回rev184，原APK176固定公钥RSA验签PASS，完整下载PCK恰好`21,638,048`字节且SHA-256`e2a366e11fcbc6daac70e3af74b72ed7c03b88e85e125ade7d4714d0322426a0`，请求1MiB Range返回HTTP 206；日志marker为`PASS_APK176_REAL_REV184_PUBLIC_PAGES_RSA_SHA256_HTTP_RANGE_PHONE_DOWNLOAD_READY`。CDN缓存头`max-age=600`。
 - 因此**原APK176真实构建签名与正式互联网资源下载已通过**；尚未得到用户手机rev184实际走动、双指缩放、第一视角、挖地基及水体截图，禁止写手机验收通过。手机无需重新下载安装包，不清除旧存档。
+
+
+## 2026-10-17 / PHONE-REV184-FAIL → ORIG-REV186-THREE-MANUAL-PROFILES / 手机QA优先、真实自适配预算
+
+### 新增唯一有效画质合同（覆盖过去全部画质和性能预算；其他要求不变）
+用户实机设备：**一加 Ace 5 Pro，Snapdragon 8 Elite/骁龙8至尊版，Adreno830，2780×1264，最高120Hz**。用户明确撤销过去所有统一画质/性能数字预算（含Draw≤200、15万三角面）；从本轮起仅按 `AGENTS.md`新增P0、`docs/GAME_ENGINEERING_MASTER.md`最新章节与`docs/QUALITY_DEVICE_ACE5PRO.md`执行：极致100%+MSAA4+阴影100m+草80m+100萤火虫+雾/辉光/云全质参考1500Draw/150万面、目标≥60争取90–120；**高档默认**85%+MSAA2+阴影60m+草40m+60萤火虫参考800Draw/60万面、目标60+；普通67%+关AA+阴影30m+草20m密度降低+20萤火虫参考400Draw/30万面、目标稳定60。三档均只手动切换、长期保存上次选择、<45FPS只告警不自动降档、极致发热耗电提示不限制、帧限随系统当前允许的Hz最高120、2D UI始终原生画质。名称标签、雾、光影、草、云、粒子均不同档位调整实际范围和密度。
+
+### 用户真实Android截图明确P0 FAIL（此前rev184的Godot headless PASS不能代替）
+用户2026-10-17 rev184手机图①：左上角约`30FPS/60Hz/GPU 6.49ms/Draw557/三角面331005`，画面是2m大小地形单元中心高度不同造成的大面积方格悬崖/直墙，既不像自然泥土地貌也不具有实体行走的视觉品质。图②：约`30FPS/GPU 8.07ms/Draw551/三角面326491`，施工门/板等放大遮住画面，`施工工·CL-NPC-0184-03`系统ID呈巨大黑描边标签，玩家和NPC实际外观仍看不见或被埋/遮挡；玩家摇杆不正常移动，左右木材资源点不能点击。第三张用户实拍自然道路供视觉参考：有真实路缘、面层砖缝纹理、稠密有体积植被、坡面连续与层层遮挡；并非要求实拍贴图覆盖Kenney低模。**必须拿实际手机画面评价，不得把模拟器跑通宣传为手机完成。**
+
+### 源码真实已改
+- `apk176_strata_terrain_rev185.gd` commit`60d259a`，后继 `rev186.gd` commit`cf6ce1e`：**P0消除假地形阶梯根因**——原每个2×2m格子只用中心高度生成水平四边形和四圈夸张垂直土墙；现未挖区域采用相邻共享坐标角点的连续实际斜坡，各处真实地面仍可挖土、碰撞随地形重建；垂直地层墙仅发生在真挖坑处或地图外缘，继续土/黏土/砾石/风化岩/基岩4+1地层与不凭空挖出资源的账本；河床盆地和局部水体保留。仍欠法线进一步平滑、微观纹理和大世界地层LOD。
+- `apk176_quality_profiles_rev185.gd` commit`30e26b5`，后继 `rev186.gd` `a854996`：三套玩家手机参数统一唯一代码；真正独立的3D `SubViewport` 100/85/67精确像素+4x/2x/无AA，太阳阴影100/60/30，草4500/2400/1100可见80/40/20米、粒子100/60/20、云9/5/2和雾密度分档、NPC近距名称20/13/8米；`user://canglan_graphics_profiles_v1.cfg`保存上次手动档位；`RenderingServer`采真实Draw/三角面和帧率、显示实际渲染像素/刷新率、<45仅警告。受本旧版Godot Mobile Vulkan支持范围所限，粒子自发光/简易云层只是可运行近似，**尚未完成真正Forward+体积云与屏幕辉光**，不能谎称三档最高表现已满足。
+- `apk176_player_controller_rev185.gd` commit`d82ecc8` / 修脚底双叠加`529c9f4`，后继`rev186.gd` commit`c0a8d57`：真实 `Control.gui_input` 接收左摇杆而不是靠本来被宿主UI吞掉的`CanvasLayer._input`；用控件本地坐标计算左摇杆，不与右屏触控撞；右侧拖镜头/双指缩放，左右屏幕点击3D屏幕投影中的树石/NPC（MultiMesh独立实体ID数据不由碰撞推定），自动向目标移动，接近后通过权威NPC经济规则门采集/交仓库或询问NPC。`rev186`新增**屏幕左侧树林点击窗口（摇杆优先）**，避免rev185仅右半屏可选石矿。键鼠可用但不作为移动端替代。系统ID保留规则层键并继续跨rev185/186稳定，不在世界标签悬浮整串`CL-...`。
+- `apk176_living_resource_world_rev185.gd` commit`6e676af`、改节点名`4b332bd`；后继 `rev186.gd` `ec0c2f4`：从`SubViewportContainer`整数`stretch_shrink`（无法实现85%/67%）换成专门3D纹理`SubViewport`→全尺寸`TextureRect`，游戏按钮/标签HUD仍由独立原生2D层绘制；增加“画质设置”按钮、三档手动选项和高档默认、极致发热提示、准确诊断HUD；隐藏原APK176带旧200Draw预算的Label/RichTextLabel黑板；人物从真正Quaternius成品GLB骨骼计算原点与脚底offset，再每次移动按地面海拔+offset放置，减少NPC地下隐身；旧版巨型显示全量系统ID改为近距仅显示`樵夫/采石工/施工工`短职业名称，逐档距离衰减。不修改原存档。
+- 沿原APK176编译Main继承和PCK入口`main_original_quality_rev186.tscn`、`main_rev186.tscn.remap`；所有现成Kenney/Quaternius合法原始GLB SHA保持不变。附`logic-qa/tools/build_apk176_quality_rev186.gd`、`tools/verify_apk176_rev186_3d_pck.py`、`logic-qa/apk176-export-fixture/verify_original_main_quality_rev186.gd`：真正Godot4.4.1加载原应用打包Main/旧房屋场景兼容、三档每一项大小/阴影/草/粒子/云/AA/长期手动保存、旧ID规则不乱、玩家实体脚与NPC骨骼贴地、真实可挖坡面不大量逐格自然竖直墙、原NPC360步采集搬运施工守恒、GUI触屏信号真实驱动模拟；QA无法代替人手在手机测试。
+
+### 实际CI与发行证据 / 未验收
+- 原版rev185 GitHub原版签名PCK `38981382182` / job`117242788874` **completed/success**，SHA `04e33760b69a95186dbff7ab0e313568cef5d57d83e2ce9916992f759f9f106f`（构建时文件21,663,616字节），成功发main，作为下一rev基线。第一轮`38981303439`QA实际发现把草/云的MultiMesh误算到“六个Kenney资源批次”导致严格检验误报失败，修复`7d9065c`，没有删除检验。
+- 原版rev186 **完整通过** `38981695728` / job`117243794180`，所有老房屋兼容、真世界启动、模型身份、同位置脚底、左/右GUI触控、三档/存储、官方RSA签名+release gate均成功；正式原APK176 `android-preview/latest.json` revision**186**，PCK `21,666,016`字节，SHA-256 `16c636e2654efb8ead50cfe38e1ab27ac89f9c9cee72d4acb28f8cfb55f6a6ab`，原包ID/签名公钥保留，旧存档不覆盖。
+- 公网真实CDN审计工作流 `.github/workflows/canglan-rev186-real-pages-http-proof.yml` commit`9cd133e`首次`38981795153`失败是真实**GitHub Pages仍返回旧revision184**（3次重试均同），不是生产签名PCK代码失败。持续待Pages队列将最新公开main部署后重新读取真实HTTP/RSA/206再签收。**不能在Pages未验收时说手机已经检测更新**。
+- **用户这部手机新版三档实际FPS/Draw/三角面均全部“未验证”**；需要玩家更新后逐档拍摄并连续测试，特别注意复核摇杆真的行走、能直接点击左树林、第一视角和完整人形可见性。真实达标再改状态灯，不能把headless PASS写为实机PASS。历史rev184约30FPS数据不准冒充三档数据。
