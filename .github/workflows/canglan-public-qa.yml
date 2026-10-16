@@ -1,9 +1,11 @@
-name: Canglan Legacy Full Source - Godot Strict QA (Separate From HD2D)
+name: Canglan Open-Source Native 3D World - Strict Godot QA
 on:
   push:
     branches: [main]
     paths:
       - 'game-source/godot3d/**'
+      - 'tools/audit_public_3d.py'
+      - '.github/workflows/canglan-public-qa.yml'
 permissions:
   contents: read
 concurrency:
@@ -34,6 +36,28 @@ jobs:
           set -euo pipefail
           cd game-source
           GODOT_BIN=/tmp/Godot_v4.4.1-stable_linux.x86_64 QA_LOG_DIR="$GITHUB_WORKSPACE/qa-logs" bash godot3d/tools/quality_gate.sh
+      - name: Capture actual 3D gameplay framebuffer on Mesa software GPU
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq xvfb libgl1-mesa-dri libglx-mesa0
+          mkdir -p qa-logs
+          CANGLAN_3D_SCREENSHOT="$GITHUB_WORKSPACE/qa-logs/real-godot-3d-world.png" \
+          timeout 160s xvfb-run -a -s '-screen 0 1280x720x24' \
+          /tmp/Godot_v4.4.1-stable_linux.x86_64 --rendering-method gl_compatibility \
+          --path game-source/godot3d \
+          --script res://tests/capture_real_frame.gd \
+          > qa-logs/visual-engine-capture.log 2>&1 || {
+            cat qa-logs/visual-engine-capture.log
+            exit 1
+          }
+          grep -Fq 'PASS REAL GODOT 3D FRAME CAPTURE' qa-logs/visual-engine-capture.log
+          test -s qa-logs/real-godot-3d-world.png
+          if grep -E 'SCRIPT ERROR:|Parse Error:|ERROR:' qa-logs/visual-engine-capture.log; then
+            echo 'BLOCKED: scene screenshot logged an engine error'
+            exit 1
+          fi
       - name: Upload QA evidence
         if: always()
         uses: actions/upload-artifact@v4
