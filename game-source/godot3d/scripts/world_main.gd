@@ -426,7 +426,8 @@ func _create_interface() -> void:
 	ui_npc_details.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	ui_npc_details.custom_minimum_size = Vector2(365,0)
 	column.add_child(ui_npc_details)
-	_inspect_npc(farmer_ids[0])
+	inspected_npc = farmer_ids[0]
+	_refresh_inspected_npc()
 	var work_header := Label.new()
 	work_header.text = "生活闭环试玩 · 砍树→运输→建房→收粮→煮饭→进食"
 	stack.add_child(work_header)
