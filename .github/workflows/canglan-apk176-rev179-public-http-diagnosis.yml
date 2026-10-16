@@ -1,0 +1,32 @@
+name: Canglan APK176 rev179 LIVE Pages HTTP Diagnosis
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'tools/verify_original_rev179_live_http.py'
+      - '.github/workflows/canglan-apk176-rev179-public-http-diagnosis.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: canglan-rev179-public-http-check
+  cancel-in-progress: true
+jobs:
+  actual-pages-not-git-verification:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 6
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify remote rev179, pinned original RSA signature, PCK SHA and real Range response
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 tools/verify_original_rev179_live_http.py
+      - name: Keep actionable remote network report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: Canglan-rev179-actual-pages-HTTP
+          path: qa-results/rev179-public-http.json
+          if-no-files-found: warn
+          retention-days: 7
