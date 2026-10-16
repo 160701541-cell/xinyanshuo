@@ -135,7 +135,7 @@ func _run() -> void:
   if not bool(terrain.call("is_water",-9.0,-28.0)):
     _fail(60,"VISIBLE_POOL_NEEDS_GENUINELY_LOWER_WATERBED")
     return
-  if float(terrain.call("height_at",-9.0,-28.0)) >= float(terrain.get("WATER_LEVEL")):
+  if float(terrain.call("height_at",-9.0,-28.0)) >= -0.72:
     _fail(61,"POND_IS_A_FAKE_BLUE_GROUND_PLANE")
     return
   var player: Node = room.get("controls")
@@ -186,7 +186,6 @@ func _run() -> void:
   var returned_for_second_stage := false
   for tick in range(360):
     room.call("_process", 1.0)
-    var terrain: Node3D = room.get("terrain_world")
     if not bool(terrain.call("inventory_conserved")):
       _fail(65,"EXCAVATION_CREATED_SOIL_OUT_OF_NOTHING_OR_LOST_MASS")
       return
@@ -317,7 +316,6 @@ func _run() -> void:
     return
   # Test REAL player movement with the SAME mobile input vector and
   # on-ground contact. Switch to a truly first-person camera view.
-  var player: Node = room.get("controls")
   var actor: Node3D = player.get("actor")
   var before_move: Vector3 = actor.position
   player.set("_joystick",Vector2(0,-1))
