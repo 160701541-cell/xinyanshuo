@@ -22,7 +22,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: Canglan-APK176-TRUE-MAIN-QA-rev177-UNSIGNED-NOT-FOR-PHONE
-          run-id: 38878434254
+          run-id: 38879627623
           github-token: ${{ github.token }}
           path: qa-results
       - name: Prove same original-game candidate SHA and restore actual APK resources
@@ -30,7 +30,7 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p qa-results/real-frame-capture
-          echo 'e69c34739a03bbcdb4e8b27aa4525d93b0999a3505f9da75922afc4479f4505c  qa-results/canglan-apk176-live-house-UNSIGNED.pck' | sha256sum -c -
+          echo 'e5dce3b42cf36c34a06fcaedca137f9d7fac8dc5e623ad721af4c92480e4715d  qa-results/canglan-apk176-live-house-UNSIGNED.pck' | sha256sum -c -
           python3 - <<'PY'
           from pathlib import Path
           import json,zipfile
@@ -74,7 +74,7 @@ jobs:
         run: |
           set -euo pipefail
           sudo apt-get update -qq
-          sudo apt-get install -y --no-install-recommends xvfb libvulkan1 mesa-vulkan-drivers
+          sudo apt-get install -y --no-install-recommends xvfb libvulkan1 mesa-vulkan-drivers fonts-noto-cjk
           curl -fL --retry 3 --connect-timeout 25 \
             'https://github.com/godotengine/godot/releases/download/4.4.1-stable/Godot_v4.4.1-stable_linux.x86_64.zip' -o /tmp/godot.zip
           unzip -q /tmp/godot.zip -d /tmp
@@ -95,6 +95,7 @@ jobs:
             --resolution 1280x720 \
             --rendering-method mobile \
             --rendering-driver vulkan \
+            --audio-driver Dummy \
             --script res://capture_original_main_house.gd \
             > qa-results/real-frame-capture/render.log 2>&1 || {
               tail -100 qa-results/real-frame-capture/render.log; exit 1;
