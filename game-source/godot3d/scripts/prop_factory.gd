@@ -57,7 +57,7 @@ func build(rules: RefCounted,seed: int) -> void:
 	var random := RandomNumberGenerator.new()
 	random.seed = seed + 900719
 	# Hillsides with deterministic tree distribution; never spawn beneath buildings.
-	for i in range(420):
+	for i in range(480):
 		var x: float = random.randf_range(-355.0,355.0)
 		var z: float = random.randf_range(-355.0,355.0)
 		if absf(x)<151.0 and absf(z)<140.0:
