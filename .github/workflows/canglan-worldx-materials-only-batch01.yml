@@ -1,0 +1,86 @@
+name: Canglan WorldX MATERIALS ONLY - four reusable 3D surface textures
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/canglan-worldx-materials-only-batch01.yml'
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: canglan-worldx-materials-only
+  cancel-in-progress: false
+jobs:
+  four-materials-not-buildings:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    env:
+      MATERIAL_DIR: art-source/worldx/materials-batch01
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: FREE safety tests BEFORE any paid model calls
+        run: |
+          set -euo pipefail
+          node --test tools/asset_factory/test_worldx_raw_materials_batch01.mjs
+      - uses: actions/checkout@v4
+        with:
+          repository: YGYOOO/WorldX
+          ref: edb4976de5963457dfbf5d2171355270a4ca1e79
+          path: worldx-upstream
+      - name: Run actual WorldX material-only extension - 4 materials, no auto retry
+        env:
+          SILICONFLOW_API_KEY: ${{ secrets.SILICONFLOW_API_KEY }}
+          RUN_URL: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          node tools/asset_factory/worldx_raw_materials_batch01.mjs worldx-upstream "$MATERIAL_DIR"
+      - name: Verify FOUR real single-material source files, dimensions and hashes
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m pip install --quiet pillow
+          python3 - <<'PY'
+          import os,hashlib,json
+          from pathlib import Path
+          from PIL import Image
+          root=Path(os.environ['MATERIAL_DIR'])
+          meta=json.loads((root/'materials.json').read_text(encoding='utf8'))
+          names=['timber','cut_stone','mortar','roof_tile']
+          assert meta['asset_type']=='raw_reusable_material_texture_not_building'
+          assert set(meta['materials'])==set(names)
+          for name in names:
+              info=json.loads((root/(name+'.json')).read_text(encoding='utf8'))
+              assert info['status']=='GENERATED_UNAPPROVED'
+              assert info['not_finished_building'] and info['no_hd2d']
+              f=root/info['file']
+              assert hashlib.sha256(f.read_bytes()).hexdigest()==info['sha256']
+              with Image.open(f) as im:
+                  im.load()
+                  assert im.size==(1024,1024),(name,im.size)
+          print('PASS_FOUR_AUTHENTIC_WORLDX_MATERIAL_CANDIDATES_NO_FINISHED_HOUSES_NO_HD2D')
+          PY
+      - name: Preserve completed material images even if later generation fails
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: Canglan-WorldX-RAW-MATERIALS-UNAPPROVED-${{ github.run_id }}
+          path: ${{ env.MATERIAL_DIR }}/
+          if-no-files-found: warn
+          retention-days: 14
+          compression-level: 0
+      - name: Store verified raw material source candidates - never silently apply unreviewed images to phone
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name canglan-worldx-material-factory
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add "$MATERIAL_DIR"
+          if ! git diff --cached --quiet; then
+            git commit -m 'art(worldx): four RAW reusable construction material texture candidates only (no prefab houses)'
+            git pull --rebase origin main
+            git push origin HEAD:main
+          fi
