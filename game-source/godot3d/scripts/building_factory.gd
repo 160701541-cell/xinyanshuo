@@ -168,6 +168,20 @@ func make_building(id: String,kind: String,location: Vector3,variation: int) -> 
 	instance.name = "BuildingVisual"
 	instance.mesh = _mesh_from_buffers(geom)
 	result.add_child(instance)
+	# The CI model factory generates reusable actual glTF 2.0 geometry.
+	# Fallback preserves an independently playable/source-buildable 3D game.
+	var glb_kind: String = kind if kind in ["home","farmhouse","shop","teahouse",
+			"inn","academy","temple","granary","workshop"] else "home"
+	var source_glb: String = "res://assets/generated/architecture/%s_%d.glb" % [glb_kind, variation%2]
+	result.set_meta("model_source","original_runtime_surface_mesh")
+	if ResourceLoader.exists(source_glb):
+		var source: Resource = load(source_glb)
+		if source is PackedScene:
+			var authored: Node3D = (source as PackedScene).instantiate()
+			authored.name = "Generated3DGLBArtReview"
+			result.add_child(authored)
+			instance.visible = false
+			result.set_meta("model_source","CI_generated_GLTF2_unapproved")
 	# Wall collider is real, and the doorway is not blocked by an invisible full-house box.
 	var solid := StaticBody3D.new()
 	solid.name = "WallsCollision"
