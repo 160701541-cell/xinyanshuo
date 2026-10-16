@@ -46,12 +46,11 @@ def main():
             pass
     report={
         "probe_repository":os.environ.get("GITHUB_REPOSITORY","unknown"),
-        "scope_notice":"Only secrets injected into THIS workflow/repository can be tested; private canglan-world Secrets cannot be inferred from a public xinyanshuo run.",
-        "private_repo_signer_source":"160701541-cell/canglan-world .github/workflows/godot-3d-android.yml refers to secrets.CANGLAN_PCK_SIGNING_KEY_B64",
+        "scope_notice":"This probe reads only explicitly injected xinyanshuo public repository Actions secrets; no other repository is consulted.",
         "original_signing_key_candidates_available":available,
         "original_rsa_key_matches_apk176":matched,
         "safe_to_sign_original_ota":matched,
-        "status":"SIGNER_AVAILABLE_IN_THIS_WORKFLOW" if matched else "NO_MATCHING_SIGNER_IN_THIS_WORKFLOW_CHECK_PRIVATE_REPO_SECRET_SCOPE"
+        "status":"SIGNER_AVAILABLE_IN_THIS_WORKFLOW" if matched else "NO_MATCHING_SIGNER_IN_PUBLIC_WORKFLOW"
     }
     dest=pathlib.Path("qa-results/original-apk176-signing-readiness.json")
     dest.parent.mkdir(parents=True,exist_ok=True)
