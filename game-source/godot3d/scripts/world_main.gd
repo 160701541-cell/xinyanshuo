@@ -189,6 +189,14 @@ func _make_streets() -> void:
 	var brick := StandardMaterial3D.new()
 	brick.albedo_color = Color("#77746b")
 	brick.roughness = 1.0
+	# Hundreds of paving joints share one MultiMesh draw instead of ~190 nodes.
+	var seam_mesh := BoxMesh.new()
+	seam_mesh.size = Vector3(0.1,0.035,8.2)
+	var seam_batch := MultiMesh.new()
+	seam_batch.transform_format = MultiMesh.TRANSFORM_3D
+	seam_batch.mesh = seam_mesh
+	seam_batch.instance_count = 5*38
+	var seam_index: int = 0
 	for row in range(5):
 		var path := MeshInstance3D.new()
 		path.name = "EastWestStoneStreet_%d" % row
@@ -199,13 +207,14 @@ func _make_streets() -> void:
 		path.position = Vector3(0,0.20,float(row)*65.0-124.0)
 		settlement_root.add_child(path)
 		for j in range(38):
-			var slab := MeshInstance3D.new()
-			var cube := BoxMesh.new()
-			cube.size = Vector3(0.1,0.035,8.2)
-			slab.mesh = cube
-			slab.position = path.position + Vector3(float(j-19)*8.3,0.09,0)
-			slab.material_override = brick
-			settlement_root.add_child(slab)
+			var world_point: Vector3 = path.position+Vector3(float(j-19)*8.3,0.09,0)
+			seam_batch.set_instance_transform(seam_index,Transform3D(Basis.IDENTITY,world_point))
+			seam_index += 1
+	var seams := MultiMeshInstance3D.new()
+	seams.name = "190StoneStreetJointsOneDrawGroup"
+	seams.multimesh = seam_batch
+	seams.material_override = brick
+	settlement_root.add_child(seams)
 	for col in range(6):
 		var lane := MeshInstance3D.new()
 		lane.name = "NorthSouthRoad_%d" % col
