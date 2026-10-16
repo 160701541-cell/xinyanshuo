@@ -597,3 +597,11 @@ Godot 4.4.1对从**原签名Android APK176**提取的实际`update_protocol.gdc`
 6. 新增 npc_intent_policy.gd 严格允许 eat、rest、inspect_stock、inspect_site、keep_working。模型只能提出意图：权限验证依据NPC ID、真实职业/村落/体力/真实粮食和施工进度，拒绝任意脚本、恶意文字凭空创造资源、忙碌工人被任意改调。
 **QA结果**：CC0导入真实Godot QA 38949607844 SUCCESS；NPC建造/本地AI逻辑真实Godot测试 38949995322 SUCCESS（包括粮食真扣账、休息数值边界、移动到仓库须经过实际位置、角色身份隔离、不允许直接给物资）；综合3D Godot QA 38950055947 SUCCESS。Android原生llama.cpp编译 38950144223 本次记录时仍在运行，不能写成功。
 **严格分辨交付**：这批为唯一公开GitHub仓库的新3D源工程和经过实测的已导入CC0文件，**不是**原已安装APK176的签名rev179热更新；未做Android本地模型实机运行、原APK兼容、存档回归或实机温控。未来如首次导入原版需要额外的Android ARM64原生推理组件，必须使用原包合法签名作一次底层APK组件升级，随后业务脚本和资源更新依旧走游戏内热更新，禁止独立APK冒充正式更新。
+
+### 同批补充：弃用错方向的自动构图工作流
+- `.github/workflows/canglan-worldx-3d-four-facades.yml` 的4面建筑图像生成Job已`if:false`硬禁用，GitHub实际触发 `38950619657` **skipped**，不会再调用图片API付费。
+- `.github/workflows/canglan-original-worldx-four-facade-3d-qa.yml` 的原APK176四面图片伪3D候选Job已`if:false`硬禁用，实际 `38950628325` **skipped**。旧素材保留审计，不再声称更新。
+- `.github/workflows/canglan-worldx-apk176-content.yml` 的2D地图/HD2D重导入Job亦已`if:false`禁用。真正材料专用WorldX流程 `canglan-worldx-materials-only-batch01.yml`不受影响。
+- `.github/workflows/canglan-public-qa.yml`已取消重新绘制程序生成房屋/人偶GLB，改为已导入的真实Kenney/Quaternius和已有角色贴图。真实Godot全场景严格QA run `38950055947` 最终**SUCCESS**。
+- 真实已来源校验的12个CC0模型/24个贴图及二进制入库真实CI `38949607844` **SUCCESS**；至少Quaternius既有knight GLB含12条动画、另一个基础人形GLB有骨骼无动作，不可声称两个都已具备动画。离线Qwen3 native Linux源码构建由 `38950144223` 单独检查；尚未完成手机端运行验收。
+- **P0发布边界**：正式站原手机应用签名rev178未因此改版，上述新3D材料/AI代码**尚未进入正式旧APK**。
