@@ -78,7 +78,7 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-      - name: Build 38 open source GLBs and validate original 3D scene source
+      - name: Build 43 open source GLBs and validate original 3D scene source
         shell: bash
         run: |
           set -euo pipefail
