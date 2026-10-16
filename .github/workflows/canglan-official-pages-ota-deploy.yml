@@ -42,7 +42,7 @@ jobs:
           root=pathlib.Path('/tmp/canglan-pages/android-preview')
           m=json.loads((root/'latest.json').read_text())
           rev=m['revision']
-          assert rev >= 179, 'Do not replace a newer CDN site with old source'
+          assert rev >= 181, 'Never deploy a pre-rev181 snapshot over signed original NPC material world'
           assert m['minimum_android_code']==m['maximum_android_code']==1176
           p=root/('canglan-content-rev-%d.pck'%rev)
           assert p.is_file(), 'Missing EXACT current OTA PCK in site'
