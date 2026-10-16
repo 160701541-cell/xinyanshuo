@@ -92,3 +92,17 @@ extract02允许在原WorldX流水线中对源图做单次图像编辑提取；�
 - 限制：程序几何会减少付费生成和手动裁图依赖，但**不会自然等于高清手绘/国漫最终美术**。建筑层次、光照、阴影、构件透视、人物尺度和安卓帧率必须以Godot真实截图和用户手机审查为准。不允许把“自动大量绘制”作为绕过视觉QA的借口。
 - QA：`game-source/hd2d-world/tests/scene_smoke.gd` 验证实体数量、身份唯一、同seed复现、状态、真实可进入室内、独立家具、路面无缝和镜头；现有 GitHub workflow 运行 Godot 4.4.1 解析/冒烟并准备**不同签名的独立测试APK**。截至本记录：GitHub源码已上传，真实Godot CI本轮结论/截图/安卓真机仍待独立确认，状态 `PUBLIC_COMMITTED / ENGINE_QA_PENDING / VISUAL_UNAPPROVED / ANDROID_UNTESTED / NOT_RELEASED_TO_ORIGINAL_GAME`。
 - 本公开路线要逐步接入原游戏之前，须迁移与原客户端兼容的 Godot 场景/正式身份及签名资源；禁止把新的独立 HD2D 测试包称为手机里已经安装的APK176的热更新，也不可动正式 `android-preview/latest.json`。
+
+## 12. CAC-3D-001 — 用户正式撤销 HD2D、恢复开源原生 3D（2026-10-16）
+
+用户明确要求改回前一个原生 3D 方向：全部**有权发布的原创代码开放开源**，大批量地形、建筑、场景、NPC和物品改由程序化建模。**CAC-PROC-001 的 HD2D 是历史验证路线，状态 SUPERSEDED/FROZEN，不再是未来美术/研发目标**。先前 CAC 图集/AI 修补不会因本决策自动进入 3D；原始来源和审计数据只读保留，避免浪费和误混。
+
+唯一本轮新研发工程入口：公开仓库 `game-source/godot3d/project.godot`，原生 Godot 4.4.1 GL Compatibility（Android Vulkan/Mobile 可等真实兼容性证据后升档）。代码：`world_rules.gd` FastNoiseLite大地形噪声，`terrain_chunk.gd` Streamable SurfaceTool高差/碰撞网格，`building_factory.gd` 三维青瓦/土墙/梁架/院门/木门/碰撞/受损，`prop_factory.gd` MultiMesh 合批多种独立带ID物件，`npc_agent.gd` 程序化 NPC 行走/ID/职业/作息与视觉LOD，`interior_factory.gd` 同建筑ID内景及独立家具，`world_main.gd` 统一组织地图和玩家操控。真实游戏入口场景 `scenes/main.tscn`。这**不是将 HD2D 贴图伪装成3D**。
+
+原生模型工厂：`tools/generate_glb_pack.py` 使用经许可的开源 trimesh(MIT) + numpy(BSD) 导出 38个真实GLB（18建筑、10道具、10NPC职业立体替身），每件SHA256及实际 glTF 结构检验，模型候选未获美术批准，NPC未绑定正式Humanoid动画；生成GLB时将静态瓦件合并减少Android drawcall，动态门另由 `building_factory.gd` 控制。GitHub Actions 可在 Godot导入前再生模型，场景支持没有生成GLB时纯引擎模型回退。已在当前会话本地用独立 `trimesh` Python脚本实际导出一批38个GLB并按SHA打包；公开源码中另有可重建同类别38件的模块化工厂，二者不应冒充已完成严格画风验收。
+
+公开源码 MIT 范围仅为 `game-source/godot3d/` 原创程序；第三方版权许可证独立列 `opensource/registry.json`、`THIRD_PARTY_NOTICES.md`。Terrain3D v1.0.2（MIT，支持 Godot4.4及Android的官方文档已检索）只是 `CANDIDATE_NOT_IMPORTED`：原游戏此前GPU渲染/手机稳定性问题未清理，不未经 ARM64 实测便将大型GDExtension改写旧用户正式包；当前先保底使用Godot内建MIT生成器。
+
+QA必须执行 `tools/audit_public_3d.py`（公库源码/许可证/隔离检查）、`tests/test_generated_glb.py`（实物GLB字节/哈希/边界）、`tools/quality_gate.sh`（真实Godot导入+场景逻辑）、`tests/capture_real_frame.gd`（真实Godot帧、拒绝纯色），独立ARM64调试APK使用新测试包名。截止此提交，公开代码和QA门禁已上传；**这些新 CI 运行结果/真实Godot截图/Android验收仍 PENDING，画风审查 FAIL/UNAPPROVED，原正式APK/PCK未发生本次更新**。不要用源文件存在推导最终手机游戏已经具备所述全部世界或NPC系统。
+
+**后续必须实际补齐**：主版原3D所有模块迁移/产权/原料守恒/施工/图纸/存档/ID兼容、世界数据增量分块及AI NPC能力、成熟国漫美术/面部BlendShape/骨骼动画、地形编辑/道路寻路/落地建筑、遮挡性能LOD、Android实机与原签名RSA/PCK发布。旧私库可只读参考，不再作为开发/提交目标。
