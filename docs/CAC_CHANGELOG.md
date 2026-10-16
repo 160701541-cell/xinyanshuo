@@ -467,3 +467,12 @@ Godot 4.4.1对从**原签名Android APK176**提取的实际`update_protocol.gdc`
 - `scripts/npc_agent.gd`：在已有80名可点选独立身份居民的世界节点直接新增Sprite3D；保留文字职业/独立姓名/三维空间、射线碰撞、经济/精力/饥饿/年龄/个人库存/工作移动；走路播放6帧精灵图、停步回到正确静态帧；无图时退回纯文字，不显示先前被否决的难看模型。职业与模板按实际生活职业映射：农夫/伐木/石工/陶工→朴素短打；厨师→酒馆类外观；商人/书生/卫卒→对应图。
 - `tests/world_smoke.gd` 新增资源存在时每个真实NPC必须有 `ReusedWorldXSprite3D` 及6×5动画帧、停步帧18和原本独立个人ID与状态标签的检查。
 - 所有提交进入公共Godot3D实验分支当前main，首轮真实严格CI `38919795797` 已触发等待Godot 4.4测试。**本轮未签原版RSA PCK、未修改原游戏OTA最新版Manifest，因此不能声称原版手机游戏已得到热更新。** 后续需要完成APK176兼容适配和原版OTA。
+
+## 2026-10-16 / CAC-ORIGINAL-OTA-178-PROGRESS / 回归真正的原APK176热更新开发
+
+用户要求“继续”：本轮明确**不发布任何新的独立测试APK**，直接实施**原版APK176（versionCode1176）兼容的Godot增量内容**，并实测原版OTA签名能力，绝不使用新密钥欺骗老游戏。
+
+1. **签名能力真正执行了远程检查**：公开仓库 `.github/workflows/canglan-original-ota-secret-readiness.yml` 真正运行 `38920447159`。CI的 `tools/check_original_ota_secret.py` 明确返回 `original_signing_key_candidates_available=0`, `original_rsa_key_matches_apk176=false`, `safe_to_sign_original_ota=false`, `BLOCKED_ORIGINAL_OTA_SIGNING_KEY_NOT_CONFIGURED_OR_MISMATCH`。这是明确的发布P0阻塞，并非推测。不能伪造/复用旧revision177签名来签新PCK，也不能让用户下载另一个APK。
+2. **修复原游戏现有素材场景**：`game-source/apk176-ota177-candidate/scripts/hd2d_worldx_npcs.gd` 新版本延用早前的WorldX PNG精灵动画，实际只创建5名历史人物；剔除第6个拿智能手机的现代服饰角色。5名NPC各有自己`entity_id`、独立年龄、饥饿、精力、心情、职业、个人库存字段、坐标和当前活动。每名NPC点选信息包含独立的ID/属性；维护原动画与地图通行逻辑，绝不是“商人×5”共享一个状态。同一APK176候选叠加场景本身已有`character_selected`点击交互，保持原游戏旧入口不变。注意这是原APK内HD2D叠加场景，不是把独立3D重建项目直接当作原游戏。
+3. **老APK176原工程检测**：原版`canglan-apk176-hd2d-overlay.yml`作业`38920761609`已真正SUCCESS：打出未签名的旧工程资源PCK并验证原签名安装包中编译主场景可覆盖加载；原版WorldX素材检测 `38920848620` 已触发。新版 `logic-qa/tools/verify_worldx_npc_content.gd` 新增强制校验5名不同ID、独立状态、禁现代手机角色。提交后另外开启`38921132853`真正还原APK176旧编译场景和Terrain3D插件进行启动/正房室内等全场景严苛验证。
+4. **正式上线状态明确仍为BLOCKED**：原游戏官网 `android-preview/latest.json` 仍是**已签rev177**；新候选revision178尚无原RSA签名密钥，未进入正式热更新频道。玩家原APK不需要下载、卸载或破坏存档。待严苛测试通过、合法生产私钥由授权安全途径在CI提供时，才能形成签名rev178+校验并推送官网；不能对用户称原游戏已经热更新。
