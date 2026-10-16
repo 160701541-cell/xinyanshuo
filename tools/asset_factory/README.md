@@ -97,3 +97,15 @@ python -m unittest discover -s tools/asset_factory -p 'test_*.py' -v
 
 ## edge04 原像素边缘精修
 `python tools/asset_factory/refine_source_house.py --source game-source/apk176-ota177-candidate/hd2d/courtyard/main_house_v3_source.png --out OUTPUT`输出523×553 RGBA候选、深浅底预览与坐标报告。右上飞檐按原图曲线补描，收紧邻屋与台基地面污染；运行时逐像素核验RGB不变。工作流canglan-source-edge04.yml保存真实文件，无模型调用。不代表完整透明素材美术已批准或Godot已接入。
+
+## CAC-PROC-001 程序化替代方案（用户2026-10-16新决策）
+
+重复扣图与AI批量生成不再是**大量城镇与建筑**的强依赖；原美术候选在 `art-source/` 隔离留档。本阶段大量场景通过 `game-source/hd2d-world/scripts/procedural_city.gd` 的固定种子和规则创建，独立建筑组件在 `procedural_building.gd`，独立可交互道具在 `procedural_prop.gd`，内景与同建筑ID在 `procedural_interior.gd`，真实游戏入口为 `scenes/village.tscn` + `scripts/village.gd`。Godot图层不引用图集，也不请求远程图片。
+
+在 Godot 4.4.1 项目目录运行：
+`godot --headless --editor --path game-source/hd2d-world --import`
+然后：
+`godot --headless --path game-source/hd2d-world --script res://tests/scene_smoke.gd`
+预期 `PASS PUBLIC HD2D GODOT SCENE STARTUP`，失败即阻断测试APK。可在图形界面打开对应 `project.godot` 实际查看院落、建筑、门、室内、四季昼夜，而非只看统计数量。所有新图形保持 `VISUAL_UNAPPROVED`；现有签名原手机游戏不自动收到这些场景。
+
+**规范约束**：程序化建筑是场景节点，物品/灯笼/井台/树木/家具必须各自持有稳定ID，不应烘成不可交互的背景。建造成本、库存、研究、施工和破坏持久化仍需原游戏权威数据系统接入；本独立测试场景不免费发放实体。
