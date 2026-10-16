@@ -279,3 +279,27 @@ Godot 4.4.1对从**原签名Android APK176**提取的实际`update_protocol.gdc`
 这一增量**不是从零臆造全部旧版本**：经 GitHub 只读核对原私有 `160701541-cell/canglan-world` 的真正 `godot3d/project.godot`、`scripts/world_state.gd`、`scripts/entity_codes.gd`、`scripts/terrain/heightfield.gd`，审核无显式密钥字符串后将后三件原始 GDScript **逐字节复制** 到公开 `game-source/godot3d/` 中。公开blob SHA与旧源一致：WorldState `f7174a7b59370deb456906d8bf8457c9d13fb52d`，EntityCodes `7d82d7de396208c799d4e5bac23741d1d436a71e`，原2km山地高度场 `7c950e459af84c57557abdb31b7b4f23266e7347`。原私库没有收到本次提交，密钥/旧存档/商业素材没有上传。
 
 `world_main.gd` 的80个三维NPC已经改为由**真实原版** `WorldState.create_actor` 分配 `actor_...` canonical ID，再读取原版 `NPC-HX-...` 公开ID作外观节点，保留空初始库存，不凭空生成可制造物料。`world_state_bridge.gd` 验证同步移动速度、实体类型和ID，禁止远距离瞬移与无权修改库存；原始世界有 `serialize/restore` 可作为持久化协议基础。新 `world_rules.gd` 采用真正旧版 Terrain3D `heightfield.gd` 的南北/西山脉和城池海拔算法，再按新场景坐标降到y=0绘制分块碰撞网格；渲染仍是Godot SurfaceTool而非将未经真机验证的Terrain3D GDExtension假装已安装。Godot引擎运行/旧档多版本回归仍 PENDING；尚未从旧版本整体迁移原场景、原UI、原资产、原NPC生活工序或原签名发布链，因此**不是原APK已正式升级**。
+
+## 2026-10-16 / CAC-3D-003 / 恢复开发：原生3D场景与Qwen3离线AI同包构建
+
+**用户指令**：「先接入游戏，一次性把AI本地模型也接入进去」，随后要求「恢复」，应从该任务断点继续，而不是回到 HD2D/重新讨论模型选型。
+
+### 实际已提交代码（不等于Android已安装）
+
+1. **离线推理真实Native实现**：`game-source/godot3d/local_ai/native/canglan_local_llm.cpp/.h` 和 `register_types.cpp`，CMake 源码锁定开源 `llama.cpp b6000` 与 `godot-cpp godot-4.4-stable`；C++后台单工作线程读取私有目录GGUF、调用 `llama_model_load_from_file/llama_decode` 并发送原生信号。无HTTP请求、云备援或“假生成成功”对话。CPU默认3线程和2048上下文，真实手机耗时/峰值RAM未知。
+2. **真正模型资源与版权**：`local_ai/model_manifest.json` 锁定 Qwen3-0.6B Q4_K_M 量化GGUF、**484MB级别**、SHA-256 `7af3fdf842f87b24672f8a7f1dd50404043f0bfb71093ff91c31d2b49df4631d`，Apache-2.0，权重不放入Git仓库。经上游 HuggingFace 页面交叉核对准确文件哈希和许可；CI在构建时下载、核验并将模型及上游Apache/MIT许可证打入APK。默认联网权限仍关闭；手机仅从APK提取到应用私有目录，文件检验失败应报告不可用。
+3. **接入真实Godot场景/NPC**：`scripts/local_ai_service.gd` 处理约484MB GGUF的2MiB块式本地复制、增量SHA256校验、加载状态、失败告警；`world_main.gd` 创建 `OfflineLocalAI`，提供手机聊天输入/模型状态，交互半径7米，按原 `WorldState` 身份ID找NPC、限流串行对话。回复仅为文本，**禁止把模型猜测当成授权交易/制造/真实库存行为**。离线模型加载失败时游戏世界仍应继续运行。
+4. **程序化模型真实嵌入**：`building_factory.gd` 有18栋建筑候选GLB导入路径，新修改 `npc_agent.gd` 实际将10种职业的GLB模型作为80个NPC对应可见模型（导入缺失时回退程序人体）；`tests/world_smoke.gd` 在模型存在时新增80个GLB真实场景节点检查。GLB NPC未绑Humanoid骨骼，简单视觉浮动并不能冒充完整人物骨骼步态。
+5. **构建门禁**：`.github/workflows/canglan-public-3d-android.yml` 先生成38个GLB，下载与校验真实Qwen GGUF、编译 Linux 与 Android ARM64 原生 `llama.cpp` GDExtension、运行 `tests/offline_ai_inference_smoke.gd` 实际生成中文回复、`tools/audit_local_ai_runtime.py` 核对SHA和AArch64 ELF，然后引擎导出Android ARM64独立调试APK，核对压缩包内原生 `.so`；任意一步失败即不发新版。源文件许可与SHA记录同步至 `opensource/registry.json`、`local_ai/NOTICE.md` 及 `tools/audit_public_3d.py`。
+6. **源码修复**：已修正 Godot `Node` 类型不能静态访问脚本自定义信号的问题（使用动态 `connect`）；并确保导入的人物是3D模型节点、模型缺失时不用假资产。
+
+### 状态矩阵（严禁混淆）
+
+- `PUBLIC_SOURCE_COMMITTED = YES`：本轮公开GitHub实际源码已上传。
+- `REAL_GLB_CANDIDATE_ARCHIVE = 38/38`：会话本地验证ZIP中38个文件的 glTF魔数和GLB容器长度一致，**并非国漫画质审核通过**。
+- `MODEL_SHA_UPSTREAM_VERIFIED = YES`：远端模型页明确提供的文件哈希与清单一致；**不代表GitHub Actions已经下载成功**。
+- `LINUX_CPP_BUILT = UNVERIFIED`，`ANDROID_ARM64_SO_BUILT = UNVERIFIED`，`GODOT_3D_IMPORT = UNVERIFIED`，`ON_DEVICE_LLM_REPLY = UNVERIFIED`，`ANDROID_APK_PUBLISHED = UNVERIFIED`，`ORIGINAL_SIGNED_GAME_UPDATED = NO`。
+- `VISUAL_QA = UNAPPROVED`；`ANDROID_RAM_FPS_THERMAL_TEST = NOT_RUN`；早期正式APK、其PCK与玩家存档未动。
+- 下一优先级：**读取本次真实CI/job日志和Godot截图**，按真实编译/解析失败逐项修复，确保独立AI+3D APK实际可启动和跑中文对话，再走原安装包签名/资源兼容流程；不得仅靠commit宣称手机已升级。
+
+本轮不触碰原私库版本构建、旧签名密钥和用户存档；停止HD2D路线继续有效。
