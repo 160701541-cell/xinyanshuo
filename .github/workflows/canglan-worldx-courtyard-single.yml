@@ -3,8 +3,9 @@ on:
   workflow_dispatch:
     inputs:
       image_model:
-        description: '在硅基流动模型广场复制当前可调用的文生图模型ID（不得用已下线FLUX.1-schnell）'
-        required: true
+        description: '文生图模型（已默认选好 Kolors，直接运行即可）'
+        required: false
+        default: 'Kwai-Kolors/Kolors'
         type: string
 permissions:
   contents: read
