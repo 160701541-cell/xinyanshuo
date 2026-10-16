@@ -1,0 +1,83 @@
+name: Canglan NPC physically builds 3D world from WorldX MATERIALS - Real Godot QA
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'game-source/godot3d/scripts/npc_building_system.gd'
+      - 'game-source/godot3d/scripts/worldbox_life_sim.gd'
+      - 'game-source/godot3d/scripts/autonomous_village_director.gd'
+      - 'game-source/godot3d/scripts/world_main.gd'
+      - 'game-source/godot3d/tests/npc_material_construction_smoke.gd'
+      - '.github/workflows/canglan-npc-material-build-qa.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: canglan-npc-materials-real-godot-qa
+  cancel-in-progress: true
+jobs:
+  native-3d-world-simulation-qa:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 14
+    steps:
+      - uses: actions/checkout@v4
+      - name: Get exact Godot 4.4.1 and test real 3D scene without publishing ANOTHER APK
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/canglan-godot qa-results
+          curl -fL --retry 3 --connect-timeout 20 \
+            https://github.com/godotengine/godot/releases/download/4.4.1-stable/Godot_v4.4.1-stable_linux.x86_64.zip \
+            -o /tmp/canglan-godot/godot.zip
+          unzip -q /tmp/canglan-godot/godot.zip -d /tmp/canglan-godot
+          chmod +x /tmp/canglan-godot/Godot_v4.4.1-stable_linux.x86_64
+          echo "GODOT=/tmp/canglan-godot/Godot_v4.4.1-stable_linux.x86_64" >> "$GITHUB_ENV"
+      - name: Import the ACTUAL Godot 3D source project, no mock assets
+        shell: bash
+        run: |
+          set -euo pipefail
+          timeout 160s "$GODOT" --headless --editor --path game-source/godot3d --import \
+            > qa-results/npc-world-real-godot-import.log 2>&1 || {
+              cat qa-results/npc-world-real-godot-import.log; exit 1;
+            }
+          if grep -E 'SCRIPT ERROR:|Parse Error:|Failed to load script' qa-results/npc-world-real-godot-import.log; then exit 1; fi
+      - name: Existing physical life simulation invariants
+        shell: bash
+        run: |
+          set -euo pipefail
+          timeout 130s "$GODOT" --headless --path game-source/godot3d \
+            --script res://tests/worldbox_life_smoke.gd > qa-results/npc-material-life.log 2>&1 || {
+              cat qa-results/npc-material-life.log; exit 1;
+            }
+          grep -Fq 'PASS CAC WORLD LIFE SIM' qa-results/npc-material-life.log
+      - name: Real individual NPC harvesting, carrying and crops regression
+        shell: bash
+        run: |
+          set -euo pipefail
+          timeout 130s "$GODOT" --headless --path game-source/godot3d \
+            --script res://tests/autonomous_job_smoke.gd > qa-results/npc-material-old-hauling.log 2>&1 || {
+              cat qa-results/npc-material-old-hauling.log; exit 1;
+            }
+          grep -Fq 'PASS CAC AUTONOMOUS NPC LOOP' qa-results/npc-material-old-hauling.log
+      - name: ACTUAL 3D NPC-produced material buildings, all four construction stages
+        shell: bash
+        run: |
+          set -euo pipefail
+          timeout 130s "$GODOT" --headless --path game-source/godot3d \
+            --script res://tests/npc_material_construction_smoke.gd > qa-results/npc-material-built-world.log 2>&1 || {
+              cat qa-results/npc-material-built-world.log; exit 1;
+            }
+          cat qa-results/npc-material-built-world.log
+          grep -Fq 'PASS CAC NPC MATERIAL-BUILT WORLD' qa-results/npc-material-built-world.log
+          if grep -E 'SCRIPT ERROR:|Parse Error:|Assertion failed|ERROR:' qa-results/npc-material-*.log; then
+            echo 'BLOCKED: actual Godot simulator failed native regression'; exit 1
+          fi
+          echo "PASS_CAC_NPC_BUILDS_ACTUAL_3D_WORLD_FROM_RAW_MATERIALS_NOT_FACADE_IMAGES"
+      - name: Preserve native scene traces, NEVER claim old phone OTA is updated
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: Canglan-NPC-builds-material-3D-native-QA-${{ github.sha }}
+          path: qa-results/npc-material-*.log
+          if-no-files-found: warn
+          retention-days: 14
