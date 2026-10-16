@@ -264,3 +264,12 @@ Godot 4.4.1对从**原签名Android APK176**提取的实际`update_protocol.gdc`
 - **QA代码已更新**：`tests/scene_smoke.gd` 检查24院落、至少50建筑、100独立物件、唯一ID、同种子复现、门及损伤、季节、夜灯、室内/家具、256px石路无缝和缩放。两个公开HD2D工作流改为 `cancel-in-progress: true`，避免每个中间提交排队重复构建；引擎工作流不再请求旧图集作为交付证明。
 - **本轮真实状态**：以上文件已提交公开仓库main；引擎实运行结果和真实渲染截图在此记录阶段**待CI证据验证**；独立debug APK能否成功生成、视觉审美及Android性能/触摸操作**仍待验**；未更新旧正式签名APK176/OTA177、玩家存档或正式分发清单。
 - **有意保留的缺口**：画面仍是原创程序几何，不可宣称达到参考国漫手绘品质；程序建筑暂不是原游戏权威库存/产权/建造系统的真实实体，不具备NPC路径、室内碰撞、破坏持久化。后续优先用真实Godot渲染截图定位造型问题，优化建筑层级/阴影/地物穿插，再做接入原客户端的公开源兼容回归与真机对照。
+
+## 2026-10-16 / CAC-3D-001 / 开源原生3D重新成为唯一开发主线
+
+- **指令改变**：用户明确停止HD2D，恢复《苍岚·人生世界》之前的3D方向，要求代码/模型能开源尽开源并将世界地形、古风院落、建筑内部、NPC、道具尽量工业化自动生成。旧HD2D方案标为SUPERSEDED，历史文件保留不再扩展。
+- **已真实提交公开 `160701541-cell/xinyanshuo` 的 native 3D Godot项目**：`game-source/godot3d/project.godot`、`scenes/main.tscn`；脚本 `world_rules.gd`、`terrain_chunk.gd`、`building_factory.gd`、`prop_factory.gd`、`npc_agent.gd`、`interior_factory.gd`、`world_main.gd`。启动场景种子 `20261016`；场景规则产生5×5个可替换的带碰撞地形块、20院落＋60建筑、约80独立身份/职业NPC及超过600个独立ID生态与生活道具，通过MultiMesh绘制高频重复物体。所有量为**生成目标/游戏代码中真实创建对象的预期计数**，本轮Godot自动化实测结果尚不可引用为已通过证据。
+- **真正的3D模型工厂**：新增 `game-source/godot3d/tools/generate_glb_pack.py`、`requirements-models.txt`、`tests/test_generated_glb.py`，在同一构建产线产出18建筑、10自然道具、10NPC职业的38份 GLB **模型候选**，逐件SHA校验，不能把三维人体刚体替身冒充有骨骼/真实动作捕捉的成品角色。当前聊天另已在本地以 Python/trimesh 真实导出38件、核对SHA并生成候选ZIP（共约1.54MB GLB）；候选尚未获得人眼视觉批准。
+- **源代码和兼容权限**：新增MIT许可证、来源清单 `opensource/registry.json` 和第三方许可说明；Godot/MultiMesh/FastNoiseLite等标准组件已接入，Terrain3D 1.0.2、Kenney/PolyHaven/ambientCG仅列作候选，**未安装/未导入**。所有新上传仅公开源码，无旧私库提交、签名密钥、隐私或不明授权资产泄漏。
+- **真实构建QA路径已接入**：`tools/audit_public_3d.py`、Godot `tests/world_smoke.gd`、`tests/capture_real_frame.gd`，加强 `.github/workflows/canglan-public-qa.yml` 实际生成GLB/导入/逻辑/Framebuffer画面QA，新增 `.github/workflows/canglan-public-3d-android.yml` 单独ARM64 QA APK构建，独立调试签名不会覆盖用户原APK176。新工作流实际执行是否PASS、画面截图是否达到用户参考美术、Android安装/帧率/发热、本次3D模块是否整合回原安装游戏，均是**PENDING/UNAPPROVED/NOT_RELEASED**。旧用户安装包和签名内容包保持不变。
+- **待改进问题不可隐藏**：当前三维建筑为程序顶点色基础几何，NPC仍是未绑骨骼/表情的人体候选；没有生活物理工序、存档权威数据、完整人群寻路/战斗、多人同屏性能达标证据。下一优先级是读取真正Godot CI与截图并修复语法/绘制问题，通过手机质量门禁后再增量迁移到原游戏并出正式签名更新。
