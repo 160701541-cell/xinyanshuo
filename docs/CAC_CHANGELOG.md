@@ -756,3 +756,17 @@ Godot 4.4.1对从**原签名Android APK176**提取的实际`update_protocol.gdc`
 ## 2026-10-17 / REL-NEXT-179 / 新增动态下一修订候选暂存器
 
 已经提交 `tools/stage_original_next_ota.py`，提交号 `cc0b78f5525a488b3f0b25f9a34f9d4b0f31087e`。相对原先写死rev178的发布器，此工具按当前已签署的公开latest.json计算下一修订，要求签名前出示PCK文件、未签署的原版APK176测试候选清单及运行日志；核验包名、1176版本、PCK哈希/长度、原签名、签署后使用APK176固定公钥重验。仅暂存到独立输出目录，**不会自动写官网latest.json、不自动发布、更不生成独立APK**。其`--original-qa-success`开关必须由调用工作流核查真实成功状态后提供，目前没有一条合格的rev179原APK176三维场景构建/启动流水线来调用它，因此目前只是发行候选工具，还不能上架。尚未取得新rev179可用PCK、运行日志、手机截图；原版仍rev178。注意旧rev178叠加HD2D资源不能当作用户要求的3D新内容发布，下一步必需真正的三维场景兼容验收。
+
+
+## 2026-10-17 / REL-3D-179-SIGNED-ORIGINAL-APK-PIPELINE / 首次将真实CC0三维预览接入原APK176发布链
+
+本轮按用户“先进入原游戏看画面”的要求，不再只堆独立3D技术工程。已完成以下**真实源码提交**：
+
+- `game-source/apk176-ota177-candidate/scripts/apk176_cc0_3d_preview.gd` 提交 `4a7d571c34be45d7e0a04eb5ab80159a9109085a`：在**原游戏主场景内**以CanvasLayer+SubViewport/Camera3D加载Kenney CC0原版GLB字节，经Godot GLTFDocument真正解析出3D场景并创建16棵橡树/10处石块实例，显示真实光照及技术地面，可点击返回原游戏/重新打开。明确仅为**视觉观察室**，未实现原大世界NPC生产自治、未修改玩家存档、不引入新APK。为避免透明全屏UI层窃取旧游戏触控，提交 `c4487ead42a056cdcd6a0d3686d837a565cf8e85` 加强鼠标/触控穿透。
+- `game-source/apk176-ota177-candidate/scenes/main_original_3d_preview_rev179.tscn` 提交 `c26b820439b523382895b8f99cc4d9ac2faeaad4`：**继承APK176真实编译Main**并保留之前HD2D/室内返回功能，在同一节点树挂真实3D CC0观察室；`scenes/main_rev179.tscn.remap` 提交 `8f04c0d572a470c1ccc6a53b09993177eee13a9a`。
+- `logic-qa/tools/build_apk176_3d_preview.gd` 提交 `21e81443d3224e462ebd69f365b8666d205d246a`：新的原游戏PCK打包脚本使用原主场景remap、复用旧素材交互及两份**已有授权Kenney GLB实文件**，没有自建正式树石模型，也没有拿独立3D游戏替代旧APK。
+- `logic-qa/apk176-export-fixture/verify_original_main_3d_preview_rev179.gd` 提交 `9bed56586a7c3cd85fd41dca749a51fe226f7e83`、加强真实MeshInstance和触控穿透检查提交 `7fc19c4485edd16abbeaa2a356dfd90bb8465aa1`：严格要求原APK176导出资源内真实主场景能够加载包含26个许可GLB三维实体的SubViewport，并验证关闭和重新打开。
+- `tools/stage_original_next_ota.py` 补充3D视觉目标与运行日志特征双重验证，提交 `81c3584feb0fb7819075ee9885b5da415dd5a604`，防止把旧HD2D候选简单改名rev179后签发。
+- `.github/workflows/canglan-apk176-rev179-real3d-signed.yml` 提交 `164146d17ad2f7bf088012338bc44701057043e3`，并在 `f9f13ab4bcca05f606bbb8b8c0ca3d8c8b36dd03` 加固：一条真实原APK176流水线恢复旧版导出资源、确认Terrain3D版本、构建原版PCK、执行真实原APK176 3D预览及旧正房进出回归、生成未签候选、用已恢复的原RSA密钥签发并用原公钥验签，**只有全部通过才发布rev179到同一个正式Android更新频道**。旧rev178不会被无条件重签，新rev179只有校验合格才替换，不发布独立APK。新工作流按变更自动触发且取消被更新替代的构建。
+
+**实际发布状态仍须以公开GitHub Actions的运行结论及`android-preview/latest.json`版本为准**。本轮只确认提交成功，当前连接没有列出新工作流的run ID和完成结果，不允许称rev179已发布。Android用户实机启动、更新UI加载及存档验收仍未完成。即便rev179经原APK176运行QA最终发布，用户看到的先是“可退出的Kenney CC0真3D树林/矿石观察室”，不是完整NPC生态与新3D大世界；后续真实世界整合仍需持续推进。
