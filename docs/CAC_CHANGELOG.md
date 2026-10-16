@@ -721,3 +721,17 @@ Godot 4.4.1对从**原签名Android APK176**提取的实际`update_protocol.gdc`
 **新的简化门禁**：第一层约几秒级的仓库静态与固定公钥验签/秘钥就绪检查（缺项早停）→仅第一层可发布条件满足时才在原APK176场景执行兼容和玩家/存档QA→根据真实候选计算PCK哈希/大小，生产RSA签名并再次使用固定原公钥检验→网页manifest+包同步发布、HTTP再次核对→用户原已安装游戏验收。每一层只测自己负责的不变量，避免对同一变更反复安装Godot和重复跑几套相同集成测试。
 
 **真实状态**：workflow及脚本提交成功，但当前GitHub连接不提供workflow_dispatch执行命令，本轮未实际触发/取得该门禁的运行结果；不能称快速门禁PASS。原版主场景能否装载新3D及原RSA签发密钥是否已经恢复均待实际验证；**rev178未改、无手机热更新、没有要求用户换APK**。下次验证应以CI artifact的独立结果为依据，不允许猜测。
+
+
+## 2026-10-17 / QA-FAST-002 / 去重CI、优先原APK176快速可发布性门禁
+
+用户要求继续精简但不犯错，研发重点仍是**原游戏能否通过合法OTA进入手机**，不增加新玩法以免扩大不可交付积压。
+
+**已提交的真实变更：**
+- `.github/workflows/canglan-resource-conservation-qa.yml` 提交 `63b493236ab51d0744ee747dde000687e05b351b`：取消与主NPC研发CI重复的每次push自动运行，保留`workflow_dispatch`作为人工深入诊断。节省重复下载Godot、重复资源导入。
+- `.github/workflows/canglan-npc-material-build-qa.yml` 提交 `302db30650ebb151b5becdbee4b4db24e397e62d`：使用**一次Godot 4.4.1下载及一次真实GLB导入**，同一次主流水线依次验证1000 tick资源守恒、确定性资源播种、既有NPC采集运输、建筑工地、本地AI意向规则，并上传各阶段日志。受资源脚本变更触发主流水线，不再自动触发第二套独立资源QA。
+- `game-source/godot3d/scripts/world_resource_seeder.gd` 提交 `60dfe41696fbc88f86db7577c0ed239d89e28c07`：清理一处注释内误留下的字面`\\n\\t`字符，避免代码审阅混淆。
+
+**简化后单通道：** 先执行公开仓库手动快速原版签名/更新前置门禁（上轮`canglan-one-click-original-quick-view.yml`）；签名不具备则跳过新PCK构建，直接报告阻塞。源代码常规提交只跑合并后的唯一Godot主集成CI；确定原版兼容及签名具备后，才运行旧APK176主场景真正验证/构建、原RSA验签、官网发布与手机现场验收。测试类别未删除，只消除重复导入和错误的rev177常数。
+
+**实际验收状态：** GitHub文件更新完成，但当前连接未提供可直接运行workflow_dispatch并取得结果的API；没有Godot日志证明最新合并流水线PASS，没有合法新revision PCK签发，也没有改`android-preview/latest.json`，原游戏仍rev178。严禁写“已经更新手机”。
