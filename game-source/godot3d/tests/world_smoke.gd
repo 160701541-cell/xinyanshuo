@@ -110,7 +110,8 @@ func _run() -> void:
 	var life: RefCounted = stage.get("life_sim")
 	for npc in npcs.get_children():
 		assert(String(npc.get_meta("art_status","")) in [
-			"TEXT_ONLY_BILLBOARD_IN_3D","REUSED_WORLDX_SPRITE_IN_REAL_3D"],
+			"TEXT_ONLY_BILLBOARD_IN_3D","REUSED_WORLDX_SPRITE_IN_REAL_3D",
+			"REAL_CC0_RIGGED_ANIMATED_QUATERNIUS"],
 			"Unapproved procedural mannequin visible instead of approved text/sprite placeholder")
 		var name_text: String = String(npc.get_meta("display_name",""))
 		assert(not name_text.is_empty(),"Individual NPC has no personal display name")
@@ -125,7 +126,13 @@ func _run() -> void:
 		assert(area.get_meta("entity_id")==code)
 		# Stage original artwork automatically from existing MIT WorldX library.
 		# Bitmap lives in true world-space Sprite3D, while identity/physics remain.
-		if ResourceLoader.exists("res://assets/generated/npc/worldx/plain_civilian.png"):
+		if String(npc.get_meta("art_status"))=="REAL_CC0_RIGGED_ANIMATED_QUATERNIUS":
+			var cc0_guard: Node3D = npc.get_node_or_null("RealCC0_guard_rig")
+			assert(cc0_guard!=null, "Pre-authored Quaternius 3D guard not installed")
+			assert(npc.get("_external_cc0_player") is AnimationPlayer,
+				"Never show a frozen character without real CC0 walk/idle animations")
+			assert(String(npc.get_meta("model_license"))=="CC0-1.0")
+		elif ResourceLoader.exists("res://assets/generated/npc/worldx/plain_civilian.png"):
 			var old_visual: Sprite3D = npc.get_node_or_null("ReusedWorldXSprite3D")
 			assert(old_visual!=null,"Previously created role artwork not applied to 3D NPC")
 			assert(old_visual.texture!=null and old_visual.hframes==6
