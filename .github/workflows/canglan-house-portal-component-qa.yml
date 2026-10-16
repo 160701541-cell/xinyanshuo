@@ -26,7 +26,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          mkdir -p qa-stage/ota177/{scenes,scripts,hd2d/courtyard}
+          mkdir -p qa-results qa-stage/ota177/{scenes,scripts,hd2d/courtyard}
           cp game-source/apk176-ota177-candidate/scenes/* qa-stage/ota177/scenes/
           cp game-source/apk176-ota177-candidate/scripts/* qa-stage/ota177/scripts/
           cp art-source/hd2d/batch-20261016/01_village_props_atlas_preview.jpg qa-stage/ota177/hd2d/atlas_village_ota177.jpg
