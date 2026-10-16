@@ -135,6 +135,30 @@ func deliver_carried(actor_id: String) -> bool:
 	_journal(village,"delivered_"+String(load["kind"]),int(load["amount"]),actor_id)
 	return true
 
+func register_field(field_code: String, village_id: String) -> bool:
+	if field_code.is_empty() or harvested_fields.has(field_code) or not villages.has(village_id):
+		return false
+	harvested_fields[field_code]={"ready":true,"next_day":day,
+		"village":village_id}
+	return true
+
+func gather_field_to_actor(actor_id: String, field_code: String) -> bool:
+	if not citizens.has(actor_id) or not harvested_fields.has(field_code):
+		return false
+	if carried_by_actor.has(actor_id):
+		return false
+	var plot: Dictionary = harvested_fields[field_code]
+	var village: String = String(citizens[actor_id]["village_id"])
+	if String(plot.get("village",""))!=village or not bool(plot["ready"]) or day<int(plot["next_day"]):
+		return false
+	var grain: int = 5
+	plot["ready"]=false
+	plot["next_day"]=day+1
+	carried_by_actor[actor_id]={"kind":"grain","amount":grain,"node":field_code}
+	citizens[actor_id]["schedule"]="carrying_grain"
+	_journal(village,"field_harvest_carried",grain,field_code)
+	return true
+
 func harvest_field(village_id: String, field_code: String, actor_id: String) -> bool:
 	if not villages.has(village_id) or not citizens.has(actor_id):
 		return false
@@ -187,6 +211,9 @@ func _citizen_work(person: Dictionary) -> void:
 	var action: String = ""
 	var amount: int = 0
 	if job == "farmer" and int(villages[town]["fields"])>0:
+		if not harvested_fields.is_empty():
+			person["schedule"]="waiting_for_harvest"
+			return
 		amount = 2+_rng.randi_range(0,2)
 		action="grain"
 	elif job in ["woodcutter","quarryman"]:
