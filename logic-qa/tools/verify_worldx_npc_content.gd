@@ -60,6 +60,29 @@ func _initialize() -> void:
 			printerr("FAIL_WORLDX_CONTENT: NPC spawned on collision tile")
 			quit(18)
 			return
+	# Existing original APK overlay must never aggregate different people into
+	# an undifferentiated role or spawn the modern smartphone character.
+	if controller.actors.size()!=5 or controller.citizen_profiles.size()!=5:
+		printerr("FAIL_WORLDX_CONTENT: incorrect historical NPC roster")
+		quit(23)
+		return
+	var seen_id: Dictionary = {}
+	for cfg in controller.character_data:
+		var unique: String = str(cfg.get("id",""))
+		var state: Dictionary = controller.get_citizen_status(unique)
+		if unique.is_empty() or seen_id.has(unique) or state.is_empty():
+			printerr("FAIL_WORLDX_CONTENT: shared or missing citizen identity")
+			quit(24)
+			return
+		seen_id[unique]=true
+		if int(state["age"])<=0 or int(state["energy"])<0 or int(state["hunger"])<0:
+			printerr("FAIL_WORLDX_CONTENT: invalid independent NPC personal status")
+			quit(25)
+			return
+		if str(cfg.get("name",""))=="林小夏":
+			printerr("FAIL_WORLDX_CONTENT: out-of-era modern smartphone NPC was spawned")
+			quit(26)
+			return
 	if controller.actors.size() < 5:
 		printerr("FAIL_WORLDX_CONTENT: sprites did not instantiate")
 		quit(10)
