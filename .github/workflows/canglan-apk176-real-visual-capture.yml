@@ -127,6 +127,10 @@ jobs:
               assert w>=800 and h>=480 and len(raw)>=45000,(p,w,h,len(raw))
               print('PASS_ACTUAL_GODOT_FRAME_FILE',p.name,w,h,len(raw))
           PY
+          python3 -m pip install --quiet --break-system-packages Pillow
+          python3 tools/qa_worldx_house_screenshots.py \
+            --indoor qa-results/real-frame-capture/real_original_apk176_house_inside.png \
+            | tee qa-results/real-frame-capture/visual-layout-audit.txt
       - name: Publish genuine engine-rendered screenshots as review artifacts (NOT phone capture)
         if: always()
         uses: actions/upload-artifact@v4
