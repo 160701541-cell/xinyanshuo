@@ -73,3 +73,6 @@
 
 ## 真实参考图传参验证门禁
 用户明确以原院落画风固定生产。新probe01核对源图SHA，在WorldX原生prompt loader适配请求中加入image实际图像数据，仅一次候选。元数据必须区分reference_image_sent和reference_effectiveness；传参成功不是风格一致证明。未视觉批准不能扩量或进入正式场景。
+
+## WorldX源图编辑提取调整
+extract02允许在原WorldX流水线中对源图做单次图像编辑提取；本工序模型明确记录Qwen/Qwen-Image-Edit-2509，不冒充Kolors。原院落仍为画风基准；不能以替换模型改变美术方向。锁定源图SHA、记录编辑参数、分别审核笔触一致/完整轮廓/被遮挡缺失/alpha，HTTP成功不等于成品批准。

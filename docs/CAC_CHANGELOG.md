@@ -185,3 +185,6 @@
 
 ## WorldX真实参考图试样probe01（2026-10-16）
 纠正batch03画风偏离：不再用纯文本冒充参考图控制。保持WorldX+Kolors，将已有院落原图以base64写入真实image请求字段，SHA锁为44d116addb17c5aa5a1f6c7edc85d44132fefdc0eb52ae422b63cc0b71060e3f。只做一张厢房候选、一次生成请求、无重试，模型是否真正有效利用参考图仍必须视觉比对。原图不改，正式发布清单不改。本地Node测试1/1 PASS、脚本语法检查PASS；云端出图待运行。API依据https://docs.siliconflow.cn/docs/api/images-generations-post ，不把HTTP成功等同于画风达标。
+
+## WorldX extract02 配置调整（2026-10-16）
+用户要求实际修改。保留WorldX模板加载与公开工厂，只将本工序后端改为图像编辑模型Qwen/Qwen-Image-Edit-2509，从已认可院落原图提取正房，禁止重新设计画风。源SHA锁定、单次编辑、无重试。按官方接口去掉编辑模型不支持的image_size，使用cfg=4，30步。本地规格测试1/1、语法检查PASS。实际画面、同源风格和遮挡缺失仍待云端出图视觉检查，不宣称已解决。

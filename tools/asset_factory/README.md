@@ -87,3 +87,6 @@ python -m unittest discover -s tools/asset_factory -p 'test_*.py' -v
 
 ## WorldX参考图probe01
 工作流canglan-worldx-reference-probe01.yml运行单件厢房验证。脚本worldx_style_reference_probe01.mjs校验已有院落原图SHA并以data URL传入Kolors的image字段，固定seed，保留prompt/来源哈希/图像/请求记录。默认一次、不重试，参考作用仍待视觉比较。`node --test tools/asset_factory/test_worldx_style_reference_probe01.mjs`检查真实image字段与单请求规格。
+
+## WorldX reference_extract02
+入口canglan-worldx-reference-extract02.yml；worldx_reference_extract02.mjs仍使用WorldX原生prompt loader，但改由Qwen/Qwen-Image-Edit-2509对已确认原院落提取正房。一次调用，无重试；不使用该模型不支持的image_size，真实结果尺寸单独核验。`node --test tools/asset_factory/test_worldx_reference_extract02.mjs`验证模型、源图输入与接口参数约束。不是新批准画风，也不是透明/结构QA通过。
