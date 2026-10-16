@@ -57,6 +57,12 @@ func _capture() -> void:
 		_fail("outdoor_screenshot_failed", 7)
 		return
 	overlay._house_portal.enter_building()
+	if overlay.art_world.visible:
+		_fail("outdoor_world_and_NPCs_visible_while_indoors", 10)
+		return
+	if not overlay._house_portal._room.visible:
+		_fail("indoor_scene_not_visible_after_entry", 11)
+		return
 	for i in range(10):
 		await process_frame
 	if not _save_frame("real_original_apk176_house_inside.png"):
