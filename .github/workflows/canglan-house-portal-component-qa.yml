@@ -1,0 +1,78 @@
+name: Canglan House Enter Exit - REAL Godot PCK Gameplay QA
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'game-source/apk176-ota177-candidate/scripts/hd2d_house_portal.gd'
+      - 'game-source/apk176-ota177-candidate/scripts/hd2d_original_overlay_ota177.gd'
+      - 'game-source/apk176-ota177-candidate/hd2d/courtyard/**'
+      - 'logic-qa/tools/verify_house_portal_content.gd'
+      - 'logic-qa/tools/build_apk176_hd2d_overlay.gd'
+      - 'tools/verify_hd2d_overlay_pck.py'
+      - '.github/workflows/canglan-house-portal-component-qa.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: canglan-house-portal-qa
+  cancel-in-progress: true
+jobs:
+  actual-building-qa:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - name: Stage same house scripts and candidate art as original APK overlay
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p qa-stage/ota177/{scenes,scripts,hd2d/courtyard}
+          cp game-source/apk176-ota177-candidate/scenes/* qa-stage/ota177/scenes/
+          cp game-source/apk176-ota177-candidate/scripts/* qa-stage/ota177/scripts/
+          cp art-source/hd2d/batch-20261016/01_village_props_atlas_preview.jpg qa-stage/ota177/hd2d/atlas_village_ota177.jpg
+          if compgen -G "game-source/apk176-ota177-candidate/hd2d/courtyard/*.png" > /dev/null; then
+            cp game-source/apk176-ota177-candidate/hd2d/courtyard/*.png qa-stage/ota177/hd2d/courtyard/
+          fi
+      - name: Download Godot 4.4.1 test engine
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl -fL --retry 3 --connect-timeout 25 \
+            https://github.com/godotengine/godot/releases/download/4.4.1-stable/Godot_v4.4.1-stable_linux.x86_64.zip -o /tmp/godot.zip
+          unzip -q /tmp/godot.zip -d /tmp
+          chmod +x /tmp/Godot_v4.4.1-stable_linux.x86_64
+      - name: Build unsigned candidate content PCK
+        shell: bash
+        env:
+          CANGLAN_OTA_STAGE_DIR: ${{ github.workspace }}/qa-stage/ota177
+          CANGLAN_QA_PCK_PATH: ${{ github.workspace }}/qa-results/canglan-house-qa-UNSIGNED.pck
+        run: |
+          set -euo pipefail
+          timeout 75s /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless --editor --path logic-qa --import > qa-results/house-godot-import.log 2>&1
+          timeout 75s /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless --path logic-qa \
+            --script res://tools/build_apk176_hd2d_overlay.gd > qa-results/house-pck-build.log 2>&1
+          cat qa-results/house-pck-build.log
+          python3 tools/verify_hd2d_overlay_pck.py "$CANGLAN_QA_PCK_PATH" > qa-results/house-pck-contents.log
+      - name: Godot runtime enter room exit to same exterior coordinates
+        shell: bash
+        env:
+          CANGLAN_QA_PCK_PATH: ${{ github.workspace }}/qa-results/canglan-house-qa-UNSIGNED.pck
+        run: |
+          set -euo pipefail
+          timeout 75s /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless --path logic-qa \
+            --script res://tools/verify_house_portal_content.gd > qa-results/house-portal-qa.log 2>&1 || {
+              cat qa-results/house-portal-qa.log; exit 1;
+            }
+          cat qa-results/house-portal-qa.log
+          grep -Fq 'PASS_CANGLAN_HOUSE_PORTAL_ENTER_EXIT_RESET_GUARD' qa-results/house-portal-qa.log
+          if grep -Eq 'SCRIPT ERROR:|Parse Error:|ERROR: Failed to load script' qa-results/house-portal-qa.log; then
+            echo '::error::Actual portal GDScript had engine errors'; exit 1
+          fi
+      - name: Preserve evidence for user review
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: Canglan-REAL-EnterExit-Godot-QA-${{ github.sha }}
+          path: qa-results/house-*.log
+          if-no-files-found: warn
+          retention-days: 14
