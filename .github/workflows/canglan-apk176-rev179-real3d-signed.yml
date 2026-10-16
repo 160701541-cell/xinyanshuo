@@ -1,0 +1,213 @@
+name: Canglan ORIGINAL APK176 rev179 TRUE 3D CC0 Preview Signed OTA
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/canglan-apk176-rev179-real3d-signed.yml'
+  workflow_dispatch:
+permissions:
+  contents: write
+  actions: read
+concurrency:
+  group: canglan-original-game-ota-rev179
+  cancel-in-progress: false
+jobs:
+  real3d-original-apk176-publish:
+    if: github.repository == '160701541-cell/xinyanshuo' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - name: Restore actual original APK176 exported resources without replacing fixtures with mocks
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p qa-results qa-stage/ota177/{scenes,scripts,hd2d/courtyard,hd2d/worldx}
+          cp game-source/apk176-ota177-candidate/scenes/* qa-stage/ota177/scenes/
+          cp game-source/apk176-ota177-candidate/scripts/* qa-stage/ota177/scripts/
+          test -s game-source/apk176-ota177-candidate/hd2d/worldx-generated/source_edge04/main_house_edge04_candidate.png
+          cp game-source/apk176-ota177-candidate/hd2d/worldx-generated/source_edge04/main_house_edge04_candidate.png qa-stage/ota177/hd2d/courtyard/main_house_isolated_edge04.png
+          cp game-source/apk176-ota177-candidate/hd2d/courtyard/*.png qa-stage/ota177/hd2d/courtyard/
+          cp -R game-source/apk176-ota177-candidate/hd2d/worldx/. qa-stage/ota177/hd2d/worldx/
+          cp art-source/hd2d/batch-20261016/01_village_props_atlas_preview.jpg qa-stage/ota177/hd2d/atlas_village_ota177.jpg
+          python3 - <<'PY'
+          from pathlib import Path
+          from zipfile import ZipFile
+          import json
+          src=Path(json.loads(Path('android-preview/base-latest.json').read_text())['file'])
+          root=Path('logic-qa/apk176-export-fixture')
+          count=0
+          total=0
+          with ZipFile(src) as apk:
+              for entry in apk.infolist():
+                  if not entry.filename.startswith('assets/') or entry.is_dir():
+                      continue
+                  rel=Path(entry.filename[len('assets/'):])
+                  if str(rel)=='project.godot':
+                      continue  # Keep the deliberately minimal exported-runtime QA project config.
+                  if rel.is_absolute() or '..' in rel.parts:
+                      raise SystemExit('APK zip path traversal blocked')
+                  if entry.file_size > 100_000_000:
+                      raise SystemExit('Unexpected single APK asset > 100MB: '+str(rel))
+                  dst=root/rel
+                  dst.parent.mkdir(parents=True,exist_ok=True)
+                  dst.write_bytes(apk.read(entry))
+                  count+=1
+                  total+=entry.file_size
+          assert (root/'.godot/global_script_class_cache.cfg').is_file()
+          assert (root/'shaders/atmosphere/layered_cloud_sky.gdshader').is_file()
+          print('PASS_REAL_APK176_FULL_EXPORTED_ASSET_FIXTURE',count,'files',total,'bytes')
+          descriptor=root/'addons/terrain_3d/terrain.gdextension'
+          if descriptor.is_file():
+              print('APK176_TERRAIN3D_GDEXTENSION_DESCRIPTOR_START')
+              print(descriptor.read_text(encoding='utf-8',errors='replace')[:11000])
+              print('APK176_TERRAIN3D_GDEXTENSION_DESCRIPTOR_END')
+          else:
+              print('APK176_TERRAIN3D_GDEXTENSION_DESCRIPTOR_MISSING')
+          with ZipFile(src) as apk:
+              for n in apk.namelist():
+                  if 'terrain' in n.lower() and (n.endswith('.so') or n.endswith('.gdextension') or n.endswith('.dll') or n.endswith('.dylib')):
+                      print('APK176_NATIVE_TERRAIN_ENTRY',n)
+          print('PASS_APK_NATIVE_TERRAIN_DIAGNOSTIC')
+          PY
+      - name: Recover exact-matching Terrain3D Linux QA plugin from trusted upstream releases
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import zipfile,json,pathlib,hashlib
+          src=pathlib.Path(json.loads(pathlib.Path('android-preview/base-latest.json').read_text())['file'])
+          with zipfile.ZipFile(src) as apk:
+              name='lib/arm64-v8a/libterrain.android.debug.arm64.so'
+              assert name in apk.namelist(), 'Actual APK176 Terrain3D Android native binary missing'
+              raw=apk.read(name)
+          pathlib.Path('/tmp/canglan-actual-android-terrain.so').write_bytes(raw)
+          print('APK176_REAL_ANDROID_TERRAIN_SHA256',hashlib.sha256(raw).hexdigest(),'size',len(raw))
+          PY
+          for version in v1.0.1-stable v1.0.2-stable; do
+            case "$version" in
+              v1.0.1-stable) archive=Terrain3D_v1.0.1.zip ;;
+              v1.0.2-stable) archive=Terrain3D_v1.0.2-stable.zip ;;
+            esac
+            if ! curl -fL --retry 2 --connect-timeout 15 --max-time 110 \
+              "https://github.com/TokisanGames/Terrain3D/releases/download/$version/$archive" -o /tmp/upstream-terrain.zip; then
+              echo "UPSTREAM_TERRAIN_DOWNLOAD_UNAVAILABLE $version"
+              continue
+            fi
+            if CANGLAN_TERRAIN_VERSION="$version" python3 - <<'PY'
+          import hashlib,os,zipfile,pathlib,sys
+          expected=hashlib.sha256(pathlib.Path('/tmp/canglan-actual-android-terrain.so').read_bytes()).hexdigest()
+          z=zipfile.ZipFile('/tmp/upstream-terrain.zip')
+          names=z.namelist()
+          android=[n for n in names if n.endswith('libterrain.android.debug.arm64.so')]
+          linux=[n for n in names if n.endswith('libterrain.linux.debug.x86_64.so')]
+          if not android or not linux:
+              print('TERRAIN_RELEASE_MISSING_PLATFORM_BINARY',os.environ['CANGLAN_TERRAIN_VERSION'])
+              sys.exit(2)
+          actual=hashlib.sha256(z.read(android[0])).hexdigest()
+          print('UPSTREAM_TERRAIN_ANDROID_SHA256',os.environ['CANGLAN_TERRAIN_VERSION'],actual)
+          if actual!=expected:
+              print('NO_PROVEN_SAME_PLUGIN_VERSION',os.environ['CANGLAN_TERRAIN_VERSION'])
+              sys.exit(2)
+          target=pathlib.Path('logic-qa/apk176-export-fixture/addons/terrain_3d/bin/libterrain.linux.debug.x86_64.so')
+          target.parent.mkdir(parents=True,exist_ok=True)
+          data=z.read(linux[0])
+          target.write_bytes(data)
+          print('PASS_EXACT_APK176_NATIVE_TERRAIN_VERSION_MATCHED_AND_LINUX_QA_LIBRARY_STAGED',
+                os.environ['CANGLAN_TERRAIN_VERSION'],'LinuxBytes',len(data))
+          PY
+            then
+              echo "MATCHED_NATIVE_TERRAIN_VERSION=$version" >> "$GITHUB_ENV"
+              break
+            fi
+          done
+          if [ -z "${MATCHED_NATIVE_TERRAIN_VERSION:-}" ] && ! grep -q '^MATCHED_NATIVE_TERRAIN_VERSION=' "$GITHUB_ENV"; then
+            echo 'BLOCKED: neither upstream release Android binary exactly matches APK176; no substitute DLL was injected'
+          fi
+      - name: Install actual Godot 4.4.1 engine
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl -fL --retry 3 --connect-timeout 25 \
+            https://github.com/godotengine/godot/releases/download/4.4.1-stable/Godot_v4.4.1-stable_linux.x86_64.zip -o /tmp/godot.zip
+          unzip -q /tmp/godot.zip -d /tmp
+          chmod +x /tmp/Godot_v4.4.1-stable_linux.x86_64
+      - name: Build original APK176 additive real3D preview candidate rev179
+        env:
+          CANGLAN_OTA_STAGE_DIR: ${{ github.workspace }}/qa-stage/ota177
+          CANGLAN_QA_PCK_PATH: ${{ github.workspace }}/qa-results/canglan-apk176-rev179-3d-UNSIGNED.pck
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p qa-stage/ota177/canglan_rev179 qa-results
+          cp game-source/godot3d/assets/free_cc0/kenney/3d/nature/tree_oak.glb qa-stage/ota177/canglan_rev179/kenney_tree_oak.glb
+          cp game-source/godot3d/assets/free_cc0/kenney/3d/castle/rocks-small.glb qa-stage/ota177/canglan_rev179/kenney_rocks_small.glb
+          timeout 75s /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless --editor --path logic-qa --import > qa-results/rev179-import.log 2>&1
+          timeout 75s /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless --path logic-qa             --script res://tools/build_apk176_3d_preview.gd > qa-results/rev179-build.log 2>&1
+          grep -Fq 'PASS_APK176_REAL_3D_CC0_PREVIEW_UNSIGN_PCK_BUILT_NO_RELEASE' qa-results/rev179-build.log
+      - name: QA actual original exported game renders 26 genuine CC0 GLB models
+        env:
+          CANGLAN_QA_PCK_PATH: ${{ github.workspace }}/qa-results/canglan-apk176-rev179-3d-UNSIGNED.pck
+        shell: bash
+        run: |
+          set -euo pipefail
+          timeout 120s /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless             --path logic-qa/apk176-export-fixture             --script res://verify_original_main_3d_preview_rev179.gd             > qa-results/rev179-original-main-3d.log 2>&1 || {
+              tail -100 qa-results/rev179-original-main-3d.log; exit 1;
+            }
+          grep -Fq 'PASS_APK176_REAL_3D_PREVIEW' qa-results/rev179-original-main-3d.log
+          if grep -Eq 'SCRIPT ERROR:|Parse Error:|ERROR:|FAIL_APK176|Failed loading resource' qa-results/rev179-original-main-3d.log; then
+            cat qa-results/rev179-original-main-3d.log; exit 1
+          fi
+      - name: Generate unsigned rev179 candidate bound to original APK identity
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 logic-qa/release-gate/sign_pck_release.py             --pack qa-results/canglan-apk176-rev179-3d-UNSIGNED.pck             --revision 179 --minimum-android-code 1176 --maximum-android-code 1176             --pack-url 'https://160701541-cell.github.io/xinyanshuo/android-preview/canglan-content-rev-179.pck'             --notes '苍岚原版：可返回旧世界的Kenney CC0真3D树林与矿石预览（非完整NPC新世界）'             --unsigned-template             --output qa-results/rev179-unsigned.json
+          python3 - <<'PY'
+          import json,pathlib
+          p=pathlib.Path('qa-results/rev179-unsigned.json')
+          d=json.loads(p.read_text())
+          assert d['revision']==179
+          d['_visual_goal']='ORIGINAL_3D_WORLD_PREVIEW'
+          p.write_text(json.dumps(d,ensure_ascii=False,indent=2)+'\n')
+          PY
+      - name: Sign only actual same-APK176 Godot accepted rev179 candidate
+        shell: bash
+        env:
+          CANGLAN_PCK_SIGNING_KEY_B64: ${{ secrets.CANGLAN_PCK_SIGNING_KEY_B64 }}
+          CANGLAN_ORIGINAL_OTA_PRIVATE_KEY_PEM: ${{ secrets.CANGLAN_ORIGINAL_OTA_PRIVATE_KEY_PEM }}
+          CANGLAN_UPDATE_PRIVATE_KEY_PEM: ${{ secrets.CANGLAN_UPDATE_PRIVATE_KEY_PEM }}
+          CANGLAN_OTA_PRIVATE_KEY_PEM: ${{ secrets.CANGLAN_OTA_PRIVATE_KEY_PEM }}
+          CANGLAN_UPDATE_SIGNING_KEY_PEM: ${{ secrets.CANGLAN_UPDATE_SIGNING_KEY_PEM }}
+        run: |
+          set -euo pipefail
+          python3 tools/stage_original_next_ota.py             --pck qa-results/canglan-apk176-rev179-3d-UNSIGNED.pck             --qa-template qa-results/rev179-unsigned.json             --qa-runtime-log qa-results/rev179-original-main-3d.log             --original-qa-success             --output qa-results/rev179-signed-stage
+          python3 tools/ota_release_gate.py             --candidate qa-results/rev179-signed-stage/latest.json             --pck qa-results/rev179-signed-stage/canglan-content-rev-179.pck             --report qa-results/rev179-cryptographic-gate.json
+      - name: Publish authentic rev179 signed original-game assets only after full QA
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p android-preview
+          test "$(python3 -c "import json;print(json.load(open('android-preview/latest.json'))['revision'])")" = 178
+          test ! -e android-preview/canglan-content-rev-179.pck
+          cp qa-results/rev179-signed-stage/canglan-content-rev-179.pck android-preview/
+          cp qa-results/rev179-signed-stage/latest.json android-preview/latest.json
+          git config user.name 'canglan-original-apk176-ota-release'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add android-preview/latest.json android-preview/canglan-content-rev-179.pck
+          git commit -m 'release(official): APK176 RSA signed real-3D CC0 preview rev179 [skip ci]'
+          # Do NOT rebase after validation; a concurrent release must fail closed.
+          git push origin HEAD:main
+      - name: Preserve QA evidence, never keys
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: Canglan-Original-APK176-Real3D-rev179-QA-${{ github.sha }}
+          path: |
+            qa-results/rev179-*.log
+            qa-results/rev179-*.json
+            qa-results/rev179-signed-stage/staging-report.json
+          if-no-files-found: warn
+          retention-days: 14
