@@ -1,0 +1,103 @@
+name: Canglan ACTUAL APK176 Main Live Instantiation - House Gate
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'logic-qa/apk176-export-fixture/verify_original_main_live_house.gd'
+      - '.github/workflows/canglan-apk176-main-live-house.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: canglan-original-apk176-live-room-gate
+  cancel-in-progress: true
+jobs:
+  original-main-live-qa:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 13
+    steps:
+      - uses: actions/checkout@v4
+      - name: Restore actual original APK176 exported resources without replacing fixtures with mocks
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p qa-results qa-stage/ota177/{scenes,scripts,hd2d/courtyard,hd2d/worldx}
+          cp game-source/apk176-ota177-candidate/scenes/* qa-stage/ota177/scenes/
+          cp game-source/apk176-ota177-candidate/scripts/* qa-stage/ota177/scripts/
+          cp game-source/apk176-ota177-candidate/hd2d/courtyard/*.png qa-stage/ota177/hd2d/courtyard/
+          cp -R game-source/apk176-ota177-candidate/hd2d/worldx/. qa-stage/ota177/hd2d/worldx/
+          cp art-source/hd2d/batch-20261016/01_village_props_atlas_preview.jpg qa-stage/ota177/hd2d/atlas_village_ota177.jpg
+          python3 - <<'PY'
+          from pathlib import Path
+          from zipfile import ZipFile
+          import json
+          src=Path(json.loads(Path('android-preview/base-latest.json').read_text())['file'])
+          root=Path('logic-qa/apk176-export-fixture')
+          count=0
+          total=0
+          with ZipFile(src) as apk:
+              for entry in apk.infolist():
+                  if not entry.filename.startswith('assets/') or entry.is_dir():
+                      continue
+                  rel=Path(entry.filename[len('assets/'):])
+                  if str(rel)=='project.godot':
+                      continue  # Keep the deliberately minimal exported-runtime QA project config.
+                  if rel.is_absolute() or '..' in rel.parts:
+                      raise SystemExit('APK zip path traversal blocked')
+                  if entry.file_size > 100_000_000:
+                      raise SystemExit('Unexpected single APK asset > 100MB: '+str(rel))
+                  dst=root/rel
+                  dst.parent.mkdir(parents=True,exist_ok=True)
+                  dst.write_bytes(apk.read(entry))
+                  count+=1
+                  total+=entry.file_size
+          assert (root/'.godot/global_script_class_cache.cfg').is_file()
+          assert (root/'shaders/atmosphere/layered_cloud_sky.gdshader').is_file()
+          print('PASS_REAL_APK176_FULL_EXPORTED_ASSET_FIXTURE',count,'files',total,'bytes')
+          PY
+      - name: Install actual Godot 4.4.1 engine
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl -fL --retry 3 --connect-timeout 25 \
+            https://github.com/godotengine/godot/releases/download/4.4.1-stable/Godot_v4.4.1-stable_linux.x86_64.zip -o /tmp/godot.zip
+          unzip -q /tmp/godot.zip -d /tmp
+          chmod +x /tmp/Godot_v4.4.1-stable_linux.x86_64
+      - name: Make exact same-game temporary PCK, unsigned
+        env:
+          CANGLAN_OTA_STAGE_DIR: ${{ github.workspace }}/qa-stage/ota177
+          CANGLAN_QA_PCK_PATH: ${{ github.workspace }}/qa-results/canglan-apk176-live-house-UNSIGNED.pck
+        shell: bash
+        run: |
+          set -euo pipefail
+          timeout 75s /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless --editor --path logic-qa --import > qa-results/live-house-import.log 2>&1
+          timeout 75s /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless --path logic-qa \
+            --script res://tools/build_apk176_hd2d_overlay.gd > qa-results/live-house-pck-build.log 2>&1
+          cat qa-results/live-house-pck-build.log
+          python3 tools/verify_hd2d_overlay_pck.py "$CANGLAN_QA_PCK_PATH" > qa-results/live-house-pck-index.log
+      - name: ACTUALLY instantiate original compiled Main with courtyard and enter/exit room
+        env:
+          CANGLAN_QA_PCK_PATH: ${{ github.workspace }}/qa-results/canglan-apk176-live-house-UNSIGNED.pck
+        shell: bash
+        run: |
+          set -euo pipefail
+          timeout 110s /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless \
+            --path logic-qa/apk176-export-fixture \
+            --script res://verify_original_main_live_house.gd > qa-results/live-main-room-runtime.log 2>&1 || {
+              tail -100 qa-results/live-main-room-runtime.log
+              exit 1
+            }
+          tail -90 qa-results/live-main-room-runtime.log
+          grep -Fq 'PASS_APK176_ACTUAL_MAIN_INSTANTIATED_AND_HOUSE_ENTER_EXIT_WITH_REAL_IMAGES' qa-results/live-main-room-runtime.log
+          if grep -Eq 'SCRIPT ERROR:|Parse Error:|ERROR: Failed to load script|Failed loading resource' qa-results/live-main-room-runtime.log; then
+            echo '::error::Full original gameplay scene threw script/resource errors despite nominal PASS'
+            exit 1
+          fi
+      - name: Upload full diagnostic logs (not a phone release)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: Canglan-APK176-Live-Main-House-UNSIGNED-QA
+          path: qa-results/live-*.log
+          if-no-files-found: warn
+          retention-days: 7
