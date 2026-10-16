@@ -31,4 +31,4 @@ linux.release.x86_64 = "res://addons/canglan_ai/bin/libcanglan_ai.linux.x86_64.s
 android.debug.arm64 = "res://addons/canglan_ai/bin/libcanglan_ai.android.arm64.so"
 android.release.arm64 = "res://addons/canglan_ai/bin/libcanglan_ai.android.arm64.so"
 END
-echo "BUILT_REAL_CANG LAN_AI_GDEXTENSION $TARGET"
+echo "BUILT_REAL_CANGLAN_AI_GDEXTENSION $TARGET"
