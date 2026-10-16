@@ -86,6 +86,17 @@ func _run() -> void:
 				assert(npc.get_node_or_null("ProceduralArtNotApproved/GeneratedOccupationGLB_Unrigged")!=null,
 					"NPC GLB declared imported but has no actual Godot scene")
 		assert(loaded_role_models==80,"All 80 NPC visual instances must import real occupation GLBs")
+		if ResourceLoader.exists("res://assets/generated/npc/male_merchant_v1.glb"):
+			var male_count: int = 0
+			for npc in npcs.get_children():
+				var job: String = String(npc.get_meta("role",""))
+				if job in ["商贾","学徒","卫卒","书生"]:
+					male_count += 1
+					assert(String(npc.get_meta("shared_master",""))=="CAC_MALE_CIVILIAN_V1",
+						"Occupation NPC did not switch to improved male mother model")
+					assert(String(npc.get_meta("model_source","")).contains("/male_"),
+						"Male candidate GLB was not actually instantiated")
+			assert(male_count>=20,"Male base was not applied to the expected 4 civilian professions")
 
 	var sample: RefCounted = Rules.new()
 	sample.call("configure",20261016)
