@@ -920,3 +920,21 @@ Godot 4.4.1对从**原签名Android APK176**提取的实际`update_protocol.gdc`
 - **真实完整通过**：GitHub run`38976345665` / job`117226600219` `completed/success`，原版编译Main真实Godot4.4.1/Terrain3D对应版本、原房屋回归、五色+真实MultiMesh+单太阳及树石通路全部受QA门禁、原RSA验签、PCK二进制SHA校验，正式Git main `android-preview/latest.json`已rev183；包`21,607,520`字节，SHA256 `5cccf09ed783638b2420f05986b4543c22d923d6289310ea6fe2c5e678e528a9`。原APK176/versionCode1176，无新APK且不写旧存档。
 
 **重要未验收**：**Draw Call≤200只作为手机上的硬验收目标，headless不能代表手机全项目真实 draw**。用户此前的截图rev182是`Draw645/200`。本批虽实际修改合批，却**不能在用户新实机截图前标“Draw≤200通过”**，包括方向光阴影有效性和FPS实机。官网真实CDN更新、手机游戏内rev183装载需另行独立检验；QA详细手机步骤`docs/QA_APK176_REV183_KENNEY_FIVE_SWATCH_BATCH_SHADOW.md`，提交`ea510c8`。以上是真正原版提交而非待执行计划。
+
+
+## 2026-10-17 / REV184-P0-REAL-PLAYABLE-TERRAIN-WATER / 用户反馈马赛克、不能操作、无第一人称、地面不是可挖土层之后的真实原版开发
+
+**需求原文重点**：用户指出rev183即使保留Kenney低多边形也不应该像马赛克；树石失去清晰轮廓；需要低模中式古代场景气质、真正的水和真实地质结构，地面不能是PlaneMesh背景，因为后续NPC要挖地基；尤其明确“不能放大缩小视野，也不能操作，我自己都没进游戏，我也没有第一视角不能互动”，要求立刻做。研发将此列P0，不再把绕场摄影机当作真正玩家。
+
+### 实际GitHub文件、功能
+- `game-source/apk176-ota177-candidate/scripts/apk176_strata_terrain_rev184.gd` 首次提交`e9294d3`：Godot4.4实际生成92×92米、46×46分块、可起伏的`ArrayMesh`三角地表+泥土运输道路+凹陷真实岸坡池塘，并为完整地形生成`StaticBody3D/ConcavePolygonShape3D`真正物理碰撞；不是单纯一整片绿`PlaneMesh`。每个2m土格至多挖8层×0.45m深，土层分别为表土、黏土、砾石、风化岩、下方阻挡基岩；每锄实际改变原网格高度/立体剖面侧壁/碰撞，并记录该土层被挖出物的`spoil_bag`库存及不可凭空产出的质量守恒账本。地层模型仍是**局部高度场+垂直剖面原型**，不是全世界洞穴/地下巷道系统；池塘是雕出真实凹盆+局部半透明水面，非流体力学。
+- `game-source/apk176-ota177-candidate/scripts/apk176_player_controller_rev184.gd` 首次提交`b17ebef`：在**原已安装APK176**的rev184主场景中生成实体玩家`CL-PLAYER-0184-0001`、注册真实村民身份和带Walking的许可Quaternius动画骨骼，而不只是自由绕视角；默认第三视角与可切第一人称真实眼位，左下原生双指隔离摇杆控制角色步行，右半独立滑动镜头，双指捏合/屏幕`视野＋/视野－`实体调整3D相机距离，`第一视角/第三视角`可点，`互动`对临近职业NPC、真实树石和仓库触发权威资源采集/搬运及对话状态，`挖地层`只有物理距离内真正挖表土与更深岩层；非假交互文本。回到原游戏有入口可重新进入。
+- `game-source/apk176-ota177-candidate/scripts/apk176_living_resource_world_rev184.gd` 初始`34a4b4b`，QA节点名修正`8313947`：把原`SubViewportContainer.stretch_shrink=2`造成的全屏马赛克改为`=1`真分辨率，并对单个3D视口启用2xMSAA；保留Kenney五色、多网格合批和太阳阴影。旧PlaneMesh基础地面不再实例化，主地图绑定可变地层、真池塘；NPC身高和世界坐标贴实际地表。**NPC施工工必须先挖足4个坑位共8层真实地基**才能去仓库领石材并按原守恒规则运输和建造；工人挖坑和玩家帮挖共用同一地形API，无法重复结算地层。旧存档未写。
+- 延续原APK176实际编译主场景覆盖 `main_original_interactive_rev184.tscn`、`main_rev184.tscn.remap`，并把所有脚本与原认证Kenney/Quaternius原GLB按新路径加入 `logic-qa/tools/build_apk176_interactive_rev184.gd`、`tools/verify_apk176_rev184_3d_pck.py`。`logic-qa/apk176-export-fixture/verify_original_main_interactive_rev184.gd` 在头less真Godot中验收原创编译APK176主场景、原房屋进出、玩家身份/行走至少1m/相机真正旋转/按键缩放/切第一人称眼位并隐藏自体/切回第三人称/仓库交互/真实玩家挖土后碰撞mesh修订和守恒、NPC挖地基后才盖房、全NPC原物资守恒与树种、Kenney多边形原件与单方向光。
+- `.github/workflows/canglan-apk176-rev184-interactive-strata-signed.yml` 首次`c3b942a`；沿用原RSA、原安卓身份`org.canglan.ancient25d.preview`/versionCode1176、Terrain3D精确版本、原基线真实导出3D Main实测、原房屋回归、坏补丁不发布。
+- **确实修复实际QA失败**：`38978145628`由于漏提交rev184生态/调色板/合批对应脚本构建阻塞，真实新增脚本`9df21b4`/`fdbe46e`/`8730016`；`38978230879`Godot验收因room脚本仍使用rev183节点名，修复`8313947`；`38978340182`因地形节点ready后旧名覆盖预期树名，修复`24f6eb2`。未对这些失败假报通过。
+- **真实完成原版OTA制作签名**：`38978406693`/job`117233260022` `completed/success`，PCK `21,638,048`字节，SHA-256 `e2a366e11fcbc6daac70e3af74b72ed7c03b88e85e125ade7d4714d0322426a0`，PCK逐文件校验原GPLB未篡改、RSA原公钥`original_rsa_signature_verified=true`，并有`PASS_REV184_SIGNED_OTA_PUBLISHED_TO_PUBLIC_MAIN`。已实查公开`android-preview/latest.json`是真正rev184（不是独立APK）。
+- 面向用户的手机手动逐项验收标准`docs/QA_APK176_REV184_NATIVE_PLAYER_STRATA_WATER.md`（提交`d7c02e2`）：先检查清晰度，左摇杆走，右滑、加减缩放、切第一人称，邻近NPC/树石/仓库互动，挖实际土层、看剖面与有坡岸水体，NPC先挖地基。
+- **仍待证据**：本轮正式Github源码及PCK已发，不代表官网CDN即时生效；需再次实测公开Pages实际HTTPS RSA+文件字节及客户端应用内加载。尤其**手机真实触控和帧率/发热、Draw≤200、原旧存档连续性并未由headless自动验证**，用户收到测试后才能标绿。由于恢复原生分辨率，若FPS下降要进一步优化材质合批/旧主场景多余渲染、场景遮挡/LOD，不能未告知就再降整屏分辨率。
+
+**明确未完成**：完整全球地形、高低地块流送/地质生长致喜马拉雅、三维体素洞穴、地下水渗透、湖泊真实流体、古代中式房屋材料齐套、全世界持久化与新玩家存档续载、复杂第一人称攻击/拾取UI。本轮是用户可移动可互动的**92m首个真实土层可挖村庄切片**，不能把它描述为完整大型古代修仙游戏。
