@@ -1,0 +1,79 @@
+name: Diagnose PUBLIC Canglan rev178 OTA Signer and Authentic QA - NO RELEASE
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/canglan-rev178-public-only-diagnosis.yml'
+      - 'tools/check_original_ota_secret.py'
+      - 'tools/publish_original_rev178_ota.py'
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  existing-pages-environment-signing-probe:
+    # Only environment returned by the PUBLIC repo Actions API on 2026-10-16.
+    # Read-only; no Pages deployment, no private repo, no secret logs.
+    environment: github-pages
+    runs-on: ubuntu-24.04
+    timeout-minutes: 7
+    env:
+      CANGLAN_PCK_SIGNING_KEY_B64: ${{ secrets.CANGLAN_PCK_SIGNING_KEY_B64 }}
+      CANGLAN_ORIGINAL_OTA_PRIVATE_KEY_PEM: ${{ secrets.CANGLAN_ORIGINAL_OTA_PRIVATE_KEY_PEM }}
+      CANGLAN_UPDATE_PRIVATE_KEY_PEM: ${{ secrets.CANGLAN_UPDATE_PRIVATE_KEY_PEM }}
+      CANGLAN_OTA_PRIVATE_KEY_PEM: ${{ secrets.CANGLAN_OTA_PRIVATE_KEY_PEM }}
+      CANGLAN_UPDATE_SIGNING_KEY_PEM: ${{ secrets.CANGLAN_UPDATE_SIGNING_KEY_PEM }}
+      CANGLAN_ANDROID_KEYSTORE_B64: ${{ secrets.CANGLAN_ANDROID_KEYSTORE_B64 }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check only whether a matching signer enters github-pages environment
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m py_compile tools/check_original_ota_secret.py
+          python3 tools/check_original_ota_secret.py
+      - name: Preserve Boolean-only signer diagnostic
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: PUBLIC-APK176-github-pages-env-signer-status-${{ github.sha }}
+          path: qa-results/original-apk176-signing-readiness.json
+          if-no-files-found: warn
+          retention-days: 7
+  no-secret-genuine-rev178-artifact-qa:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 9
+    steps:
+      - uses: actions/checkout@v4
+      - name: Require unchanged successful real APK176 Godot main QA run
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          test "$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/38921298121" --jq '.conclusion')" = success
+      - name: Fetch original QA pack from this SAME PUBLIC repository
+        uses: actions/download-artifact@v4
+        with:
+          name: Canglan-APK176-TRUE-MAIN-QA-rev178-UNSIGNED-NOT-FOR-PHONE
+          run-id: 38921298121
+          github-token: ${{ github.token }}
+          path: qa-results
+      - name: Reproduce rev178 publisher compatibility gates with NO signing secret
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m py_compile tools/publish_original_rev178_ota.py tools/check_original_ota_secret.py
+          python3 - <<'PY'
+          import pathlib,sys
+          sys.path.insert(0,'tools')
+          from publish_original_rev178_ota import qa_proof
+          root=pathlib.Path('.').resolve()
+          pack=root/'qa-results/canglan-apk176-live-house-UNSIGNED.pck'
+          manifest=root/'qa-results/canglan-rev178-UNSIGNED-NOT-FOR-PHONE.json'
+          runtime=root/'qa-results/live-main-room-runtime.log'
+          m=qa_proof(pack,manifest,runtime,root)
+          assert m['revision']==178 and m['signature']=='' and m['size_bytes']==21021440
+          print('PASS_PUBLIC_APK176_REV178_AUTHENTIC_PCK_AND_LIVE_MAIN_PROOF_NO_SECRET_REQUIRED')
+          PY
+      - name: Publish no APKs, no PCKs, no manifests
+        run: echo "DIAGNOSIS_ONLY__NO_RELEASE_NO_SECRETS"
