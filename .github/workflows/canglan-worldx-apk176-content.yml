@@ -114,7 +114,7 @@ jobs:
           out=pathlib.Path("logic-qa/apk176-export-fixture")
           with zipfile.ZipFile(src) as zip:
               for p in zip.namelist():
-                  if p.startswith("assets/scripts/") and p.endswith((".gdc",".gd.remap")):
+                  if p.startswith("assets/shaders/") or (p.startswith("assets/scripts/") and p.endswith((".gdc",".gd.remap"))):
                       dst=out / p[len("assets/"):]
                       dst.parent.mkdir(parents=True,exist_ok=True)
                       dst.write_bytes(zip.read(p))
@@ -125,6 +125,10 @@ jobs:
                       dst.parent.mkdir(parents=True,exist_ok=True)
                       dst.write_bytes(zip.read(p))
           PY
+          # The real original class registry refers to shipped shader preloads.
+          # Mirror their actual bytes, never replace them with mock shaders.
+          test -s logic-qa/apk176-export-fixture/shaders/atmosphere/layered_cloud_sky.gdshader
+          echo 'PASS_ORIGINAL_APK176_ACTUAL_ATMOSPHERE_SHADER_PRELOADS_EXTRACTED'
           test -s logic-qa/apk176-export-fixture/.godot/global_script_class_cache.cfg
           python3 - <<'PY'
           from pathlib import Path
