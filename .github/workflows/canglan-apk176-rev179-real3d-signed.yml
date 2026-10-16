@@ -4,13 +4,16 @@ on:
     branches: [main]
     paths:
       - '.github/workflows/canglan-apk176-rev179-real3d-signed.yml'
+      - 'game-source/apk176-ota177-candidate/scripts/apk176_cc0_3d_preview.gd'
+      - 'logic-qa/apk176-export-fixture/verify_original_main_3d_preview_rev179.gd'
+      - 'logic-qa/tools/build_apk176_3d_preview.gd'
   workflow_dispatch:
 permissions:
   contents: write
   actions: read
 concurrency:
   group: canglan-original-game-ota-rev179
-  cancel-in-progress: false
+  cancel-in-progress: true
 jobs:
   real3d-original-apk176-publish:
     if: github.repository == '160701541-cell/xinyanshuo' && github.ref == 'refs/heads/main'
@@ -159,6 +162,19 @@ jobs:
           grep -Fq 'PASS_APK176_REAL_3D_PREVIEW' qa-results/rev179-original-main-3d.log
           if grep -Eq 'SCRIPT ERROR:|Parse Error:|ERROR:|FAIL_APK176|Failed loading resource' qa-results/rev179-original-main-3d.log; then
             cat qa-results/rev179-original-main-3d.log; exit 1
+          fi
+      - name: Regression original APK176 house enter-exit with new 3D content loaded
+        env:
+          CANGLAN_QA_PCK_PATH: ${{ github.workspace }}/qa-results/canglan-apk176-rev179-3d-UNSIGNED.pck
+        shell: bash
+        run: |
+          set -euo pipefail
+          timeout 120s /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless --path logic-qa/apk176-export-fixture --script res://verify_original_main_live_house.gd > qa-results/rev179-original-house-regression.log 2>&1 || {
+            tail -100 qa-results/rev179-original-house-regression.log; exit 1;
+          }
+          grep -Fq 'OBSERVED_APK176_MAIN_INSTANCE_WITH_PORTAL_AND_IMAGES_PENDING_ENGINE_ERROR_AUDIT' qa-results/rev179-original-house-regression.log
+          if grep -Eq 'SCRIPT ERROR:|Parse Error:|ERROR:|FAIL_APK176|Failed loading resource' qa-results/rev179-original-house-regression.log; then
+            tail -100 qa-results/rev179-original-house-regression.log; exit 1
           fi
       - name: Generate unsigned rev179 candidate bound to original APK identity
         shell: bash
