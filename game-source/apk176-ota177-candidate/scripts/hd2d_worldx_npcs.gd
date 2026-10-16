@@ -13,6 +13,8 @@ var nav_map_index := 0
 var wander_targets: Array[Vector2] = []
 var next_decision := 0.0
 var character_data: Array[Dictionary] = []
+var citizen_profiles: Dictionary = {}
+var status_clock: float = 0.0
 var rng := RandomNumberGenerator.new()
 
 func _ready() -> void:
@@ -29,7 +31,7 @@ func _ready() -> void:
 	var items: Variant = parsed.get("characters", [])
 	if not (items is Array):
 		return
-	for i in range(mini(items.size(), 16)):
+	for i in range(mini(items.size(), 5)):
 		var cfg: Dictionary = items[i]
 		var sprite: AnimatedSprite2D = _make_actor(cfg)
 		if sprite == null:
@@ -39,6 +41,16 @@ func _ready() -> void:
 		add_child(sprite)
 		actors.append(sprite)
 		character_data.append(cfg)
+		var code: String = str(cfg.get("id",""))
+		var jobs := ["商贾","算命先生","捕快","平民","酒馆常客"]
+		assert(not code.is_empty() and not citizen_profiles.has(code),
+			"Original NPC must have independent canonical ID")
+		citizen_profiles[code]={"entity_id":code,
+			"display_name":str(cfg.get("name","村民")),
+			"occupation":jobs[mini(i,4)],
+			"age":22+(i*7)%40,"energy":100-i*4,
+			"hunger":i*5,"mood":57+i*3,
+			"inventory":{},"activity":"行走","world_position":sprite.position}
 		directions.append(1.0 if (i % 2 == 0) else -1.0)
 		wander_targets.append(sprite.position)
 		if sprite.sprite_frames.has_animation("walk-down"):
@@ -166,8 +178,18 @@ func _make_actor(cfg: Dictionary) -> AnimatedSprite2D:
 	sprite.z_index = 6
 	return sprite
 
+func get_citizen_status(id: String) -> Dictionary:
+	return (citizen_profiles[id] as Dictionary).duplicate(true) if citizen_profiles.has(id) else {}
+
 func _process(delta: float) -> void:
 	elapsed += delta
+	status_clock += delta
+	if status_clock >= 9.0:
+		status_clock=0.0
+		for citizen_id in citizen_profiles:
+			var profile: Dictionary = citizen_profiles[citizen_id]
+			profile["energy"]=maxi(0,int(profile["energy"])-1)
+			profile["hunger"]=mini(100,int(profile["hunger"])+1)
 	next_decision -= delta
 	if next_decision <= 0.0:
 		next_decision = 1.25
@@ -209,5 +231,15 @@ func _unhandled_input(event: InputEvent) -> void:
 			min_distance = distance
 	if selected >= 0:
 		var cfg := character_data[selected]
-		character_selected.emit(str(cfg.get("id","")),str(cfg.get("name","旅人")),str(cfg.get("description","")))
+			var person_code: String = str(cfg.get("id",""))
+			var record: Dictionary = get_citizen_status(person_code)
+			var biography: String = str(cfg.get("description",""))
+			if not record.is_empty():
+				biography += " | ID:"+person_code
+				biography += " | 年龄:"+str(record["age"])
+				biography += " | 精力:"+str(record["energy"])
+				biography += " | 饥饿:"+str(record["hunger"])
+				biography += " | 心情:"+str(record["mood"])
+				biography += " | 行为:"+str(record["activity"])
+			character_selected.emit(person_code,str(cfg.get("name","旅人")),biography)
 		get_viewport().set_input_as_handled()
