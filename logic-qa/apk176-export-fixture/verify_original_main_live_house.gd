@@ -51,6 +51,12 @@ func _run() -> void:
 	if not portal._outside_image_present or not portal._inside_image_present:
 		_fail("real_outdoor_or_indoor_art_not_loaded", 9)
 		return
+	# Previous real Godot screenshot exposed that the inside picture was
+	# technically loaded but its ColorRect/TextureRect had a zero viewport.
+	var room_art: TextureRect = portal._room.get_node("WorldXKolorsInteriorCandidate")
+	if portal._room.size.x < 800 or portal._room.size.y < 480 or room_art.size.x < 800 or room_art.size.y < 480:
+		_fail("loaded_house_art_not_actually_fullscreen_visible", 12)
+		return
 	var before: Vector2 = portal.current_spawn
 	portal.enter_building()
 	if not portal.inside or not portal._room.visible:
