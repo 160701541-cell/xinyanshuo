@@ -8,10 +8,11 @@ func _initialize() -> void:
 
 func _test() -> void:
 	var all_models: Dictionary = Bridge.PIECES
-	assert(all_models.size()>=10,"Missing expected 3D CC0 modules/props")
+	assert(all_models.size()==12,"Missing expected 3D CC0 modules/props")
 	var library: Dictionary = Bridge.get_import_status()
 	assert((library["missing"] as Array).is_empty(),
 		"Real Kenney/Quaternius files were not staged or imported into Godot")
+	assert(all_models.has("civilian_rig") and all_models.has("guard_rig"))
 	var scene_root := Node3D.new()
 	scene_root.name = "RealExternalCC0SourceModels"
 	root.add_child(scene_root)
@@ -27,6 +28,6 @@ func _test() -> void:
 			assert((mesh as MeshInstance3D).mesh!=null,
 				"Missing imported GLTF geometry on "+String(asset_key))
 		assert(node.get_parent()==scene_root)
-	print("PASS_CC0_REAL_EXISTING_3D_KENNEY_QUATERNIUS_10_MODELS_IMO_NO_AI_GENERATION")
+	print("PASS_CC0_REAL_EXISTING_3D_KENNEY_QUATERNIUS_12_MODELS_NO_AI_GENERATION")
 	scene_root.queue_free()
 	quit(0)
