@@ -228,3 +228,10 @@
 
 ### rev177 原客户端签名协议最终复验（2026-10-16T10:10Z）
 Godot 4.4.1对从**原签名Android APK176**提取的实际`update_protocol.gdc`/`update_channel.gdc`运行`Crypto.verify`、实际已发布PCK的SHA/长度和`ProjectSettings.load_resource_pack`，并装载原`res://scenes/main.tscn`。本机Terrain3D同版校验后，GitHub Actions [run 38885361170](https://github.com/160701541-cell/xinyanshuo/actions/runs/38885361170) **SUCCESS**，输出 `PASS_APK176_PERMANENT_RSA_PCK_AND_CANONICAL_MAIN_SCENE` 与 `PASS_ORIGINAL_ANDROID_UPDATER_NATIVE_GODOT_RSA_REV177_RESOURCE_MOUNT`。因此不仅OpenSSL、也确证**原版Godot客户端验签方式接受rev177发布**。真实用户Android手机下载、存档和画风验收仍待操作。
+
+
+### 2026-10-16 原版已签名rev177已发布，但用户实图发现视觉QA严重失败（待rev178修复）
+- **实际已发布，不再引用旧「rev167尚未更新」状态**：原仓库 `android-preview/latest.json` 当前为 **revision 177**，APK兼容范围versionCode=1176；同目录有真实 `canglan-content-rev-177.pck`（20,361,696字节）。GitHub run `38884507811` RSA签名验证通过并原子发布；run `38884890631` 在正式HTTPS网站验证RSA清单、PCK SHA256与CDN 206 Range；run `38885361170` 用原APK176真实Godot Crypto、原主场景加载验证通过。以上不代表已在用户手机确认更新成功。
+- **用户提供真实画面对照**：室内画面左半幅为大面积纯棕空白、右侧只出现屋顶/门廊照片；室外底图是另一画风的WorldX 2D镇图，前景直接贴了1024×1024的青蓝屋顶整院图片（带角落AI生成字样），拼贴边缘明显。尽管Godot功能检查绿灯，这样的视觉质量必须**REJECT**，不能作为最终游戏美术QA通过。
+- **实际后续候选修复，尚未替换已签名rev177**：将室外整张院落贴图替换为源图RGB逐像素不变的 `source_edge04/main_house_edge04_candidate.png` 523×553 RGBA独立建筑可见部分，stage 到 `res://hd2d/courtyard/main_house_isolated_edge04.png`；透明区域不再出现原图矩形/角落AI生成字样。室内Control改为顶层局部画布，Sprite2D采用保持比例的**cover铺满**，解决半屏纯色留白（会裁掉部分方形原图，房间原画本身依旧需整改）。Godot QA增加全屏覆盖、源图非1024整张且透明角落检查。
+- **迭代签名安全**：rev177已签名清单与对应PCK内容为不可变发布物，不能用新代码直接改写旧rev177 PCK，否则客户端RSA/SHA会拒绝。以上候选变化必须作为**rev178**重新由原APK接受的相同RSA私钥签名并完整视觉验收后才可进入用户手机。原版RSA私钥目前在本会话未取得可重签的可用证据；既有rev177预签数据不等于有rev178签名能力。不得擅自将本候选覆盖进线上rev177。
