@@ -361,6 +361,41 @@ func _create_interface() -> void:
 	ui_auto = Label.new()
 	ui_auto.text = "自主村民：等待工人出发……"
 	stack.add_child(ui_auto)
+	var panel := PanelContainer.new()
+	panel.name = "IndividualCitizenInfoPanel"
+	stack.add_child(panel)
+	var column := VBoxContainer.new()
+	panel.add_child(column)
+	var heading_npc := Label.new()
+	heading_npc.text = "NPC个体档案 · 3D文字人物测试"
+	column.add_child(heading_npc)
+	var selector := HBoxContainer.new()
+	column.add_child(selector)
+	var farmer_ids: Array[String] = []
+	for npc in citizen_nodes:
+		var code: String = String(npc.get_meta("entity_id",""))
+		var profile: Dictionary = life_sim.get("citizens").get(code,{})
+		if String(profile.get("profession",""))=="farmer":
+			farmer_ids.append(code)
+			if farmer_ids.size()>=2:
+				break
+	assert(farmer_ids.size()==2,"Two unique farmer entities required")
+	ui_farmer_a = Button.new()
+	ui_farmer_a.name = "InspectFarmerA"
+	ui_farmer_a.text = "农民甲 · "+String(npc_node_index[farmer_ids[0]].get_meta("display_name"))
+	ui_farmer_a.pressed.connect(_inspect_npc.bind(farmer_ids[0]))
+	selector.add_child(ui_farmer_a)
+	ui_farmer_b = Button.new()
+	ui_farmer_b.name = "InspectFarmerB"
+	ui_farmer_b.text = "农民乙 · "+String(npc_node_index[farmer_ids[1]].get_meta("display_name"))
+	ui_farmer_b.pressed.connect(_inspect_npc.bind(farmer_ids[1]))
+	selector.add_child(ui_farmer_b)
+	ui_npc_details = Label.new()
+	ui_npc_details.name = "CitizenLiveStatus"
+	ui_npc_details.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	ui_npc_details.custom_minimum_size = Vector2(365,0)
+	column.add_child(ui_npc_details)
+	_inspect_npc(farmer_ids[0])
 	var work_header := Label.new()
 	work_header.text = "生活闭环试玩 · 砍树→运输→建房→收粮→煮饭→进食"
 	stack.add_child(work_header)
