@@ -273,3 +273,9 @@ Godot 4.4.1对从**原签名Android APK176**提取的实际`update_protocol.gdc`
 - **源代码和兼容权限**：新增MIT许可证、来源清单 `opensource/registry.json` 和第三方许可说明；Godot/MultiMesh/FastNoiseLite等标准组件已接入，Terrain3D 1.0.2、Kenney/PolyHaven/ambientCG仅列作候选，**未安装/未导入**。所有新上传仅公开源码，无旧私库提交、签名密钥、隐私或不明授权资产泄漏。
 - **真实构建QA路径已接入**：`tools/audit_public_3d.py`、Godot `tests/world_smoke.gd`、`tests/capture_real_frame.gd`，加强 `.github/workflows/canglan-public-qa.yml` 实际生成GLB/导入/逻辑/Framebuffer画面QA，新增 `.github/workflows/canglan-public-3d-android.yml` 单独ARM64 QA APK构建，独立调试签名不会覆盖用户原APK176。新工作流实际执行是否PASS、画面截图是否达到用户参考美术、Android安装/帧率/发热、本次3D模块是否整合回原安装游戏，均是**PENDING/UNAPPROVED/NOT_RELEASED**。旧用户安装包和签名内容包保持不变。
 - **待改进问题不可隐藏**：当前三维建筑为程序顶点色基础几何，NPC仍是未绑骨骼/表情的人体候选；没有生活物理工序、存档权威数据、完整人群寻路/战斗、多人同屏性能达标证据。下一优先级是读取真正Godot CI与截图并修复语法/绘制问题，通过手机质量门禁后再增量迁移到原游戏并出正式签名更新。
+
+### CAC-3D-002 / Original 3D 实际源码兼容迁移（2026-10-16）
+
+这一增量**不是从零臆造全部旧版本**：经 GitHub 只读核对原私有 `160701541-cell/canglan-world` 的真正 `godot3d/project.godot`、`scripts/world_state.gd`、`scripts/entity_codes.gd`、`scripts/terrain/heightfield.gd`，审核无显式密钥字符串后将后三件原始 GDScript **逐字节复制** 到公开 `game-source/godot3d/` 中。公开blob SHA与旧源一致：WorldState `f7174a7b59370deb456906d8bf8457c9d13fb52d`，EntityCodes `7d82d7de396208c799d4e5bac23741d1d436a71e`，原2km山地高度场 `7c950e459af84c57557abdb31b7b4f23266e7347`。原私库没有收到本次提交，密钥/旧存档/商业素材没有上传。
+
+`world_main.gd` 的80个三维NPC已经改为由**真实原版** `WorldState.create_actor` 分配 `actor_...` canonical ID，再读取原版 `NPC-HX-...` 公开ID作外观节点，保留空初始库存，不凭空生成可制造物料。`world_state_bridge.gd` 验证同步移动速度、实体类型和ID，禁止远距离瞬移与无权修改库存；原始世界有 `serialize/restore` 可作为持久化协议基础。新 `world_rules.gd` 采用真正旧版 Terrain3D `heightfield.gd` 的南北/西山脉和城池海拔算法，再按新场景坐标降到y=0绘制分块碰撞网格；渲染仍是Godot SurfaceTool而非将未经真机验证的Terrain3D GDExtension假装已安装。Godot引擎运行/旧档多版本回归仍 PENDING；尚未从旧版本整体迁移原场景、原UI、原资产、原NPC生活工序或原签名发布链，因此**不是原APK已正式升级**。
