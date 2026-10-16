@@ -59,12 +59,12 @@ func setup(sim: RefCounted, citizens: Array[Node3D]) -> void:
 			continue
 		var type: String = "tree" if role=="woodcutter" else "stone"
 		var node_id: String = "AUTO-NAT-%08d" % (assigned+1)
-		var pos: Vector3 = citizen.home+Vector3(11.0,0,10.0)
+		var pos: Vector3 = Vector3(citizen.get("home"))+Vector3(11.0,0,10.0)
 		if not bool(economy.call("register_natural_node",node_id,TOWN,type,9)):
 			continue
 		natural_art[node_id] = _make_node(node_id,pos,type)
 		assignments[code] = {"node_id":node_id,"kind":type,
-			"citizen":citizen,"phase":"to_resource","depot":citizen.home,
+			"citizen":citizen,"phase":"to_resource","depot":Vector3(citizen.get("home")),
 			"done":0}
 		citizen.call("assign_work_destination",pos)
 		assigned+=1
@@ -93,7 +93,7 @@ func _process(delta: float) -> void:
 				harvested_jobs+=1
 				var node_info: Dictionary = economy.get("natural_nodes")[job["node_id"]]
 				if bool(node_info["depleted"]):
-					natural_art[job["node_id"]].visible=false
+					(natural_art[job["node_id"]] as Node3D).visible=false
 				job["phase"]="to_depot"
 				citizen.call("assign_work_destination",job["depot"])
 			else:
@@ -105,7 +105,7 @@ func _process(delta: float) -> void:
 				job["done"]=int(job["done"])+1
 				job["phase"]="to_resource"
 				citizen.call("assign_work_destination",
-					natural_art[job["node_id"]].position)
+					(natural_art[job["node_id"]] as Node3D).position)
 			else:
 				job["phase"]="done"
 				citizen.call("cancel_work_destination")
