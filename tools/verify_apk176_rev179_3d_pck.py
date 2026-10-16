@@ -18,6 +18,7 @@ REQUIRED = {
     "scripts/hd2d_house_portal.gd",
     "canglan_rev179/kenney_tree_oak.glb",
     "canglan_rev179/kenney_rocks_small.glb",
+    "Textures/colormap.png",
 }
 BASE_DIR = Path(__file__).resolve().parents[1]
 EXPECTED_MODELS = {
@@ -77,6 +78,9 @@ def audit(path: Path) -> dict:
             raise ValueError("BLOCKED: corrupted GLB header " + model_path)
         if hashlib.sha256(value).hexdigest() != hashlib.sha256(source.read_bytes()).hexdigest():
             raise ValueError("BLOCKED: altered/non-licensed staged model " + model_path)
+    palette = found["Textures/colormap.png"]
+    if palette[:8] != bytes.fromhex("89504e470d0a1a0a") or len(palette) < 128:
+        raise ValueError("BLOCKED: official Kenney external palette is missing or corrupt")
     scene = found["scenes/main_original_3d_preview_rev179.tscn"]
     if (b"apk176_cc0_3d_preview.gd" not in scene
             or b"export-3ad5c15c4f3250da0cc7c1af1770d85f-main.scn" not in scene):
