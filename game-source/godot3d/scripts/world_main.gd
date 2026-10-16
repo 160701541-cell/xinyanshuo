@@ -107,6 +107,9 @@ func _ready() -> void:
 		life_sim.call("add_citizen",
 			String(citizen_nodes[n].get_meta("entity_id","")),
 			"CL-HX-VILLAGE-0001",work_roles[n%work_roles.size()],20+n%42)
+		var person_id: String = String(citizen_nodes[n].get_meta("entity_id",""))
+		var profile: Dictionary = life_sim.get("citizens")[person_id]
+		citizen_nodes[n].call("refresh_text_status",profile)
 	prop_root.call("build",rules,seed)
 	# One tangible gameplay loop: chop physical tree -> carrier walks to depot
 	# -> materials delivered -> paid house -> crops -> food -> eating.
