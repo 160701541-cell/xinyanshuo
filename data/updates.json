@@ -1,10 +1,23 @@
 {
   "schema": 1,
   "channel": "signed-releases",
-  "updated_at": "2026-10-14T15:32:00Z",
-  "source": "android-preview/latest.json; signed PCK from verified CI",
-  "verification": "RSA/PCK compatibility is checked by native Godot application, not website.",
+  "updated_at": "2026-10-16T10:05:42Z",
+  "source": "android-preview/latest.json; RSA original APK key + official HTTPS PCK",
+  "verification": "Godot signed manifest, Pages PCK SHA256 and real Android updater Range HTTP verified in GitHub Actions; user Android device visual/performance QA pending.",
   "entries": [
+    {
+      "revision": 177,
+      "first_seen_utc": "2026-10-16T10:05:42Z",
+      "notes": "《苍岚》原版APK176原证书RSA签名资源更新：WorldX村镇地图、正房室外及独立室内场景、可进入和退出的功能样板；美术仍属候选，真手机验收未完成。",
+      "sha256": "af5e08020e7ae473a31ed2917839ea3544bdf3747b15790bcea49e46a54eb6f3",
+      "size_bytes": 20361696,
+      "status": "signed_release",
+      "android_version_code": 1176,
+      "protocol": "RSA-3072 PKCS1-v1_5 / SHA-256",
+      "remote_https_verified": true,
+      "remote_range_206_verified": true,
+      "ci_run": 38884890631
+    },
     {
       "revision": 167,
       "first_seen_utc": "2026-10-14T15:32:00Z",
