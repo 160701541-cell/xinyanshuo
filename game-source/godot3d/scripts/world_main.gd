@@ -84,9 +84,9 @@ func _ready() -> void:
 	# never returns scripted dialog disguised as AI.
 	local_ai = LocalAI.new()
 	local_ai.name = "OfflineLocalAI"
-	local_ai.state_changed.connect(_on_local_ai_state)
-	local_ai.npc_reply.connect(_on_local_npc_reply)
-	local_ai.inference_failed.connect(_on_local_ai_error)
+	local_ai.connect("state_changed",Callable(self,"_on_local_ai_state"))
+	local_ai.connect("npc_reply",Callable(self,"_on_local_npc_reply"))
+	local_ai.connect("inference_failed",Callable(self,"_on_local_ai_error"))
 	add_child(local_ai)
 	_create_interface()
 	_on_local_ai_state(String(local_ai.get("stage")),String(local_ai.get("info")))
