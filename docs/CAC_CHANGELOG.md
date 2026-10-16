@@ -173,3 +173,12 @@
 
 ## WorldX batch03 六件道具（2026-10-16）
 用户要求继续批量生成。本轮新增炼丹炉、炼器台、晾药架、集市摊位、木推车、落地灯笼六件候选订单。沿用WorldX原生prompt loader与Kolors，每件一次，顺序执行，最多六次请求，失败停止，不自动重试。缩短提示词并强化空白背景，文本控制仍非机器参考图锁定。生成前写请求记录，未完成请求需要检查Artifact后人工恢复，防止重复付费。Node规格回归1/1、脚本语法检查本地PASS；模型产物与视觉QA待云端实际运行。
+
+
+### CAC-0021增补 · 原 APK176 完整实例化QA严格反证（2026-10-16）
+
+- 新增 `logic-qa/apk176-export-fixture/verify_original_main_live_house.gd` 与独立CI `.github/workflows/canglan-apk176-main-live-house.yml`；恢复原Android APK176导出区**455个真实资源（43,459,834字节）**到临时夹具（保留QA项目入口配置），将真实WorldX室外/室内图和同游戏脚本写入同一候选PCK。run `38876960537` 完成且**严格 FAIL**。
+- Godot检测到：`res://addons/terrain_3d/terrain.gdextension` 在Linux导出夹具中缺少兼容的原生扩展，随后 `Terrain3D native library missing` 和部分原游戏场景脚本空节点错误；同时观察到6名WorldX NPC及正房交互节点确已加入游戏主树。
+- 这与前述**原游戏PackedScene可成功装载**是两种不同层级测试：`PackedScene`装载PASS ≠ 主场景完整实例化/每个底层3D引擎功能PASS。**不推测Linux缺失自动等于手机Android缺失**；需要验证原版Android GDExtension发布物或兼容Linux测试插件，不得用假的Node替代原生Terrain3D以制造绿色结果。
+- 纠正测试输出：将易误导的打印改为 `OBSERVED_APK176_MAIN_INSTANCE_WITH_PORTAL_AND_IMAGES_PENDING_ENGINE_ERROR_AUDIT`，只有所有引擎错误检查清零后CI才打印最终 `PASS_APK176_ACTUAL_MAIN_INSTANTIATED_NO_ENGINE_ERRORS_WITH_REAL_HOUSE`。
+- **当前真实状态**：组件功能QA绿色，原APK main资源装载QA绿色，完整原游戏实例化QA红色，永久签名密钥无可用证据，手机原版更新仍未发布。
