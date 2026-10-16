@@ -117,6 +117,11 @@ func _run() -> void:
 			farmer_codes.append(code)
 	assert(farmer_codes.size()==2 and farmer_codes[0]!=farmer_codes[1],
 		"Two visible farmers must have different IDs")
+	for farmer_id in farmer_codes:
+		var person: Node3D = stage.get("npc_node_index")[farmer_id]
+		var text: Label3D = person.get_node("TextOnly_NPC_3D/ProfessionIn3D")
+		assert(text.text.begins_with("农民"),
+			"Real farmer must visibly render 农民 rather than unrelated old model profession")
 	assert(stage.get("ui_farmer_a") is Button and stage.get("ui_farmer_b") is Button)
 	assert(stage.get("ui_npc_details") is Label)
 	stage.call("_inspect_npc",farmer_codes[0])
