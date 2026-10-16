@@ -4,6 +4,11 @@ on:
     branches: [main]
     paths:
       - 'logic-qa/apk176-export-fixture/verify_original_main_live_house.gd'
+      - 'logic-qa/tools/verify_house_portal_content.gd'
+      - 'game-source/apk176-ota177-candidate/scripts/hd2d_house_portal.gd'
+      - 'game-source/apk176-ota177-candidate/scripts/hd2d_original_overlay_ota177.gd'
+      - 'game-source/apk176-ota177-candidate/hd2d/courtyard/**'
+      - 'logic-qa/tools/build_apk176_hd2d_overlay.gd'
       - '.github/workflows/canglan-apk176-main-live-house.yml'
   workflow_dispatch:
 permissions:
