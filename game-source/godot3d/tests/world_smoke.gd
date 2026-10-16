@@ -76,6 +76,17 @@ func _run() -> void:
 		npc_ids[id]=true
 		assert(n.call("status")["id"]==id,"NPC identity doesn't match its state")
 	assert(npc_ids.size()==80,"NPC headcount not supported by nodes")
+	# The batch generator must be reflected in the 3D game, not merely an
+	# artifact ZIP that the mobile player never sees.
+	if ResourceLoader.exists("res://assets/generated/npc/role_00.glb"):
+		var loaded_role_models: int = 0
+		for npc in npcs.get_children():
+			if npc.get_meta("art_status","")=="UNRIGGED_GENERATED_GLB_CANDIDATE":
+				loaded_role_models += 1
+				assert(npc.get_node_or_null("ProceduralArtNotApproved/GeneratedOccupationGLB_Unrigged")!=null,
+					"NPC GLB declared imported but has no actual Godot scene")
+		assert(loaded_role_models==80,"All 80 NPC visual instances must import real occupation GLBs")
+
 	var sample: RefCounted = Rules.new()
 	sample.call("configure",20261016)
 	var y1: float = float(sample.call("height_at",141.0,27.0))
