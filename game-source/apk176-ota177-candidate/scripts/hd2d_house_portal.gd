@@ -1,12 +1,14 @@
 extends Control
-## One real, reversible building traversal in the ORIGINAL APK176 HD2D overlay.
+## Enterable building candidate: the exterior uses a real 523x553 source-pixel
+## alpha crop, never paste a WATERMARKED 1024x1024 courtyard rectangle over
+## a different 2D WorldX city map. Indoor artwork uses viewport cover crop.
 ## Exterior and interior are separate render spaces with a shared persistent
 ## building ID. Does not touch saves, global quest state or the original scene.
 signal building_entered(building_id: String)
 signal building_exited(building_id: String)
 
 const BUILDING_ID := "CL-HOUSE-0001"
-const EXTERIOR := "res://hd2d/courtyard/main_house_v3_source.png"
+const EXTERIOR := "res://hd2d/courtyard/main_house_isolated_edge04.png"
 const INTERIOR := "res://hd2d/courtyard/main_house_interior.png"
 
 var inside := false
@@ -71,7 +73,7 @@ func _sync_room_sprite() -> void:
 		return
 	# Scale the original image uniformly: no clipping, invisible furniture,
 	# distorted 2D geometry, or implicit TextureRect stretch surprises.
-	var s := minf(room_size.x / tex_size.x, room_size.y / tex_size.y)
+	var s := maxf(room_size.x / tex_size.x, room_size.y / tex_size.y)
 	_room_sprite.scale = Vector2(s, s)
 	_room_sprite.position = room_size * 0.5
 
@@ -95,8 +97,8 @@ func _build_exterior() -> void:
 		facade.name = "CourtyardExteriorArtCandidate"
 		facade.texture = tex
 		facade.centered = false
-		facade.position = Vector2(465.0, 145.0)
-		facade.scale = Vector2(0.46, 0.46)
+		facade.position = Vector2(572.0, 118.0)
+		facade.scale = Vector2(0.70, 0.70)
 		_outdoor_art.add_child(facade)
 		_outside_image_present = true
 	else:
@@ -112,7 +114,7 @@ func _build_exterior() -> void:
 	var entry := Button.new()
 	entry.name = "ExteriorHouseDoor"
 	entry.text = "正房门 · 进入"
-	entry.position = Vector2(630.0, 550.0)
+	entry.position = Vector2(675.0, 475.0)
 	entry.size = Vector2(160.0, 50.0)
 	entry.pressed.connect(enter_building)
 	_outdoor_art.add_child(entry)
@@ -130,6 +132,10 @@ func _build_exterior() -> void:
 func _build_interior() -> void:
 	_room = Control.new()
 	_room.name = "CL_HOUSE_0001_InteriorScene"
+	# Do not inherit a shifted Control transform from the overlay; source of
+	# half-screen blank bronze in actual Godot rendered verification frames.
+	_room.top_level = true
+	_room.position = Vector2.ZERO
 	add_child(_room)
 	_room.set_anchors_preset(Control.PRESET_TOP_LEFT)
 	_room.size = size
