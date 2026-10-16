@@ -11,8 +11,8 @@ var indoor_entity_index: Dictionary = {}
 var night: bool = false
 
 func open_for(building: Node2D, is_night: bool) -> void:
-	source_building_id = building.entity_id
-	room_kind = building.kind
+	source_building_id = String(building.get("entity_id"))
+	room_kind = String(building.get("kind"))
 	night = is_night
 	for item in furnishings:
 		remove_child(item)
@@ -41,9 +41,9 @@ func open_for(building: Node2D, is_night: bool) -> void:
 
 func _make_prop(kind: String, at: Vector2, id: String, variation: int) -> void:
 	var p: Node2D = Prop.new()
-	p.setup(id,kind,variation)
+	p.call("setup",id,kind,variation)
 	p.position = at
-	p.update_weather(0,night)
+	p.call("update_weather",0,night)
 	furnishings.append(p)
 	indoor_entity_index[id] = p
 	add_child(p)
