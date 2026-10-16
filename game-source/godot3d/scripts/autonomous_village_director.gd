@@ -96,10 +96,9 @@ func _process(delta: float) -> void:
 	if state_time<0.20:
 		return
 	state_time=0
-	# Construction commits on the NEXT director cycle after physical delivery.
-	# This keeps the warehouse credit independently observable and auditable.
-	if not _has_started_house and completed_deliveries>=1:
-		_has_started_house=bool(economy.call("request_construction",TOWN,"home"))
+	# Never call legacy request_construction here. Resource haulers deliver
+	# only raw wood/stone/grain. NPCBuilding assigns living tradesmen to craft
+	# reusable materials and physically place each 3D structural part.
 	for code in assignments.keys():
 		var job: Dictionary = assignments[code]
 		var citizen: Node3D = job["citizen"]
@@ -149,15 +148,8 @@ func _process(delta: float) -> void:
 			else:
 				job["phase"]="done"
 				citizen.call("cancel_work_destination")
-	# Physically instantiate a small Chinese-style house only after simulation
-	# has paid real materials and the authoritative time-tick completes it.
-	var town: Dictionary = economy.get("villages")[TOWN]
-	if int(town["homes"])>_last_homes:
-		var old_count: int = _last_homes
-		_last_homes=int(town["homes"])
-		for counter in range(_last_homes-old_count):
-			_make_house(construction_built)
-			construction_built+=1
+	# Construction visualization is exclusively handled by NPCBuilding
+	# after real material production, physical delivery and named NPC labor.
 
 func _show_cargo(code: String, person: Node3D, kind: String) -> void:
 	_clear_cargo(code)
@@ -176,18 +168,6 @@ func _clear_cargo(code: String) -> void:
 		if is_instance_valid(old):
 			old.queue_free()
 		cargo_art.erase(code)
-
-func _make_house(slot: int) -> void:
-	var house := Node3D.new()
-	house.name="BuiltFromActualVillageResources_%02d" % slot
-	house.position = Vector3(12+slot*6,0,25)
-	add_child(house)
-	_mesh("PlasteredWalls",Vector3(0,1.25,0),Vector3(3.8,2.5,2.8),
-		Color("#c3b8a5"),house)
-	_mesh("GreyTileRoof",Vector3(0,2.73,0),Vector3(4.5,.57,3.35),
-		Color("#59686a"),house)
-	_mesh("WoodenDoor",Vector3(0,1.05,1.44),Vector3(.85,1.8,.05),
-		Color("#775c46"),house)
 
 func stats() -> Dictionary:
 	var working: int = 0
