@@ -9,6 +9,7 @@ const Props = preload("res://scripts/prop_factory.gd")
 const Citizen = preload("res://scripts/npc_agent.gd")
 const Interiors = preload("res://scripts/interior_factory.gd")
 const LocalAI = preload("res://scripts/local_ai_service.gd")
+const LocalNPCIntents = preload("res://scripts/npc_intent_policy.gd")
 const LifeSim = preload("res://scripts/worldbox_life_sim.gd")
 const Worksites = preload("res://scripts/worldbox_visible_worksite.gd")
 const AutonomousDirector = preload("res://scripts/autonomous_village_director.gd")
@@ -58,6 +59,9 @@ var npc_text_refresh_accum: float = 0.0
 var ui_action: Button
 var ui_leave: Button
 var local_ai: Node
+var npc_intent_policy: RefCounted
+var _local_npc_ai_budget_clock: float = 55.0
+var _local_npc_ai_cursor: int = 0
 var ui_ai_status: Label
 var ui_ai_prompt: LineEdit
 var ui_ai_answer: Label
@@ -141,8 +145,10 @@ func _ready() -> void:
 	# never returns scripted dialog disguised as AI.
 	local_ai = LocalAI.new()
 	local_ai.name = "OfflineLocalAI"
+	npc_intent_policy = LocalNPCIntents.new()
 	local_ai.connect("state_changed",Callable(self,"_on_local_ai_state"))
 	local_ai.connect("npc_reply",Callable(self,"_on_local_npc_reply"))
+	local_ai.connect("npc_intent",Callable(self,"_on_autonomous_npc_intent"))
 	local_ai.connect("inference_failed",Callable(self,"_on_local_ai_error"))
 	add_child(local_ai)
 	_create_interface()
@@ -561,6 +567,56 @@ func _on_local_ai_state(next_state: String, description: String) -> void:
 	if ui_ai_talk!=null:
 		ui_ai_talk.disabled = (next_state!="ready")
 
+func _on_autonomous_npc_intent(entity_code: String, response: String) -> void:
+	if npc_intent_policy==null or life_sim==null:
+		return
+	var choice: String = String(npc_intent_policy.call("parse_intent",response))
+	if choice.is_empty():
+		return
+	var actor: Node3D = npc_node_index.get(entity_code) as Node3D
+	if actor==null:
+		return
+	var now: int = int(life_sim.get("day"))*24 + int(life_sim.get("hour"))
+	var accepted: bool = bool(npc_intent_policy.call("apply_intent",entity_code,
+		choice,life_sim,actor,npc_building_system,now))
+	if accepted and ui_work_result!=null:
+		ui_work_result.text = "离线NPC自主决定：" + entity_code + " → " + choice
+
+func _ask_one_autonomous_npc(delta: float) -> void:
+	if local_ai==null or life_sim==null or npc_intent_policy==null:
+		return
+	_local_npc_ai_budget_clock -= delta
+	if _local_npc_ai_budget_clock>0.0:
+		return
+	# 0.6B on mobile is shared: one suggestion at most every 75 seconds.
+	_local_npc_ai_budget_clock=75.0
+	if String(local_ai.get("stage"))!="ready" or citizen_nodes.is_empty():
+		return
+	var profiles: Dictionary = life_sim.get("citizens")
+	for offset in range(citizen_nodes.size()):
+		var index: int = (_local_npc_ai_cursor+offset)%citizen_nodes.size()
+		var actor: Node3D = citizen_nodes[index]
+		if actor.global_position.distance_squared_to(avatar.global_position)>35.0*35.0:
+			continue
+		var code: String = String(actor.get_meta("entity_id",""))
+		if not profiles.has(code):
+			continue
+		var person: Dictionary = profiles[code]
+		if bool(actor.get("_externally_assigned_job")):
+			continue  # Never hijack physical work already assigned by NPC builders.
+		var town: Dictionary = life_sim.get("villages")[String(person["village_id"])]
+		var context: Dictionary = {
+			"energy":int(person["energy"]),
+			"hunger":int(person["hunger"]),
+			"food":int((town["stock"] as Dictionary).get("food",0)),
+			"construction_pending":not String(npc_building_system.get("current_project")).is_empty()
+		}
+		var queued: bool = bool(local_ai.call("ask_npc_intent",code,
+			String(person["profession"]),_hour,context))
+		if queued:
+			_local_npc_ai_cursor=(index+1)%citizen_nodes.size()
+		return
+
 func _on_local_npc_reply(entity_code: String, message: String) -> void:
 	if ui_ai_answer!=null:
 		ui_ai_answer.text = entity_code + "： " + message
@@ -638,6 +694,7 @@ func _process(delta: float) -> void:
 			if citizen.global_position.distance_squared_to(avatar.global_position)<190.0*190.0:
 				citizen.call("wake_near_player")
 	_refresh_status_throttled(delta)
+	_ask_one_autonomous_npc(delta)
 	npc_text_refresh_accum+=delta
 	if npc_text_refresh_accum>=0.6 and life_sim!=null:
 		npc_text_refresh_accum=0.0
@@ -851,5 +908,6 @@ func snapshot() -> Dictionary:
 		"art_status":"WIP_NO_VISUAL_APPROVAL","original_apk_updated":false,
 		"npc_material_build_status":npc_building_system.call("stats") if npc_building_system!=null else {},
 		"local_ai_state":String(local_ai.get("stage")) if local_ai!=null else "not_installed",
+		"npc_local_ai_intents":npc_intent_policy.call("snapshot") if npc_intent_policy!=null else {},
 		"local_ai_backend":"llama.cpp GGUF embedded C++ GDExtension (when compiled)",
 		"model_verified":String(local_ai.get("stage")) in ["loading","ready","thinking"] if local_ai!=null else false}
