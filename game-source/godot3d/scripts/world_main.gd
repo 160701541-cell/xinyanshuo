@@ -13,6 +13,7 @@ const LocalNPCIntents = preload("res://scripts/npc_intent_policy.gd")
 const LifeSim = preload("res://scripts/worldbox_life_sim.gd")
 const Worksites = preload("res://scripts/worldbox_visible_worksite.gd")
 const AutonomousDirector = preload("res://scripts/autonomous_village_director.gd")
+const ResourceSeeder = preload("res://scripts/world_resource_seeder.gd")
 const NPCBuilding = preload("res://scripts/npc_building_system.gd")
 # Authentic earlier Canglan 3D economy/identity source has been audited and
 # safely migrated to the PUBLIC repository without any signing credentials.
@@ -122,6 +123,9 @@ func _ready() -> void:
 		var person_id: String = String(citizen_nodes[n].get_meta("entity_id",""))
 		var profile: Dictionary = life_sim.get("citizens")[person_id]
 		citizen_nodes[n].call("refresh_text_status",profile)
+	# Seed independent finite natural resources BEFORE NPC work assignment.
+	ResourceSeeder.new().call("seed_village", life_sim, rules,
+		"CL-HX-VILLAGE-0001", seed)
 	prop_root.call("build",rules,seed)
 	# One tangible gameplay loop: chop physical tree -> carrier walks to depot
 	# -> materials delivered -> paid house -> crops -> food -> eating.
@@ -494,7 +498,7 @@ func _create_interface() -> void:
 	)
 	actions.add_child(time_btn)
 	var ai_title := Label.new()
-	ai_title.text = "本机NPC语言模型 / Qwen3 0.6B（完全离线）"
+	ai_title.text = "本机NPC语言模型 / 由玩家在游戏内选择"
 	stack.add_child(ai_title)
 	ui_ai_status = Label.new()
 	ui_ai_status.text = "正在检测手机本地模型……"
