@@ -303,3 +303,14 @@ Godot 4.4.1对从**原签名Android APK176**提取的实际`update_protocol.gdc`
 - 下一优先级：**读取本次真实CI/job日志和Godot截图**，按真实编译/解析失败逐项修复，确保独立AI+3D APK实际可启动和跑中文对话，再走原安装包签名/资源兼容流程；不得仅靠commit宣称手机已升级。
 
 本轮不触碰原私库版本构建、旧签名密钥和用户存档；停止HD2D路线继续有效。
+
+## 2026-10-16 / CAC-3D-004 / 下一步：依据真实GitHub Actions错误日志定点修复
+
+**不是“正在处理”的空进度。本阶段读取了公开Actions真实作业ID和完整失败日志，现已在公开仓库实施对应修复。**
+
+- 公开Android/离线AI构建作业 `38900955107`，失败 `tools/audit_public_3d.py: scripts/prop_factory.gd: missing entity_id`。实际独立道具的稳定身份在 `_entity(id,...)` → `entities[id]` 数据字典，不是渲染节点 `entity_id` 元数据。修正源码静态QA，不伪造 `entity_id` 渲染器标识。对应提交 `8e08c8932e4db8a226daa31d71a0c9c6c7f83d0c`。
+- 原生3D严格 QA 作业 `38900513434`，报 `generate_glb_pack.py line 162: assert combined.vertices.shape[0] > 20`。单个盒子等低模可以合法使用8顶点/12面，误判有效几何。已改为 `>=8 vertices, >=12 faces` 且继续执行 `tests/test_generated_glb.py` 容器/SHA/网格测试。提交 `d3ca39e9ee1a3edf378a704be74145d4bb1e77ce`。
+- 最新初轮严格Godot作业 `38901239353`：**真实引擎已成功导入、创建25块地形/80个院落建筑/80原版WorldState NPC/937个GPU模型实例**。然而 `world_props=586` 未达到`>=600`硬门槛，`tests/world_smoke.gd:51` 失败，严格拒绝放行。已在 `prop_factory.gd` 将可生成林木采样420→480；实体仍有稳定ID和实际3D MultiMesh，非简单降门槛；待重新运行确认。提交 `e88e223a79ae051b09164a6d8e4ff922e14bcbc9`。
+- Android AI构建作业 `38901239340`：实际Qwen GGUF**从上游成功下载且通过SHA256校验**，实际 CMake/Linux 编译 llama.cpp 后在 GDExtension C++ 环节失败：`fatal error: godot_cpp/classes/node.hpp: No such file or directory`。根因是旧Godot 4.4 CMake 目标是 `godot::cpp`（别名 `godot-cpp.template_debug`），不是无头文件传播的裸 `godot-cpp` 链接文字。已经更改 CMake 真实target为 `godot::cpp` 并增加缺失时的 fail-closed 错误，提交 `8f20a0a8372490aed63d2f8bcb84e81eee6842aa`；另将头文件 `godot_cpp/variant/string.hpp` 显式包含，提交 `dfc46758f13a47c95e85d2ab21f00077e618ba85`。
+- 之前 Android Workflow YAML 曾在补包检查时出现重复段、破坏shell正则，已将 APK 导出后的剩余工作流区块全部重建并经GitHub识别执行，提交 `a5fbad6a59918a31f74e17b8819ccc4ac665fcb8`。
+- **结果边界：** 修复已经提交，不等于本轮重测通过。上述历史作业均为失败；修复后的严格场景QA运行 `38901820922`、Android AI+3D一体化APK运行 `38901821292` 已触发，当前需要读取它们的最终结果。没有成功的APK下载和手机实测；原APK、原签名与玩家存档均未修改。
