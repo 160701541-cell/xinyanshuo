@@ -52,10 +52,12 @@ jobs:
                   target.write_bytes(apk.read(p))
                   print("VERIFIED_REAL_APK176_BYTECODE",p,len(apk.read(p)))
               for p in apk.namelist():
-                  if p.startswith("assets/scripts/") and p.endswith((".gdc",".gd.remap")):
+                  if p.startswith("assets/shaders/") or (p.startswith("assets/scripts/") and p.endswith((".gdc",".gd.remap"))):
                       dest.joinpath(p.removeprefix("assets/")).parent.mkdir(parents=True,exist_ok=True)
                       dest.joinpath(p.removeprefix("assets/")).write_bytes(apk.read(p))
           PY
+          test -s logic-qa/apk176-export-fixture/shaders/atmosphere/layered_cloud_sky.gdshader
+          echo 'PASS_ORIGINAL_APK176_GDSHADER_PRELOADS_RESTORED'
           test -s logic-qa/apk176-export-fixture/.godot/global_script_class_cache.cfg
           grep -Fq '"class": &"CanglanValleyAtmosphere"' logic-qa/apk176-export-fixture/.godot/global_script_class_cache.cfg
           grep -Fq '"class": &"WorldState"' logic-qa/apk176-export-fixture/.godot/global_script_class_cache.cfg
