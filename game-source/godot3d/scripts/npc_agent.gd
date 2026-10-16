@@ -149,7 +149,7 @@ func _process(delta: float) -> void:
 	var proximity: float = global_position.distance_to(_observer.global_position)
 	# Render/activity LOD: citizens are IDs even when not visually instantiated.
 	_body_visual.visible = proximity < 65.0
-	if proximity > 190.0:
+	if proximity > 190.0 and not _externally_assigned_job:
 		set_process(false)
 		return
 	_decide_clock -= delta
