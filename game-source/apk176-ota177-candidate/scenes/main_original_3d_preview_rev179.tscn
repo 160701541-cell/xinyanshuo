@@ -1,0 +1,16 @@
+[gd_scene load_steps=4 format=3]
+
+; The REAL APK176 exported packed Main remains the inherited root.
+; Both existing rev178 HD2D entry and reversible licensed CC0 3D visual
+; acceptance room are children; no save/gameplay scripts are replaced.
+[ext_resource type="PackedScene" path="res://.godot/exported/133200997/export-3ad5c15c4f3250da0cc7c1af1770d85f-main.scn" id="1"]
+[ext_resource type="Script" path="res://scripts/hd2d_original_overlay_ota177.gd" id="2"]
+[ext_resource type="Script" path="res://scripts/apk176_cc0_3d_preview.gd" id="3"]
+
+[node name="Main" instance=ExtResource("1")]
+
+[node name="HD2DArtAcceptance" type="CanvasLayer" parent="."]
+script = ExtResource("2")
+
+[node name="CanglanAPK176Actual3DPreview" type="CanvasLayer" parent="."]
+script = ExtResource("3")
