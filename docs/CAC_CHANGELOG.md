@@ -371,3 +371,26 @@ Godot 4.4.1对从**原签名Android APK176**提取的实际`update_protocol.gdc`
 - 原版WorldState身份与现有3D场景仍通过冒烟门槛，玩家可见工地的按钮/几何物已作为主场景加载，仍须手机目视验收。
 
 **但此GitHub严格QA整体仍然为FAILURE**，后续真实GPU Mesa/Xvfb截图步骤返回 `ERROR: Condition "status < 0" is true. Returning: ERR_CANT_OPEN`，并被防绕过策略阻拦。这不是经济演算失败，也不能说“所有QA通过”。Android GGUF和正式APK结果仍未验证。
+
+## 2026-10-16 / CAC-LIFE-003 / 村民开始自发劳动（真实Godot主场景增量）
+
+用户继续要求推进WorldBox式玩法。核心目标不是“增加背景NPC数量”，而是**能从实际资源节点出发、靠自身走到地块、携物回家、只有到仓库才能完成资源入账**。
+
+### 已经实际提交的代码
+
+- `scripts/autonomous_village_director.gd`：新增主世界自主职业调度器（Godot Node3D），以玩家原有80名NPC作为工作执行者，目前为10人有限范围的自主工组：8名樵夫/石工、2名农人。每个人独立分配职业资源目标、家附近交付点和行动阶段 `to_resource → to_depot → to_resource`，农田用 `waiting_field` 等到次日可再次收获。实体树/石头/农田拥有稳定的资源编号与渲染节点；每棵树/石有9单位可采存量，消耗殆尽后视觉节点消失；农田每天产出有限。
+- `scripts/npc_agent.gd`：增加 `assign_work_destination` / `cancel_work_destination` / `reached_work_destination`，已分配任务的角色由工作命令接管目标，**保留非工作NPC原先日常漫步行为**；离摄像机190米远时不再停止任务逻辑，只关闭远距可视化，允许物资经济在玩家视线外继续推进。当前为平面方向直线转向，**没有NavigationAgent/NavMesh绕障，仍属于寻路技术候选**。
+- `scripts/worldbox_life_sim.gd`：禁掉仍有实体世界资源时的虚空木材与石头增益；启用具稳定地块ID的 `register_field` 与 `gather_field_to_actor`，农民粮食先装到个人运输仓，不能当场凭空加村庄库存，仓储交付时才入账，次日字段 `ready` 再允许收成。保留手动 `harvest_field` 以兼容上一轮试玩。
+- 自主工人真实物料可视：工人拿到木材/石头/谷物后，角色节点上创建相应颜色的盒状物料标记 `RealCarried_xxx`，到仓库交付后释放，NPC不是只跑数值；村镇自动支付12木/6石并申请新屋，等经济时钟完成施工后才生成可见房屋。
+- `scripts/world_main.gd`：在**同一原Godot主3D场景**实例化 `AutonomousNPCJobsWorldVisible`，并在HUD报告有多少人工作、几次采集/交货、新房数与森林剩余值。与上一轮玩家六键手动闭环并存；原版WorldState人物和已有建筑系统没有被清空。
+- QA：`tests/world_smoke.gd` 确认10个实际NPC工单和8块天然资源+一棵手动试验树、2块农田，并检查真实NPC节点接收工作目标；`tests/autonomous_job_smoke.gd` 加入确实在Godot场景里实例化NPC，**测试通过人为模拟到达**资源点/仓库以验证采集、负载、交付、建筑，附加2位农夫实物粮袋搬运验证；`tools/quality_gate.sh` 把上述测试作为CI放行硬门槛。
+- 截图QA的Mesa/Xvfb工作流加入 `--audio-driver Dummy`，尝试排除Linux无声卡导致的 `ERR_CANT_OPEN`，但未看新CI最终结论前不能声称已经修好。
+
+### 当前明确限制
+
+1. 工作NPC可以“走向工作目标”但没有真正寻路网格、障碍绕行与地形成本，暂不具备数万人规模调度；这是下一轮重大技术门槛。
+2. 新村屋的外形是程序生成的简易灰瓦白墙，而不是完整建筑内部；自动建房还未链接真实住房分配和迁入。
+3. 工作循环影响的是新增生活经济模块，不意味着原本私有旧APK中的正式全部系统已经迁移。旧包签名与玩家存档继续保持原样。
+4. 已生成/提交所有源码并触发公开GitHub构建和Godot QA；**当下并无新版实机APK成功结果可引用**。后续必须读真实job日志，修复任何未通过的脚本/安卓GDExtension后才发可安装包。
+
+主要公开3D Godot测试流水线：https://github.com/160701541-cell/xinyanshuo/actions/workflows/canglan-public-qa.yml
