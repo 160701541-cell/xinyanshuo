@@ -1,0 +1,99 @@
+{
+  "schema": 1,
+  "policy": "CAC-OSS-001",
+  "project": "Canglan HD2D",
+  "updated": "2026-10-16",
+  "allowed_active_licenses": [
+    "MIT",
+    "Apache-2.0",
+    "BSD-3-Clause",
+    "BSD-2-Clause",
+    "ISC",
+    "CC0-1.0"
+  ],
+  "entries": [
+    {
+      "id": "godot-4.4.1",
+      "kind": "engine",
+      "status": "ACTIVE",
+      "version": "4.4.1",
+      "license": "MIT",
+      "source": "https://github.com/godotengine/godot",
+      "license_proof": "https://godotengine.org/license/",
+      "used_by": [
+        "game-source/hd2d-world/project.godot"
+      ],
+      "notes": "Pre-existing engine; binary exports must retain engine copyright and MIT notice."
+    },
+    {
+      "id": "fastnoiselite-native",
+      "kind": "bundled-engine-component",
+      "status": "ACTIVE",
+      "version": "bundled in Godot 4.4.1",
+      "license": "MIT",
+      "source": "https://github.com/Auburn/FastNoiseLite",
+      "license_proof": "https://github.com/Auburn/FastNoiseLite/blob/master/LICENSE",
+      "used_by": [
+        "game-source/hd2d-world/scripts/oss_world_services.gd"
+      ],
+      "notes": "Via Godot FastNoiseLite class; no separate downloaded runtime binary."
+    },
+    {
+      "id": "astargrid2d-native",
+      "kind": "bundled-engine-component",
+      "status": "ACTIVE",
+      "version": "bundled in Godot 4.4.1",
+      "license": "MIT",
+      "source": "https://github.com/godotengine/godot",
+      "license_proof": "https://godotengine.org/license/",
+      "used_by": [
+        "game-source/hd2d-world/scripts/oss_world_services.gd"
+      ],
+      "notes": "Godot built-in AStarGrid2D; no separate addon."
+    },
+    {
+      "id": "kenney-cc0-packs",
+      "kind": "optional-asset-source",
+      "status": "CANDIDATE_NOT_IMPORTED",
+      "version": "unselected",
+      "license": "CC0-1.0",
+      "source": "https://kenney.nl/assets",
+      "license_proof": "https://kenney.nl/support",
+      "used_by": [],
+      "notes": "Potential individually modeled world props or UI controls. Western stylized packs require Chinese painterly style review; no asset files currently imported."
+    },
+    {
+      "id": "poly-haven-assets",
+      "kind": "optional-asset-source",
+      "status": "CANDIDATE_NOT_IMPORTED",
+      "version": "unselected",
+      "license": "CC0-1.0",
+      "source": "https://polyhaven.com/",
+      "license_proof": "https://polyhaven.com/license",
+      "used_by": [],
+      "notes": "High quality material/texture candidate; live API has separate conditions; do not call from in-game client. Downloaded file must be SHA-pinned, traced, optimized and visual reviewed."
+    },
+    {
+      "id": "ambientcg-materials",
+      "kind": "optional-asset-source",
+      "status": "CANDIDATE_NOT_IMPORTED",
+      "version": "unselected",
+      "license": "CC0-1.0",
+      "source": "https://ambientcg.com/",
+      "license_proof": "https://docs.ambientcg.com/license/",
+      "used_by": [],
+      "notes": "Texture candidates only; inspect specific download license, SHA and visual style before importing. Avoid auto-importing huge maps into Android."
+    },
+    {
+      "id": "blender-tool",
+      "kind": "optional-build-tool",
+      "status": "CANDIDATE_NOT_IMPORTED",
+      "version": "unselected",
+      "license": "GPL-3.0-or-later",
+      "source": "https://projects.blender.org/blender/blender",
+      "license_proof": "https://www.blender.org/about/license/",
+      "used_by": [],
+      "notes": "GPL build-time tool can generate output, but its GPL executable should not be shipped embedded in game."
+    }
+  ]
+}
