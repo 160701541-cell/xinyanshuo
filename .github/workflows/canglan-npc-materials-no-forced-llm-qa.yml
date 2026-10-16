@@ -1,0 +1,33 @@
+name: Canglan 3D NPC construction + real CC0 assets + deferred LLM QA
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'game-source/godot3d/scripts/local_ai_service.gd'
+      - 'game-source/godot3d/scripts/npc_building_system.gd'
+      - 'game-source/godot3d/scripts/cc0_asset_bridge.gd'
+      - 'game-source/godot3d/tests/deferred_ai_and_cc0_build_smoke.gd'
+      - '.github/workflows/canglan-npc-materials-no-forced-llm-qa.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  godot-4-4-real-runtime:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install actual Godot 4.4.1 Linux headless
+        run: |
+          set -euo pipefail
+          curl -fL --retry 3 -o /tmp/godot.zip https://github.com/godotengine/godot-builds/releases/download/4.4.1-stable/Godot_v4.4.1-stable_linux.x86_64.zip
+          unzip -q /tmp/godot.zip -d /tmp
+          sudo install -m755 /tmp/Godot_v4.4.1-stable_linux.x86_64 /usr/local/bin/godot
+      - name: Import real 3D models and material resources
+        run: |
+          set -euo pipefail
+          godot --headless --path game-source/godot3d --editor --import --quit
+      - name: Execute actual GDScript NPC/CC0/AI-choice acceptance
+        run: |
+          set -euo pipefail
+          godot --headless --path game-source/godot3d --script res://tests/deferred_ai_and_cc0_build_smoke.gd
