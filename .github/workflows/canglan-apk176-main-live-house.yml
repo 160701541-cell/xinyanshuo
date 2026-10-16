@@ -54,6 +54,18 @@ jobs:
           assert (root/'.godot/global_script_class_cache.cfg').is_file()
           assert (root/'shaders/atmosphere/layered_cloud_sky.gdshader').is_file()
           print('PASS_REAL_APK176_FULL_EXPORTED_ASSET_FIXTURE',count,'files',total,'bytes')
+          descriptor=root/'addons/terrain_3d/terrain.gdextension'
+          if descriptor.is_file():
+              print('APK176_TERRAIN3D_GDEXTENSION_DESCRIPTOR_START')
+              print(descriptor.read_text(encoding='utf-8',errors='replace')[:11000])
+              print('APK176_TERRAIN3D_GDEXTENSION_DESCRIPTOR_END')
+          else:
+              print('APK176_TERRAIN3D_GDEXTENSION_DESCRIPTOR_MISSING')
+          with ZipFile(src) as apk:
+              for n in apk.namelist():
+                  if 'terrain' in n.lower() and (n.endswith('.so') or n.endswith('.gdextension') or n.endswith('.dll') or n.endswith('.dylib')):
+                      print('APK176_NATIVE_TERRAIN_ENTRY',n)
+          print('PASS_APK_NATIVE_TERRAIN_DIAGNOSTIC')
           PY
       - name: Install actual Godot 4.4.1 engine
         shell: bash
