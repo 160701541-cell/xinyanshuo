@@ -25,6 +25,9 @@ jobs:
           mkdir -p qa-stage/ota177/hd2d qa-stage/ota177/scenes qa-stage/ota177/scripts
           cp game-source/apk176-ota177-candidate/scenes/* qa-stage/ota177/scenes/
           cp game-source/apk176-ota177-candidate/scripts/* qa-stage/ota177/scripts/
+          mkdir -p qa-stage/ota177/hd2d/courtyard
+          cp game-source/apk176-ota177-candidate/hd2d/courtyard/*.png qa-stage/ota177/hd2d/courtyard/
+          cp game-source/apk176-ota177-candidate/hd2d/worldx-generated/source_edge04/main_house_edge04_candidate.png qa-stage/ota177/hd2d/courtyard/main_house_isolated_edge04.png
           cp art-source/hd2d/batch-20261016/01_village_props_atlas_preview.jpg qa-stage/ota177/hd2d/atlas_village_ota177.jpg
           python3 - <<'PY'
           from pathlib import Path
