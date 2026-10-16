@@ -181,7 +181,7 @@
       const summary = document.createElement('summary');
       addText(summary, 'span', 'log-date', String(item.date || '开发记录').slice(0, 12));
       addText(summary, 'span', 'log-title', String(item.title || '未命名开发记录').slice(0, 190));
-      addText(summary, 'span', 'log-tag', '实际工作日志');
+      addText(summary, 'span', 'log-tag', item.source_status === 'public-cac-procedural' ? '公开程序化研发' : '实际工作日志');
       details.appendChild(summary);
       addText(details, 'div', 'log-content', String(item.body || '暂无详细说明').slice(0, 10000));
       developmentList.appendChild(details);
@@ -193,30 +193,63 @@
       + ' / ' + allEntries.length + ' 条正式开发记录';
     moreButton.hidden = visibleCount >= allEntries.length;
   }
+  // CAC-PROC: Read the new PUBLIC single-source changelog directly from Pages.
+  // The old signed-release feed and legacy sanitized history stay untouched.
+  // No GitHub API, polling loop, or fake Android release status is involved.
   async function loadDevelopment() {
+    let feed = null;
+    let publicEntries = [];
     try {
-      const feed = await getFreshJSON('./data/development.json');
+      feed = await getFreshJSON('./data/development.json');
       if (feed.schema !== 1 || feed.channel !== 'public-development-log'
           || !Array.isArray(feed.entries) || feed.entries.length > 200
           || !feed.entries.every(item => typeof item.title === 'string' && typeof item.body === 'string')) {
-        throw new Error('Unexpected development log schema');
+        feed = null;
       }
-      const digest = JSON.stringify([feed.source_commit, feed.synced_at, feed.entries.length]);
-      if (digest !== lastDevelopmentDigest) {
-        allEntries = feed.entries;
-        visibleCount = 7;
-        lastDevelopmentDigest = digest;
-        renderDevelopment();
-      }
-      developmentSync.textContent = '源码日志同步：' + safeDate(feed.synced_at);
-      developmentSync.title = '源文件：' + String(feed.source_file || 'docs/DEVELOPMENT_LOG.md');
-    } catch (e) {
+    } catch (_) { /* Public devlog may remain readable independently. */ }
+    try {
+      const url = './docs/CAC_CHANGELOG.md?t=' + Math.floor(Date.now() / 50000);
+      const res = await fetch(url, {cache: 'no-store'});
+      if (!res.ok) throw new Error('Public CAC changelog unavailable');
+      const markdown = await res.text();
+      if (markdown.length > 200000) throw new Error('Unexpected public changelog size');
+      const regex = /^##\s+(\d{4}-\d{2}-\d{2})\s*\/\s*(CAC-PROC-\d{3})\s*\/\s*(.+)$/gm;
+      const headers = Array.from(markdown.matchAll(regex)).slice(-24);
+      publicEntries = headers.reverse().map(m => {
+        const after = m.index + m[0].length;
+        const next = markdown.indexOf('\n## ', after);
+        const details = markdown.slice(after, next < 0 ? undefined : next).trim();
+        return {
+          id: 'public-' + m[2], date: m[1], title: m[2] + ' · ' + m[3],
+          body: details.slice(0, 10000), source_status: 'public-cac-procedural'
+        };
+      });
+    } catch (_) { /* Keep visible authenticated history if CAC unavailable. */ }
+    const legacyEntries = feed ? feed.entries : [];
+    if (!publicEntries.length && !feed) {
       if (!allEntries.length) {
         clear(developmentList);
-        addText(developmentList, 'p', 'loading-copy', '开发日志暂时无法读取。更新服务和游戏本身不受影响，请稍后重试。');
+        addText(developmentList, 'p', 'loading-copy', '公开开发日志暂时无法读取，历史正式版本仍可查询。');
       }
-      developmentSync.textContent = '正在等待工作日志同步';
+      developmentSync.textContent = '等待公开开发日志同步';
+      return;
     }
+    const digest = JSON.stringify([
+      feed ? feed.source_commit : '',
+      feed ? feed.synced_at : '',
+      publicEntries.map(item => [item.id, item.body]),
+      legacyEntries.length
+    ]);
+    if (digest !== lastDevelopmentDigest) {
+      allEntries = [...publicEntries, ...legacyEntries];
+      visibleCount = 7;
+      lastDevelopmentDigest = digest;
+      renderDevelopment();
+    }
+    developmentSync.textContent = publicEntries.length
+      ? '公开CAC程序研发记录：' + publicEntries.length + ' 条 · 历史日志同步：' + safeDate(feed && feed.synced_at)
+      : '历史源码日志同步：' + safeDate(feed && feed.synced_at);
+    developmentSync.title = '新版：docs/CAC_CHANGELOG.md；历史：' + String(feed && feed.source_file || 'data/development.json');
   }
   if (moreButton) moreButton.addEventListener('click', () => {
     visibleCount += 10;
