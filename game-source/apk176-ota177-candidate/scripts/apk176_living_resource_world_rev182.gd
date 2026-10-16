@@ -58,7 +58,7 @@ var _closed: bool = false
 var _events: Array[String] = []
 
 func _ready() -> void:
-  name = "CanglanAutonomousMaterialWorldRev180"
+  name = "CanglanAutonomousEcologyWorldRev182"
   layer = 70
   sim = Economy.new()
   sim.start(20261017)
