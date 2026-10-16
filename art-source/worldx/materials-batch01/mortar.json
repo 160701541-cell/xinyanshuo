@@ -1,0 +1,22 @@
+{
+  "schema": 1,
+  "material_id": "mortar",
+  "source": "YGYOOO/WorldX extension",
+  "worldx_commit": "edb4976de5963457dfbf5d2171355270a4ca1e79",
+  "pipeline": "actual WorldX source prompt loader + SiliconFlow image model",
+  "model": "Kwai-Kolors/Kolors",
+  "kind": "reusable_seamless_surface_albedo_CANDIDATE",
+  "file": "mortar.png",
+  "sha256": "c194f3be4512b945cacbf25e6b8d872df6b2ac59d66690e5ca5353c0cdae989c",
+  "bytes": 2017735,
+  "license": "provider_terms_review_needed",
+  "status": "GENERATED_UNAPPROVED",
+  "seamless": "REQUIRES_EDGE_QA",
+  "style": "REQUIRES_ART_QA",
+  "uniform_scale": "REQUIRES_ART_QA",
+  "no_watermark": "REQUIRES_VISUAL_QA",
+  "not_finished_building": true,
+  "no_hd2d": true,
+  "applied_to_game": false,
+  "run_url": "https://github.com/160701541-cell/xinyanshuo/actions/runs/38947005032"
+}

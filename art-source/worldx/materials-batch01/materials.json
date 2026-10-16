@@ -1,0 +1,24 @@
+{
+  "schema": 1,
+  "source": "WorldX extension",
+  "art_status": "PENDING_VISUAL_APPROVAL",
+  "asset_type": "raw_reusable_material_texture_not_building",
+  "materials": {
+    "timber": {
+      "file": "timber.png",
+      "sha256": "76a8c3c872ffca391a45ece4322981352c9008d4edf29ee67ce91e2a631687f9"
+    },
+    "cut_stone": {
+      "file": "cut_stone.png",
+      "sha256": "b0a302234c1f78e618cae875f9af7c83f2b247b7fd665ce3be9125dfdc837937"
+    },
+    "mortar": {
+      "file": "mortar.png",
+      "sha256": "c194f3be4512b945cacbf25e6b8d872df6b2ac59d66690e5ca5353c0cdae989c"
+    },
+    "roof_tile": {
+      "file": "roof_tile.png",
+      "sha256": "d217d85e3c2901f01fa30df44d733acc3ba532bc63a7a23b7b26a295b92703e6"
+    }
+  }
+}

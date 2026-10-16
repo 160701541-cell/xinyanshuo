@@ -1,0 +1,22 @@
+{
+  "schema": 1,
+  "material_id": "timber",
+  "source": "YGYOOO/WorldX extension",
+  "worldx_commit": "edb4976de5963457dfbf5d2171355270a4ca1e79",
+  "pipeline": "actual WorldX source prompt loader + SiliconFlow image model",
+  "model": "Kwai-Kolors/Kolors",
+  "kind": "reusable_seamless_surface_albedo_CANDIDATE",
+  "file": "timber.png",
+  "sha256": "76a8c3c872ffca391a45ece4322981352c9008d4edf29ee67ce91e2a631687f9",
+  "bytes": 1821408,
+  "license": "provider_terms_review_needed",
+  "status": "GENERATED_UNAPPROVED",
+  "seamless": "REQUIRES_EDGE_QA",
+  "style": "REQUIRES_ART_QA",
+  "uniform_scale": "REQUIRES_ART_QA",
+  "no_watermark": "REQUIRES_VISUAL_QA",
+  "not_finished_building": true,
+  "no_hd2d": true,
+  "applied_to_game": false,
+  "run_url": "https://github.com/160701541-cell/xinyanshuo/actions/runs/38947005032"
+}

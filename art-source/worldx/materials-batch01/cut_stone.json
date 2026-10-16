@@ -1,0 +1,22 @@
+{
+  "schema": 1,
+  "material_id": "cut_stone",
+  "source": "YGYOOO/WorldX extension",
+  "worldx_commit": "edb4976de5963457dfbf5d2171355270a4ca1e79",
+  "pipeline": "actual WorldX source prompt loader + SiliconFlow image model",
+  "model": "Kwai-Kolors/Kolors",
+  "kind": "reusable_seamless_surface_albedo_CANDIDATE",
+  "file": "cut_stone.png",
+  "sha256": "b0a302234c1f78e618cae875f9af7c83f2b247b7fd665ce3be9125dfdc837937",
+  "bytes": 1721693,
+  "license": "provider_terms_review_needed",
+  "status": "GENERATED_UNAPPROVED",
+  "seamless": "REQUIRES_EDGE_QA",
+  "style": "REQUIRES_ART_QA",
+  "uniform_scale": "REQUIRES_ART_QA",
+  "no_watermark": "REQUIRES_VISUAL_QA",
+  "not_finished_building": true,
+  "no_hd2d": true,
+  "applied_to_game": false,
+  "run_url": "https://github.com/160701541-cell/xinyanshuo/actions/runs/38947005032"
+}
