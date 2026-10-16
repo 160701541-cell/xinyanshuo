@@ -4,10 +4,28 @@
   "source_file": "docs/DEVELOPMENT_LOG.md",
   "source_commit": "72152f176e7a53f9d5e41a498db435d3eb7dcac2",
   "source_hash": "6031861dbf165dd8be049c3e13d0f7e260919acbe8a4bc01be66dd70d222d3a8",
-  "synced_at": "2026-10-14T19:49:23Z",
-  "public_note": "开发工作日志不是签名游戏更新日志；未发布功能可能写在这里。隐去密钥与内部配置。",
+  "synced_at": "2026-10-16T10:05:42Z",
+  "public_note": "2026-10-16 original signed OTA revision 177 was cryptographically verified live on official HTTPS; logs distinguish website deployment from user Android real-device test; never expose signing secrets.",
   "entries": [
-    {"id":"dev-20261015-first-inworld-clay-qa","date":"2026-10-15","title":"可交互河岸黏土与工艺工单进入Work候选","body":"已提交有限泥源场景、采泥操作与陶罐混料按钮。原字节源码在独立Godot4.4.1测试中通过17项采集测试、338项贴地3D几何测试；16项Work源代码交互约束审查通过。尚未跑原完整游戏/安卓，未发布。","source_status":"isolated-Godot-pass_full-game-blocked"},
+    {
+      "id": "dev-20261016-original-apk176-rev177-SIGNED-LIVE",
+      "date": "2026-10-16",
+      "title": "原版《苍岚》APK176签名内容热更rev177已正式发布，WorldX场景与可进正房实装",
+      "body": "从已安装APK176真实签名RSA信任链恢复签名能力（密钥未进入GitHub源码、公开仓库或日志；本地临时复制已清除）。以公开GitHub QA run 38882131496完整原Godot主场景与进入/退出正房测试通过的20,361,696字节PCK为唯一发布内容；原Android版本码1176、资源修订177，RSA-3072签名经原APK固定公钥验证，发布源运行38884507811全绿。官网GitHub Pages已正式上线并由独立Actions run 38884890631验证：latest.json实际返回rev177并RSA验签通过，PCK SHA256=af5e08020e7ae473a31ed2917839ea3544bdf3747b15790bcea49e46a54eb6f3，全量20,361,696字节校验通过，HTTP Range返回206/1MiB可供原版Android更新器分块下载。不需要用户卸载重装APK；在已装游戏“苍岚·世界更新”点击“检查更新→下载安装资源补丁”即可尝试更新。真实Android手机的下载/进入/场景画面/手感仍需用户实机验收，室内外图片是候选美术、三视角未完整实现，不能说它们已经成为最终游戏品质。",
+      "source_status": "genuine-original-apk176-rsa-signed-ota177-published-public-https-verified; Android phone visual QA pending",
+      "evidence": {
+        "source_run": 38882131496,
+        "publisher_run": 38884507811,
+        "remote_http_run": 38884890631
+      }
+    },
+    {
+      "id": "dev-20261015-first-inworld-clay-qa",
+      "date": "2026-10-15",
+      "title": "可交互河岸黏土与工艺工单进入Work候选",
+      "body": "已提交有限泥源场景、采泥操作与陶罐混料按钮。原字节源码在独立Godot4.4.1测试中通过17项采集测试、338项贴地3D几何测试；16项Work源代码交互约束审查通过。尚未跑原完整游戏/安卓，未发布。",
+      "source_status": "isolated-Godot-pass_full-game-blocked"
+    },
     {
       "id": "dev-20261015-work-aligned-craft-source-ownership",
       "date": "2026-10-15",
