@@ -15,7 +15,7 @@ var hotspot_labels: Node2D
 var panel: Control
 var art_world: Node2D
 var cam_offset := Vector2(0.0, 0.0)
-var zoom := 0.7
+var zoom := 1.0
 var active := true
 var dragging := false
 var touches: Dictionary = {}
@@ -300,7 +300,7 @@ func _update_art_transform() -> void:
 	if art_world == null:
 		return
 	art_world.scale = Vector2(zoom,zoom)
-	art_world.position = get_viewport().get_visible_rect().size/2 - Vector2(850.0,480.0)*zoom + cam_offset
+	art_world.position = get_viewport().get_visible_rect().size/2 - Vector2(760.0,427.5)*zoom + cam_offset
 
 func _unhandled_input(event: InputEvent) -> void:
 	if not active:
