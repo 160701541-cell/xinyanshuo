@@ -1,0 +1,39 @@
+name: Canglan APK176 rev182 Actual Public Pages RSA & PCK HTTP Proof
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/canglan-rev182-real-pages-http-proof.yml'
+      - 'tools/verify_original_current_ota_http.py'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  prove-real-original-phone-ota-https:
+    if: github.repository == '160701541-cell/xinyanshuo' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Prove external Pages actually serves signed original APK176 rev182
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(python3 -c "import json;print(json.load(open('android-preview/latest.json'))['revision'])")" = 182
+          python3 tools/verify_original_current_ota_http.py
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          result=json.loads(Path("qa-results/original-current-public-ota-http.json").read_text())
+          assert result['live_revision']==182
+          assert result['status']=='PASS_CURRENT_ORIGINAL_APK176_PUBLIC_HTTPS_RSA_SHA256_AND_RANGE'
+          print('PASS_ANDROID_APK176_REV182_PUBLIC_CDN_RSA_SHA256_BYTES_HTTP_RANGE')
+          PY
+      - name: Retain external failure reason or success, no keys
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: Canglan-rev182-real-official-Pages-HTTP-Proof
+          path: qa-results/original-current-public-ota-http.json
+          if-no-files-found: warn
+          retention-days: 14
