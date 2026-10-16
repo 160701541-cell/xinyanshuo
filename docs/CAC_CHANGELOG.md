@@ -491,3 +491,11 @@ Godot 4.4.1对从**原签名Android APK176**提取的实际`update_protocol.gdc`
 
 ## 2026-10-16 / P0-REPO-BOUNDARY / 用户严格要求唯一公开仓库
 用户再次明确：**绝不使用私有仓库**。之前的助手调查了不被允许的旧私有仓库，这属于流程错误，并不构成任何跨仓库迁移的授权。本次已在项目根 `AGENTS.md` 设为P0硬性禁令：只允许 `160701541-cell/xinyanshuo` 公开 `main`，禁止再搜索、读取、修改、引用或调用任何私有仓库，不得拿私有仓库的签名密钥解释或阻塞公开仓库发布。唯一目标仍是原游戏内热更新，不推荐重装独立APK。已经清除 `tools/check_original_ota_secret.py` 中不恰当的私有仓库指向：只检查公共仓库运行时真正注入的合法签名Secret，检查结果不能扩展解释为其他仓库没有密钥。此提交**仅修正规则和诊断，不宣称rev178已签名或手机已热更新**。
+
+## 2026-10-16 / CAC-ORIGINAL-REV178-SIGNER-PUBLISHER / 只在公开仓库执行正式热更新链
+
+实际新增 `tools/publish_original_rev178_ota.py`：严格只接受 `38921298121` 中原始APK176已通过Godot实场景/室内交互QA的**完全一致**21,021,440字节rev178候选PCK（SHA-256 `4bf2e3e9e934a0bbdea97275b824317dbe6472b1782ee50a461673ffc4d93bdc`）。在签名前检查当前已发布正版rev177有真实APK内置公钥认可的RSA签名、APK包名和1176兼容范围、Godot实场景无ERROR、未签候选manifest的rev178信息；在安全临时目录用同一内置公钥匹配的签名私钥产生rev178正式签名，必须通过原版RSA + PCK SHA-256安全门才能写官方 `android-preview/latest.json` 与 `canglan-content-rev-178.pck`，无外来独立APK、无新证书、无私钥上传。
+
+实际新增 `.github/workflows/canglan-original-apk176-rev178-signed-ota.yml`：构建/签名/发布**仅使用公开仓库 `160701541-cell/xinyanshuo`**，由GitHub Actions在主分支以 `actions/download-artifact@v4` 从同公开仓库对应已通过的真实Godot QA提取候选，验证后才会提交原游戏官网同一更新频道。该流程不会在失败时污染线上manifest；没有“忽略安全门失败”行为，也不引入独立安装包。用户不需要重新下载APK。
+
+**已真实触发，准确结果**：公开仓库运行 `38922763801` 在正式原RSA签名预检查阶段 `BLOCKED: original pinned-key RSA signer unavailable in PUBLIC xinyanshuo Actions context`，没有进入签名、没有推送。这里仅证明**这个公开仓库这次GitHub Actions作业没有拿到与APK176的RSA公钥匹配的私钥**，并不能断言用户曾经没有配置别的密钥；尤其不能把Android APK签名keystore误当成PCK更新清单RSA密钥。公开源代码无法自行恢复私钥，也不允许复用rev177签名给不同的rev178字节。当前官网仍是正式签名rev177，待公开仓库允许合法原RSA key注入后同一流水线可继续，但不可谎称已经更新到手机。
