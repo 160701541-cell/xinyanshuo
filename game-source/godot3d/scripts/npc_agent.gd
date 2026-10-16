@@ -167,7 +167,10 @@ func _process(delta: float) -> void:
 		return
 	var proximity: float = global_position.distance_to(_observer.global_position)
 	# Render/activity LOD: citizens are IDs even when not visually instantiated.
-	_body_visual.visible = proximity < 65.0
+	if _body_visual != null:
+		_body_visual.visible = proximity < 65.0
+	if text_marker!=null:
+		text_marker.visible = proximity < 85.0
 	if proximity > 190.0 and not _externally_assigned_job:
 		set_process(false)
 		return
@@ -189,20 +192,41 @@ func _process(delta: float) -> void:
 		_walk_clock += delta * 6.7
 		if _generated_role_visual != null:
 			_generated_role_visual.position.y = absf(sin(_walk_clock))*0.035
-		_left_leg.rotation.x = sin(_walk_clock)*0.42
-		_right_leg.rotation.x = -sin(_walk_clock)*0.42
-		_left_arm.rotation.x = -sin(_walk_clock)*0.35
-		_right_arm.rotation.x = sin(_walk_clock)*0.35
+		if _left_leg != null:
+			_left_leg.rotation.x = sin(_walk_clock)*0.42
+		if _right_leg != null:
+			_right_leg.rotation.x = -sin(_walk_clock)*0.42
+		if _left_arm != null:
+			_left_arm.rotation.x = -sin(_walk_clock)*0.35
+		if _right_arm != null:
+			_right_arm.rotation.x = sin(_walk_clock)*0.35
 		_citizen_state["task"] = "rest_home" if _is_resting else "walking"
 	else:
-		_left_leg.rotation.x = lerpf(_left_leg.rotation.x,0,delta*5)
-		_right_leg.rotation.x = lerpf(_right_leg.rotation.x,0,delta*5)
-		_left_arm.rotation.x = lerpf(_left_arm.rotation.x,0,delta*5)
-		_right_arm.rotation.x = lerpf(_right_arm.rotation.x,0,delta*5)
+		if _left_leg != null:
+			_left_leg.rotation.x = lerpf(_left_leg.rotation.x,0,delta*5)
+		if _right_leg != null:
+			_right_leg.rotation.x = lerpf(_right_leg.rotation.x,0,delta*5)
+		if _left_arm != null:
+			_left_arm.rotation.x = lerpf(_left_arm.rotation.x,0,delta*5)
+		if _right_arm != null:
+			_right_arm.rotation.x = lerpf(_right_arm.rotation.x,0,delta*5)
 		if _generated_role_visual != null:
 			_generated_role_visual.position.y = lerpf(_generated_role_visual.position.y,0.0,clampf(delta*6,0.0,1.0))
 		_citizen_state["task"] = "resting" if _is_resting else "waiting"
 	position.y = float(rules.call("height_at",position.x,position.z))
+
+func _notify_inspect(code: String) -> void:
+	inspection_requested.emit(code)
+
+func refresh_text_status(person_state: Dictionary) -> void:
+	sim_profile = person_state.duplicate(true)
+	if text_marker!=null:
+		text_marker.call("set_status",String(person_state.get("schedule","idle")),
+			int(person_state.get("hunger",0)),int(person_state.get("energy",100)))
+
+func select_text_marker(is_target: bool) -> void:
+	if text_marker!=null:
+		text_marker.call("mark_selected",is_target)
 
 func assign_work_destination(location: Vector3) -> void:
 	_external_job_destination = location
@@ -234,4 +258,5 @@ func wake_near_player() -> void:
 func status() -> Dictionary:
 	return {"id":entity_id,"profession":profession,"home":[home.x,home.y,home.z],
 			"goal":_citizen_state["goal"],"task":_citizen_state["task"],
-			"art_status":String(get_meta("art_status","PROCEDURAL_HUMANOID_PLACEHOLDER"))}
+			"art_status":String(get_meta("art_status","PROCEDURAL_HUMANOID_PLACEHOLDER")),
+			"display_name":civilian_name,"sim_profile":sim_profile.duplicate(true)}
