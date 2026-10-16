@@ -23,6 +23,7 @@ func start(seed: int = 20261016) -> void:
 	natural_nodes.clear()
 	carried_by_actor.clear()
 	harvested_fields.clear()
+	resource_positions.clear()
 	# Raw resources and crafted construction materials persist as independent stock.
 
 func create_village(code: String, initial: Dictionary = {}) -> bool:
@@ -87,6 +88,7 @@ func _spend(village_id: String, bill: Dictionary) -> bool:
 var natural_nodes: Dictionary = {}
 var carried_by_actor: Dictionary = {}
 var harvested_fields: Dictionary = {}
+var resource_positions: Dictionary = {}
 
 func register_natural_node(entity_code: String, village_id: String, kind: String,
 		quantity: int) -> bool:
@@ -99,6 +101,29 @@ func register_natural_node(entity_code: String, village_id: String, kind: String
 	natural_nodes[entity_code]={"id":entity_code,"village":village_id,
 		"kind":kind,"remaining":quantity,"depleted":false}
 	return true
+
+func register_resource_position(node_id: String, position: Vector3) -> bool:
+	if not natural_nodes.has(node_id) and not harvested_fields.has(node_id):
+		return false
+	if resource_positions.has(node_id):
+		return false
+	resource_positions[node_id] = position
+	return true
+
+func get_available_resource_nodes(village_id: String, kind: String) -> Array[String]:
+	var result: Array[String] = []
+	if kind == "field":
+		for node_id in harvested_fields.keys():
+			var field: Dictionary = harvested_fields[node_id]
+			if String(field.get("village", "")) == village_id and bool(field.get("ready", false)) and resource_positions.has(node_id):
+				result.append(String(node_id))
+	else:
+		for node_id in natural_nodes.keys():
+			var node: Dictionary = natural_nodes[node_id]
+			if String(node.get("village", "")) == village_id and String(node.get("kind", "")) == kind and int(node.get("remaining", 0)) > 0 and resource_positions.has(node_id):
+				result.append(String(node_id))
+	result.sort()
+	return result
 
 func gather_to_actor(actor_id: String, node_id: String) -> bool:
 	if not citizens.has(actor_id) or not natural_nodes.has(node_id):
@@ -325,6 +350,7 @@ func snapshot() -> Dictionary:
 	return {"schema":1,"seed":world_seed,"day":day,"hour":hour,
 		"villages":villages.duplicate(true),"citizens":citizens.duplicate(true),
 		"natural_nodes":natural_nodes.duplicate(true),
+		"resource_positions":resource_positions.duplicate(true),
 		"loads":carried_by_actor.duplicate(true),
 		"plots":harvested_fields.duplicate(true),
 		"last_events":event_log.slice(maxi(0,event_log.size()-32))}
