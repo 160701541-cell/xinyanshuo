@@ -46,7 +46,7 @@ func _test() -> void:
 		return
 	var original_spawn: Vector2 = portal.current_spawn
 	portal.enter_building()
-	if not portal.inside or not portal._room.visible or portal._outdoor_art.visible or portal._open_button.visible:
+	if not portal.inside or not portal._room.visible or portal._outdoor_art.visible or portal._open_button.visible or outside.visible or portal._room.z_index <= 6:
 		_fail("ENTER_STATE_BAD", 9)
 		return
 	if portal.current_spawn != portal.inside_spawn:
@@ -57,7 +57,7 @@ func _test() -> void:
 		_fail("DUPLICATE_ENTER", 11)
 		return
 	portal.exit_building()
-	if portal.inside or portal._room.visible or not portal._outdoor_art.visible or not portal._open_button.visible:
+	if portal.inside or portal._room.visible or not portal._outdoor_art.visible or not portal._open_button.visible or not outside.visible:
 		_fail("EXIT_STATE_BAD", 12)
 		return
 	if portal.current_spawn != original_spawn:
