@@ -605,3 +605,11 @@ Godot 4.4.1对从**原签名Android APK176**提取的实际`update_protocol.gdc`
 - `.github/workflows/canglan-public-qa.yml`已取消重新绘制程序生成房屋/人偶GLB，改为已导入的真实Kenney/Quaternius和已有角色贴图。真实Godot全场景严格QA run `38950055947` 最终**SUCCESS**。
 - 真实已来源校验的12个CC0模型/24个贴图及二进制入库真实CI `38949607844` **SUCCESS**；至少Quaternius既有knight GLB含12条动画、另一个基础人形GLB有骨骼无动作，不可声称两个都已具备动画。离线Qwen3 native Linux源码构建由 `38950144223` 单独检查；尚未完成手机端运行验收。
 - **P0发布边界**：正式站原手机应用签名rev178未因此改版，上述新3D材料/AI代码**尚未进入正式旧APK**。
+
+## 2026-10-17 / CAC-NEW-CHAT-CONTINUE-AI-NATIVE-001 / 跨对话接续：NPC离线思想、自建世界而非图片
+
+用户新对话发来上一轮会话触顶截图：继续已确认的优先任务，不再要求重新解释——NPC离线AI决定意图、权威世界规则决定是否落实，NPC亲自采集/加工/运输/分阶段建造，维持真3D；免费Kenney/Quaternius CC0可商用现有模型优先，不再自造人偶或HD2D整图；只用公开 `xinyanshuo`，仅原版签名热更新算游戏交付。
+
+**本轮实际GitHub修复：** 核查最新原生Qwen+llama.cpp Linux GDExtension编译QA运行 `38950144223`，从完整Job log核实原C++ `libcanglan_ai.so` 实际在Linux编译成功，Job败在 Python文本合同断言：原引擎源码输出是`严格只输出单独一行 ACTION=xxx`，断言却错误找`只返回一行`，不是C++编译失败，更不是手机离线AI已运行。修改 `.github/workflows/canglan-offline-npc-native-linux-qa.yml`：断言精确匹配意图分支实际系统提示，并同时验证对话分支禁止凭空交易。提交 `8fc5eb559a395bf88ab000188a2a2bce22796f2d`，真实Linux QA run `38953517388` 自动启动，等待最终结论。**仅Linux编译QA，绝非Android ARM64、原版APK176的GDExtension已安装或手机GGUF实际推理。**
+
+**当前实际交付边界：** 源码改动和QA修复不构成新版本正式OTA。最后成功发布的原游戏RSA签名包为rev178，新的NPC生活/施工/CC0/离线AI内容尚未签发到原应用；不可拿独立测试APK替代。下一阶段要核实原版APK176的Android原生库可升级能力和不换包名、不换签名的安全路径，再决定需要APK覆盖还是仍可走签名PCK。
