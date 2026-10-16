@@ -65,11 +65,11 @@ func _on_interaction(_camera: Node, event: InputEvent,
 func set_status(task: String, hunger: int, energy: int) -> void:
 	if descriptor==null:
 		return
-	var task_name := {
+	var task_name: String = String({
 		"work":"劳作","carrying_grain":"背粮","carrying_wood":"背木",
 		"carrying_stone":"搬石","waiting_for_harvest":"待收获",
 		"rest":"休息","sleep":"睡觉","delivered":"已交货",
-		"eat":"进食","craft":"制作","cook":"做饭"}.get(task,task)
+		"eat":"进食","craft":"制作","cook":"做饭"}.get(task,task))
 	descriptor.text = display_name+" · "+String(task_name)
 	caption.text = occupation+"  饱食"+str(100-clampi(hunger,0,100))+"%"
 
