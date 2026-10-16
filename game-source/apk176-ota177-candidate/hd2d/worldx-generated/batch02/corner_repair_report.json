@@ -1,0 +1,36 @@
+[
+  {
+    "id": "courtyard_gate_closed",
+    "source_sha256": "491d429659c50ba5a8c15d474738d345852f6b2083a48a0d7144e754a9e44731",
+    "output": "courtyard_gate_closed_repaired.png",
+    "output_sha256": "db5a7f27636f2274bcb2dcbc9de1737a793bea54a5db7004d8bd995a7ad6cc59",
+    "patch_sha256": "22814201ae21522c1279b5cb363619a61017aad6bf393f3a575fa18b50abb2fd",
+    "bbox_xyxy": [
+      868,
+      950,
+      1009,
+      1006
+    ],
+    "outside_pixels_unchanged": true,
+    "repair": "script mask + built-in AI inpainting + local feathered compositing",
+    "original_provenance_retained": true,
+    "approval": "TEXT_REPAIR_ONLY_NOT_INDEPENDENT_SPRITE_APPROVAL"
+  },
+  {
+    "id": "village_stone_well",
+    "source_sha256": "8bd125ae9648b0e3314c8fcf18f8ff81d9ef1d5d662d1e6709421a299045a291",
+    "output": "village_stone_well_repaired.png",
+    "output_sha256": "4b8b19a04240dc2af4b70fa499c30261dd3d91595814481b9b37554209145958",
+    "patch_sha256": "aa7874b9cb381e4b1007733f72172c73fc2e48fa4efadf5191e0ef4ea129d13b",
+    "bbox_xyxy": [
+      868,
+      950,
+      1009,
+      1006
+    ],
+    "outside_pixels_unchanged": true,
+    "repair": "script mask + built-in AI inpainting + local feathered compositing",
+    "original_provenance_retained": true,
+    "approval": "TEXT_REPAIR_ONLY_NOT_INDEPENDENT_SPRITE_APPROVAL"
+  }
+]
