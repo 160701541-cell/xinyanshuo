@@ -59,8 +59,11 @@ func _run() -> void:
     return
   var econ = room.get("sim")
   var first: Dictionary = room.call("stats")
-  if int(first.get("revision",0)) != 182 or int(first.get("source_assets",0)) != 7:
-    _fail(9, "MUST_LOAD_ALL_SEVEN_REAL_LICENSED_SOURCE_MODELS")
+  if int(first.get("revision",0)) != 182:
+    _fail(9, "REVISION_MISMATCH_ACTUAL_ROOM_REPORT_" + str(first.get("revision")))
+    return
+  if int(first.get("source_assets",0)) != 7:
+    _fail(44, "MUST_LOAD_ALL_SEVEN_REAL_LICENSED_SOURCE_MODELS_GOT_" + str(first.get("source_assets",0)))
     return
   if not (first.get("missing_assets", []) as Array).is_empty():
     _fail(10, "SOME_LICENSED_GLB_OR_TEXTURES_MISSING")
