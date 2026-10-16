@@ -4,6 +4,7 @@ extends Node3D
 ## structural parts IN THE REAL 3D WORLD. No finished-house art generation.
 ## Navigation still uses the existing prototype steering, NOT obstacle-aware navmesh.
 const TOWN := "CL-HX-VILLAGE-0001"
+const FreeCC0 = preload("res://scripts/cc0_asset_bridge.gd")
 const YARD := Vector3(2.0, 0.4, 40.0)
 const WORKSHOP_LOCATION := Vector3(39.0, 0.35, 43.0)
 const STAGE_DATA := [
@@ -87,6 +88,14 @@ func setup(world_sim: RefCounted, citizens: Array[Node3D]) -> void:
 	add_child(depot)
 	_mesh_piece(depot,"RawTimberMaterial",Vector3(-1.4,0.2,0),Vector3(1.8,.4,.7),"timber")
 	_mesh_piece(depot,"StoneMaterial",Vector3(1.2,.3,0),Vector3(1.2,.6,.75),"cut_stone")
+	# Real Kenney GLBs only when imported, keeping physics and material stock authoritative.
+	var timber_display: Node3D = FreeCC0.instantiate_asset(
+		"tree_log",depot,Vector3(-1.4,.28,-.7),Vector3.ONE)
+	var stone_display: Node3D = FreeCC0.instantiate_asset(
+		"stone_cluster",depot,Vector3(1.2,.1,-.7),Vector3.ONE)
+	depot.set_meta("visual_source",
+		"REAL_KENNEY_CC0_GLBS" if timber_display!=null and stone_display!=null
+		else "ORIGINAL_3D_GEOMETRY_FALLBACK")
 
 func _create_plan_if_needed() -> void:
 	if simulation==null or builder==null or not current_project.is_empty():
@@ -241,6 +250,13 @@ func _render_completed_stage(stage_id: String) -> void:
 		_mesh_piece(parent,"NPCRaisedBeam",Vector3(0,3.5,0),
 			Vector3(5.0,.25,3.9),"timber")
 	elif stage_id=="walls":
+		# Existing free modular Quaternius wall model. Art fit pending:
+		# don't allow an unreviewed facade to replace true stage geometry.
+		var plaster_candidate: Node3D = FreeCC0.instantiate_asset(
+			"plaster_wall",parent,Vector3(0,1.85,-1.7),Vector3.ONE)
+		if plaster_candidate!=null:
+			plaster_candidate.visible = false
+			plaster_candidate.set_meta("art_review_pending",true)
 		_mesh_piece(parent,"NPCBuiltBackWall",Vector3(0,1.85,-1.7),
 			Vector3(4.4,2.7,.25),"mortar")
 		for x in [-2.1,2.1]:
@@ -250,6 +266,11 @@ func _render_completed_stage(stage_id: String) -> void:
 			_mesh_piece(parent,"NPCBuiltFrontWall_"+str(x),
 				Vector3(x,2.2,1.7),Vector3(1.25,2.0,.25),"mortar")
 	elif stage_id=="roof":
+		var roof_candidate: Node3D = FreeCC0.instantiate_asset(
+			"clay_tiled_roof",parent,Vector3(0,4.3,0),Vector3.ONE)
+		if roof_candidate!=null:
+			roof_candidate.visible = false
+			roof_candidate.set_meta("art_review_pending",true)
 		for sign in [-1.0,1.0]:
 			_mesh_piece(parent,"NPCLaidRoofSlope_"+str(sign),
 				Vector3(sign*1.15,4.2,0),Vector3(2.9,.22,5.0),
@@ -335,7 +356,9 @@ func stats() -> Dictionary:
 		"carried_by_npc":inventory_on_actor.duplicate(true),
 		"completed":completed,"construction_site_count":construction_sites.size(),
 		"raw_art_policy":"WorldX_SEAMLESS_MATERIALS_ONLY_NOT_FINISHED_HOUSES",
-		"nav":"DIRECT_STEERING_NOT_NAVMESH"}
+		"nav":"DIRECT_STEERING_NOT_NAVMESH",
+		"source_asset_lib":"EXISTING_KENNEY_QUATERNIUS_CC0",
+		"third_party_asset_status":FreeCC0.get_import_status()}
 
 func snapshot() -> Dictionary:
 	return {"schema":1,"sites":construction_sites.duplicate(true),
