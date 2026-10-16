@@ -212,6 +212,11 @@ func _process(delta: float) -> void:
 					actor.play("walk-down")
 		elif actor.sprite_frames.has_animation("idle-front") and actor.animation != "idle-front":
 			actor.play("idle-front")
+		var person_code: String = str(character_data[i].get("id",""))
+		if citizen_profiles.has(person_code):
+			var state: Dictionary = citizen_profiles[person_code]
+			state["world_position"] = actor.position
+			state["activity"] = "行走" if distance.length()>1.0 else "待机"
 
 func _unhandled_input(event: InputEvent) -> void:
 	var pointer: Vector2
@@ -231,15 +236,15 @@ func _unhandled_input(event: InputEvent) -> void:
 			min_distance = distance
 	if selected >= 0:
 		var cfg := character_data[selected]
-			var person_code: String = str(cfg.get("id",""))
-			var record: Dictionary = get_citizen_status(person_code)
-			var biography: String = str(cfg.get("description",""))
-			if not record.is_empty():
-				biography += " | ID:"+person_code
-				biography += " | 年龄:"+str(record["age"])
-				biography += " | 精力:"+str(record["energy"])
-				biography += " | 饥饿:"+str(record["hunger"])
-				biography += " | 心情:"+str(record["mood"])
-				biography += " | 行为:"+str(record["activity"])
-			character_selected.emit(person_code,str(cfg.get("name","旅人")),biography)
+		var person_code: String = str(cfg.get("id",""))
+		var record: Dictionary = get_citizen_status(person_code)
+		var biography: String = str(cfg.get("description",""))
+		if not record.is_empty():
+			biography += " | ID:"+person_code
+			biography += " | 年龄:"+str(record["age"])
+			biography += " | 精力:"+str(record["energy"])
+			biography += " | 饥饿:"+str(record["hunger"])
+			biography += " | 心情:"+str(record["mood"])
+			biography += " | 行为:"+str(record["activity"])
+		character_selected.emit(person_code,str(cfg.get("name","旅人")),biography)
 		get_viewport().set_input_as_handled()
