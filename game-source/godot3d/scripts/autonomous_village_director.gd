@@ -96,6 +96,10 @@ func _process(delta: float) -> void:
 	if state_time<0.20:
 		return
 	state_time=0
+	# Construction commits on the NEXT director cycle after physical delivery.
+	# This keeps the warehouse credit independently observable and auditable.
+	if not _has_started_house and completed_deliveries>=1:
+		_has_started_house=bool(economy.call("request_construction",TOWN,"home"))
 	for code in assignments.keys():
 		var job: Dictionary = assignments[code]
 		var citizen: Node3D = job["citizen"]
@@ -148,8 +152,6 @@ func _process(delta: float) -> void:
 	# Physically instantiate a small Chinese-style house only after simulation
 	# has paid real materials and the authoritative time-tick completes it.
 	var town: Dictionary = economy.get("villages")[TOWN]
-	if not _has_started_house and completed_deliveries>=1:
-		_has_started_house=bool(economy.call("request_construction",TOWN,"home"))
 	if int(town["homes"])>_last_homes:
 		var old_count: int = _last_homes
 		_last_homes=int(town["homes"])
