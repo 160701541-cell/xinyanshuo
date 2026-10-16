@@ -1,0 +1,83 @@
+name: Canglan APK176 - NATIVE Godot Original RSA Signed rev177 PCK Acceptance
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/canglan-apk176-rev177-native-godot-qa.yml'
+      - 'android-preview/latest.json'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: canglan-apk176-original-protocol-signed-pck-validation
+  cancel-in-progress: true
+jobs:
+  real-original-crypto-protocol:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 11
+    steps:
+      - uses: actions/checkout@v4
+      - name: Restore full original Android APK176 exported game files (NOT mock classes)
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p qa-results
+          python3 - <<'PY'
+          import json,pathlib,zipfile
+          root=pathlib.Path('logic-qa/apk176-export-fixture')
+          base=json.loads(pathlib.Path('android-preview/base-latest.json').read_text())
+          assert base['version_code']==1176
+          assert base['sha256']=='3cef8894246ddd4c481c48abfc99a55008f82be17885706f2cbd060b9ed21a7a'
+          with zipfile.ZipFile(base['file']) as apk:
+              count=0
+              for info in apk.infolist():
+                  if not info.filename.startswith('assets/') or info.is_dir() or info.filename=='assets/project.godot':
+                      continue
+                  rel=pathlib.Path(info.filename[len('assets/'):])
+                  if rel.is_absolute() or '..' in rel.parts:
+                      raise RuntimeError('Unsafe APK asset path')
+                  dest=root/rel
+                  dest.parent.mkdir(parents=True,exist_ok=True)
+                  dest.write_bytes(apk.read(info))
+                  count+=1
+          assert (root/'.godot/global_script_class_cache.cfg').exists()
+          assert (root/'scripts/update_protocol.gdc').is_file()
+          print('PASS_EXACT_ORIGINAL_SIGNED_APK176_GODOT_EXPORTED_FILES',count)
+          PY
+      - name: Install official Godot 4.4.1 original game runtime engine
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl -fL --retry 3 --connect-timeout 25 \
+            'https://github.com/godotengine/godot/releases/download/4.4.1-stable/Godot_v4.4.1-stable_linux.x86_64.zip' -o /tmp/godot.zip
+          unzip -q /tmp/godot.zip -d /tmp
+          chmod +x /tmp/Godot_v4.4.1-stable_linux.x86_64
+      - name: Run AUTHENTIC installed APK176 Crypto.verify, PCK SHA and original main scene
+        shell: bash
+        env:
+          CANGLAN_OTA_SIGNED_MANIFEST: ${{ github.workspace }}/android-preview/latest.json
+          CANGLAN_QA_PCK_PATH: ${{ github.workspace }}/android-preview/canglan-content-rev-177.pck
+        run: |
+          set -euo pipefail
+          timeout 95s /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless \
+            --path logic-qa/apk176-export-fixture \
+            --script res://verify_real_original_signed_hd2d.gd \
+            > qa-results/original-apk176-crypto-rev177.log 2>&1 || {
+              cat qa-results/original-apk176-crypto-rev177.log
+              exit 1
+            }
+          cat qa-results/original-apk176-crypto-rev177.log
+          grep -Fq 'PASS_APK176_PERMANENT_RSA_PCK_AND_CANONICAL_MAIN_SCENE' qa-results/original-apk176-crypto-rev177.log
+          if grep -Eq 'SCRIPT ERROR:|Parse Error:|ERROR:|Failed loading resource' qa-results/original-apk176-crypto-rev177.log; then
+            echo '::error::Native Godot original APK176 rejected published revision177'
+            exit 1
+          fi
+          echo 'PASS_ORIGINAL_ANDROID_UPDATER_NATIVE_GODOT_RSA_REV177_RESOURCE_MOUNT'
+      - name: Preserve original native-protocol release acceptance logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: Original-APK176-REV177-Real-Godot-Crypto-Release-QA
+          path: qa-results/original-apk176-crypto-rev177.log
+          retention-days: 14
+          if-no-files-found: warn
