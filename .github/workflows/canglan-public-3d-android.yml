@@ -195,25 +195,24 @@ jobs:
           set -euo pipefail
           mkdir -p qa-logs
           GODOT=/tmp/godot-editor/Godot_v4.4.1-stable_linux.x86_64
-          echo "Installed Godot export templates:"
-          ls -lh "$HOME/.local/share/godot/export_templates/4.4.1.stable/" | head -n 25
-          echo "Android tooling:"
-          ls -lh "$ANDROID_SDK_ROOT/platform-tools/adb" "$ANDROID_SDK_ROOT/build-tools/35.0.0/aapt2"
-          echo "Exporting with --verbose for exact root-cause evidence"
           "$GODOT" --verbose --headless --path game-source/godot3d \
             --export-debug 'Android Canglan 3D QA' "$GITHUB_WORKSPACE/qa-logs/Canglan-3D-public-ARM64-debug.apk" \
             > qa-logs/export.log 2>&1 || {
-            cat qa-logs/export.log; exit 1;
-          }
+              cat qa-logs/export.log
+              exit 1
+            }
           test -s qa-logs/Canglan-3D-public-ARM64-debug.apk
-          # Godot Android export must REALLY embed its native runtime, not only
-          # print a CI claim. GGUF asset inclusion is inspected by Godot on run.
+          # Godot must embed ARM64 GDExtension. Never publish an APK missing AI.
           unzip -Z1 qa-logs/Canglan-3D-public-ARM64-debug.apk \
-            | grep -E 'lib/arm64-v8a/libcanglan_ai.*\\.so
+            | grep -F 'libcanglan_ai.android.arm64.so' \
+            > qa-logs/embedded-local-ai-native.txt || {
+              echo 'BLOCKED: no compiled offline AI ARM64 native library in APK'
+              exit 1
+            }
           unzip -t qa-logs/Canglan-3D-public-ARM64-debug.apk | tail -n 2
           sha256sum qa-logs/Canglan-3D-public-ARM64-debug.apk > qa-logs/apk.sha256
           cat qa-logs/apk.sha256
-          echo 'PASS: standalone PUBLIC 3D QA APK (not existing app OTA/signing identity)'
+          echo 'PASS real APK bytes contain native AI library'
       - name: Upload installable test APK ONLY on success
         if: success()
         uses: actions/upload-artifact@v4
@@ -236,10 +235,9 @@ jobs:
           APK="qa-logs/Canglan-3D-public-ARM64-debug.apk"
           gh release create "$TAG" "$APK" qa-logs/apk.sha256 \
             --repo "${GITHUB_REPOSITORY}" \
-            --title "苍岚 3D 候选场景测试 · ${GITHUB_SHA:0:12}" \
-            --notes "这是公开仓库单独构建的Android ARM64测试APK，包名 com.xinyanshuo.canglan.oss3dqa，使用CI临时调试签名。不是既有《苍岚》正式APK的覆盖更新，也不是签名资源补丁。包含真正GGUF Qwen3-0.6B Q4_K_M本地模型、llama.cpp ARM64扩展与NPC聊天（首次运行提取并SHA256核验），及3D地形、建筑、80名NPC和室内。约484MB模型使安装包显著增大。本测试包未经过用户手机实测，不是原正式APK覆盖更新。请勿卸载原游戏；如已安装其他版本的3D独立测试包，可能需先卸载该测试包。" \
+            --title "苍岚 3D + 本地Qwen AI 真正独立安装测试 · ${GITHUB_SHA:0:12}" \
+            --notes "ARM64独立QA包，不覆盖原《苍岚》签名安装包。38个程序化3D模型、原版WorldState人物ID、真正离线Qwen3 GGUF+llama.cpp原生推理。美术质量、真机温控和性能仍未验证。勿卸载原游戏。" \
             --prerelease
-          gh release view "$TAG" --repo "${GITHUB_REPOSITORY}" --json url --jq .url
       - name: Keep diagnostic logs on failure
         if: always()
         uses: actions/upload-artifact@v4
@@ -248,61 +246,12 @@ jobs:
           path: |
             qa-logs/export.log
             qa-logs/import.log
+            qa-logs/scene-smoke.log
             qa-logs/llama-cpp-linux-build.log
             qa-logs/llama-cpp-android-build.log
             qa-logs/local-qwen-actual-inference.log
             qa-logs/local-ai-runtime-audit.json
             qa-logs/embedded-local-ai-native.txt
-            qa-logs/native-ai-reimport.log
-          if-no-files-found: warn
-          retention-days: 7
- \
-            > qa-logs/embedded-local-ai-native.txt || {
-              echo 'BLOCKED: exported APK has no arm64 llama.cpp GDExtension'
-              exit 1
-            }
-          cat qa-logs/embedded-local-ai-native.txt
-          unzip -t qa-logs/Canglan-3D-public-ARM64-debug.apk | tail -n 2
-          sha256sum qa-logs/Canglan-3D-public-ARM64-debug.apk > qa-logs/apk.sha256
-          cat qa-logs/apk.sha256
-          echo 'PASS: standalone PUBLIC 3D QA APK (not existing app OTA/signing identity)'
-      - name: Upload installable test APK ONLY on success
-        if: success()
-        uses: actions/upload-artifact@v4
-        with:
-          name: CANGLAN-standalone-3D-public-APK-${{ github.sha }}
-          path: |
-            qa-logs/Canglan-3D-public-ARM64-debug.apk
-            qa-logs/apk.sha256
-          if-no-files-found: error
-          retention-days: 14
-          compression-level: 0
-      - name: Publish independently installable 3D QA APK as prerelease
-        if: success()
-        shell: bash
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          set -euo pipefail
-          TAG="canglan-3d-qa-${GITHUB_SHA:0:12}"
-          APK="qa-logs/Canglan-3D-public-ARM64-debug.apk"
-          gh release create "$TAG" "$APK" qa-logs/apk.sha256 \
-            --repo "${GITHUB_REPOSITORY}" \
-            --title "苍岚 3D 候选场景测试 · ${GITHUB_SHA:0:12}" \
-            --notes "这是公开仓库单独构建的Android ARM64测试APK，包名 com.xinyanshuo.canglan.oss3dqa，使用CI临时调试签名。不是既有《苍岚》正式APK的覆盖更新，也不是签名资源补丁。包含真正GGUF Qwen3-0.6B Q4_K_M本地模型、llama.cpp ARM64扩展与NPC聊天（首次运行提取并SHA256核验），及3D地形、建筑、80名NPC和室内。约484MB模型使安装包显著增大。本测试包未经过用户手机实测，不是原正式APK覆盖更新。请勿卸载原游戏；如已安装其他版本的3D独立测试包，可能需先卸载该测试包。" \
-            --prerelease
-          gh release view "$TAG" --repo "${GITHUB_REPOSITORY}" --json url --jq .url
-      - name: Keep diagnostic logs on failure
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: godot3d-public-android-debug-export-logs-${{ github.sha }}
-          path: |
-            qa-logs/export.log
-            qa-logs/import.log
-            qa-logs/llama-cpp-linux-build.log
-            qa-logs/llama-cpp-android-build.log
-            qa-logs/local-qwen-actual-inference.log
             qa-logs/native-ai-reimport.log
           if-no-files-found: warn
           retention-days: 7
