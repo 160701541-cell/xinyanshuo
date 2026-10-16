@@ -135,4 +135,9 @@ func _run() -> void:
   print("PASS_APK176_ACTUAL_MAIN_INSTANTIATED_NO_ENGINE_ERRORS_WITH_REAL_HOUSE")
   print("PASS_REV180_LICENSED_3D_NPC_RESOURCE_TRANSPORT_MATERIAL_CONSERVATION_STAGE_BUILD")
   print("REV180_ACTUAL_APK176_QA_STATS ",report)
+  # Explicitly teardown original exported scene before the headless RenderServer
+  # exits: otherwise GLTF skeleton/animation/mesh RIDs report leaked resources.
+  main.queue_free()
+  await process_frame
+  await process_frame
   quit(0)
