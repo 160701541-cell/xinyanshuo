@@ -96,6 +96,9 @@ func _build_interface() -> void:
   frame.mouse_filter = Control.MOUSE_FILTER_IGNORE
   frame.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
   frame.stretch = true
+  # Android render the secondary world at half the screen linear resolution.
+  # This replaces double-full-res rendering while preserving touch hit areas.
+  frame.stretch_shrink = 2
   ui.add_child(frame)
   view = SubViewport.new()
   view.name = "ActualLicensed3DWorldViewport"
