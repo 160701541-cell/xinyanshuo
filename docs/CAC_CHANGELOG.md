@@ -965,3 +965,9 @@ Godot 4.4.1对从**原签名Android APK176**提取的实际`update_protocol.gdc`
 - 原版rev186 **完整通过** `38981695728` / job`117243794180`，所有老房屋兼容、真世界启动、模型身份、同位置脚底、左/右GUI触控、三档/存储、官方RSA签名+release gate均成功；正式原APK176 `android-preview/latest.json` revision**186**，PCK `21,666,016`字节，SHA-256 `16c636e2654efb8ead50cfe38e1ab27ac89f9c9cee72d4acb28f8cfb55f6a6ab`，原包ID/签名公钥保留，旧存档不覆盖。
 - 公网真实CDN审计工作流 `.github/workflows/canglan-rev186-real-pages-http-proof.yml` commit`9cd133e`首次`38981795153`失败是真实**GitHub Pages仍返回旧revision184**（3次重试均同），不是生产签名PCK代码失败。持续待Pages队列将最新公开main部署后重新读取真实HTTP/RSA/206再签收。**不能在Pages未验收时说手机已经检测更新**。
 - **用户这部手机新版三档实际FPS/Draw/三角面均全部“未验证”**；需要玩家更新后逐档拍摄并连续测试，特别注意复核摇杆真的行走、能直接点击左树林、第一视角和完整人形可见性。真实达标再改状态灯，不能把headless PASS写为实机PASS。历史rev184约30FPS数据不准冒充三档数据。
+
+
+### rev186 公网OTA最终校验证据（纠正此前Pages过期状态）
+- **GitHub Pages Build+Deploy**：run`38982016201`，官方main建站和deploy作业均`completed/success`。另一个自动HTTPS验签作业`38981795153`初次因Pages/CDN滞后返回revision184而fail，不是程序通过；**Pages正式重新部署后重跑同作业，新job`117245214387` `completed/success`**。
+- 真实GitHub Actions外部网络校验日志：`PASS_APK176_REAL_REV186_PUBLIC_PAGES_RSA_SHA256_HTTP_RANGE_PHONE_DOWNLOAD_READY`，公网官网确实返回revision`186`，正式原APK176固定RSA公钥验证通过；完整下载PCK字节数`21666016`，SHA256`16c636e2654efb8ead50cfe38e1ab27ac89f9c9cee72d4acb28f8cfb55f6a6ab`；HTTP Range响应206，CDN `Cache-Control: max-age=600`。因此**原版生产签名发布+真实公网可检索/可下载**已证实，用户原安装包APK176理论可通过游戏内更新器获取。
+- **保持手机黄灯**：上述所有严格CI及网络验签结果不能代替用户在一加Ace5Pro实际更新rev186后的真机验收；三档FPS/Draw/三角面仍全部**未验证**，明确等待三档手机截图，不写虚假稳定60或极致120。
