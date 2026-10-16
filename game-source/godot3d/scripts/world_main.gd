@@ -44,6 +44,12 @@ var cam: Camera3D
 var sun: DirectionalLight3D
 var world_env: WorldEnvironment
 var ui_status: Label
+var ui_npc_details: Label
+var ui_farmer_a: Button
+var ui_farmer_b: Button
+var inspected_npc: String = ""
+var npc_node_index: Dictionary = {}
+var npc_text_refresh_accum: float = 0.0
 var ui_action: Button
 var ui_leave: Button
 var local_ai: Node
@@ -254,6 +260,8 @@ func _build_settlements() -> void:
 				assert(not id.is_empty(),"Original WorldState identity generator failed")
 				civil.call("setup",id,(ordinal+n)%10,spawn,rules,avatar)
 				civil.set_meta("canonical_id",canonical_id)
+				civil.connect("inspection_requested",Callable(self,"_inspect_npc"))
+				npc_node_index[id] = civil
 				npc_root.add_child(civil)
 				citizen_nodes.append(civil)
 	_make_streets()
