@@ -18,6 +18,16 @@ jobs:
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
+      - name: Enforce OSS runtime licences and reject unverifiable asset imports
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 tools/verify_open_source_registry.py --root .
+          python3 -m unittest discover -s tools -p 'test_open_source_registry.py' -v
+          test -s game-source/hd2d-world/opensource/THIRD_PARTY_NOTICES.md
+          grep -Fq 'Godot Engine 4.4.1' game-source/hd2d-world/opensource/THIRD_PARTY_NOTICES.md
+          grep -Fq 'FastNoiseLite' game-source/hd2d-world/opensource/THIRD_PARTY_NOTICES.md
+
       - name: Install Godot 4.4.1
         shell: bash
         run: |
