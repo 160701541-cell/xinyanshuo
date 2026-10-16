@@ -26,7 +26,7 @@ def inspect(root: pathlib.Path):
     assert categories=={"architecture":18,"props":10,"npc":15},categories
     mother=meta.get("male_master",{})
     assert mother.get("master_id")=="CAC_HAN_MALE_V2"
-    assert mother.get("skeleton_status")=="LANDMARKS_ONLY_NOT_SKINNED"
+    assert mother.get("skeleton_status")=="UNRIGGED_LANDMARKS_ONLY"
     assert len(mother.get("bone_guide_positions",{}))>=14
     assert len(mother.get("identity_features",[]))==6
     assert "交领右衽" in mother["identity_features"][0]
