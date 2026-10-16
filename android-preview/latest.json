@@ -1,12 +1,12 @@
 {
   "schema": 1,
   "channel": "android-preview",
-  "revision": 167,
-  "minimum_android_code": 1165,
-  "maximum_android_code": 2147483000,
-  "sha256": "0b1577e774f22959939a7befd0d7b183765f217d5e75683ac46b973207ac5b8e",
-  "size_bytes": 1247136,
-  "pack_url": "https://160701541-cell.github.io/xinyanshuo/android-preview/canglan-content-rev-167.pck",
-  "notes": "P0-G3：18个实体施工材料、真实工人运料与逐角木桩放线；累计包含天空#166修复",
-  "signature": "mEBkhivLxBwB6rTDJ2svHt5Bngyp93Lo7K9eJMigAbeBelZFZWCG78p82fw44uSWk5z9b8JTXFGCmzDLIZ4UYTtIxopJXJiXqJgN8jLCcrs0KsYWpGH1KbCyNKvOGCL1B2JXJHvGfOHhjHsNsAl+tWGT0TOb5L7osADphMcjAbBnghDL8LQwvy2Du0ccNZaaal3O0XqzGM2ro4tQ2iVLnx9D5JNkhNzI+KrCfqoV09fOil5yE/Cr45UmXxKCYK+RcO5xQJhrDN/12VOPIRBSJR/V6AX5kLtbsMByggICAfGil8SV4ClVnIc+Lf4JTsCqhguuOTnbNq/JLffdewjnS0Xa2/Omp6WkHZIh/k0iziCab03CmahFnPOI7cMlwf9GYrY1xRz/PWKtGGj6GRpiWDSvto2+Rn857M/xPOo3OiGOd1ubRTz58TG6ZcXyy44kbQPmPSI5lWa0Dx1oLeOef+ki9apRYbibkhJIDU0F5atFrcKFDwXJk9CNHJc+oZk2"
+  "revision": 177,
+  "minimum_android_code": 1176,
+  "maximum_android_code": 1176,
+  "sha256": "af5e08020e7ae473a31ed2917839ea3544bdf3747b15790bcea49e46a54eb6f3",
+  "size_bytes": 20361696,
+  "pack_url": "https://160701541-cell.github.io/xinyanshuo/android-preview/canglan-content-rev-177.pck",
+  "notes": "苍岚：WorldX新场景、国风正房与室内进出功能（测试更新）",
+  "signature": "UjR26/80Gpi/NPosPGnlUaZByyCZIIU72mHuXnhKJ5a9z80yeZzLMGu93OCg02++2deBicFd/ne/cAH5Gkhfzu4zDX8xWDf7HRlf3gFOdGuKD2zF4AjEWpk7FFG/3r/zgqc7a9mBi/jBTNcTa8l6ScVUr3h9vkIw//V2ugfSaCO0SDxiZGJLJRsEw9Wl03B2KnHepcgndupAbHD+eJYHyGUTQQUZ4hs4txnKWlqRdZx7dSi+BMOi2EnSz4nGzB3bCRTB+VBBTd5UTrsV4PP13Y27iQC+JKs5HrJxRWsywU6dRKDitKkMEkSAfYg8y99fKMI3UL8myzIXl8v9Sf2aRWAdRI8DDwiMOA81HIzvUvuQb5SBRMy3WoY1TFqKjwn2yeg9KZOwumF3qsFT3bOtG2C0lHct+LjreJaIQDViF4+YX4mebpsrCfnSbT/hHqbSdN7/Xt8KkeRrtO7mSJZ2Oj2ykexqLQTukU36d36IJmUAGu4X6DTbI2aVhH9T+k3M"
 }
