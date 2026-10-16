@@ -75,12 +75,12 @@ func _test() -> void:
 	if not portal.visible or portal.transition_count != 2:
 		_fail("ORIGINAL_WORLD_SWITCH_CHANGED_STATE", 16)
 		return
-	var outer := FileAccess.file_exists("res://hd2d/courtyard/main_house_v3_source.png")
+	var outer := FileAccess.file_exists("res://hd2d/courtyard/main_house_isolated_edge04.png")
 	var inner := FileAccess.file_exists("res://hd2d/courtyard/main_house_interior.png")
 	if not outer or not inner:
 		_fail("ORIGINAL_WORLDX_EXTERIOR_OR_INTERIOR_ART_NOT_IN_PACK", 18)
 		return
-	for image_path in ["res://hd2d/courtyard/main_house_v3_source.png", "res://hd2d/courtyard/main_house_interior.png"]:
+	for image_path in ["res://hd2d/courtyard/main_house_isolated_edge04.png", "res://hd2d/courtyard/main_house_interior.png"]:
 		var sample := Image.new()
 		if sample.load_png_from_buffer(FileAccess.get_file_as_bytes(image_path)) != OK:
 			_fail("ART_PNG_INVALID_" + image_path, 19)
@@ -88,6 +88,16 @@ func _test() -> void:
 		if sample.get_width() < 768 or sample.get_height() < 768:
 			_fail("ART_RESOLUTION_TOO_LOW_" + image_path, 20)
 			return
+	var facade_png := Image.new()
+	if facade_png.load_png_from_buffer(FileAccess.get_file_as_bytes("res://hd2d/courtyard/main_house_isolated_edge04.png")) != OK:
+		_fail("EXTERIOR_ALPHA_PNG_CORRUPT", 25)
+		return
+	if facade_png.get_width() >= 1024 or facade_png.get_height() >= 1024:
+		_fail("UNSPLIT_WHOLE_COURTYARD_USED_AS_HOUSE", 26)
+		return
+	if facade_png.get_pixel(0, 0).a > 0.01:
+		_fail("EXTERIOR_HAS_SOLID_RECTANGLE_BACKGROUND", 27)
+		return
 	if not portal._room.has_node("WorldXKolorsInteriorCandidate"):
 		_fail("INTERIOR_VISUAL_NOT_APPLIED", 21)
 		return
@@ -99,8 +109,11 @@ func _test() -> void:
 			_fail("INTERIOR_RASTER_RECT_ZERO_SIZE_" + str(rect.name), 22)
 			return
 	var footprint: Vector2 = indoor_art.texture.get_size() * indoor_art.scale
-	if footprint.x < 480.0 or footprint.y < 480.0:
+	if footprint.x < portal._room.size.x or footprint.y < portal._room.size.y:
 		_fail("INTERIOR_PNG_VISIBLE_FOOTPRINT_TOO_SMALL", 23)
+		return
+	if not portal._room.top_level:
+		_fail("INTERIOR_INHERITS_SHIFTED_PARENT_TRANSFORM", 28)
 		return
 	if indoor_art.position.distance_to(portal._room.size * 0.5) > 1.0:
 		_fail("INTERIOR_PNG_CENTERING_WRONG", 24)
