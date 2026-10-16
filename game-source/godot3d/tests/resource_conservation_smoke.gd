@@ -34,6 +34,35 @@ func _run() -> void:
 	assert(int(sim.get("natural_nodes")["tree1"]["remaining"]) == 0)
 	assert(not sim.call("gather_to_actor", "wood1", "tree1"))
 	assert(sim.call("get_available_resource_nodes", "v1", "tree").is_empty())
+	# A rich vein has a larger finite reserve and replenishes slowly.
+	assert(sim.call("register_rich_mineral_vein", "vein1", "v1", "stone",
+		Vector3(12, 0, 8), 12000))
+	assert(int(sim.get("natural_nodes")["vein1"]["capacity"]) == 12000)
+	assert(int(sim.get("natural_nodes")["vein1"]["remaining"]) == 1000)
+	assert(sim.call("gather_to_actor", "stone1", "vein1"))
+	assert(sim.call("deliver_carried", "stone1"))
+	for i in range(11):
+		sim.call("tick")
+	assert(int(sim.get("natural_nodes")["vein1"]["remaining"]) == 997,
+		"Rich mineral vein regenerated before its recovery delay")
+	for i in range(25):
+		sim.call("tick")
+	assert(int(sim.get("natural_nodes")["vein1"]["remaining"]) <= 999,
+		"Mine replenishment exceeded two units per 12 hours")
+	assert(int(sim.get("natural_nodes")["vein1"]["remaining"]) < 1000,
+		"Mine replenished faster than a single extraction")
+	# Trees can regrow, but only if explicitly configured by the biome.
+	assert(sim.call("register_natural_node", "sapling1", "v1", "tree", 3))
+	assert(sim.call("configure_resource_recovery", "sapling1", 3, 1, 48, 24))
+	assert(sim.call("gather_to_actor", "wood1", "sapling1"))
+	assert(sim.call("deliver_carried", "wood1"))
+	assert(int(sim.get("natural_nodes")["sapling1"]["remaining"]) == 0)
+	for i in range(48):
+		sim.call("tick")
+	assert(int(sim.get("natural_nodes")["sapling1"]["remaining"]) == 0)
+	for i in range(24):
+		sim.call("tick")
+	assert(int(sim.get("natural_nodes")["sapling1"]["remaining"]) == 1)
 	sim.call("start", 20261017)
 	assert(sim.get("natural_nodes").is_empty(), "Restart retained stale world nodes")
 	assert(sim.get("resource_positions").is_empty(), "Restart retained stale resource positions")
