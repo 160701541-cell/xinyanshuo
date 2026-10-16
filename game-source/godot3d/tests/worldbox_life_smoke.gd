@@ -8,7 +8,7 @@ func _test() -> void:
 	sim.call("start",141)
 	assert(bool(sim.call("create_village","TEST-01",
 		{"homes":2,"fields":2,"food":30,"water":30,
-		"grain":20,"wood":25,"stone":10,"clay":8})))
+		"grain":20,"wood":15,"stone":10,"clay":8})))
 	assert(not bool(sim.call("create_village","TEST-01",{})))
 	assert(bool(sim.call("add_citizen","P-01","TEST-01","farmer")))
 	assert(bool(sim.call("add_citizen","P-02","TEST-01","woodcutter")))
@@ -42,7 +42,7 @@ func _test() -> void:
 	replica.call("start",141)
 	replica.call("create_village","TEST-01",
 		{"homes":2,"fields":2,"food":30,"water":30,
-		"grain":20,"wood":25,"stone":10,"clay":8})
+		"grain":20,"wood":15,"stone":10,"clay":8})
 	for entry in ["farmer","woodcutter","cook","potter"]:
 		replica.call("add_citizen","P-%02d" % (
 			["farmer","woodcutter","cook","potter"].find(entry)+1),
