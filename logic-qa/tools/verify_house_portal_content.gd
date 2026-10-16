@@ -93,11 +93,18 @@ func _test() -> void:
 		return
 	# Headless node visibility alone was a false positive: the 1st real
 	# raster screenshot proved that the indoor Control was size 0.
-	var indoor_texture_rect: TextureRect = portal._room.get_node("WorldXKolorsInteriorCandidate")
-	for rect in [portal, portal._room, indoor_texture_rect]:
+	var indoor_art: Sprite2D = portal._room.get_node("WorldXKolorsInteriorCandidate")
+	for rect in [portal, portal._room]:
 		if rect.size.x < 800.0 or rect.size.y < 480.0:
 			_fail("INTERIOR_RASTER_RECT_ZERO_SIZE_" + str(rect.name), 22)
 			return
+	var footprint: Vector2 = indoor_art.texture.get_size() * indoor_art.scale
+	if footprint.x < 480.0 or footprint.y < 480.0:
+		_fail("INTERIOR_PNG_VISIBLE_FOOTPRINT_TOO_SMALL", 23)
+		return
+	if indoor_art.position.distance_to(portal._room.size * 0.5) > 1.0:
+		_fail("INTERIOR_PNG_CENTERING_WRONG", 24)
+		return
 	if outer != portal._outside_image_present or inner != portal._inside_image_present:
 		_fail("IMAGE_LOADER_STATUS_INCONSISTENT", 17)
 		return
