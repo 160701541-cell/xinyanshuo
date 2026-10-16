@@ -362,3 +362,12 @@ Godot 4.4.1对从**原签名Android APK176**提取的实际`update_protocol.gdc`
 `tests/worldbox_life_smoke.gd` 新增可重复确定性测试：每棵树木材只可被搬一次，采收时村库不增加、仓库交付才增加，村庄木材/粮草负库存不被允许，田地不能重复收割，做饭/进食耗材准确，以及两次同seed、同操作的快照严格一致。`tools/quality_gate.sh` 执行该真实Godot测试，失败即阻止正式QA。
 
 **当前状态**：文件已进入 `160701541-cell/xinyanshuo` main，最新严格QA运行号 `38910293756`，Android 3D+Qwen 构建运行号 `38910293606`。直到看到成功的作业报告前只称“已提交等待验证”，并非实机安装完成。原版游戏APK签名未动。下一步包括读取上述真正CI日志、修复运行时缺陷、为可见工人添加寻路/全量NPC分工、使材质到WorldBox风格统一，且正式更新之前必须检查兼容和签名。
+
+### CAC-LIFE-002 / GitHub正式Godot引擎验证结果（日志已读取）
+
+作业 `38910293756`（严格QA job `117004255932`）**在真实Godot 4.4.1 Linux headless引擎中完成并通过了**：
+- 43件GLB工厂生成与审查；程序场景中25块地形、60栋房屋、80名NPC、627件独立道具、1025批实例，完整主场景测试：`PASS PUBLIC CANGLAN 3D GODOT SCENE`。
+- 新生活/生产演算测试：`PASS CAC WORLD LIFE SIM: 4 jobs, real resource costs, 25 ticks, deterministic state, new house, finite tree, real carrier, regrowth, cooking/eating, no negative stock`。
+- 原版WorldState身份与现有3D场景仍通过冒烟门槛，玩家可见工地的按钮/几何物已作为主场景加载，仍须手机目视验收。
+
+**但此GitHub严格QA整体仍然为FAILURE**，后续真实GPU Mesa/Xvfb截图步骤返回 `ERROR: Condition "status < 0" is true. Returning: ERR_CANT_OPEN`，并被防绕过策略阻拦。这不是经济演算失败，也不能说“所有QA通过”。Android GGUF和正式APK结果仍未验证。
