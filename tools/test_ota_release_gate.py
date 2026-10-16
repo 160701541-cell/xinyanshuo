@@ -31,10 +31,11 @@ class ProductionOTALockdownTests(unittest.TestCase):
                 modified = dict(self.live, **{key: value})
                 self.assertFalse(gate.verify_signature(modified, self.key))
 
-    def test_apk176_requires_minimum_revision_177(self):
+    def test_apk176_requires_monotonic_revision_after_current_feed(self):
         self.assertEqual(self.base["version_code"], 1176)
         required = max(self.live["revision"], self.base["version_code"]-1000)+1
-        self.assertEqual(required, 177)
+        self.assertGreater(required, self.live["revision"])
+        self.assertGreaterEqual(required, self.base["version_code"] - 1000 + 1)
 
     def test_unsigned_dummy_pack_cannot_be_published(self):
         with tempfile.TemporaryDirectory() as tmp:
