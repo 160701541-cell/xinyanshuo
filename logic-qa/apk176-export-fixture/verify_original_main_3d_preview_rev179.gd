@@ -35,9 +35,14 @@ func _run() -> void:
 	var panel: Node = window.get_node_or_null("CC0PreviewInterface")
 	var viewport: SubViewport = panel.get_node_or_null(
 		"ActualReal3DViewportContainer/Actual3DRenderingViewport") if panel != null else null
-	if viewport == null or viewport.get_world_3d() == null:
-		_fail(7, "no_real_Godot_3d_renderer")
+	if viewport == null:
+		_fail(7, "missing_actual_SubViewport_node")
 		return
+	if not viewport.own_world_3d or viewport.size.x < 800 or viewport.size.y < 480:
+		_fail(18, "incorrect_3d_SubViewport_configuration")
+		return
+	# In --headless the rendering server may not materialize a World3D.
+	# Verify scene and its Camera3D/MeshInstance3D nodes below instead.
 	var scene_3d: Node3D = viewport.get_node_or_null("LicensedKenneyWorld")
 	if scene_3d == null or scene_3d.get_node_or_null("Mobile3DPreviewCamera") == null:
 		_fail(8, "missing_world_or_perspective_camera")
