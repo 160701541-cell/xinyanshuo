@@ -36,6 +36,18 @@ func _run() -> void:
 			"NPC is not physically steering toward real resource site")
 	var worksite: Node3D = stage.get_node_or_null("CAC_LifeWorksite_PlayerVisible")
 	assert(worksite!=null,"Actual physical harvest/build/eat scene missing")
+	# Phone playtest screenshot regression: debug card MUST NOT cover
+	# the world before the player intentionally opens or selects a citizen.
+	var overlay: PanelContainer = stage.get("ui_panel")
+	var show_panel: Button = stage.get("ui_toggle")
+	assert(overlay!=null and show_panel!=null,
+		"Mobile compact HUD toggle was not installed")
+	assert(not overlay.visible,
+		"World is obscured by huge always-open left debug panel at boot")
+	stage.call("_toggle_game_panel")
+	assert(overlay.visible,"Touch HUD menu fails to reveal citizen details")
+	stage.call("_toggle_game_panel")
+	assert(not overlay.visible,"Touch HUD menu cannot return to 3D gameplay")
 	var before: Dictionary = stage.call("snapshot")
 	print("PUBLIC_CANGLAN_3D_COUNTS:",before)
 	assert(before["source"]=="PUBLIC_GODOT3D","Wrong engine baseline")
@@ -125,6 +137,7 @@ func _run() -> void:
 	assert(stage.get("ui_farmer_a") is Button and stage.get("ui_farmer_b") is Button)
 	assert(stage.get("ui_npc_details") is Label)
 	stage.call("_inspect_npc",farmer_codes[0])
+	assert(overlay.visible,"Tapped 3D citizen does not open live profile card")
 	var first_panel: String = (stage.get("ui_npc_details") as Label).text
 	stage.call("_inspect_npc",farmer_codes[1])
 	var second_panel: String = (stage.get("ui_npc_details") as Label).text
