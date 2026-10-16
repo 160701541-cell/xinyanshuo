@@ -91,7 +91,10 @@ def audit(path: Path) -> dict:
         raise ValueError("BLOCKED: original compiled APK176 scene not inherited")
     if b"main_original_autonomous_rev180.tscn" not in found["scenes/main.tscn.remap"]:
         raise ValueError("BLOCKED: original APK entrypoint not pointed at 3D preview")
-    if (b"gather_to_actor" not in found["canglan_rev180/worldbox_life_sim.gd"] or\n            b"deliver_carried" not in found["canglan_rev180/worldbox_life_sim.gd"]):\n        raise ValueError("BLOCKED: actual finite resource transport backend missing")\n    return {"resource_count": len(found), "real_verified_cc0_glb_count": len(EXPECTED_MODELS),
+    if (b"gather_to_actor" not in found["canglan_rev180/worldbox_life_sim.gd"] or
+            b"deliver_carried" not in found["canglan_rev180/worldbox_life_sim.gd"]):
+        raise ValueError("BLOCKED: actual finite resource transport backend missing")
+    return {"resource_count": len(found), "real_verified_cc0_glb_count": len(EXPECTED_MODELS),
             "size_bytes": len(raw), "sha256": hashlib.sha256(raw).hexdigest(),
             "original_compiled_main_preserved": True}
 
