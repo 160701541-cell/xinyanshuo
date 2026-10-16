@@ -3,6 +3,7 @@ extends Node
 ## A single 0.6B model is shared by all NPCs; economy cannot be changed by text.
 signal state_changed(stage: String, description: String)
 signal npc_reply(entity_id: String, reply: String)
+signal npc_intent(entity_id: String, intention: String)
 signal inference_failed(message: String)
 
 const MANIFEST_PATH := "res://local_ai/model_manifest.json"
@@ -14,6 +15,7 @@ var native: Node
 var manifest: Dictionary = {}
 var install_thread: Thread
 var running_request_id: String = ""
+var running_request_kind: String = ""
 var dialogue_history: Dictionary = {}
 
 func _ready() -> void:
@@ -122,6 +124,7 @@ func _on_model_ready() -> void:
 
 func _on_error(message: String) -> void:
 	running_request_id = ""
+	running_request_kind = ""
 	_update("ready" if native!=null and bool(native.call("model_loaded")) else "unavailable",
 			"本地推理异常："+message)
 	inference_failed.emit(message)
@@ -129,10 +132,21 @@ func _on_error(message: String) -> void:
 func _on_reply_ready(entity_code: String, reply: String) -> void:
 	if entity_code != running_request_id:
 		return
+	var kind: String = running_request_kind
 	running_request_id = ""
+	running_request_kind = ""
 	var safe: String = reply.strip_edges().substr(0,240)
 	if safe.is_empty():
 		inference_failed.emit("模型输出为空")
+		return
+	if kind=="intent":
+		# This line is a PROPOSAL, never a command executed by this class.
+		# WorldBox validates intent and decides if any real-world action is legal.
+		npc_intent.emit(entity_code,safe)
+		_update("ready","本地AI给出NPC意向；正在由世界规则核验")
+		return
+	if kind!="dialogue":
+		inference_failed.emit("本地模型回复了未知请求类型")
 		return
 	if not dialogue_history.has(entity_code):
 		dialogue_history[entity_code] = []
@@ -142,6 +156,28 @@ func _on_reply_ready(entity_code: String, reply: String) -> void:
 		records.pop_front()
 	_update("ready","AI离线运行中 · 已完成一轮对话")
 	npc_reply.emit(entity_code,safe)
+
+func ask_npc_intent(entity_id: String, profession: String,
+		world_hour: float, facts: Dictionary) -> bool:
+	# A shared 0.6B CPU model is throttled to one sequential near-player NPC.
+	if stage!="ready" or native==null or running_request_id!="" or bool(native.call("inference_busy")):
+		return false
+	if entity_id.is_empty() or entity_id.length()>52 or profession.length()>35:
+		return false
+	var energy: int = clampi(int(facts.get("energy",70)),0,100)
+	var hunger: int = clampi(int(facts.get("hunger",0)),0,100)
+	var food: int = maxi(0,int(facts.get("food",0)))
+	var ongoing: String = "有" if bool(facts.get("construction_pending",false)) else "无"
+	var persona: String = ("你是苍岚世界独立居民%s，职业%s，当前%.0f时，精力%d，饥饿%d，村庄粮食%d，有施工项目%s。" %
+		[entity_id,profession,world_hour,energy,hunger,food,ongoing])
+	persona += "只决定本人下一步愿望，不允许虚构物品、建造或更改数字。只返回一行ACTION=选项；选项必须是eat,rest,inspect_stock,inspect_site,keep_working之一，且只能是其中一个。/no_think"
+	running_request_id=entity_id
+	running_request_kind="intent"
+	_update("thinking","离线AI根据NPC真实需要思考选择……")
+	native.call("request_reply",entity_id,persona,
+		"从你的实际饥饿、精力、职业和工地进度选择一件合理的下一步行为。只返回ACTION=xxx。",
+		48)
+	return true
 
 func ask_npc(entity_id: String, role_name: String, player_text: String,
 		world_hour: float, world_facts: Dictionary) -> bool:
@@ -161,6 +197,7 @@ func ask_npc(entity_id: String, role_name: String, player_text: String,
 	if dialogue_history.has(entity_id):
 		persona += "最近曾说过："+ "；".join(dialogue_history[entity_id])
 	running_request_id = entity_id
+	running_request_kind = "dialogue"
 	_update("thinking","离线AI正在思考，其他NPC仍执行原作息……")
 	native.call("request_reply",entity_id,persona,text,
 		int(manifest.get("max_reply_tokens",96)))
