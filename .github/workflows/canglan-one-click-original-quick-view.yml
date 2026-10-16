@@ -19,7 +19,7 @@ jobs:
         run: |
           set -euo pipefail
           python3 tools/quick_view_preflight.py
-          python3 tools/test_ota_release_gate.py
+          python3 -m unittest tools.test_ota_release_gate -q
       - name: Check original RSA signer, never print credentials
         shell: bash
         env:
