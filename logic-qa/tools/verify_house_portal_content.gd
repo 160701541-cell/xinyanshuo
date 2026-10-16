@@ -77,6 +77,20 @@ func _test() -> void:
 		return
 	var outer := FileAccess.file_exists("res://hd2d/courtyard/main_house_v3_source.png")
 	var inner := FileAccess.file_exists("res://hd2d/courtyard/main_house_interior.png")
+	if not outer or not inner:
+		_fail("ORIGINAL_WORLDX_EXTERIOR_OR_INTERIOR_ART_NOT_IN_PACK", 18)
+		return
+	for image_path in ["res://hd2d/courtyard/main_house_v3_source.png", "res://hd2d/courtyard/main_house_interior.png"]:
+		var sample := Image.new()
+		if sample.load_png_from_buffer(FileAccess.get_file_as_bytes(image_path)) != OK:
+			_fail("ART_PNG_INVALID_" + image_path, 19)
+			return
+		if sample.get_width() < 768 or sample.get_height() < 768:
+			_fail("ART_RESOLUTION_TOO_LOW_" + image_path, 20)
+			return
+	if not portal._room.has_node("WorldXKolorsInteriorCandidate"):
+		_fail("INTERIOR_VISUAL_NOT_APPLIED", 21)
+		return
 	if outer != portal._outside_image_present or inner != portal._inside_image_present:
 		_fail("IMAGE_LOADER_STATUS_INCONSISTENT", 17)
 		return
