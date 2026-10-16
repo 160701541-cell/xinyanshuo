@@ -621,3 +621,15 @@ Godot 4.4.1对从**原签名Android APK176**提取的实际`update_protocol.gdc`
 - 新增 `tools/audit_original_apk176_npc_ai_native_bridge.py`，公开repo本身已收录`android-preview/base-latest.json`指定的真实原APK176 ZIP二进制；逐条审计lib/*.so和Godot GDExtension相关元数据，输出清单与阻断理由，完全不需要访问私库、不产生APK、不泄漏密钥。
 - 新增仅用于真实性审计的公开repo Action `.github/workflows/canglan-original-npc-ai-phone-compat-audit.yml`；**真实CI `38954290732` 运行SUCCESS**，Job `117153125491` 回传 `ORIGINAL_NATIVE_LIBS 3 AI_BACKEND_MATCHES 0`、`P0_BLOCKED_ORIGINAL_APK176_NO_NATIVE_LLAMA_LIBS`、`PASS_TRUTHFUL_PHONE_RELEASE_BOUNDARY_AUDIT`。这意味着**原版APK176中没有可核验的llama.cpp / canglan_ai / ggml本地推理Android动态库**；只通过PCK上传权重和脚本不可能让内置 `ClassDB.class_exists("CanglanLocalLLM")` 自动变真。现有单独3D工程里的NPC本地AI逻辑/CC0已实测，不等于安装版兼容。
 - **正式手机发布状态**：目前`android-preview/latest.json`仍然revision178，本次未签rev179、未发布不兼容PCK、未生成其他包、未碰用户存档。**这不是成功发布**。推进路径：在唯一公库构建同原包名、同原签名的Android底层升级，以带合法原版keystore签名的覆盖APK只做一次llama.cpp ARM64/GDExtension初始化与真正3D世界兼容迁移；之后内容继续签名PCK OTA。或先发布不依赖本地AI的新行为与建设系统，但同样先证明原版主场景3D装载兼容。不得谎称旧APK176本身已经有离线Qwen。
+
+## 2026-10-17 / CAC-NPC-LLM-CHOICE-DEFERRED / 本地模型用户以后自己选，其他3D建造功能继续
+
+用户明确决定：**本地NPC AI模型由用户自行选择后再接入；当前先推进游戏里其他系统**。不允许默默指定Qwen3 0.6B、强制下载约484MB模型、假装NPC已经能调用AI；也不允许回退到HD2D、四面建筑图片或自行逐个造3D模型。
+
+已实改公开仓库原生3D游戏源码 `game-source/godot3d/scripts/local_ai_service.gd`：新增用户选择文件 `user://local_models/selected_model.json` 的显式授权门；不存在该文件时显示 `awaiting_user_selection` 并直接退出AI启动，**不加载、不下载任何默认GGUF**。已写入其他不依赖AI的NPC生活、工作、采集、木匠/石匠/陶工材料加工、实体运输、分阶段房屋建造均继续运行的预期。
+
+原生3D工程已有且继续沿用 `cc0_asset_bridge.gd` 12项**真正已导入的**Kenney、Quaternius开源3D GLB/glTF模块（包括门、石阶、墙、屋顶、木料、石块、人物/护卫）；`npc_building_system.gd` 已根据真实库存与工人劳动阶段装配这些现成模块。Poly Pizza暂不自动抓取，须逐个核对创作者及CC0/CC-BY许可，不能笼统认定其全部商用无署名。绝不让图片替代实体3D。
+
+新增 `tests/deferred_ai_and_cc0_build_smoke.gd` 与公开仓库专属真实Godot 4.4.1 CI `canglan-npc-materials-no-forced-llm-qa.yml`，用真实Godot引擎验证模型选择门、实体CC0模块、NPC及加工配方，运行ID `38955498300`；**在该工作流成功且与原版APK176兼容的签名PCK真正发布之前，绝不宣称本次修改已经更新到手机**。
+
+注意：以后用户选择本地模型时，需要实现可选模型菜单、用户可见的GGUF文件导入/验证和llama.cpp能力检查，不得用预置固定模型代替用户选择。
