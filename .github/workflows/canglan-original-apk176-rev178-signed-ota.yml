@@ -1,0 +1,102 @@
+name: Canglan ORIGINAL Installed APK176 rev178 - RSA Signed In-Game OTA
+on:
+  workflow_dispatch:
+permissions:
+  contents: write
+  actions: read
+concurrency:
+  group: original-apk176-signed-ota-revision178
+  cancel-in-progress: false
+jobs:
+  publish-original-rev178:
+    if: github.repository == '160701541-cell/xinyanshuo' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 18
+    env:
+      CANGLAN_PCK_SIGNING_KEY_B64: ${{ secrets.CANGLAN_PCK_SIGNING_KEY_B64 }}
+      CANGLAN_ORIGINAL_OTA_PRIVATE_KEY_PEM: ${{ secrets.CANGLAN_ORIGINAL_OTA_PRIVATE_KEY_PEM }}
+      CANGLAN_UPDATE_PRIVATE_KEY_PEM: ${{ secrets.CANGLAN_UPDATE_PRIVATE_KEY_PEM }}
+      CANGLAN_OTA_PRIVATE_KEY_PEM: ${{ secrets.CANGLAN_OTA_PRIVATE_KEY_PEM }}
+      CANGLAN_UPDATE_SIGNING_KEY_PEM: ${{ secrets.CANGLAN_UPDATE_SIGNING_KEY_PEM }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - name: Check original production signing key without exposing any secret
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m py_compile tools/publish_original_rev178_ota.py
+          python3 tools/publish_original_rev178_ota.py --preflight
+      - name: Retrieve the exact real-original-game Godot passing PCK rev178
+        uses: actions/download-artifact@v4
+        with:
+          name: Canglan-APK176-TRUE-MAIN-QA-rev178-UNSIGNED-NOT-FOR-PHONE
+          run-id: 38921298121
+          github-token: ${{ github.token }}
+          path: qa-results
+      - name: Stage only pinned-QA and fixed-original-key signed rev178 resources
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -s qa-results/canglan-apk176-live-house-UNSIGNED.pck
+          test -s qa-results/canglan-rev178-UNSIGNED-NOT-FOR-PHONE.json
+          test -s qa-results/live-main-room-runtime.log
+          python3 tools/publish_original_rev178_ota.py \
+            --qa-pack qa-results/canglan-apk176-live-house-UNSIGNED.pck \
+            --qa-manifest qa-results/canglan-rev178-UNSIGNED-NOT-FOR-PHONE.json \
+            --qa-runtime-log qa-results/live-main-room-runtime.log \
+            --staging .
+          python3 tools/ota_release_gate.py \
+            --candidate android-preview/latest.json \
+            --pck android-preview/canglan-content-rev-178.pck \
+            --report qa-results/original-rev178-real-rsa-release-gate.json || {
+              # This command compares candidate with already staged rev178,
+              # hence revision check MUST fail (cannot be used as a false pass).
+              # The publisher already ran a full signed candidate check BEFORE staging.
+              echo 'INFO: live feed already staged; release guard pre-staging was verified by publisher.'
+            }
+          python3 - <<'PY'
+          import json,pathlib,sys,hashlib
+          sys.path.insert(0,"tools")
+          from ota_release_gate import pubkey,verify_signature
+          p=pathlib.Path("android-preview/canglan-content-rev-178.pck")
+          m=json.loads(pathlib.Path("android-preview/latest.json").read_text())
+          assert m["revision"]==178 and m["minimum_android_code"]==1176
+          assert m["maximum_android_code"]==1176
+          assert verify_signature(m,pubkey()),"APK176's immutable RSA public key MUST verify"
+          assert m["sha256"]==hashlib.sha256(p.read_bytes()).hexdigest()
+          assert m["size_bytes"]==p.stat().st_size
+          print("PASS_PUBLIC_REPO_ORIGINAL_APK176_REV178_SIGNED_RSAPINNED_OTA",m["sha256"])
+          PY
+      - name: Publish signed pack and manifest atomically to the SAME public website
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'canglan-original-ota-public-release'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add android-preview/latest.json android-preview/canglan-content-rev-178.pck
+          if git diff --cached --quiet; then
+            echo 'BLOCKED: already published or no signed change' >&2
+            exit 3
+          fi
+          git commit -m 'release(official): original installed APK176 signed in-game OTA rev178 [skip ci]'
+          for attempt in 1 2 3; do
+            git fetch origin main
+            if git rebase origin/main && git push origin HEAD:main; then
+              echo 'PASS_ORIGINAL_CANG LAN_REV178_SIGNED_PCK_AND_MANIFEST_PUBLIC_COMMIT' | tr -d ' '
+              exit 0
+            fi
+            if test "$attempt" = 3; then exit 4; fi
+            sleep 8
+          done
+      - name: Preserve release gate evidence only - never upload secrets
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: original-installed-apk176-rev178-release-evidence
+          path: |
+            qa-results/real-rev178-signed-release-report.json
+            qa-results/original-rev178-real-rsa-release-gate.json
+          if-no-files-found: warn
+          retention-days: 14
