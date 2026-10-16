@@ -49,6 +49,15 @@ func _run() -> void:
 	if not (report.get("missing_assets", []) as Array).is_empty():
 		_fail(10, "invalid_or_missing_actual_CC0_GLB_source")
 		return
+	var genuine_meshes: Array[Node] = scene_3d.find_children("*", "MeshInstance3D", true, false)
+	# 26 real CC0 meshes plus an independent technical terrain plane.
+	if genuine_meshes.size() < 27:
+		_fail(15, "expected_real_GLB_MeshInstance3D_nodes_not_placeholder_labels")
+		return
+	var interface: Control = panel as Control
+	if interface.mouse_filter != Control.MOUSE_FILTER_IGNORE:
+		_fail(16, "closing_preview_would_steal_original_game_touches")
+		return
 	if not bool(report.get("save_unchanged", false)):
 		_fail(11, "must_never_modify_original_game_save")
 		return
