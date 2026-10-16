@@ -257,27 +257,13 @@ func gather_field_to_actor(actor_id: String, field_code: String) -> bool:
 	return true
 
 func harvest_field(village_id: String, field_code: String, actor_id: String) -> bool:
+	# Legacy interface retained for UI compatibility, but grain MUST enter
+	# the worker's finite cargo first. The depot credits only on delivery.
 	if not villages.has(village_id) or not citizens.has(actor_id):
 		return false
-	if citizens[actor_id]["village_id"]!=village_id:
+	if String(citizens[actor_id]["village_id"]) != village_id:
 		return false
-	if int(villages[village_id]["fields"])<=0:
-		return false
-	if not harvested_fields.has(field_code):
-		return false
-	var plot: Dictionary = harvested_fields[field_code]
-	if String(plot.get("village",""))!=village_id:
-		return false
-	if not bool(plot["ready"]) or day<int(plot["next_day"]):
-		return false
-	# The player must fetch field yield; this cannot be spammed every frame.
-	var grain: int = 5
-	if not _add_stock(village_id,"grain",grain):
-		return false
-	plot["ready"]=false
-	plot["next_day"]=day+1
-	_journal(village_id,"harvest_grain",grain,field_code)
-	return true
+	return gather_field_to_actor(actor_id, field_code)
 
 func prepare_meal(village_id: String, actor_id: String) -> bool:
 	if not citizens.has(actor_id) or citizens[actor_id]["village_id"]!=village_id:
