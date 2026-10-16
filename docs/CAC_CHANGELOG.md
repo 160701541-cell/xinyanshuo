@@ -781,3 +781,13 @@ Godot 4.4.1对从**原签名Android APK176**提取的实际`update_protocol.gdc`
 3. 发现旧rev178 HD2D CanvasLayer在新3D预览关闭后仍遮住原游戏世界。现3D预览就绪时先关闭旧HD2D界面但**保留旧节点与功能**，退出预览时真正露出原3D世界（提交 `c03a425fe26c18ad2fb9f1a23db25cdfb945a7b9`）；新增原APK176 Godot用例断言旧2D界面未挡住3D（提交 `bbdb311f2e9c3b9e896151e5f73d5de49f1edcb4`）。
 
 **真实状态**：源码已在公开GitHub提交；本次GitHub连接未返回新rev179流水线的实际跑完结论，未取得全量Godot runtime输出、安卓设备更新证据或已发布PCK。再次读取正式版本仍为rev178，**不能说手机已可更新rev179**。后续只能按GitHub真实CI运行产物、官网latest.json及手机验收三方证据升级状态灯。
+
+
+## 2026-10-17 / REV179-FAIL-REAL-LOG-38963284512 / 按用户提供的具体失败Actions日志修复
+
+**真实失败定位（不是猜测）**：用户提供的GitHub Actions运行`38963284512` / job `117183464134`，公开连接读取了完整job步骤与真实日志。1-6步成功：恢复真实APK176资产、Terrain3D v1.0.2精确匹配、Godot4.4.1下载、26条资源PCK索引/双GLB SHA完整性验收PASS（21,059,168字节）；**第7步Godot原APK176实时3D场景验收失败**，错误为 `GLTFDocument.append_from_buffer`中`p_base_path.is_empty()`导致图像解析失败，以及`FAIL_APK176_REV179_3D_PREVIEW no_real_Godot_3d_renderer`。后续rev179候选签名/发布步骤按门禁被正确跳过。并非RSA密钥失效，也不是PCK没有打包。
+
+**真实修复代码**：
+- `game-source/apk176-ota177-candidate/scripts/apk176_cc0_3d_preview.gd` 提交 `99406392dbb182cb910d2966c996736ac3f9f62a`：Godot GLB内贴图解析需要非空基路径，把错误的`append_from_buffer(data, "", state)`改为`append_from_buffer(data, path.get_base_dir(), state)`，不修改源模型和授权。
+- `logic-qa/apk176-export-fixture/verify_original_main_3d_preview_rev179.gd` 提交 `61aa64b697ba06bf74e075a8e8f5cae18a6b4876`：将Godot SubViewport场景验收由`viewport.world_3d`改用`viewport.get_world_3d()`查询实际使用的3D World（`own_world_3d`是开关，不是拿资源的断言接口）。
+- 现有rev179工作流已监听这两份源码路径，提交后将按既有门禁重新执行。**本批只证实GitHub修复代码提交，未取得新一轮Godot成功或rev179更新成功的运行证据**。正式`android-preview/latest.json`仍须等待真实原版3D渲染、房屋/存档回归、RSA验签及推送同时满足后才能改为rev179。未改官网live或重新安装APK。
