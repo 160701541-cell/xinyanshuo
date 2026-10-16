@@ -1,0 +1,27 @@
+{
+  "schema": 1,
+  "id": "canglan-offline-dialogue-qwen3-0.6b-q4km",
+  "version": "2026-10-16",
+  "framework": "llama.cpp",
+  "runtime_pin": "b6000",
+  "model": "Qwen3-0.6B",
+  "quant": "Q4_K_M",
+  "language": [
+    "zh-CN"
+  ],
+  "author": "Qwen (Alibaba)",
+  "license": "Apache-2.0",
+  "license_url": "https://huggingface.co/Qwen/Qwen3-0.6B",
+  "upstream": "https://huggingface.co/QuantFactory/Qwen3-0.6B-GGUF",
+  "source_url": "https://huggingface.co/QuantFactory/Qwen3-0.6B-GGUF/resolve/main/Qwen3-0.6B.Q4_K_M.gguf",
+  "sha256": "7af3fdf842f87b24672f8a7f1dd50404043f0bfb71093ff91c31d2b49df4631d",
+  "size_hint_bytes": 484000000,
+  "destination": "models/Qwen3-0.6B.Q4_K_M.gguf",
+  "max_context_tokens": 2048,
+  "max_reply_tokens": 96,
+  "threads": 3,
+  "ram_budget_note": "~0.5GB weights plus KV/3D engine; real phone benchmark required",
+  "required_for_offline": true,
+  "bundled_in_git": false,
+  "qa": "NATIVE_ANDROID_RUNTIME_PENDING"
+}
