@@ -47,7 +47,7 @@ jobs:
           repository: YGYOOO/WorldX
           path: worldx-upstream
       - name: Patch WorldX native map generator prompt
-        run: python3 tools/asset_factory/patch_worldx_canglan_courtyard.py --worldx-root worldx-upstream
+        run: python3 tools/asset_factory/patch_worldx_canglan_main_house.py --worldx-root worldx-upstream
       - name: Install WorldX generator dependencies
         working-directory: worldx-upstream/generators
         run: npm ci --ignore-scripts
@@ -63,8 +63,8 @@ jobs:
           const model = (process.env.SILICONFLOW_IMAGE_MODEL || '').trim();
           if (!model) throw Error('Missing image_model input: choose an active text-to-image model from SiliconFlow model marketplace');
           const prompt = loadPrompt('step1-map-generation.md', {
-            userPrompt: '苍岚高清国风四合院，单张独立建筑素材试样',
-            additionalConstraints: '画风必须统一，不要像素风、Q版、90度俯视。',
+            userPrompt: '苍岚四合院正房单体素材，保持上一批四合院画风不变，提升瓦片与木梁清晰度',
+            additionalConstraints: '仅一栋正房，纯色背景，可裁剪，无树木、院墙和其他建筑，不要模糊。',
           });
           const response = await fetch('https://api.siliconflow.cn/v1/images/generations', {
             method: 'POST',
@@ -84,18 +84,18 @@ jobs:
           const png = bytes.subarray(0,8).toString('hex') === '89504e470d0a1a0a';
           const jpeg = bytes.subarray(0,3).toString('hex') === 'ffd8ff';
           if (!png && !jpeg) throw Error('Unknown image format');
-          writeFileSync('../../courtyard-output/courtyard_source.'+(png?'png':'jpg'), bytes);
+          writeFileSync('../../courtyard-output/main_house_source.'+(png?'png':'jpg'), bytes);
           writeFileSync('../../courtyard-output/generation_meta.json', JSON.stringify({
             generator:'WorldX native prompt-loader + SiliconFlow images/generations adapter',
             model, status:'generated_not_qa_approved', bytes:bytes.length,
-            format:png?'png':'jpeg', prompt_version:'canglan-courtyard-batch01'
+            format:png?'png':'jpeg', prompt_version:'canglan-main-house-batch02'
           },null,2));
           console.log('WORLDX_SILICONFLOW_COURTYARD_GENERATED',bytes.length);
           NODE
       - name: Upload generated source only
         uses: actions/upload-artifact@v4
         with:
-          name: Canglan-WorldX-Courtyard-Batch01-Unreviewed
+          name: Canglan-WorldX-MainHouse-Batch02-Unreviewed
           path: courtyard-output/
           if-no-files-found: error
           retention-days: 14
