@@ -333,3 +333,9 @@ Godot 4.4.1对从**原签名Android APK176**提取的实际`update_protocol.gdc`
 - 工业化规范已提交 `docs/CAC_MALE_NPC_MASTER_V1.md`，描述层叠交领、围裙挂点、面部最小信息、衣袖非圆柱轮廓、实际共享身体测量、职业可换件和后续真实蒙皮/动画质量门槛。
 - **真实状态**：本地5个GLB文件可用性确认；公开GitHub源码已提交并触发后续CI；但生产仓库43件联合生成、Godot引擎实时全量导入、Android APK/旧APK热更新、最终画风审批，在本次提交时仍须看新CI的真实结果，不可假称全部通过。
 - 其他QA背景：修复后的原3D场景25地形、80院落建筑、80角色、627道具/1025批量实例曾经在真实Godot CI启动并通过主体场景，后续实际严格截图步骤失败；含Qwen本地模型Android流程在真实推理冒烟前仍有失败，暂不声称已可安装。男母版不会解除上述现有发布阻塞。
+
+### CAC-MALE-001 / 本轮真实CI证据补录
+
+公开GitHub Actions严格3D作业 `38905880781`（`aee58119cf1c5d9af1dbf3b05cc256346b832a66`）中，已明确执行至 **Capture actual 3D gameplay framebuffer on Mesa software GPU**，前置批量生成43份GLB/模型校验与**Godot完整场景冒烟全部通过**；原始日志逐字打印 `PASS PUBLIC CANGLAN 3D GODOT SCENE: 25 live terrain chunks / 60 houses / 80 NPC / 600+ props / indoor furniture / door / collapse / stable IDs`，启动统计 `world_props=627`、`batched_instances=1025`，这也意味着 `world_smoke.gd` 新增的4个男母版职业GLB真实场景引用断言已通过。
+
+但**整条严格CI尚未通过**：后续 Mesa/Xvfb 真正取帧阶段存在 `ERROR: Condition "status < 0" is true. Returning: ERR_CANT_OPEN`，且QA策略遇到 `ERROR:` 必须失败，不许跳过。需单独定位是软件GPU截图打开错误或其它渲染资源错误；这是截图QA的BLOCKER，不能宣传所有测试绿灯。Android ARM64+Qwen GGUF整包仍未通过真机验收。
