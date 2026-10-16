@@ -7,6 +7,11 @@ on:
       - 'game-source/godot3d/scripts/autonomous_village_director.gd'
       - 'game-source/godot3d/tests/resource_conservation_smoke.gd'
       - 'game-source/godot3d/scripts/world_resource_seeder.gd'
+      - 'game-source/godot3d/scripts/world_resource_visuals.gd'
+      - 'game-source/godot3d/scripts/world_main.gd'
+      - 'game-source/godot3d/scripts/worldbox_visible_worksite.gd'
+      - 'game-source/godot3d/tests/world_smoke.gd'
+      - 'game-source/godot3d/tests/autonomous_job_smoke.gd'
       - 'game-source/godot3d/tests/resource_world_seeding_smoke.gd'
       - '.github/workflows/canglan-resource-conservation-qa.yml'
 jobs:
@@ -20,6 +25,11 @@ jobs:
           curl -fL --retry 3 -o /tmp/godot.zip https://github.com/godotengine/godot/releases/download/4.4.1-stable/Godot_v4.4.1-stable_linux.x86_64.zip
           unzip -q /tmp/godot.zip -d /tmp
           chmod +x /tmp/Godot_v4.4.1-stable_linux.x86_64
+      - name: Import real licensed GLB assets and GDScript sources
+        run: |
+          set -o pipefail
+          timeout 160s /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless --editor --path game-source/godot3d --import 2>&1 | tee /tmp/godot-import.log
+          if grep -E 'SCRIPT ERROR:|Parse Error:|Failed to load script' /tmp/godot-import.log; then exit 1; fi
       - name: Run actual Godot resource regression
         run: |
           set -o pipefail
@@ -30,3 +40,15 @@ jobs:
           set -o pipefail
           /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless --path game-source/godot3d --script res://tests/resource_world_seeding_smoke.gd --quit-after 300 2>&1 | tee /tmp/seeding-test.log
           grep -q PASS_WORLD_RESOURCE_SEEDING_PREEXISTING_NODES /tmp/seeding-test.log
+      - name: Native 3D world and CC0 meshes integration smoke
+        run: |
+          set -o pipefail
+          timeout 160s /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless --path game-source/godot3d --script res://tests/world_smoke.gd 2>&1 | tee /tmp/world-scene.log
+          grep -q 'PASS PUBLIC CANGLAN 3D GODOT SCENE' /tmp/world-scene.log
+          if grep -E 'SCRIPT ERROR:|Parse Error:|Assertion failed|ERROR:' /tmp/world-scene.log; then exit 1; fi
+      - name: Autonomous NPC harvesting and physical delivery integration
+        run: |
+          set -o pipefail
+          timeout 160s /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless --path game-source/godot3d --script res://tests/autonomous_job_smoke.gd 2>&1 | tee /tmp/npc-transport.log
+          grep -q 'PASS CAC AUTONOMOUS NPC LOOP' /tmp/npc-transport.log
+          if grep -E 'SCRIPT ERROR:|Parse Error:|Assertion failed|ERROR:' /tmp/npc-transport.log; then exit 1; fi
