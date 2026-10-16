@@ -59,7 +59,7 @@ jobs:
           mkdir -p qa-logs
           CANGLAN_3D_SCREENSHOT="$GITHUB_WORKSPACE/qa-logs/real-godot-3d-world.png" \
           timeout 160s xvfb-run -a -s '-screen 0 1280x720x24' \
-          /tmp/Godot_v4.4.1-stable_linux.x86_64 --rendering-method gl_compatibility \
+          /tmp/Godot_v4.4.1-stable_linux.x86_64 --audio-driver Dummy --rendering-method gl_compatibility \
           --path game-source/godot3d \
           --script res://tests/capture_real_frame.gd \
           > qa-logs/visual-engine-capture.log 2>&1 || {
