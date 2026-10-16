@@ -694,3 +694,16 @@ Godot 4.4.1对从**原签名Android APK176**提取的实际`update_protocol.gdc`
 依总纲和AGENTS.md推进：新增`game-source/godot3d/scripts/world_resource_visuals.gd`（提交`b18a0480f1d10c5bcf29161ffdab7c83a7c6a846`），为播种后的自然节点与农田创建真实3D世界坐标的Label3D调试标识；每秒从权威模拟读取节点ID、类型、当前储量/容量，耗尽时隐藏，恢复后重新显示；农田显示成熟或生长状态。此显示层**不生成资源，不修改库存，不是正式树木/矿石模型**。主世界`world_main.gd`已接入显示层，提交`59d368b520d832e15c25f7f7af64e6aa2e4437e0`。
 
 **QA门禁**：仅确认GitHub提交成功；本轮没有真实Godot运行结果、画面截图或Android实机数据，不得称画面已验收。下一批需优先处理：已导入CC0树木/石矿素材实际绑定与许可审计、碰撞及寻路、真实CI失败诊断；同时检查原版APK176兼容桥与签名PCK发行阻塞。**原版OTA未更新。**
+
+
+## 2026-10-17 / ECO-007-REAL-CC0-VISUALS-AND-LOGISTICS-P0
+
+本轮不再只堆调试标签：真实资源视觉系统`world_resource_visuals.gd`使用**已在公开仓库真实导入且有来源记录**的Kenney CC0 `tree_oak.glb`与`rocks-small.glb`，按权威节点ID/坐标实例化32个3D模型；每秒根据自然节点剩余储量切换显隐，树木按剩余比例显示成长缩放。资源标识保留为开发调试（不算正式完整风格QA）。提交`ae2fb48354e6b536a86f18e03aeedfa82e0142b5`。未擅自创建新模型或改变库存。
+
+发现此前世界生成器播种7个农田已占满`fields=7`额度，导致既有玩家交互农田`FIELD-LOOP`登记失败，形成P0玩法回归。现世界播种6块预置农田，给原交互工作区保留1块；提交`ab43c378ab4e8d8ea7191b8dde65fc60b263d2af`，播种回归调整`fce6f42827f499d308b901919a749eb7fe20ee44`，主世界检查调整`49ec0170feab2983f5016adfb6a405e63a3a6435`。
+
+发现`worldbox_life_sim.gd.harvest_field`旧API可在没有运输的情况下直接把粮食写入村庄仓库，违反守恒与真实物流。提交`032cde58f53489e6fbccb7805ee132fb19bc5e8a`改为调用`gather_field_to_actor`，只将粮食记入搬运者负载；`worldbox_visible_worksite.gd`提交`8744abeb7e46cc1ab4695286ad86db5b2489f260`让交互收割后必须走到仓库才能确认入库（该旧演示场景仍包含临时BoxMesh其他对象，**未达到正式美术标准**）。资源守恒回归测试增加重复采集/重复入库防护，提交`158ea9f5dc632709c741a63825a636ca434c7d1b`。
+
+此前`autonomous_job_smoke.gd`仍依赖已被移除的`natural_art`方块节点并严格断言旧8+2结构，不能用于新资源生成器；现按真实资源位置验证NPC采集/搬运/两名农民交货，提交`f1edbab91c4b3945f764142d0e91f9b5ef5e4996`。Godot CI增加GLB导入、完整3D主世界和NPC运输集成检查，提交`127b27f1d740985d18e07d137ae26864e5cf88bd`。
+
+**QA状态：本次只确认源码实际提交，Godot CI未读取成功结果，不标通过；Android原版APK176签名OTA仍未更新，手机未验收。** 仍需优化寻路避障、素材统一风格、替换演示场景临时方块，审查原版PCK兼容及合法生产签名链。
