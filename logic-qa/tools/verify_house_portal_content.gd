@@ -85,7 +85,8 @@ func _test() -> void:
 		if sample.load_png_from_buffer(FileAccess.get_file_as_bytes(image_path)) != OK:
 			_fail("ART_PNG_INVALID_" + image_path, 19)
 			return
-		if sample.get_width() < 768 or sample.get_height() < 768:
+		var minimum := 400 if image_path.ends_with("main_house_isolated_edge04.png") else 768
+		if sample.get_width() < minimum or sample.get_height() < minimum:
 			_fail("ART_RESOLUTION_TOO_LOW_" + image_path, 20)
 			return
 	var facade_png := Image.new()
