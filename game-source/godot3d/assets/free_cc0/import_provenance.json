@@ -222,6 +222,26 @@
       "license": "CC0-1.0",
       "origin_website": "https://quaternius.com/packs/medievalvillagemegakit.html",
       "mirror_transport_commit": "21104b4045261c28fc312360841ed1a7b0ac8782"
+    },
+    {
+      "supplier": "quaternius_humanoid",
+      "file": "public/assets/character.glb",
+      "sha256": "d6f3b64cab629f6ddca9ba063811aeffd3663a8a4e49ade47cd9505dc2bbd70f",
+      "bytes": 741320,
+      "git_blob_sha1": "b3fd79533fdb9fcedd077744f7e120920eb6cc97",
+      "license": "CC0-1.0",
+      "origin_website": "https://quaternius.com/packs/universalbasecharacters.html",
+      "mirror_transport_commit": "ddd5fc34a445bcded3cf9836607aaeebc19a5c78"
+    },
+    {
+      "supplier": "quaternius_knight",
+      "file": "public/models/knight.glb",
+      "sha256": "71d710f21e01566e4c4d8fb3e2f06af9222f62132a01455855fd9353ee54a685",
+      "bytes": 414452,
+      "git_blob_sha1": "38000ded705d6f1eb02235d1b74f36ca9ac65703",
+      "license": "CC0-1.0",
+      "origin_website": "https://quaternius.itch.io/lowpoly-animated-knight",
+      "mirror_transport_commit": "71bbfbdfacd118196994b26da68eec1876d55c6b"
     }
   ],
   "sources": [
@@ -238,6 +258,26 @@
       "mirror_repo": "J-Ponzo/gltf-medieval-village-megakit",
       "mirror_commit": "21104b4045261c28fc312360841ed1a7b0ac8782",
       "asset_license": "CC0-1.0"
+    },
+    {
+      "source": "quaternius_humanoid",
+      "official": "https://quaternius.com/packs/universalbasecharacters.html",
+      "mirror_repo": "programasweights/avatar",
+      "mirror_commit": "ddd5fc34a445bcded3cf9836607aaeebc19a5c78",
+      "asset_license": "CC0-1.0"
+    },
+    {
+      "source": "quaternius_knight",
+      "official": "https://quaternius.itch.io/lowpoly-animated-knight",
+      "mirror_repo": "ilrein/warptracker",
+      "mirror_commit": "71bbfbdfacd118196994b26da68eec1876d55c6b",
+      "asset_license": "CC0-1.0"
     }
-  ]
+  ],
+  "character_paths": {
+    "civilian": "quaternius_humanoid/public/assets/character.glb",
+    "guard": "quaternius_knight/public/models/knight.glb"
+  },
+  "world_effect": "SCENERY_AND_NPC_APPEARANCE_ONLY; NO PREBUILT_VILLAGE",
+  "original_phone_signed_pck": "NOT_RELEASED"
 }
