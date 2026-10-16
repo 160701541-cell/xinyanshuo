@@ -6,6 +6,7 @@ import base64, json, os, pathlib, subprocess, tempfile
 from ota_release_gate import pubkey
 
 ENV_CANDIDATES=(
+    "CANGLAN_PCK_SIGNING_KEY_B64",  # Actual legacy signer alias from canglan-world private CI
     "CANGLAN_ORIGINAL_OTA_PRIVATE_KEY_PEM",
     "CANGLAN_UPDATE_PRIVATE_KEY_PEM",
     "CANGLAN_OTA_PRIVATE_KEY_PEM",
