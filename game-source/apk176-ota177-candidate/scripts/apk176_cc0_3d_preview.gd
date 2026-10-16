@@ -45,6 +45,11 @@ func _ready() -> void:
 	view_root.name = "LicensedKenneyWorld"
 	preview.add_child(view_root)
 	_create_visual_stage()
+	# Old rev178 raster overlay is preserved for compatibility but must NOT
+	# cover the actual original 3D game when this preview is dismissed.
+	var legacy: Node = get_parent().get_node_or_null("HD2DArtAcceptance")
+	if legacy != null and legacy.has_method("_set_visible"):
+		legacy.call("_set_visible", false)
 	var hud := VBoxContainer.new()
 	hud.name = "PreviewHUD"
 	hud.mouse_filter = Control.MOUSE_FILTER_IGNORE
