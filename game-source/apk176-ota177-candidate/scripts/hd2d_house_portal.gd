@@ -28,7 +28,10 @@ func install(world: Node2D, status: Label) -> void:
 	_world = world
 	_status = status
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
-	set_anchors_preset(Control.PRESET_FULL_RECT)
+	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	# Anchor-only setup kept the room at 0×0 in the REAL Godot viewport
+	# even while HUD labels rendered, so its PNG did not appear.
+	size = get_viewport().get_visible_rect().size
 	_build_exterior()
 	_build_interior()
 	_build_entrance_controls()
@@ -90,13 +93,15 @@ func _build_interior() -> void:
 	_room = Control.new()
 	_room.name = "CL_HOUSE_0001_InteriorScene"
 	add_child(_room)
-	_room.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_room.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	_room.size = get_viewport().get_visible_rect().size
 	_room.mouse_filter = Control.MOUSE_FILTER_STOP
 	var floor := ColorRect.new()
 	floor.name = "FallbackWoodFloor"
 	floor.color = Color("#977d61")
 	_room.add_child(floor)
-	floor.set_anchors_preset(Control.PRESET_FULL_RECT)
+	floor.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	floor.size = _room.size
 	var tex := _read_texture(INTERIOR)
 	if tex != null:
 		var art := TextureRect.new()
@@ -105,7 +110,8 @@ func _build_interior() -> void:
 		art.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 		art.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
 		_room.add_child(art)
-		art.set_anchors_preset(Control.PRESET_FULL_RECT)
+		art.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+		art.size = _room.size
 		_inside_image_present = true
 	else:
 		# Functional, deliberately marked placeholder, never considered art QA.
@@ -158,7 +164,7 @@ func _build_entrance_controls() -> void:
 	_open_button.name = "EnterHouseFixedHUD"
 	_open_button.text = "进入正房"
 	_open_button.custom_minimum_size = Vector2(150.0, 58.0)
-	_open_button.set_anchors_preset(Control.PRESET_BOTTOM_RIGHT)
+	_open_button.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_RIGHT)
 	_open_button.offset_left = -182.0
 	_open_button.offset_top = -94.0
 	_open_button.offset_right = -20.0
