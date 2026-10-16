@@ -78,3 +78,6 @@ python -m unittest discover -s tools/asset_factory -p 'test_*.py' -v
 
 ## WorldX 真实出图 batch02（2026-10-16）
 `canglan-worldx-props-batch02.yml` 使用已存在的 `SILICONFLOW_API_KEY` Secret，固定 WorldX 提交与原生 prompt loader，替换90度地图模板，顺序生成院门和石井两个1024原图候选。每件最多一次生成请求、失败不重试、已有完整产物跳过；记录提示词、模型、SHA、运行链接。`node --test tools/asset_factory/test_worldx_props_batch02.mjs` 无付费调用。这里只使用文本画风约束，没有把参考图传给模型，必须视觉比较。纯色原图不是透明成品；生成候选单独保存，未引用场景，不改发布清单；部分成功在 Actions Artifact 保存，不能盲目重跑付费批次。
+
+## batch02 局部修补复现
+`python tools/asset_factory/apply_ai_corner_repair.py --root game-source/apk176-ota177-candidate/hd2d/worldx-generated/batch02` 使用已完成的AI修补补片输出两张1024修补版，保留原图、来源和SHA。自动断言修补区域外逐像素一致；Actions自动保存修补版。此命令不重新调用模型，不处理主体背景分离。
