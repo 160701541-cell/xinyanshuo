@@ -67,6 +67,9 @@ def main():
     report={
         "signing_alias_diagnostics":secret_status,
         "android_apk_keystore_secret_present":bool(os.environ.get("CANGLAN_ANDROID_KEYSTORE_B64","").strip()),
+        "site_publish_token_alias_set":os.environ.get("PUBLIC_SITE_PUBLISH_TOKEN_PRESENT","").lower()=="true",
+        "ota_release_enabled_variable":os.environ.get("PUBLIC_OTA_RELEASE_ENABLED","").lower()=="true",
+        "note_site_publisher":"CANGLAN_SITE_PUBLISH_TOKEN only pushes site updates; it cannot sign APK176 PCK manifests.",
         "note_android_keystore":"Android APK keystore is NOT a valid content-update RSA manifest signer",
         "probe_repository":os.environ.get("GITHUB_REPOSITORY","unknown"),
         "scope_notice":"This probe reads only explicitly injected xinyanshuo public repository Actions secrets; no other repository is consulted.",
