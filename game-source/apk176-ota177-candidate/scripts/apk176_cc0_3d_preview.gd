@@ -18,10 +18,13 @@ func _ready() -> void:
 	name = "CanglanAPK176Actual3DPreview"
 	var ui := Control.new()
 	ui.name = "CC0PreviewInterface"
+	# Transparent parent MUST NOT intercept touch after preview is closed.
+	ui.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	ui.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	add_child(ui)
 	var backdrop := ColorRect.new()
 	backdrop.name = "SkyBorder"
+	backdrop.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	backdrop.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	backdrop.color = Color("#293e47")
 	ui.add_child(backdrop)
@@ -44,6 +47,7 @@ func _ready() -> void:
 	_create_visual_stage()
 	var hud := VBoxContainer.new()
 	hud.name = "PreviewHUD"
+	hud.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	hud.position = Vector2(18.0, 18.0)
 	ui.add_child(hud)
 	var title := Label.new()
@@ -55,12 +59,14 @@ func _ready() -> void:
 	hud.add_child(_notice)
 	var exit_button := Button.new()
 	exit_button.name = "Exit3DPreview"
+	exit_button.mouse_filter = Control.MOUSE_FILTER_STOP
 	exit_button.text = "返回原游戏"
 	exit_button.custom_minimum_size = Vector2(180.0, 56.0)
 	exit_button.pressed.connect(_close_preview)
 	hud.add_child(exit_button)
 	var reopen := Button.new()
 	reopen.name = "Reopen3DPreview"
+	reopen.mouse_filter = Control.MOUSE_FILTER_STOP
 	reopen.text = "再次查看3D"
 	reopen.custom_minimum_size = Vector2(180.0, 56.0)
 	reopen.visible = false
