@@ -49,7 +49,12 @@ jobs:
           assert "if (intent_mode)" in cpp
           assert "ACTION=xxx" in cpp
           assert "48,true)" in gd
-          assert "只输出角色在场景中实际会说" in cpp and "只返回一行" in cpp
+          # Intent branch explicitly says "严格只输出单独一行", whereas the
+          # previous assertion searched a different wording and falsely failed
+          # after the real .so had already compiled successfully.
+          assert "严格只输出单独一行 ACTION=xxx" in cpp
+          assert "只输出角色在场景中实际会说" in cpp
+          assert "不要写动作指令或凭空确认交易" in cpp
           assert "class_exists(\"CanglanLocalLLM\")" in gd
           print('PASS_OFFLINE_NPC_INTENT_VS_DIALOGUE_NATIVE_MODE_CONTRACT')
           PY
