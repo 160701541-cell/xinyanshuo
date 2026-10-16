@@ -684,9 +684,15 @@ func _refresh_status_throttled(delta: float) -> void:
 		_refresh_status()
 		if autonomous_director!=null and ui_auto!=null:
 			var work: Dictionary = autonomous_director.call("stats")
-			ui_auto.text = "自主生产：%d名工人 / 采集%d次 / 实际运回%d次 / 新房%d / 林木余量%d" % [
+			ui_auto.text = "NPC真实生产：%d名 / 采集%d / 实际运回%d / 林木剩余%d" % [
 				int(work["workers"]),int(work["harvested"]),int(work["delivered"]),
-				int(work["new_houses_visible"]),int(work["remaining_trees"])]
+				int(work["remaining_trees"])]
+			if npc_building_system!=null:
+				var progress: Dictionary = npc_building_system.call("stats")
+				ui_auto.text += "\\nNPC规划: %s | 施工阶段:%s | 实际已建:%d" % [
+					String(progress["active_site"]),String(progress["stage"]),
+					int(progress["completed"])]
+				ui_auto.text += "\\n木匠/石匠/陶匠 → 材料仓库 → %s 实地建设" % String(progress["builder_id"])
 
 func _refresh_light() -> void:
 	if sun == null:
@@ -843,6 +849,7 @@ func snapshot() -> Dictionary:
 		"batched_instances":int(prop_stats.get("visible_mesh_instances",0)),
 		"inside":_inside,"license":"MIT engine; original procedural geometry",
 		"art_status":"WIP_NO_VISUAL_APPROVAL","original_apk_updated":false,
+		"npc_material_build_status":npc_building_system.call("stats") if npc_building_system!=null else {},
 		"local_ai_state":String(local_ai.get("stage")) if local_ai!=null else "not_installed",
 		"local_ai_backend":"llama.cpp GGUF embedded C++ GDExtension (when compiled)",
 		"model_verified":String(local_ai.get("stage")) in ["loading","ready","thinking"] if local_ai!=null else false}
