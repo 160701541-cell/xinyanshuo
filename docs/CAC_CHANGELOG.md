@@ -791,3 +791,16 @@ Godot 4.4.1对从**原签名Android APK176**提取的实际`update_protocol.gdc`
 - `game-source/apk176-ota177-candidate/scripts/apk176_cc0_3d_preview.gd` 提交 `99406392dbb182cb910d2966c996736ac3f9f62a`：Godot GLB内贴图解析需要非空基路径，把错误的`append_from_buffer(data, "", state)`改为`append_from_buffer(data, path.get_base_dir(), state)`，不修改源模型和授权。
 - `logic-qa/apk176-export-fixture/verify_original_main_3d_preview_rev179.gd` 提交 `61aa64b697ba06bf74e075a8e8f5cae18a6b4876`：将Godot SubViewport场景验收由`viewport.world_3d`改用`viewport.get_world_3d()`查询实际使用的3D World（`own_world_3d`是开关，不是拿资源的断言接口）。
 - 现有rev179工作流已监听这两份源码路径，提交后将按既有门禁重新执行。**本批只证实GitHub修复代码提交，未取得新一轮Godot成功或rev179更新成功的运行证据**。正式`android-preview/latest.json`仍须等待真实原版3D渲染、房屋/存档回归、RSA验签及推送同时满足后才能改为rev179。未改官网live或重新安装APK。
+
+
+## 2026-10-17 / REV179-FAIL-38963913645 / 从第二次真实GitHub日志修复共享调色板与无屏测试误判
+
+用户提供的运行URL对应 run `38963913645` / job `117185731063`。**实际运行记录**确认1~6步成功，包括原APK176导出资源与准确版本Terrain3D、Godot4.4.1及PCK真GLB逐字节检查；第7步失败。日志与上次不同，暴露两个独立问题：`GLTFDocument`解析rocks模型时找不到`res://Textures/colormap.png`（Kenney Castle Kit原本就有独立共享贴图，之前只打包GLB漏了贴图）；另外无显示设备的`--headless`环境`SubViewport.get_world_3d()`为空，验证脚本直接归为`no_real_Godot_3d_renderer`，但日志已有实际新增MeshInstance3D和正常移动渲染模式的运行证据。**不是RSA失败，也不是PCK/场景主入口资源缺失**。
+
+本轮真实修复：
+- `logic-qa/tools/build_apk176_3d_preview.gd` 提交`453bc880acd55ab79fe1a2577a32ca8bdfbca5a9`：把Kenney原包共享贴图 `Textures/colormap.png` 放入原版APK176 PCK同名路径。
+- `.github/workflows/canglan-apk176-rev179-real3d-signed.yml` 提交`f223c0f20dede781305c1290798c9047a679287e`：从公开Kenney CC0素材镜像读取原包独立调色板PNG，校验PNG magic和合理尺寸后才运行原版游戏测试，不通过则停止构建。Kenney官方关于GLB引用的外部贴图要求亦明确需要复制相邻Textures目录，不能用空白占位图假冒完整素材。
+- `logic-qa/apk176-export-fixture/verify_original_main_3d_preview_rev179.gd` 提交`38809bee7722b5e92e8b16489370dc20c48676e6`：无屏Godot验证关注真实存在的SubViewport节点、own_world_3d开关、1280x720尺寸、Camera3D、26个授权GLB实例及渲染MeshInstance节点；不以headless的World3D空值伪装失败。更严格的手机实际截图仍待验收。
+- `tools/verify_apk176_rev179_3d_pck.py` 提交`a3975d5b8fe405e9f8a5f79adf00046ec77c82c4`：把共享PNG列入PCK必有文件，校验魔数，避免签出仍丢色彩的3D模型。
+
+**状态**：本次修改均返回真实GitHub提交记录，但当前回合尚未获取这些最新提交所触发的rev179流水线成功结果；正式旧游戏更新清单是否升至rev179必须重新查`android-preview/latest.json`并用新运行结果验证。原RSA已单独实际通过，不需重复配置。未声称手机已更新。
