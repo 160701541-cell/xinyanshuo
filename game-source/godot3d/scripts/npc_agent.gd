@@ -1,6 +1,15 @@
 extends Node3D
 ## Procedural 3D citizen, identifiable/scheduled, rendered as a temporary humanoid
 ## mannequin. NOT a rigged/face-animation or fully autonomous AI NPC.
+const TextAvatar = preload("res://scripts/npc_text_avatar.gd")
+const TEXT_ONLY_TEST_MODE := true
+const FAMILY_NAMES := ["沈","林","周","许","叶","陆","秦","顾","苏","江","方","唐"]
+const GIVEN_NAMES := ["守田","青禾","景安","春山","清河","成林","怀谷","平生",
+	"远舟","小满","东来","知秋","长青","景年","阿宁","思源","秋实","云生"]
+signal inspection_requested(actor_id: String)
+var text_marker: Node3D
+var civilian_name: String = ""
+var sim_profile: Dictionary = {}
 const ROLE_NAMES := ["农人","商贾","铁匠","工匠","学徒","旅人","卫卒","医者","书生","茶客"]
 var entity_id: String = ""
 var profession: String = ""
@@ -39,7 +48,17 @@ func setup(id: String,role_index: int,spawn: Vector3,world_rules: RefCounted,
 	set_meta("entity_id",id)
 	set_meta("role",profession)
 	set_meta("art_status","PROCEDURAL_HUMANOID_PLACEHOLDER")
-	_build_body(role_index)
+	var ordinal: int = absi(id.hash())
+	civilian_name = FAMILY_NAMES[ordinal%FAMILY_NAMES.size()] + GIVEN_NAMES[int(ordinal/FAMILY_NAMES.size())%GIVEN_NAMES.size()]
+	set_meta("display_name",civilian_name)
+	if TEXT_ONLY_TEST_MODE:
+		text_marker = TextAvatar.new()
+		add_child(text_marker)
+		text_marker.call("configure",id,civilian_name,profession,ordinal)
+		text_marker.connect("selected",Callable(self,"_notify_inspect"))
+		set_meta("art_status","TEXT_ONLY_BILLBOARD_IN_3D")
+	else:
+		_build_body(role_index)
 
 func _mat(rgb: Color) -> StandardMaterial3D:
 	var material := StandardMaterial3D.new()
