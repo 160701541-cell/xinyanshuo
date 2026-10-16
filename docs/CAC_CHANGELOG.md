@@ -321,3 +321,15 @@ Godot 4.4.1对从**原签名Android APK176**提取的实际`update_protocol.gdc`
 - 此次未通过下一门槛：`tests/world_smoke.gd:97` 报 **Player has no physical character collider**。查代码：`_build_avatar()` 创建 `CollisionShape3D.new()` 并挂至 `CharacterBody3D`，但是程序化子节点未显式命名；测试的 `get_node_or_null("CollisionShape3D")` 因Godot自动命名找不到它。修复方案保留原有物理碰撞器，仅新增 `shape.name="CollisionShape3D"`，不将QA换成“存在即通过”的假判定。
 - 实际修复提交 `8376ccb6f05ccd694b74ba2bfbe93595dd9798cc`（先在 `fix/cac-3d-qa-collider-native-20261016` 修复，随后以预期父SHA的非强制fast-forward将该提交发布到 **公开main分支**）。
 - main最新严格3D实测任务 `38903246205` 与含本地Qwen/Android ARM64任务 `38903246208` 已由实际代码变更触发，尚无成功结果。**Android签名原版APK未被替换**，人物绑骨/国漫画质和手机性能仍未完成验收。
+
+## 2026-10-16 / CAC-MALE-001 / 男平民母版V1真实建模、接入游戏与测试
+
+用户在 `A 女母版 / B 男母版 / C 建模生产清单` 中选择 **B**。本轮执行男平民母版**真实建模与Godot源码集成**，不是只交口头规格。
+
+- 原创参数化主脚本：`game-source/godot3d/tools/male_civilian_master.py` (首次真实GitHub提交 `14d0bc3978ae3d7ececffa8f01158e0beb71e6c8`, 后续为调整袖子比例提交 `5807c12d9ea2916e700bd50a984fd1c0792135d7`)。同一身体形体/交领/腰带/四肢/耳眼鼻嘴/布鞋/颈部/帽檐挂点规范，生成村民、商贾、学徒、卫卒、书生5款颜色和职业模块；主体留骨架挂点元数据，但**并未做蒙皮/真正Humanoid动作**。
+- 5个真实GLB已经在本地Python `trimesh` 实际导出并逐件通过 glTF魔数、容器长度、SHA256、载入三角网格、尺寸校验。各模型分别约1716—1808个三角面；人体高约2.44m；所有新角色采用灰青、灰蓝、灰粉、深青、浅灰绿低饱和色系。模型/源码/设计清单/预览PNG存为本轮可供用户查验的ZIP。预览只是软件生成的静态候选渲染，**不是Godot引擎截图**。
+- 工厂集成：`tools/generate_glb_pack.py` 从38件扩展成 **43件真实GLB**，新增 `npc/male_villager_v1.glb`、`male_merchant_v1.glb`、`male_apprentice_v1.glb`、`male_guard_v1.glb`、`male_scholar_v1.glb`；`tests/test_generated_glb.py` 新增男女母版边界/文件数、面数、世界尺寸、元数据和五种文件SHA验证。
+- 运行时真实接入：`scripts/npc_agent.gd` 对职业索引1、4、6、8（商人、学徒、卫卒、书生）优先导入新男母版GLB，保留旧模型作为异常回退，不强迫其他身份变成男性；由原版 `WorldState` 管理NPC canonical ID，不触碰库存、存档、签名。Godot `tests/world_smoke.gd` 新增对应职业实例元数据和GLB节点断言（预计32/80居民属于这4职业，须以真实Godot测试结果为准）。
+- 工业化规范已提交 `docs/CAC_MALE_NPC_MASTER_V1.md`，描述层叠交领、围裙挂点、面部最小信息、衣袖非圆柱轮廓、实际共享身体测量、职业可换件和后续真实蒙皮/动画质量门槛。
+- **真实状态**：本地5个GLB文件可用性确认；公开GitHub源码已提交并触发后续CI；但生产仓库43件联合生成、Godot引擎实时全量导入、Android APK/旧APK热更新、最终画风审批，在本次提交时仍须看新CI的真实结果，不可假称全部通过。
+- 其他QA背景：修复后的原3D场景25地形、80院落建筑、80角色、627道具/1025批量实例曾经在真实Godot CI启动并通过主体场景，后续实际严格截图步骤失败；含Qwen本地模型Android流程在真实推理冒烟前仍有失败，暂不声称已可安装。男母版不会解除上述现有发布阻塞。
