@@ -63,9 +63,8 @@ def house(kind,variant):
         for ix in (-1,0,1):
             box(s,f"lattice_{side}_{ix}",(x+ix*0.44,2.1,d/2+0.33),
                 (0.065,1.48,0.08),"wood")
-    for side in (-1,1):
-        box(s,f"door_leaf_{side}",(side*0.68,1.22,d/2+0.21),
-            (1.31,2.35,0.12),"wood")
+    # Door leaves are runtime-hinged independent entities in building_factory.gd,
+    # never baked shut into the imported static GLB geometry.
     box(s,"door_beam",(0,h-0.31,d/2+0.24),(3.1,0.4,0.38),"wood")
     roof(s,"Han_Ceramic_Roof",w,d,h+0.22,h+1.9)
     return s
@@ -136,10 +135,16 @@ def generate(out:Path,seed:int=20261016):
     for rel,scene in tasks:
         path=out/rel
         path.parent.mkdir(parents=True,exist_ok=True)
-        data=scene.export(file_type="glb")
+        # Merge baked static parts into one vertex-colored GLB mesh.
+        # Thousands of tiny tile meshes as separate Godot nodes would be
+        # catastrophic for Android draw-call budgets.
+        combined = trimesh.util.concatenate(list(scene.dump()))
+        assert combined.vertices.shape[0] > 20
+        compact_scene = trimesh.Scene(combined)
+        data=compact_scene.export(file_type="glb")
         assert data[:4]==b"glTF" and len(data)>400
         path.write_bytes(data)
-        bounds=scene.bounds
+        bounds=compact_scene.bounds
         assert np.isfinite(bounds).all()
         manifest["models"].append({"path":rel,"sha256":hashlib.sha256(data).hexdigest(),
             "bytes":len(data),"bounds":[list(map(float,bounds[0])),list(map(float,bounds[1]))]})
