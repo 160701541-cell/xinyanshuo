@@ -30,7 +30,8 @@ jobs:
           import json
           from pathlib import Path
           d=json.loads(Path("game-source/godot3d/opensource/cc0_asset_catalog.json").read_text())
-          assert {x['id'] for x in d["sources"]}=={"kenney","quaternius"}
+          assert {x['id'] for x in d["sources"]}=={
+              "kenney","quaternius","quaternius_humanoid","quaternius_knight"}
           assert all(x['license']=="CC0-1.0" for x in d["sources"])
           assert all(len(x['mirror_commit'])==40 for x in d["sources"])
           assert all(len(asset["git_blob_sha1"])==40 for s in d["sources"] for asset in s["files"])
@@ -49,6 +50,23 @@ jobs:
           tail -n 30 /tmp/canglan-cc0-download-proof.log
           test -s game-source/godot3d/assets/free_cc0/kenney/3d/castle/tree-log.glb
           test -s game-source/godot3d/assets/free_cc0/quaternius/glTF/Wall_Plaster_Straight.gltf
+          test -s game-source/godot3d/assets/free_cc0/quaternius_humanoid/public/assets/character.glb
+          test -s game-source/godot3d/assets/free_cc0/quaternius_knight/public/models/knight.glb
+          python3 - <<'PY'
+          from pathlib import Path
+          import struct,json
+          root=Path('game-source/godot3d/assets/free_cc0')
+          for rel in ('quaternius_humanoid/public/assets/character.glb',
+                      'quaternius_knight/public/models/knight.glb'):
+              raw=(root/rel).read_bytes()
+              assert raw[:4]==b'glTF',rel
+              assert struct.unpack_from('<I',raw,4)[0]==2
+              assert struct.unpack_from('<I',raw,8)[0]==len(raw)
+              assert raw[16:20]==b'JSON'
+              payload=json.loads(raw[20:20+struct.unpack_from('<I',raw,12)[0]])
+              assert payload.get('meshes') and payload.get('nodes') and payload.get('skins'),rel
+              print('PASS_CC0_REAL_RIGGED_3D_CHARACTER',rel,'animations',len(payload.get('animations',[])))
+          PY
       - name: Install pinned Godot 4.4.1 for ACTUAL scene and mesh QA
         shell: bash
         run: |
@@ -75,7 +93,7 @@ jobs:
               exit 1
             }
           cat qa-results/cc0-real-world-meshes.log
-          grep -Fq 'PASS_CC0_REAL_EXISTING_3D_KENNEY_QUATERNIUS_10_MODELS_IMO_NO_AI_GENERATION' qa-results/cc0-real-world-meshes.log
+          grep -Fq 'PASS_CC0_REAL_EXISTING_3D_KENNEY_QUATERNIUS_12_MODELS_NO_AI_GENERATION' qa-results/cc0-real-world-meshes.log
           if grep -Eh 'SCRIPT ERROR:|Parse Error:|ERROR:|Assertion failed' qa-results/cc0-real-world-meshes.log; then
             echo 'BLOCKED: asset import was not approved by actual Godot runtime'
             exit 1
