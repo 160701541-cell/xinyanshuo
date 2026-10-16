@@ -1,4 +1,4 @@
-> **2026-10-16 最高优先级规范更新：**《苍岚》新开发只上传公开仓库 `160701541-cell/xinyanshuo`；旧私库/旧项目开发基线已否决。统一执行 [CAC 工业化开发协议](docs/CAC_PUBLIC_INDUSTRIAL_PIPELINE_V2.md)。新增或调整工序必须同步更新规范、开发日志和测试；冲突时以CAC协议为准。\n\n# 心魇说 · 《苍岚·人生世界》官方网站
+> **2026-10-16 研发主线重要变更：停止HD2D，改回《苍岚·人生世界》原生开源3D方向。** 已新增 [公开Godot 3D工程](game-source/godot3d/README.md)、程序地形/建筑/NPC/物品和 [38个GLB开源自动建模工序](game-source/godot3d/tools/generate_glb_pack.py)，并部署 [严格3D QA](.github/workflows/canglan-public-qa.yml) 与 [独立3D安卓测试构建](.github/workflows/canglan-public-3d-android.yml) 的源代码。**所有新增3D模型仍是美术候选；未验证引擎CI/真机，不宣称新内容已进入原来APK176签名版。** 开源仅限有权许可的作品，旧存档/签名密钥不得公开。\n\n> **2026-10-16 最高优先级规范更新：**《苍岚》新开发只上传公开仓库 `160701541-cell/xinyanshuo`；旧私库/旧项目开发基线已否决。统一执行 [CAC 工业化开发协议](docs/CAC_PUBLIC_INDUSTRIAL_PIPELINE_V2.md)。新增或调整工序必须同步更新规范、开发日志和测试；冲突时以CAC协议为准。\n\n# 心魇说 · 《苍岚·人生世界》官方网站
 
 ## P0 最高指令：持续公开GPT-6 / Work进展与构建状态（2026-10-14）
 
