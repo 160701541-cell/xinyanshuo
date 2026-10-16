@@ -80,9 +80,52 @@ func _run() -> void:
   if int(first.get("worker_count",0)) != 3 or int(first.get("resource_node_count",0)) != 21:
     _fail(11, "NPC_AND_FINITE_RESOURCE_IDENTITIES_MISSING")
     return
-  if (world.find_children("*", "MeshInstance3D", true, false) as Array).size() < 28:
-    _fail(12, "REAL_GLBS_NOT_IN_RENDER_TREE")
+  # The entire point of this version is that static Kenney GLBs must NO
+  # LONGER create one independently rendered MeshInstance3D per tree/stone.
+  var drawn_parts: Array[Node] = world.find_children("*", "MultiMeshInstance3D", true, false)
+  var batch: Dictionary = first.get("kenney_batch",{})
+  if int(first.get("palette_roles",0)) != 5:
+    _fail(12, "KENNEY_MAIN_PALETTE_MUST_HAVE_EXACTLY_FIVE_SWATCHES")
     return
+  if drawn_parts.size() == 0 or int(batch.get("multimesh_draw_nodes",0)) < 3:
+    _fail(45, "NO_REAL_MULTI_MESH_BATCHING_OF_LICENSED_KENNEY_SOURCES")
+    return
+  if drawn_parts.size() != int(batch["multimesh_draw_nodes"]):
+    _fail(46, "BATCH_NODES_MUST_BE_REAL_MULTIMESH_DRAWABLES")
+    return
+  if int(batch.get("batched_world_objects",0)) < 23:
+    _fail(47, "TREES_ROCKS_AND_SITE_ITEMS_NOT_ACTUALLY_BATCHED")
+    return
+  if int(batch.get("mesh_surface_draw_floor",9999)) > 65:
+    _fail(48, "SOURCE_GLBS_HAVE_TOO_MANY_SURFACES_FOR_MOBILE_200_BUDGET")
+    return
+  if not (batch.get("batch_errors", []) as Array).is_empty():
+    _fail(49, "MISSING_OR_INVALID_KENNEY_MULTIMESH_ROLE")
+    return
+  var sun_nodes: Array[Node] = world.find_children("*","DirectionalLight3D",true,false)
+  if sun_nodes.size() != 1:
+    _fail(50, "SCENE_MUST_HAVE_EXACTLY_ONE_MOBILE_DIRECTIONAL_SUN")
+    return
+  var sun: DirectionalLight3D = sun_nodes[0]
+  if not sun.shadow_enabled or sun.directional_shadow_max_distance > 55.0:
+    _fail(51, "SUN_MUST_CAST_CHEAP_SHORT_DISTANCE_SHADOWS")
+    return
+  for road in ["WalkableVillagePackedEarth","ForestToWarehouseRoute","QuarryToWarehouseRoute"]:
+    if world.get_node_or_null(road) == null:
+      _fail(52, "MISSING_REAL_DIRT_ROAD_" + road)
+      return
+  var source_positions: Dictionary = econ.get("resource_positions")
+  for rid in source_positions:
+    var id_text: String = String(rid)
+    if not id_text.begins_with("CL-TREE-0183-") and not id_text.begins_with("CL-STONE-0183-"):
+      continue
+    var position: Vector3 = source_positions[rid]
+    if id_text.begins_with("CL-TREE-0183-") and position.x > -10.0:
+      _fail(53, "FOREST_BLOCKS_CLEAR_CENTRAL_PATH_" + id_text)
+      return
+    if id_text.begins_with("CL-STONE-0183-") and position.x < 11.0:
+      _fail(54, "QUARRY_BLOCKS_CLEAR_CENTRAL_PATH_" + id_text)
+      return
   var animations: Dictionary = first.get("animation_reports", {})
   for code in ["CL-NPC-0183-01","CL-NPC-0183-02","CL-NPC-0183-03"]:
     if not animations.has(code):
@@ -240,6 +283,8 @@ func _run() -> void:
   print("PASS_APK176_ACTUAL_MAIN_INSTANTIATED_NO_ENGINE_ERRORS_WITH_REAL_HOUSE")
   print("PASS_REV183_LICENSED_3D_NPC_RESOURCE_TRANSPORT_MATERIAL_CONSERVATION_STAGE_BUILD")
   print("PASS_REV183_PHONE_VISIBILITY_TREE_SEED_BEDROCK_EXCLUSION_AND_TECTONIC_MILLIONS_OF_YEARS")
+  print("PASS_REV183_FIVE_SWATCHES_REAL_KENNEY_MULTIMESH_ONE_SUN_AND_CLEAR_ROADS")
+  print("REV183_MOBILE_DRAW_BUDGET_200_REQUIRES_ANDROID_HUD_OBSERVATION_NOT_HEADLESS_EMULATION")
   print("REV183_ACTUAL_APK176_QA_STATS ",report)
   # Explicitly teardown original exported scene before the headless RenderServer
   # exits: otherwise GLTF skeleton/animation/mesh RIDs report leaked resources.
