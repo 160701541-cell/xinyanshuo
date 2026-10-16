@@ -1,0 +1,4 @@
+# Build-time OSS only; not embedded in the Android APK.
+# trimesh: MIT; numpy: BSD-3-Clause.
+numpy==2.3.5
+trimesh==4.11.1
