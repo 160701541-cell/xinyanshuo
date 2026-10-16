@@ -642,3 +642,14 @@ Godot 4.4.1对从**原签名Android APK176**提取的实际`update_protocol.gdc`
 **本轮实际GitHub提交**：新增 `docs/GAME_ENGINEERING_MASTER.md` 作为**长期维护的工程总日志主入口/执行索引**，覆盖21领域、G0–G8路线、第一批Issue、质量门禁、原版发布边界、日志模板；提交 `cd2c2b3faeeac4d1eb748613ed13a2e19d290e12`。原有本历史日志完整保留，之后每轮应先读 `AGENTS.md` + 本文件 + `docs/GAME_ENGINEERING_MASTER.md`，并同时更新实际进展。**详版母本目前作为对话附件供下载，尚未逐字节提交到GitHub；GitHub中的是工程执行索引，不能谎称完整母本已归档。**
 
 **本次状态**：仅文档/研发规范提交；未修改Godot玩法代码、未签名PCK、未更新rev178、未完成手机实机验收。下一阶段优先G0原版兼容/发行链与G1美术基准村庄、G2物资守恒闭环。
+
+
+## 2026-10-17 / SIM-001-P0-NO-FREE-RESOURCES / 按工程总纲开始真实代码修复
+
+**已读取** `AGENTS.md`、`docs/GAME_ENGINEERING_MASTER.md`（前轮）、本日志、正式rev178基线，并检查 `worldbox_life_sim.gd` 与 `autonomous_village_director.gd`。发现P0真实缺陷：`_citizen_work()` 中农民、伐木工、采石工在未登记自然资源节点时，仍能通过每小时`_add_stock`凭空增加粮、木、石；`start()`没有清空自然节点、搬运背包、农田状态，重开模拟存在陈旧状态残留。
+
+**实际源码提交**：`b2e4ab03c4a5e50e04504b60dbf16033d2880a15` 修改 `game-source/godot3d/scripts/worldbox_life_sim.gd`：三种职业的时间tick不再直接产出原料；只等待已有资源/农田的实体采集与运输任务；`start()`清空节点、在途货物、农田数据。现有`gather_to_actor→deliver_carried`守恒路径保留。
+
+**新增测试**：`acdde42f916f0c779296d42d2508782fbc8b1d49` 添加 `game-source/godot3d/tests/resource_conservation_smoke.gd`，覆盖1000 tick无资源凭空生成、有限树木采集、双重交货拒绝、耗尽后拒采、重新启动清空旧状态。
+
+**真实QA状态**：测试源码已提交，**尚未运行Godot**（当前执行环境没有Godot命令），不能写通过。仍需在公开CI跑真实Godot引擎测试；既有`autonomous_village_director.gd`还存在“根据NPC住址生成自然节点”和临时BoxMesh视觉资产问题，后续按先有资源后派工重构。**正式OTA状态**：仍为rev178；未完成原版APK176兼容审计、RSA签名PCK、手机实机验收，不能称已更新手机。
