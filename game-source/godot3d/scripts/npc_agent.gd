@@ -49,7 +49,7 @@ func setup(id: String,role_index: int,spawn: Vector3,world_rules: RefCounted,
 	set_meta("role",profession)
 	set_meta("art_status","PROCEDURAL_HUMANOID_PLACEHOLDER")
 	var ordinal: int = absi(id.hash())
-	civilian_name = FAMILY_NAMES[ordinal%FAMILY_NAMES.size()] + GIVEN_NAMES[int(ordinal/FAMILY_NAMES.size())%GIVEN_NAMES.size()]
+	civilian_name = FAMILY_NAMES[ordinal%FAMILY_NAMES.size()] + GIVEN_NAMES[int(ordinal/FAMILY_NAMES.size())%GIVEN_NAMES.size()] + "·" + id.right(4)
 	set_meta("display_name",civilian_name)
 	if TEXT_ONLY_TEST_MODE:
 		text_marker = TextAvatar.new()
