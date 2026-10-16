@@ -2,7 +2,8 @@ extends RefCounted
 ## CAC-LIFE-001: headless deterministic civilian economy and village development.
 ## This module models real state transitions; visuals/AI text never grant items.
 const TICK_MINUTES := 60
-const RESOURCE_KEYS := ["grain", "wood", "stone", "clay", "water", "food", "coin"]
+const RESOURCE_KEYS := ["grain", "wood", "stone", "clay", "water", "food", "coin",
+	"timber", "cut_stone", "roof_tile", "mortar"]
 var world_seed: int = 20261016
 var hour: int = 6
 var day: int = 1
@@ -19,6 +20,7 @@ func start(seed: int = 20261016) -> void:
 	villages.clear()
 	citizens.clear()
 	event_log.clear()
+	# Raw resources and crafted construction materials persist as independent stock.
 
 func create_village(code: String, initial: Dictionary = {}) -> bool:
 	if villages.has(code) or code.is_empty():
