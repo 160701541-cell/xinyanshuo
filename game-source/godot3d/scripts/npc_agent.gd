@@ -119,7 +119,7 @@ func _build_body(role: int) -> void:
 		1:"merchant", 4:"apprentice", 6:"guard", 8:"scholar"}
 	var occupation_index: int = posmod(role,10)
 	if male_roles.has(occupation_index):
-		var candidate: String = "res://assets/generated/npc/male_%s_v1.glb" % male_roles[occupation_index]
+		var candidate: String = "res://assets/generated/npc/male_%s_han_v2.glb" % male_roles[occupation_index]
 		if ResourceLoader.exists(candidate):
 			model_file = candidate
 	if ResourceLoader.exists(model_file):
@@ -136,7 +136,8 @@ func _build_body(role: int) -> void:
 			set_meta("art_status","UNRIGGED_GENERATED_GLB_CANDIDATE")
 			set_meta("model_source",model_file)
 			if model_file.contains("/male_"):
-				set_meta("shared_master","CAC_MALE_CIVILIAN_V1")
+				set_meta("shared_master","CAC_HAN_MALE_V2")
+				set_meta("costume_dna","JIaOLING_YOUREN_HEADWRAP_CLOTH_SASH")
 				set_meta("wardrobe_role",String(male_roles[occupation_index]))
 				set_meta("skeleton_status","NOT_SKINNED_NO_RIG")
 
