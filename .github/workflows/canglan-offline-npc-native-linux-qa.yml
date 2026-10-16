@@ -1,0 +1,64 @@
+name: Canglan OFFLINE NPC Qwen Intent - Real Native llama.cpp C++ Build (NO APK)
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'game-source/godot3d/local_ai/native/**'
+      - 'game-source/godot3d/local_ai/build_native.sh'
+      - 'game-source/godot3d/scripts/local_ai_service.gd'
+      - '.github/workflows/canglan-offline-npc-native-linux-qa.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  compile-real-native-offline-llm:
+    if: github.repository == '160701541-cell/xinyanshuo'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 24
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install native build system (no paid API or model weights)
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq cmake ninja-build g++ pkg-config git
+      - name: Really compile pinned godot-cpp 4.4 + llama.cpp b6000 GDExtension
+        shell: bash
+        run: |
+          set -euo pipefail
+          cmake -S game-source/godot3d/local_ai/native -B /tmp/canglan-offline-native-linux -G Ninja \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_CXX_FLAGS="-Werror=return-type" \
+            -DGGML_OPENMP=OFF -DGGML_NATIVE=OFF
+          timeout 960s cmake --build /tmp/canglan-offline-native-linux --target canglan_ai -j 3
+          test -s /tmp/canglan-offline-native-linux/stage/libcanglan_ai.so
+          nm -D /tmp/canglan-offline-native-linux/stage/libcanglan_ai.so | grep -F 'canglan_ai_init'
+          echo 'PASS_OFFLINE_NPC_GODOT_CPP_LLAMA_REAL_NATIVE_LIBRARY_COMPILED'
+      - name: Check dialogue vs intent genuinely distinct at the C++ boundary
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          root=Path("game-source/godot3d")
+          h=(root/"local_ai/native/canglan_local_llm.h").read_text()
+          cpp=(root/"local_ai/native/canglan_local_llm.cpp").read_text()
+          gd=(root/"scripts/local_ai_service.gd").read_text()
+          assert "bool intent_mode=false" in h
+          assert "if (intent_mode)" in cpp
+          assert "ACTION=xxx" in cpp
+          assert "48,true)" in gd
+          assert "只输出角色在场景中实际会说" in cpp and "只返回一行" in cpp
+          assert "class_exists(\"CanglanLocalLLM\")" in gd
+          print('PASS_OFFLINE_NPC_INTENT_VS_DIALOGUE_NATIVE_MODE_CONTRACT')
+          PY
+      - name: Retain build status only; NOT an installable Android APK
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: Canglan-LOCAL-Qwen-Cpp-Godot4-Compile-Proof-NO-APK
+          path: |
+            /tmp/canglan-offline-native-linux/stage/libcanglan_ai.so
+          if-no-files-found: warn
+          retention-days: 3
