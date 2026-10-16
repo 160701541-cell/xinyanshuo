@@ -19,7 +19,7 @@ test('WorldX upstream pinned and prompt uses ONLY orthographic facade view',()=>
   });
   assert.ok(!text.includes('{{'),text);
   assert.ok(text.includes('正交投影'));
-  assert.ok(text.includes('只有这一面'));
+  assert.ok(text.includes('只能看到这一面'));
   assert.ok(text.includes('不要把四面放在同一张图'));
   assert.ok(text.includes('非HD2D地图'));
 });
