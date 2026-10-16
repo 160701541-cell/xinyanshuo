@@ -1,0 +1,72 @@
+name: Canglan Official Website and APK176 OTA - Deploy to Pages
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'android-preview/latest.json'
+      - 'android-preview/canglan-content-rev-*.pck'
+      - '.github/workflows/canglan-official-pages-ota-deploy.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+  actions: read
+concurrency:
+  group: canglan-official-pages-ota-deployment
+  cancel-in-progress: false
+jobs:
+  deploy-official-site:
+    if: github.repository == '160701541-cell/xinyanshuo' && github.ref == 'refs/heads/main'
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 16
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build bounded public website (NOT developer repository contents)
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/canglan-pages
+          find . -maxdepth 1 -type f \( -name '*.html' -o -name '*.css' -o -name '*.js' -o -name '*.svg' -o -name '*.ico' -o -name '*.webmanifest' -o -name '.nojekyll' \) -exec cp -t /tmp/canglan-pages {} +
+          for dir in android-preview art data assets images media; do
+            if [ -d "$dir" ]; then cp -a "$dir" /tmp/canglan-pages/; fi
+          done
+          test -s /tmp/canglan-pages/index.html
+          test -s /tmp/canglan-pages/android-preview/latest.json
+          python3 - <<'PY'
+          import json,pathlib,hashlib
+          root=pathlib.Path('/tmp/canglan-pages/android-preview')
+          m=json.loads((root/'latest.json').read_text())
+          rev=m['revision']
+          assert rev >= 179, 'Do not replace a newer CDN site with old source'
+          assert m['minimum_android_code']==m['maximum_android_code']==1176
+          p=root/('canglan-content-rev-%d.pck'%rev)
+          assert p.is_file(), 'Missing EXACT current OTA PCK in site'
+          assert p.stat().st_size==m['size_bytes']
+          assert hashlib.sha256(p.read_bytes()).hexdigest()==m['sha256']
+          print('PASS_PAGES_SITE_CONTAINS_SIGNED_ORIGINAL_OTA',rev,m['sha256'])
+          PY
+      - uses: actions/configure-pages@v5
+      - name: Upload actual official website including rev179 PCK as Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: /tmp/canglan-pages
+      - name: Deploy GitHub Pages (NOT just push to main)
+        id: deploy
+        uses: actions/deploy-pages@v4
+      - name: Verify Pages CDN remotely AFTER deployment
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 tools/verify_original_rev179_live_http.py
+      - name: Save CDN diagnostic, even on failure
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: Canglan-official-Pages-rev179-publish-and-HTTP-check
+          path: qa-results/rev179-public-http.json
+          if-no-files-found: warn
+          retention-days: 7
