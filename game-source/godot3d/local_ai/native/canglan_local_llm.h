@@ -1,5 +1,6 @@
 #pragma once
 #include <godot_cpp/classes/node.hpp>
+#include <godot_cpp/variant/string.hpp>
 #include <godot_cpp/core/class_db.hpp>
 #include <atomic>
 #include <mutex>
