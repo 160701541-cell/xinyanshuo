@@ -56,38 +56,36 @@ func setup(sim: RefCounted, citizens: Array[Node3D]) -> void:
 	economy = sim
 	name = "AutonomousNPCJobsWorldVisible"
 	_last_homes = int(economy.get("villages")[TOWN]["homes"])
-	var assigned: int = 0
-	var farmers: int = 0
+	# Resources are authored by world generation BEFORE jobs are dispatched.
+	# No NPC may create a tree, quarry, or field by accepting a job.
+	var reserved: Dictionary = {}
 	for citizen in citizens:
-		var code: String = String(citizen.get_meta("entity_id",""))
+		var code: String = String(citizen.get_meta("entity_id", ""))
 		if code.is_empty():
 			continue
-		var data: Dictionary = economy.get("citizens").get(code,{})
-		var role: String = String(data.get("profession",""))
-		if role not in ["woodcutter","quarryman","farmer"]:
+		var data: Dictionary = economy.get("citizens").get(code, {})
+		var role: String = String(data.get("profession", ""))
+		if role not in ["woodcutter", "quarryman", "farmer"]:
 			continue
-		if role=="farmer" and (farmers>=2 or assigned==0):
+		var kind: String = "tree" if role == "woodcutter" else ("stone" if role == "quarryman" else "field")
+		var available: Array[String] = economy.call("get_available_resource_nodes", TOWN, kind)
+		var node_id: String = ""
+		for candidate in available:
+			if not reserved.has(candidate):
+				node_id = candidate
+				break
+		if node_id.is_empty():
 			continue
-		if role!="farmer" and assigned>=10:
-			continue
-		var type: String = "tree" if role=="woodcutter" else ("stone" if role=="quarryman" else "field")
-		var node_id: String = ("AUTO-FIELD-%08d" if type=="field" else "AUTO-NAT-%08d") % (assigned+1)
-		var pos: Vector3 = Vector3(citizen.get("home"))+Vector3(11.0,0,10.0)
-		var accepted: bool = bool(economy.call("register_field",node_id,TOWN)) if type=="field" else bool(economy.call("register_natural_node",node_id,TOWN,type,9))
-		if not accepted:
-			continue
-		if type=="field":
-			farmers+=1
-		natural_art[node_id] = _make_node(node_id,pos,type)
-		assignments[code] = {"node_id":node_id,"kind":type,
-			"citizen":citizen,"phase":"to_resource","depot":Vector3(citizen.get("home")),
-			"done":0}
-		citizen.call("assign_work_destination",pos)
-		assigned+=1
-		# Bound near-field dispatch: 8 timber/stone NPCs plus 2 actual farmers.
-		if assigned>=10 and farmers>=2:
-			break
-	assert(assignments.size()>=8,"Autonomous citizens have no jobs")
+		reserved[node_id] = code
+		var position: Vector3 = economy.get("resource_positions")[node_id]
+		assignments[code] = {"node_id": node_id, "kind": kind,
+			"citizen": citizen, "phase": "to_resource",
+			"depot": Vector3(citizen.get("home")), "done": 0}
+		citizen.call("assign_work_destination", position)
+
+func _set_resource_visible(node_id: String, value: bool) -> void:
+	if natural_art.has(node_id) and is_instance_valid(natural_art[node_id]):
+		(natural_art[node_id] as Node3D).visible = value
 
 func _process(delta: float) -> void:
 	if economy==null:
@@ -110,17 +108,17 @@ func _process(delta: float) -> void:
 		if phase=="waiting_field":
 			var plot: Dictionary = economy.get("harvested_fields").get(job["node_id"],{})
 			if bool(plot.get("ready",false)):
-				(natural_art[job["node_id"]] as Node3D).visible=true
+				_set_resource_visible(String(job["node_id"]), true)
 				job["phase"]="to_resource"
 				citizen.call("assign_work_destination",
-					(natural_art[job["node_id"]] as Node3D).position)
+					economy.get("resource_positions")[job["node_id"]])
 			continue
 		if phase=="to_resource" and bool(citizen.call("reached_work_destination",1.20)):
 			var picked: bool = bool(economy.call("gather_field_to_actor",code,String(job["node_id"]))) if job["kind"]=="field" else bool(economy.call("gather_to_actor",code,String(job["node_id"])))
 			if picked:
 				harvested_jobs+=1
 				if job["kind"]=="field":
-					(natural_art[job["node_id"]] as Node3D).visible=false
+					_set_resource_visible(String(job["node_id"]), false)
 				else:
 					var node_info: Dictionary = economy.get("natural_nodes")[job["node_id"]]
 					if bool(node_info["depleted"]):
