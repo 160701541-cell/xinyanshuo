@@ -159,7 +159,9 @@ def generate(out:Path,seed:int=20261016):
         # Thousands of tiny tile meshes as separate Godot nodes would be
         # catastrophic for Android draw-call budgets.
         combined = trimesh.util.concatenate(list(scene.dump()))
-        assert combined.vertices.shape[0] > 20
+        # Valid compact props may have only 8 vertices/12 faces (single box).
+        # Reject empty or degenerate GLBs, not small low-poly components.
+        assert combined.vertices.shape[0] >= 8 and combined.faces.shape[0] >= 12
         compact_scene = trimesh.Scene(combined)
         data=compact_scene.export(file_type="glb")
         assert data[:4]==b"glTF" and len(data)>400
