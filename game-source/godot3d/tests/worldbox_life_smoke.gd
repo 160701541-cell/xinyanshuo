@@ -55,6 +55,10 @@ func _test() -> void:
 	assert(not bool(sim.call("deliver_carried","P-02")))
 	assert(not bool(sim.call("gather_to_actor","P-02",source_id)),
 		"Depleted natural tree cannot yield infinite resources")
+	assert(not bool(sim.call("harvest_field","TEST-01","FORGED-FIELD-INFINITE","P-01")),
+		"Any arbitrary field ID would create infinite free grain")
+	assert(bool(sim.call("register_field","FIELD-01","TEST-01")))
+	assert(not bool(sim.call("register_field","FIELD-01","TEST-01")))
 	assert(bool(sim.call("harvest_field","TEST-01","FIELD-01","P-01")))
 	assert(not bool(sim.call("harvest_field","TEST-01","FIELD-01","P-01")),
 		"One field cannot be harvested twice before regrowth")
@@ -85,6 +89,7 @@ func _test() -> void:
 	replica.call("register_natural_node",source_id,"TEST-01","tree",3)
 	replica.call("gather_to_actor","P-02",source_id)
 	replica.call("deliver_carried","P-02")
+	replica.call("register_field","FIELD-01","TEST-01")
 	replica.call("harvest_field","TEST-01","FIELD-01","P-01")
 	replica.call("prepare_meal","TEST-01","P-03")
 	replica.call("feed_citizen","P-01")
