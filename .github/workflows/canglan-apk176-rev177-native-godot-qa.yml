@@ -44,6 +44,28 @@ jobs:
           assert (root/'scripts/update_protocol.gdc').is_file()
           print('PASS_EXACT_ORIGINAL_SIGNED_APK176_GODOT_EXPORTED_FILES',count)
           PY
+      - name: Recover real exact-matching Linux Terrain3D binary for this desktop QA only
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl -fL --retry 3 --connect-timeout 20 --max-time 110 \
+            'https://github.com/TokisanGames/Terrain3D/releases/download/v1.0.2-stable/Terrain3D_v1.0.2-stable.zip' -o /tmp/canglan-native-terrain.zip
+          python3 - <<'PY'
+          import zipfile,pathlib,hashlib,json
+          base=json.loads(pathlib.Path('android-preview/base-latest.json').read_text())
+          with zipfile.ZipFile(base['file']) as apk:
+              android=apk.read('lib/arm64-v8a/libterrain.android.debug.arm64.so')
+          actual=hashlib.sha256(android).hexdigest()
+          assert actual=='57488420ff5c15d1963109bb979b8ed7934c7980eb306c2023505ef60f2a6c94'
+          with zipfile.ZipFile('/tmp/canglan-native-terrain.zip') as z:
+              a=next(n for n in z.namelist() if n.endswith('libterrain.android.debug.arm64.so'))
+              l=next(n for n in z.namelist() if n.endswith('libterrain.linux.debug.x86_64.so'))
+              assert hashlib.sha256(z.read(a)).hexdigest()==actual, 'Not exactly APK176 Terrain3D plugin release!'
+              target=pathlib.Path('logic-qa/apk176-export-fixture/addons/terrain_3d/bin/libterrain.linux.debug.x86_64.so')
+              target.parent.mkdir(parents=True,exist_ok=True)
+              target.write_bytes(z.read(l))
+          print('PASS_ORIGINAL_APK176_EXACT_TERRAIN3D_NATIVE_LINUX_QA_LIBRARY')
+          PY
       - name: Install official Godot 4.4.1 original game runtime engine
         shell: bash
         run: |
