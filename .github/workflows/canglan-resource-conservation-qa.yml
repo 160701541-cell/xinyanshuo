@@ -1,19 +1,12 @@
 name: Canglan Resource Conservation Godot QA
 on:
   workflow_dispatch:
-  push:
-    paths:
-      - 'game-source/godot3d/scripts/worldbox_life_sim.gd'
-      - 'game-source/godot3d/scripts/autonomous_village_director.gd'
-      - 'game-source/godot3d/tests/resource_conservation_smoke.gd'
-      - 'game-source/godot3d/scripts/world_resource_seeder.gd'
-      - 'game-source/godot3d/scripts/world_resource_visuals.gd'
-      - 'game-source/godot3d/scripts/world_main.gd'
-      - 'game-source/godot3d/scripts/worldbox_visible_worksite.gd'
-      - 'game-source/godot3d/tests/world_smoke.gd'
-      - 'game-source/godot3d/tests/autonomous_job_smoke.gd'
-      - 'game-source/godot3d/tests/resource_world_seeding_smoke.gd'
-      - '.github/workflows/canglan-resource-conservation-qa.yml'
+# Manual-only deep diagnosis; the normal 3D workflow runs the smoke tests once.
+permissions:
+  contents: read
+concurrency:
+  group: canglan-resource-deep-diagnostic
+  cancel-in-progress: true
 jobs:
   godot-resource-test:
     runs-on: ubuntu-latest
