@@ -158,3 +158,15 @@
 - 用户要求脚本清除右下角AI字样后进行AI修补。已实际使用内置图像编辑工具分别修复院门与石井；保留模型来源，不冒称人工原创。
 - 为避免整图重绘改变原建筑，以脚本仅合成右下角141×56局部补片；原始1024×1024 PNG保持不变，另存repaired版本。两件本地像素差分均确认范围外逐像素一致。
 - 原图、AI修补补片、可重跑脚本和SHA报告留存；公开Actions复现处理不调用付费模型。未完成主体独立/透明清底，不等于独立素材批准或手机更新。
+
+
+## CAC-0021 · 修复原安装包APK176的真正主场景QA阻塞（2026-10-16）
+
+- **根因已定位并修复**：早前APK176入口脚本缺少 `CanglanValleyAtmosphere`、`WorldState` 等全局类不是“旧APK代码坏了”，而是我们错误搭建的QA夹具没有从**原已签名APK176**提取 `assets/.godot/global_script_class_cache.cfg`。专项诊断真实读取APK并证实类缓存4377字节，含缺失类和对应原GDScript路径；GitHub run `38876281621` SUCCESS。**全部来自原APK，未注入虚假的同名替代类**。
+- 类缓存恢复后进一步发现原天气脚本真实 `res://shaders/atmosphere/...` preload缺失。CI依照APK原始ZIP资源路径恢复 **全部真实 `assets/shaders/**`**，不伪造shader、不改动原游戏的GDScript。
+- 修复原始两条CI：`.github/workflows/canglan-worldx-apk176-content.yml` 和 `.github/workflows/canglan-apk176-hd2d-overlay.yml`。**两条测试均已由红转绿**：
+  - WorldX+原APK完整版候选 PCK：run `38876521634` **SUCCESS**，源自真实APK的 `main.gdc` 与类缓存加载 `res://scenes/main.tscn` 成功；PCK索引22条；2张WorldX地形、6套NPC动画、真实室外/室内PNG、正房进出行为均经过Godot资源和实例验证；单独组件测试输出 `PASS_CANGLAN_HOUSE_PORTAL_ENTER_EXIT_RESET_GUARD ... exterior_art=true interior_art=true`。
+  - 原APK HD2D入口的较小候选包：run `38876552557` **SUCCESS**，PCK资源7项，原版编译 `main.gdc` + `main.scn` 可装载；未检出脚本解析或编译错误。
+- **状态边界必须清楚**：目前完成的是原导出主场景的 `PackedScene` **成功装载验证**，以及正房进出组件实例化自动化验证。**尚未在Android手机上加载、未完成原游戏整场景实例化运行验收，也没有推送正式热更。**
+- **真正的发布阻塞仍在**：用于给用户已安装APK176发布revision≥177的原始RSA签名私钥未通过仓库现有检查；只有与APK内公钥匹配的原私钥才能发布可信热更。不可拿新的私钥签名冒充正式补丁；APK覆盖安装还必须满足原Android证书和包名。
+- 后续次序：1）真实原APK场景实例化 + 图像验收；2）恢复同一原RSA签名能力；3）构建并发布可被已安装客户端认证的rev177内容，手机实际测试，更新官网与下载/更新日志。
