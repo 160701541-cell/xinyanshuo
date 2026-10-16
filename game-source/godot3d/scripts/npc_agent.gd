@@ -2,12 +2,25 @@ extends Node3D
 ## Procedural 3D citizen, identifiable/scheduled, rendered as a temporary humanoid
 ## mannequin. NOT a rigged/face-animation or fully autonomous AI NPC.
 const TextAvatar = preload("res://scripts/npc_text_avatar.gd")
+# CAC-SPRITE-001: existing WorldX assets become real Sprite3D character looks.
+# Text labels/unique 3D selection volumes and canonical data remain.
 const TEXT_ONLY_TEST_MODE := true
+const USE_EXISTING_WORLDX_SPRITES := true
+const SPRITE_DIR := "res://assets/generated/npc/worldx/"
+const VISUAL_JOB_MAP := {
+	"farmer":"plain_civilian", "woodcutter":"plain_civilian",
+	"quarryman":"plain_civilian", "potter":"plain_civilian",
+	"cook":"tavern", "merchant":"merchant",
+	"scholar":"scholar", "guard":"guard"}
+
 const FAMILY_NAMES := ["沈","林","周","许","叶","陆","秦","顾","苏","江","方","唐"]
 const GIVEN_NAMES := ["守田","青禾","景安","春山","清河","成林","怀谷","平生",
 	"远舟","小满","东来","知秋","长青","景年","阿宁","思源","秋实","云生"]
 signal inspection_requested(actor_id: String)
 var text_marker: Node3D
+var legacy_2d_sprite: Sprite3D
+var _sprite_move_frame: float = 0.0
+var _sprite_visual_kind: String = ""
 var civilian_name: String = ""
 var sim_profile: Dictionary = {}
 const ROLE_NAMES := ["农人","商贾","铁匠","工匠","学徒","旅人","卫卒","医者","书生","茶客"]
@@ -59,6 +72,46 @@ func setup(id: String,role_index: int,spawn: Vector3,world_rules: RefCounted,
 		set_meta("art_status","TEXT_ONLY_BILLBOARD_IN_3D")
 	else:
 		_build_body(role_index)
+
+func _apply_old_sprite_for_job(job: String) -> void:
+	if not USE_EXISTING_WORLDX_SPRITES:
+		return
+	var kind: String = String(VISUAL_JOB_MAP.get(job,"plain_civilian"))
+	var filename: String = SPRITE_DIR + kind + ".png"
+	if not ResourceLoader.exists(filename):
+		# Fail safely: status labels and original 3D interaction still work.
+		set_meta("art_status","TEXT_ONLY_BILLBOARD_IN_3D")
+		return
+	if legacy_2d_sprite != null and _sprite_visual_kind==kind:
+		return
+	if legacy_2d_sprite!=null:
+		remove_child(legacy_2d_sprite)
+		legacy_2d_sprite.queue_free()
+		legacy_2d_sprite=null
+	var texture: Texture2D = load(filename) as Texture2D
+	if texture==null:
+		return
+	var sprite := Sprite3D.new()
+	sprite.name = "ReusedWorldXSprite3D"
+	sprite.texture = texture
+	sprite.hframes = 6
+	sprite.vframes = 5
+	sprite.frame = 18
+	sprite.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+	sprite.pixel_size = 0.0094
+	sprite.position = Vector3(0,1.06,0)
+	sprite.alpha_cut = SpriteBase3D.ALPHA_CUT_DISCARD
+	sprite.texture_filter = BaseMaterial3D.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
+	sprite.double_sided = true
+	# Random color variation never changes the actual NPC personal record.
+	var jitter: float = float(posmod(entity_id.hash(),7))*0.012
+	sprite.modulate = Color(1.0-jitter,1.0-jitter*.44,1.0-jitter*.60,1.0)
+	add_child(sprite)
+	legacy_2d_sprite = sprite
+	_sprite_visual_kind = kind
+	set_meta("art_status","REUSED_WORLDX_SPRITE_IN_REAL_3D")
+	set_meta("sprite_source",filename)
+	set_meta("sprite_animation_sheet",true)
 
 func _mat(rgb: Color) -> StandardMaterial3D:
 	var material := StandardMaterial3D.new()
@@ -171,6 +224,8 @@ func _process(delta: float) -> void:
 		_body_visual.visible = proximity < 65.0
 	if text_marker!=null:
 		text_marker.visible = proximity < 85.0
+	if legacy_2d_sprite!=null:
+		legacy_2d_sprite.visible = proximity < 85.0
 	if proximity > 190.0 and not _externally_assigned_job:
 		set_process(false)
 		return
@@ -190,6 +245,9 @@ func _process(delta: float) -> void:
 		position += direction * minf(delta_target.length(),delta*_movement_speed)
 		rotation.y = atan2(direction.x,direction.z)
 		_walk_clock += delta * 6.7
+		if legacy_2d_sprite!=null:
+			_sprite_move_frame+=delta*8.0
+			legacy_2d_sprite.frame = 6 + posmod(int(_sprite_move_frame),6)
 		if _generated_role_visual != null:
 			_generated_role_visual.position.y = absf(sin(_walk_clock))*0.035
 		if _left_leg != null:
@@ -202,6 +260,8 @@ func _process(delta: float) -> void:
 			_right_arm.rotation.x = sin(_walk_clock)*0.35
 		_citizen_state["task"] = "rest_home" if _is_resting else "walking"
 	else:
+		if legacy_2d_sprite!=null:
+			legacy_2d_sprite.frame=18
 		if _left_leg != null:
 			_left_leg.rotation.x = lerpf(_left_leg.rotation.x,0,delta*5)
 		if _right_leg != null:
@@ -226,6 +286,7 @@ func refresh_text_status(person_state: Dictionary) -> void:
 			"farmer":"农民","woodcutter":"樵夫","quarryman":"采石工",
 			"cook":"厨师","potter":"陶工"}.get(work,work))
 		text_marker.set("occupation",actual_role)
+		_apply_old_sprite_for_job(work)
 		text_marker.call("set_status",String(person_state.get("schedule","idle")),
 			int(person_state.get("hunger",0)),int(person_state.get("energy",100)))
 
