@@ -116,6 +116,13 @@ func gather_to_actor(actor_id: String, node_id: String) -> bool:
 	_journal(String(source["village"]),"harvest_from_world",amount,node_id)
 	return true
 
+func resource_remaining(kind: String) -> int:
+	var sum: int = 0
+	for entry in natural_nodes.values():
+		if entry["kind"]==kind:
+			sum+=int(entry["remaining"])
+	return sum
+
 func deliver_carried(actor_id: String) -> bool:
 	if not citizens.has(actor_id) or not carried_by_actor.has(actor_id):
 		return false
@@ -182,12 +189,14 @@ func _citizen_work(person: Dictionary) -> void:
 	if job == "farmer" and int(villages[town]["fields"])>0:
 		amount = 2+_rng.randi_range(0,2)
 		action="grain"
-	elif job == "woodcutter":
-		amount = 2+_rng.randi_range(0,1)
-		action="wood"
-	elif job == "quarryman":
-		amount = 1+_rng.randi_range(0,1)
-		action="stone"
+	elif job in ["woodcutter","quarryman"]:
+		# Only physical gather_to_actor -> deliver_carried may mint these resources
+		# when authored finite world nodes exist. Never fabricate timber in time tick.
+		if not natural_nodes.is_empty():
+			person["schedule"]="looking_for_worksite"
+			return
+		amount = 2+_rng.randi_range(0,1) if job=="woodcutter" else 1+_rng.randi_range(0,1)
+		action="wood" if job=="woodcutter" else "stone"
 	elif job == "potter":
 		if _spend(town,{"clay":2,"wood":1}):
 			_add_stock(town,"coin",3)
