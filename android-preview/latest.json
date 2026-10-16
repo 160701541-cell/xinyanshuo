@@ -1,12 +1,12 @@
 {
   "schema": 1,
   "channel": "android-preview",
-  "revision": 182,
+  "revision": 183,
   "minimum_android_code": 1176,
   "maximum_android_code": 1176,
-  "sha256": "bfd085956b4a2d41f1fd12635f312bd484d7c98692e99ce7958aea6d4ec8f1d8",
-  "size_bytes": 21596192,
-  "pack_url": "https://160701541-cell.github.io/xinyanshuo/android-preview/canglan-content-rev-182.pck",
-  "notes": "苍岚原版：可返回旧世界的可见角色与名字、伐倒树种子可播种、岩石露头恢复、百万年板块造山演示；NPC实体搬运建造（非完整世界）",
-  "signature": "jIwt9ZShpGdsI8gthSL2QH8UVgYNagHM2vEkunogfwaeu6LYPjqN7LfSlwQFGVdAJ3ooKMqw/ZfuZ7wFZLv/EwbUU4RhTV0Pv9D04nscM6JGhFchMHtl8FoY+e1SjthzrPJLQbCKFJSTplx/MqkXv7Bu+N8dqoEMnB9bg9XNYZh2iro9FdpievHLGnnn2Y9wosi36CIToKhEndavl1g64OMuirLBJjQ0Buh9K7W/XIjSI6gipla+F4HX62atSP1D2wOaAjnLMorwr4vwbwovUN6WHP5hoA8s+1g6OjFLlfpoAqnCwO3y7A56ug8NK83eHziPqk55fuZZCwF8uh/KIfWikCEPORWqyKS5jHKzGtQTfW+6B6i8e+wVQjslb86AjoRDOi8q4pWTdsV2t3kVr5nN4YF7M9E7/lorBSABIbI5bymDohftiSaeZRIanF8Kt0AGyPpI0pN0m/e1b+n+nP1A117ry/XtGixrWILt4BhNRqhxz+XSDLeywKny0bLw"
+  "sha256": "5cccf09ed783638b2420f05986b4543c22d923d6289310ea6fe2c5e678e528a9",
+  "size_bytes": 21607520,
+  "pack_url": "https://160701541-cell.github.io/xinyanshuo/android-preview/canglan-content-rev-183.pck",
+  "notes": "苍岚原版：Kenney低多边形统一五色、树石与施工件MultiMesh合批、单方向光简易阴影、树林矿石分组与畅通道路。Draw≤200待实机验收。",
+  "signature": "UDHVmsNuUVIr8cev9tFbg0iac0b9O90fqv1KzWG89VuQRaKYHMvI5aNq7eW0HJQ+EtvD6X3XSSjwMjR37z+f2MOc9aXvU3MCchXcgteQKJGsPKuFo3/LU4ZcvNXQ4OPRb3O+vYCmqaGYjnYvNtheanyf8xk2r5XKxOkC+bwtWp2UPmLKwlpZfNW2s0IcMUDqOjzhRM/u1k5GfvAZv6GDsr6Z4CFOXepx5RXmmWF7BiSYRlvbgFNR45dHaed5Ydv1BrrjE/RAN0SJbRvTW/vimtHxxQ3rHHwsIVjSrzPWSsRmzOWssxb9ILXV0rMOmZurgKofspF1T5dDdWhdyr2DpCd8e6pi2HwiEovmoxjC+m7MvTqxgokpFHbrdhq/j4BQG1oizKsJ9DK05IQ0v/mCHhiyQWbRNS9dARHcTJmI0wDoZRKVjge55gYARWUxAPvt5YW7uGy+H4KLT97tEQqMcoolRllxRYS5PkhdqY+zpdb1ONLQP9OvotMI6MEHkBYF"
 }
