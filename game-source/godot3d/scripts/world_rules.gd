@@ -1,14 +1,18 @@
 extends RefCounted
+## Reuses the actual original Canglan 3D Terrain3D authoring height function.
+const OriginalTerrainField = preload("res://scripts/terrain/heightfield.gd")
 ## Seeded mainland terrain, metres in Godot Y-up space.
 ## No copyrighted heightmap, data service, engine plugin or live network request.
 const SECTOR_METERS: float = 512.0
 var seed: int = 20261016
+var original_terrain: RefCounted
 var hills: FastNoiseLite
 var detail: FastNoiseLite
 var ecology: FastNoiseLite
 
 func configure(value: int) -> void:
 	seed = value
+	original_terrain = OriginalTerrainField.new()
 	hills = FastNoiseLite.new()
 	hills.seed = value
 	hills.noise_type = FastNoiseLite.TYPE_SIMPLEX_SMOOTH
@@ -25,16 +29,20 @@ func configure(value: int) -> void:
 	ecology.frequency = 0.006
 
 func height_at(x: float, z: float) -> float:
-	var mountains: float = hills.get_noise_2d(x,z) * 19.0
-	var fine: float = detail.get_noise_2d(x,z) * 1.6
-	var base: float = mountains + fine
-	# Authentic settlement site preparation: 3D buildings have supported foundations.
+	# Preserve the REAL prior Canglan world's northern/western mountain
+	# envelopes, 500m original city plateau and terrain authoring coordinates.
+	# Translate its 26m city datum to this gameplay mesh's y=0 origin.
+	var baseline: float = float(original_terrain.call("height_at",x,z)) - OriginalTerrainField.CITY_ELEVATION
+	var micro: float = detail.get_noise_2d(x,z) * 0.36
+	var base: float = baseline + micro
+	# Physical foundations for current newly generated compact settlement.
 	var dx: float = maxf(0.0, absf(x)-137.0)
 	var dz: float = maxf(0.0, absf(z)-130.0)
 	var dist: float = sqrt(dx*dx+dz*dz)
 	var flatten: float = 1.0 - smoothstep(6.0,52.0,dist)
 	base = lerpf(base, 0.0,flatten)
-	# A shallow south-eastern river valley retained outside the settlement.
+	# Small tributary route for this technical slice only; the historical
+	# terrain generator and original main-game river remain untouched.
 	var river_axis: float = 270.0 + sin(x*0.003)*37.0
 	var d: float = absf(z-river_axis)
 	if d < 45.0:
@@ -58,4 +66,4 @@ func settlement_zone(col: int,row: int) -> String:
 	return names[posmod(col*7+row*11+seed,names.size())]
 
 func stats() -> Dictionary:
-	return {"seed":seed,"river":"seeded shallow valley","noise":"Godot FastNoiseLite MIT"}
+	return {"seed":seed,"river":"technical tributary valley","noise":"Godot FastNoiseLite MIT", "height_source":"original Canglan Terrain3D heightfield.gd"}
