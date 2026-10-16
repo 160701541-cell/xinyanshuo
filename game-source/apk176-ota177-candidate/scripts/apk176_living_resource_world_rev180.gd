@@ -376,26 +376,59 @@ func _move_builder(worker: Dictionary, delta: float) -> void:
     _set_worker_animation(worker, false)
     return
   var phase: Dictionary = STAGES[_stage_index]
+  var worker_node: Node3D = worker["node"]
   if not _stage_paid:
+    # Builder MUST first walk back to the real warehouse; no teleporting
+    # materials from village stock directly to the worksite.
+    worker["phase"] = "to_warehouse_for_materials"
+    worker["target"] = DEPOT
+    if not _navigate(worker, delta):
+      return
     if not sim._spend(TOWN, phase["consume"]):
       worker["phase"] = "waiting_materials"
-      _set_worker_animation(worker, false)
       return
     _stage_paid = true
     _stage_progress = 0.0
+    # Stock is now in this specific builder's finite load, *not minted*.
+    worker["carried_materials"] = phase["consume"].duplicate(true)
     worker["phase"] = "to_building_site"
     worker["target"] = SITE
-    _add_event("工地领料 " + String(phase["id"]))
-  if not _navigate(worker, delta):
+    var role: String = "timber" if int(phase["consume"].get("wood",0))>0 else "stone"
+    if asset_sources.has(role):
+      var visual: Node3D = (asset_sources[role] as Node3D).duplicate()
+      visual.name = "ActualCarriedLicensedMaterial"
+      visual.position = Vector3(0.25, 1.1, -0.1)
+      visual.scale = Vector3.ONE * 0.54
+      worker_node.add_child(visual)
+      worker["cargo_visual"] = visual
+    _add_event("工人领取实体材料 " + String(phase["id"]))
     return
-  worker["phase"] = "working_" + String(phase["id"])
+  if String(worker.get("phase","")) == "to_building_site":
+    if not _navigate(worker, delta):
+      return
+    # Materials are delivered only on physical arrival, before labor starts.
+    worker["delivered_materials"] = worker.get("carried_materials",{}).duplicate(true)
+    worker.erase("carried_materials")
+    if worker.has("cargo_visual"):
+      var cargo: Node3D = worker["cargo_visual"]
+      if is_instance_valid(cargo):
+        cargo.queue_free()
+      worker.erase("cargo_visual")
+    worker["phase"] = "working_" + String(phase["id"])
+    _add_event("实体材料到达工地 " + String(phase["id"]))
+    return
+  # Work is measured in elapsed physical seconds after delivery; no instant
+  # spawn on job assignment and no appearance before material reservation.
+  _set_worker_animation(worker, false)
   _stage_progress += delta
   if _stage_progress >= float(phase["time"]):
     _place_stage_art(String(phase["id"]))
     _add_event("NPC竣工阶段 " + String(phase["id"]))
+    worker.erase("delivered_materials")
     _stage_index += 1
     _stage_paid = false
     _stage_progress = 0.0
+    worker["phase"] = "return_to_warehouse"
     worker["target"] = DEPOT
 
 func _add_event(message: String) -> void:
