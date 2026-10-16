@@ -18,13 +18,13 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          test "$(python3 -c "import json;print(json.load(open('android-preview/latest.json'))['revision'])")" = 183
+          test "$(python3 -c "import json;print(json.load(open('android-preview/latest.json'))['revision'])")" = 184
           python3 tools/verify_original_current_ota_http.py
           python3 - <<'PY'
           import json
           from pathlib import Path
           state=json.loads(Path('qa-results/original-current-public-ota-http.json').read_text())
-          assert state['live_revision']==183, 'CDN is still a different revision'
+          assert state['live_revision']==184, 'CDN is still a different revision'
           assert state['installed_apk_version_code']==1176
           assert state['pck_bytes']>21000000
           assert state['status']=='PASS_CURRENT_ORIGINAL_APK176_PUBLIC_HTTPS_RSA_SHA256_AND_RANGE'
