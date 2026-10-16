@@ -210,10 +210,3 @@ jobs:
             qa-results/ota-rev177-gate-output.log
           if-no-files-found: warn
           retention-days: 14
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: Canglan-APK176-Live-Main-House-UNSIGNED-QA
-          path: qa-results/live-*.log
-          if-no-files-found: warn
-          retention-days: 7
