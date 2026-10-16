@@ -1,0 +1,198 @@
+extends Control
+## One real, reversible building traversal in the ORIGINAL APK176 HD2D overlay.
+## Exterior and interior are separate render spaces with a shared persistent
+## building ID. Does not touch saves, global quest state or the original scene.
+signal building_entered(building_id: String)
+signal building_exited(building_id: String)
+
+const BUILDING_ID := "CL-HOUSE-0001"
+const EXTERIOR := "res://hd2d/courtyard/main_house_v3_source.png"
+const INTERIOR := "res://hd2d/courtyard/main_house_interior.png"
+
+var inside := false
+var transition_count := 0
+var outside_spawn := Vector2(703.0, 622.0)
+var inside_spawn := Vector2(600.0, 680.0)
+var current_spawn := Vector2.ZERO
+var _world: Node2D
+var _room: Control
+var _open_button: Button
+var _exit_button: Button
+var _status: Label
+var _outdoor_art: Node2D
+var _player_marker: Node2D
+var _outside_image_present := false
+var _inside_image_present := false
+
+func install(world: Node2D, status: Label) -> void:
+	_world = world
+	_status = status
+	mouse_filter = Control.MOUSE_FILTER_IGNORE
+	set_anchors_preset(Control.PRESET_FULL_RECT)
+	_build_exterior()
+	_build_interior()
+	_build_entrance_controls()
+	current_spawn = outside_spawn
+
+func _read_texture(path: String) -> Texture2D:
+	if not FileAccess.file_exists(path):
+		return null
+	var image := Image.new()
+	var bytes := FileAccess.get_file_as_bytes(path)
+	if image.load_png_from_buffer(bytes) != OK:
+		push_warning("Invalid building PNG at " + path)
+		return null
+	return ImageTexture.create_from_image(image)
+
+func _build_exterior() -> void:
+	_outdoor_art = Node2D.new()
+	_outdoor_art.name = "CanglanBuilding_CL_HOUSE_0001"
+	_world.add_child(_outdoor_art)
+	var tex := _read_texture(EXTERIOR)
+	if tex != null:
+		var facade := Sprite2D.new()
+		facade.name = "CourtyardExteriorArtCandidate"
+		facade.texture = tex
+		facade.centered = false
+		facade.position = Vector2(465.0, 145.0)
+		facade.scale = Vector2(0.46, 0.46)
+		_outdoor_art.add_child(facade)
+		_outside_image_present = true
+	else:
+		# Honest fallback when a CI candidate pack does not yet contain the art.
+		var silhouette := Polygon2D.new()
+		silhouette.name = "MissingExteriorArtFallback"
+		silhouette.polygon = PackedVector2Array([
+			Vector2(505, 330), Vector2(735, 330),
+			Vector2(780, 525), Vector2(460, 525)
+		])
+		silhouette.color = Color("#7c7669")
+		_outdoor_art.add_child(silhouette)
+	var entry := Button.new()
+	entry.name = "ExteriorHouseDoor"
+	entry.text = "正房门 · 进入"
+	entry.position = Vector2(630.0, 550.0)
+	entry.size = Vector2(160.0, 50.0)
+	entry.pressed.connect(enter_building)
+	_outdoor_art.add_child(entry)
+	_player_marker = Node2D.new()
+	_player_marker.name = "PlayerOutsideLocation"
+	_player_marker.position = outside_spawn
+	_outdoor_art.add_child(_player_marker)
+	var indicator := Polygon2D.new()
+	indicator.color = Color("#e8d6a2")
+	indicator.polygon = PackedVector2Array([
+			Vector2(0,-13), Vector2(9,1), Vector2(0,12), Vector2(-9,1)
+	])
+	_player_marker.add_child(indicator)
+
+func _build_interior() -> void:
+	_room = Control.new()
+	_room.name = "CL_HOUSE_0001_InteriorScene"
+	add_child(_room)
+	_room.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_room.mouse_filter = Control.MOUSE_FILTER_STOP
+	var floor := ColorRect.new()
+	floor.name = "FallbackWoodFloor"
+	floor.color = Color("#977d61")
+	_room.add_child(floor)
+	floor.set_anchors_preset(Control.PRESET_FULL_RECT)
+	var tex := _read_texture(INTERIOR)
+	if tex != null:
+		var art := TextureRect.new()
+		art.name = "WorldXKolorsInteriorCandidate"
+		art.texture = tex
+		art.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		art.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
+		_room.add_child(art)
+		art.set_anchors_preset(Control.PRESET_FULL_RECT)
+		_inside_image_present = true
+	else:
+		# Functional, deliberately marked placeholder, never considered art QA.
+		var top_wall := ColorRect.new()
+		top_wall.name = "FallbackInteriorWall"
+		top_wall.color = Color("#d5c6a9")
+		top_wall.anchor_right = 1.0
+		top_wall.offset_bottom = 125.0
+		_room.add_child(top_wall)
+		for spec in [
+			{"name":"TablePlaceholder","rect":Rect2(480,285,180,85),"color":"#5f402d"},
+			{"name":"BedPlaceholder","rect":Rect2(140,260,180,100),"color":"#725444"},
+			{"name":"CabinetPlaceholder","rect":Rect2(850,180,105,175),"color":"#624430"}
+		]:
+			var item := ColorRect.new()
+			item.name = str(spec["name"])
+			item.position = spec["rect"].position
+			item.size = spec["rect"].size
+			item.color = Color(str(spec["color"]))
+			_room.add_child(item)
+	var top_bar := HBoxContainer.new()
+	top_bar.name = "InteriorHUD"
+	top_bar.position = Vector2(18.0, 18.0)
+	_room.add_child(top_bar)
+	var label := Label.new()
+	label.text = "苍岚 · 正房内 | 建筑ID " + BUILDING_ID
+	label.add_theme_font_size_override("font_size", 24)
+	label.add_theme_color_override("font_color", Color("#fcefd1"))
+	label.add_theme_color_override("font_shadow_color", Color("#1b1715"))
+	top_bar.add_child(label)
+	_exit_button = Button.new()
+	_exit_button.name = "ExitToOriginalCourtyard"
+	_exit_button.text = "离开正房 · 返回院落"
+	_exit_button.custom_minimum_size = Vector2(185.0, 54.0)
+	_exit_button.pressed.connect(exit_building)
+	top_bar.add_child(_exit_button)
+	var bottom := Label.new()
+	bottom.name = "InteriorVisualStatus"
+	bottom.text = "室内：WorldX/Kolors候选原图（单张布景，家具交互待拆分）" if _inside_image_present else "室内：可进出功能已接通；美术图未载入，当前显示占位家具"
+	bottom.set_anchors_preset(Control.PRESET_BOTTOM_LEFT)
+	bottom.offset_left = 22.0
+	bottom.offset_top = -65.0
+	bottom.offset_right = 780.0
+	bottom.offset_bottom = -20.0
+	_room.add_child(bottom)
+	_room.visible = false
+
+func _build_entrance_controls() -> void:
+	_open_button = Button.new()
+	_open_button.name = "EnterHouseFixedHUD"
+	_open_button.text = "进入正房"
+	_open_button.custom_minimum_size = Vector2(150.0, 58.0)
+	_open_button.set_anchors_preset(Control.PRESET_BOTTOM_RIGHT)
+	_open_button.offset_left = -182.0
+	_open_button.offset_top = -94.0
+	_open_button.offset_right = -20.0
+	_open_button.offset_bottom = -28.0
+	_open_button.pressed.connect(enter_building)
+	add_child(_open_button)
+
+func enter_building() -> void:
+	if inside:
+		return
+	inside = true
+	transition_count += 1
+	current_spawn = inside_spawn
+	_outdoor_art.visible = false
+	_room.visible = true
+	_open_button.visible = false
+	if _status != null:
+		_status.text = "已进入 " + BUILDING_ID + "；可点击「离开正房」回到原室外位置"
+	building_entered.emit(BUILDING_ID)
+
+func exit_building() -> void:
+	if not inside:
+		return
+	inside = false
+	transition_count += 1
+	current_spawn = outside_spawn
+	_outdoor_art.visible = true
+	_room.visible = false
+	_open_button.visible = true
+	_player_marker.position = outside_spawn
+	if _status != null:
+		_status.text = "已离开正房，返回原院落门前；原游戏状态未重置"
+	building_exited.emit(BUILDING_ID)
+
+func set_overlay_visible(active: bool) -> void:
+	visible = active
+	# Keep interior state while temporarily viewing the original world.
