@@ -16,7 +16,8 @@ REQUIRED = {
     "scripts/apk176_living_resource_world_rev182.gd",
     "scripts/hd2d_original_overlay_ota177.gd",
     "scripts/hd2d_house_portal.gd",
-    "canglan_rev182/worldbox_life_sim.gd",\n    "canglan_rev182/ecology_growth.gd",
+    "canglan_rev182/worldbox_life_sim.gd",
+    "canglan_rev182/ecology_growth.gd",
     "Textures/colormap.png",
 }
 BASE_DIR = Path(__file__).resolve().parents[1]
