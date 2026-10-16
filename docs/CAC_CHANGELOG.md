@@ -523,3 +523,14 @@ Godot 4.4.1对从**原签名Android APK176**提取的实际`update_protocol.gdc`
 **当前准确根因界定：** 原游戏rev178 QA资源、代码验证均可通过；当前这个公开仓库的普通主分支Actions job与现有`github-pages`环境job均**没有注入五个已声明的RSA签名Secret名称**，签名步骤无法执行。可能是配置别名不同、配置的密钥用途不同或所处的Secrets作用域与该job不重叠。由于 GitHub runner token 无权读取仓库Secret元数据，无法仅凭该token判定实际已设置的别名；也不能从签名公钥反推RSA私钥。
 
 **发布状态**：rev178尚未签名与推送，`android-preview/latest.json`仍是rev177；不得让玩家重装APK、不使用私有仓库、不绕过RSA。下一步唯一需解决的是合法签名Secret在允许的公开仓库CI中正确注入，复跑 `.github/workflows/canglan-original-apk176-rev178-signed-ota.yml`，最后必须真机更新验收。
+
+## 2026-10-17 / P0 APK176 rev178 发布实际执行（用户称现已可打包更新）
+
+**用户授权执行之后，立即实际重跑仅公开仓库发布任务**：原安装包APK176签名热更新工作流 `38925668945`（重试新作业 `117077997517`）已经运行，**结论failure，因正式签名私钥仍未注入而在安全门阻止发布**。同时重跑环境配置排查 `38925680620`：`github-pages`环境 `117078363015` 是fail closed，原APK176真实rev178未签补丁资源QA `117078366090` 为SUCCESS。
+
+安全状态探针的本次新增发现（仅报告有无，不显示任何机密内容）：
+- `CANGLAN_ANDROID_KEYSTORE_B64` **现在确实在公开仓库Actions job中已注入**（以前报告false、此次报告true），说明用户近期配置至少有一个安卓APK签名所用Secret；但这只能证明变量非空，并未验证文件有效或证书是否与原安装包相同。
+- 五个OTA RSA签名候选别名 **均为 `NOT_INJECTED_IN_THIS_JOB`**，包括 `CANGLAN_ORIGINAL_OTA_PRIVATE_KEY_PEM`、`CANGLAN_PCK_SIGNING_KEY_B64`。其本身不表明用户未配置密钥，只表明公开主分支发布runner与`github-pages`环境当前均取不到其中任何一个。安卓APK keystore并不自动具备与原游戏信任根匹配的PCK内容签名能力，不能私自代用或修改公钥。
+- `CANGLAN_SITE_PUBLISH_TOKEN` 标志false但本发布工作流使用 `GITHUB_TOKEN`提交公库，非此轮卡点；`CANGLAN_ENABLE_OTA_RELEASES` 的当前工作流变量探针为不存在/false（当前实际rev178流程不依赖它），不是阻塞主因。
+- `qa_proof` 经不读取机密的独立真实CI重试成功验证：21,021,440字节、SHA-256 `4bf2e3e9e934a0bbdea97275b824317dbe6472b1782ee50a461673ffc4d93bdc` 的rev178原版内容补丁及实场景QA符合代码的兼容检查。
+- 本次**没有发布新版manifest、没有改线上rev177、没有签发假的RSA签名、没有交付独立APK替代热更新、没有使用任何私有仓库**。下一个合法动作是让已签过原版rev177更新的原始RSA签名私钥在本公开仓库以正确名/正确作用域注入，再运行同一流水线；不能凭空生成原私钥。
