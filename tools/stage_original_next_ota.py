@@ -41,6 +41,7 @@ def validate_original_qa(pack: pathlib.Path, template: pathlib.Path,
     if not (unsigned.get("_not_a_release") == "UNSIGNED_DEVELOPER_TEMPLATE_DO_NOT_HOST"
             and unsigned.get("signature") == ""
             and unsigned.get("schema") == 1
+            and unsigned.get("_visual_goal") == "ORIGINAL_3D_WORLD_PREVIEW"
             and unsigned.get("revision") == revision
             and unsigned.get("minimum_android_code") == 1176
             and unsigned.get("maximum_android_code") == 1176
@@ -52,7 +53,9 @@ def validate_original_qa(pack: pathlib.Path, template: pathlib.Path,
     if pack.read_bytes()[:4] != b"GDPC" or digest != unsigned.get("sha256") or pack.stat().st_size != unsigned.get("size_bytes"):
         raise ValueError("BLOCKED: unsigned QA candidate differs from PCK bytes")
     log = runtime.read_text(encoding="utf-8")
-    if OBSERVED_MARKER not in log or any(x in log for x in DANGEROUS_LOG_MARKERS):
+    if (OBSERVED_MARKER not in log
+            or "PASS_APK176_REAL_3D_PREVIEW" not in log
+            or any(x in log for x in DANGEROUS_LOG_MARKERS)):
         raise ValueError("BLOCKED: original exported main scene Godot runtime QA failed")
     # Exactly this historical assertion is performed by the original APK176
     # main-scene CI job; a log alone is not a substitute for its SUCCESS status.
