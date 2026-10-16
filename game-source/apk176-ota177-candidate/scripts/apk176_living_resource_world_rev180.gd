@@ -499,3 +499,13 @@ func stats() -> Dictionary:
     "stock_wood": int(stock["wood"]), "stock_stone": int(stock["stone"]),
     "stage": _stage_index, "built_cc0_parts": _built_pieces,
     "not_whole_finished_house": true, "save_unchanged": true}
+
+func _exit_tree() -> void:
+  # GLTFDocument.generate_scene produces freestanding Node3D templates.
+  # They are NOT in the SceneTree, so main.queue_free() cannot clean them.
+  # Release their Skeleton/Mesh/Animation resources before the renderer exits.
+  for source in asset_sources.values():
+    if is_instance_valid(source):
+      source.free()
+  asset_sources.clear()
+  _hidden_game_world.clear()
