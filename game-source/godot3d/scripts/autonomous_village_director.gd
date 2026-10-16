@@ -15,37 +15,47 @@ var state_time: float = 0.0
 var _last_homes: int = 22
 var _construction_visuals: int = 0
 var _has_started_house: bool = false
+var _citizens: Array[Node3D] = []
 
 func setup(sim: RefCounted, citizens: Array[Node3D]) -> void:
 	economy = sim
+	_citizens = citizens
 	name = "AutonomousNPCJobsWorldVisible"
 	_last_homes = int(economy.get("villages")[TOWN]["homes"])
-	# Resources are authored by world generation BEFORE jobs are dispatched.
-	# No NPC may create a tree, quarry, or field by accepting a job.
+	_dispatch_idle_workers()
+
+func _dispatch_idle_workers() -> void:
+	if economy == null:
+		return
 	var reserved: Dictionary = {}
-	for citizen in citizens:
+	for job in assignments.values():
+		if String(job.get("phase", "")) not in ["done", "waiting_resource", "waiting_field"]:
+			reserved[String(job["node_id"])] = true
+	for citizen in _citizens:
+		if not is_instance_valid(citizen):
+			continue
 		var code: String = String(citizen.get_meta("entity_id", ""))
 		if code.is_empty():
 			continue
-		var data: Dictionary = economy.get("citizens").get(code, {})
-		var role: String = String(data.get("profession", ""))
+		var role: String = String(economy.get("citizens").get(code, {}).get("profession", ""))
 		if role not in ["woodcutter", "quarryman", "farmer"]:
 			continue
+		if assignments.has(code):
+			var phase: String = String(assignments[code]["phase"])
+			if phase not in ["done", "waiting_resource", "waiting_field"]:
+				continue
 		var kind: String = "tree" if role == "woodcutter" else ("stone" if role == "quarryman" else "field")
-		var available: Array[String] = economy.call("get_available_resource_nodes", TOWN, kind)
-		var node_id: String = ""
-		for candidate in available:
-			if not reserved.has(candidate):
-				node_id = candidate
-				break
-		if node_id.is_empty():
-			continue
-		reserved[node_id] = code
-		var position: Vector3 = economy.get("resource_positions")[node_id]
-		assignments[code] = {"node_id": node_id, "kind": kind,
-			"citizen": citizen, "phase": "to_resource",
-			"depot": Vector3(citizen.get("home")), "done": 0}
-		citizen.call("assign_work_destination", position)
+		var candidates: Array[String] = economy.call("get_available_resource_nodes", TOWN, kind)
+		for node_id in candidates:
+			if reserved.has(node_id):
+				continue
+			reserved[node_id] = true
+			var position: Vector3 = economy.get("resource_positions")[node_id]
+			assignments[code] = {"node_id": node_id, "kind": kind,
+				"citizen": citizen, "phase": "to_resource",
+				"depot": Vector3(citizen.get("home")), "done": 0}
+			citizen.call("assign_work_destination", position)
+			break
 
 func _set_resource_visible(node_id: String, value: bool) -> void:
 	if natural_art.has(node_id) and is_instance_valid(natural_art[node_id]):
@@ -58,6 +68,7 @@ func _process(delta: float) -> void:
 	if state_time<0.20:
 		return
 	state_time=0
+	_dispatch_idle_workers()
 	# Never call legacy request_construction here. Resource haulers deliver
 	# only raw wood/stone/grain. NPCBuilding assigns living tradesmen to craft
 	# reusable materials and physically place each 3D structural part.
@@ -86,12 +97,12 @@ func _process(delta: float) -> void:
 				else:
 					var node_info: Dictionary = economy.get("natural_nodes")[job["node_id"]]
 					if bool(node_info["depleted"]):
-						(natural_art[job["node_id"]] as Node3D).visible=false
+						_set_resource_visible(String(job["node_id"]), false)
 				_show_cargo(code,citizen,String(job["kind"]))
 				job["phase"]="to_depot"
 				citizen.call("assign_work_destination",job["depot"])
 			else:
-				job["phase"]="done"
+				job["phase"]="waiting_resource"
 				citizen.call("cancel_work_destination")
 		elif phase=="to_depot" and bool(citizen.call("reached_work_destination",1.20)):
 			if bool(economy.call("deliver_carried",code)):
@@ -104,9 +115,14 @@ func _process(delta: float) -> void:
 					job["phase"]="waiting_field"
 					citizen.call("cancel_work_destination")
 				else:
-					job["phase"]="to_resource"
-					citizen.call("assign_work_destination",
-						(natural_art[job["node_id"]] as Node3D).position)
+					var source: Dictionary = economy.get("natural_nodes").get(job["node_id"], {})
+					if int(source.get("remaining", 0)) > 0:
+						job["phase"]="to_resource"
+						citizen.call("assign_work_destination",
+							economy.get("resource_positions")[job["node_id"]])
+					else:
+						job["phase"]="waiting_resource"
+						citizen.call("cancel_work_destination")
 			else:
 				job["phase"]="done"
 				citizen.call("cancel_work_destination")
@@ -124,7 +140,7 @@ func _clear_cargo(code: String) -> void:
 func stats() -> Dictionary:
 	var working: int = 0
 	for job in assignments.values():
-		if job["phase"]!="done":
+		if job["phase"] not in ["done", "waiting_resource", "waiting_field"]:
 			working+=1
 	return {"workers":assignments.size(),"active_workers":working,
 		"harvested":harvested_jobs,"delivered":completed_deliveries,
