@@ -111,11 +111,28 @@ def prop(kind,variant):
     return s
 def role_mesh(role):
     s=trimesh.Scene()
-    cylinder(s,"coat",(0,1.3,0),0.37,1.1,"robe")
+    # Ten different roles share a human scale but not an identical dress silhouette.
+    garment=[(81,114,111,255),(147,111,74,255),(101,104,107,255),
+             (112,92,71,255),(125,137,103,255),(84,113,146,255),
+             (81,93,93,255),(144,131,102,255),(106,122,149,255),
+             (162,112,87,255)][role]
+    robes=trimesh.creation.cylinder(radius=0.34+0.015*(role%3),height=1.12,
+                                     sections=10)
+    robes.apply_translation((0,1.28,0))
+    robes.visual.vertex_colors=np.tile(garment,(len(robes.vertices),1))
+    s.add_geometry(robes,geom_name="independent_role_robe",
+                   node_name="independent_role_robe")
     g=trimesh.creation.icosphere(subdivisions=2,radius=0.25)
     g.apply_translation((0,2.12,0))
     add(s,"face",g,"skin")
-    box(s,"cap",(0,2.37,0),(0.4,0.13,0.4),"hair")
+    box(s,"cap",(0,2.37+role%3*0.04,0),
+        (0.4+role%3*0.12,0.13,0.4),"hair")
+    if role in (1,5,8):
+        box(s,"traveller_scroll_or_ledger",(0.55,1.12,0.23),(0.33,0.5,0.17),"paper")
+    if role in (0,3):
+        box(s,"worker_tool_pouch",(-0.4,0.83,0.12),(0.3,0.33,0.22),"wood")
+    if role == 6:
+        box(s,"guard_chest_armor",(0,1.42,0.3),(0.67,0.62,0.21),"stone")
     for side in (-1,1):
         cylinder(s,f"arm_{side}",(side*0.45,1.34,0),0.11,0.85,"robe")
         cylinder(s,f"leg_{side}",(side*0.19,0.36,0),0.12,0.72,"wood")
