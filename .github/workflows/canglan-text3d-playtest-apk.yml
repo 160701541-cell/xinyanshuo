@@ -1,10 +1,7 @@
 name: Canglan 3D text-NPC playable Android APK - fast game loop QA
+# Not a hot update to the installed, RSA-pinned original APK176.
+# Never auto-publish a different-package, ephemeral-signature APK on each commit.
 on:
-  push:
-    branches: [main]
-    paths:
-      - 'game-source/godot3d/**'
-      - '.github/workflows/canglan-text3d-playtest-apk.yml'
   workflow_dispatch:
 permissions:
   contents: write
