@@ -673,3 +673,10 @@ Godot 4.4.1对从**原签名Android APK176**提取的实际`update_protocol.gdc`
 新增回归测试提交`4be646bc79b73cbf1af2815692788fe4300b256a`：大型矿脉容量/开采/冷却/慢速恢复，树木72小时恢复1单位。**测试尚未在Godot实际执行，不能标通过。**
 
 **尚未完成**：真正的世界生成器需要按地貌、生态和矿脉类型预先播种这些节点；NPC耗尽资源后的重新派工/休养后复工、恢复中的视觉成长、存档兼容迁移、Android实机和原版签名OTA均待做。正式游戏仍rev178。
+
+
+## 2026-10-17 / SIM-004-RECOVERY-REDISPATCH / 资源耗尽后重新找矿、恢复后复工
+
+检查`autonomous_village_director.gd`发现此前去掉BoxMesh后仍保留两处直接访问`natural_art[node_id]`，会在采集资源耗尽或交货后触发无效字典索引。提交`89c3c442b30f401ff7ae22ae11d6cde310d65cb7`：改为安全可选视觉节点访问，NPC在资源耗尽时进入`waiting_resource`而非反复向空节点寻路；调度器每次轮询预先存在的可用节点，按ID稳定选择新资源；矿脉/树木恢复后可重新派工。**前提：世界生成器必须先登记资源位置，尚未完成场景集成。**
+
+新增真实Godot 4.4.1 GitHub Actions回归工作流`.github/workflows/canglan-resource-conservation-qa.yml`，提交`57a6fb0fec153c8d54d4a3ba0eda7fac92020c0c`，执行1000 tick无凭空产出、资源耗尽、重复交货、矿脉恢复和树木再生测试。**工作流已提交，但本次尚未核验CI运行结果；不写QA通过。** 原APK176正式rev178仍未改变，未手机验收。
