@@ -3,6 +3,9 @@ extends CanvasLayer
 ## genuine world root, NOT a standalone APK, and never changes player saves.
 ## Revisions must be signed by the permanent original APK RSA key.
 const TILE_PATH := "res://hd2d/atlas_village_ota177.jpg"
+## Older props atlas has black rectangular backgrounds and mismatched pixel art;
+## keep source for QA only instead of masking the new WorldX scene.
+const SHOW_LEGACY_QA_ASSETS := false
 const WORLDX_TERRAIN := "res://hd2d/worldx/worldx_000.png"
 const WORLDX_TERRAIN_ALT := "res://hd2d/worldx/worldx_001.png"
 var worldx_map_sprite: Sprite2D
@@ -32,7 +35,8 @@ func _ready() -> void:
 func _build_visual() -> void:
 	panel = Control.new()
 	panel.name = "HD2DInGameVillage"
-	panel.set_anchors_preset(Control.PRESET_FULL_RECT)
+	panel.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	panel.size = get_viewport().get_visible_rect().size
 	panel.mouse_filter = Control.MOUSE_FILTER_PASS
 	add_child(panel)
 	_background = ColorRect.new()
@@ -44,7 +48,8 @@ func _build_visual() -> void:
 	art_world.name = "HD2DArtwork"
 	panel.add_child(art_world)
 	_add_worldx_surface()
-	_add_road()
+	if SHOW_LEGACY_QA_ASSETS:
+		_add_road()
 	var gui := VBoxContainer.new()
 	gui.position = Vector2(18.0, 16.0)
 	panel.add_child(gui)
@@ -66,8 +71,11 @@ func _build_visual() -> void:
 	var note := Label.new()
 	note.text = "这是游戏内临时对照场景，原世界仍在运行，存档不变"
 	gui.add_child(note)
-	_load_atlas()
-	_add_worldx_npcs()
+	if SHOW_LEGACY_QA_ASSETS:
+		_load_atlas()
+		_add_worldx_npcs()
+	else:
+		_status.text = "WorldX国风场景：点击建筑入口可进入室内；旧图集已隔离"
 	var worldx_switch := Button.new()
 	worldx_switch.text = "切换 WorldX 地图区"
 	worldx_switch.pressed.connect(_toggle_worldx_map)
@@ -93,6 +101,8 @@ func _install_house_portal() -> void:
 	_house_portal = house_script.new()
 	_house_portal.name = "CanglanExteriorInteriorPortal"
 	panel.add_child(_house_portal)
+	_house_portal.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	_house_portal.size = get_viewport().get_visible_rect().size
 	_house_portal.install(art_world, _status)
 
 func _add_worldx_surface() -> void:
