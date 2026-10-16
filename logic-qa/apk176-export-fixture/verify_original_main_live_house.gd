@@ -66,6 +66,24 @@ func _run() -> void:
 	if portal.inside or portal.current_spawn != before or not portal._outdoor_art.visible:
 		_fail("live_original_main_exit_failed", 11)
 		return
+	# The real original 3D world must be playable when HD2D is minimized.
+	# Hidden controls must not steal touch, except a single reopen button.
+	overlay._set_visible(false)
+	if overlay.active or overlay._house_portal.visible or not overlay._original_world_toggle.visible:
+		_fail("return_to_original_world_did_not_hide_overlay", 14)
+		return
+	for hud in overlay._gui.get_children():
+		if hud != overlay._original_world_toggle and hud.visible:
+			_fail("old_world_still_blocked_by_hd2d_hud_" + hud.name, 15)
+			return
+	overlay._set_visible(true)
+	if not overlay.active or not overlay._house_portal.visible:
+		_fail("hd2d_reopen_control_failed", 16)
+		return
+	for hud in overlay._gui.get_children():
+		if not hud.visible:
+			_fail("hd2d_hud_not_restored_" + hud.name, 17)
+			return
 	print("OBSERVED_APK176_MAIN_INSTANCE_WITH_PORTAL_AND_IMAGES_PENDING_ENGINE_ERROR_AUDIT")
 	_finished = true
 	quit(0)
