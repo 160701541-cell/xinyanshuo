@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Open 3D GLB asset factory: 18 houses, 10 props, 10 role mannequins, 5 male mother-template GLBs.
+"""Open 3D GLB asset factory: 18 houses, 10 props, 10 role mannequins, 5 historically Chinese-inspired male civilian mother-template GLBs.
 
 Only original parameterized geometry, no proprietary AI/API/assets.
 Build-time Python dependencies: trimesh 4.11.1 MIT, numpy 2.3.5 BSD-3.
@@ -10,7 +10,7 @@ import argparse, hashlib, json, math
 from pathlib import Path
 import numpy as np
 import trimesh
-from male_civilian_master import build_male, male_master_manifest
+from male_han_master_v2 import build_han_male, manifest as han_master_manifest
 
 COLORS={
  "plaster":(211,203,180,255),"roof":(68,91,98,255),
@@ -155,7 +155,7 @@ def generate(out:Path,seed:int=20261016):
     # CAC-MALE-001 is a shared actual civilian male mother-geometry system.
     # Four live occupations use variants; villager is the neutral base reference.
     for outfit in ("villager","merchant","apprentice","guard","scholar"):
-        tasks.append((f"npc/male_{outfit}_v1.glb",build_male(outfit)))
+        tasks.append((f"npc/male_{outfit}_han_v2.glb",build_han_male(outfit)))
     manifest={"schema":1,"seed":seed,"status":"CANDIDATE_NOT_ART_APPROVED","count":len(tasks),"models":[]}
     for rel,scene in tasks:
         path=out/rel
@@ -175,7 +175,7 @@ def generate(out:Path,seed:int=20261016):
         assert np.isfinite(bounds).all()
         manifest["models"].append({"path":rel,"sha256":hashlib.sha256(data).hexdigest(),
             "bytes":len(data),"bounds":[list(map(float,bounds[0])),list(map(float,bounds[1]))]})
-    manifest["male_master"] = male_master_manifest()
+    manifest["male_master"] = han_master_manifest()
     (out/"manifest.json").write_text(json.dumps(manifest,ensure_ascii=False,indent=2)+"\n")
     return manifest
 if __name__=="__main__":
