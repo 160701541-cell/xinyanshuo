@@ -41,6 +41,8 @@ func setup(world_sim: RefCounted, actor_id: String) -> void:
 	name = "CAC_LifeWorksite_PlayerVisible"
 	sim.call("register_natural_node",TREE,VILLAGE,"tree",3)
 	sim.call("register_field",FIELD,VILLAGE)
+	sim.call("register_resource_position", TREE, _start)
+	sim.call("register_resource_position", FIELD, Vector3(10,0,47))
 	work_tree = Node3D.new()
 	work_tree.name = "FiniteHarvestableTree"
 	work_tree.position = _start
@@ -113,7 +115,7 @@ func action_deliver() -> bool:
 	if not bool(sim.call("deliver_carried",worker_id)):
 		return false
 	log_load.visible=false
-	steps.append("工人到达仓库：村庄木材真实增加3")
+	steps.append("工人到达仓库：实际背负的物资已入库")
 	return true
 
 func action_build_house() -> bool:
@@ -129,7 +131,10 @@ func action_harvest() -> bool:
 	if sim==null or not bool(sim.call("harvest_field",VILLAGE,FIELD,worker_id)):
 		return false
 	crop_patch.visible=false
-	steps.append("农田实物被收获：粮食入库5，次日才会复长")
+	worker_node.position = crop_patch.position
+	_run_anim = true
+	_run_clock = 0.0
+	steps.append("农田收获5粮装入工人背包：运到仓库后才会入库，次日复长")
 	return true
 
 func action_cook() -> bool:
