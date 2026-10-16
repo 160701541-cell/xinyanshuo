@@ -129,3 +129,17 @@
 - GitHub Actions生产的**原版APK176场景PCK候选共19个实际资源**，包含2张HD地图、6张人物动画表、2个商铺交互JSON、2个实际通行网格JSON、NPC元数据与原版场景资源；索引SHA/MD5检查通过。
 - Godot 4.4.1实测 `PASS_WORLDX_REAL_GAME_ASSETS maps=2 NPCs=6 walk_frames=36 clickable_hotspots=3`。同时验证NPC出生位置必须在WorldX通行网格、且地图/商铺控件运行。
 - **总体CI保持失败而不是假绿**：完整原导出APK `main.gdc` 在最小原二进制fixture仍然缺少真实Godot全局类注册（例如`WorldState`）；因此尚无法宣布安装包可安全热更新，也没有发布`latest.json`。
+
+
+## CAC-0020 · 原《苍岚》正房：室外 → 室内 → 原位返回，真实 Godot/PCK 功能样板（2026-10-16）
+
+**交付形式**：直接修改唯一游戏仓库的 `game-source/apk176-ota177-candidate`，不是独立HTML、另一个APK或空规划；原安装版尚未收到此更新。
+
+1. **真实游戏逻辑**：新增 `scripts/hd2d_house_portal.gd`。建筑固定 ID 为 `CL-HOUSE-0001`；在原 APK176 场景继承层 `scripts/hd2d_original_overlay_ota177.gd` 内挂载户外建筑及“进入正房”按钮；切入独立室内 Control 场景，提供“离开正房·返回院落”；重复进入/退出有幂等保护，外部返回坐标恢复，原世界不会因室内切换而卸载或重置存档。室内时停止覆盖层外景拖动输入。
+2. **真实素材入仓**：CI `Canglan WorldX Kolors - One Real House Interior + Exterior Art Intake` 成功运行 `38875341735`，从第三批原始 WorldX/Kolors Artifacts 按 SHA256 `44d116addb17c5aa5a1f6c7edc85d44132fefdc0eb52ae422b63cc0b71060e3f` 完整恢复室外原图；WorldX 官方模板加载器 + 硅基流动 Kolors 实际生成 `main_house_interior.png`（1024×1024；SHA256 `7f0cfb7886284ad9627b5c411ca4fc1b372f294545508db0bfd0e6008ab0887e`）。两个真实 PNG 已永久提交进 `hd2d/courtyard/`，并留有 `SOURCE_MANIFEST.json`。**图片仍属候选，美术审查未批准；室外原图实际上包含整个院落，室内图仍有檐顶，不得冒充独立建筑或多视角3D资源。**
+3. **Godot 4.4.1 真引擎 QA**：`logic-qa/tools/verify_house_portal_content.gd` 在打包的实际 Godot 资源 PCK 上实例化室外/室内节点，测试进入、返回、坐标恢复、重复操作、切回原世界及两张真实图片解码。成功 CI `38875604448` 输出 `PASS_CANGLAN_HOUSE_PORTAL_ENTER_EXIT_RESET_GUARD building=CL-HOUSE-0001 transitions=2 exterior_art=true interior_art=true`。此为**引擎无屏幕自动QA**，不是手机实机截图。
+4. **PCK**：修改 `logic-qa/tools/build_apk176_hd2d_overlay.gd`、`tools/verify_hd2d_overlay_pck.py`；正式候选索引允许控制脚本及且仅两张建筑图像。本次只是 UNSIGNED QA PCK，禁止宣称用户手机 APK176 已安装新版内容。
+5. **仍阻塞**：原 APK176 编译主场景在CI复原夹具缺少原 GDScript 全局类注册（`WorldState` 等），完整旧 APK 主场景 QA `38875604439` 总体为失败；当前 GitHub 无对应手机旧应用 OTA RSA 私钥，不能合法发布签名热更。即使建筑进出组件 QA 通过，不能当作整个原游戏可更新的证明。
+6. **下一步**：保留这次实际可运行的组件逻辑，优先修复旧APK夹具的真实类注册/正式签名通道；同时视觉 QA/建筑单体清底、室内家具互动需独立完成。第一、第二、第三人称镜头尚未实装。
+
+**开发节奏**：本轮按用户允许的稳定并行流程推进：功能模块、Godot 引擎QA、WorldX 实际图片生成三条独立工作线，确有实际资源和测试证据；没有重复盲目生成同一张院落。
