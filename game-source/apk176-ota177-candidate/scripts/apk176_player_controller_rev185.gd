@@ -63,7 +63,7 @@ func _spawn_player() -> void:
   actor.position = Vector3(1.5,0,7.0)
   world.add_child(actor)
   room.call("_normalize_worker_height",actor)
-  actor.position.y = float(terrain.call("height_at",actor.position.x,actor.position.z)) + float(actor.get_meta("actor_ground_offset_y",0.0)) + float(actor.get_meta("actor_ground_offset_y",0.0))
+  actor.position.y = float(terrain.call("height_at",actor.position.x,actor.position.z)) + float(actor.get_meta("actor_ground_offset_y",0.0))
   actor.set_meta("entity_id",PLAYER_ID)
   actor.set_meta("controllable",true)
   var possible: Array[Node] = actor.find_children("*","AnimationPlayer",true,false)
@@ -435,7 +435,7 @@ func step(delta: float) -> void:
     _set_movement_animation(false)
   # Character visual standing on actual physical surface, not a 2D painted
   # panel. Re-snap to the currently excavated triangle beneath the feet.
-  actor.position.y = float(terrain.call("height_at",actor.position.x,actor.position.z))
+  actor.position.y = float(terrain.call("height_at",actor.position.x,actor.position.z)) + float(actor.get_meta("actor_ground_offset_y",0.0))
   if not bool(room.get("_follow_builder")):
     update_camera()
   if _hud_flash>0.0:
