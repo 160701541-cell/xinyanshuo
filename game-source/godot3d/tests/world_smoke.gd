@@ -91,27 +91,42 @@ func _run() -> void:
 		npc_ids[id]=true
 		assert(n.call("status")["id"]==id,"NPC identity doesn't match its state")
 	assert(npc_ids.size()==80,"NPC headcount not supported by nodes")
-	# The batch generator must be reflected in the 3D game, not merely an
-	# artifact ZIP that the mobile player never sees.
-	if ResourceLoader.exists("res://assets/generated/npc/role_00.glb"):
-		var loaded_role_models: int = 0
-		for npc in npcs.get_children():
-			if npc.get_meta("art_status","")=="UNRIGGED_GENERATED_GLB_CANDIDATE":
-				loaded_role_models += 1
-				assert(npc.get_node_or_null("ProceduralArtNotApproved/GeneratedOccupationGLB_Unrigged")!=null,
-					"NPC GLB declared imported but has no actual Godot scene")
-		assert(loaded_role_models==80,"All 80 NPC visual instances must import real occupation GLBs")
-		if ResourceLoader.exists("res://assets/generated/npc/male_merchant_han_v2.glb"):
-			var male_count: int = 0
-			for npc in npcs.get_children():
-				var job: String = String(npc.get_meta("role",""))
-				if job in ["商贾","学徒","卫卒","书生"]:
-					male_count += 1
-					assert(String(npc.get_meta("shared_master",""))=="CAC_HAN_MALE_V2",
-						"Occupation NPC did not switch to improved male mother model")
-					assert(String(npc.get_meta("model_source","")).contains("/male_"),
-						"Male candidate GLB was not actually instantiated")
-			assert(male_count>=20,"Male base was not applied to the expected 4 civilian professions")
+	# TEXT-ONLY PLAYTEST replaces unapproved mannequin GLBs, but does not
+	# replace the actual individual NPC, their 3D world position or collider.
+	var names_seen: Dictionary = {}
+	var farmer_codes: Array[String] = []
+	var life: RefCounted = stage.get("life_sim")
+	for npc in npcs.get_children():
+		assert(String(npc.get_meta("art_status",""))=="TEXT_ONLY_BILLBOARD_IN_3D",
+			"Unapproved character model remained visible in gameplay-first text mode")
+		var name_text: String = String(npc.get_meta("display_name",""))
+		assert(not name_text.is_empty(),"Individual NPC has no personal display name")
+		var marker: Node3D = npc.get_node_or_null("TextOnly_NPC_3D")
+		assert(marker!=null,"Real 3D text avatar node missing")
+		assert(marker.get_node_or_null("ProfessionIn3D") is Label3D)
+		assert(marker.get_node_or_null("UniqueNameAndIdentity3D") is Label3D)
+		var area: Area3D = marker.get_node_or_null("InteractionArea3D")
+		assert(area!=null and area.has_meta("entity_id"),
+			"Touch target isn't tied to the individual NPC ID")
+		var code: String = String(npc.get_meta("entity_id",""))
+		assert(area.get_meta("entity_id")==code)
+		assert((life.get("citizens") as Dictionary).has(code),
+			"NPC text marker has no live identity or state")
+		var state: Dictionary = life.get("citizens")[code]
+		if state["profession"]=="farmer" and farmer_codes.size()<2:
+			farmer_codes.append(code)
+	assert(farmer_codes.size()==2 and farmer_codes[0]!=farmer_codes[1],
+		"Two visible farmers must have different IDs")
+	assert(stage.get("ui_farmer_a") is Button and stage.get("ui_farmer_b") is Button)
+	assert(stage.get("ui_npc_details") is Label)
+	stage.call("_inspect_npc",farmer_codes[0])
+	var first_panel: String = (stage.get("ui_npc_details") as Label).text
+	stage.call("_inspect_npc",farmer_codes[1])
+	var second_panel: String = (stage.get("ui_npc_details") as Label).text
+	assert(first_panel!=second_panel and first_panel.contains(farmer_codes[0])
+		and second_panel.contains(farmer_codes[1]),
+		"Two farmers appear interchangeable or share the same status card")
+	assert(String(stage.get("inspected_npc"))==farmer_codes[1])
 
 	var sample: RefCounted = Rules.new()
 	sample.call("configure",20261016)
