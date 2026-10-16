@@ -25,4 +25,14 @@ if grep -Eq 'SCRIPT ERROR:|Parse Error:|Parser Error:|Assertion failed|Failed to
   echo 'BLOCKED: Godot engine emitted an error'
   exit 13
 fi
+timeout 60s "$godot" --headless --path "$project" --script res://tests/worldbox_life_smoke.gd > "$logdir/worldbox-life-smoke.log" 2>&1 || {
+  cat "$logdir/worldbox-life-smoke.log"
+  exit 16
+}
+cat "$logdir/worldbox-life-smoke.log"
+grep -Fq 'PASS CAC WORLD LIFE SIM' "$logdir/worldbox-life-smoke.log"
+if grep -Eq 'SCRIPT ERROR:|Parse Error:|Assertion failed|ERROR:' "$logdir/worldbox-life-smoke.log"; then
+  echo 'BLOCKED: real Godot NPC economy simulation has errors'
+  exit 17
+fi
 echo 'PASS PUBLIC 3D SOURCE TECHNICAL QA ONLY — VISUAL ANDROID RELEASE UNAPPROVED'
