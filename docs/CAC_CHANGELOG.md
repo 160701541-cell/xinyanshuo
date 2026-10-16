@@ -534,3 +534,17 @@ Godot 4.4.1对从**原签名Android APK176**提取的实际`update_protocol.gdc`
 - `CANGLAN_SITE_PUBLISH_TOKEN` 标志false但本发布工作流使用 `GITHUB_TOKEN`提交公库，非此轮卡点；`CANGLAN_ENABLE_OTA_RELEASES` 的当前工作流变量探针为不存在/false（当前实际rev178流程不依赖它），不是阻塞主因。
 - `qa_proof` 经不读取机密的独立真实CI重试成功验证：21,021,440字节、SHA-256 `4bf2e3e9e934a0bbdea97275b824317dbe6472b1782ee50a461673ffc4d93bdc` 的rev178原版内容补丁及实场景QA符合代码的兼容检查。
 - 本次**没有发布新版manifest、没有改线上rev177、没有签发假的RSA签名、没有交付独立APK替代热更新、没有使用任何私有仓库**。下一个合法动作是让已签过原版rev177更新的原始RSA签名私钥在本公开仓库以正确名/正确作用域注入，再运行同一流水线；不能凭空生成原私钥。
+
+## 2026-10-17 / CAC-OTA-178-RELEASED / 《苍岚》原安装APK176的真实签名rev178热更新已发布
+
+**用户确认已经在公开仓库设置好RSA密钥之后，终于按“只用公开仓库、只用游戏内热更新、不重装APK、不删存档”正式发布成功。**
+
+### 实际执行与证据
+1. **正式签名/原版实QA/公开仓库Git发布全部成功**：对唯一允许的 `160701541-cell/xinyanshuo` 的原版发布Actions `38925668945` 发起Failed Jobs重试，最新Job ID `117105352623`，最终`conclusion=success`。预检：`PASS_RSA_SIGNER_MATCHES_INSTALLED_APK176_PUBLIC_KEY_NO_SECRET_EXPOSED`。真正下载此前原APK176主场景完整 QA成功run `38921298121` 已严格测试的固定字节候选PCK，签名后分别给出 `PASS_ORIGINAL_APK176_SIGNED_REV178_STAGED`、`PASS_PUBLIC_REPO_ORIGINAL_APK176_REV178_SIGNED_RSAPINNED_OTA`，将 `android-preview/latest.json` 与 `android-preview/canglan-content-rev-178.pck` 一同发布到公开仓库 main，发布git提交 `b1e917a`，Log `PASS_ORIGINAL_CANGLAN_REV178_SIGNED_PCK_AND_MANIFEST_PUBLIC_COMMIT`。
+2. **原版PCK签名与包身份正确**：发布后GitHub源码实际读取 `android-preview/latest.json` 确认revision=178、渠道`android-preview`、兼容Android versionCode=1176、原引擎已安装包名 `org.canglan.ancient25d.preview` 的固定RSA公钥验证通过。PCK大小 `21021440` 字节、SHA-256 `4bf2e3e9e934a0bbdea97275b824317dbe6472b1782ee50a461673ffc4d93bdc`，**禁止把这个包理解成安卓APK或独立demo包**。
+3. **GitHub Pages部署实际成功**：官方站Pages build/deploy run `38940171362` 三job (build/deploy/report) 均 `conclusion=success`。
+4. **已验证真正的公网HTTPS而不仅是GitHub仓库**：新增只读 `tools/verify_original_rev178_public_ota_http.py` 和发布后外网严格核验Action `.github/workflows/canglan-original-rev178-public-https-proof.yml`。Actions run `38940623092` **SUCCESS**，GitHub官方Ubuntu runner通过公网请求 `https://160701541-cell.github.io/xinyanshuo/android-preview/latest.json` 得到新rev178、对照公开仓库文本、使用原APK176固定RSA公钥验证签名，完整下载公网 `canglan-content-rev-178.pck` ~21MB并验证二进制`GDPC`头/长度/SHA-256完美一致；日志 `PASS_PUBLIC_HTTP_ORIGINAL_APK176_SIGNED_MANIFEST_178` 和 `PASS_PUBLIC_HTTPS_ORIGINAL_APK176_REV178_FULL_PACK_SHA256`。
+5. **角色玩法**：rev178基于原版引擎兼容资源，同版已做好5名历史WorldX人物既有动画、独立ID、年龄/精力/饥饿/心情等可点选信息、旧版地图与正房室内进出，详见 `CAC-ORIGINAL-OTA-178-PROGRESS`。并不宣称将独立原生3D测试APP整体热更进原版了。
+6. **保留真实的最后一步**：尚未由用户手机实机验证游戏内发现178、下载、校验、实际进入场景并保留原存档。所有公开RSA+Pages+完整PCK公网QA虽均绿，仍将**手机实机验收**标记为 `PENDING_USER_DEVICE_ACCEPTANCE`，不能冒充通过。
+
+**当前状态**：官方原版热更新rev178 **已成功合法签名、官网发布、公网校验**；现由用户直接打开原安装《苍岚》、使用游戏内检查更新验证。**无需下载新APK，不可卸载旧版本，禁止暴露RSA私钥。**
