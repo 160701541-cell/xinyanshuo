@@ -1,12 +1,12 @@
 {
   "schema": 1,
   "channel": "android-preview",
-  "revision": 180,
+  "revision": 181,
   "minimum_android_code": 1176,
   "maximum_android_code": 1176,
-  "sha256": "4a1fdcdc84785734ba6a4ddda51e209c07547ea9b19582f87ff3be1b93e732b7",
-  "size_bytes": 21577696,
-  "pack_url": "https://160701541-cell.github.io/xinyanshuo/android-preview/canglan-content-rev-180.pck",
+  "sha256": "beaa0b1e7ddea8d8fe43531912fa7a4cd234229bbd6d740e6f834142cc1bbc98",
+  "size_bytes": 21579328,
+  "pack_url": "https://160701541-cell.github.io/xinyanshuo/android-preview/canglan-content-rev-181.pck",
   "notes": "苍岚原版：可返回旧世界的真实NPC采集搬运、守恒物资、Kenney/Quaternius CC0工地分阶段施工测试（非完整生活世界）",
-  "signature": "GUI94zQLiGKQ451GyVVRNPmK2WnmB5z27diVd5wqwgGaZyco+qzRGFbE89gN7zBrGco/i6aRTCv13ueEJUXgQ9A1mVDVCn/yTmUs7b8OpBy3LtrnhW7bsWf5WwrGCYnKyUV6D1S3ruxTL1EBCsX5UHpX9KU4L5nxXyNXBbrPwyrmxN6SX0szCJJv8vaZtcysJrAixPc06y9kWQzILgc7yAd1v7AbFndq0L6apnaLtBwfLiigpYdsg2OMU/l2hoOcUq16Joo3h54iWvC+3VCJiARpVHF8xoXn6oYx7jitjXamA69eyhupkBokP+Us7Vmqw95Nzjo159z0Qxv8tk76+7PDODbAuIo3bb2HnF/B7m5TvAnJWu/jeCO7Np+RqCmGq/O9T1df7BYF/PZWM0QGuJVHkHgaibVfYaSdCHBcSHlQO+vef6g2noYSCO9iFxjRQz7yEhh50oyP3SOmObitiSvzbpYdU/rO4nuZOOj3jP/qtAolmOOIsw5wVSmXjhwC"
+  "signature": "kgtXx0r8TI8NbSuwT1Cr3maiaWxQql3GkeFGRcH0q5gc6fLn3XgCXmcIsmhgSMtQZ91Gi7ptg/78aHZNon7SvZXOBg/5UhTxiIP8p9ZFMci7ohEgkg0cTOImqO4IMl8x5fkdporo6hqRrS222y4vo+O4W+wRtfVKwCpl4xUhLfTreQOkGjH2swcpfZEW0iIj5J8UBRzMQpZOnIG3oMCemb+riuA4SDBkuzVTGQz7QrRYg98XLOzBx8Ue+nqCgybqLHHznaDtS+46U/KaiizT45I4WKelYjTM8aZ9URyF+3z9kVhmAaTb7foqH1bpREeXIut8n0TIQ5t45rKkmhyuBCRXOrVl8nbX/rw2gdRysBig1moC19C55wTFUlGXqjkn8a3wOmb5SyOSkYKqw+aN5Xc0bLYJ9UxeqbdVwl1RuPK0fBuoyrFEayWUOG2TtMFPmDS9JKjQYdYarwRC8mBjp2HWhnd/JDExAxVQTPGY9WLxhP7OyvgCW9tDQSp/xMgj"
 }
