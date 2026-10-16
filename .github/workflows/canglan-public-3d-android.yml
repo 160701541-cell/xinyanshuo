@@ -15,7 +15,7 @@ jobs:
   standalone-android-qa:
     name: Build independently installable 3D QA APK (NOT original game)
     runs-on: ubuntu-24.04
-    timeout-minutes: 35
+    timeout-minutes: 65
     steps:
       - uses: actions/checkout@v4
       - name: Audit native 3D licences and forbid legacy 2D assets
@@ -40,7 +40,7 @@ jobs:
           echo "$(dirname "$bin")" >> "$GITHUB_PATH"
           echo "ANDROID_SDK_ROOT=$sdk_root" >> "$GITHUB_ENV"
           echo "ANDROID_HOME=$sdk_root" >> "$GITHUB_ENV"
-          "$bin" --sdk_root="$sdk_root" --install 'platform-tools' 'platforms;android-35' 'build-tools;35.0.0'
+          "$bin" --sdk_root="$sdk_root" --install 'platform-tools' 'platforms;android-35' 'build-tools;35.0.0' 'ndk;27.2.12479018'
       - name: Download pinned official Godot editor and Android templates
         shell: bash
         run: |
@@ -86,6 +86,30 @@ jobs:
           python -m pip install -r game-source/godot3d/tools/requirements-models.txt
           python game-source/godot3d/tools/generate_glb_pack.py --out game-source/godot3d/assets/generated
           python game-source/godot3d/tests/test_generated_glb.py --root game-source/godot3d/assets/generated
+      - name: Stage model weights from Apache-2.0 upstream with exact SHA256
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p game-source/godot3d/models qa-logs
+          curl -fL --retry 3 --retry-delay 3 --connect-timeout 25 --max-time 1200 \
+            'https://huggingface.co/QuantFactory/Qwen3-0.6B-GGUF/resolve/main/Qwen3-0.6B.Q4_K_M.gguf' \
+            -o game-source/godot3d/models/Qwen3-0.6B.Q4_K_M.gguf
+          echo '7af3fdf842f87b24672f8a7f1dd50404043f0bfb71093ff91c31d2b49df4631d  game-source/godot3d/models/Qwen3-0.6B.Q4_K_M.gguf' \
+            | sha256sum -c -
+          test "$(stat -c %s game-source/godot3d/models/Qwen3-0.6B.Q4_K_M.gguf)" -gt 450000000
+          echo 'PASS: actual Apache 2 Qwen3 quantized model downloaded; exact sha verified'
+      - name: Build actual Linux offline llama.cpp GDExtension for end-to-end model test
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq ninja-build
+          bash game-source/godot3d/local_ai/build_native.sh linux \
+            > qa-logs/llama-cpp-linux-build.log 2>&1 || {
+              tail -n 130 qa-logs/llama-cpp-linux-build.log
+              exit 1
+            }
+          test -s game-source/godot3d/addons/canglan_ai/bin/libcanglan_ai.linux.x86_64.so
       - name: Import real project before export
         run: |
           set -euo pipefail
@@ -107,6 +131,47 @@ jobs:
           }
           cat qa-logs/scene-smoke.log
           grep -Fq 'PASS PUBLIC CANGLAN 3D GODOT SCENE' qa-logs/scene-smoke.log
+      - name: Prove real offline Qwen3 token inference in Godot
+        shell: bash
+        run: |
+          set -euo pipefail
+          GODOT=/tmp/godot-editor/Godot_v4.4.1-stable_linux.x86_64
+          timeout 190s "$GODOT" --headless --path game-source/godot3d \
+            --script res://tests/offline_ai_inference_smoke.gd \
+            > qa-logs/local-qwen-actual-inference.log 2>&1 || {
+              cat qa-logs/local-qwen-actual-inference.log
+              exit 1
+            }
+          grep -Fq 'PASS NATIVE OFFLINE GGUF INFERENCE' qa-logs/local-qwen-actual-inference.log
+          if grep -E 'SCRIPT ERROR:|Parse Error:|ERROR:' qa-logs/local-qwen-actual-inference.log; then
+            echo 'BLOCKED: local native engine reported error'
+            exit 1
+          fi
+      - name: Cross-compile REAL arm64-v8a on-device llama.cpp extension
+        shell: bash
+        run: |
+          set -euo pipefail
+          export ANDROID_NDK_HOME="$ANDROID_SDK_ROOT/ndk/27.2.12479018"
+          test -f "$ANDROID_NDK_HOME/build/cmake/android.toolchain.cmake"
+          bash game-source/godot3d/local_ai/build_native.sh android \
+            > qa-logs/llama-cpp-android-build.log 2>&1 || {
+              tail -n 130 qa-logs/llama-cpp-android-build.log
+              exit 1
+            }
+          test -s game-source/godot3d/addons/canglan_ai/bin/libcanglan_ai.android.arm64.so
+          readelf -h game-source/godot3d/addons/canglan_ai/bin/libcanglan_ai.android.arm64.so \
+            | grep -q 'AArch64'
+          echo 'PASS native Android ARM64 local AI library compiled'
+      - name: Reimport Android extension and GGUF before Godot export
+        shell: bash
+        run: |
+          set -euo pipefail
+          /tmp/godot-editor/Godot_v4.4.1-stable_linux.x86_64 --headless --editor \
+            --path game-source/godot3d --import \
+            > qa-logs/native-ai-reimport.log 2>&1 || {
+              cat qa-logs/native-ai-reimport.log
+              exit 1
+            }
       - name: Build public 3D debug APK
         shell: bash
         run: |
@@ -151,7 +216,7 @@ jobs:
           gh release create "$TAG" "$APK" qa-logs/apk.sha256 \
             --repo "${GITHUB_REPOSITORY}" \
             --title "苍岚 3D 候选场景测试 · ${GITHUB_SHA:0:12}" \
-            --notes "这是公开仓库单独构建的Android ARM64测试APK，包名 com.xinyanshuo.canglan.oss3dqa，使用CI临时调试签名。不是既有《苍岚》正式APK的覆盖更新，也不是签名资源补丁。包含完整独立 Godot 3D 技术试玩：程序化多块地形、约60幢建模建筑、80名程序化NPC、独立道具、房间、交互和第三人称视角；非正式APK覆盖更新，非最终美术效果。请勿卸载原游戏；如已安装其他版本的3D独立测试包，可能需先卸载该测试包。" \
+            --notes "这是公开仓库单独构建的Android ARM64测试APK，包名 com.xinyanshuo.canglan.oss3dqa，使用CI临时调试签名。不是既有《苍岚》正式APK的覆盖更新，也不是签名资源补丁。包含真正GGUF Qwen3-0.6B Q4_K_M本地模型、llama.cpp ARM64扩展与NPC聊天（首次运行提取并SHA256核验），及3D地形、建筑、80名NPC和室内。约484MB模型使安装包显著增大。本测试包未经过用户手机实测，不是原正式APK覆盖更新。请勿卸载原游戏；如已安装其他版本的3D独立测试包，可能需先卸载该测试包。" \
             --prerelease
           gh release view "$TAG" --repo "${GITHUB_REPOSITORY}" --json url --jq .url
       - name: Keep diagnostic logs on failure
@@ -162,5 +227,9 @@ jobs:
           path: |
             qa-logs/export.log
             qa-logs/import.log
+            qa-logs/llama-cpp-linux-build.log
+            qa-logs/llama-cpp-android-build.log
+            qa-logs/local-qwen-actual-inference.log
+            qa-logs/native-ai-reimport.log
           if-no-files-found: warn
           retention-days: 7
