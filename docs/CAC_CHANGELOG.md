@@ -735,3 +735,10 @@ Godot 4.4.1对从**原签名Android APK176**提取的实际`update_protocol.gdc`
 **简化后单通道：** 先执行公开仓库手动快速原版签名/更新前置门禁（上轮`canglan-one-click-original-quick-view.yml`）；签名不具备则跳过新PCK构建，直接报告阻塞。源代码常规提交只跑合并后的唯一Godot主集成CI；确定原版兼容及签名具备后，才运行旧APK176主场景真正验证/构建、原RSA验签、官网发布与手机现场验收。测试类别未删除，只消除重复导入和错误的rev177常数。
 
 **实际验收状态：** GitHub文件更新完成，但当前连接未提供可直接运行workflow_dispatch并取得结果的API；没有Godot日志证明最新合并流水线PASS，没有合法新revision PCK签发，也没有改`android-preview/latest.json`，原游戏仍rev178。严禁写“已经更新手机”。
+
+
+## 2026-10-17 / REL-QUICK-VIEW-003 / 快速发布门禁自动启动一次
+
+用户继续要求优先进入手机原版游戏。本轮修改`.github/workflows/canglan-one-click-original-quick-view.yml`，提交`0964738c518cbfec44115c4c9e4659eb6d3ccd15`：保留手动`workflow_dispatch`，同时仅当**这个门禁工作流自身变更并提交main**时自动触发一次快速检查；其它开发提交不重复触发这个昂贵/无意义的发布检查。检查内容仍为原APK176发布身份、已签的官方更新清单固定公钥验证、原生产签名私钥是否注入及密钥匹配。缺原私钥绝不尝试发布，也不访问任何私有仓库。没有触发签名、修改manifest或者发APK。
+
+**执行证据边界**：GitHub已返回提交SHA。当前GitHub连接的`fetch_commit_workflow_runs`仅查询PR类运行，提交查询为空不能推断push作业成功/失败；网页查询也未取得可用日志。因此快速门禁的实际运行结论**未确认**，后续需读取公开Actions run/产出的`Canglan-original-quick-view-preflight-...`证据。完整3D旧APK176主场景兼容与原RSA签名仍是P0阻塞，正式rev178未修改，手机尚无新更新。
