@@ -12,7 +12,9 @@ const PIECES := {
 	"wood_bridge":"res://assets/free_cc0/kenney/3d/nature/bridge_wood.glb",
 	"plaster_wall":"res://assets/free_cc0/quaternius/glTF/Wall_Plaster_Straight.gltf",
 	"clay_tiled_roof":"res://assets/free_cc0/quaternius/glTF/Roof_2x4_RoundTile.gltf",
-	"storage_crate":"res://assets/free_cc0/quaternius/glTF/Prop_Crate.gltf"
+	"storage_crate":"res://assets/free_cc0/quaternius/glTF/Prop_Crate.gltf",
+	"civilian_rig":"res://assets/free_cc0/quaternius_humanoid/public/assets/character.glb",
+	"guard_rig":"res://assets/free_cc0/quaternius_knight/public/models/knight.glb"
 }
 const MAX_RENDER_DISTANCE: float = 65.0
 const DEFAULT_MAX_SCALE: float = 1.6
@@ -45,6 +47,8 @@ static func instantiate_asset(role: String,parent: Node3D,local_pos: Vector3,
 	node.scale = local_scale
 	node.set_meta("asset_origin", "LICENSE_VERIFIED_EXISTING_CC0")
 	node.set_meta("asset_source", "kenney" if String(PIECES[role]).contains("/kenney/") else "quaternius")
+	node.set_meta("original_cc0_asset",true)
+	node.set_meta("not_generated_by_ai",true)
 	node.set_meta("asset_key", role)
 	node.set_meta("asset_path", String(PIECES[role]))
 	# The caller's site/material inventory and collision remain authoritative.
