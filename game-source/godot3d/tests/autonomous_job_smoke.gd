@@ -43,6 +43,33 @@ func _run() -> void:
 	assert(String(job["phase"])=="to_resource",
 		"NPC should return for next finite physical tree/stone haul")
 	assert(int(director.get("completed_deliveries"))==1)
+	# The farming profession owns a separately rendered finite crop plot.
+	var farmers: int = 0
+	for entry in jobs.values():
+		if String(entry["kind"])!="field":
+			continue
+		farmers+=1
+		var crop_actor: Node3D = entry["citizen"]
+		var patch: Node3D = director.get("natural_art")[entry["node_id"]]
+		var grain_before: int = int(stock["grain"])
+		crop_actor.position = patch.position
+		director.call("_process",0.25)
+		assert(int(stock["grain"])==grain_before,
+			"Farmer harvest directly credited grain without reaching warehouse")
+		assert(not patch.visible,"Harvested crop geometry did not disappear")
+		assert(sim.get("carried_by_actor").has(String(crop_actor.get_meta("entity_id",""))),
+			"Farmer cannot carry physical grain")
+		assert(String(entry["phase"])=="to_depot")
+		assert(director.get("cargo_art").has(String(crop_actor.get_meta("entity_id",""))),
+			"Harvested grain must be visibly carried by actual 3D NPC")
+		crop_actor.position = entry["depot"]
+		director.call("_process",0.25)
+		assert(int(stock["grain"])==grain_before+5,
+			"Warehouse crop delivery did not credit real field harvest")
+		assert(String(entry["phase"])=="waiting_field",
+			"Harvested field should wait until next day to regrow")
+		assert(not sim.get("carried_by_actor").has(String(crop_actor.get_meta("entity_id",""))))
+	assert(farmers==2,"Two autonomous farmers must work and deliver finite plots")
 	# Fresh house is built only after resources were debited and time ticked.
 	var town: Dictionary = sim.get("villages")["CL-HX-VILLAGE-0001"]
 	var housing_before: int = int(town["homes"])
@@ -58,6 +85,6 @@ func _run() -> void:
 		assert(int(town["homes"])==housing_before+1)
 		assert(int(director.get("construction_built"))==1,
 			"Paid simulation house must be rendered as Godot 3D object")
-	print("PASS CAC AUTONOMOUS NPC LOOP: bound real 3D actor, finite tree, carrying, depot delivery, paid house after hour tick")
+	print("PASS CAC AUTONOMOUS NPC LOOP: bound real 3D actor, finite tree, two harvested crops, physical grain carrying, depot delivery, paid house after hour tick")
 	stage.queue_free()
 	quit(0)
