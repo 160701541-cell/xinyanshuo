@@ -449,3 +449,10 @@ Godot 4.4.1对从**原签名Android APK176**提取的实际`update_protocol.gdc`
 - 上述已经进公开 `main`：`d91e0137681b629fe81879a2ce6c297868c28974`、`73386a392a38a8c1f7fc821d4633ae9e11cf0cc3`、`ad5e421ba9b860177e9c385824bc9af9abd6e7f2`。新快速独立测试APK真实GitHub Actions运行 `38916876513`，严格Godot QA运行 `38916876739`；本次记录时间尚未通过新打包/实机验证，不可直接给用户旧APK冒充更新。原签名安装包仍未能热更新。
 
 说明：此次根据真机截图做第一轮布局修复，不代表操作手感、地形纹理与场景视觉已达美术标准。真正应优先完善可用操作、物体交互、任务流程，再优化场景。
+
+### CAC-MOBILE-UX-001 / 严格QA与APK实际交付确认
+
+- `38916876739` **严格Godot+实际Mesa渲染截图QA成功**（全部步骤SUCCESS），覆盖默认HUD折叠、打开/关闭按钮、点击独立居民自动展示其状态、原真实Godot世界与自主生产生活回归检测。
+- `38916876513` **Godot Android debug APK实际构建+GitHub prerelease发布成功**。构建源SHA `ad5e421ba9b860177e9c385824bc9af9abd6e7f2`；独立测试包 `Canglan-3D-TextNPC-Playtest.apk` 实际上传大小28,238,730字节。
+- APK公开下载链接：`https://github.com/160701541-cell/xinyanshuo/releases/download/canglan-text3d-playtest-ad5e421ba9b8/Canglan-3D-TextNPC-Playtest.apk`。属于独立Godot debug APK，**不是用户原签名APK的覆盖热更新**。持续集成使用每次随机生成的调试签名，同包名的独立旧测试APK可能因签名变化无法直接覆盖安装；不得要求用户卸载原正式游戏。为避免数据损失，任何卸载先确认仅为独立测试应用且没有需要保留的本地测试存档。
+- 这份更新是在收到用户真实手机截图之后实际提交、真实Godot回归通过、构建成功的修正版。手机用户仍需目视复核UI缩放、触控、亮度和性能；CI的Mesa截图不是手机设备本身的验收。
