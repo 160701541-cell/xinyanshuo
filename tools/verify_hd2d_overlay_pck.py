@@ -8,8 +8,8 @@ import audit_tiny_ota_pck as pck
 
 REQUIRED={"scenes/main.tscn.remap","scenes/main_hd2d_ota177.tscn",
 "scripts/hd2d_original_overlay_ota177.gd","scripts/hd2d_stone_road.gd",
-"scripts/hd2d_worldx_npcs.gd","hd2d/atlas_village_ota177.jpg"}
-OPTIONAL={"hd2d/worldx/npcs/npcs.json"}
+"scripts/hd2d_worldx_npcs.gd","scripts/hd2d_house_portal.gd","hd2d/atlas_village_ota177.jpg"}
+OPTIONAL={"hd2d/worldx/npcs/npcs.json", "hd2d/courtyard/main_house_v3_source.png", "hd2d/courtyard/main_house_interior.png"}
 OPTIONAL.update("hd2d/worldx/worldx_%03d.png"%i for i in range(8))
 OPTIONAL.update("hd2d/worldx/zones_%03d.json"%i for i in range(8))
 OPTIONAL.update("hd2d/worldx/nav_%03d.json"%i for i in range(8))
@@ -18,7 +18,7 @@ OPTIONAL.update("hd2d/worldx/npcs/npc_%02d.png"%i for i in range(16))
 def names_only(raw):
     if raw[:4]!=b"GDPC":raise ValueError("No Godot PCK header")
     count=struct.unpack_from("<I",raw,0x60)[0]
-    if not 6<=count<=47:raise ValueError("Unbounded resource count")
+    if not 7<=count<=53:raise ValueError("Unbounded resource count")
     position=0x64
     result=set()
     for _ in range(count):
@@ -39,7 +39,7 @@ def verify(path):
     npc="hd2d/worldx/npcs/npcs.json"
     if npc in paths and not "hd2d/worldx/npcs/npc_00.png" in paths:
         raise ValueError("NPC manifest without character sprite")
-    if path.stat().st_size>36_000_000:raise ValueError("Oversized mobile candidate")
+    if path.stat().st_size>43_000_000:raise ValueError("Oversized mobile candidate")
     pck.ALLOWED=paths
     entries=pck.read_index(raw)
     if set(x["name"] for x in entries)!=paths:raise ValueError("PCK index corrupt")
