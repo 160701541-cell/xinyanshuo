@@ -21,6 +21,9 @@ permissions:
   contents: write
 jobs:
   worldx-original-pck:
+    # P0 2026-10-17 user direction: WorldX ONLY for material textures; no 2D maps/HD2D overlays.
+    # Read-only historical workflow preserved but NEVER generates or publishes new 2D worlds.
+    if: false
     runs-on: ubuntu-24.04
     timeout-minutes: 18
     steps:
