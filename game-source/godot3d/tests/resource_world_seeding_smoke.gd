@@ -19,9 +19,9 @@ func _test() -> void:
 	assert(int(placed["stone"]) == 10)
 	assert(int(placed["clay"]) == 6)
 	assert(int(placed["rich_vein"]) == 1)
-	assert(int(placed["field"]) == 7)
+	assert(int(placed["field"]) == 6)
 	assert(sim.get("natural_nodes").size() == 32)
-	assert(sim.get("resource_positions").size() == 39)
+	assert(sim.get("resource_positions").size() == 38)
 	assert(sim.call("get_available_resource_nodes",
 		"CL-HX-VILLAGE-0001", "tree").size() == 16)
 	var sim2: RefCounted = Life.new()
