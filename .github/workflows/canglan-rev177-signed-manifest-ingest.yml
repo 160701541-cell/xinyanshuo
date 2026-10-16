@@ -1,0 +1,116 @@
+name: Canglan APK176 - Publish Verified Original-RSA Signed rev177 (No Private Key in Repo)
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'release-handoff/canglan-rev177-SIGNED-original-apk176.json'
+      - '.github/workflows/canglan-rev177-signed-manifest-ingest.yml'
+  workflow_dispatch:
+permissions:
+  contents: write
+  actions: read
+concurrency:
+  group: canglan-original-apk176-signed-rev177-publication
+  cancel-in-progress: false
+jobs:
+  verified-original-game-update:
+    if: github.repository == '160701541-cell/xinyanshuo' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download same original APK176 Godot run that passed full scene+house QA
+        uses: actions/download-artifact@v4
+        with:
+          name: Canglan-APK176-TRUE-MAIN-QA-rev177-UNSIGNED-NOT-FOR-PHONE
+          run-id: 38882131496
+          github-token: ${{ github.token }}
+          path: qa-results
+      - name: Verify original embedded RSA signature, QA artifact and exact APK version
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p qa-results
+          SOURCE=qa-results/canglan-apk176-live-house-UNSIGNED.pck
+          MANIFEST=release-handoff/canglan-rev177-SIGNED-original-apk176.json
+          test -s "$SOURCE"
+          test -s "$MANIFEST"
+          python3 tools/ota_release_gate.py \
+            --candidate "$MANIFEST" --pck "$SOURCE" \
+            --report qa-results/original-rev177-signed-cryptographic-gate.json
+          python3 - <<'PY'
+          import pathlib,json,hashlib
+          root=pathlib.Path('.')
+          old=json.loads((root/'qa-results/canglan-rev177-UNSIGNED-NOT-FOR-PHONE.json').read_text())
+          new=json.loads((root/'release-handoff/canglan-rev177-SIGNED-original-apk176.json').read_text())
+          pck=(root/'qa-results/canglan-apk176-live-house-UNSIGNED.pck').read_bytes()
+          log=(root/'qa-results/live-main-room-runtime.log').read_text(encoding='utf8')
+          assert 'OBSERVED_APK176_MAIN_INSTANCE_WITH_PORTAL_AND_IMAGES_PENDING_ENGINE_ERROR_AUDIT' in log
+          assert not any(s in log for s in ('SCRIPT ERROR:', 'Parse Error:', 'ERROR:', 'FAIL_APK176'))
+          assert old['sha256']==new['sha256']==hashlib.sha256(pck).hexdigest()
+          assert old['size_bytes']==new['size_bytes']==len(pck)
+          assert new['revision']==177
+          assert new['minimum_android_code']==new['maximum_android_code']==1176
+          assert new['pack_url']=='https://160701541-cell.github.io/xinyanshuo/android-preview/canglan-content-rev-177.pck'
+          assert new['signature'] and '_not_a_release' not in new
+          print('PASS_ORIGINAL_APP_GODOT_QA_PLUS_REV177_RSA_VERIFIED_WITH_PINNED_APK_PUBLIC_KEY')
+          PY
+      - name: Stage signed PCK and immutable signed update manifest atomically in official Pages source
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import pathlib,shutil,json,hashlib,sys
+          sys.path.insert(0,'tools')
+          from ota_release_gate import pubkey,verify_signature
+          root=pathlib.Path('.')
+          dst=root/'android-preview'
+          existing=json.loads((dst/'latest.json').read_text())
+          accepted=json.loads((root/'release-handoff/canglan-rev177-SIGNED-original-apk176.json').read_text())
+          if existing['revision'] > 177:
+              raise SystemExit('BLOCKED_ROLLBACK: later public rev already exists')
+          if existing['revision']==177 and existing['sha256'] != accepted['sha256']:
+              raise SystemExit('BLOCKED_REVISION_CONFLICT: same rev with different pack')
+          assert verify_signature(accepted,pubkey())
+          source=root/'qa-results/canglan-apk176-live-house-UNSIGNED.pck'
+          dest=dst/'canglan-content-rev-177.pck'
+          shutil.copy2(source,dest)
+          assert dest.stat().st_size==accepted['size_bytes']
+          assert hashlib.sha256(dest.read_bytes()).hexdigest()==accepted['sha256']
+          (dst/'latest.json').write_text(json.dumps(accepted,ensure_ascii=False,indent=2)+'\n')
+          new=json.loads((dst/'latest.json').read_text())
+          assert verify_signature(new,pubkey()), 'Release signature was lost in Pages staging'
+          print('PASS_ORIGINAL_SIGNED_PCK177_AND_MANIFEST_STAGED_TOGETHER',dest.stat().st_size)
+          PY
+      - name: Publish real phone update into EXACT original game website repository
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'canglan-signed-ota-release'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add android-preview/latest.json android-preview/canglan-content-rev-177.pck
+          if git diff --cached --quiet; then
+            echo 'SIGNED_REV177_ALREADY_COMMITTED'
+            exit 0
+          fi
+          git commit -m 'release: original APK176 RSA-signed rev177 WorldX house and indoor scenes'
+          for attempt in 1 2 3 4; do
+            git fetch origin main
+            if git rebase origin/main && git push origin HEAD:main; then
+              echo 'PASS_SIGNED_ORIGINAL_APK176_REV177_PUBLIC_GIT_DEPLOYED'
+              exit 0
+            fi
+            if [ "$attempt" = 4 ]; then
+              echo '::error::Signed release verified but public GitHub push did not complete'
+              exit 1
+            fi
+            sleep 8
+          done
+      - name: Retain public release proof and HASH only, never key material
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: Canglan-original-APK176-RSA-rev177-signed-publication-QA
+          path: qa-results/original-rev177-signed-cryptographic-gate.json
+          retention-days: 14
+          if-no-files-found: warn
