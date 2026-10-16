@@ -11,8 +11,8 @@ using namespace godot;
 void CanglanLocalLLM::_bind_methods() {
     ClassDB::bind_method(D_METHOD("load_gguf", "absolute_path", "context_tokens", "threads"),
         &CanglanLocalLLM::load_gguf, DEFVAL(2048), DEFVAL(3));
-    ClassDB::bind_method(D_METHOD("request_reply", "entity_code", "persona", "text", "max_tokens"),
-        &CanglanLocalLLM::request_reply, DEFVAL(96));
+    ClassDB::bind_method(D_METHOD("request_reply", "entity_code", "persona", "text", "max_tokens", "intent_mode"),
+        &CanglanLocalLLM::request_reply, DEFVAL(96), DEFVAL(false));
     ClassDB::bind_method(D_METHOD("model_loaded"), &CanglanLocalLLM::model_loaded);
     ClassDB::bind_method(D_METHOD("inference_busy"), &CanglanLocalLLM::inference_busy);
     ClassDB::bind_method(D_METHOD("cancel"), &CanglanLocalLLM::cancel);
@@ -71,15 +71,15 @@ void CanglanLocalLLM::load_internal(String absolute_path) {
 }
 
 void CanglanLocalLLM::request_reply(String entity_code, String persona,
-                                     String text, int max_tokens) {
+                                     String text, int max_tokens, bool intent_mode) {
     if (!loaded_flag || busy_flag.exchange(true)) return;
     cancel_flag = false;
     if (worker.joinable()) worker.join();
     worker = std::thread(&CanglanLocalLLM::reply_internal, this, entity_code, persona,
-                         text, std::clamp(max_tokens, 16, 128));
+                         text, std::clamp(max_tokens, 16, 128), intent_mode);
 }
 
-void CanglanLocalLLM::reply_internal(String entity, String persona, String human, int cap) {
+void CanglanLocalLLM::reply_internal(String entity, String persona, String human, int cap, bool intent_mode) {
     llama_model * m = nullptr;
     {
         std::scoped_lock guard(state_mutex);
@@ -103,7 +103,13 @@ void CanglanLocalLLM::reply_internal(String entity, String persona, String human
     }
     std::string prompt = "<|im_start|>system\n";
     prompt += persona.utf8().get_data();
-    prompt += "\n只输出角色在场景中实际会说的话；不要写动作指令或凭空确认交易。/no_think<|im_end|>\n<|im_start|>user\n";
+    if (intent_mode) {
+        prompt += "\n严格只输出单独一行 ACTION=xxx，xxx 从 eat,rest,inspect_stock,inspect_site,keep_working 中选择。"
+                  "这只是建议，世界规则会验证，绝不凭空修改库存或建房。/no_think";
+    } else {
+        prompt += "\n只输出角色在场景中实际会说的话；不要写动作指令或凭空确认交易。/no_think";
+    }
+    prompt += "<|im_end|>\n<|im_start|>user\n";
     prompt += human.utf8().get_data();
     prompt += "<|im_end|>\n<|im_start|>assistant\n";
     const llama_vocab * vocab = llama_model_get_vocab(m);
