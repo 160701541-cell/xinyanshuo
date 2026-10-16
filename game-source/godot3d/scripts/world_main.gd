@@ -8,6 +8,7 @@ const Buildings = preload("res://scripts/building_factory.gd")
 const Props = preload("res://scripts/prop_factory.gd")
 const Citizen = preload("res://scripts/npc_agent.gd")
 const Interiors = preload("res://scripts/interior_factory.gd")
+const LocalAI = preload("res://scripts/local_ai_service.gd")
 # Authentic earlier Canglan 3D economy/identity source has been audited and
 # safely migrated to the PUBLIC repository without any signing credentials.
 const OriginalWorldState = preload("res://scripts/world_state.gd")
@@ -34,6 +35,11 @@ var world_env: WorldEnvironment
 var ui_status: Label
 var ui_action: Button
 var ui_leave: Button
+var local_ai: Node
+var ui_ai_status: Label
+var ui_ai_prompt: LineEdit
+var ui_ai_answer: Label
+var ui_ai_talk: Button
 var _room: Node3D
 var _inside: bool = false
 var _selected: Node3D
@@ -73,7 +79,17 @@ func _ready() -> void:
 	_load_nearby_terrain()
 	_build_settlements()
 	prop_root.call("build",rules,seed)
+	# The actual GGUF/llama.cpp service is part of the same 3D game process.
+	# When native binary or verified weights are missing it reports disabled,
+	# never returns scripted dialog disguised as AI.
+	local_ai = LocalAI.new()
+	local_ai.name = "OfflineLocalAI"
+	local_ai.state_changed.connect(_on_local_ai_state)
+	local_ai.npc_reply.connect(_on_local_npc_reply)
+	local_ai.inference_failed.connect(_on_local_ai_error)
+	add_child(local_ai)
 	_create_interface()
+	_on_local_ai_state(String(local_ai.get("stage")),String(local_ai.get("info")))
 	_update_camera(1.0)
 	_refresh_status()
 	print("CANGLAN_3D_WORLD_READY ",snapshot())
@@ -303,9 +319,76 @@ func _create_interface() -> void:
 		_refresh_light()
 	)
 	actions.add_child(time_btn)
+	var ai_title := Label.new()
+	ai_title.text = "本机NPC语言模型 / Qwen3 0.6B（完全离线）"
+	stack.add_child(ai_title)
+	ui_ai_status = Label.new()
+	ui_ai_status.text = "正在检测手机本地模型……"
+	stack.add_child(ui_ai_status)
+	var chat_row := HBoxContainer.new()
+	stack.add_child(chat_row)
+	ui_ai_prompt = LineEdit.new()
+	ui_ai_prompt.placeholder_text = "对附近的NPC说话……"
+	ui_ai_prompt.custom_minimum_size = Vector2(220,46)
+	ui_ai_prompt.max_length = 120
+	ui_ai_prompt.text_submitted.connect(func(_value: String) -> void: _talk_to_nearby())
+	chat_row.add_child(ui_ai_prompt)
+	ui_ai_talk = Button.new()
+	ui_ai_talk.text = "和NPC交谈"
+	ui_ai_talk.disabled = true
+	ui_ai_talk.pressed.connect(_talk_to_nearby)
+	chat_row.add_child(ui_ai_talk)
+	ui_ai_answer = Label.new()
+	ui_ai_answer.text = "仅在模型文件哈希校验与本机推理引擎成功加载后开放。"
+	ui_ai_answer.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	ui_ai_answer.custom_minimum_size = Vector2(365,0)
+	stack.add_child(ui_ai_answer)
 	var footer := Label.new()
 	footer.text = "左半屏拖动行走 · 右半屏拖动视角 · WASD移动 · 鼠标右键转向"
 	stack.add_child(footer)
+
+func _on_local_ai_state(next_state: String, description: String) -> void:
+	if ui_ai_status!=null:
+		ui_ai_status.text = "离线AI：" + description
+	if ui_ai_talk!=null:
+		ui_ai_talk.disabled = (next_state!="ready")
+
+func _on_local_npc_reply(entity_code: String, message: String) -> void:
+	if ui_ai_answer!=null:
+		ui_ai_answer.text = entity_code + "： " + message
+
+func _on_local_ai_error(message: String) -> void:
+	if ui_ai_answer!=null:
+		ui_ai_answer.text = "本地模型：" + message
+
+func _nearest_citizen(radius_m: float = 7.0) -> Node3D:
+	var best: Node3D = null
+	var best_sq: float = radius_m*radius_m
+	for citizen in citizen_nodes:
+		var d: float = citizen.global_position.distance_squared_to(avatar.global_position)
+		if d<best_sq:
+			best_sq = d
+			best = citizen
+	return best
+
+func _talk_to_nearby() -> void:
+	if _inside or local_ai==null:
+		return
+	var near: Node3D = _nearest_citizen()
+	if near==null:
+		ui_ai_answer.text = "附近7米没有可以交谈的居民，请靠近一名NPC。"
+		return
+	var code: String = String(near.get_meta("entity_id",""))
+	var profession: String = String(near.get_meta("role","村民"))
+	var prompt: String = ui_ai_prompt.text
+	if prompt.strip_edges().is_empty():
+		ui_ai_answer.text = "先输入你想说的话。"
+		return
+	var ok: bool = bool(local_ai.call("ask_npc",code,profession,prompt,_hour,
+			{"place":"苍岚河西新镇"}))
+	if ok:
+		ui_ai_answer.text = "正在用手机本地模型计算 " + code + " 的回答……"
+		ui_ai_prompt.clear()
 
 func _physics_process(delta: float) -> void:
 	if avatar == null or _inside:
@@ -519,4 +602,7 @@ func snapshot() -> Dictionary:
 		"world_props":int(prop_stats.get("independent_prop_ids",0)),
 		"batched_instances":int(prop_stats.get("visible_mesh_instances",0)),
 		"inside":_inside,"license":"MIT engine; original procedural geometry",
-		"art_status":"WIP_NO_VISUAL_APPROVAL","original_apk_updated":false}
+		"art_status":"WIP_NO_VISUAL_APPROVAL","original_apk_updated":false,
+		"local_ai_state":String(local_ai.get("stage")) if local_ai!=null else "not_installed",
+		"local_ai_backend":"llama.cpp GGUF embedded C++ GDExtension (when compiled)",
+		"model_verified":String(local_ai.get("stage")) in ["loading","ready","thinking"] if local_ai!=null else false}
