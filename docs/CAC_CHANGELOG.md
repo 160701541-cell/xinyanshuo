@@ -548,3 +548,26 @@ Godot 4.4.1对从**原签名Android APK176**提取的实际`update_protocol.gdc`
 6. **保留真实的最后一步**：尚未由用户手机实机验证游戏内发现178、下载、校验、实际进入场景并保留原存档。所有公开RSA+Pages+完整PCK公网QA虽均绿，仍将**手机实机验收**标记为 `PENDING_USER_DEVICE_ACCEPTANCE`，不能冒充通过。
 
 **当前状态**：官方原版热更新rev178 **已成功合法签名、官网发布、公网校验**；现由用户直接打开原安装《苍岚》、使用游戏内检查更新验证。**无需下载新APK，不可卸载旧版本，禁止暴露RSA私钥。**
+
+## 2026-10-17 / CAC-MATERIALS-NPC-WORLD-001 / 世界由NPC建，我们只生产材质（用户纠偏）
+
+用户明确否决此前错误的 WorldX 四面建筑立面图、整套建筑图、HD2D 背景方案。**用户要的是：我们只批量做可复用的材料纹理；建筑、道路、城镇由有身份的NPC根据自身需求和世界资源亲自建成真正3D实体。** 而不是四面贴图取巧搭一个伪3D城镇。
+
+### 实际撤销
+- 删除之前未经运行的4个WorldX四面成品建筑生成文件：`tools/asset_factory/worldx_four_facades.prompt.md`、`worldx_four_facades.mjs`、`test_worldx_four_facades.mjs`、`verify_worldx_four_facades.py`。**没有运行四面建筑的付费生成请求**。
+- `AGENTS.md`新增最高级规则禁止继续生成完整建筑/四面图片或HD2D地图当作游戏世界；未来只生成材料纹理。
+- 删除 `scripts/autonomous_village_director.gd` 原“村民一搬运完就立刻刷出预制房屋”的临时逻辑，实际资源采集运输保留。
+
+### 实际完成的NPC自主建设源码
+- `game-source/godot3d/scripts/worldbox_life_sim.gd`：扩充原有实体仓库加工材料 `timber`、`cut_stone`、`mortar`、`roof_tile`；原木、石、泥土与水等基础库存继续作为生产来源。
+- 新 `game-source/godot3d/scripts/npc_building_system.gd`：已经把有ID的80 NPC划分出木匠、石匠、陶工、建筑工，城市作坊缺失时由世界状态触发NPC建设计划；真实工人必须抵达材料工坊，消耗有限的木/石/泥/水加工中间材料；建筑工必须从仓库领取相应材料，随身携带实体货物到指定地块后交付；必须完成劳动计数后，4个阶段才在**世界3D空间**出现地基/木架/墙面/屋瓦。最后工作坊数量才从0变1，财产和职业记录有ID与事件日志。无物品/工人未到现场不能凭空造房。
+- `game-source/godot3d/scripts/world_main.gd` 真正挂载 `NPCBuilding`；80名原有NPC保留不同稳定身份，新设对应建筑职业；HUD显示规划项目编号、施工阶段、本人施工状态，保留第三人称3D世界，不是独立HD2D贴图。
+- `game-source/godot3d/tests/npc_material_construction_smoke.gd` 严格集成测试3D实际Godot主场景：NPC规划前不得存在成品建筑、3种加工职业、材料确实扣账、货物在角色身上且运达、地基/木构/墙/瓦按阶段装配、最终经济中增加工坊数量与玩家可观察的3D建筑实体；禁止负库存。测试中仅人为模拟“NPC已走到目标点”，所以**不证明自动寻路导航、复杂城市完全自主规划、持久存档读取通过**。
+- CI `.github/workflows/canglan-npc-material-build-qa.yml` 真实 Godot 4.4.1 无APK增量QA，run `38946236428` 和改HUD后的 `38946345582` **SUCCESS**；原有3D综合Godot QA `38946343576` **SUCCESS**。这只验证了单个工坊建设样本和原游戏3D实验工程，后续NPC选址、个体记忆、完整大规模城市建设需要继续迭代。
+
+### 真实WorldX素材流水线：只做材料（已真实成功生成4张）
+- 新 `tools/asset_factory/worldx_raw_material_template.md`、`worldx_raw_materials_batch01.mjs`、`test_worldx_raw_materials_batch01.mjs`。扩展真正YGYOOO/WorldX指定提交 `edb4976` 的prompt-loader，使用公开仓库已授权 `SILICONFLOW_API_KEY` 调用API，每种材质一次，**无付费失败自动重试**；只生成4种1024×1024表面：深棕木纹 `timber`、青灰石面 `cut_stone`、灰泥 `mortar`、青灰瓦 `roof_tile`。不生成房子、立面、院落地图或人物贴纸。须诚实称为“WorldX上游工具扩展”，因为上游原生的map generator是二维俯视地图工具，并不是PBR材质生产工具。
+- `.github/workflows/canglan-worldx-materials-only-batch01.yml` 实际 run `38947005032` **SUCCESS**，在四次受控生成后校验每份文件大小、1024²尺寸、SHA256并提交到公开仓库 `art-source/worldx/materials-batch01/`。4个真实PNG分别有元数据、生成源码prompt与请求账本；程序明确标 `GENERATED_UNAPPROVED`，不能谎称已经过无缝拼接检测或美术审批、不能直接发布手机。生成原图已存入公开仓库可供玩家/开发方查阅。
+- 新 `docs/NPC_WORLD_CONSTRUCTION.md` 固化后续蓝图、职业、世界进化、有限资源、建造失败/中止条件与存档规则。
+
+**发行状态**：目前这些新的材料/建筑工代码和WorldX纹理是公开仓库新增研发布局，**尚未为安装在玩家手机里的APK176制作合法兼容的新版rev179 PCK、更未通过原版3D主场景/移动端实机验收**；已发布rev178不能视为这次NPC建设系统已经进入原版。不能建议重装独立测试APK。下一轮要让真正WorldX材料经过风格/无缝审核并成为3D纹理，再解决原版兼容增量补丁，然后签名热更新。
