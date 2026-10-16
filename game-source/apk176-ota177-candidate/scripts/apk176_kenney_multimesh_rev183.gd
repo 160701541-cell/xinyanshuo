@@ -10,7 +10,7 @@ const MAX_CAPACITY := {
   "steps": 18,
   "door": 4
 }
-const INVISIBLE := Transform3D(Basis.IDENTITY.scaled(Vector3.ZERO), Vector3.ZERO)
+var invisible_transform: Transform3D = Transform3D(Basis.IDENTITY.scaled(Vector3.ZERO), Vector3.ZERO)
 var group_parts: Dictionary = {}
 var proxies: Dictionary = {}
 var capacity_used: Dictionary = {}
@@ -50,7 +50,7 @@ func initialize(source_by_role: Dictionary, palette: RefCounted) -> bool:
       # transform, without reallocation or making another draw call.
       multimesh.instance_count = int(MAX_CAPACITY[role])
       for n in range(multimesh.instance_count):
-        multimesh.set_instance_transform(n, INVISIBLE)
+        multimesh.set_instance_transform(n, invisible_transform)
       var draw := MultiMeshInstance3D.new()
       draw.name = "ActualKenneyBatch_" + role + "_" + str(entries.size())
       draw.multimesh = multimesh
@@ -101,7 +101,7 @@ func sync_role(role: String) -> void:
     var local_transform: Transform3D = part["local"]
     for index in range(items.size()):
       var proxy: Node3D = items[index]
-      var world_transform: Transform3D = INVISIBLE
+      var world_transform: Transform3D = invisible_transform
       if is_instance_valid(proxy) and proxy.visible:
         world_transform = proxy.transform * local_transform
       instance.set_instance_transform(index, world_transform)
