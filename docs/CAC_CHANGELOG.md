@@ -339,3 +339,14 @@ Godot 4.4.1对从**原签名Android APK176**提取的实际`update_protocol.gdc`
 公开GitHub Actions严格3D作业 `38905880781`（`aee58119cf1c5d9af1dbf3b05cc256346b832a66`）中，已明确执行至 **Capture actual 3D gameplay framebuffer on Mesa software GPU**，前置批量生成43份GLB/模型校验与**Godot完整场景冒烟全部通过**；原始日志逐字打印 `PASS PUBLIC CANGLAN 3D GODOT SCENE: 25 live terrain chunks / 60 houses / 80 NPC / 600+ props / indoor furniture / door / collapse / stable IDs`，启动统计 `world_props=627`、`batched_instances=1025`，这也意味着 `world_smoke.gd` 新增的4个男母版职业GLB真实场景引用断言已通过。
 
 但**整条严格CI尚未通过**：后续 Mesa/Xvfb 真正取帧阶段存在 `ERROR: Condition "status < 0" is true. Returning: ERR_CANT_OPEN`，且QA策略遇到 `ERROR:` 必须失败，不许跳过。需单独定位是软件GPU截图打开错误或其它渲染资源错误；这是截图QA的BLOCKER，不能宣传所有测试绿灯。Android ARM64+Qwen GGUF整包仍未通过真机验收。
+
+## 2026-10-16 / CAC-LIFE-001 / 游戏玩法优先：WorldBox式活世界模拟第一轮
+
+用户明确反馈：不必继续追求复杂写实美术，甚至使用像素或WorldBox式方块世界，只要《苍岚》玩法丰富、世界有内容。研发优先级已经从纯美术转为“玩家行为—NPC生产生活—真实资源变化—村镇建设—反作用于世界”。不更换原3D引擎及原版WorldState身份系统，不再为母版图消耗主线。
+
+**实际提交：**
+- `game-source/godot3d/scripts/worldbox_life_sim.gd`：独立Godot `RefCounted`确定性经济仿真，真实资源粮/木/石/泥/水/食物/铜钱；NPC年龄/饥饿/精力/心情，农人、樵夫、采石、厨师、陶工按时间产出，夜晚休息和一日三餐消耗，食物短缺带来真实数值后果。玩家申请房屋、田地、工坊必须原材料充足且一次性扣减，有建设完成记录。村庄繁荣由住房容量、田地、工坊、食物不足驱动，有限长度事件日志便于UI和存档。
+- `game-source/godot3d/scripts/world_main.gd`：**确实接入同一个Godot3D实时世界**，80个原WorldState NPC保留原身份编码，另建立独立生活生产索引；按职业分工，现有3D HUD显示村民、日时、繁荣、粮木石粮食等库存，虚拟时间每小时推进一次。AI文本对话不再承担经济权威。
+- `game-source/godot3d/tests/worldbox_life_smoke.gd`：演算25小时，检查4种职业生产、建筑前材料扣除、非法无资源建设拒绝、完成后房屋+1、库存不负、事件记录、重复随机种子/同操作序列可复现。`game-source/godot3d/tools/quality_gate.sh` 已加入此场景真实Godot测试，失败阻止发布。
+- **限制与边界：** 这是生活模拟第一层而非完成的WorldBox游戏；目前NPC行走的美术行为与职业生产通过稳定ID对应，但还没有寻路工作站/野外真实伐木对象耗尽机制、天气灾害、国家战争或玩家建筑UI；村镇初始物资暂是测试村落的预置资源（不是无中生有交易）。仍需Godot CI实测确认脚本全部无解析/类型错误，当前只确认源码提交，不能宣称整包通过、手机已更新。
+- **下一里程碑**：优先“砍树→背木回村→建房→村民搬入→种田→收获→做饭→吃饭”可被摄像机看到的完整闭环，再扩充交易/研究/灾害，最后统一美术。不再拿造型脚本替代游戏内容。
