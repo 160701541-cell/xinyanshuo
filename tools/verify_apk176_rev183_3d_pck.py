@@ -17,7 +17,9 @@ REQUIRED = {
     "scripts/hd2d_original_overlay_ota177.gd",
     "scripts/hd2d_house_portal.gd",
     "canglan_rev183/worldbox_life_sim.gd",
-    "canglan_rev183/ecology_growth.gd",\n    "canglan_rev183/visual_palette.gd",\n    "canglan_rev183/kenney_multimesh.gd",
+    "canglan_rev183/ecology_growth.gd",
+    "canglan_rev183/visual_palette.gd",
+    "canglan_rev183/kenney_multimesh.gd",
     "Textures/colormap.png",
 }
 BASE_DIR = Path(__file__).resolve().parents[1]
