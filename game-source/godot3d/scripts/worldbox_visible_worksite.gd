@@ -40,6 +40,7 @@ func setup(world_sim: RefCounted, actor_id: String) -> void:
 	worker_id = actor_id
 	name = "CAC_LifeWorksite_PlayerVisible"
 	sim.call("register_natural_node",TREE,VILLAGE,"tree",3)
+	sim.call("register_field",FIELD,VILLAGE)
 	work_tree = Node3D.new()
 	work_tree.name = "FiniteHarvestableTree"
 	work_tree.position = _start
