@@ -1,12 +1,12 @@
 {
   "schema": 1,
   "channel": "android-preview",
-  "revision": 183,
+  "revision": 184,
   "minimum_android_code": 1176,
   "maximum_android_code": 1176,
-  "sha256": "5cccf09ed783638b2420f05986b4543c22d923d6289310ea6fe2c5e678e528a9",
-  "size_bytes": 21607520,
-  "pack_url": "https://160701541-cell.github.io/xinyanshuo/android-preview/canglan-content-rev-183.pck",
-  "notes": "苍岚原版：Kenney低多边形统一五色、树石与施工件MultiMesh合批、单方向光简易阴影、树林矿石分组与畅通道路。Draw≤200待实机验收。",
-  "signature": "UDHVmsNuUVIr8cev9tFbg0iac0b9O90fqv1KzWG89VuQRaKYHMvI5aNq7eW0HJQ+EtvD6X3XSSjwMjR37z+f2MOc9aXvU3MCchXcgteQKJGsPKuFo3/LU4ZcvNXQ4OPRb3O+vYCmqaGYjnYvNtheanyf8xk2r5XKxOkC+bwtWp2UPmLKwlpZfNW2s0IcMUDqOjzhRM/u1k5GfvAZv6GDsr6Z4CFOXepx5RXmmWF7BiSYRlvbgFNR45dHaed5Ydv1BrrjE/RAN0SJbRvTW/vimtHxxQ3rHHwsIVjSrzPWSsRmzOWssxb9ILXV0rMOmZurgKofspF1T5dDdWhdyr2DpCd8e6pi2HwiEovmoxjC+m7MvTqxgokpFHbrdhq/j4BQG1oizKsJ9DK05IQ0v/mCHhiyQWbRNS9dARHcTJmI0wDoZRKVjge55gYARWUxAPvt5YW7uGy+H4KLT97tEQqMcoolRllxRYS5PkhdqY+zpdb1ONLQP9OvotMI6MEHkBYF"
+  "sha256": "e2a366e11fcbc6daac70e3af74b72ed7c03b88e85e125ade7d4714d0322426a0",
+  "size_bytes": 21638048,
+  "pack_url": "https://160701541-cell.github.io/xinyanshuo/android-preview/canglan-content-rev-184.pck",
+  "notes": "苍岚原APK176：修复低分辨率马赛克，真实可控角色、双指缩放/加减视野、左右触控、第一第三人称、接近资源/NPC/仓库互动；92米真实起伏可挖土层+地下岩层碰撞，池塘水位与地基NPC挖掘。Draw≤200与移动端性能待实测。",
+  "signature": "T+YggZh9ZXVWkyuqqU7NxQ7rlWyX7pE93lmqa0p5Rq3PFy1DQORobEu630bfRPNM+NViSir0tOgnptlRxy6ulzlYjhqqFW5VQXfqea9adFqU35UZFGX9Ca4HDcwnP3qZDkKBwmAaTNikmuVPns9J25odeRx7UHCB2tfLrEDEfEp7Uc1rqCshZ2WBnEugY+/cZJsQibRj+WhB2x15IrGrN5BaFNHTC51LD/Cpr05AvXAqLU+9941oLGB+8x+qG3FcS8w4sUmc8RiunZ0dD84ZADGOYbKkY8wqV9/i0ymR/yxt1EDWihr7ykO0n8b19lhwISc9TvCJsYHSf1xNle/2jtFd1RrjETXI85CthVFHhqIEJBq2DICGB9uJrAzfMdJSrgt3M1bLHcrGSFrlmBhHTcrQDTYeyub02y/5IXZekcY+v89DuTjzEFTy/Y4r9RnGEOopzADlXHiv1PZceHH0Lc8sb5yBhjUS3+GufQmLhOI4V2K7tMwtglWkv2rnKZl0"
 }
