@@ -25,11 +25,16 @@ def inspect(root: pathlib.Path):
         assert all(v>0 for v in scene.extents)
     assert categories=={"architecture":18,"props":10,"npc":15},categories
     mother=meta.get("male_master",{})
-    assert mother.get("master_id")=="CAC_MALE_CIVILIAN_V1"
+    assert mother.get("master_id")=="CAC_HAN_MALE_V2"
     assert mother.get("skeleton_status")=="LANDMARKS_ONLY_NOT_SKINNED"
     assert len(mother.get("bone_guide_positions",{}))>=14
+    assert len(mother.get("identity_features",[]))==6
+    assert "交领右衽" in mother["identity_features"][0]
+    assert "西式鸭舌帽" in mother["identity_features"][3]
+    assert mother.get("skeleton_status")=="UNRIGGED_LANDMARKS_ONLY"
+
     for role in ("villager","merchant","apprentice","guard","scholar"):
-        file=f"npc/male_{role}_v1.glb"
+        file=f"npc/male_{role}_han_v2.glb"
         assert file in names,"Missing shareable male base variant: "+file
         male=trimesh.load(root/file,force="scene")
         assert male.extents[1]>2.25 and male.extents[1]<2.6,role
@@ -40,7 +45,7 @@ def inspect(root: pathlib.Path):
             if x["path"].startswith("npc/male_")}
     assert len(hashes)==5, "All male variants accidentally duplicated"
     return {"status":"PASS_GLTF_BYTES","counts":categories,"models":len(names),
-            "visual_qa":"PENDING","rigging":"NOT_RIGGED", "male_mother":"CAC_MALE_CIVILIAN_V1",
+            "visual_qa":"PENDING","rigging":"NOT_RIGGED", "male_mother":"CAC_HAN_MALE_V2",
             "original_signed_game_updated":False}
 
 if __name__=="__main__":
