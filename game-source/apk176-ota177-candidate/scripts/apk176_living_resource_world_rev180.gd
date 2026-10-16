@@ -22,7 +22,7 @@ const STAGES := [
   {"id": "fenced_walls", "consume": {"wood": 6}, "time": 7.0},
   {"id": "door_frame", "consume": {"wood": 3, "stone": 3}, "time": 8.0}
 ]
-var sim: RefCounted
+var sim
 var world: Node3D
 var view: SubViewport
 var camera: Camera3D
