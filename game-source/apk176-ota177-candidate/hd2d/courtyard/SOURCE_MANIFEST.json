@@ -1,0 +1,19 @@
+{
+  "batch": "house-interior-v1",
+  "model": "Kwai-Kolors/Kolors",
+  "pipeline": "WorldX prompt loader + SiliconFlow generation bridge",
+  "qa_status": "functional_candidate_NOT_visual_approved",
+  "same_camera_rotatable": false,
+  "assets": [
+    {
+      "path": "main_house_v3_source.png",
+      "sha256": "44d116addb17c5aa5a1f6c7edc85d44132fefdc0eb52ae422b63cc0b71060e3f",
+      "size_bytes": 2278785
+    },
+    {
+      "path": "main_house_interior.png",
+      "sha256": "7f0cfb7886284ad9627b5c411ca4fc1b372f294545508db0bfd0e6008ab0887e",
+      "size_bytes": 1267184
+    }
+  ]
+}
