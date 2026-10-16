@@ -45,3 +45,7 @@ godot --headless --path game-source/godot3d --script res://tests/world_smoke.gd
 这批纯几何候选质量远低于用户批准的国漫参考最终画风。下一层必须提升共享瓦片材质/真实法线、地貌生态、建筑近景比例和合院生活细节，使用真正授权开源带骨骼人物与走/跑/交互动画，加入可被寻路系统使用的道路/地块占用、切换室内的世界定位、授权资产来源与原游戏存档/产权/制造/交易/战斗系统迁移。Terrain3D 1.0.2 (MIT) 已核对有 Android/GL Compatibility 支持文档，但本工程在 Android GPU/ARM64 GDExtension 实测之前不强制装载。
 
 **开源边界**：只发布具备合法版权许可的代码/素材；绝不公开签名私钥、APK密钥、用户游戏存档、账号凭据或未经批准的第三方素材，也不改变旧 APK176 与签名 PCK 的数字签名锚。
+
+## 与以前真正的原生 3D 版本关系（2026-10-16）
+
+已查阅历史只读私有仓库 `godot3d/`：原来的 Godot 4.4 主场景含 `update_bootstrap.tscn`、Terrain3D、持久化 WorldState 和复杂 NPC/制造模块，但完整可授权安全迁移尚未完成。本公开3D工程已**逐字节复用并校验**三份原版源脚本：`scripts/world_state.gd`、`scripts/entity_codes.gd`、`scripts/terrain/heightfield.gd`，新80名NPC实际用原 `WorldState.create_actor` 注册并通过兼容桥验证位置与库存边界，地形高度使用原版500m城池/西北山地模型。这是原版数据与地貌的真实增量接入，而不是声称完整APK主场景已经搬完。原先旧版资源、角色骨骼、安装更新器和所有安全私钥继续未迁移，状态 BLOCKED/PENDING。
