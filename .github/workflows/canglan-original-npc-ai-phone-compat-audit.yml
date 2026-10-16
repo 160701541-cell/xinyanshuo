@@ -1,0 +1,34 @@
+name: Original installed APK176 - NPC offline AI native phone compatibility audit
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'tools/audit_original_apk176_npc_ai_native_bridge.py'
+      - '.github/workflows/canglan-original-npc-ai-phone-compat-audit.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  inspect-original-apk:
+    if: github.repository == '160701541-cell/xinyanshuo'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify official APK176 local GGUF/llama native components without pretending PCK supports new SO
+        run: |
+          set -euo pipefail
+          python3 tools/audit_original_apk176_npc_ai_native_bridge.py
+          python3 - <<'PY'
+          import json,pathlib
+          data=json.loads(pathlib.Path('qa-results/original-apk176-ai-native-audit.json').read_text())
+          assert data['may_claim_local_npc_ai_ota_ready'] is False
+          print("PASS_TRUTHFUL_PHONE_RELEASE_BOUNDARY_AUDIT")
+          PY
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: Original-APK176-NPC-Local-AI-Compatibility-Audit
+          path: qa-results/original-apk176-ai-native-audit.json
+          if-no-files-found: warn
+          retention-days: 14
