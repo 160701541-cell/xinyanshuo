@@ -112,6 +112,16 @@ func _build_body(role: int) -> void:
 	# It is intentionally marked UNRIGGED; never claim skeletal walking,
 	# BlendShapes, or a production quality character until tested.
 	var model_file: String = "res://assets/generated/npc/role_%02d.glb" % posmod(role,10)
+	# First real low-poly male civilian MASTER, 4 role-accurate outfits.
+	# Other residents retain their independent candidate models until
+	# female, child, elder, humanoid rig and animation gates are approved.
+	var male_roles: Dictionary = {
+		1:"merchant", 4:"apprentice", 6:"guard", 8:"scholar"}
+	var occupation_index: int = posmod(role,10)
+	if male_roles.has(occupation_index):
+		var candidate: String = "res://assets/generated/npc/male_%s_v1.glb" % male_roles[occupation_index]
+		if ResourceLoader.exists(candidate):
+			model_file = candidate
 	if ResourceLoader.exists(model_file):
 		var imported: Resource = load(model_file)
 		if imported is PackedScene:
@@ -125,6 +135,10 @@ func _build_body(role: int) -> void:
 			_generated_role_visual = model
 			set_meta("art_status","UNRIGGED_GENERATED_GLB_CANDIDATE")
 			set_meta("model_source",model_file)
+			if model_file.contains("/male_"):
+				set_meta("shared_master","CAC_MALE_CIVILIAN_V1")
+				set_meta("wardrobe_role",String(male_roles[occupation_index]))
+				set_meta("skeleton_status","NOT_SKINNED_NO_RIG")
 
 func _process(delta: float) -> void:
 	if _observer == null or rules == null:
