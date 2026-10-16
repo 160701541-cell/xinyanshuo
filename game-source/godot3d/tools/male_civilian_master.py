@@ -23,8 +23,8 @@ FACE = "#685c50"
 LANDMARKS = {
  "root":(0,0,0),"hips":(0,1.05,0),"spine":(0,1.33,0),"chest":(0,1.58,0),
  "neck":(0,1.81,0),"head":(0,2.12,0),
- "shoulder_l":(-.49,1.66,0),"elbow_l":(-.62,1.3,.01),"wrist_l":(-.7,.99,.03),
- "shoulder_r":(.49,1.66,0),"elbow_r":(.62,1.3,.01),"wrist_r":(.7,.99,.03),
+ "shoulder_l":(-.445,1.66,0),"elbow_l":(-.62,1.3,.01),"wrist_l":(-.7,.99,.03),
+ "shoulder_r":(.445,1.66,0),"elbow_r":(.62,1.3,.01),"wrist_r":(.7,.99,.03),
  "knee_l":(-.205,.51,0),"ankle_l":(-.205,.15,0),
  "knee_r":(.205,.51,0),"ankle_r":(.205,.15,0),
 }
@@ -119,7 +119,7 @@ def build_male(kind="villager"):
     p=PALETTES[kind]
     s=trimesh.Scene()
     cloth_loft(s,"tapered_torso",[(0,1.02,0,.355,.225),(0,1.29,0,.365,.230),
-              (0,1.57,0,.431,.233),(0,1.76,0,.338,.204)],p["cloth"])
+              (0,1.57,0,.389,.233),(0,1.76,0,.338,.204)],p["cloth"])
     cloth_loft(s,"split_lower_robe",[(0,.71,0,.416,.262),
               (0,.89,0,.389,.231),(0,1.095,0,.356,.231)],p["hem"])
     for side,name in ((-1,"L"),(1,"R")):
@@ -128,15 +128,15 @@ def build_male(kind="villager"):
                    [(x,.16,0,.147,.145),(x,.55,0,.154,.141),(x,.94,0,.167,.162)],
                    p["trouser"],8)
         box(s,"grounded_cloth_shoe_"+name,(x,.084,.09),(.30,.16,.46),p["shoe"])
-        cone_segment(s,"upper_sleeve_"+name,(side*.491,1.70,0),
-                     (side*.600,1.315,.027),.207,.185,p["sleeve"])
-        cone_segment(s,"forearm_taper_sleeve_"+name,(side*.604,1.33,.027),
-                     (side*.699,1.017,.065),.184,.142,p["sleeve"])
-        cone_segment(s,"cuff_hem_"+name,(side*.697,1.04,.065),
-                     (side*.704,1.007,.069),.149,.143,p["accent"],8)
-        orb(s,"hand_"+name,(side*.715,.922,.092),(.095,.131,.085),SKIN)
-        cone_segment(s,"cloth_folds_"+name,(side*.594,1.35,.155),
-                     (side*.611,1.26,.150),.035,.020,p["hem"],7)
+        cone_segment(s,"upper_sleeve_"+name,(side*.445,1.70,0),
+                     (side*.545,1.315,.027),.182,.164,p["sleeve"])
+        cone_segment(s,"forearm_taper_sleeve_"+name,(side*.549,1.33,.027),
+                     (side*.615,1.017,.065),.163,.124,p["sleeve"])
+        cone_segment(s,"cuff_hem_"+name,(side*.613,1.04,.065),
+                     (side*.621,1.007,.069),.136,.129,p["accent"],8)
+        orb(s,"hand_"+name,(side*.626,.922,.092),(.088,.123,.083),SKIN)
+        cone_segment(s,"cloth_folds_"+name,(side*.538,1.35,.155),
+                     (side*.543,1.26,.150),.035,.020,p["hem"],7)
     box(s,"belt", (0,1.105,0),(.79,.105,.48),p["belt"])
     box(s,"belt_knot",(.04,1.10,.266),(.13,.11,.05),p["accent"])
     collar(s,p["undercollar"])
