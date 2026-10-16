@@ -138,6 +138,12 @@ func deliver_carried(actor_id: String) -> bool:
 func register_field(field_code: String, village_id: String) -> bool:
 	if field_code.is_empty() or harvested_fields.has(field_code) or not villages.has(village_id):
 		return false
+	var registered: int = 0
+	for existing in harvested_fields.values():
+		if String(existing.get("village",""))==village_id:
+			registered+=1
+	if registered>=int(villages[village_id]["fields"]):
+		return false
 	harvested_fields[field_code]={"ready":true,"next_day":day,
 		"village":village_id}
 	return true
@@ -167,8 +173,10 @@ func harvest_field(village_id: String, field_code: String, actor_id: String) -> 
 	if int(villages[village_id]["fields"])<=0:
 		return false
 	if not harvested_fields.has(field_code):
-		harvested_fields[field_code]={"ready":true,"next_day":1}
+		return false
 	var plot: Dictionary = harvested_fields[field_code]
+	if String(plot.get("village",""))!=village_id:
+		return false
 	if not bool(plot["ready"]) or day<int(plot["next_day"]):
 		return false
 	# The player must fetch field yield; this cannot be spammed every frame.
