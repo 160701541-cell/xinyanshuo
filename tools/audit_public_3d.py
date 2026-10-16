@@ -13,6 +13,9 @@ REQUIRED = [
     "scripts/npc_agent.gd", "scripts/interior_factory.gd",
     "tests/world_smoke.gd", "tools/quality_gate.sh",
     "LICENSE", "opensource/THIRD_PARTY_NOTICES.md",
+    "local_ai/model_manifest.json", "local_ai/native/CMakeLists.txt",
+    "local_ai/native/canglan_local_llm.cpp", "local_ai/NOTICE.md",
+    "scripts/local_ai_service.gd", "local_ai/build_native.sh",
     "opensource/registry.json",
 ]
 REQUIRED_CONTRACTS = {
@@ -67,7 +70,18 @@ def verify(root: pathlib.Path):
             assert not item.get("used_by"), "Candidate falsely marked used"
         else:
             raise AssertionError("Invalid third party state")
-    assert {"godot", "fastnoiselite"}.issubset(ids)
+    assert {"godot", "fastnoiselite", "llama.cpp-cpu", "qwen3-0.6b-q4km"}.issubset(ids)
+    # A model can be a source-integrated pinned build-time dependency without
+    # placing nearly half a gigabyte of copyrighted weights in Git history.
+    import hashlib
+    model=json.loads((game/"local_ai/model_manifest.json").read_text("utf-8"))
+    declared=next(item for item in inventory["entries"] if item["id"]=="qwen3-0.6b-q4km")
+    assert declared["license"]=="Apache-2.0"
+    assert declared["kind"]=="on-demand-build-model"
+    assert declared["sha256"]==model["sha256"], "Published GGUF fingerprint must match manifest"
+    assert declared["source"].startswith(model["upstream"]), "Unverifiable quant provenance"
+    assert model["bundled_in_git"] is False
+    assert model["required_for_offline"] is True
     # Byte-level evidence: these three modules were copied verbatim from
     # private ORIGINAL Godot3D history only after secret audit.
     original_blobs = {
@@ -75,7 +89,6 @@ def verify(root: pathlib.Path):
         "scripts/entity_codes.gd":"7d82d7de396208c799d4e5bac23741d1d436a71e",
         "scripts/terrain/heightfield.gd":"7c950e459af84c57557abdb31b7b4f23266e7347",
     }
-    import hashlib
     for path,expected in original_blobs.items():
         data=(game/path).read_bytes()
         git_blob=b"blob "+str(len(data)).encode()+b"\x00"+data
