@@ -6,6 +6,10 @@ signal npc_reply(entity_id: String, reply: String)
 signal npc_intent(entity_id: String, intention: String)
 signal inference_failed(message: String)
 
+# User will choose the offline model later. Never silently select/download 0.6B.
+# AI inference remains optional; deterministic jobs, material crafting and NPC
+# construction continue without any model.
+const USER_MODEL_CHOICE_PATH := "user://local_models/selected_model.json"
 const MANIFEST_PATH := "res://local_ai/model_manifest.json"
 const MODEL_RESOURCE := "res://models/Qwen3-0.6B.Q4_K_M.gguf"
 const MODEL_INSTALLED := "user://local_models/Qwen3-0.6B.Q4_K_M.gguf"
@@ -19,6 +23,13 @@ var running_request_kind: String = ""
 var dialogue_history: Dictionary = {}
 
 func _ready() -> void:
+	if not FileAccess.file_exists(USER_MODEL_CHOICE_PATH):
+		_update("awaiting_user_selection","本地AI模型由玩家自行选择；未选择时NPC照常生活、采集和建造")
+		return
+	var chosen: Variant = JSON.parse_string(FileAccess.get_file_as_string(USER_MODEL_CHOICE_PATH))
+	if not (chosen is Dictionary) or String(chosen.get("model_id","")) != "canglan-offline-dialogue-qwen3-0.6b-q4km":
+		_update("awaiting_user_selection","尚未选择受支持的本地模型；NPC基础行为继续运行")
+		return
 	if not FileAccess.file_exists(MANIFEST_PATH):
 		_update("unavailable","缺少公开的模型授权清单")
 		return
