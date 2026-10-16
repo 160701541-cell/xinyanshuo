@@ -20,7 +20,7 @@ import tempfile
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "tools"))
 sys.path.insert(0, str(ROOT / "logic-qa" / "release-gate"))
-from check_original_ota_secret import ENV_CANDIDATES, pub_der
+from check_original_ota_secret import ENV_CANDIDATES, pub_der, decode_private_secret
 from ota_release_gate import pubkey, pubkey as actual_apk_public_key
 from ota_release_gate import check_candidate, verify_signature
 from sign_pck_release import build_manifest, sign_manifest
@@ -41,13 +41,10 @@ def matching_original_private() -> bytes | None:
         value = os.environ.get(name, "").strip()
         if not value:
             continue
-        if value.startswith("-----BEGIN "):
-            key_bytes = (value + ("\n" if not value.endswith("\n") else "")).encode()
-        else:
-            try:
-                key_bytes = base64.b64decode(value, validate=True)
-            except ValueError:
-                continue
+        try:
+            key_bytes = decode_private_secret(value)
+        except ValueError:
+            continue
         try:
             if pub_der(key_bytes, True) == pinned:
                 return key_bytes
