@@ -680,7 +680,7 @@ func _reopen_world() -> void:
 
 func stats() -> Dictionary:
   var stock: Dictionary = sim.villages[TOWN]["stock"]
-  return {"revision": 182, "world_seed": 20261017,
+  return {"revision": 183, "world_seed": 20261017,
     "worker_count": workers.size(), "resource_node_count": sim.natural_nodes.size(),
     "source_assets": asset_sources.size(), "missing_assets": asset_errors.duplicate(),
     "animation_reports": animation_report.duplicate(true),
