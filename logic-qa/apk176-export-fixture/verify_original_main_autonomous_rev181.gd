@@ -86,8 +86,23 @@ func _run() -> void:
   var paid_stone := 0
   var known_stage := 0
   var paid_stage := false
+  var observed_builder_carried_real_materials := false
+  var observed_builder_depot_with_material_pickup := false
+  var returned_for_second_stage := false
   for tick in range(360):
     room.call("_process", 1.0)
+    var live_workers: Dictionary = room.get("workers")
+    var builder: Dictionary = live_workers.get("CL-NPC-0181-03", {})
+    if String(builder.get("phase","")) == "to_building_site":
+      var held: Dictionary = builder.get("carried_materials", {})
+      if held.is_empty() or not builder.has("cargo_visual"):
+        _fail(25, "BUILDER_ARRIVED_WITHOUT_PHYSICALLY_CARRIED_LICENSED_MATERIALS")
+        return
+      observed_builder_carried_real_materials = true
+      if (builder["node"] as Node3D).position.distance_to(Vector3(0,0,10)) < 1.5:
+        observed_builder_depot_with_material_pickup = true
+    if String(builder.get("phase","")) == "to_warehouse_for_materials" and int(room.get("_stage_index"))>=1:
+      returned_for_second_stage = true
     var stage: int = int(room.get("_stage_index"))
     var stage_paid_now: bool = bool(room.get("_stage_paid"))
     if stage < known_stage or stage > 4:
@@ -118,6 +133,9 @@ func _run() -> void:
     return
   if not paid_stage:
     _fail(21, "NO_EVIDENCE_OF_ACTUAL_STOCK_RESERVATION")
+    return
+  if not (observed_builder_carried_real_materials and observed_builder_depot_with_material_pickup and returned_for_second_stage):
+    _fail(26, "BUILDER_MUST_WALK_TO_WAREHOUSE_AND_TRANSPORT_STAGED_MATERIALS")
     return
   if not bool(report.get("save_unchanged",false)):
     _fail(22, "MUST_PRESERVE_EXISTING_SAVES")
