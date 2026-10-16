@@ -2,6 +2,10 @@ name: Canglan One-Click Original APK176 Quick View Gate
 # Manual only: no redundant CI on every model/content commit.
 on:
   workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/canglan-one-click-original-quick-view.yml'
 permissions:
   contents: read
 concurrency:
