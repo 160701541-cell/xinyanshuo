@@ -21,6 +21,19 @@ func _run() -> void:
 	var props: Node3D = stage.get_node_or_null("IndependentWorldProps")
 	assert(terrain!=null and settlement!=null and npcs!=null and props!=null,
 		"Any missing world subsystem is release-blocking")
+	var director: Node3D = stage.get_node_or_null("AutonomousNPCJobsWorldVisible")
+	assert(director!=null,"Actual Godot world has no autonomous NPC work director")
+	var jobs: Dictionary = director.call("stats")
+	assert(int(jobs["workers"])==8, "8 physical working villagers were not assigned")
+	var economy: RefCounted = stage.get("life_sim")
+	assert((economy.get("natural_nodes") as Dictionary).size()==9,
+		"8 finite natural work sites + 1 visible manual tree must exist")
+	for worker in (director.get("assignments") as Dictionary).values():
+		var citizen: Node3D = worker["citizen"]
+		assert(bool(citizen.get("_externally_assigned_job")),
+			"NPC is not physically steering toward real resource site")
+	var worksite: Node3D = stage.get_node_or_null("CAC_LifeWorksite_PlayerVisible")
+	assert(worksite!=null,"Actual physical harvest/build/eat scene missing")
 	var before: Dictionary = stage.call("snapshot")
 	print("PUBLIC_CANGLAN_3D_COUNTS:",before)
 	assert(before["source"]=="PUBLIC_GODOT3D","Wrong engine baseline")
