@@ -1,0 +1,108 @@
+name: Canglan 3D - Import REAL Kenney + Quaternius CC0 GLB Models into Godot (NO APK)
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/canglan-cc0-real-model-import.yml'
+      - 'tools/asset_factory/import_cc0_model_packs.py'
+      - 'game-source/godot3d/opensource/cc0_asset_catalog.json'
+      - 'game-source/godot3d/scripts/cc0_asset_bridge.gd'
+      - 'game-source/godot3d/tests/cc0_existing_assets_smoke.gd'
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: canglan-real-cc0-godot-import
+  cancel-in-progress: false
+jobs:
+  import-genuine-licensed-cc0:
+    if: github.repository == '160701541-cell/xinyanshuo'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 23
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check REAL asset catalog and no fabricated models
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m py_compile tools/asset_factory/import_cc0_model_packs.py
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          d=json.loads(Path("game-source/godot3d/opensource/cc0_asset_catalog.json").read_text())
+          assert {x['id'] for x in d["sources"]}=={"kenney","quaternius"}
+          assert all(x['license']=="CC0-1.0" for x in d["sources"])
+          assert all(len(x['mirror_commit'])==40 for x in d["sources"])
+          assert all(len(asset["git_blob_sha1"])==40 for s in d["sources"] for asset in s["files"])
+          print("PASS_CC0_REAL_SOURCE_LICENSE_AND_BLOB_PINS")
+          PY
+      - name: Download existing CC0 3D files from pinned PUBLIC archives (not AI!)
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 tools/asset_factory/import_cc0_model_packs.py \
+            --catalog game-source/godot3d/opensource/cc0_asset_catalog.json \
+            --out game-source/godot3d/assets/free_cc0 > /tmp/canglan-cc0-download-proof.log 2>&1 || {
+              tail -n 35 /tmp/canglan-cc0-download-proof.log
+              exit 1
+            }
+          tail -n 30 /tmp/canglan-cc0-download-proof.log
+          test -s game-source/godot3d/assets/free_cc0/kenney/3d/castle/tree-log.glb
+          test -s game-source/godot3d/assets/free_cc0/quaternius/glTF/Wall_Plaster_Straight.gltf
+      - name: Install pinned Godot 4.4.1 for ACTUAL scene and mesh QA
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl -fL --retry 3 --connect-timeout 20 \
+            https://github.com/godotengine/godot/releases/download/4.4.1-stable/Godot_v4.4.1-stable_linux.x86_64.zip -o /tmp/canglan-godot.zip
+          unzip -q /tmp/canglan-godot.zip -d /tmp
+          chmod +x /tmp/Godot_v4.4.1-stable_linux.x86_64
+      - name: ACTUALLY import all GLB/glTF in Godot then instantiate and inspect 3D meshes
+        shell: bash
+        run: |
+          set -euo pipefail
+          GODOT=/tmp/Godot_v4.4.1-stable_linux.x86_64
+          mkdir -p qa-results
+          timeout 145s "$GODOT" --headless --editor --path game-source/godot3d --import \
+            > qa-results/cc0-godot-import.log 2>&1 || {
+              tail -n 110 qa-results/cc0-godot-import.log
+              exit 1
+            }
+          timeout 100s "$GODOT" --headless --path game-source/godot3d \
+            --script res://tests/cc0_existing_assets_smoke.gd \
+            > qa-results/cc0-real-world-meshes.log 2>&1 || {
+              tail -n 110 qa-results/cc0-real-world-meshes.log
+              exit 1
+            }
+          cat qa-results/cc0-real-world-meshes.log
+          grep -Fq 'PASS_CC0_REAL_EXISTING_3D_KENNEY_QUATERNIUS_10_MODELS_IMO_NO_AI_GENERATION' qa-results/cc0-real-world-meshes.log
+          if grep -Eh 'SCRIPT ERROR:|Parse Error:|ERROR:|Assertion failed' qa-results/cc0-real-world-meshes.log; then
+            echo 'BLOCKED: asset import was not approved by actual Godot runtime'
+            exit 1
+          fi
+      - name: Commit real downloaded meshes/texture deps and precise provenance to ONLY public repository
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'canglan-public-cc0-asset-import'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add game-source/godot3d/assets/free_cc0/
+          if git diff --cached --quiet; then
+            echo 'PASS_CC0_GODOT_REAL_ASSETS_ALREADY_INSTALLED'
+            exit 0
+          fi
+          git commit -m 'assets(real CC0): Kenney GLB + Quaternius modular glTF; Godot scene QA success [skip ci]'
+          git fetch origin main
+          git rebase origin/main
+          git push origin HEAD:main
+          echo 'PASS_REAL_CC0_3D_MODEL_BYTES_COMMITTED_TO_GODOT'
+      - name: Preserve import evidence on success or failure
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: Canglan-REAL-CC0-Godot3D-mesh-import-audit-${{ github.run_id }}
+          path: |
+            qa-results/cc0-godot-import.log
+            qa-results/cc0-real-world-meshes.log
+          if-no-files-found: warn
+          retention-days: 14
