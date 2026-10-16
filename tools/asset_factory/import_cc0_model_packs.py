@@ -100,7 +100,8 @@ def stage(catalog_path: Path = CATALOG, destination: Path = OUTPUT) -> dict:
         commit = pack["mirror_commit"]
         if not (len(commit) == 40 and all(c in "0123456789abcdef" for c in commit)):
             raise ValueError("Unpinned mirror source commit")
-        if repo not in ("shorepine/kenney", "J-Ponzo/gltf-medieval-village-megakit",\n                        "programasweights/avatar", "ilrein/warptracker"):
+        if repo not in ("shorepine/kenney", "J-Ponzo/gltf-medieval-village-megakit",
+                        "programasweights/avatar", "ilrein/warptracker"):
             raise ValueError("Unknown mirror: "+repo)
         folder = destination / pack["id"]
         pack_assets = []
