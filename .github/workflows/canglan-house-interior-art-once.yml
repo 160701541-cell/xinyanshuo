@@ -1,0 +1,140 @@
+name: Canglan WorldX Kolors - One Real House Interior + Exterior Art Intake
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/canglan-house-interior-art-once.yml'
+  workflow_dispatch:
+permissions:
+  contents: write
+  actions: read
+concurrency:
+  group: canglan-worldx-one-house-interior
+  cancel-in-progress: false
+jobs:
+  import-one-pair:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    env:
+      SILICONFLOW_API_KEY: ${{ secrets.SILICONFLOW_API_KEY }}
+      SILICONFLOW_MODEL: Kwai-Kolors/Kolors
+      ART_DIR: game-source/apk176-ota177-candidate/hd2d/courtyard
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify that one image model key is configured
+        shell: bash
+        run: |
+          if [ -z "$SILICONFLOW_API_KEY" ]; then
+            echo "::error::SILICONFLOW_API_KEY missing; no generation attempted"
+            exit 1
+          fi
+      - name: Retrieve EXACT V3 WorldX outdoor image from prior successful artifact
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$ART_DIR" qa-results
+          curl --fail --silent --show-error --location --retry 2 \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/repos/$GITHUB_REPOSITORY/actions/artifacts/12033321158/zip" \
+            -o /tmp/canglan_v3_original_art.zip
+          unzip -p /tmp/canglan_v3_original_art.zip main_house_v3_source.png > "$ART_DIR/main_house_v3_source.png"
+          printf '%s  %s\n' \
+            '44d116addb17c5aa5a1f6c7edc85d44132fefdc0eb52ae422b63cc0b71060e3f' \
+            "$ART_DIR/main_house_v3_source.png" | sha256sum -c -
+          echo 'PASS_REAL_WORLDX_V3_ORIGINAL_ART_UNCHANGED'
+      - name: Checkout WorldX prompt and generator source
+        uses: actions/checkout@v4
+        with:
+          repository: YGYOOO/WorldX
+          path: worldx-upstream
+      - name: Apply approved Canglan indoor artwork style through WorldX template loader
+        run: python3 tools/asset_factory/patch_worldx_canglan_interior.py --worldx-root worldx-upstream
+      - name: Install WorldX generator dependencies
+        working-directory: worldx-upstream/generators
+        run: npm ci --ignore-scripts
+      - name: Generate ONE indoor room painting through WorldX prompt + SiliconFlow Kolors
+        working-directory: worldx-upstream/generators
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --input-type=module <<'NODE'
+          import {writeFileSync} from 'node:fs';
+          import {loadPrompt} from './map/src/utils/prompt-loader.mjs';
+          const prompt = loadPrompt('step1-map-generation.md',{
+            userPrompt: '正房内部一间可通行木构房间，正下方中央为室外入室内的门槛位置。',
+            additionalConstraints: '室内场景严禁出现大屋顶、院墙、整座院落、树木或远景；须符合第一批青灰瓦国风手绘画风。'
+          });
+          if (prompt.includes('{{userPrompt}}')) throw Error('WorldX prompt variables unresolved');
+          const response = await fetch('https://api.siliconflow.cn/v1/images/generations', {
+            method:'POST',
+            headers:{Authorization:'Bearer '+process.env.SILICONFLOW_API_KEY,'Content-Type':'application/json'},
+            body:JSON.stringify({model:process.env.SILICONFLOW_MODEL,prompt,image_size:'1024x1024'}),
+            signal:AbortSignal.timeout(150000)
+          });
+          const raw = await response.text();
+          if(!response.ok) throw Error('Image generation failed: HTTP '+response.status+' '+raw.slice(0,240));
+          const url = JSON.parse(raw).images?.[0]?.url;
+          if(!url?.startsWith('https://'))throw Error('API returned no HTTPS image URL');
+          const img = await fetch(url,{signal:AbortSignal.timeout(90000)});
+          if(!img.ok) throw Error('Image fetch: HTTP '+img.status);
+          const bytes=Buffer.from(await img.arrayBuffer());
+          const png=bytes.subarray(0,8).toString('hex')==='89504e470d0a1a0a';
+          const jpg=bytes.subarray(0,3).toString('hex')==='ffd8ff';
+          if(bytes.length<30000 || (!png&&!jpg)) throw Error('Bad generated image format');
+          writeFileSync('../../room-candidate.'+(png?'png':'jpg'),bytes);
+          console.log('PASS_WORLDX_KOLORS_ACTUAL_ROOM_CANDIDATE',bytes.length,png?'PNG':'JPG');
+          NODE
+      - name: Normalize real image to PNG, verify dimensions, and write provenance
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m pip install --quiet --break-system-packages pillow
+          python3 - <<'PY'
+          from pathlib import Path
+          from PIL import Image
+          import json,hashlib
+          source = next(iter(Path('.').glob('room-candidate.*')),None)
+          if not source:
+              raise SystemExit('No generated interior image')
+          dest=Path('game-source/apk176-ota177-candidate/hd2d/courtyard')
+          im=Image.open(source)
+          im.load()
+          if min(im.size)<768: raise SystemExit('Interior image resolution too low')
+          im.convert('RGB').save(dest/'main_house_interior.png',format='PNG',optimize=True)
+          files=['main_house_v3_source.png','main_house_interior.png']
+          provenance={'batch':'house-interior-v1','model':'Kwai-Kolors/Kolors',
+              'pipeline':'WorldX prompt loader + SiliconFlow generation bridge',
+              'qa_status':'functional_candidate_NOT_visual_approved',
+              'same_camera_rotatable':False,
+              'assets':[{ 'path':name,'sha256':hashlib.sha256((dest/name).read_bytes()).hexdigest(),
+                   'size_bytes':(dest/name).stat().st_size} for name in files]}
+          (dest/'SOURCE_MANIFEST.json').write_text(json.dumps(provenance,ensure_ascii=False,indent=2)+'\n',encoding='utf-8')
+          print('PASS_REAL_WORLDX_KOLORS_HOUSE_EXTERIOR_AND_INTERIOR_ASSETS',im.size)
+          PY
+      - name: Commit only two actual artwork sources into the ORIGINAL game repository
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'canglan-actions'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add "$ART_DIR/main_house_v3_source.png" "$ART_DIR/main_house_interior.png" "$ART_DIR/SOURCE_MANIFEST.json"
+          if git diff --cached --quiet; then
+            echo 'Both artwork images are already recorded'
+          else
+            git commit -m 'art(worldx): real matching exterior + enterable indoor room candidates'
+            git pull --rebase origin main
+            git push origin HEAD:main
+          fi
+      - name: Preserve original image files for user review
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: Canglan-WorldX-House-Exterior-Interior-Art-UNREVIEWED
+          path: |
+            game-source/apk176-ota177-candidate/hd2d/courtyard/*.png
+            game-source/apk176-ota177-candidate/hd2d/courtyard/SOURCE_MANIFEST.json
+          if-no-files-found: warn
+          retention-days: 14
