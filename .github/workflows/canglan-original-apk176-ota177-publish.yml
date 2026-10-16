@@ -1,0 +1,97 @@
+name: Canglan ORIGINAL APK176 - Real Signed rev177 OTA Deployment
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/canglan-original-apk176-ota177-publish.yml'
+      - 'tools/publish_original_rev177_ota.py'
+permissions:
+  contents: write
+  actions: read
+concurrency:
+  group: canglan-original-apk176-rev177-signed-publisher
+  cancel-in-progress: false
+jobs:
+  original-signed-ota:
+    if: github.repository == '160701541-cell/xinyanshuo' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    env:
+      CANGLAN_ORIGINAL_OTA_PRIVATE_KEY_PEM: ${{ secrets.CANGLAN_ORIGINAL_OTA_PRIVATE_KEY_PEM }}
+      CANGLAN_UPDATE_PRIVATE_KEY_PEM: ${{ secrets.CANGLAN_UPDATE_PRIVATE_KEY_PEM }}
+      CANGLAN_OTA_PRIVATE_KEY_PEM: ${{ secrets.CANGLAN_OTA_PRIVATE_KEY_PEM }}
+      CANGLAN_UPDATE_SIGNING_KEY_PEM: ${{ secrets.CANGLAN_UPDATE_SIGNING_KEY_PEM }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Confirm no accidental Python syntax errors
+        run: python3 -m py_compile tools/publish_original_rev177_ota.py
+      - name: Prove original APK176 permanent RSA signing capability BEFORE fetching assets
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 tools/publish_original_rev177_ota.py --preflight
+      - name: Fetch exact known-green REAL original-game rev177 Godot QA pack
+        uses: actions/download-artifact@v4
+        with:
+          name: Canglan-APK176-TRUE-MAIN-QA-rev177-UNSIGNED-NOT-FOR-PHONE
+          run-id: 38882131496
+          github-token: ${{ github.token }}
+          path: qa-results
+      - name: Verify trusted PCK bytes, same installed app, original RSA and stage only signed OTA
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -s qa-results/canglan-apk176-live-house-UNSIGNED.pck
+          test -s qa-results/canglan-rev177-UNSIGNED-NOT-FOR-PHONE.json
+          test -s qa-results/live-main-room-runtime.log
+          python3 tools/publish_original_rev177_ota.py \
+            --qa-pack qa-results/canglan-apk176-live-house-UNSIGNED.pck \
+            --qa-manifest qa-results/canglan-rev177-UNSIGNED-NOT-FOR-PHONE.json \
+            --qa-runtime-log qa-results/live-main-room-runtime.log \
+            --staging .
+          # Defensive guard: the production version must NEVER be unsigned.
+          python3 - <<'PY'
+          import json, pathlib, hashlib
+          source = json.loads(pathlib.Path('qa-results/canglan-rev177-UNSIGNED-NOT-FOR-PHONE.json').read_text())
+          final = json.loads(pathlib.Path('android-preview/latest.json').read_text())
+          pack = pathlib.Path('android-preview/canglan-content-rev-177.pck')
+          assert source['sha256'] == final['sha256'] == hashlib.sha256(pack.read_bytes()).hexdigest()
+          assert source['signature'] == '' and len(final['signature']) >= 256
+          assert final['revision'] == 177 and final['minimum_android_code'] == 1176
+          assert final['maximum_android_code'] == 1176
+          assert pack.stat().st_size >= 1_000_000
+          print('PASS_SIGNED_REAL_APK176_OTA177_FINAL_SITE_BYTES_CHECK', final['sha256'])
+          PY
+      - name: Publish real rev177 signed manifest and candidate PCK to ORIGINAL website only
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'canglan-original-ota-signing-bot'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add android-preview/latest.json android-preview/canglan-content-rev-177.pck
+          if git diff --cached --quiet; then
+            echo '::error::No signed rev177 change to publish (or already deployed)'
+            exit 1
+          fi
+          git commit -m 'release: signed original APK176 rev177 WorldX buildings and room [skip ci]'
+          for i in 1 2 3; do
+            git fetch origin main
+            if git rebase origin/main && git push origin HEAD:main; then
+              echo 'PASS_SIGNED_ORIGINAL_GAME_REV177_GIT_PUBLISHED'
+              break
+            fi
+            if [ "$i" = "3" ]; then
+              echo '::error::Signed update was staged but not published because of branch contention'
+              exit 1
+            fi
+            sleep 10
+          done
+      - name: Preserve small cryptographic release report only, NEVER private key
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: Canglan-Original-APK176-Rev177-Signed-Release-Report
+          path: qa-results/real-rev177-signed-release-report.json
+          retention-days: 14
+          if-no-files-found: warn
