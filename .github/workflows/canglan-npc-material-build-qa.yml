@@ -4,6 +4,9 @@ on:
     branches: [main]
     paths:
       - 'game-source/godot3d/scripts/npc_building_system.gd'
+      - 'game-source/godot3d/scripts/npc_intent_policy.gd'
+      - 'game-source/godot3d/scripts/local_ai_service.gd'
+      - 'game-source/godot3d/tests/local_npc_ai_intent_smoke.gd'
       - 'game-source/godot3d/scripts/worldbox_life_sim.gd'
       - 'game-source/godot3d/scripts/autonomous_village_director.gd'
       - 'game-source/godot3d/scripts/world_main.gd'
@@ -73,6 +76,20 @@ jobs:
             echo 'BLOCKED: actual Godot simulator failed native regression'; exit 1
           fi
           echo "PASS_CAC_NPC_BUILDS_ACTUAL_3D_WORLD_FROM_RAW_MATERIALS_NOT_FACADE_IMAGES"
+      - name: Test OFFLINE NPC intention governance against actual living WorldBox stock
+        shell: bash
+        run: |
+          set -euo pipefail
+          timeout 130s "$GODOT" --headless --path game-source/godot3d \
+            --script res://tests/local_npc_ai_intent_smoke.gd > qa-results/npc-material-local-ai-intent.log 2>&1 || {
+              cat qa-results/npc-material-local-ai-intent.log
+              exit 1
+            }
+          cat qa-results/npc-material-local-ai-intent.log
+          grep -Fq 'PASS CAC LOCAL QWEN NPC AI INTENT' qa-results/npc-material-local-ai-intent.log
+          if grep -Eq 'SCRIPT ERROR:|Parse Error:|Assertion failed|ERROR:' qa-results/npc-material-local-ai-intent.log; then
+            echo 'BLOCKED: unauthorized AI simulation outcome'; exit 1
+          fi
       - name: Preserve native scene traces, NEVER claim old phone OTA is updated
         if: always()
         uses: actions/upload-artifact@v4
