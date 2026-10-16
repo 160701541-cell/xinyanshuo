@@ -10,6 +10,10 @@ on:
       - 'game-source/godot3d/scripts/worldbox_life_sim.gd'
       - 'game-source/godot3d/scripts/autonomous_village_director.gd'
       - 'game-source/godot3d/scripts/world_main.gd'
+      - 'game-source/godot3d/scripts/world_resource_seeder.gd'
+      - 'game-source/godot3d/scripts/world_resource_visuals.gd'
+      - 'game-source/godot3d/tests/resource_world_seeding_smoke.gd'
+      - 'game-source/godot3d/tests/resource_conservation_smoke.gd'
       - 'game-source/godot3d/tests/npc_material_construction_smoke.gd'
       - '.github/workflows/canglan-npc-material-build-qa.yml'
   workflow_dispatch:
@@ -44,6 +48,20 @@ jobs:
               cat qa-results/npc-world-real-godot-import.log; exit 1;
             }
           if grep -E 'SCRIPT ERROR:|Parse Error:|Failed to load script' qa-results/npc-world-real-godot-import.log; then exit 1; fi
+      - name: Natural resource conservation and world seeding in one Godot import
+        shell: bash
+        run: |
+          set -euo pipefail
+          timeout 130s "$GODOT" --headless --path game-source/godot3d \
+            --script res://tests/resource_conservation_smoke.gd > qa-results/resource-conservation.log 2>&1 || {
+              cat qa-results/resource-conservation.log; exit 1;
+            }
+          grep -Fq 'PASS_RESOURCE_CONSERVATION_1000_TICKS_NO_MINT_NO_DOUBLE_DELIVERY' qa-results/resource-conservation.log
+          timeout 130s "$GODOT" --headless --path game-source/godot3d \
+            --script res://tests/resource_world_seeding_smoke.gd > qa-results/resource-world-seeding.log 2>&1 || {
+              cat qa-results/resource-world-seeding.log; exit 1;
+            }
+          grep -Fq 'PASS_WORLD_RESOURCE_SEEDING_PREEXISTING_NODES' qa-results/resource-world-seeding.log
       - name: Existing physical life simulation invariants
         shell: bash
         run: |
@@ -95,6 +113,8 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: Canglan-NPC-builds-material-3D-native-QA-${{ github.sha }}
-          path: qa-results/npc-material-*.log
+          path: |
+            qa-results/npc-material-*.log
+            qa-results/resource-*.log
           if-no-files-found: warn
           retention-days: 14
