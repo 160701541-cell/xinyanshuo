@@ -24,14 +24,35 @@ var _player_marker: Node2D
 var _outside_image_present := false
 var _inside_image_present := false
 
+func _full_screen_area() -> Vector2:
+	# Layout can start before viewport sizing in exported/headless APK fixtures.
+	# The parent HD2D panel carries the usable gameplay display bounds.
+	var owner: Control = get_parent() as Control
+	if owner != null and owner.size.x >= 800.0 and owner.size.y >= 480.0:
+		return owner.size
+	var viewport_area: Vector2 = get_viewport().get_visible_rect().size
+	if viewport_area.x >= 800.0 and viewport_area.y >= 480.0:
+		return viewport_area
+	return Vector2(1280.0, 720.0) # QA/headless landscape safety fallback.
+
+func _process(_delta: float) -> void:
+	# Do not allow an anchor-layout notification to squash the displayed
+	# indoor art to 0x0 after it has successfully been loaded.
+	var desired := _full_screen_area()
+	if size.distance_squared_to(desired) > 1.0:
+		size = desired
+		if _room != null:
+			_room.size = desired
+			for part in _room.get_children():
+				if part is TextureRect or part is ColorRect:
+					part.size = desired
+
 func install(world: Node2D, status: Label) -> void:
 	_world = world
 	_status = status
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
-	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	# Anchor-only setup kept the room at 0×0 in the REAL Godot viewport
-	# even while HUD labels rendered, so its PNG did not appear.
-	size = get_viewport().get_visible_rect().size
+	set_anchors_preset(Control.PRESET_TOP_LEFT)
+	size = _full_screen_area()
 	_build_exterior()
 	_build_interior()
 	_build_entrance_controls()
@@ -93,14 +114,14 @@ func _build_interior() -> void:
 	_room = Control.new()
 	_room.name = "CL_HOUSE_0001_InteriorScene"
 	add_child(_room)
-	_room.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	_room.size = get_viewport().get_visible_rect().size
+	_room.set_anchors_preset(Control.PRESET_TOP_LEFT)
+	_room.size = size
 	_room.mouse_filter = Control.MOUSE_FILTER_STOP
 	var floor := ColorRect.new()
 	floor.name = "FallbackWoodFloor"
 	floor.color = Color("#977d61")
 	_room.add_child(floor)
-	floor.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	floor.set_anchors_preset(Control.PRESET_TOP_LEFT)
 	floor.size = _room.size
 	var tex := _read_texture(INTERIOR)
 	if tex != null:
@@ -110,7 +131,7 @@ func _build_interior() -> void:
 		art.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 		art.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
 		_room.add_child(art)
-		art.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+		art.set_anchors_preset(Control.PRESET_TOP_LEFT)
 		art.size = _room.size
 		_inside_image_present = true
 	else:
