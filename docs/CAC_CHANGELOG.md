@@ -811,3 +811,10 @@ Godot 4.4.1对从**原签名Android APK176**提取的实际`update_protocol.gdc`
 用户提供真实GitHub运行 `38964273466`、job `117186774293` 和手机截图；连接读取的真实日志显示**步骤1~10全部通过**，包括旧APK176 Godot原主场景+26件Kenney CC0素材的3D检查、原房屋进出回归、rev179 PCK（21066816字节、SHA256 `b1317883b1f884264b6a4a6e063683c2fb0cb324d13c81003564a8ff84a6a4e1`）、**原版生产RSA签名验签PASS**。仅**第11步GitHub push失败**：`! [rejected] HEAD -> main (fetch first)`，因为CI开始后还有其他研发提交推高了公开main；Git没有权限将旧基础的发布commit直接快进推送。不是密钥缺失、场景解析失败或PCK无效。
 
 已修改`.github/workflows/canglan-apk176-rev179-real3d-signed.yml`，提交`8f1581cadf93e3789dade9ae79af187fccf15b68`：签名候选通过后，发布器循环抓取origin/main，要求远端**仍为rev178且没有rev179 PCK**（否则阻止覆盖）；再仅对**已验证、内容不变的正式签名文件提交**做`git rebase origin/main`并push，最多3次有限重试。若新版由其他并行发布者先上线则立即停止，不乱覆盖。该流水线文件受push自身路径过滤，会自动触发新一轮构建。仍需核实本轮新run实际结论和正式网站rev179，不可仅凭提交成功称手机更新。
+
+
+## 2026-10-17 / REL-179-PUBLISHED-IN-PUBLIC-MAIN / 原APK176签名真实3D预览rev179已进入公开仓库正式频道
+
+本轮重新读取**实际公开仓库** `android-preview/latest.json`，正式通道已由rev178推进为**rev179**，`minimum_android_code=maximum_android_code=1176`，包名仍受原APK176门禁约束。GitHub仓库存在`android-preview/canglan-content-rev-179.pck`，最新发行提交 `74ad36cda135aab71e209deb106a0a6e4a2ccb7a`，提交标题为`release(official): APK176 RSA signed real-3D CC0 preview rev179 [skip ci]`，说明上轮git non-fast-forward冲突修复后**PCK与manifest已真正提交正式main**。manifest: SHA-256 `b1317883b1f884264b6a4a6e063683c2fb0cb324d13c81003564a8ff84a6a4e1`；大小`21066816`字节；地址`https://160701541-cell.github.io/xinyanshuo/android-preview/canglan-content-rev-179.pck`。该SHA与上轮实际CI `38964273466` 的原版RSA验签成功、完整Godot QA成功的签署候选一致。**源码仓库的正式发布已经完成。**
+
+**严格界限**：本轮无法通过可用工具对GitHub Pages站点完成独立HTTP可达性与下载内容验证，尚无用户手机完成下载/装载的截图，不能冒充安卓实机验收完成。可立即请用户打开**原已安装的《苍岚》**内置更新器检查是否发现rev179（无需重装APK、勿清存档）。预期此次仅为可返回的Kenney CC0树木+石头3D预览，未实现完整NPC生态接管原版主世界。如手机仍检测不到rev179，下一优先级应审查Pages发布延时/缓存及客户端版本通道，而不是重复签发。
