@@ -836,3 +836,17 @@ Godot 4.4.1对从**原签名Android APK176**提取的实际`update_protocol.gdc`
 本轮实改`.github/workflows/canglan-official-pages-ota-deploy.yml`：`cdbc1e4039d9351376828d7b3f4d132fb2b2a819`加入对GitHub Pages官方REST元信息的读取，把source/build_type、安全HTTP状态、不含任何令牌的配置诊断存于`qa-results/rev179-pages-configuration.json`，并纳入Actions artifact；`1c899cd45dfa354581d32a736460c0ded7b1a70c`在检测到旧`build_type=legacy`时尝试通过公开仓库自身`pages:write`授权REST切换为`build_type=workflow`，若平台拒绝则给明确的Settings→Pages→Source=GitHub Actions阻塞提示。此流程之后会继续以官方Pages Artifact发布静态网站与rev179 PCK，再独立从实际CDN验证固定RSA、公网manifest、SHA及Range。保留原密钥与旧存档不动。
 
 **真实性声明**：本轮确认的仍只是代码已提交；当前GitHub集成未暴露按workflow名查询最新运行的操作，且当前容器无法解析github.io；尚无新工作流成功日志、Pages HTTP成功结果或手机实测。因此仍不能标记官网rev179已上线。用户可提供最新Official Website and APK176 OTA - Deploy to Pages运行URL，优先直接读取作业日志继续消除具体阻塞。
+
+
+## 2026-10-17 / OTA179-PAGES-FULL-RECOVERY / 自行定位与实测rev179 CDN可达性——已验收发布链，等待手机
+
+用户不再愿意提供GitHub链接，要求“自己看”。本轮首次通过已授权公开仓库GitHub REST GET工作流列表精确找到最新运行，不再让用户复制Actions URL。
+
+**实际证据**：
+- `38966384092` / job `117193808589`：先前追加的“检查并自动切换Pages部署源”流程失败，日志显示GitHub Pages当前是`build_type=legacy`、source=`main:/`，API切换被拒绝。但事实证明这**不是用户必须手动修复的阻塞**：更早的`38965376371` / job `117190433146` 已使用GitHub Pages官方Actions部署方法成功，在runner公网实测 rev179 RSA/PCK/Range 全部通过。
+- `38966415561`：原Pages自动`pages build and deployment`最终`success`，说明旧`main:/`发布链本身能成功发布，之前多个连续提交造成了流水线取消及缓存时序混乱。
+- 因此清除不必要的legacy source迁移步骤，**恢复已经有真实成功记录的Pages直部署逻辑**，提交`b000f49681f1d468601f5e60a5cd1d17bf14df60`。
+- 同时主动重试旧失败的公网诊断job `117189407985`，新的job `117195219763` / run `38965071226` **completed/success**：公网 `latest.json` 真实返回`revision=179`，原APK176固定RSA验签成功；公网PCK长`21,066,816`字节，SHA256 `b1317883b1f884264b6a4a6e063683c2fb0cb324d13c81003564a8ff84a6a4e1`，HTTP Range返回206，公网缓存头`Cache-Control: max-age=600`。
+- 恢复后官方官网部署新run `38966857594` / job `117195356245` **completed/success**；日志明确`PASS_PAGES_SITE_CONTAINS_SIGNED_ORIGINAL_OTA 179`、`Reported success!`及`PASS_REV179_PUBLIC_HTTPS_RSA_SHA256_AND_RANGE`。**可确定远程正式官网已是rev179且可完整下载和断点续传**，不必重签补丁，不必切换Pages Source，也无需再跑Godot构建。
+
+**剩余唯一不可代替环节**：用户原已安装的Android APK176应用内点击检查更新并实测下载/装载，仍待现场结果。之前用户的浏览器看到178时，官网发布可能尚未完成，且文件声明`max-age=600`（最多10分钟公共缓存），不说明当前仍是178。可用手机浏览器带查询参数`?v=179`单独观察源站rev179；游戏固定manifest URL是否有额外Android HTTP缓存需以新一次原版应用内检查结果判断。无论如何，绝不可宣称手机验收通过。
