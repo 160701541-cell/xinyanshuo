@@ -9,6 +9,8 @@ var rules: RefCounted
 var random := RandomNumberGenerator.new()
 var _observer: Node3D
 var _target := Vector3.ZERO
+var _external_job_destination: Vector3 = Vector3.ZERO
+var _externally_assigned_job: bool = false
 var _walk_clock: float = 0.0
 var _decide_clock: float = 0.0
 var _body_visual: Node3D
@@ -151,7 +153,9 @@ func _process(delta: float) -> void:
 		set_process(false)
 		return
 	_decide_clock -= delta
-	if _decide_clock <= 0:
+	if _externally_assigned_job:
+		_target = _external_job_destination
+	elif _decide_clock <= 0:
 		_decide_clock = random.randf_range(4.0,8.0)
 		if _is_resting:
 			_target = home
@@ -180,6 +184,23 @@ func _process(delta: float) -> void:
 			_generated_role_visual.position.y = lerpf(_generated_role_visual.position.y,0.0,clampf(delta*6,0.0,1.0))
 		_citizen_state["task"] = "resting" if _is_resting else "waiting"
 	position.y = float(rules.call("height_at",position.x,position.z))
+
+func assign_work_destination(location: Vector3) -> void:
+	_external_job_destination = location
+	_externally_assigned_job = true
+	_target = location
+	_decide_clock = 0.0
+	set_process(true)
+
+func cancel_work_destination() -> void:
+	_externally_assigned_job = false
+	_target = home
+
+func reached_work_destination(radius: float=1.1) -> bool:
+	if not _externally_assigned_job:
+		return false
+	return Vector2(position.x,position.z).distance_to(
+		Vector2(_external_job_destination.x,_external_job_destination.z))<=radius
 
 func set_hour(hour: float) -> void:
 	_is_resting = hour < 6.0 or hour > 20.0
