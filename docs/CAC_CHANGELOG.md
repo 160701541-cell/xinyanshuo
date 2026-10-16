@@ -571,3 +571,17 @@ Godot 4.4.1对从**原签名Android APK176**提取的实际`update_protocol.gdc`
 - 新 `docs/NPC_WORLD_CONSTRUCTION.md` 固化后续蓝图、职业、世界进化、有限资源、建造失败/中止条件与存档规则。
 
 **发行状态**：目前这些新的材料/建筑工代码和WorldX纹理是公开仓库新增研发布局，**尚未为安装在玩家手机里的APK176制作合法兼容的新版rev179 PCK、更未通过原版3D主场景/移动端实机验收**；已发布rev178不能视为这次NPC建设系统已经进入原版。不能建议重装独立测试APK。下一轮要让真正WorldX材料经过风格/无缝审核并成为3D纹理，再解决原版兼容增量补丁，然后签名热更新。
+
+## 2026-10-17 / CAC-LOCAL-NPC-CC0 / 用户要求离线AI驱动NPC思想、弃自造模型改用免费成熟3D资产
+
+**最新用户指令：** NPC思想接入本地模型；不要自己造人物/村庄3D模型。Kenney、Quaternius、Poly Pizza优先免费可商用且风格可统一的成熟资源，直接导入Godot。WorldX只生成独立材料纹理，NPC通过真实世界物资经济自主建造。
+
+**真实代码和资源（只用公开仓库 `160701541-cell/xinyanshuo`）：**
+- `game-source/godot3d/opensource/cc0_asset_catalog.json`：Kenney CC0城堡/自然、Quaternius CC0免费Standard模块与角色的锁定Git Blob SHA、固定来源commit、许可和原网站。Poly Pizza不同模型需逐个核实CC0/CC-BY，不随便当成免署名CC0。
+- `tools/asset_factory/import_cc0_model_packs.py`：无AI生成/无私库，真实HTTPS下载已存在的GLB、gltf、bin、PBR贴图，逐字节校验hash和gltf依赖，生成准确来源记录。
+- `game-source/godot3d/scripts/cc0_asset_bridge.gd` + `tests/cc0_existing_assets_smoke.gd`：让Godot读取真实12个现成3D模型并验证网格、来源和节点，候选视觉/动画还需后续QA。实际CI `38948880609`首批**SUCCESS**：10模型22文件成功放进游戏仓库（提交`24249ff`）；后续`38949607844`**SUCCESS**：扩增为12模型24文件，含Quaternius真实骨骼人物和有12条原始动画的Knight GLB。旧的30MB级PBR贴图将来需压缩/优化安卓内存和远端补丁量。
+- `scripts/npc_building_system.gd`：已在真实Godot3D施工工地和实体库存流程中使用Kenney木料与石块真正网格，Quaternius墙/瓦模块作为视觉候选，不会凭空生成完成房屋，NPC仍然完成伐木/采石/加工/搬运/四阶段施工。
+- `scripts/npc_intent_policy.gd` + `scripts/local_ai_service.gd` 已具备基于每位NPC的精力、饥饿、职位、粮食、施工状态的离线AI候选意向与现实规则验收，遵守单一模型串行推理、不经审查不允许直接生金币/虚造建造。实际native C++逻辑修正 `canglan_local_llm.h/.cpp`：新增单独`intent_mode`，不再让“只许输出对话”的强制system prompt压制NPC ACTION=行为判断。其Linux真C++编译任务 `.github/workflows/canglan-offline-npc-native-linux-qa.yml` 已触发，但**只有编译成功才能说原生库编译通过；安卓ARM64实机推理未做**。
+- `AGENTS.md`已写最新P0：禁止自造3D游戏美术模型，优先Kenney/Quaternius CC0、Poly Pizza逐个许可；AI仅拥有NPC意向、世界库存/建筑权威独立，严格区分原版热更新。并在 `.github/workflows/canglan-public-qa.yml`移除重新生成程序低模屋/人偶的工作流步骤，改为现成CC0素材和已有经校验精灵。
+
+**当前实际交付**：以上是真实的公开Godot3D研发源码/材质/模型和本地AI行为代码，**尚未集成进已签名原APK176/rev178的正式热更新包，也未进行用户手机上的离线GGUF和人物动画验收**。不能把公开3D工程测试冒充旧APK热更新。原版APK不存在已确认的llama.cpp ARM64组件；升级原版安卓底层库需单独验证是否真正需要覆盖APK，只能沿用旧包名/签名和存档，不能推荐重新安装另一应用。详细进展与来源见 `docs/NPC_OFFLINE_AI_CC0_ASSET_PIPELINE.md`。
