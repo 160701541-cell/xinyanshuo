@@ -20,17 +20,18 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-      - name: Build original open-source 3D GLB catalog before engine import
+      - name: Stage previously made lawful NPC sprites only - DO NOT GENERATE 3D MODELS
         shell: bash
         run: |
           set -euo pipefail
-          python -m pip install -r game-source/godot3d/tools/requirements-models.txt
-          python game-source/godot3d/tools/generate_glb_pack.py \
-            --out game-source/godot3d/assets/generated --seed 20261016
-          python game-source/godot3d/tests/test_generated_glb.py \
-            --root game-source/godot3d/assets/generated \
-            | tee /tmp/canglan3d-model-audit.json
-          test -s /tmp/canglan3d-model-audit.json
+          mkdir -p game-source/godot3d/assets/generated
+          python3 game-source/godot3d/tools/stage_existing_worldx_npcs.py \
+            --out game-source/godot3d/assets/generated
+          test -s game-source/godot3d/assets/generated/npc/worldx/plain_civilian.png
+          # Kenney/Quaternius CC0 models are ALREADY committed to the public
+          # source. Never re-run the retired procedural mannequin/house factory.
+          test -s game-source/godot3d/assets/free_cc0/kenney/3d/castle/tree-log.glb
+          test -s game-source/godot3d/assets/free_cc0/quaternius/glTF/Wall_Plaster_Straight.gltf
       - name: Ensure reviewed public game source exists
         run: |
           set -euo pipefail
@@ -72,14 +73,13 @@ jobs:
             echo 'BLOCKED: scene screenshot logged an engine error'
             exit 1
           fi
-      - name: Upload actual procedural GLBs and QA evidence
+      - name: Upload real licensed-model Godot QA evidence only
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: canglan-strict-qa-${{ github.sha }}
           path: |
             qa-logs/
-            game-source/godot3d/assets/generated/
           compression-level: 2
           if-no-files-found: warn
           retention-days: 7
