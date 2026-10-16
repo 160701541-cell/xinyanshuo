@@ -585,3 +585,15 @@ Godot 4.4.1对从**原签名Android APK176**提取的实际`update_protocol.gdc`
 - `AGENTS.md`已写最新P0：禁止自造3D游戏美术模型，优先Kenney/Quaternius CC0、Poly Pizza逐个许可；AI仅拥有NPC意向、世界库存/建筑权威独立，严格区分原版热更新。并在 `.github/workflows/canglan-public-qa.yml`移除重新生成程序低模屋/人偶的工作流步骤，改为现成CC0素材和已有经校验精灵。
 
 **当前实际交付**：以上是真实的公开Godot3D研发源码/材质/模型和本地AI行为代码，**尚未集成进已签名原APK176/rev178的正式热更新包，也未进行用户手机上的离线GGUF和人物动画验收**。不能把公开3D工程测试冒充旧APK热更新。原版APK不存在已确认的llama.cpp ARM64组件；升级原版安卓底层库需单独验证是否真正需要覆盖APK，只能沿用旧包名/签名和存档，不能推荐重新安装另一应用。详细进展与来源见 `docs/NPC_OFFLINE_AI_CC0_ASSET_PIPELINE.md`。
+
+## 2026-10-17 / CAC-NPC-LOCAL-AI-CC0-001 / 改用真实CC0素材并让NPC拥有受约束的本地AI决策
+**新要求**：用户禁止继续生成低质量自建模型和AI整屋贴片。优先采用Kenney、Quaternius、Poly Pizza等已存在且许可可逐项审计的免费可商用模型；世界真正由各NPC根据供需/图纸/材料/劳动建设。NPC离线模型只负责思考，世界规则负责审查和执行。
+**真正提交且生效的源码**：
+1. game-source/godot3d/opensource/cc0_asset_catalog.json 和 tools/asset_factory/import_cc0_model_packs.py，新增固定Git SHA和Blob SHA的Kenney/Quaternius民居结构件、树木、门窗道具与普通人形/带12个预制原动画片段的骑士GLB。Poly Pizza必须按模型核对CC0/CC-BY署名，不贸然导入其他人版权内容。
+2. 公开仓库CC0实际导入CI 38949607844 **SUCCESS**：下载24个真实文件、逐一比对原Git blob校验、通过Godot 4.4.1原生编辑器导入并真实实例化12个资源入口，确实Git commit回唯一公开仓库 game-source/godot3d/assets/free_cc0/，非只写清单；约28.8MB源文件及依赖。
+3. game-source/godot3d/scripts/cc0_asset_bridge.gd 暴露12类现成真实3D模型；npc_building_system.gd 在消耗实际材料、工人背负到工地并完成地基/支架/墙/屋顶后才按部位装配外部CC0构件，不凭空刷现成房子，旧实体ID与成本/施工规则不变。
+4. npc_agent.gd 对Guard优先尝试真正的Quaternius可动角色，强制存在Idle+Walk AnimationPlayer才启用；否则仍使用旧动画素材占位，不许静止人偶模拟走路。world_main.gd新增实际卫卒职业。已下载的Quaternius基础普通人形为真实绑定模型但尚无自带动画，不谎称80个居民全都已用骨骼模型。
+5. local_ai_service.gd 增加与玩家交谈相隔离的 ask_npc_intent 和 npc_intent 异步回调；world_main.gd 将在本地模型真正可用时选择附近一名非忙碌NPC，每75秒最多请求一次，80个角色复用一份Qwen3-0.6B GGUF + llama.cpp，引擎未装/权重未通过SHA校验时不假装AI可用。
+6. 新增 npc_intent_policy.gd 严格允许 eat、rest、inspect_stock、inspect_site、keep_working。模型只能提出意图：权限验证依据NPC ID、真实职业/村落/体力/真实粮食和施工进度，拒绝任意脚本、恶意文字凭空创造资源、忙碌工人被任意改调。
+**QA结果**：CC0导入真实Godot QA 38949607844 SUCCESS；NPC建造/本地AI逻辑真实Godot测试 38949995322 SUCCESS（包括粮食真扣账、休息数值边界、移动到仓库须经过实际位置、角色身份隔离、不允许直接给物资）；综合3D Godot QA 38950055947 SUCCESS。Android原生llama.cpp编译 38950144223 本次记录时仍在运行，不能写成功。
+**严格分辨交付**：这批为唯一公开GitHub仓库的新3D源工程和经过实测的已导入CC0文件，**不是**原已安装APK176的签名rev179热更新；未做Android本地模型实机运行、原APK兼容、存档回归或实机温控。未来如首次导入原版需要额外的Android ARM64原生推理组件，必须使用原包合法签名作一次底层APK组件升级，随后业务脚本和资源更新依旧走游戏内热更新，禁止独立APK冒充正式更新。
