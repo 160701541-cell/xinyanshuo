@@ -1,0 +1,64 @@
+name: Canglan WorldX Courtyard Single Image
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: canglan-worldx-courtyard-single
+  cancel-in-progress: false
+jobs:
+  generate-one:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      IMAGE_GEN_API_KEY: ${{ secrets.IMAGE_GEN_API_KEY }}
+      IMAGE_GEN_BASE_URL: ${{ vars.IMAGE_GEN_BASE_URL }}
+      IMAGE_GEN_MODEL: ${{ vars.IMAGE_GEN_MODEL }}
+      STEP1_MAX_RETRIES: "0"
+      STEP1_GENERATE_TIMEOUT_MS: "150000"
+      STEP1_REVIEW_TIMEOUT_MS: "45000"
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check image provider credentials
+        run: |
+          if [ -z "$IMAGE_GEN_API_KEY" ]; then
+            echo "::error::IMAGE_GEN_API_KEY repository secret is not configured. No image was generated."
+            exit 1
+          fi
+      - name: Checkout WorldX generator
+        uses: actions/checkout@v4
+        with:
+          repository: YGYOOO/WorldX
+          path: worldx-upstream
+      - name: Patch WorldX native map generator prompt
+        run: python3 tools/asset_factory/patch_worldx_canglan_courtyard.py --worldx-root worldx-upstream
+      - name: Install WorldX generator dependencies
+        working-directory: worldx-upstream/generators
+        run: npm ci --ignore-scripts
+      - name: Generate one courtyard using WorldX's native image client
+        working-directory: worldx-upstream/generators
+        run: |
+          mkdir -p ../../courtyard-output
+          node --input-type=module <<'NODE'
+          import { writeFileSync } from 'node:fs';
+          import { generateImage } from './map/src/models/gemini-flash-img.mjs';
+          import { loadPrompt } from './map/src/utils/prompt-loader.mjs';
+          const prompt = loadPrompt('step1-map-generation.md', {
+            userPrompt: '苍岚高清国风四合院，单张独立建筑素材试样',
+            additionalConstraints: '画风必须统一，不要像素风、Q版、90度俯视。',
+          });
+          const png = await generateImage(prompt, {aspectRatio: '1:1', imageSize: '2K', logStep: 'Canglan courtyard batch 01', requestTimeoutMs: 150000});
+          if (!png || png.length < 50000 || png.subarray(0,8).toString('hex') !== '89504e470d0a1a0a') {
+            throw new Error('Invalid or missing generated PNG');
+          }
+          writeFileSync('../../courtyard-output/courtyard_source.png', png);
+          writeFileSync('../../courtyard-output/generation_meta.json', JSON.stringify({generator:'WorldX native gemini-flash-img.mjs',prompt_version:'canglan-courtyard-batch01',status:'generated_not_qa_approved',bytes:png.length},null,2));
+          console.log('WORLDX_COURTYARD_GENERATED', png.length);
+          NODE
+      - name: Upload generated source only
+        uses: actions/upload-artifact@v4
+        with:
+          name: Canglan-WorldX-Courtyard-Batch01-Unreviewed
+          path: courtyard-output/
+          if-no-files-found: error
+          retention-days: 14
