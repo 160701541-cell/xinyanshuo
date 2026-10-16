@@ -88,11 +88,12 @@ jobs:
               exit 1
             }
           tail -90 qa-results/live-main-room-runtime.log
-          grep -Fq 'PASS_APK176_ACTUAL_MAIN_INSTANTIATED_AND_HOUSE_ENTER_EXIT_WITH_REAL_IMAGES' qa-results/live-main-room-runtime.log
-          if grep -Eq 'SCRIPT ERROR:|Parse Error:|ERROR: Failed to load script|Failed loading resource' qa-results/live-main-room-runtime.log; then
-            echo '::error::Full original gameplay scene threw script/resource errors despite nominal PASS'
+          grep -Fq 'OBSERVED_APK176_MAIN_INSTANCE_WITH_PORTAL_AND_IMAGES_PENDING_ENGINE_ERROR_AUDIT' qa-results/live-main-room-runtime.log
+          if grep -Eq 'SCRIPT ERROR:|Parse Error:|ERROR:|Failed loading resource' qa-results/live-main-room-runtime.log; then
+            echo '::error::BLOCKED_FULL_MAIN_RUNTIME: native Terrain3D GDExtension and/or original gameplay errors; observed component transitions alone do not qualify as a full PASS'
             exit 1
           fi
+          echo 'PASS_APK176_ACTUAL_MAIN_INSTANTIATED_NO_ENGINE_ERRORS_WITH_REAL_HOUSE'
       - name: Upload full diagnostic logs (not a phone release)
         if: always()
         uses: actions/upload-artifact@v4
