@@ -2,6 +2,7 @@ extends Node3D
 ## Procedural 3D citizen, identifiable/scheduled, rendered as a temporary humanoid
 ## mannequin. NOT a rigged/face-animation or fully autonomous AI NPC.
 const TextAvatar = preload("res://scripts/npc_text_avatar.gd")
+const CC0Models = preload("res://scripts/cc0_asset_bridge.gd")
 # CAC-SPRITE-001: existing WorldX assets become real Sprite3D character looks.
 # Text labels/unique 3D selection volumes and canonical data remain.
 const TEXT_ONLY_TEST_MODE := true
@@ -21,6 +22,12 @@ var text_marker: Node3D
 var legacy_2d_sprite: Sprite3D
 var _sprite_move_frame: float = 0.0
 var _sprite_visual_kind: String = ""
+var _external_cc0_character: Node3D
+var _external_cc0_player: AnimationPlayer
+var _cc0_movement: String = ""
+var _cc0_idle: String = ""
+var _cc0_last_active: String = ""
+
 var civilian_name: String = ""
 var sim_profile: Dictionary = {}
 const ROLE_NAMES := ["农人","商贾","铁匠","工匠","学徒","旅人","卫卒","医者","书生","茶客"]
@@ -73,7 +80,64 @@ func setup(id: String,role_index: int,spawn: Vector3,world_rules: RefCounted,
 	else:
 		_build_body(role_index)
 
+func _find_animation_by_keyword(mixer: AnimationPlayer, keywords: Array[String]) -> String:
+	for clip in mixer.get_animation_list():
+		var label: String = String(clip).to_lower()
+		for keyword in keywords:
+			if label.contains(keyword):
+				return String(clip)
+	return ""
+
+func _try_cc0_guard_character(job: String) -> bool:
+	# Do NOT show a frozen rigged mannequin. Only display a licensed 3D
+	# character when a real pre-authored idle + locomotion clip is present.
+	if job!="guard":
+		return false
+	if _external_cc0_character!=null:
+		return true
+	if not CC0Models.is_installed("guard_rig"):
+		return false
+	var imported: Node3D = CC0Models.instantiate_asset("guard_rig",self,Vector3.ZERO)
+	if imported==null:
+		return false
+	var nodes: Array[Node] = imported.find_children("*","AnimationPlayer",true,false)
+	if nodes.is_empty():
+		imported.queue_free()
+		return false
+	var mixer: AnimationPlayer = nodes[0] as AnimationPlayer
+	var walking: String = _find_animation_by_keyword(mixer,["walk","run"])
+	var idling: String = _find_animation_by_keyword(mixer,["idle","stand","breath"])
+	if walking.is_empty() or idling.is_empty():
+		imported.queue_free()
+		return false
+	_external_cc0_character=imported
+	_external_cc0_player=mixer
+	_cc0_movement=walking
+	_cc0_idle=idling
+	imported.position.y=0
+	imported.scale=Vector3.ONE
+	_external_cc0_player.play(_cc0_idle)
+	_cc0_last_active="idle"
+	set_meta("art_status","REAL_CC0_RIGGED_ANIMATED_QUATERNIUS")
+	set_meta("model_source",CC0Models.PIECES["guard_rig"])
+	set_meta("model_license","CC0-1.0")
+	set_meta("model_not_ai_generated",true)
+	if legacy_2d_sprite!=null:
+		legacy_2d_sprite.visible=false
+	return true
+
+func _play_cc0_movement(is_moving: bool) -> void:
+	if _external_cc0_player==null:
+		return
+	var state: String = "walking" if is_moving else "idle"
+	if state==_cc0_last_active:
+		return
+	_cc0_last_active=state
+	_external_cc0_player.play(_cc0_movement if is_moving else _cc0_idle)
+
 func _apply_old_sprite_for_job(job: String) -> void:
+	if _try_cc0_guard_character(job):
+		return
 	if not USE_EXISTING_WORLDX_SPRITES:
 		return
 	var kind: String = String(VISUAL_JOB_MAP.get(job,"plain_civilian"))
@@ -225,7 +289,9 @@ func _process(delta: float) -> void:
 	if text_marker!=null:
 		text_marker.visible = proximity < 85.0
 	if legacy_2d_sprite!=null:
-		legacy_2d_sprite.visible = proximity < 85.0
+		legacy_2d_sprite.visible = proximity < 85.0 and _external_cc0_character==null
+	if _external_cc0_character!=null:
+		_external_cc0_character.visible = proximity < 65.0
 	if proximity > 190.0 and not _externally_assigned_job:
 		set_process(false)
 		return
@@ -245,6 +311,7 @@ func _process(delta: float) -> void:
 		position += direction * minf(delta_target.length(),delta*_movement_speed)
 		rotation.y = atan2(direction.x,direction.z)
 		_walk_clock += delta * 6.7
+		_play_cc0_movement(true)
 		if legacy_2d_sprite!=null:
 			_sprite_move_frame+=delta*8.0
 			legacy_2d_sprite.frame = 6 + posmod(int(_sprite_move_frame),6)
@@ -260,6 +327,7 @@ func _process(delta: float) -> void:
 			_right_arm.rotation.x = sin(_walk_clock)*0.35
 		_citizen_state["task"] = "rest_home" if _is_resting else "walking"
 	else:
+		_play_cc0_movement(false)
 		if legacy_2d_sprite!=null:
 			legacy_2d_sprite.frame=18
 		if _left_leg != null:
