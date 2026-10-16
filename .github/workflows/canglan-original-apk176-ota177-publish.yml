@@ -1,11 +1,7 @@
 name: Canglan ORIGINAL APK176 - Real Signed rev177 OTA Deployment
+# Obsolete/standalone path: manual run only; do not replace installed-game OTA.
 on:
   workflow_dispatch:
-  push:
-    branches: [main]
-    paths:
-      - '.github/workflows/canglan-original-apk176-ota177-publish.yml'
-      - 'tools/publish_original_rev177_ota.py'
 permissions:
   contents: write
   actions: read
