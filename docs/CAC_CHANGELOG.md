@@ -770,3 +770,14 @@ Godot 4.4.1对从**原签名Android APK176**提取的实际`update_protocol.gdc`
 - `.github/workflows/canglan-apk176-rev179-real3d-signed.yml` 提交 `164146d17ad2f7bf088012338bc44701057043e3`，并在 `f9f13ab4bcca05f606bbb8b8c0ca3d8c8b36dd03` 加固：一条真实原APK176流水线恢复旧版导出资源、确认Terrain3D版本、构建原版PCK、执行真实原APK176 3D预览及旧正房进出回归、生成未签候选、用已恢复的原RSA密钥签发并用原公钥验签，**只有全部通过才发布rev179到同一个正式Android更新频道**。旧rev178不会被无条件重签，新rev179只有校验合格才替换，不发布独立APK。新工作流按变更自动触发且取消被更新替代的构建。
 
 **实际发布状态仍须以公开GitHub Actions的运行结论及`android-preview/latest.json`版本为准**。本轮只确认提交成功，当前连接没有列出新工作流的run ID和完成结果，不允许称rev179已发布。Android用户实机启动、更新UI加载及存档验收仍未完成。即便rev179经原APK176运行QA最终发布，用户看到的先是“可退出的Kenney CC0真3D树林/矿石观察室”，不是完整NPC生态与新3D大世界；后续真实世界整合仍需持续推进。
+
+
+## 2026-10-17 / REV179-QA-SAFETY-008 / 原版3D候选的真实PCK字节审计与返回交互修复
+
+本批没有堆新场景；聚焦之前已提交的原APK176真3D rev179发布链潜在发布事故：
+
+1. 新增`tools/verify_apk176_rev179_3d_pck.py`（提交 `408c8f3dc2674e7acbeef85d2c57d5b3b9f3c215`）：逐项读取Godot 4.4 PCK v2资源索引和校验资源MD5，确认仍指向**原APK176编译主场景**、包含原版返回/房屋脚本及真3D脚本、两份Kenney GLB真实二进制头与长度正确，并与仓库已授权源模型逐字节SHA-256匹配。阻止把LFS指针/损坏GLB/2D假场景签名发布。
+2. 原APK176 rev179流水线已在Godot引擎运行前加入这项校验（提交 `aa7674ced8584739fa74f1cd17443015d31e393a`）；校验失败直接停止，不进行签名和更新清单覆盖。
+3. 发现旧rev178 HD2D CanvasLayer在新3D预览关闭后仍遮住原游戏世界。现3D预览就绪时先关闭旧HD2D界面但**保留旧节点与功能**，退出预览时真正露出原3D世界（提交 `c03a425fe26c18ad2fb9f1a23db25cdfb945a7b9`）；新增原APK176 Godot用例断言旧2D界面未挡住3D（提交 `bbdb311f2e9c3b9e896151e5f73d5de49f1edcb4`）。
+
+**真实状态**：源码已在公开GitHub提交；本次GitHub连接未返回新rev179流水线的实际跑完结论，未取得全量Godot runtime输出、安卓设备更新证据或已发布PCK。再次读取正式版本仍为rev178，**不能说手机已可更新rev179**。后续只能按GitHub真实CI运行产物、官网latest.json及手机验收三方证据升级状态灯。
