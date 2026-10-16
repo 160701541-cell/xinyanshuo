@@ -7,6 +7,7 @@ on:
       - 'game-source/apk176-ota177-candidate/scripts/apk176_cc0_3d_preview.gd'
       - 'logic-qa/apk176-export-fixture/verify_original_main_3d_preview_rev179.gd'
       - 'logic-qa/tools/build_apk176_3d_preview.gd'
+      - 'tools/verify_apk176_rev179_3d_pck.py'
   workflow_dispatch:
 permissions:
   contents: write
@@ -150,6 +151,7 @@ jobs:
           timeout 75s /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless --editor --path logic-qa --import > qa-results/rev179-import.log 2>&1
           timeout 75s /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless --path logic-qa             --script res://tools/build_apk176_3d_preview.gd > qa-results/rev179-build.log 2>&1
           grep -Fq 'PASS_APK176_REAL_3D_CC0_PREVIEW_UNSIGN_PCK_BUILT_NO_RELEASE' qa-results/rev179-build.log
+          python3 tools/verify_apk176_rev179_3d_pck.py qa-results/canglan-apk176-rev179-3d-UNSIGNED.pck
       - name: QA actual original exported game renders 26 genuine CC0 GLB models
         env:
           CANGLAN_QA_PCK_PATH: ${{ github.workspace }}/qa-results/canglan-apk176-rev179-3d-UNSIGNED.pck
