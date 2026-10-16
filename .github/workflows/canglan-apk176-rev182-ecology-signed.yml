@@ -175,9 +175,15 @@ jobs:
           assert len(b)>128 and 0<struct.unpack_from('>I',b,16)[0]<=4096
           print('PASS_LICENSED_KENNEY_CASTLE_COLORMAP_PRESENT',len(b))
           PY
-          timeout 75s /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless --editor --path logic-qa --import > qa-results/rev182-import.log 2>&1
-          timeout 75s /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless --path logic-qa             --script res://tools/build_apk176_ecology_rev182.gd > qa-results/rev182-build.log 2>&1
-          grep -Fq 'PASS_APK176_REV182_LIVING_3D_AUTONOMOUS_PCK_BUILT_UNSIGNED' qa-results/rev182-build.log
+          timeout 75s /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless --editor --path logic-qa --import > qa-results/rev182-import.log 2>&1 || {
+            tail -110 qa-results/rev182-import.log; exit 1;
+          }
+          timeout 75s /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless --path logic-qa             --script res://tools/build_apk176_ecology_rev182.gd > qa-results/rev182-build.log 2>&1 || {
+            tail -110 qa-results/rev182-build.log; exit 1;
+          }
+          grep -Fq 'PASS_APK176_REV182_LIVING_3D_AUTONOMOUS_PCK_BUILT_UNSIGNED' qa-results/rev182-build.log || {
+            tail -110 qa-results/rev182-build.log; exit 1;
+          }
           python3 tools/verify_apk176_rev182_3d_pck.py qa-results/canglan-apk176-rev182-3d-UNSIGNED.pck
       - name: QA actual APK176 Main runs animated workers, finite resources and material-paid staged 3D construction
         env:
