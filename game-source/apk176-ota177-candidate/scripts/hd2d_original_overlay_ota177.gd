@@ -74,11 +74,13 @@ func _build_visual() -> void:
 	var note := Label.new()
 	note.text = "这是游戏内临时对照场景，原世界仍在运行，存档不变"
 	gui.add_child(note)
+	# Actual interactive content matters more than an empty polished backdrop.
+	# The original WorldX NPC sprites are allowed as temporary gameplay
+	# characters; the unrelated black-box atlas/road remain quarantined.
 	if SHOW_LEGACY_QA_ASSETS:
 		_load_atlas()
-		_add_worldx_npcs()
-	else:
-		_status.text = "WorldX国风场景：点击建筑入口可进入室内；旧图集已隔离"
+	_add_worldx_npcs()
+	_status.text = "WorldX可游玩测试：6名NPC可移动/点击、区域交互、正房进出"
 	var worldx_switch := Button.new()
 	worldx_switch.text = "切换 WorldX 地图区"
 	worldx_switch.pressed.connect(_toggle_worldx_map)
