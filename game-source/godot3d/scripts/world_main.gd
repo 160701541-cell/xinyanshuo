@@ -114,7 +114,7 @@ func _ready() -> void:
 	# WorldX generates reusable MATERIAL surface art, not prebuilt houses.
 	var work_roles := ["farmer","woodcutter","quarryman","cook","potter",
 		"farmer","farmer","cook","woodcutter","farmer",
-		"carpenter","mason","builder"]
+		"carpenter","mason","builder","guard"]
 	for n in range(citizen_nodes.size()):
 		life_sim.call("add_citizen",
 			String(citizen_nodes[n].get_meta("entity_id","")),
