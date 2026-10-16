@@ -90,3 +90,7 @@ python -m unittest discover -s tools/asset_factory -p 'test_*.py' -v
 
 ## WorldX reference_extract02
 入口canglan-worldx-reference-extract02.yml；worldx_reference_extract02.mjs仍使用WorldX原生prompt loader，但改由Qwen/Qwen-Image-Edit-2509对已确认原院落提取正房。一次调用，无重试；不使用该模型不支持的image_size，真实结果尺寸单独核验。`node --test tools/asset_factory/test_worldx_reference_extract02.mjs`验证模型、源图输入与接口参数约束。不是新批准画风，也不是透明/结构QA通过。
+
+## 原画像素提取（零模型调用）
+`python tools/asset_factory/extract_source_house.py --source game-source/apk176-ota177-candidate/hd2d/courtyard/main_house_v3_source.png --out OUTPUT`。
+锁定原院落SHA，对正房可见部分加轮廓alpha，输出532×537原生PNG、浅深底预览与JSON。运行时自动验证保留RGB逐像素一致；不重绘、不放大。工作流canglan-source-pixel-extract.yml真实复现输出并提交。手工轮廓仍待细修，被遮挡结构未恢复，不自动批准。
