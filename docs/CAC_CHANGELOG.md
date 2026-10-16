@@ -633,3 +633,12 @@ Godot 4.4.1对从**原签名Android APK176**提取的实际`update_protocol.gdc`
 新增 `tests/deferred_ai_and_cc0_build_smoke.gd` 与公开仓库专属真实Godot 4.4.1 CI `canglan-npc-materials-no-forced-llm-qa.yml`，用真实Godot引擎验证模型选择门、实体CC0模块、NPC及加工配方，运行ID `38955498300`；**在该工作流成功且与原版APK176兼容的签名PCK真正发布之前，绝不宣称本次修改已经更新到手机**。
 
 注意：以后用户选择本地模型时，需要实现可选模型菜单、用户可见的GGUF文件导入/验证和llama.cpp能力检查，不得用预置固定模型代替用户选择。
+
+
+## 2026-10-17 / CAC-MASTER-LOG-ADOPTION / 用户指定完整工程总设计为后续开发日志
+
+用户明确指示“现在以这个为开发日志”，将本对话生成的《苍岚人生世界_完整游戏工程总设计_v1.0.md》（21章，涵盖美术、NPC、资源工业、修仙、技术、QA、原版发布）设为今后研发总蓝图与开发日志基准。
+
+**本轮实际GitHub提交**：新增 `docs/GAME_ENGINEERING_MASTER.md` 作为**长期维护的工程总日志主入口/执行索引**，覆盖21领域、G0–G8路线、第一批Issue、质量门禁、原版发布边界、日志模板；提交 `cd2c2b3faeeac4d1eb748613ed13a2e19d290e12`。原有本历史日志完整保留，之后每轮应先读 `AGENTS.md` + 本文件 + `docs/GAME_ENGINEERING_MASTER.md`，并同时更新实际进展。**详版母本目前作为对话附件供下载，尚未逐字节提交到GitHub；GitHub中的是工程执行索引，不能谎称完整母本已归档。**
+
+**本次状态**：仅文档/研发规范提交；未修改Godot玩法代码、未签名PCK、未更新rev178、未完成手机实机验收。下一阶段优先G0原版兼容/发行链与G1美术基准村庄、G2物资守恒闭环。
