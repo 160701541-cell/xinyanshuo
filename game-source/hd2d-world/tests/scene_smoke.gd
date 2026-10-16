@@ -1,4 +1,5 @@
 extends SceneTree
+const Paving = preload("res://scripts/stone_road.gd")
 ## Real Godot contract test. No network calls and no Android/release claims.
 func _initialize() -> void:
 	call_deferred("_run")
@@ -23,9 +24,8 @@ func _run() -> void:
 	assert(int(stats["entities"]) == int(stats["buildings"])+int(stats["props"]), "Duplicate world entity IDs")
 	var road: Node = city.get_node_or_null("SeamlessStoneRoad")
 	assert(road != null and road.get_child_count() == 14, "Paving missing")
-	var paving: Script = load("res://scripts/stone_road.gd")
-	var img: Image = paving.make_image()
-	assert(img.get_width()==256 and paving.edges_match(img), "Road seam failed")
+	var img: Image = Paving.make_image()
+	assert(img.get_width()==256 and Paving.edges_match(img), "Road seam failed")
 	var houses: Array[Node2D] = city.get("buildings")
 	var first: Node2D = houses[0]
 	var id: String = String(first.get("entity_id"))
