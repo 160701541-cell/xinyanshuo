@@ -1,5 +1,8 @@
-name: Canglan WorldX Courtyard Single Image
+name: Canglan WorldX Main House V3 Single Image
 on:
+  push:
+    paths:
+      - '.github/workflows/canglan-worldx-courtyard-single.yml'
   workflow_dispatch:
     inputs:
       image_model:
@@ -18,7 +21,7 @@ jobs:
     timeout-minutes: 15
     env:
       SILICONFLOW_API_KEY: ${{ secrets.SILICONFLOW_API_KEY }}
-      SILICONFLOW_IMAGE_MODEL: ${{ inputs.image_model }}
+      SILICONFLOW_IMAGE_MODEL: ${{ inputs.image_model || 'Kwai-Kolors/Kolors' }}
       IMAGE_GEN_API_KEY: ${{ secrets.SILICONFLOW_API_KEY }}
       STEP1_MAX_RETRIES: "0"
       STEP1_GENERATE_TIMEOUT_MS: "150000"
@@ -51,7 +54,7 @@ jobs:
       - name: Install WorldX generator dependencies
         working-directory: worldx-upstream/generators
         run: npm ci --ignore-scripts
-      - name: Generate one courtyard with WorldX prompt and SiliconFlow image API
+      - name: Generate one isolated main house V3 via WorldX and SiliconFlow
         working-directory: worldx-upstream/generators
         env:
           SILICONFLOW_API_KEY: ${{ secrets.SILICONFLOW_API_KEY }}
@@ -84,18 +87,18 @@ jobs:
           const png = bytes.subarray(0,8).toString('hex') === '89504e470d0a1a0a';
           const jpeg = bytes.subarray(0,3).toString('hex') === 'ffd8ff';
           if (!png && !jpeg) throw Error('Unknown image format');
-          writeFileSync('../../courtyard-output/main_house_source.'+(png?'png':'jpg'), bytes);
+          writeFileSync('../../courtyard-output/main_house_v3_source.'+(png?'png':'jpg'), bytes);
           writeFileSync('../../courtyard-output/generation_meta.json', JSON.stringify({
             generator:'WorldX native prompt-loader + SiliconFlow images/generations adapter',
             model, status:'generated_not_qa_approved', bytes:bytes.length,
-            format:png?'png':'jpeg', prompt_version:'canglan-main-house-batch02'
+            format:png?'png':'jpeg', prompt_version:'canglan-main-house-v3-batch03'
           },null,2));
           console.log('WORLDX_SILICONFLOW_COURTYARD_GENERATED',bytes.length);
           NODE
       - name: Upload generated source only
         uses: actions/upload-artifact@v4
         with:
-          name: Canglan-WorldX-MainHouse-Batch02-Unreviewed
+          name: Canglan-WorldX-MainHouse-V3-Batch03-Unreviewed
           path: courtyard-output/
           if-no-files-found: error
           retention-days: 14
