@@ -60,6 +60,6 @@ func _run() -> void:
 	if portal.inside or portal.current_spawn != before or not portal._outdoor_art.visible:
 		_fail("live_original_main_exit_failed", 11)
 		return
-	print("PASS_APK176_ACTUAL_MAIN_INSTANTIATED_AND_HOUSE_ENTER_EXIT_WITH_REAL_IMAGES")
+	print("OBSERVED_APK176_MAIN_INSTANCE_WITH_PORTAL_AND_IMAGES_PENDING_ENGINE_ERROR_AUDIT")
 	_finished = true
 	quit(0)
