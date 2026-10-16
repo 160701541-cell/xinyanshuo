@@ -2,16 +2,32 @@
 """Secure original-APK RSA secret capability probe. Never prints private key.
 Only emits a Boolean capability and original key match result.
 """
-import base64, json, os, pathlib, subprocess, tempfile
+import base64, json, os, pathlib, re, subprocess, tempfile
 from ota_release_gate import pubkey
 
 ENV_CANDIDATES=(
-    "CANGLAN_PCK_SIGNING_KEY_B64",  # Actual legacy signer alias from canglan-world private CI
+    "CANGLAN_PCK_SIGNING_KEY_B64",  # Content-signing RSA; never Android keystore
     "CANGLAN_ORIGINAL_OTA_PRIVATE_KEY_PEM",
     "CANGLAN_UPDATE_PRIVATE_KEY_PEM",
     "CANGLAN_OTA_PRIVATE_KEY_PEM",
     "CANGLAN_UPDATE_SIGNING_KEY_PEM",
 )
+def decode_private_secret(value: str) -> bytes:
+    """Accept PEM, escaped-newline PEM or whitespace-wrapped base64 PEM.
+    Return key bytes in memory only; never log the value.
+    """
+    raw=value.strip()
+    if not raw:
+        raise ValueError("empty secret")
+    if raw.startswith("-----BEGIN "):
+        return (raw.replace("\\\\n","\\n").rstrip()+"\\n").encode("utf-8")
+    compact=re.sub(r"\\s+","",raw)
+    decoded=base64.b64decode(compact,validate=True)
+    if not decoded.startswith(b"-----BEGIN "):
+        raise ValueError("content signing secret is not a PEM-formatted RSA key")
+    return decoded.rstrip()+b"\\n"
+
+
 def pub_der(input_bytes: bytes, is_private: bool) -> bytes:
     with tempfile.TemporaryDirectory() as work:
         d=pathlib.Path(work)
@@ -30,21 +46,28 @@ def main():
     matched=False
     available=0
     old_pub=pub_der(pubkey().encode("utf8"), False)
+    # Boolean/status-only diagnostics. Never print secret bytes, lengths or
+    # hashes; never confuse Android APK signing credentials with the OTA RSA.
+    secret_status={}
     for name in ENV_CANDIDATES:
-        value=os.environ.get(name,"").strip()
-        if not value:
+        value=os.environ.get(name,"")
+        if not value.strip():
+            secret_status[name]="NOT_INJECTED_IN_THIS_JOB"
             continue
         available+=1
-        if not value.startswith("-----BEGIN"):
-            try:
-                value=base64.b64decode(value,validate=True).decode("utf8")
-            except (ValueError,UnicodeDecodeError):
-                continue
         try:
-            matched=matched or pub_der(value.encode("utf8"), True)==old_pub
-        except (ValueError,subprocess.SubprocessError):
-            pass
+            key=decode_private_secret(value)
+            if pub_der(key,True)==old_pub:
+                matched=True
+                secret_status[name]="MATCHES_ORIGINAL_APK_RSA_PUBLIC_KEY"
+            else:
+                secret_status[name]="INJECTED_BUT_DIFFERENT_RSA_KEY"
+        except (ValueError,subprocess.SubprocessError,OSError):
+            secret_status[name]="INJECTED_BUT_INVALID_RSA_PEM_OR_ENCODING"
     report={
+        "signing_alias_diagnostics":secret_status,
+        "android_apk_keystore_secret_present":bool(os.environ.get("CANGLAN_ANDROID_KEYSTORE_B64","").strip()),
+        "note_android_keystore":"Android APK keystore is NOT a valid content-update RSA manifest signer",
         "probe_repository":os.environ.get("GITHUB_REPOSITORY","unknown"),
         "scope_notice":"This probe reads only explicitly injected xinyanshuo public repository Actions secrets; no other repository is consulted.",
         "original_signing_key_candidates_available":available,
