@@ -14,6 +14,7 @@ const LifeSim = preload("res://scripts/worldbox_life_sim.gd")
 const Worksites = preload("res://scripts/worldbox_visible_worksite.gd")
 const AutonomousDirector = preload("res://scripts/autonomous_village_director.gd")
 const ResourceSeeder = preload("res://scripts/world_resource_seeder.gd")
+const ResourceVisuals = preload("res://scripts/world_resource_visuals.gd")
 const NPCBuilding = preload("res://scripts/npc_building_system.gd")
 # Authentic earlier Canglan 3D economy/identity source has been audited and
 # safely migrated to the PUBLIC repository without any signing credentials.
@@ -126,6 +127,10 @@ func _ready() -> void:
 	# Seed independent finite natural resources BEFORE NPC work assignment.
 	ResourceSeeder.new().call("seed_village", life_sim, rules,
 		"CL-HX-VILLAGE-0001", seed)
+	# Diagnostic only: these labels are not licensed 3D assets.
+	var resource_debug: Node3D = ResourceVisuals.new()
+	add_child(resource_debug)
+	resource_debug.call("setup", life_sim)
 	prop_root.call("build",rules,seed)
 	# One tangible gameplay loop: chop physical tree -> carrier walks to depot
 	# -> materials delivered -> paid house -> crops -> food -> eating.
