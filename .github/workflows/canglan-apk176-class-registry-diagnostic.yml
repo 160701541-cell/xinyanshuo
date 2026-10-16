@@ -1,0 +1,42 @@
+name: Canglan APK176 Exact Global Class Registry Diagnostic
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/canglan-apk176-class-registry-diagnostic.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  apk176-class-registry:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 4
+    steps:
+      - uses: actions/checkout@v4
+      - name: Inspect installed game's actual export and global class metadata
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p qa-results
+          python3 - <<'PY'
+          import json, zipfile, pathlib, re
+          meta=json.loads(pathlib.Path('android-preview/base-latest.json').read_text())
+          print('APK176_SOURCE',meta['file'])
+          with zipfile.ZipFile(meta['file']) as a:
+              names=a.namelist()
+              globals=[n for n in names if any(w in n.lower() for w in ('global_script_class','project.godot','class_cache','script_class'))]
+              print('ACTUAL_APK_GLOBAL_CLASS_METADATA_PATHS',globals)
+              for name in globals:
+                  if name.endswith(('.cfg','.godot','.txt','.json')):
+                      b=a.read(name)
+                      print('ACTUAL_APK_METADATA',name,'size',len(b),'text',b[:8000].decode('utf-8','replace'))
+              scripts=sorted(x for x in names if x.startswith('assets/scripts/') and x.endswith(('.gdc','.gd.remap')))
+              print('ORIGINAL_APK_SCRIPT_COUNT',len(scripts))
+              print('ORIGINAL_APK_COMPILED_SCRIPTS',*[p for p in scripts if p.endswith('.gdc')],sep='\n')
+              important=['CanglanValleyAtmosphere','CanglanGameHUD','AncientTouchJoystick','WorldState','VillageDaySimulation','AncientWorldPlayer','AncientHouseAccess']
+              for cls in important:
+                  tokens=re.findall(r'[A-Z][A-Za-z0-9_]{3,}',cls)
+                  candidates=[p for p in scripts if all(seg in p.lower() for seg in re.findall(r'[A-Z]?[a-z0-9]+',cls) if len(seg)>3)]
+                  print('CLASS_MAPPING_HINT',cls,candidates)
+              print('PASS_INSPECT_ACTUAL_APK_GLOBAL_CLASS_EXPORT')
+          PY
