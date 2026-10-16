@@ -54,7 +54,7 @@ func available_setup() -> bool:
 		if not (info is Dictionary):
 			return false
 		var filename: String = str(info.get("file",""))
-		if filename.get_base_dir() != "." or not filename.begins_with(side+"."):
+		if filename.get_file() != filename or not filename.begins_with(side+"."):
 			push_error("WorldX 3D invalid facade relative filename: " + filename)
 			return false
 		var path: String = ROOT + filename
@@ -131,6 +131,8 @@ func _box(label: String, centre: Vector3, dimensions: Vector3,
 	mesh.mesh = box
 	mesh.material_override = _mat(color)
 	mesh.position = centre
+	# Keep the textured exterior visible instead of covering it with opaque wall boxes.
+	mesh.visible = not collision or label == "PhysicalStoneFoundation"
 	_house.add_child(mesh)
 	if collision:
 		var body := StaticBody3D.new()
@@ -160,7 +162,7 @@ func _build_true_3d_building(images: Dictionary) -> void:
 	var back: StandardMaterial3D = _mat(Color.WHITE,images["back"])
 	var left: StandardMaterial3D = _mat(Color.WHITE,images["left"])
 	var right: StandardMaterial3D = _mat(Color.WHITE,images["right"])
-	var zl := fz+0.04
+	var zl := fz+0.19
 	# The front picture is UV-cut into three actual 3D surfaces so the original
 	# interactive doorway is NOT painted over by a solid flat billboard.
 	_quad(front,"SouthFrontLeft",Vector3(-fx,0,zl),Vector3(-door_half,0,zl),
@@ -173,12 +175,12 @@ func _build_true_3d_building(images: Dictionary) -> void:
 		Vector3(door_half,door_top,zl),Vector3(door_half,h,zl),
 		Vector3(-door_half,h,zl),Vector2((fx-door_half)/w,0),
 		Vector2((fx+door_half)/w,(h-door_top)/h))
-	_quad(back,"NorthBack",Vector3(fx,0,-fz-0.04),Vector3(-fx,0,-fz-0.04),
-		Vector3(-fx,h,-fz-0.04),Vector3(fx,h,-fz-0.04))
-	_quad(left,"WestLeft",Vector3(-fx-0.04,0,fz),Vector3(-fx-0.04,0,-fz),
-		Vector3(-fx-0.04,h,-fz),Vector3(-fx-0.04,h,fz))
-	_quad(right,"EastRight",Vector3(fx+0.04,0,-fz),Vector3(fx+0.04,0,fz),
-		Vector3(fx+0.04,h,fz),Vector3(fx+0.04,h,-fz))
+	_quad(back,"NorthBack",Vector3(fx,0,-fz-0.19),Vector3(-fx,0,-fz-0.19),
+		Vector3(-fx,h,-fz-0.19),Vector3(fx,h,-fz-0.19))
+	_quad(left,"WestLeft",Vector3(-fx-0.19,0,fz),Vector3(-fx-0.19,0,-fz),
+		Vector3(-fx-0.19,h,-fz),Vector3(-fx-0.19,h,fz))
+	_quad(right,"EastRight",Vector3(fx+0.19,0,-fz),Vector3(fx+0.19,0,fz),
+		Vector3(fx+0.19,h,fz),Vector3(fx+0.19,h,-fz))
 	_facade_layers = {
 		"front":get_node("WorldXPhysical3DBuilding/SouthFrontLeft"),
 		"back":get_node("WorldXPhysical3DBuilding/NorthBack"),
