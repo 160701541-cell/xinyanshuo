@@ -804,3 +804,10 @@ Godot 4.4.1对从**原签名Android APK176**提取的实际`update_protocol.gdc`
 - `tools/verify_apk176_rev179_3d_pck.py` 提交`a3975d5b8fe405e9f8a5f79adf00046ec77c82c4`：把共享PNG列入PCK必有文件，校验魔数，避免签出仍丢色彩的3D模型。
 
 **状态**：本次修改均返回真实GitHub提交记录，但当前回合尚未获取这些最新提交所触发的rev179流水线成功结果；正式旧游戏更新清单是否升至rev179必须重新查`android-preview/latest.json`并用新运行结果验证。原RSA已单独实际通过，不需重复配置。未声称手机已更新。
+
+
+## 2026-10-17 / REL-179-FINAL-PUSH-CONFLICT / 修复最后一步并发提交冲突
+
+用户提供真实GitHub运行 `38964273466`、job `117186774293` 和手机截图；连接读取的真实日志显示**步骤1~10全部通过**，包括旧APK176 Godot原主场景+26件Kenney CC0素材的3D检查、原房屋进出回归、rev179 PCK（21066816字节、SHA256 `b1317883b1f884264b6a4a6e063683c2fb0cb324d13c81003564a8ff84a6a4e1`）、**原版生产RSA签名验签PASS**。仅**第11步GitHub push失败**：`! [rejected] HEAD -> main (fetch first)`，因为CI开始后还有其他研发提交推高了公开main；Git没有权限将旧基础的发布commit直接快进推送。不是密钥缺失、场景解析失败或PCK无效。
+
+已修改`.github/workflows/canglan-apk176-rev179-real3d-signed.yml`，提交`8f1581cadf93e3789dade9ae79af187fccf15b68`：签名候选通过后，发布器循环抓取origin/main，要求远端**仍为rev178且没有rev179 PCK**（否则阻止覆盖）；再仅对**已验证、内容不变的正式签名文件提交**做`git rebase origin/main`并push，最多3次有限重试。若新版由其他并行发布者先上线则立即停止，不乱覆盖。该流水线文件受push自身路径过滤，会自动触发新一轮构建。仍需核实本轮新run实际结论和正式网站rev179，不可仅凭提交成功称手机更新。
