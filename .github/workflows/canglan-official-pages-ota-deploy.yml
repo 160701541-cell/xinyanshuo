@@ -25,57 +25,6 @@ jobs:
     timeout-minutes: 16
     steps:
       - uses: actions/checkout@v4
-      - name: Diagnose GitHub Pages source before publishing
-        shell: bash
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          set -euo pipefail
-          python3 - <<'PY'
-          import json,os,urllib.request,urllib.error,pathlib
-          req=urllib.request.Request('https://api.github.com/repos/160701541-cell/xinyanshuo/pages',headers={
-            'Authorization':'Bearer '+os.environ['GH_TOKEN'],
-            'Accept':'application/vnd.github+json',
-            'X-GitHub-Api-Version':'2022-11-28'
-          })
-          report={'repository':'160701541-cell/xinyanshuo','expected_revision':179}
-          try:
-            with urllib.request.urlopen(req,timeout=20) as response:
-              data=json.load(response)
-            report.update({'status':'PAGES_CONFIGURATION_READ','build_type':data.get('build_type'),
-                           'source':data.get('source'),'url':data.get('html_url')})
-          except urllib.error.HTTPError as exc:
-            report.update({'status':'PAGES_CONFIGURATION_QUERY_FAILED','http_status':exc.code})
-          pathlib.Path('qa-results').mkdir(exist_ok=True)
-          pathlib.Path('qa-results/rev179-pages-configuration.json').write_text(json.dumps(report,ensure_ascii=False,indent=2)+'\\n')
-          print('PAGES_CONFIGURATION',json.dumps(report,ensure_ascii=False))
-          if report.get('build_type') == 'legacy':
-            # Safe one-time source migration: old branch deployment was still
-            # serving rev178 despite a signed rev179 manifest in main.
-            body=json.dumps({'build_type':'workflow'}).encode()
-            change=urllib.request.Request(
-              'https://api.github.com/repos/160701541-cell/xinyanshuo/pages',
-              data=body,method='PUT',headers={
-                'Authorization':'Bearer '+os.environ['GH_TOKEN'],
-                'Accept':'application/vnd.github+json',
-                'Content-Type':'application/json',
-                'X-GitHub-Api-Version':'2022-11-28'
-              })
-            try:
-              with urllib.request.urlopen(change,timeout=20) as res:
-                report['migration_http_status']=res.status
-              report['status']='PAGES_SOURCE_MIGRATED_TO_GITHUB_ACTIONS'
-              report['build_type']='workflow'
-              pathlib.Path('qa-results/rev179-pages-configuration.json').write_text(
-                json.dumps(report,ensure_ascii=False,indent=2)+'\\n')
-              print('PASS_PAGES_SOURCE_MIGRATED_TO_WORKFLOW')
-            except urllib.error.HTTPError as exc:
-              report['migration_http_status']=exc.code
-              report['status']='PAGES_SOURCE_MIGRATION_NEEDS_ADMIN_ACTION'
-              pathlib.Path('qa-results/rev179-pages-configuration.json').write_text(
-                json.dumps(report,ensure_ascii=False,indent=2)+'\\n')
-              raise SystemExit('PAGES_SOURCE_BRANCH_MODE_AND_API_MIGRATION_DENIED: Settings > Pages > Source must be GitHub Actions')
-          PY
       - name: Build bounded public website (NOT developer repository contents)
         shell: bash
         run: |
@@ -118,8 +67,6 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: Canglan-official-Pages-rev179-publish-and-HTTP-check
-          path: |
-            qa-results/rev179-public-http.json
-            qa-results/rev179-pages-configuration.json
+          path: qa-results/rev179-public-http.json
           if-no-files-found: warn
           retention-days: 7
