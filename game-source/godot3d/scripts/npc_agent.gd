@@ -221,6 +221,11 @@ func _notify_inspect(code: String) -> void:
 func refresh_text_status(person_state: Dictionary) -> void:
 	sim_profile = person_state.duplicate(true)
 	if text_marker!=null:
+		var work: String = String(person_state.get("profession",""))
+		var actual_role: String = String({
+			"farmer":"农民","woodcutter":"樵夫","quarryman":"采石工",
+			"cook":"厨师","potter":"陶工"}.get(work,work))
+		text_marker.set("occupation",actual_role)
 		text_marker.call("set_status",String(person_state.get("schedule","idle")),
 			int(person_state.get("hunger",0)),int(person_state.get("energy",100)))
 
