@@ -473,6 +473,35 @@ func _create_interface() -> void:
 	footer.text = "左半屏拖动行走 · 右半屏拖动视角 · WASD移动 · 鼠标右键转向"
 	stack.add_child(footer)
 
+func _inspect_npc(actor_id: String) -> void:
+	if not npc_node_index.has(actor_id):
+		return
+	inspected_npc = actor_id
+	for npc in citizen_nodes:
+		npc.call("select_text_marker",
+			String(npc.get_meta("entity_id",""))==actor_id)
+	_refresh_inspected_npc()
+
+func _refresh_inspected_npc() -> void:
+	if ui_npc_details==null or life_sim==null or not npc_node_index.has(inspected_npc):
+		return
+	var record: Dictionary = life_sim.get("citizens").get(inspected_npc,{})
+	if record.is_empty():
+		return
+	var npc: Node3D = npc_node_index[inspected_npc]
+	var job_name: String = String({
+		"farmer":"农民","woodcutter":"樵夫","quarryman":"采石工",
+		"cook":"厨师","potter":"陶工"}.get(String(record["profession"]),record["profession"]))
+	var load: Dictionary = life_sim.get("carried_by_actor").get(inspected_npc,{})
+	var cargo: String = "无" if load.is_empty() else (
+		String(load.get("kind",""))+" x"+str(load.get("amount",0)))
+	var loc: Vector3 = npc.global_position
+	ui_npc_details.text = "%s / %s / 年龄%d\n身份编码: %s\n精力%d/100  饥饿%d/100  心情%d/100\n状态: %s  携带: %s\n3D坐标: %.1f, %.1f, %.1f" % [
+		String(npc.get_meta("display_name","居民")),job_name,
+		int(record.get("age",0)),inspected_npc,int(record.get("energy",0)),
+		int(record.get("hunger",0)),int(record.get("mood",0)),
+		String(record.get("schedule","idle")),cargo,loc.x,loc.y,loc.z]
+
 func _on_local_ai_state(next_state: String, description: String) -> void:
 	if ui_ai_status!=null:
 		ui_ai_status.text = "离线AI：" + description
