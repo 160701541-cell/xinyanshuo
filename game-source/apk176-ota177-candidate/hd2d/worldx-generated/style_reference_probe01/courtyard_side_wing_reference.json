@@ -1,0 +1,17 @@
+{
+  "id": "courtyard_side_wing_reference",
+  "batch": "worldx-props-style_reference_probe01",
+  "model": "Kwai-Kolors/Kolors",
+  "pipeline": "WorldX native prompt loader + SiliconFlow",
+  "file": "courtyard_side_wing_reference.png",
+  "sha256": "8394c405863c9a3df2111e42b708918019e43c439cc7ad70f8043c8bb320a835",
+  "upstream_commit": "edb4976de5963457dfbf5d2171355270a4ca1e79",
+  "status": "GENERATED_UNAPPROVED",
+  "reference_image_sent": true,
+  "reference_sha256": "44d116addb17c5aa5a1f6c7edc85d44132fefdc0eb52ae422b63cc0b71060e3f",
+  "reference_effectiveness": "REQUIRES_VISUAL_VERIFICATION",
+  "style_control": "reference_input_plus_text_NOT_style_approved",
+  "transparency": "NOT_CLEANED",
+  "license_status": "PROVIDER_TERMS_REVIEW_REQUIRED",
+  "run_url": "https://github.com/160701541-cell/xinyanshuo/actions/runs/38878523085"
+}
