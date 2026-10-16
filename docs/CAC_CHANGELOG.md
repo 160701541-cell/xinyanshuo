@@ -203,3 +203,12 @@
 - WorldX NPC 原先始终使用`nav_000.json`，切换到第二个 WorldX 地图区后仍沿用第一张图的碰撞网格。现为 `scripts/hd2d_worldx_npcs.gd` 添加真实地图导航切换：从`nav_000/001.json`逐条验证行/列及0/1语义，验证成功后原子替换地图，重新安排NPC到可行走格子。非法地图不会破坏已有导航；覆盖`verify_worldx_npc_content.gd`增加换图、走位、非法索引回滚和返回旧地图验证。**由于这批NPC像素风与选定国风存在明显冲突，正式HD2D场景仍保持`SHOW_LEGACY_QA_ASSETS=false`，功能准备好不代表允许放出不统一画风。**
 - 原版已确认为有效的资源修复仍保留：原APK真实GDScript注册缓存与着色器，Terrain3D插件经 Android ELF SHA-256 完全一致验证后恢复同版本Linux QA插件。Godot 原版场景测试上轮为绿色；最新代码变更必须待本轮CI另行验证。
 - **当前仍未完成**：原装APK176可信OTA签名缺原版RSA私钥；虽有rev177真实资源PCK和严格运行QA，也不可发布为手机自动更新。美术视觉不一致、实体遮挡与真第一/第三人称场景移动仍需逐批解决。
+
+## 2026-10-16 · 正式手机APK176资源rev177签名交付链实际接入（严格阻塞可见）
+
+- 用户要求将已通过Godot原版主场景QA的高清WorldX建筑/室内资源**更新进目前已安装的原《苍岚》**，不是另发独立测试APK。新增可信发布脚本 `tools/publish_original_rev177_ota.py` 与Actions `.github/workflows/canglan-original-apk176-ota177-publish.yml`，在当前公开仓库上自动预检、读取固定QA来源 `38882131496` 的原游戏20MB PCK，验证原APK包标识/版本、rev167现有签名、rev177兼容范围、整场景Godot无报错、资源SHA；随后仅用**原APK公钥匹配的RSA私钥**生成签名rev177 JSON，将真实PCK+签名manifest一起提交到官网 `android-preview/`。没有原私钥时**禁止提交**，绝不生成假更新。
+- 该签名发布工序实际启动，运行 `38883233952` 因 `BLOCKED_ORIGINAL_RSA_PRIVATE_KEY_NOT_CONFIGURED_OR_NOT_MATCHED` 拒绝发布（首次仅检查四个通用别名），说明之前说的“构建完成即可更新手机”确实不成立。
+- **恢复重要历史线索**：原私有签名工程 `160701541-cell/canglan-world` 的 `.github/workflows/godot-3d-android.yml`、`xinyanshuo-p0-rescue.yml` 使用**真实别名 `CANGLAN_PCK_SIGNING_KEY_B64`**，且旧流程曾用 `CANGLAN_SITE_PUBLISH_TOKEN` 推送签名资源。只读核验旧工作流，未读取、输出或复制旧密钥、未在私有仓库开发/发布。将这一真实原始别名加入公开仓库的签名候选名单和两个工作流的Secrets读取；仍以原APK内的不可变RSA公钥DER逐字节匹配为必要条件。无论名称相同与否，密钥匹配失败就拒绝发布。
+- 现仍需核验新别名在**公开**仓库是否确有可用Secret；GitHub不同仓库的Secret默认互不共享，不得假定私有仓库有密钥就代表公开仓库有。
+- 若新公仓没有匹配密钥，后续需要用户批准**仅使用原私有仓库现成签名服务完成一次rev177签名**，或由用户将真正原RSA私钥安全地放进公开仓库的Actions Secrets（不要在聊天或源码传私钥）。不得自行换一把新RSA、换APK调试签名、卸载旧游戏或冒充手机已热更。
+- **正式更新状态**：仍以 `android-preview/latest.json` 实际字段及GitHub Pages远程可访问文件为唯一依据。未验证线上rev177之前一直显示 `BLOCKED_NOT_PUBLISHED`。
