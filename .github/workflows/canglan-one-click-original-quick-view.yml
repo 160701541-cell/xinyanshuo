@@ -1,0 +1,44 @@
+name: Canglan One-Click Original APK176 Quick View Gate
+# Manual only: no redundant CI on every model/content commit.
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: canglan-quick-view-original-apk
+  cancel-in-progress: true
+jobs:
+  original-quick-view-gate:
+    if: github.repository == '160701541-cell/xinyanshuo' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 6
+    steps:
+      - uses: actions/checkout@v4
+      - name: Fast verify original game identity and existing public content
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 tools/quick_view_preflight.py
+          python3 tools/test_ota_release_gate.py
+      - name: Check original RSA signer, never print credentials
+        shell: bash
+        env:
+          CANGLAN_PCK_SIGNING_KEY_B64: ${{ secrets.CANGLAN_PCK_SIGNING_KEY_B64 }}
+          CANGLAN_ORIGINAL_OTA_PRIVATE_KEY_PEM: ${{ secrets.CANGLAN_ORIGINAL_OTA_PRIVATE_KEY_PEM }}
+          CANGLAN_UPDATE_PRIVATE_KEY_PEM: ${{ secrets.CANGLAN_UPDATE_PRIVATE_KEY_PEM }}
+          CANGLAN_OTA_PRIVATE_KEY_PEM: ${{ secrets.CANGLAN_OTA_PRIVATE_KEY_PEM }}
+          CANGLAN_UPDATE_SIGNING_KEY_PEM: ${{ secrets.CANGLAN_UPDATE_SIGNING_KEY_PEM }}
+        run: |
+          set -euo pipefail
+          python3 tools/check_original_ota_secret.py
+          echo "::notice::Signer matches original APK176. Next gate: exact original entrypoint, PCK resources and phone-compatible runtime. This job never publishes."
+      - name: Save short release-blocker report, even when blocked
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: Canglan-original-quick-view-preflight-${{ github.sha }}
+          path: |
+            qa-results/quick-view-preflight.json
+            qa-results/original-apk176-signing-readiness.json
+          if-no-files-found: warn
+          retention-days: 7
