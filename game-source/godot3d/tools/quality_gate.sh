@@ -35,4 +35,14 @@ if grep -Eq 'SCRIPT ERROR:|Parse Error:|Assertion failed|ERROR:' "$logdir/worldb
   echo 'BLOCKED: real Godot NPC economy simulation has errors'
   exit 17
 fi
+timeout 65s "$godot" --headless --path "$project" --script res://tests/autonomous_job_smoke.gd > "$logdir/autonomous-job-smoke.log" 2>&1 || {
+  cat "$logdir/autonomous-job-smoke.log"
+  exit 18
+}
+cat "$logdir/autonomous-job-smoke.log"
+grep -Fq 'PASS CAC AUTONOMOUS NPC LOOP' "$logdir/autonomous-job-smoke.log"
+if grep -Eq 'SCRIPT ERROR:|Parse Error:|Assertion failed|ERROR:' "$logdir/autonomous-job-smoke.log"; then
+  echo 'BLOCKED: autonomous 3D NPC worksite simulation generated an engine error'
+  exit 19
+fi
 echo 'PASS PUBLIC 3D SOURCE TECHNICAL QA ONLY — VISUAL ANDROID RELEASE UNAPPROVED'
