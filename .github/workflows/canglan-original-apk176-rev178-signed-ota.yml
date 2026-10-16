@@ -1,6 +1,11 @@
 name: Canglan ORIGINAL Installed APK176 rev178 - RSA Signed In-Game OTA
 on:
   workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'tools/publish_original_rev178_ota.py'
+      - '.github/workflows/canglan-original-apk176-rev178-signed-ota.yml'
 permissions:
   contents: write
   actions: read
