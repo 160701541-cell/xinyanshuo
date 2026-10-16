@@ -1,6 +1,8 @@
 extends SceneTree
 ## Real Godot engine-run regression. Explicitly NO claim of Android approval.
 const Rules = preload("res://scripts/world_rules.gd")
+const OriginalWorld = preload("res://scripts/world_state.gd")
+const Bridge = preload("res://scripts/world_state_bridge.gd")
 
 func _initialize() -> void:
 	call_deferred("_run")
@@ -36,14 +38,13 @@ func _run() -> void:
 		assert(npc.get_meta("entity_id")==world_entities[canonical].get("public_code"),
 			"Historical stable NPC public code mismatch")
 	var saved: Dictionary = authoritative.call("serialize")
-	var restored: RefCounted = load("res://scripts/world_state.gd").new()
+	var restored: RefCounted = OriginalWorld.new()
 	restored.call("restore",saved)
 	assert((restored.get("entities") as Dictionary).size()==80,
 		"Original WorldState serialize/restore compatibility broken")
 	var first_canonical: String = String(npcs.get_child(0).get_meta("canonical_id"))
 	var inventory_count: int = (authoritative.get("inventories") as Dictionary).size()
-	var bridge: Script = load("res://scripts/world_state_bridge.gd")
-	assert(not bridge.sync_actor(authoritative,first_canonical,Vector3(9999,0,9999),1.0),
+	assert(not Bridge.sync_actor(authoritative,first_canonical,Vector3(9999,0,9999),1.0),
 		"Motion authority allowed teleportation")
 	assert((authoritative.get("inventories") as Dictionary).size()==inventory_count,
 		"Rendering is not allowed to create inventory" )
