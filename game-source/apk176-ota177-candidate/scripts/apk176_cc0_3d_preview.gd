@@ -93,7 +93,7 @@ func _parse_cc0_asset(path: String) -> Node3D:
 		return null
 	var doc := GLTFDocument.new()
 	var state := GLTFState.new()
-	if doc.append_from_buffer(data, "", state) != OK:
+	if doc.append_from_buffer(data, path.get_base_dir(), state) != OK:
 		_model_errors.append("INVALID_CC0_GLTF:" + path)
 		return null
 	var mesh: Node3D = doc.generate_scene(state)
