@@ -499,3 +499,10 @@ Godot 4.4.1对从**原签名Android APK176**提取的实际`update_protocol.gdc`
 实际新增 `.github/workflows/canglan-original-apk176-rev178-signed-ota.yml`：构建/签名/发布**仅使用公开仓库 `160701541-cell/xinyanshuo`**，由GitHub Actions在主分支以 `actions/download-artifact@v4` 从同公开仓库对应已通过的真实Godot QA提取候选，验证后才会提交原游戏官网同一更新频道。该流程不会在失败时污染线上manifest；没有“忽略安全门失败”行为，也不引入独立安装包。用户不需要重新下载APK。
 
 **已真实触发，准确结果**：公开仓库运行 `38922763801` 在正式原RSA签名预检查阶段 `BLOCKED: original pinned-key RSA signer unavailable in PUBLIC xinyanshuo Actions context`，没有进入签名、没有推送。这里仅证明**这个公开仓库这次GitHub Actions作业没有拿到与APK176的RSA公钥匹配的私钥**，并不能断言用户曾经没有配置别的密钥；尤其不能把Android APK签名keystore误当成PCK更新清单RSA密钥。公开源代码无法自行恢复私钥，也不允许复用rev177签名给不同的rev178字节。当前官网仍是正式签名rev177，待公开仓库允许合法原RSA key注入后同一流水线可继续，但不可谎称已经更新到手机。
+
+### 2026-10-16 / rev178 实际发布重试（用户明确指令“开始发布”）
+- 只使用公开仓库 `160701541-cell/xinyanshuo`。用户授权实际发布，执行 GitHub Actions `rerun_failed_workflow_run_jobs`，正式原版OTA流程 `38922763801` 重试成功**启动**（尝试次数更新、作业ID `117047980016`）。
+- 最终结果 **FAIL CLOSED**：在 `Check original production signing key without exposing any secret` 步骤返回 `BLOCKED: original pinned-key RSA signer unavailable in PUBLIC xinyanshuo Actions context`、exit 2；后续下载QA PCK、签名、原官网提交步骤未执行。
+- 这只说明本次公开仓库Actions Job中注入的候选值**没有与已安装APK176固定公钥匹配的签名密钥**；不意味着用户没配置其他类型的密钥、也不代表密钥不存在。Android APK keystore与OTA manifest RSA是不同用途，不能混用。程序从未输出私钥明文。
+- 官网正式OTA `android-preview/latest.json` 仍是rev177；没有rev178已签名/已发布的证据。禁止补签伪证书、绕过签名校验、以独立APK替代或要求重新安装。
+- 下一步必须在**同一个公开仓库**检查 Actions Secret 名称和值的实际注入范围及其与原版内置RSA公钥的匹配（不暴露内容），然后重试同一公开OTA workflow；无授权匹配私钥前不能把rev178当成正式更新。
