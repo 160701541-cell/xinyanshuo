@@ -20,12 +20,12 @@ class CanglanLocalLLM : public Node {
     int cpu_threads = 3;
     static void _bind_methods();
     void load_internal(String absolute_path);
-    void reply_internal(String entity_code, String system_prompt, String human_text, int max_tokens);
+    void reply_internal(String entity_code, String system_prompt, String human_text, int max_tokens, bool intent_mode);
 public:
     CanglanLocalLLM() = default;
     ~CanglanLocalLLM() override;
     void load_gguf(String absolute_path, int context_tokens=2048, int threads=3);
-    void request_reply(String entity_code, String system_prompt, String human_text, int max_tokens=96);
+    void request_reply(String entity_code, String system_prompt, String human_text, int max_tokens=96, bool intent_mode=false);
     bool model_loaded() const { return loaded_flag.load(); }
     bool inference_busy() const { return busy_flag.load(); }
     void cancel();
