@@ -1,0 +1,80 @@
+name: Canglan WorldX - Four-View 3D Building Facades (NOT HD2D)
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/canglan-worldx-3d-four-facades.yml'
+      - 'tools/asset_factory/worldx_four_facades.mjs'
+      - 'tools/asset_factory/worldx_four_facades.prompt.md'
+      - 'tools/asset_factory/test_worldx_four_facades.mjs'
+      - 'tools/asset_factory/verify_worldx_four_facades.py'
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: canglan-worldx-four-sided-3d
+  cancel-in-progress: false
+jobs:
+  generate-real-worldx-facades:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    env:
+      ART_DIR: art-source/worldx3d/facades/courtyard_main_hall
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Before paid requests validate the 4-face design with actual WorldX contract
+        run: node --test tools/asset_factory/test_worldx_four_facades.mjs
+      - name: Use PUBLIC MIT upstream WorldX prompt renderer at exact pinned commit
+        uses: actions/checkout@v4
+        with:
+          repository: YGYOOO/WorldX
+          ref: edb4976de5963457dfbf5d2171355270a4ca1e79
+          path: worldx-upstream
+          persist-credentials: false
+      - name: Generate FOUR reference-conditioned orthographic facades, one request per view
+        id: generate
+        env:
+          SILICONFLOW_API_KEY: ${{ secrets.SILICONFLOW_API_KEY }}
+          RUN_URL: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git -C worldx-upstream rev-parse HEAD)" = edb4976de5963457dfbf5d2171355270a4ca1e79
+          test -n "$SILICONFLOW_API_KEY" || { echo "::error::Only public-repo SiliconFlow key is allowed"; exit 2; }
+          node tools/asset_factory/worldx_four_facades.mjs worldx-upstream "$ART_DIR"
+      - name: Verify real four distinct source PNG/JPG assets with SHA and metadata
+        if: steps.generate.outcome == 'success'
+        run: |
+          set -euo pipefail
+          python3 -m pip install --quiet pillow
+          python3 tools/asset_factory/verify_worldx_four_facades.py "$ART_DIR"
+      - name: Save produced assets even if later sides fail (no hidden paid retry)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: Canglan-WorldX-3D-4-SIDED-NOT-APPROVED-${{ github.run_id }}
+          path: ${{ env.ART_DIR }}
+          if-no-files-found: warn
+          retention-days: 21
+      - name: Commit produced UNAPPROVED source facades into public source library
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          if ! test -d "$ART_DIR"; then
+            echo 'NO_WORLDX_IMAGE_CREATED'
+            exit 0
+          fi
+          git config user.name 'canglan-worldx-asset-factory'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add "$ART_DIR"
+          if git diff --cached --quiet; then
+            echo 'NO_NEW_WORLDX_IMAGE_COMMIT'
+            exit 0
+          fi
+          git commit -m 'art(WorldX): four cardinal-view candidate facades for real 3D walls, NOT HD2D [skip ci]'
+          git pull --rebase origin main
+          git push origin HEAD:main
