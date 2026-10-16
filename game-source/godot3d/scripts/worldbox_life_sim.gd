@@ -99,8 +99,67 @@ func register_natural_node(entity_code: String, village_id: String, kind: String
 	if quantity<=0 or quantity>1000:
 		return false
 	natural_nodes[entity_code]={"id":entity_code,"village":village_id,
-		"kind":kind,"remaining":quantity,"depleted":false}
+		"kind":kind,"remaining":quantity,"capacity":quantity,
+		"depleted":false,"regen_units":0,"regen_hours":0,
+		"recovery_hours":0,"next_regen_hour":-1}
 	return true
+
+# Regeneration represents ecological regrowth or gradual geological exposure.
+# Rates are strictly bounded: one gather yields up to 3 units; even a rich
+# deposit replenishes at most 2 units per 12 simulated hours.
+func configure_resource_recovery(node_id: String, capacity: int,
+		regen_units: int, regen_hours: int, recovery_hours: int) -> bool:
+	if not natural_nodes.has(node_id):
+		return false
+	var node: Dictionary = natural_nodes[node_id]
+	if capacity < int(node["remaining"]) or capacity > 100000:
+		return false
+	if regen_units < 0 or regen_units > 2 or regen_hours < 12 or recovery_hours < 1:
+		return false
+	node["capacity"] = capacity
+	node["regen_units"] = regen_units
+	node["regen_hours"] = regen_hours
+	node["recovery_hours"] = recovery_hours
+	node["next_regen_hour"] = -1
+	return true
+
+func register_rich_mineral_vein(node_id: String, village_id: String,
+		kind: String, position: Vector3, capacity: int = 12000) -> bool:
+	if kind not in ["stone", "clay"] or capacity < 1001 or capacity > 100000:
+		return false
+	# Initial exposed seam; underground reserve is the bounded capacity.
+	if not register_natural_node(node_id, village_id, kind, 1000):
+		return false
+	if not configure_resource_recovery(node_id, capacity, 2, 12, 24):
+		natural_nodes.erase(node_id)
+		return false
+	return register_resource_position(node_id, position)
+
+func _absolute_hour() -> int:
+	return (day - 1) * 24 + hour
+
+func _recover_natural_resources() -> void:
+	var now: int = _absolute_hour()
+	for node_id in natural_nodes.keys():
+		var node: Dictionary = natural_nodes[node_id]
+		var interval: int = int(node.get("regen_hours", 0))
+		var units: int = int(node.get("regen_units", 0))
+		if interval <= 0 or units <= 0:
+			continue
+		if int(node["remaining"]) >= int(node["capacity"]):
+			node["next_regen_hour"] = -1
+			continue
+		var due: int = int(node.get("next_regen_hour", -1))
+		if due < 0:
+			node["next_regen_hour"] = now + interval
+			continue
+		if now < due:
+			continue
+		var cycles: int = 1 + (now - due) / interval
+		node["remaining"] = mini(int(node["capacity"]),
+			int(node["remaining"]) + cycles * units)
+		node["depleted"] = int(node["remaining"]) == 0
+		node["next_regen_hour"] = due + cycles * interval
 
 func register_resource_position(node_id: String, position: Vector3) -> bool:
 	if not natural_nodes.has(node_id) and not harvested_fields.has(node_id):
@@ -140,6 +199,8 @@ func gather_to_actor(actor_id: String, node_id: String) -> bool:
 	var amount: int = mini(3,int(source["remaining"]))
 	source["remaining"] = int(source["remaining"])-amount
 	source["depleted"] = int(source["remaining"])==0
+	if int(source.get("regen_units", 0)) > 0 and int(source.get("next_regen_hour", -1)) < 0:
+		source["next_regen_hour"] = _absolute_hour() + int(source["recovery_hours"]) + int(source["regen_hours"])
 	carried_by_actor[actor_id]={"kind":resource,"amount":amount,"node":node_id}
 	person["energy"] = maxi(0,int(person["energy"])-5)
 	person["schedule"]="carrying_"+resource
@@ -317,6 +378,7 @@ func tick() -> void:
 		hour=0
 		day+=1
 	_refresh_field_growth()
+	_recover_natural_resources()
 	for citizen_id in citizens.keys():
 		var person: Dictionary = citizens[citizen_id]
 		person["hunger"]=mini(100,int(person["hunger"])+4)
