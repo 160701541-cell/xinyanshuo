@@ -22,7 +22,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: Canglan-APK176-TRUE-MAIN-QA-rev177-UNSIGNED-NOT-FOR-PHONE
-          run-id: 38879627623
+          run-id: 38880259260
           github-token: ${{ github.token }}
           path: qa-results
       - name: Prove same original-game candidate SHA and restore actual APK resources
@@ -30,7 +30,7 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p qa-results/real-frame-capture
-          echo 'e5dce3b42cf36c34a06fcaedca137f9d7fac8dc5e623ad721af4c92480e4715d  qa-results/canglan-apk176-live-house-UNSIGNED.pck' | sha256sum -c -
+          echo 'f1a3391538d4fbb3193f4c85075aaea35d3ae5ce6d2b282c53f62c146f87920a  qa-results/canglan-apk176-live-house-UNSIGNED.pck' | sha256sum -c -
           python3 - <<'PY'
           from pathlib import Path
           import json,zipfile
