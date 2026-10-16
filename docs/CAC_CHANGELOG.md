@@ -613,3 +613,11 @@ Godot 4.4.1对从**原签名Android APK176**提取的实际`update_protocol.gdc`
 **本轮实际GitHub修复：** 核查最新原生Qwen+llama.cpp Linux GDExtension编译QA运行 `38950144223`，从完整Job log核实原C++ `libcanglan_ai.so` 实际在Linux编译成功，Job败在 Python文本合同断言：原引擎源码输出是`严格只输出单独一行 ACTION=xxx`，断言却错误找`只返回一行`，不是C++编译失败，更不是手机离线AI已运行。修改 `.github/workflows/canglan-offline-npc-native-linux-qa.yml`：断言精确匹配意图分支实际系统提示，并同时验证对话分支禁止凭空交易。提交 `8fc5eb559a395bf88ab000188a2a2bce22796f2d`，真实Linux QA run `38953517388` 自动启动，等待最终结论。**仅Linux编译QA，绝非Android ARM64、原版APK176的GDExtension已安装或手机GGUF实际推理。**
 
 **当前实际交付边界：** 源码改动和QA修复不构成新版本正式OTA。最后成功发布的原游戏RSA签名包为rev178，新的NPC生活/施工/CC0/离线AI内容尚未签发到原应用；不可拿独立测试APK替代。下一阶段要核实原版APK176的Android原生库可升级能力和不换包名、不换签名的安全路径，再决定需要APK覆盖还是仍可走签名PCK。
+
+## 2026-10-17 / CAC-PHONE-RELEASE-REQUEST-LOCAL-AI / 原手机APK176原生AI组件实际兼容性检查
+
+用户明确要求将“离线Qwen NPC + Kenney/Quaternius既有CC0模型 + NPC自主施工”**发布到原手机游戏，不新装独立APK**。按P0安全发布要求，先检查真正在用户手机上安装的原版APK176二进制有没有llama.cpp所需Android native ARM64动态库，防止仅把GDScript和3D源码仓库打成PCK、冒充功能正常。
+
+- 新增 `tools/audit_original_apk176_npc_ai_native_bridge.py`，公开repo本身已收录`android-preview/base-latest.json`指定的真实原APK176 ZIP二进制；逐条审计lib/*.so和Godot GDExtension相关元数据，输出清单与阻断理由，完全不需要访问私库、不产生APK、不泄漏密钥。
+- 新增仅用于真实性审计的公开repo Action `.github/workflows/canglan-original-npc-ai-phone-compat-audit.yml`；**真实CI `38954290732` 运行SUCCESS**，Job `117153125491` 回传 `ORIGINAL_NATIVE_LIBS 3 AI_BACKEND_MATCHES 0`、`P0_BLOCKED_ORIGINAL_APK176_NO_NATIVE_LLAMA_LIBS`、`PASS_TRUTHFUL_PHONE_RELEASE_BOUNDARY_AUDIT`。这意味着**原版APK176中没有可核验的llama.cpp / canglan_ai / ggml本地推理Android动态库**；只通过PCK上传权重和脚本不可能让内置 `ClassDB.class_exists("CanglanLocalLLM")` 自动变真。现有单独3D工程里的NPC本地AI逻辑/CC0已实测，不等于安装版兼容。
+- **正式手机发布状态**：目前`android-preview/latest.json`仍然revision178，本次未签rev179、未发布不兼容PCK、未生成其他包、未碰用户存档。**这不是成功发布**。推进路径：在唯一公库构建同原包名、同原签名的Android底层升级，以带合法原版keystore签名的覆盖APK只做一次llama.cpp ARM64/GDExtension初始化与真正3D世界兼容迁移；之后内容继续签名PCK OTA。或先发布不依赖本地AI的新行为与建设系统，但同样先证明原版主场景3D装载兼容。不得谎称旧APK176本身已经有离线Qwen。
