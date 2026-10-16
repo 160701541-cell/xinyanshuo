@@ -97,7 +97,17 @@ jobs:
           echo '7af3fdf842f87b24672f8a7f1dd50404043f0bfb71093ff91c31d2b49df4631d  game-source/godot3d/models/Qwen3-0.6B.Q4_K_M.gguf' \
             | sha256sum -c -
           test "$(stat -c %s game-source/godot3d/models/Qwen3-0.6B.Q4_K_M.gguf)" -gt 450000000
-          echo 'PASS: actual Apache 2 Qwen3 quantized model downloaded; exact sha verified'
+          # Redistribution requires the full original Apache 2.0 and MIT texts.
+          curl -fL --retry 3 --connect-timeout 25 \
+            'https://huggingface.co/Qwen/Qwen3-0.6B/raw/main/LICENSE' \
+            -o game-source/godot3d/local_ai/LICENSE-QWEN-APACHE-2.0.txt
+          curl -fL --retry 3 --connect-timeout 25 \
+            'https://raw.githubusercontent.com/ggml-org/llama.cpp/b6000/LICENSE' \
+            -o game-source/godot3d/local_ai/LICENSE-LLAMACPP-MIT.txt
+          grep -Fq 'Apache License' game-source/godot3d/local_ai/LICENSE-QWEN-APACHE-2.0.txt
+          grep -Fq 'MIT License' game-source/godot3d/local_ai/LICENSE-LLAMACPP-MIT.txt \
+            || grep -Fq 'Permission is hereby granted' game-source/godot3d/local_ai/LICENSE-LLAMACPP-MIT.txt
+          echo 'PASS: exact Apache 2 model and llama.cpp MIT licenses staged with verified weights'
       - name: Build actual Linux offline llama.cpp GDExtension for end-to-end model test
         shell: bash
         run: |
