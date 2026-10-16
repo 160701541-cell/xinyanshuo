@@ -1,0 +1,70 @@
+name: Canglan WorldX props batch03 (6 candidates, no retries)
+on:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/canglan-worldx-props-batch03.yml']
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: canglan-worldx-generation
+  cancel-in-progress: false
+jobs:
+  generate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    env:
+      ART_DIR: game-source/apk176-ota177-candidate/hd2d/worldx-generated/batch03
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify batch limits without paid API calls
+        run: node --test tools/asset_factory/test_worldx_props_batch03.mjs
+      - uses: actions/checkout@v4
+        with:
+          repository: YGYOOO/WorldX
+          ref: edb4976de5963457dfbf5d2171355270a4ca1e79
+          path: worldx-upstream
+      - name: Generate at most six new candidates, sequential, no generation retry
+        env:
+          SILICONFLOW_API_KEY: ${{ secrets.SILICONFLOW_API_KEY }}
+          RUN_URL: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: node tools/asset_factory/worldx_props_batch03.mjs worldx-upstream "$ART_DIR"
+      - name: Validate actual image dimensions and recorded SHA
+        run: |
+          python3 -m pip install --quiet pillow
+          python3 - <<'PY'
+          import os,json,hashlib
+          from pathlib import Path
+          from PIL import Image
+          root=Path(os.environ['ART_DIR'])
+          names=['alchemy_furnace','smith_workbench','herb_drying_rack','market_stall','wood_handcart','standing_lantern']
+          for name in names:
+              meta=json.loads((root/(name+'.json')).read_text())
+              image=root/meta['file']
+              assert hashlib.sha256(image.read_bytes()).hexdigest()==meta['sha256']
+              with Image.open(image) as im:
+                  im.load()
+                  assert im.size==(1024,1024), im.size
+              assert meta['status']=='GENERATED_UNAPPROVED'
+          print('PASS_6_REAL_SOURCE_IMAGES_NOT_VISUALLY_APPROVED')
+          PY
+      - name: Preserve completed candidates even if a later generation fails
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: WorldX-props-batch03-UNAPPROVED-${{ github.run_id }}
+          path: ${{ env.ART_DIR }}/
+          if-no-files-found: warn
+      - name: Commit validated source candidates only (no game scene or release changes)
+        run: |
+          git config user.name 'canglan-actions'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add "$ART_DIR"
+          if ! git diff --cached --quiet; then
+            git commit -m 'art(worldx): batch03 six village and cultivation props unapproved source candidates'
+            git pull --rebase origin main
+            git push origin HEAD:main
+          fi
