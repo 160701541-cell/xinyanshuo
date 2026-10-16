@@ -18,6 +18,8 @@ var dragging := false
 var touches: Dictionary = {}
 var _background: ColorRect
 var _status: Label
+var _house_portal: Control
+var _original_world_toggle: Button
 var _interaction_actions: HBoxContainer
 var _day_tint: ColorRect
 var _is_night := false
@@ -56,10 +58,11 @@ func _build_visual() -> void:
 	_interaction_actions = HBoxContainer.new()
 	_interaction_actions.name = "WorldXSceneActions"
 	gui.add_child(_interaction_actions)
-	var switch := Button.new()
-	switch.text = "返回原世界 / 重新打开 HD2D"
-	switch.pressed.connect(func(): _set_visible(not active))
-	gui.add_child(switch)
+	_original_world_toggle = Button.new()
+	_original_world_toggle.name = "OriginalWorldToggle"
+	_original_world_toggle.text = "返回原世界"
+	_original_world_toggle.pressed.connect(func(): _set_visible(not active))
+	gui.add_child(_original_world_toggle)
 	var note := Label.new()
 	note.text = "这是游戏内临时对照场景，原世界仍在运行，存档不变"
 	gui.add_child(note)
@@ -79,7 +82,18 @@ func _build_visual() -> void:
 	lighting.text = "昼夜切换"
 	lighting.pressed.connect(_toggle_day_night)
 	gui.add_child(lighting)
+	_install_house_portal()
 	_update_art_transform()
+
+func _install_house_portal() -> void:
+	var house_script: Script = load("res://scripts/hd2d_house_portal.gd")
+	if house_script == null:
+		push_error("Building interior transition controller unavailable")
+		return
+	_house_portal = house_script.new()
+	_house_portal.name = "CanglanExteriorInteriorPortal"
+	panel.add_child(_house_portal)
+	_house_portal.install(art_world, _status)
 
 func _add_worldx_surface() -> void:
 	# Reuse ACTUAL raster images from the MIT WorldX sample world.
@@ -263,15 +277,14 @@ func _set_visible(show: bool) -> void:
 	_background.visible = show
 	art_world.visible = show
 	_day_tint.visible = show
+	if _house_portal != null:
+		_house_portal.set_overlay_visible(show)
 	# Preserve an always-available return/re-open action without intercepting
 	# touches on the original 3D game when HD2D is hidden.
 	panel.mouse_filter = Control.MOUSE_FILTER_PASS if show else Control.MOUSE_FILTER_IGNORE
 	_status.text = "HD2D已打开" if show else "原游戏运行中"
-	for child in panel.get_children():
-		if child is VBoxContainer:
-			for widget in child.get_children():
-				if widget is Button:
-					widget.text = "返回原世界" if show else "重新打开HD2D"
+	if _original_world_toggle != null:
+		_original_world_toggle.text = "返回原世界" if show else "重新打开HD2D"
 
 func _update_art_transform() -> void:
 	if art_world == null:
@@ -281,6 +294,8 @@ func _update_art_transform() -> void:
 
 func _unhandled_input(event: InputEvent) -> void:
 	if not active:
+		return
+	if _house_portal != null and _house_portal.inside:
 		return
 	if event is InputEventScreenTouch and event.pressed:
 		if _worldx_interact(event.position):
