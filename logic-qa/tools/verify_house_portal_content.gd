@@ -91,6 +91,13 @@ func _test() -> void:
 	if not portal._room.has_node("WorldXKolorsInteriorCandidate"):
 		_fail("INTERIOR_VISUAL_NOT_APPLIED", 21)
 		return
+	# Headless node visibility alone was a false positive: the 1st real
+	# raster screenshot proved that the indoor Control was size 0.
+	var indoor_texture_rect: TextureRect = portal._room.get_node("WorldXKolorsInteriorCandidate")
+	for rect in [portal, portal._room, indoor_texture_rect]:
+		if rect.size.x < 800.0 or rect.size.y < 480.0:
+			_fail("INTERIOR_RASTER_RECT_ZERO_SIZE_" + str(rect.name), 22)
+			return
 	if outer != portal._outside_image_present or inner != portal._inside_image_present:
 		_fail("IMAGE_LOADER_STATUS_INCONSISTENT", 17)
 		return
