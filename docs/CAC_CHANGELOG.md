@@ -225,3 +225,6 @@
 6. **额外独立验证**：新增真正APK176编译器内`Crypto.verify`协议的Godot 4.4.1签名接受性测试。首次CI识别仅Linux测试夹具缺失Terrain3D本机GDExtension；已按用户APK中Android .so的SHA-256严格比对真实上游v1.0.2后恢复Linux同版插件，避免假造引擎错误、也不改动签名更新；本项最终结论以新的CI结果为准。
 
 对应官网可见版本条目同步进入 `data/updates.json` 与 `data/development.json`，历史旧数据保留。所有研发新内容下次再发，**不再修改rev177已经签名的PCK**；后续修订需使用更高revision和原有RSA签名链。
+
+### rev177 原客户端签名协议最终复验（2026-10-16T10:10Z）
+Godot 4.4.1对从**原签名Android APK176**提取的实际`update_protocol.gdc`/`update_channel.gdc`运行`Crypto.verify`、实际已发布PCK的SHA/长度和`ProjectSettings.load_resource_pack`，并装载原`res://scenes/main.tscn`。本机Terrain3D同版校验后，GitHub Actions [run 38885361170](https://github.com/160701541-cell/xinyanshuo/actions/runs/38885361170) **SUCCESS**，输出 `PASS_APK176_PERMANENT_RSA_PCK_AND_CANONICAL_MAIN_SCENE` 与 `PASS_ORIGINAL_ANDROID_UPDATER_NATIVE_GODOT_RSA_REV177_RESOURCE_MOUNT`。因此不仅OpenSSL、也确证**原版Godot客户端验签方式接受rev177发布**。真实用户Android手机下载、存档和画风验收仍待操作。
