@@ -653,3 +653,14 @@ Godot 4.4.1对从**原签名Android APK176**提取的实际`update_protocol.gdc`
 **新增测试**：`acdde42f916f0c779296d42d2508782fbc8b1d49` 添加 `game-source/godot3d/tests/resource_conservation_smoke.gd`，覆盖1000 tick无资源凭空生成、有限树木采集、双重交货拒绝、耗尽后拒采、重新启动清空旧状态。
 
 **真实QA状态**：测试源码已提交，**尚未运行Godot**（当前执行环境没有Godot命令），不能写通过。仍需在公开CI跑真实Godot引擎测试；既有`autonomous_village_director.gd`还存在“根据NPC住址生成自然节点”和临时BoxMesh视觉资产问题，后续按先有资源后派工重构。**正式OTA状态**：仍为rev178；未完成原版APK176兼容审计、RSA签名PCK、手机实机验收，不能称已更新手机。
+
+
+## 2026-10-17 / SIM-002-PREEXISTING-RESOURCES / NPC不再为任务生成资源
+
+按`docs/GAME_ENGINEERING_MASTER.md`继续推进G2：`worldbox_life_sim.gd`新增`resource_positions`及`register_resource_position`、`get_available_resource_nodes`，查询仅返回**预先登记、具有世界坐标、尚未耗尽**的资源，按ID排序，重启清理坐标；提交`39b3790cf15a0fb639d9505ba45f092a44631ac8`。
+
+`autonomous_village_director.gd`改为仅给NPC分派已存在的节点、避免多个NPC初次争抢同一节点；不再在派工时注册树/石/田。提交`6a8d6519ff862883bdef6cbbd62cc4f14143d1f2`。移除该调度器用于资源与货物的临时BoxMesh造型，待合法现成3D资产接入，提交`c598d4e29ffb56ce4aa4800644bf49dfc34ce25b`。扩充资源守恒测试：位置登记、耗尽后不可再次分派、重启清空坐标，提交`0ed99712b9bcf1cec3160447ce3917608fe171d5`。
+
+**重要限制/潜在回归**：当前调度器不再自动生成资源，因此若原场景没有**在setup前**预先登记节点及坐标，NPC不会接到采集工作，画面也不会有旧BoxMesh树/石占位。此为P0世界生成前置依赖，下一批必须补上真正独立世界资源播种、合法资产渲染桥和场景接线；不能称已形成完整可玩闭环。
+
+**QA状态**：GitHub源码已提交，尚未运行真实Godot/安卓，测试结果PENDING；没有签发新PCK，原版仍rev178，未手机验收。
