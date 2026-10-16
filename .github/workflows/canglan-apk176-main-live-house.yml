@@ -167,7 +167,7 @@ jobs:
             exit 1
           fi
           echo 'PASS_APK176_ACTUAL_MAIN_INSTANTIATED_NO_ENGINE_ERRORS_WITH_REAL_HOUSE'
-      - name: Prepare revision177 UNSIGNED handoff; independently prove only release RSA signature is missing
+      - name: Prepare revision178 UNSIGNED handoff; independently prove only release RSA signature is missing
         shell: bash
         env:
           CANGLAN_QA_PCK_PATH: ${{ github.workspace }}/qa-results/canglan-apk176-live-house-UNSIGNED.pck
@@ -175,31 +175,31 @@ jobs:
           set -euo pipefail
           python3 logic-qa/release-gate/sign_pck_release.py \
             --pack "$CANGLAN_QA_PCK_PATH" \
-            --revision 177 \
+            --revision 178 \
             --minimum-android-code 1176 \
             --maximum-android-code 1176 \
-            --pack-url 'https://160701541-cell.github.io/xinyanshuo/android-preview/canglan-content-rev-177.pck' \
+            --pack-url 'https://160701541-cell.github.io/xinyanshuo/android-preview/canglan-content-rev-178.pck' \
             --notes '苍岚原版：WorldX真实地图、正房室外室内及进出功能候选' \
             --unsigned-template \
-            --output qa-results/canglan-rev177-UNSIGNED-NOT-FOR-PHONE.json
+            --output qa-results/canglan-rev178-UNSIGNED-NOT-FOR-PHONE.json
           python3 tools/ota_release_gate.py \
-            --candidate qa-results/canglan-rev177-UNSIGNED-NOT-FOR-PHONE.json \
+            --candidate qa-results/canglan-rev178-UNSIGNED-NOT-FOR-PHONE.json \
             --pck "$CANGLAN_QA_PCK_PATH" \
-            --report qa-results/ota-rev177-UNSIGNED-gate-report.json \
-            > qa-results/ota-rev177-gate-output.log 2>&1 && {
+            --report qa-results/ota-rev178-UNSIGNED-gate-report.json \
+            > qa-results/ota-rev178-gate-output.log 2>&1 && {
               echo '::error::Unsigned candidate unexpectedly passed an RSA release gate'; exit 1;
             }
           python3 - <<'PY'
           import json,hashlib,os,pathlib
-          result=json.loads(pathlib.Path('qa-results/ota-rev177-UNSIGNED-gate-report.json').read_text())
+          result=json.loads(pathlib.Path('qa-results/ota-rev178-UNSIGNED-gate-report.json').read_text())
           bad=result['candidate']['errors']
           assert bad == ['RSA signature DOES NOT match immutable public key in installed APK'], bad
-          assert result['required_next_revision']==177
-          m=json.loads(pathlib.Path('qa-results/canglan-rev177-UNSIGNED-NOT-FOR-PHONE.json').read_text())
-          assert m['revision']==177 and m['minimum_android_code']==1176
+          assert result['required_next_revision']==178
+          m=json.loads(pathlib.Path('qa-results/canglan-rev178-UNSIGNED-NOT-FOR-PHONE.json').read_text())
+          assert m['revision']==178 and m['minimum_android_code']==1176
           assert m['maximum_android_code']==1176 and m['signature']==''
           assert m['_not_a_release']=='UNSIGNED_DEVELOPER_TEMPLATE_DO_NOT_HOST'
-          print('PASS_REV177_PACK_BYTES_VERSION_RANGE_AND_UNSIGNED_RSA_SAFETY_GATE',
+          print('PASS_REV178_PACK_BYTES_VERSION_RANGE_AND_UNSIGNED_RSA_SAFETY_GATE',
                 m['sha256'],m['size_bytes'])
           print('RELEASE_BLOCKER_ONLY_ORIGINAL_APK_RSA_PRIVATE_KEY')
           PY
@@ -207,13 +207,13 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: Canglan-APK176-TRUE-MAIN-QA-rev177-UNSIGNED-NOT-FOR-PHONE
+          name: Canglan-APK176-TRUE-MAIN-QA-rev178-UNSIGNED-NOT-FOR-PHONE
           path: |
             qa-results/live-*.log
             qa-results/live-house-pck-index.log
             qa-results/canglan-apk176-live-house-UNSIGNED.pck
-            qa-results/canglan-rev177-UNSIGNED-NOT-FOR-PHONE.json
-            qa-results/ota-rev177-UNSIGNED-gate-report.json
-            qa-results/ota-rev177-gate-output.log
+            qa-results/canglan-rev178-UNSIGNED-NOT-FOR-PHONE.json
+            qa-results/ota-rev178-UNSIGNED-gate-report.json
+            qa-results/ota-rev178-gate-output.log
           if-no-files-found: warn
           retention-days: 14
