@@ -128,6 +128,7 @@ func _build_avatar() -> void:
 	avatar.position = Vector3(0,3.0,38.0)
 	add_child(avatar)
 	var shape := CollisionShape3D.new()
+	shape.name = "CollisionShape3D"
 	var capsule := CapsuleShape3D.new()
 	capsule.radius = 0.35
 	capsule.height = 1.85
