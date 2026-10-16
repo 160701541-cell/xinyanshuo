@@ -1,0 +1,15 @@
+{
+  "id": "courtyard_gate_closed",
+  "batch": "worldx-props-batch02",
+  "model": "Kwai-Kolors/Kolors",
+  "pipeline": "WorldX native prompt loader + SiliconFlow",
+  "file": "courtyard_gate_closed.png",
+  "sha256": "491d429659c50ba5a8c15d474738d345852f6b2083a48a0d7144e754a9e44731",
+  "upstream_commit": "edb4976de5963457dfbf5d2171355270a4ca1e79",
+  "status": "GENERATED_UNAPPROVED",
+  "reference_conditioning": false,
+  "style_control": "text_only_requires_visual_review",
+  "transparency": "NOT_CLEANED",
+  "license_status": "PROVIDER_TERMS_REVIEW_REQUIRED",
+  "run_url": "https://github.com/160701541-cell/xinyanshuo/actions/runs/38875940357"
+}

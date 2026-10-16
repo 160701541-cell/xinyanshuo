@@ -1,0 +1,15 @@
+{
+  "id": "village_stone_well",
+  "batch": "worldx-props-batch02",
+  "model": "Kwai-Kolors/Kolors",
+  "pipeline": "WorldX native prompt loader + SiliconFlow",
+  "file": "village_stone_well.png",
+  "sha256": "8bd125ae9648b0e3314c8fcf18f8ff81d9ef1d5d662d1e6709421a299045a291",
+  "upstream_commit": "edb4976de5963457dfbf5d2171355270a4ca1e79",
+  "status": "GENERATED_UNAPPROVED",
+  "reference_conditioning": false,
+  "style_control": "text_only_requires_visual_review",
+  "transparency": "NOT_CLEANED",
+  "license_status": "PROVIDER_TERMS_REVIEW_REQUIRED",
+  "run_url": "https://github.com/160701541-cell/xinyanshuo/actions/runs/38875940357"
+}
