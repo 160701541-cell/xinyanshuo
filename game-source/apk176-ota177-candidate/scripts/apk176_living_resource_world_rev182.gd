@@ -420,13 +420,16 @@ func _move_gatherer(worker: Dictionary, delta: float) -> void:
       var actual_seeds: int = eco.delivered_seed_from_actor(code)
       if actual_seeds > 0:
         _add_event("种子实际入库×" + str(actual_seeds))
-        var new_id: String = eco.plant_first_available()
-        if not new_id.is_empty():
-          var position: Vector3 = eco.trees[new_id]["position"]
-          var sapling: Node3D = _place_asset("tree", new_id, position, 0.10)
-          if sapling != null:
-            natural_meshes[new_id] = sapling
-          _add_event("村民把1枚真种子种入林地 " + new_id)
+        # Keep half of the delivered seeds as REAL village stock available
+        # for future player/NPC planting, instead of consuming every seed.
+        if eco.planted_count * 2 < eco.minted_seed_events:
+          var new_id: String = eco.plant_first_available()
+          if not new_id.is_empty():
+            var position: Vector3 = eco.trees[new_id]["position"]
+            var sapling: Node3D = _place_asset("tree", new_id, position, 0.10)
+            if sapling != null:
+              natural_meshes[new_id] = sapling
+            _add_event("村民消耗1枚种子种入林地 " + new_id)
       _add_event(code + " 运输入库")
       worker["phase"] = "idle"
 
