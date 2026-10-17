@@ -374,8 +374,8 @@ func _update_streamed_meadow_cut(position: Vector3,radius: float) -> void:
 func _on_terrain_changed(position: Vector3,radius: float) -> void:
   # Chunk edit removes the correct physical vegetation without looping
   # over 4500 legacy centre tufts and touching out-of-bounds old cells.
-  var idx: Vector2i=terrain.call("_indices",position.x,position.z)
-  if not bool(terrain.call("_in_bounds",idx.x,idx.y)):
+  var center_cell: Vector2i=terrain.call("_indices",position.x,position.z)
+  if not bool(terrain.call("_in_bounds",center_cell.x,center_cell.y)):
     _update_streamed_meadow_cut(position,radius)
     return
   # A real excavation can never leave old 3D grass hovering above its soil.
