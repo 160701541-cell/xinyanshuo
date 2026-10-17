@@ -1067,8 +1067,16 @@ func _step_native_animals(delta: float) -> void:
     elif beast["state"]=="attack" and float(beast[
         "attack_cooldown"])<=0.0 and hero!=null:
       # Actual HP decrement, not just a hostile label / attack animation.
-      var hit_player: Dictionary=controls.call(
-        "apply_player_damage",int(beast["damage"]))
+      var bullet_path:=PhysicsRayQueryParameters3D.create(
+        actor.position+Vector3.UP*1.25,hero.position+Vector3.UP*0.95,2)
+      bullet_path.exclude=[(beast["collider"] as StaticBody3D).get_rid()]
+      var blocked: Dictionary=world.get_world_3d().direct_space_state.intersect_ray(
+        bullet_path)
+      if not blocked.is_empty():
+        beast["state"]="alert"
+        continue
+      var hit_player: int=int(controls.call(
+        "apply_player_damage",int(beast["damage"])))
       beast["attack_cooldown"]=2.2
       beast["mana"]=maxi(0,int(beast["mana"])-(
         3 if int(beast["mana"])>=3 else 0))
