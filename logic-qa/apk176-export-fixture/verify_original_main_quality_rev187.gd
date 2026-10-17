@@ -1373,6 +1373,17 @@ func _run() -> void:
   if not bool(player.get("_soar_landing")):
     _fail(280,"REV202_NORMAL_LANDING_BUTTON_MUST_ENTER_DESCENT")
     return
+  # User's P0: cancel landing while still airborne must resume actual
+  # sword-flight even above a blocking roof; never trap the action forever.
+  player.call("toggle_avatar_flight")
+  if bool(player.get("_soar_landing")) or (
+      float(player.get("_soar_target_altitude"))<3.0):
+    _fail(340,"REV205_FLYING_SWORD_CANNOT_TAKEOFF_AGAIN_WHILE_LANDING")
+    return
+  player.call("toggle_avatar_flight")
+  if not bool(player.get("_soar_landing")):
+    _fail(341,"REV205_RESUMED_FLYING_SWORD_CANNOT_START_CONTROLLED_LANDING_AGAIN")
+    return
   player.call("step",0.80)
   if String(player.get("camera_mode"))!="third" or float(player.get("_soar_altitude"))>0.045:
     _fail(281,"REV202_NORMAL_LANDING_BUTTON_FAILED_TO_RETURN_TO_GROUND")
@@ -1705,6 +1716,7 @@ func _run() -> void:
   print("PASS_REV201_ACTUAL_LICENSED_ALTAR_HIDDEN_DETERMINISTIC_ROOT_12_AUTONOMOUS_CULTIVATORS_REAL_HOUR_MEDITATION_QI_AND_BREAKTHROUGH_SAVED")
   print("PASS_REV204_AUTHORITY_GATED_LEARNED_QI_BOLT_SPEND_REAL_MANA_TRAVEL_HIT_AND_LEVEL2_WARD")
   print("PASS_REV205_REAL_CC0_MOBILE_SKIN_8_SHORTCUTS_TRUE_SKY_FEET_SWIPES_AND_DUEL_LOCKON")
+  print("PASS_REV205_TRUE_SOAR_CANCEL_LANDING_AND_RETAKEOFF")
   room.call("_focus_builder")
   if not bool(room.get("_follow_builder")) or float(room.get("_camera_distance")) > 14.0:
     _fail(42,"BUTTON_MUST_ACTUALLY_FOCUS_VISIBLE_NPC")
