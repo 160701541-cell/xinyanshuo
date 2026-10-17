@@ -171,8 +171,13 @@ func _run() -> void:
   if bool(room.get("developer_ui_visible")) or ui.get_node("ProductionInspector").visible:
     _fail(143,"REV188_DEBUG_QA_CONTROLS_SHOULD_BE_HIDDEN_IN_NORMAL_GAMEPLAY")
     return
-  var gauges: ProgressBar=game_hud.get_node("LiveGameVitalsRev188/MarginContainer/VBoxContainer/RealHealthFromFallDamageAndFood")
-  var stamina: ProgressBar=game_hud.get_node("LiveGameVitalsRev188/MarginContainer/VBoxContainer/ActualWorldCitizenEnergy")
+  var found_hp: Array[Node]=game_hud.find_children("RealHealthFromFallDamageAndFood","ProgressBar",true,false)
+  var found_stamina: Array[Node]=game_hud.find_children("ActualWorldCitizenEnergy","ProgressBar",true,false)
+  if found_hp.size()!=1 or found_stamina.size()!=1:
+    _fail(144,"REV188_LIVE_VITALS_NOT_IN_ACTUAL_SCENE_TREE")
+    return
+  var gauges: ProgressBar=found_hp[0] as ProgressBar
+  var stamina: ProgressBar=found_stamina[0] as ProgressBar
   if gauges==null or stamina==null or int(gauges.value)!=100:
     _fail(144,"REV188_MOBILE_HEALTH_OR_STAMINA_GAUGE_NOT_REAL")
     return
