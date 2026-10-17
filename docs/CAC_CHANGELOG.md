@@ -1145,3 +1145,26 @@ Godot 4.4.1对从**原签名Android APK176**提取的实际`update_protocol.gdc`
 - **实际截图可检验**：run`39018512560`的真实Godot双机位人物截图artifact`12095587220`是修改后构建采集的人物清晰像素存在证据：近景实际玩家是深蓝衣服金发基础低模，45°镜头同一地形下人和NPC可以看到；场景里可居住房屋/屋顶/精致修仙人物仍不达标，**本轮只声称“人物重现”不声称“画质优秀”**。
 - **公网验签已真实通过**：专用`.github/workflows/canglan-rev198-real-pages-http-proof.yml` commit`83c52d3`，run`39018709779`、job`117356012718` **completed/success**，公开Pages完整下载真实PCK **21,779,104字节**、原APK176固定公钥 RSA 验签、SHA256 `02e5ddb16934aa3388d834ef6ead788e967b88ed377e452bcafee96983dc9bd8`匹配、HTTP Range **206**，`PASS_APK176_REAL_REV198_PUBLIC_PAGES_RSA_SHA256_HTTP_RANGE_PHONE_DOWNLOAD_READY`。缓存max-age600，手机仍未执行，`still_needs_physical_phone_acceptance:true`。
 - **下步**：玩家手机更新原APK176到rev198后，重点验收人是否能看见、七个控制按钮、真实可跳能落地、能角色飞行升降、45°跟随、锁镜头、双指缩放、石阶可登、墙树石停止穿模、第一人称脸/手可读性。仍须改良高品质精细CC0角色/衣服脸/建筑/植被，不应用CI像素门禁把所有P0已解决。
+
+
+## 2026-10-17 / rev201 真实修仙入门：世界灵脉种子、12名修士、古石灵根检测、吐纳与炼气突破｜正式原APK176签名PCK发布＋公网站点验签成功
+
+### 用户要求、手机与实际能力边界
+- 用户使用**一加 Ace 5 Pro**（官方骁龙8至尊版/Adreno830，RAM有12GB与16GB两档，用户具体内存未确认），要求本地模型优于原0.6B、御剑飞行、世界种子生成、明显更多修仙NPC、人物可以修炼、放置能交互查看自身灵根的真实检测台。已核实官方产品规格、ggml-org Qwen3-1.7B 和Qwen原厂Qwen3-4B GGUF文件。详细决策文档：`docs/ACE5PRO_OFFLINE_NPC_MODEL_UPGRADE_REV201.md` commit`26da5b4`；**推荐1.7B Q4_K_M约1.28GB常驻，4B Q4_K_M约2.497GB可选增强**。但原APK176仍缺原生CanglanLocalLLM/llama.cpp ARM64，玩家手机并没有下载或加载这两套权重，仍须原游戏相同包名/签名证书的合法覆盖APK升级一次；PCK绝不可冒充本地大模型已成功运行。现在NPC是**规则自治，不是LLM对话**。
+
+### 同一原游戏的真实代码
+- 新`game-source/apk176-ota177-candidate/scripts/apk176_cultivation_world_rev201.gd` commit`8bdda2c`：由首次启动生成**可复现的修仙生态世界seed**（用户路径`user://canglan_original_cultivation_seed_v1.json`原子保存），稳定生成12名游历/采药/巡山/散修的姓名、个人实体ID、五行属性、年龄、体力、饥饿、炼气层数、不同日程和初值；玩家实际灵根由相同种子＋身份ID确定，**未亲自到检测台以前不得在HUD或public API显示结果**。存档同一随机种子、检测结果、玩家吐纳/境界进度，不因重开重复随机天资。原已有地形的采挖和玩家存档原封不动，原核心Terrain3D/跨区块地形已有独立seed20261017——**本rev的种子只控制修仙层NPC与灵脉/灵根，尚非整个地形重新生成、新建多个世界槽位或无穷地貌的完成**。
+- 用户能从出生区域往东约10m到一个真实**Kenney授权石阶组成的古代灵根检测台**（稳定ID `CL-ANCIENT-SPIRIT-ROOT-TEST-ALTAR`，石台实际Godot GLB网格+真实碰撞/青色世界指示圈+中文Label3D，不是单纯UI文字）。靠近3.4m内点实际手机HUD「检测灵根」才能获得个人金木水火土或无灵根评定。可修角色从遗迹铭文获得首门吐纳知识（不是凭空发实体丹药、灵石、金币）；无灵根无法作弊施仙术仍能修习凡人战斗。
+- 「吐纳修炼」接**已有真实WorldBox sim.tick整世界小时**，每个小时真实消耗玩家经济角色4体力、按灵根权重/离检测台灵脉远近/世界种子计算增长灵气，经脉负荷升高并暂停；「突破炼气」按层消耗真实修为/检查经脉，第一次升级为炼气一层，直到13层属于首版修真进阶。不得越级直接跳筑基，也不虚发灵石、丹药或已有高级飞剑技能。闭关时世界全NPC、施工、饥饿、生态、昼夜按真实倍速一起前进，法力/功法凭登记知识规则产生。
+- 12名新修士的实际已授权**Quaternius有骨骼的GLB**在真实3D地图生成，原角色甲胄材质按个体重新染色、沿用有真GLB发丝、实际Idle/Walk动作、中文名/职业/境界/时刻表，全部有`StaticBody3D`胶囊碰撞体（防止再次人体穿透）；每小时按姓名ID独立修炼/采药探路/巡山/休息并随世界时间变动，已验证实体数量和碰撞而非只写数组。**尚没有12套不同精致原创人形、复杂宗门AI、完整采药产出交易/真实宗门住房与死亡寿元反馈**，不得称这已是完整NPC社会。
+- **原APK接线**：`apk176_living_resource_world_rev187.gd` commit`b44f1d6` 在原3D Main创建玩家与自然环境后实例化同一个cultivation authority，并在同一个12秒/世界小时权威时钟里调`advance_world_hour`，真实场景每帧跟地形更新人物动画与碰撞。HUD原`apk176_player_controller_rev187.gd` commit`2eca87d`增加**检测灵根/吐纳修炼/突破**三触摸按钮、当前种子和修士数量、灵根测后才显示类型、境界、当前灵气和经脉负荷；原跳飞/角色镜头/多人触控仍在。没有新增独立APK/HTML/伪造后台AI。
+- 原PCK打包路径`logic-qa/tools/build_apk176_quality_rev187.gd` commit`1c43bcd`明确把修仙模块打到`res://canglan_rev187/cultivation_world.gd`；正式workflows staging真正复制新脚本，不是只提交源文件给GitHub。
+- 前序rev200**真实串行阻塞已解决**：原hair QA让`MeshInstance3D`自身查`find_children()`得到空列表，不能认定角色无头发；commit`3f86e93`修正`_visible_bounds()`包含网格本身，rev200工作流commit`47feae3`复制当时已纳入原Main的新模块并过全QA，run`39024405446`**completed/success**发布正式revision200。rev201第一次run`39024167663` **完整真Godot QA已通过但不允许跨过rev200签名**，签发被`stage_original_next_ota.py`以`QA candidate is not next-revision APK176 template`阻止，绝没有绕过；正式rev201工作流commit`8889c7f`升级为必须**当前revision200→201**的严格生产安全检查，按顺序发布。
+- rev201细化NPC碰撞及外观commit`c9189d6`，原QA`logic-qa/apk176-export-fixture/verify_original_main_quality_rev187.gd` commits`bf9e178`,`dc73f93`：真实本机Godot 4.4.1原APK176 Main测试检测台持有Kenney GLB实体ID、12名骨骼人物和12个真人碰撞胶囊、生成种子JSON复现、未测根性隐藏、离台过远失败、手机按钮真回调、同一天12名NPC各自推进时辰、玩家按世界100倍速同步花体力涨修为，真的扣灵气成功突破1层并立即原子存档重新加载依旧一致。正式工作流`.github/workflows/canglan-original-apk176-rev201-spiritual-seed-alter-cultivator-signed.yml` run`39024654444` job`117373249564` **completed/success**，全旧玩法经济/采挖/树林/模型/Android HUD/画质/地形/原Godot截图等门禁保持，`PASS_REV201_ACTUAL_LICENSED_ALTAR_HIDDEN_DETERMINISTIC_ROOT_12_AUTONOMOUS_CULTIVATORS_REAL_HOUR_MEDITATION_QI_AND_BREAKTHROUGH_SAVED`通过。此为Linux Godot/Mesa引擎实测，**不是一加手机帧率或触屏实机通过**。
+- **实际原APK176固定证书公钥RSA签名发布**：GitHub正式工厂run`39024654444`印`original_rsa_signature_verified:true`及`PASS_REV201_SIGNED_OTA_PUBLISHED_TO_PUBLIC_MAIN`。当前公共manifest`android-preview/latest.json`revision **201**、versionCode只允许**1176**、新PCK**22,037,120字节**、SHA256 `245762e18945383660ecf6a100760be993d86259f25753ac5f41121ffe27c687`，旧rev199/200仍保留原签名文件、旧手机存档不抹。
+- **独立官网实际网络验证**：`.github/workflows/canglan-rev201-real-pages-http-proof.yml` commit`517462d` run`39024907778` job`117373877645` **completed/success**，原网站真实HTTPS完整下载22,037,120字节，原APK固定RSA签名/SHA-256全部一致，HTTP Range 返回206，标记`PASS_APK176_REAL_REV201_PUBLIC_PAGES_RSA_SHA256_HTTP_RANGE_PHONE_DOWNLOAD_READY`；CDN manifest cache max-age600s。手机用户安装/更新后实际查看是否可显示台、跑修炼和飞剑动画、发热/卡顿**仍待实机**。
+
+### 下一阶段阻塞
+- 本地AI原APK没有Native llama.cpp/GDExtension，升级必须恢复同一包名、原APK正式keystore覆盖签名打包，且在手机完成真实SHA256权重下载、安装、聊天推理、NPC行为与世界数据门禁；当前不能称Qwen正在游戏运行。
+- 世界 seed 目前只影响修仙层，不可更换原流式地形seed，否则会损坏用户已经采挖保存的区块；正式生成全地图须加多世界存档隔离/初始生成顺序/保存迁移后再交付。
+- 修仙NPC更多且有真实骨骼/碰撞/作息，但服装角色粗糙、人物模型重复，复杂宗门社会/经济支撑、门派成品材质和动画仍未达用户参考标准；下一步真实手机体验QA优先。
