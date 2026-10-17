@@ -113,6 +113,11 @@ var spirit_resource_visuals: Dictionary={}
 var licensed_understory_count: int=0
 var licensed_understory_draw_parts: int=0
 var licensed_understory_triangle_budget: int=0
+# Soil edits MUST remove foliage from changed cells in the GPU buffer.
+# Logical positions are authoritative: imported GLB node pivots can be offset.
+var licensed_understory_locations: Array[Transform3D]=[]
+var licensed_understory_draws: Array[MultiMeshInstance3D]=[]
+var licensed_understory_source_offsets: Array[Transform3D]=[]
 const SPIRIT_CC0_SOURCES: Dictionary={
   "flower":"res://canglan_rev187/cc0_spirit/herb/flower.glb",
   "flower2":"res://canglan_rev187/cc0_spirit/herb/flower2.glb",
@@ -220,6 +225,8 @@ func _ready() -> void:
   # the physical quality/vegetation controller is initialized. The earlier
   # call ran before quality existed and rejected all genuine bush sources.
   _spawn_licensed_living_understory()
+  terrain_world.connect("terrain_cell_changed",
+    Callable(self,"_on_understory_terrain_changed"))
   _set_dev_ui_visible(false)
   _update_camera()
   _sync_living_daylight()
@@ -852,6 +859,7 @@ func _spawn_licensed_living_understory() -> void:
       Vector3.ONE*scale_factor),
       Vector3(x,float(terrain_world.call("height_at",x,z)),z))
     locations.append(t)
+  licensed_understory_locations=locations.duplicate()
   for part in actual_parts:
     # Detached original GLTF source has no world transform; compose its
     # existing authoring transform hierarchy without calling to_global().
@@ -874,11 +882,43 @@ func _spawn_licensed_living_understory() -> void:
     draw.cast_shadow=GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
     draw.visibility_range_end=73.0
     world.add_child(draw)
+    licensed_understory_draws.append(draw)
+    licensed_understory_source_offsets.append(offset)
     licensed_understory_draw_parts+=1
   licensed_understory_count=locations.size()
   licensed_understory_triangle_budget=locations.size()*source_triangles
   if licensed_understory_count<24:
     asset_errors.append("REV207_UNDERSTORY_ALL_LICENSED_BUSHES_MISSING")
+
+# A live excavation destroys only the currently affected living
+# understorey instance; never leave floating plants on mined/compacted soil.
+# The original licensed GLB part survives and the instance GPU slot is
+# hidden until ecological replanting yields a new viable location. No loot.
+func _on_understory_terrain_changed(at: Vector3,radius: float) -> void:
+  if quality==null or licensed_understory_draws.is_empty():
+    return
+  for idx in range(licensed_understory_locations.size()):
+    var original: Transform3D=licensed_understory_locations[idx]
+    var pos: Vector3=original.origin
+    if Vector2(pos.x-at.x,pos.z-at.z).length()>radius+1.5:
+      continue
+    var valid: bool=bool(quality.call("_natural_plantable",pos.x,pos.z))
+    for draw_idx in range(licensed_understory_draws.size()):
+      var batch: MultiMesh=licensed_understory_draws[draw_idx].multimesh
+      # Source transform stored independently per immutable vendor mesh part.
+      batch.set_instance_transform(idx,original*licensed_understory_source_offsets[
+        draw_idx] if valid else Transform3D(
+          Basis.IDENTITY.scaled(Vector3.ZERO),Vector3.ZERO))
+
+func _living_shrub_count() -> int:
+  if licensed_understory_draws.is_empty():
+    return 0
+  var mm: MultiMesh=licensed_understory_draws[0].multimesh
+  var count: int=0
+  for index in range(mm.instance_count):
+    if absf(mm.get_instance_transform(index).basis.determinant())>0.0000001:
+      count+=1
+  return count
 
 func _spawn_spirit_resource_nodes() -> void:
   if spirit_resources==null or not bool(spirit_resources.get("_loaded")):
@@ -1833,6 +1873,7 @@ func stats() -> Dictionary:
     "rev207_real_cc0_shrub_understory":licensed_understory_count,
     "rev207_real_cc0_shrub_draw_nodes":licensed_understory_draw_parts,
     "rev207_real_cc0_shrub_triangles":licensed_understory_triangle_budget,
+    "rev207_real_cc0_shrub_live_after_terrain_edits":_living_shrub_count(),
     "rev206_world_spirit_resource_visuals":spirit_resource_visuals.size(),
     "rev206_licensed_spirit_plant_rock_sources":spirit_resource_sources.size(),
     "rev206_native_animated_wildlife_count":_wildlife_anim_count,
