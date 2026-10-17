@@ -4,6 +4,7 @@ on:
     branches: [feat/rev208-green-kenney-saplings-vegetation]
     paths:
       - '.github/workflows/canglan-rev208-hq-mature-trees-convert-godot-import.yml'
+      - 'tools/asset_factory/rev208_optimize_mature_cc0_trees.py'
   workflow_dispatch:
 permissions:
   contents: write
