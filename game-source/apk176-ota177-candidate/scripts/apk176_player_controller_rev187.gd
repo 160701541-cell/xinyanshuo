@@ -1668,7 +1668,8 @@ func step(delta: float) -> void:
   _fall_damage_cd=maxf(0.0,_fall_damage_cd-delta)
   _spar_tick(delta)
   terrain.call("stream_around",actor.position)
-  var previous_ground_y: float=float(terrain.call("height_at",actor.position.x,actor.position.z))
+  _step_jump(delta)
+  var previous_ground_y: float=_ground_surface_y(actor.position.x,actor.position.z)
   var input_axis: Vector2 = _joystick
   # Touch joystick wins while a finger is actually manipulating it.
   if _joystick_touch<0 and _pad_device>=0:
@@ -1708,32 +1709,53 @@ func step(delta: float) -> void:
   elif input_axis.length()>0.08 and camera_mode=="fly":
     var flight_dir: Vector3=(_right()*input_axis.x+_forward()*(-input_axis.y)).normalized()
     _flight_position+=flight_dir*clampf(9.5+(_flight_position.y*0.15),9.5,22.0)*delta
-    _flight_position.x=clampf(_flight_position.x,-300,300)
-    _flight_position.z=clampf(_flight_position.z,-300,300)
+    _flight_position.y=maxf(1.4,_flight_position.y)
     _flight_m+=flight_dir.length()*delta
     _set_movement_animation(false)
+  elif input_axis.length()>0.08 and camera_mode=="soar":
+    # REAL avatar flight, not a camera-only illusion; streamed collision
+    # chunks remain populated as the actor moves across world coordinates.
+    var fly_vector: Vector3=(_right()*input_axis.x+_forward()*(-input_axis.y)).normalized()
+    var flying_target: Vector3=actor.position+fly_vector*8.0*delta
+    if _can_actor_move_to(flying_target,
+        _ground_surface_y(flying_target.x,flying_target.z)+_soar_altitude):
+      actor.position.x=flying_target.x
+      actor.position.z=flying_target.z
+      _soar_distance_m+=8.0*delta
+      _flight_m+=8.0*delta
+    actor.rotation.y=atan2(fly_vector.x,fly_vector.z)
+    _set_movement_animation(false)
   elif input_axis.length()>0.08:
-    _follow_npc = false
+    _follow_npc=false
     room.set("_follow_builder",false)
-    var motion: Vector3 = (_right()*input_axis.x + _forward()*(-input_axis.y)).normalized()
-    var velocity: float = MOVE_SPEED
-    var candidate: Vector3 = actor.position + motion*velocity*delta
-    var nearby_height: float = float(terrain.call("height_at",candidate.x,candidate.z))
-    var current_height: float = float(terrain.call("height_at",actor.position.x,actor.position.z))
-    if bool(terrain.call("stream_contains_physical_chunk",candidate.x,candidate.z)) and not bool(terrain.call("is_water",candidate.x,candidate.z)):
-      if nearby_height-current_height <= 0.85:
-        actor.position.x = candidate.x
-        actor.position.z = candidate.z
-        _movement_m += velocity*delta
-    actor.rotation.y = atan2(motion.x,motion.z)
-    _set_movement_animation(true)
+    var motion: Vector3=(_right()*input_axis.x+_forward()*(-input_axis.y)).normalized()
+    var actual_move: float=MOVE_SPEED*delta
+    var candidate: Vector3=actor.position+motion*actual_move
+    var previous_pos: Vector3=actor.position
+    var current_height: float=_ground_surface_y(previous_pos.x,previous_pos.z)
+    # Validate a swept full-height human capsule against real structures.
+    # If a corner blocks both axes, try each independently for wall sliding.
+    for place in [candidate,Vector3(candidate.x,actor.position.y,previous_pos.z),
+        Vector3(previous_pos.x,actor.position.y,candidate.z)]:
+      var possible: Vector3=place
+      if not bool(terrain.call("is_water",possible.x,possible.z)):
+        var height: float=_ground_surface_y(possible.x,possible.z)
+        var diff: float=height-current_height
+        if diff <= (1.05 if _jump_height>0 else 0.46) and diff>=-1.10 and (
+            _can_actor_move_to(possible)):
+          actor.position.x=possible.x
+          actor.position.z=possible.z
+          _movement_m+=Vector2(possible.x-previous_pos.x,possible.z-previous_pos.z).length()
+          break
+    actor.rotation.y=atan2(motion.x,motion.z)
+    _set_movement_animation(actor.position.distance_squared_to(previous_pos)>0.00001)
   else:
     _set_movement_animation(false)
-  # Character visual standing on actual physical surface, not a 2D painted
-  # panel. Re-snap to the currently excavated triangle beneath the feet.
-  var new_ground_y: float=float(terrain.call("height_at",actor.position.x,actor.position.z))
-  actor.position.y = new_ground_y + float(actor.get_meta("actor_ground_offset_y",0.0))
-  if previous_ground_y-new_ground_y>2.3 and _fall_damage_cd<=0.0:
+  # Ground, walkable-stair ramps, true jump parabola and voluntary avatar
+  # flight share ONE player height. No per-frame snapping away real jumping.
+  var new_ground_y: float=_ground_surface_y(actor.position.x,actor.position.z)
+  actor.position.y=new_ground_y+float(actor.get_meta("actor_ground_offset_y",0.0))+_jump_height+_soar_altitude
+  if previous_ground_y-new_ground_y>2.3 and _fall_damage_cd<=0.0 and _jump_height<=0.0 and _soar_altitude<=0.0:
     apply_player_damage(roundi((previous_ground_y-new_ground_y-2.0)*10.0))
     _fall_damage_cd=0.8
   if not bool(room.get("_follow_builder")):
@@ -1755,24 +1777,39 @@ func _set_movement_animation(moving: bool) -> void:
 func _safe_camera_position(target: Vector3, desired: Vector3) -> Vector3:
   if world==null or world.get_world_3d()==null:
     return desired
-  # Original art had no PhysicsBody3D -> add them to stage props in scene.
-  # Cast from player head to desired camera. Stop before the first wall.
-  var ray: PhysicsRayQueryParameters3D=PhysicsRayQueryParameters3D.create(
-    target,desired,3)
-  ray.collide_with_areas=false
-  var hit: Dictionary=world.get_world_3d().direct_space_state.intersect_ray(ray)
-  if hit.is_empty():
-    return desired
-  var hit_position: Vector3=hit["position"]
-  _camera_collision_hits+=1
-  var step: Vector3=(desired-target).normalized()
-  var safe_distance: float=maxf(0.65,target.distance_to(hit_position)-0.38)
-  return target+step*safe_distance
+  var travel: Vector3=desired-target
+  if travel.length()<0.20:
+    return target+Vector3.UP*0.5
+  var space:=world.get_world_3d().direct_space_state
+  var direction: Vector3=travel.normalized()
+  var adjusted: Vector3=desired
+  # Use a real swept sphere, not only a thin zero-width ray. The actual
+  # camera has a near plane; a center-line ray previously let walls intrude.
+  var cast:=PhysicsShapeQueryParameters3D.new()
+  cast.shape=_camera_sphere
+  cast.transform=Transform3D(Basis(),target)
+  cast.collision_mask=2
+  cast.motion=travel
+  cast.margin=0.02
+  var safe: PackedFloat32Array=space.cast_motion(cast)
+  if safe.size()>0 and safe[0]<0.999:
+    var travel_fraction: float=maxf(0.01,float(safe[0])-0.045)
+    adjusted=target+travel*travel_fraction
+    _camera_collision_hits+=1
+  else:
+    var ray:=PhysicsRayQueryParameters3D.create(target,desired,2)
+    var hit: Dictionary=space.intersect_ray(ray)
+    if not hit.is_empty():
+      adjusted=target+direction*maxf(0.68,target.distance_to(hit["position"])-0.42)
+      _camera_collision_hits+=1
+  if bool(terrain.call("stream_contains_physical_chunk",adjusted.x,adjusted.z)):
+    adjusted.y=maxf(adjusted.y,_ground_surface_y(adjusted.x,adjusted.z)+0.54)
+  return adjusted
 
 func update_camera() -> void:
   if camera==null or actor==null:
     return
-  camera.near=0.08
+  camera.near=0.14 # Near clip should not cut through the character
   if camera_mode=="fly":
     camera.position=_flight_position
     camera.look_at(camera.position+Vector3(-sin(_yaw)*cos(_pitch),
@@ -1796,19 +1833,19 @@ func update_camera() -> void:
     camera.look_at(target,Vector3.UP)
     return
   if is_first_person:
-    camera.position=Vector3(actor.position.x,
-      float(terrain.call("height_at",actor.position.x,actor.position.z))+1.65,
-      actor.position.z)
+    # Keep the real character rig visible; the lens sits in front of the
+    # face, allowing arms/legs on downward look without looking into a head.
+    camera.position=actor.position+Vector3.UP*1.58+_forward()*0.36
     camera.look_at(camera.position+Vector3(-sin(_yaw)*cos(_pitch),
       sin(_pitch),-cos(_yaw)*cos(_pitch)),Vector3.UP)
   else:
-    var target: Vector3=Vector3(actor.position.x,
-      float(terrain.call("height_at",actor.position.x,actor.position.z))+1.35,
-      actor.position.z)
+    var target: Vector3=actor.position+Vector3.UP*1.19
     var offset:=Vector3(sin(_yaw)*cos(_pitch),
       sin(_pitch),cos(_yaw)*cos(_pitch))
     var desired: Vector3=target+offset*_distance
-    desired.y=maxf(desired.y,float(terrain.call("height_at",desired.x,desired.z))+0.7)
+    if camera_mode=="iso":
+      _pitch=PI/4.0
+    desired.y=maxf(desired.y,_ground_surface_y(desired.x,desired.z)+0.7)
     camera.position=_safe_camera_position(target,desired)
     camera.look_at(target,Vector3.UP)
 
@@ -1922,6 +1959,18 @@ func stats() -> Dictionary:
     "touch_look":true,
     "pinch_zoom":true,
     "zoom_buttons":2,
+    "pinch_events_real_input":_pinch_zoom_events,
+    "visible_camera_shortcuts":7,
+    "camera_angle_locked":_camera_angle_locked,
+    "iso45_follow_camera":camera_mode=="iso" and absf(_pitch-PI/4.0)<0.001,
+    "third_person_avatar_visible":actor!=null and actor.visible,
+    "jump_count":_jump_count,
+    "landing_count":_landing_count,
+    "jump_height_m":_jump_height,
+    "actual_avatar_flight":camera_mode=="soar",
+    "avatar_soar_altitude_m":_soar_altitude,
+    "avatar_soar_distance_m":_soar_distance_m,
+    "blocked_real_wall_steps":_blocked_wall_steps,
     "interaction_count":_interaction_count,
     "dig_count":_dig_count,
     "movement_m":_movement_m,
