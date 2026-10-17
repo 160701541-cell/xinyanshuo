@@ -1319,6 +1319,36 @@ func cast_spirit_bolt() -> Dictionary:
   projectile.position=source
   projectile.cast_shadow=GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
   world.add_child(projectile)
+  # Particle trail lives in WORLD coordinates, so traveling orb leaves an
+  # observable path instead of a tiny static dot. Mobile-bounded 14 sprites.
+  var trail:=GPUParticles3D.new()
+  trail.name="TravelingQiBoltSpiritTailActuallyEmitting"
+  trail.amount=14
+  trail.lifetime=0.31
+  trail.one_shot=false
+  trail.local_coords=false
+  var motion:=ParticleProcessMaterial.new()
+  motion.gravity=Vector3.ZERO
+  motion.initial_velocity_min=0.12
+  motion.initial_velocity_max=0.40
+  motion.emission_shape=ParticleProcessMaterial.EMISSION_SHAPE_SPHERE
+  motion.emission_sphere_radius=0.04
+  trail.process_material=motion
+  var trail_quad:=QuadMesh.new()
+  trail_quad.size=Vector2(0.09,0.09)
+  var trail_paint:=StandardMaterial3D.new()
+  trail_paint.shading_mode=BaseMaterial3D.SHADING_MODE_UNSHADED
+  trail_paint.billboard_mode=BaseMaterial3D.BILLBOARD_ENABLED
+  trail_paint.cull_mode=BaseMaterial3D.CULL_DISABLED
+  trail_paint.transparency=BaseMaterial3D.TRANSPARENCY_ALPHA
+  trail_paint.albedo_color=_art_tint()
+  trail_paint.emission_enabled=true
+  trail_paint.emission=_art_tint()
+  trail_paint.emission_energy_multiplier=1.6
+  trail_quad.material=trail_paint
+  trail.draw_pass_1=trail_quad
+  projectile.add_child(trail)
+  trail.emitting=true
   _spell_projectiles.append({
     "node":projectile,"distance_left":9.5,
     "damage":14+int(spiritual.call("public_player_status").get("layer",1))*4})
