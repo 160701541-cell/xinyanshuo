@@ -108,18 +108,15 @@ var spirit_resources: RefCounted
 var world_society: RefCounted
 var spirit_resource_sources: Dictionary={}
 var spirit_resource_visuals: Dictionary={}
-# Actual source-GLB understorey, GPU MultiMesh instancing with preserved UV
-# and vendor surface PBR. Count not conflated with harvestable medicine.
+# True original Quaternius GLB plants, cloned (meshes, UV, real source
+# materials). A bounded 210-source-node CPU fallback is safer than silently
+# rendering identity matrix MultiMesh ghosts on the actual Godot 4.4.1 GPU.
 var licensed_understory_count: int=0
 var licensed_understory_draw_parts: int=0
 var licensed_understory_triangle_budget: int=0
-# Soil edits MUST remove foliage from changed cells in the GPU buffer.
-# Logical positions are authoritative: imported GLB node pivots can be offset.
-var licensed_understory_locations: Array[Transform3D]=[]
-var licensed_understory_draws: Array[MultiMeshInstance3D]=[]
-var licensed_understory_source_offsets: Array[Transform3D]=[]
-var licensed_understory_render_indices: Array[int]=[]
-var licensed_understory_unplantable: Dictionary={}
+var licensed_understory_locations: Array[Vector3]=[]
+var licensed_understory_instances: Array[Node3D]=[]
+var licensed_understory_surfaces_per_plant: int=0
 const SPIRIT_CC0_SOURCES: Dictionary={
   "flower":"res://canglan_rev187/cc0_spirit/herb/flower.glb",
   "flower2":"res://canglan_rev187/cc0_spirit/herb/flower2.glb",
@@ -799,172 +796,104 @@ func quote_and_fund_near_house(point: Vector3) -> Dictionary:
 # engine's plantability mask excludes ponds, rock, paths and excavation.
 # This is decorative living understorey, NOT free harvestable inventory:
 # collectible medicine remains the strictly conserved spirit_resource ledger.
+# Licensed 3D undergrowth MUST be real GPU-renderable models, not an
+# arbitrary scene graph or plant data. Verified Godot 4.4.1 Main QA found
+# imported-GLB MultiMesh instance_set_transform, and even bulk set_buffer,
+# roundtripping as IDENTITY at (0,0,0). The source-authorized GLB source
+# scene duplication used successfully by medicinal herbs avoids phantom
+# bushes and retains exact textured UV/normal maps. We cap the mobile draw
+# budget rather than claiming one batch when no legitimate batch exists.
 func _spawn_licensed_living_understory() -> void:
   if not spirit_resource_sources.has("bush") or quality==null:
     asset_errors.append("REV207_UNDERSTORY_CC0_BUSH_NOT_IMPORTED")
     return
   var original: Node3D=spirit_resource_sources["bush"]
-  var meshes: Array[Node]=original.find_children("*","MeshInstance3D",true,false)
-  if meshes.is_empty():
-    asset_errors.append("REV207_UNDERSTORY_REAL_GLTF_SOURCE_HAS_NO_MESH")
-    return
+  var part_nodes: Array[Node]=original.find_children("*","MeshInstance3D",true,false)
   var source_triangles: int=0
-  var actual_parts: Array[MeshInstance3D]=[]
-  for source in meshes:
-    var part: MeshInstance3D=source as MeshInstance3D
-    if part==null or part.mesh==null:
+  var surface_count: int=0
+  for node in part_nodes:
+    var source: MeshInstance3D=node as MeshInstance3D
+    if source==null or source.mesh==null:
       continue
-    actual_parts.append(part)
-    for idx in range(part.mesh.get_surface_count()):
-      var arrays: Array=part.mesh.surface_get_arrays(idx)
-      var indices: PackedInt32Array=arrays[Mesh.ARRAY_INDEX]
-      var vertices: PackedVector3Array=arrays[Mesh.ARRAY_VERTEX]
-      source_triangles+=int(indices.size()/3) if not indices.is_empty() else (
-        int(vertices.size()/3))
-  if actual_parts.is_empty() or source_triangles<=0:
-    asset_errors.append("REV207_UNDERSTORY_EMPTY_OR_NONTRIANGLE_LICENSED_GLTF")
+    for index in range(source.mesh.get_surface_count()):
+      var arrays: Array=source.mesh.surface_get_arrays(index)
+      var faces: PackedInt32Array=arrays[Mesh.ARRAY_INDEX]
+      var points: PackedVector3Array=arrays[Mesh.ARRAY_VERTEX]
+      source_triangles+=int(faces.size()/3) if not faces.is_empty() else (
+        int(points.size()/3))
+      surface_count+=1
+  if source_triangles<=0 or surface_count<=0:
+    asset_errors.append("REV207_NO_REAL_LICENSED_SOURCE_BUSH_MESH_AND_TEXTURE")
     return
-  # Hard source-aware mobile triangle budget: do not multiply a 20k-tri
-  # authored plant by 1,000 on phones. Conservative, deterministic upper
-  # bound; exact draw calls still depend on original GLB surface count.
-  var count: int=clampi(220000/maxi(1,source_triangles),24,980)
-  var random:=RandomNumberGenerator.new()
-  random.seed=20261018
-  var locations: Array[Transform3D]=[]
+  # CPU-drawcall ceiling: one genuine authored GLB node per shrub. Existing
+  # 10,800 grass MultiMeshes still cover ground underneath the shrubs.
+  var target: int=clampi(116000/maxi(1,source_triangles),96,210)
+  var rng:=RandomNumberGenerator.new()
+  rng.seed=20261018
   var attempts: int=0
-  while locations.size()<count and attempts<count*12:
+  while licensed_understory_count<target and attempts<target*14:
     attempts+=1
-    var x: float=random.randf_range(-42.0,42.0)
-    var z: float=random.randf_range(-42.0,42.0)
+    var x: float=rng.randf_range(-42.0,42.0)
+    var z: float=rng.randf_range(-42.0,42.0)
     if not bool(quality.call("_natural_plantable",x,z)):
       continue
-    # Keep the exact six real CC0 housing blueprints (including paid future
-    # houses), stair access and medical herb nodes free of rooted bushes.
-    var reserved: bool=false
+    var excluded: bool=false
     for site in housing_blueprints.values():
-      var p: Vector3=site["at"]
-      if Vector2(x-p.x,z-p.z).length()<7.2:
-        reserved=true
+      var home: Vector3=site["at"]
+      if Vector2(x-home.x,z-home.z).length()<7.2:
+        excluded=true
         break
-    if reserved:
+    if excluded:
       continue
-    var no_collision: bool=true
-    for living_herb in spirit_resource_visuals.values():
-      var h: Node3D=living_herb["model"]
-      if Vector2(h.position.x-x,h.position.z-z).length()<1.6:
-        no_collision=false
+    for herb in spirit_resource_visuals.values():
+      var h: Node3D=herb["model"]
+      if Vector2(x-h.position.x,z-h.position.z).length()<1.6:
+        excluded=true
         break
-    if not no_collision:
+    if excluded:
       continue
-    var scale_factor: float=random.randf_range(0.38,0.72)
-    var t:=Transform3D(Basis(Vector3.UP,random.randf_range(-PI,PI)).scaled(
-      Vector3.ONE*scale_factor),
-      Vector3(x,float(terrain_world.call("height_at",x,z)),z))
-    locations.append(t)
-  licensed_understory_locations=locations.duplicate()
-  for part in actual_parts:
-    # Detached original GLTF source has no world transform; compose its
-    # existing authoring transform hierarchy without calling to_global().
-    var offset: Transform3D=Transform3D.IDENTITY
-    var cursor: Node3D=part
-    while cursor!=null and cursor!=original:
-      offset=cursor.transform*offset
-      cursor=cursor.get_parent() as Node3D
-    var batch:=MultiMesh.new()
-    batch.transform_format=MultiMesh.TRANSFORM_3D
-    batch.mesh=part.mesh
-    batch.instance_count=locations.size()
-    var draw:=MultiMeshInstance3D.new()
-    draw.name="RealQuaterniusLicensedPBRUnderstoryBatched_"+str(
-      licensed_understory_draw_parts)
-    draw.multimesh=batch
-    draw.material_override=part.material_override
-    draw.cast_shadow=GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-    draw.visibility_range_end=73.0
-    world.add_child(draw)
-    # Subscene is alive; the centralized compact renderer will initialize
-    # all only-visible slots after every vendor part is registered.
-    licensed_understory_draws.append(draw)
-    licensed_understory_source_offsets.append(offset)
-    licensed_understory_draw_parts+=1
-  licensed_understory_count=locations.size()
-  licensed_understory_triangle_budget=locations.size()*source_triangles
-  _rebuild_visible_shrub_gpu_slots()
-  if licensed_understory_count<24:
-    asset_errors.append("REV207_UNDERSTORY_ALL_LICENSED_BUSHES_MISSING")
+    var model: Node3D=original.duplicate()
+    model.name="RealQuaterniusLicensedUnderstory_%03d" % licensed_understory_count
+    var y: float=float(terrain_world.call("height_at",x,z))
+    model.position=Vector3(x,y,z)
+    model.rotation.y=rng.randf_range(-PI,PI)
+    model.scale=Vector3.ONE*rng.randf_range(0.38,0.72)
+    model.set_meta("source_license","Quaternius-CC0")
+    model.set_meta("never_free_inventory",true)
+    model.set_meta("source_prefab","bush.glb")
+    world.add_child(model)
+    licensed_understory_locations.append(Vector3(x,y,z))
+    licensed_understory_instances.append(model)
+    licensed_understory_count+=1
+  licensed_understory_surfaces_per_plant=surface_count
+  licensed_understory_draw_parts=licensed_understory_count*surface_count
+  licensed_understory_triangle_budget=licensed_understory_count*source_triangles
+  if licensed_understory_count<96 or licensed_understory_triangle_budget>140000:
+    asset_errors.append("REV207_LIVE_LICENSED_UNDERGROWTH_MOBILE_BUDGET_OR_DENSITY")
 
-# MultiMesh may round-trip any hidden zero/small-scale instance as an
-# IDENTITY matrix at world origin. Instead of making fake invisible objects,
-# COMPACT the live natural shrub slots and set visible_instance_count. This
-# is the genuine GPU culling contract and preserves authored GLB transforms.
-func _rebuild_visible_shrub_gpu_slots() -> void:
-  if licensed_understory_draws.is_empty():
-    return
-  licensed_understory_render_indices.clear()
-  for original_id in range(licensed_understory_locations.size()):
-    if not licensed_understory_unplantable.has(original_id):
-      licensed_understory_render_indices.append(original_id)
-  for draw_idx in range(licensed_understory_draws.size()):
-    var mm: MultiMesh=licensed_understory_draws[draw_idx].multimesh
-    var source: Transform3D=licensed_understory_source_offsets[draw_idx]
-    # Bulk-upload the complete SOURCE GLB authoring transform buffer.
-    # Godot's RenderingServer can return default IDENTITY in headless mode
-    # after repeated per-instance writes on an imported PBR MultiMesh.
-    # The full buffer is atomic, retains real UV/normal/PBR geometry and
-    # prevents a partially initialized 3D population in the phone renderer.
-    var vertex_stride: int=12
-    var bytes: PackedFloat32Array=PackedFloat32Array()
-    bytes.resize(mm.instance_count*vertex_stride)
-    for i in range(mm.instance_count):
-      var tx: Transform3D=Transform3D.IDENTITY
-      if i<licensed_understory_render_indices.size():
-        var original_id: int=licensed_understory_render_indices[i]
-        tx=licensed_understory_locations[original_id]*source
-      var o: int=i*vertex_stride
-      bytes[o+0]=tx.basis.x.x
-      bytes[o+1]=tx.basis.y.x
-      bytes[o+2]=tx.basis.z.x
-      bytes[o+3]=tx.origin.x
-      bytes[o+4]=tx.basis.x.y
-      bytes[o+5]=tx.basis.y.y
-      bytes[o+6]=tx.basis.z.y
-      bytes[o+7]=tx.origin.y
-      bytes[o+8]=tx.basis.x.z
-      bytes[o+9]=tx.basis.y.z
-      bytes[o+10]=tx.basis.z.z
-      bytes[o+11]=tx.origin.z
-    mm.set_buffer(bytes)
-    mm.visible_instance_count=licensed_understory_render_indices.size()
-    if draw_idx==0 and mm.visible_instance_count>0:
-      print("REV207_BULK_VENDOR_GLTF_SHRUB_BUFFER_PROOF",
-        " visible=",mm.visible_instance_count,
-        " uploaded=",bytes.size(),
-        " actual=",mm.get_instance_transform(0),
-        " target=",licensed_understory_locations[
-          licensed_understory_render_indices[0]]*source)
-
-
+# An excavation kills only the bushes on the affected real surface cells.
+# Their source-authored GLB meshes remain in the memory pool for later
+# biological recovery; no origin-identity GPU clones or free inventories.
 func _on_understory_terrain_changed(at: Vector3,radius: float) -> void:
-  if quality==null or licensed_understory_draws.is_empty():
+  if quality==null:
     return
-  var changed: bool=false
-  for idx in range(licensed_understory_locations.size()):
-    var pos: Vector3=licensed_understory_locations[idx].origin
+  for index in range(licensed_understory_instances.size()):
+    var pos: Vector3=licensed_understory_locations[index]
     if Vector2(pos.x-at.x,pos.z-at.z).length()>radius+1.5:
       continue
-    var exists: bool=licensed_understory_unplantable.has(idx)
-    var viable: bool=bool(quality.call("_natural_plantable",pos.x,pos.z))
-    if not viable and not exists:
-      licensed_understory_unplantable[idx]=true
-      changed=true
-    elif viable and exists:
-      licensed_understory_unplantable.erase(idx)
-      changed=true
-  if changed:
-    _rebuild_visible_shrub_gpu_slots()
+    var stem: Node3D=licensed_understory_instances[index]
+    if is_instance_valid(stem):
+      stem.visible=bool(quality.call("_natural_plantable",pos.x,pos.z))
+      if stem.visible:
+        stem.position.y=float(terrain_world.call(
+          "height_at",pos.x,pos.z))
 
 func _living_shrub_count() -> int:
-  return licensed_understory_render_indices.size()
+  var visible: int=0
+  for living in licensed_understory_instances:
+    if is_instance_valid(living) and living.visible:
+      visible+=1
+  return visible
 
 func _spawn_spirit_resource_nodes() -> void:
   if spirit_resources==null or not bool(spirit_resources.get("_loaded")):
