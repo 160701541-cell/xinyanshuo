@@ -177,6 +177,42 @@ func _capture() -> void:
       _fail("REV208_MAIN_GENUINE_PBR_MATURE_TREE_IMAGE_MISSING_"+tree_id)
       return
   print("PASS_REV208_THREE_TRUE_8_9M_PBR_TREE_GODOT441_ORIGINAL_MAIN_RENDERED_SCREENSHOTS")
+  # NEW: three genuine evergreen / understory original-Main art evidence
+  # photographs, never vendor thumbnails, concept art or a separate QA scene.
+  var real_botanicals: Dictionary=room.get("hq_botanical_visuals")
+  for forest_frame in [
+      {"kind":"pine","file":"real_godot_rev208_hq_pine_forest_actual_main.png"},
+      {"kind":"cypress","file":"real_godot_rev208_hq_cypress_grove_actual_main.png"},
+      {"kind":"fern","file":"real_godot_rev208_hq_fern_understory_actual_main.png"}]:
+    var desired_kind: String=String(forest_frame["kind"])
+    var subject: Node3D=null
+    for botanical_id in real_botanicals:
+      var candidate: Node3D=real_botanicals[botanical_id]
+      if is_instance_valid(candidate) and String(
+          candidate.get_meta("hq_rev208_vendor_cc0_botanical",""))==desired_kind:
+        subject=candidate
+        break
+    if subject==null:
+      _fail("REV208_SOURCE_AUTHORED_BOTANICAL_MISSING_REAL_MAIN_FRAME_"+desired_kind)
+      return
+    var center: Vector3=subject.position
+    var place_y: float=float(opening_terrain.call(
+      "height_at",center.x,center.z+7.4))
+    opening_actor.position=Vector3(center.x,place_y+float(
+      opening_actor.get_meta("actor_ground_offset_y",0.0)),center.z+7.4)
+    player.call("_set_mode","third")
+    player.set("_yaw",0.0)
+    player.set("_pitch",0.24)
+    player.set("_distance",18.0 if desired_kind!="fern" else 7.2)
+    room.call("_sync_rev208_botanical_visibility",opening_actor.position)
+    player.call("update_camera")
+    for botanical_frame in range(5):
+      await process_frame
+    await RenderingServer.frame_post_draw
+    if not _save(String(forest_frame["file"])):
+      _fail("REV208_BOTANICAL_ACTUAL_MAIN_GODOT_IMAGE_EMPTY_"+desired_kind)
+      return
+  print("PASS_REV208_THREE_REAL_GODOT441_ORIGINAL_MAIN_EVERGREEN_AND_FERN_ART_EVIDENCE_UNAPPROVED")
   opening_actor.position=opening_actor_pos
   room.get("sim").hour=qa_old_hour
   room.call("_sync_living_daylight")
