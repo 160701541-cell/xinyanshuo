@@ -164,6 +164,10 @@ var _ward_cd: float=0.0
 var _ward_seconds: float=0.0
 var _ward_visual: MeshInstance3D
 var _spell_projectiles: Array[Dictionary]=[]
+var _enemy_elemental_status: String=""
+var _enemy_status_remaining: float=0.0
+var _enemy_status_tick: float=0.0
+var _enemy_status_color: Color=Color.WHITE
 var _combat_hit_count: int=0
 var _spirit_bolt_impact_count: int=0
 var _quality_sheet_button: Button
@@ -1417,6 +1421,9 @@ func stop_practice() -> void:
     if mesh!=null and is_instance_valid(mesh):
       mesh.queue_free()
   _spell_projectiles.clear()
+  _enemy_elemental_status=""
+  _enemy_status_remaining=0.0
+  _enemy_status_tick=0.0
   _spar_stage="inactive"
   _spar_timer=0
   _guard_time=0
@@ -1649,20 +1656,14 @@ func sword_attack() -> bool:
   _refresh_game_hud()
   return true
 
-func _art_tint() -> Color:
+func _root_effect() -> Dictionary:
   var spiritual: RefCounted=room.get("cultivation")
   if spiritual==null:
-    return Color("#88e8f1")
-  var kind: String=String(spiritual.call("public_player_status").get("root_kind",""))
-  if kind.begins_with("火"):
-    return Color("#ff945f")
-  if kind.begins_with("木"):
-    return Color("#a2e18a")
-  if kind.begins_with("金"):
-    return Color("#f4dfa0")
-  if kind.begins_with("土"):
-    return Color("#e0b57f")
-  return Color("#7dc9f0")
+    return {"color":"#88e8f1","effect":"none","debuff":"无"}
+  return spiritual.call("visual_root_signature")
+
+func _art_tint() -> Color:
+  return Color(String(_root_effect().get("color","#88e8f1")))
 
 func cast_spirit_bolt() -> Dictionary:
   if _spar_stage in ["inactive","victory"] or _bolt_cd>0.0 or (
@@ -1754,9 +1755,13 @@ func cast_spirit_bolt() -> Dictionary:
   trail.draw_pass_1=trail_quad
   projectile.add_child(trail)
   trail.emitting=true
+  var cast_effect: Dictionary=_root_effect()
   _spell_projectiles.append({
     "node":projectile,"distance_left":9.5,
-    "damage":14+int(spiritual.call("public_player_status").get("layer",1))*4})
+    "damage":14+int(spiritual.call("public_player_status").get("layer",1))*4,
+    "root_effect":String(cast_effect.get("effect","none")),
+    "root_debuff":String(cast_effect.get("debuff","无")),
+    "root_color":_art_tint()})
   say("灵息弹：法力真实消耗4，飞行命中后才扣对方生命")
   _refresh_game_hud()
   return {"ok":true,"spent":int(debit["spent"]),"projectile":projectile}
@@ -1786,7 +1791,8 @@ func _step_spell_projectiles(delta: float) -> void:
     missile.position=proposed
     if progress>=span.length()-0.20 or (
         not hit.is_empty() and hit.get("collider")==_spar_collision):
-      _spar_damage_opponent(int(shot["damage"]),true)
+      if _spar_damage_opponent(int(shot["damage"]),true):
+        _apply_elemental_impact(shot)
       missile.queue_free()
       continue
     if float(shot["distance_left"])<=0.0:
@@ -1833,6 +1839,45 @@ func cast_spirit_ward() -> Dictionary:
   _refresh_game_hud()
   return {"ok":true,"spent":int(debit["spent"]),"duration":_ward_seconds}
 
+func _apply_elemental_impact(shot: Dictionary) -> void:
+  # Each hit has already consumed real mana and passed physical 3D travel
+  # + wall raycast. No element is allowed to conjure extra items or HP.
+  var effect: String=String(shot.get("root_effect","none"))
+  var debuff: String=String(shot.get("root_debuff",""))
+  if effect=="none" or _spar_stage=="victory":
+    return
+  _enemy_elemental_status=effect
+  _enemy_status_remaining=3.0
+  _enemy_status_tick=0.0
+  _enemy_status_color=shot.get("root_color",Color("#96dfe3"))
+  if effect in ["freeze","shock","slow","entangle","gravity","yin"]:
+    # The old trainer state machine uses _spar_timer to schedule its next
+    # attack. This is a real target action penalty, not only a blue tag.
+    _spar_timer+=1.10 if effect in ["freeze","entangle"] else 0.65
+  if effect=="push" and _spar_partner!=null:
+    # No teleport through walls; collision-free single push should be added
+    # only with a full body-sweep in the complete combat system.
+    _spar_timer+=0.3
+  _sync_spar_meters()
+
+func _tick_elemental_impact(delta: float) -> void:
+  if _enemy_elemental_status=="" or _spar_stage in ["inactive","victory"]:
+    return
+  _enemy_status_remaining=maxf(0.0,_enemy_status_remaining-delta)
+  _enemy_status_tick+=delta
+  if _enemy_status_tick>=1.0:
+    _enemy_status_tick-=1.0
+    if _enemy_elemental_status in ["burn","poison","bleed","decay"]:
+      # At most 2 damage per elapsed real second for three seconds, and
+      # only against the consenting practice opponent. No free XP or loot.
+      _spar_damage_opponent(2,true)
+      if _spar_partner!=null and is_instance_valid(_spar_partner):
+        _spawn_real_combat_hit(_spar_partner.position+Vector3.UP*1.35,
+          _enemy_status_color,1)
+  if _enemy_status_remaining<=0.0:
+    _enemy_elemental_status=""
+    _sync_spar_meters()
+
 func _step_spiritual_combat(delta: float) -> void:
   _attack_anim_seconds=maxf(0.0,_attack_anim_seconds-delta)
   # Focus living duel actors without hijacking the user's normal zoom value.
@@ -1845,6 +1890,7 @@ func _step_spiritual_combat(delta: float) -> void:
   _bolt_cd=maxf(0.0,_bolt_cd-delta)
   _ward_cd=maxf(0.0,_ward_cd-delta)
   _ward_seconds=maxf(0.0,_ward_seconds-delta)
+  _tick_elemental_impact(delta)
   if _ward_visual!=null and is_instance_valid(_ward_visual):
     if _ward_seconds<=0.0:
       _ward_visual.queue_free()
