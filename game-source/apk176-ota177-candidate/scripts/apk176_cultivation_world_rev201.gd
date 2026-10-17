@@ -66,6 +66,14 @@ func _default_player() -> Dictionary:
     "latent_root_profile":{},"root_profile":{}}
 
 func _load_or_initialize() -> void:
+  # Regression/backward-compatible migration may instantiate a detached
+  # cultivation ledger and call this loader directly, without initialize().
+  # Setup deterministic catalog and virtual census before touching save state.
+  if root_catalog==null:
+    root_catalog=RootTaxonomy.new()
+  if city_population==null:
+    city_population=CityPopulation.new()
+    city_population.call("initialize",root_catalog)
   var parsed: Variant=null
   if FileAccess.file_exists(SAVE_PATH):
     var file:=FileAccess.open(SAVE_PATH,FileAccess.READ)
@@ -174,7 +182,8 @@ func _load_or_initialize() -> void:
     original["health"]=int(original["max_health"])
     original["max_mana"]=12+layer*9 if String(original["realm"])=="炼气" else 0
     original["mana"]=int(original["max_mana"])
-  _ensure_all_existing_world_citizens_have_roots()
+  if sim!=null:
+    _ensure_all_existing_world_citizens_have_roots()
   save_state()
 
 func _ensure_all_existing_world_citizens_have_roots() -> void:
