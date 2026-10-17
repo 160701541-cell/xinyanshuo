@@ -22,7 +22,10 @@ ASSETS={
  "hydrangea":{"slug":"flowering-hydrangea-shrub-af2da5d3","layer":"shrub","height_range":[0.6,1.7],"author":"Innerscene"},
  "rose":{"slug":"flowering-rose-bush-a9534324","layer":"shrub","height_range":[0.5,1.5],"author":"Innerscene"},
  "lavender":{"slug":"lavender-bush-6d454088","layer":"shrub","height_range":[0.3,1.2],"author":"Innerscene"},
- "grass":{"slug":"ornamental-grass-clump-feb33ef2","layer":"groundcover","height_range":[0.6,1.6],"author":"Innerscene"}
+ "grass":{"slug":"ornamental-grass-clump-feb33ef2","layer":"groundcover","height_range":[0.6,1.6],"author":"Innerscene"},
+ "medicinal_wood":{"slug":"hydrangea-flower-with-stem-77d795e6","layer":"independent_spirit_plant","height_range":[0.35,0.75],"author":"Innerscene"},
+ "medicinal_fire":{"slug":"rose-flower-with-stem-b2a45a50","layer":"independent_spirit_plant","height_range":[0.3,0.7],"author":"Innerscene"},
+ "medicinal_water":{"slug":"lily-flower-with-stem-176a1c74","layer":"independent_spirit_plant","height_range":[0.4,0.75],"author":"Innerscene"}
 }
 MAX=19_000_000
 def fetch(url):
@@ -86,7 +89,7 @@ def main(out):
     }
     print("REV208_SOURCE_CC0_REAL_GLTF",key,digest,"tris",details["triangle_lod0"])
   (out/"manifest.json").write_text(json.dumps(manifest,ensure_ascii=False,indent=2)+"\n",encoding="utf-8")
-  print("PASS_REV208_CC0_8_PHYSICAL_VENDOR_3D_FOLIAGE_SOURCES_NOT_ART_APPROVED")
+  print("PASS_REV208_CC0_11_PHYSICAL_VENDOR_3D_FOLIAGE_AND_MEDICINAL_SOURCES_NOT_ART_APPROVED")
 if __name__=="__main__":
   if len(sys.argv)!=2:raise SystemExit("usage: rev208_intake_cc0_evergreen_understory.py OUT_DIR")
   main(sys.argv[1])
