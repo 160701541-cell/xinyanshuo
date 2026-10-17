@@ -547,7 +547,9 @@ func _create_hud() -> void:
   _locked_target_label=Label.new()
   _locked_target_label.name="ActualSelectedTargetNameHealthRealmPreview"
   _locked_target_label.add_theme_font_size_override("font_size",17)
-  _locked_target_label.add_theme_color_override("font_color",Color("#f3d99d"))
+  _locked_target_label.add_theme_color_override("font_color",Color("#fbe5b3"))
+  _locked_target_label.add_theme_color_override("font_outline_color",Color("#092630"))
+  _locked_target_label.add_theme_constant_override("outline_size",5)
   _locked_target_label.mouse_filter=Control.MOUSE_FILTER_IGNORE
   hud.add_child(_locked_target_label)
   _locked_target_label.visible=false
@@ -739,10 +741,17 @@ func _build_game_hud() -> void:
   _game_menu_button("菜单",325,"settings")
   _game_sheet=PanelContainer.new()
   _game_sheet.name="Rev188CharacterInventoryCultivationMenu"
-  _game_sheet.position=Vector2(16,150)
-  _game_sheet.custom_minimum_size=Vector2(435,245)
+  # Inventory/settings use a proper centered modal; old panel at (16,150)
+  # overlapped real player vitals, world clock and other phone labels.
+  _game_sheet.position=Vector2(360,136)
+  _game_sheet.custom_minimum_size=Vector2(462,245)
   _game_sheet.visible=false
-  _game_sheet.add_theme_stylebox_override("panel",_rounded(Color(0.06,0.11,0.13,0.95),12))
+  var sheet_skin:=_rounded(Color(0.045,0.095,0.12,0.98),15)
+  sheet_skin.border_color=Color("#b29a69")
+  sheet_skin.set_border_width_all(2)
+  sheet_skin.shadow_color=Color("#071218",0.75)
+  sheet_skin.shadow_size=12
+  _game_sheet.add_theme_stylebox_override("panel",sheet_skin)
   hud.add_child(_game_sheet)
   var v:=VBoxContainer.new()
   v.name="Rev205RealBackpackAndCharacterGameSheet"
@@ -756,7 +765,7 @@ func _build_game_hud() -> void:
   v.add_child(_game_sheet_body)
   _inventory_list=ItemList.new()
   _inventory_list.name="ActualSourcedBackpack24StackSelectableSlots"
-  _inventory_list.custom_minimum_size=Vector2(409,174)
+  _inventory_list.custom_minimum_size=Vector2(430,144)
   _inventory_list.max_columns=4
   _inventory_list.same_column_width=true
   _inventory_list.select_mode=ItemList.SELECT_SINGLE
@@ -2103,6 +2112,25 @@ func _layout_hud() -> void:
     bar.size=Vector2(89,54)
   if _locked_target_label!=null:
     _locked_target_label.position=Vector2(maxf(365.0,size.x*0.5-160.0),188.0)
+  if _game_sheet!=null:
+    # Occupy a deliberate center-left modal area, below the tabs and away
+    # from top-left HP/SP, preserving a usable 720p landscape viewport.
+    _game_sheet.position=Vector2(clampf(size.x*0.35,260.0,
+      maxf(265.0,size.x-492.0)),136.0)
+    # Avoid tiny screenshot overlay for entire menu; keep world simulation
+    # alive, but prevent HUD text competing with the open sheet.
+    var modal_open: bool=_game_sheet.visible
+    for key in _game_actions:
+      (_game_actions[key] as Button).visible=not modal_open and (
+        ["GuardAction","EvadeAction","SwordAttack","SpiritBolt","SpiritWard","LockedArt"].has(key)
+        if _spar_stage!="inactive" else [
+        "GatherAction","DashAction","DigAction","InteractAction",
+        "ViewAction","LockedArt","PlantSapling"].has(key))
+    if _living_clock_label!=null:
+      _living_clock_label.visible=not modal_open
+      _living_speed_button.visible=not modal_open
+    if _flight_altitude_label!=null and modal_open:
+      _flight_altitude_label.visible=false
   if _target_panel!=null:
     # Keep target HUD BELOW the always-on first row of seven view toggles.
     # Previously it sat under those buttons and concealed its own MP bar.
