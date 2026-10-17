@@ -58,7 +58,11 @@ var _flight_shadow: MeshInstance3D
 var _flight_altitude_beam: MeshInstance3D
 var _flight_wind_particles: GPUParticles3D
 var _living_clock_label: Label
+var _living_seed_label: Label
 var _living_speed_button: Button
+var _root_exam_button: Button
+var _meditate_button: Button
+var _breakthrough_button: Button
 var _local_ai_status_label: Label
 var _flight_altitude_label: Label
 var _soar_distance_m: float = 0.0
@@ -439,6 +443,7 @@ func _create_hud() -> void:
   notice = caption
   _build_game_hud()
   _create_living_clock_and_flight_hud()
+  _create_cultivation_action_buttons()
   _layout_hud()
 
 
@@ -479,6 +484,61 @@ func _create_living_clock_and_flight_hud() -> void:
   _flight_altitude_label.add_theme_constant_override("shadow_offset_y",2)
   _flight_altitude_label.mouse_filter=Control.MOUSE_FILTER_IGNORE
   hud.add_child(_flight_altitude_label)
+
+func _create_cultivation_action_buttons() -> void:
+  # 3 usable Android touch actions; never require console commands or
+  # reading hidden root weights in the character-creation panel.
+  _root_exam_button=Button.new()
+  _root_exam_button.name="LiveActualSpiritRootAltarExamTouchAction"
+  _root_exam_button.text="检测灵根"
+  _root_exam_button.size=Vector2(105,49)
+  _root_exam_button.pressed.connect(func(): _try_root_examination())
+  hud.add_child(_root_exam_button)
+  _meditate_button=Button.new()
+  _meditate_button.name="LiveOriginalWorldMeditationRealHourTouchAction"
+  _meditate_button.text="吐纳修炼"
+  _meditate_button.size=Vector2(105,49)
+  _meditate_button.pressed.connect(func(): _try_meditation())
+  hud.add_child(_meditate_button)
+  _breakthrough_button=Button.new()
+  _breakthrough_button.name="LiveActualQiPaidBreakthroughTouchAction"
+  _breakthrough_button.text="突破"
+  _breakthrough_button.size=Vector2(105,49)
+  _breakthrough_button.pressed.connect(func(): _try_breakthrough())
+  hud.add_child(_breakthrough_button)
+  _living_seed_label=Label.new()
+  _living_seed_label.name="ActuallyPersistentSpiritualWorldGenerationSeedVisible"
+  _living_seed_label.add_theme_font_size_override("font_size",15)
+  _living_seed_label.add_theme_color_override("font_color",Color("#def1e1"))
+  _living_seed_label.mouse_filter=Control.MOUSE_FILTER_IGNORE
+  hud.add_child(_living_seed_label)
+
+func _try_root_examination() -> Dictionary:
+  var system: RefCounted=room.get("cultivation")
+  if system==null:
+    return {"ok":false,"message":"灵根检测系统还未加载"}
+  var answer: Dictionary=system.call("examine_player_root")
+  say(String(answer.get("message","灵根检测失败")))
+  _refresh_game_hud()
+  return answer
+
+func _try_meditation() -> Dictionary:
+  var system: RefCounted=room.get("cultivation")
+  if system==null:
+    return {"ok":false,"message":"灵气修行系统还未加载"}
+  var answer: Dictionary=system.call("toggle_player_meditation")
+  say(String(answer.get("message","吐纳失败")))
+  _refresh_game_hud()
+  return answer
+
+func _try_breakthrough() -> Dictionary:
+  var system: RefCounted=room.get("cultivation")
+  if system==null:
+    return {"ok":false,"message":"修炼系统未加载"}
+  var answer: Dictionary=system.call("player_breakthrough")
+  say(String(answer.get("message","突破失败")))
+  _refresh_game_hud()
+  return answer
 
 func _game_menu_button(label: String, x: float, mode: String) -> void:
   var b := Button.new()
@@ -657,6 +717,24 @@ func _refresh_game_hud() -> void:
   (_game_actions["EvadeAction"] as Button).disabled=_spar_stage=="inactive" or _dodge_cd>0 or energy<7
   (_game_actions["GuardAction"] as Button).text="防御中" if _guard_time>0 else "格挡"
   (_game_actions["EvadeAction"] as Button).text="闪避中" if _dodge_time>0 else "闪避"
+  var spiritual: RefCounted=room.get("cultivation")
+  if spiritual!=null and _root_exam_button!=null:
+    var record: Dictionary=spiritual.call("public_player_status")
+    var tested: bool=bool(record.get("tested",false))
+    _root_exam_button.text="复查灵根" if tested else "检测灵根"
+    _meditate_button.text="停止吐纳" if bool(record.get("meditating",false)) else "吐纳修炼"
+    _breakthrough_button.text="突破炼气"
+    _living_seed_label.text="世界灵脉种子：%d · 修士 %d人" % [
+      int(spiritual.get("world_seed")),int(spiritual.call("stats").get("cultivator_count",0))]
+    if tested:
+      var root: String=String(record.get("root_kind",""))
+      var level: int=int(record.get("layer",0))
+      _spirit_notice.text="%s  %s · %s  修为%d  经脉%d" % [
+        root,String(record.get("realm","凡人")),
+        "第%d层" % level if level>0 else "未入炼气",
+        int(record.get("qi",0)),int(record.get("stress",0))]
+    else:
+      _spirit_notice.text="灵根：未检测 · 请寻找青色灵根检测台"
   (buttons["RealJumpButton"] as Button).disabled=_jump_height>0.0 or camera_mode in ["fly","god","soar"] or energy<4
   (buttons["CameraLockButton"] as Button).text="解锁视角" if _camera_angle_locked else "锁视角"
   (buttons["Iso45Button"] as Button).text="第三人称" if camera_mode=="iso" else "俯视45°"
@@ -678,9 +756,10 @@ func _refresh_game_hud() -> void:
         ground_m,_air_display_speed]
     else:
       _flight_altitude_label.visible=false
-  if _spirit_notice!=null:
-    _spirit_notice.text="灵力：未检测灵根 | 切磋 %s · %s" % [
-      _spar_stage,_spar_last_outcome] if _spar_stage!="inactive" else "灵力：未检测灵根（未解锁）"
+  if _spar_stage!="inactive":
+    _spirit_notice.text="凡人切磋 %s · %s" % [_spar_stage,_spar_last_outcome]
+  elif spiritual==null:
+    _spirit_notice.text="灵根：未检测（检测台尚未装载）"
   _quality_sheet_button.visible=_game_sheet!=null and _game_sheet.visible and _game_sheet_mode=="settings"
   _developer_sheet_button.visible=_quality_sheet_button.visible
   _rest_sheet_button.visible=_game_sheet.visible and _game_sheet_mode=="character"
@@ -702,8 +781,18 @@ func _refresh_game_hud() -> void:
     else:
       _game_sheet_body.text="随身背包空\n靠近树木、石块点击「互动」采集"
   elif _game_sheet_mode=="cultivation":
-    _game_sheet_title.text="修炼 · 凡人"
-    _game_sheet_body.text="灵根检测：尚未开放\n境界：凡人  法力：未解锁\n凡人武学：可进行有危险的切磋、格挡和闪避训练\n御剑与法术尚未解锁"
+    _game_sheet_title.text="修炼 · 灵根与境界"
+    if spiritual==null:
+      _game_sheet_body.text="修仙系统未加载"
+    else:
+      var r: Dictionary=spiritual.call("public_player_status")
+      if not bool(r.get("tested",false)):
+        _game_sheet_body.text="灵根：尚未检测（检测前严格隐藏）\n请前往青色古石检测台，点击【检测灵根】\n凡人阶段仍可切磋、行走与御风测试"
+      else:
+        _game_sheet_body.text="灵根：%s\n境界：%s %d层\n功法：%s\n灵气：%d  法力：%d  经脉负荷：%d\n真实世界小时里点击【吐纳修炼】积累灵气；满足条件点击【突破】" % [
+          String(r.get("root_kind","未知")),String(r.get("realm","凡人")),
+          int(r.get("layer",0)),String(r.get("method","无")),
+          int(r.get("qi",0)),int(r.get("mana",0)),int(r.get("stress",0))]
   else:
     _game_sheet_title.text="菜单 · 系统设置"
     _game_sheet_body.text="横屏触控：左侧走路，右侧旋转\n视角按键：切第一/第三视角\n画质帧率和研发工具在下方设置"
@@ -1135,6 +1224,13 @@ func _layout_hud() -> void:
   notice.position=Vector2(minf(370.0,size.x*0.27),maxf(210.0,size.y-47.0))
   if _pad_hint!=null:
     _pad_hint.position=Vector2(16,139)
+  if _root_exam_button!=null:
+    var width: float=size.x
+    _root_exam_button.position=Vector2(width-392.0,size.y-213.0)
+    _meditate_button.position=Vector2(width-280.0,size.y-213.0)
+    _breakthrough_button.position=Vector2(width-168.0,size.y-213.0)
+  if _living_seed_label!=null:
+    _living_seed_label.position=Vector2(19,232)
   if _living_clock_label!=null:
     _living_clock_label.position=Vector2(19,148)
     _living_speed_button.position=Vector2(19,183)
@@ -2279,6 +2375,9 @@ func stats() -> Dictionary:
     "gamepad_touch_fallback":true,
     "gamepad_hotplug_support":true,
     "gamepad_menu_navigation":true,
+    "real_spirit_exam_altar_button":_root_exam_button!=null,
+    "real_meditation_button":_meditate_button!=null,
+    "real_breakthrough_button":_breakthrough_button!=null,
     "real_mortal_sparring":_spar_stage!="inactive",
     "practice_stage":_spar_stage,"practice_attack_count":_spar_attacks,
     "perfect_guards":_spar_perfect_guards,
