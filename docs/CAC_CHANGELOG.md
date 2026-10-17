@@ -1108,3 +1108,26 @@ Godot 4.4.1对从**原签名Android APK176**提取的实际`update_protocol.gdc`
 - **官方真实发布**：原APK176 versionCode1176在唯一公开repo`160701541-cell/xinyanshuo`的正式发布工作流run`39015892756`印出`original_rsa_signature_verified:true`以及`PASS_REV196_SIGNED_OTA_PUBLISHED_TO_PUBLIC_MAIN`；`android-preview/latest.json`递增为 **revision196**，PCK **21,762,656字节**，SHA256 **fe78c20064cb8432789cb181a8afed9703f0e50920670d57b49ad0dda17c2429**，正式原公钥对应RSA签名且不覆盖rev195及旧玩家存档。
 - **独立公网验签已完成**：新增`.github/workflows/canglan-rev196-real-pages-http-proof.yml` commit`72a9894`；run`39016029571`、job`117348206046` **completed/success**，真实Pages HTTPS完整**21,762,656字节**、固定原APK176 RSA公钥验签、SHA256 `fe78c20064cb8432789cb181a8afed9703f0e50920670d57b49ad0dda17c2429`一致、HTTP Range **206**，打印`PASS_APK176_REAL_REV196_PUBLIC_PAGES_RSA_SHA256_HTTP_RANGE_PHONE_DOWNLOAD_READY`。CDN清单有`max-age=600`缓存，手机安装/运行/视觉仍待用户实机。
 - **目前仍P0未完成**：高品质真正骨骼攻击/格挡/闪避动画、角色面部及装备、真正妖兽AI与流派武学、灵根和飞剑法术、屋瓦细节与可住人中式院落、跨区块树林再生、大量树种、近景纹理与高质量环境光效。此轮**只新增可自愿进入的真实基础切磋**；用户手机实际触屏/手柄是否正常、视觉品质是否达到高目标全部`未验证`。下一步优先许可明确的成品角色+战斗动画替换简陋运动反馈，制作真引擎战斗截图并补可居住院落，不继续声称已经实现视觉盛宴。
+
+
+## 2026-10-17 / rev197 手机实测 P0「人看不见、不能跳飞、没有45°视角锁、无法缩放、连续穿模」——实际原APK176已签名OTA，手机仍待验收
+
+### 用户真机失败高优先级复现
+- 用户明确反馈rev196手机：「不能飞、不能跳、没有锁定屏幕的东西、没有俯视45度视角、人物看不见、穿模一直穿模、不能缩放屏幕」。旧功能脚本里`_layout_hud()`用开发模式`dev`把`GodViewButton/FlyViewButton/ZoomInButton/ZoomOutButton`**一律隐藏**，但代码`stats`仍报告`free_flight_available/pinch_zoom=true`；既不代表玩家看见按钮，更不代表真机可交互。**这就是之前QA与真实操作脱节的根本原因。**
+- 旧版`step()`结尾每帧将玩家Y强制贴地→不可能真跳跃；只支持 camera_mode==fly（**摄影机飞而不是角色飞**），第三视角相机12米且没有专用45°跟随、镜头锁定；`_set_mode(first)`直接`actor.visible=false`，第一人称彻底没有身体。旧双指缩放只能由右手下方热区、且`_input`未维护跨区域多点触控，实际手指放在两半屏幕无法缩放。旧走路只有位置差和水/坡检查，不做实体碰撞；墙、树林等实体穿透，旧楼梯用1米实心箱体不可走。相机只有单线ray检测，近裁剪面会穿墙。**这些是从实际源码审计得出的可验证漏洞，不是猜测。**
+
+### 真正改动的原游戏源码
+- 玩家脚本`game-source/apk176-ota177-candidate/scripts/apk176_player_controller_rev187.gd` commits `cce0618`,`fd16713`,`198d415`：玩家HUD（正常模式、开发模式关闭仍可见）永久提供 **俯视45°、上帝、角色飞行、跳跃、锁/解锁镜头方向、放大、缩小** 7个实际`Button`，同时原四菜单/八动作槽保留。按钮集中在右上第二横排，飞行时独立显示升高/降低。代码`_input`以全屏触摸索引维护多指，排除摇杆/UI按钮，跨左/右游戏热区仍识别比例变化；初始第三人称/45°视角/上帝缩放，第一人称由真实调整FOV实现放大缩小。镜头锁只锁**旋转**，仍跟随玩家并允许缩放，不冒充系统级安卓横竖屏强制锁定。
+- 新`iso`相机用固定 `PI/4`俯视、跟随玩家（不是单独自由摄影机），可切回第三人称，取消旧视角里直接隐藏整个`actor`的做法、保持许可GLB人形在相机范围内。正式飞行按钮进入新的`soar`**真实角色**飞行模式，起飞高约3m、左右摇杆沿真实流式世界移动、按升高/降低改变玩家实体高度，飞行距离/高度是真实角色状态；独立开发工具的自由摄影机模式仍存在，但不再误以为那等于角色会飞。此角色飞行是**开放测试操控**，不是修为已解锁的御剑功法或正式修仙力学。
+- 跳跃`jump_action/_step_jump`：实际玩家花4体力后受15m/s²重力运动，上升再落回真实地形，有顶部障碍ray检查、不可在上帝/飞行状态启动；不再被逐帧旧贴地代码取消。正常走路与飞行通过`PhysicsShapeQueryParameters3D`的全身胶囊`cast_motion+intersect_shape`对真实建筑与树石等mask2障碍碰撞检查，并做XZ两个方向滑墙尝试；不允许玩家简单修改坐标穿墙。第三人称相机增加真实半径0.24m的球体扫掠与地形高度兜底，不再只有单射线。
+- 世界脚本`apk176_living_resource_world_rev187.gd` commits`eed408c`,`b673f5b`：正式许可Kenney树木/石块批量渲染不变，添加低成本真实树干/石头StaticBody3D碰撞器、按实体现存量及采伐/生长状态同步；许可石阶原先碰撞代理是高度1米实心箱，现在将楼梯分到**可走表面层bit4**，薄斜坡实体作为地面支撑，人物可以沿坡面升高（对石阶的准确尺寸拟合仍待真机与asset mesh外形核验）。将坡道形状命名为`TrueWalkableStairRampCollision`便于真实QA。
+- 输入与手柄：手机屏幕上可直接点7个控制键；手柄正常状态A跳跃、LT互动、X采集、B疾步，切磋中原B闪避/RB格挡仍保留；键盘空格在非切磋时跳跃。原世界NPC/资源/序列化/玩家ID继续沿用，不重新安装原APK。
+
+### 实际测试、首败修复、发布证据
+- `logic-qa/apk176-export-fixture/verify_original_main_quality_rev187.gd` commit`d0a9d39`：原APK176已导出Main真实Godot 4.4.1场景中验证7个**真实可见且可点击**按钮、许可mesh人形节点/实体身高/摄像机投影坐标和真正45°pitch、锁视角拒绝旋转、可见缩放按钮、模拟两指输入跨区域识别、起跳真实高度/体力扣款/完整落地、角色飞起升降/摇杆真实移动、高度回落、真正碰撞楼梯坡道及临时2米实体墙阻挡玩家身体和镜头；不只检查`stats()`宣称能力。`logic-qa/apk176-export-fixture/capture_original_main_rev187_compare.gd` commit`e5bcb64`增加原Main实机以外的第三人称近距角色和45°跟随镜头**真实引擎帧**截图，不允许代替手机测试；正式 rev197 通过签发后单独执行新截图的QA-only流程。
+- **真实首测失败** `39017005869`：`REV197_STAIR_SHOULD_HAVE_WALKABLE_RAMP_NOT_TALL_BLOCKING_CUBE`，Godot脚本默认子节点名不可当成稳定引用，commit`b673f5b`给坡道碰撞形状明确名称，commit`2419445`调整QA查询。以后不得因CI绿色就忽略手机失败。
+- **通过的原GameMain编译/运行并正式发布**：工作流`.github/workflows/canglan-original-apk176-rev197-real-mobile-camera-jump-collision-signed.yml` commit`d807058`，真实run`39017076980` job`117351323794` **completed/success**。实际原场景、新触控和物理测试、原NPC材料守恒/房屋/手柄/存档兼容门禁通过，含 `PASS_REV197_REAL_ANDROID_TOUCH_PINCH_45DEG_VISIBLE_AVATAR_CAMERA_LOCK_JUMP_AVATAR_FLIGHT_STAIRS_AND_COLLISION`；生产 RSA 签名 `original_rsa_signature_verified:true` 且输出 `PASS_REV197_SIGNED_OTA_PUBLISHED_TO_PUBLIC_MAIN`。**这证明Godot内模拟触控通路而非手机硬件成功。**
+- **正式PCK**：唯一公开仓库`160701541-cell/xinyanshuo`原APK176 versionCode1176 manifest升至 **revision197**；签名包**21,777,408字节**，SHA256 **77345709523b15c2caaa73bb0cec208d0d88e7055e0aa537b17ba82ad0777aa3**，绝不覆盖已发布rev196或旧存档。GameMain真正兼容但**用户一加Ace5Pro硬件实际手势/触摸/飞行、第一人称显示和物理帧率待实机验收**。
+- **公网安全验签成功**：独立`.github/workflows/canglan-rev197-real-pages-http-proof.yml` workflow run`39017265181`、job`117351850377` **completed/success**。真的通过PagesHTTPS下载rev197全部21777408字节并用原公钥检验RSA/sha256及HTTP Range206，日志`PASS_APK176_REAL_REV197_PUBLIC_PAGES_RSA_SHA256_HTTP_RANGE_PHONE_DOWNLOAD_READY`。官网manifest CDN最大缓存600秒。
+- **新增真实引擎的角色图片**：workflow截图阶段QA-only重新运行`39017340974`（已签名rev197不可覆写，仅验收原版Main），包含第三人称近镜与45°角色画面，**此项是否通过以该run最终结果为准**；截图为GitHub Linux Mesa Vulkan，不能虚称用户手机画面。
+- **仍未解决**：用户指定参考风格的高清角色面部/人物骨骼攻防动作、仙侠真实灵根御剑、可居住中式院落/屋顶细节、全生态森林和多树种；飞行逻辑仅开放角色调试和基本碰撞，不是真正修仙功法；房屋模型形状与坡道碰撞器精确吻合须手机爬梯和进屋实测；当前原游戏依然属于 P0 大量未完成的原型，绝不能因为镜头/跳跃有Godot QA就宣称完整游戏已合格。
