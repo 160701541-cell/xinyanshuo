@@ -516,6 +516,209 @@ func _layout_hud() -> void:
   if _pad_hint!=null:
     _pad_hint.position=Vector2(16,139)
 
+
+# REV189: Bluetooth/USB HID pads use Godot 4.4's normalized SDL JoyButton/
+# JoyAxis layout. This is not a phone-keyboard emulation layer.
+func _load_pad_options() -> void:
+  var cfg:=ConfigFile.new()
+  if cfg.load("user://canglan_controller_v1.cfg")!=OK:
+    return
+  _pad_deadzone=clampf(float(cfg.get_value("pad","deadzone",PAD_DEFAULT_DEADZONE)),0.12,0.35)
+  _pad_sensitivity=clampf(float(cfg.get_value("pad","look_sensitivity",1.0)),0.7,1.6)
+  _pad_invert_y=bool(cfg.get_value("pad","invert_y",false))
+
+func _save_pad_options() -> void:
+  var cfg:=ConfigFile.new()
+  cfg.set_value("pad","deadzone",_pad_deadzone)
+  cfg.set_value("pad","look_sensitivity",_pad_sensitivity)
+  cfg.set_value("pad","invert_y",_pad_invert_y)
+  if cfg.save("user://canglan_controller_v1.cfg")!=OK:
+    push_warning("手柄设置无法写入本机存储")
+
+func _refresh_pad_option_labels() -> void:
+  if _pad_setting_speed==null:
+    return
+  _pad_setting_speed.text="右摇杆速度："+str(_pad_sensitivity)+"倍"
+  _pad_setting_invert.text="右摇杆上下反转："+("开启" if _pad_invert_y else "关闭")
+  _pad_setting_deadzone.text="双摇杆死区："+str(_pad_deadzone)
+
+func _cycle_pad_sensitivity() -> void:
+  var values: Array[float]=[0.7,1.0,1.3,1.6]
+  var idx: int=values.find(_pad_sensitivity)
+  _pad_sensitivity=values[(idx+1)%values.size()]
+  _save_pad_options()
+  _refresh_pad_option_labels()
+
+func _toggle_pad_invert() -> void:
+  _pad_invert_y=not _pad_invert_y
+  _save_pad_options()
+  _refresh_pad_option_labels()
+
+func _cycle_pad_deadzone() -> void:
+  var values: Array[float]=[0.12,0.19,0.27,0.35]
+  var idx: int=values.find(_pad_deadzone)
+  _pad_deadzone=values[(idx+1)%values.size()]
+  _save_pad_options()
+  _refresh_pad_option_labels()
+
+func _on_pad_hotplug(device: int, connected: bool) -> void:
+  # Keep first active controller; auto-switch if that controller disappears.
+  if connected and _pad_device<0:
+    _detect_pad()
+  elif not connected and device==_pad_device:
+    _pad_device=-1
+    _pad_last_move=Vector2.ZERO
+    _pad_last_look=Vector2.ZERO
+    _pad_trigger_left_latched=false
+    _pad_trigger_right_latched=false
+    _detect_pad()
+
+func _detect_pad() -> void:
+  var devices: Array[int]=Input.get_connected_joypads()
+  if devices.has(_pad_device):
+    return
+  _pad_device=-1
+  _pad_device_name=""
+  if not devices.is_empty():
+    _pad_device=devices[0]
+    _pad_device_name=Input.get_joy_name(_pad_device)
+    _pad_status="已连接"
+  else:
+    _pad_status="未连接"
+    _pad_menu_options.clear()
+    _pad_trigger_left_latched=false
+    _pad_trigger_right_latched=false
+    _pad_last_move=Vector2.ZERO
+    _pad_last_look=Vector2.ZERO
+  if _pad_hint!=null:
+    _pad_hint.text=("手柄："+_pad_device_name+
+      "  A互动 X采集 Y挖掘 B疾步 · LB视角 RB背包 · Start设置" if _pad_device>=0 else "")
+    _pad_hint.visible=_pad_device>=0 and not _game_sheet.visible
+
+# Radial deadzone: no drifting after releasing either stick; preserve diagonal
+# speed with a single magnitude clamp instead of independent X/Y thresholds.
+func _pad_axis_deadzone(raw: Vector2) -> Vector2:
+  var length: float=raw.length()
+  if length<=_pad_deadzone:
+    return Vector2.ZERO
+  return raw.normalized()*clampf((length-_pad_deadzone)/(1.0-_pad_deadzone),0.0,1.0)
+
+func _pad_read_stick(axis_x: int, axis_y: int) -> Vector2:
+  if _pad_device<0 or not Input.get_connected_joypads().has(_pad_device):
+    return Vector2.ZERO
+  return _pad_axis_deadzone(Vector2(
+    Input.get_joy_axis(_pad_device,axis_x),
+    Input.get_joy_axis(_pad_device,axis_y)))
+
+func _pad_apply_look(right_axis: Vector2, delta: float) -> void:
+  var stick: Vector2=_pad_axis_deadzone(right_axis)
+  _pad_last_look=stick
+  if stick.length()<0.001 or _look_touch>=0 or _game_sheet.visible:
+    return
+  var y: float=-stick.y if _pad_invert_y else stick.y
+  turn_view(Vector2(stick.x,y)*PAD_LOOK_PIXELS_PER_SECOND*_pad_sensitivity*delta)
+
+func _pad_poll_triggers() -> void:
+  if _pad_device<0 or not Input.get_connected_joypads().has(_pad_device) or _game_sheet.visible:
+    return
+  var lt: float=Input.get_joy_axis(_pad_device,JOY_AXIS_TRIGGER_LEFT)
+  var rt: float=Input.get_joy_axis(_pad_device,JOY_AXIS_TRIGGER_RIGHT)
+  if lt>0.65 and not _pad_trigger_left_latched:
+    _pad_trigger_left_latched=true
+    interact()
+  elif lt<0.35:
+    _pad_trigger_left_latched=false
+  if rt>0.65 and not _pad_trigger_right_latched:
+    _pad_trigger_right_latched=true
+    gather_action()
+  elif rt<0.35:
+    _pad_trigger_right_latched=false
+
+func _pad_focus_menu(index: int) -> void:
+  _pad_menu_options.clear()
+  if _game_sheet==null or not _game_sheet.visible:
+    return
+  for node in _game_sheet.find_children("*","Button",true,false):
+    var button: Button=node as Button
+    if button.is_visible_in_tree() and not button.disabled:
+      _pad_menu_options.append(button)
+  if _pad_menu_options.is_empty():
+    return
+  _pad_menu_index=posmod(index,_pad_menu_options.size())
+  _pad_menu_options[_pad_menu_index].grab_focus()
+
+func _pad_close_menu() -> void:
+  if _game_sheet!=null:
+    _game_sheet.hide()
+  _pad_menu_options.clear()
+  var focused: Control=room.get_viewport().gui_get_focus_owner()
+  if focused!=null:
+    focused.release_focus()
+
+# Single route for real InputEventJoypadButton and injected QA button tests.
+# Never modify existing touchscreen/keyboard paths to masquerade as HID.
+func _pad_press_button(button: int) -> void:
+  if not _enabled:
+    return
+  _pad_button_event_count+=1
+  if button==JOY_BUTTON_START:
+    _open_game_menu("settings")
+    return
+  if button==JOY_BUTTON_BACK:
+    if _game_sheet.visible:
+      _pad_close_menu()
+    else:
+      _open_game_menu("character")
+    return
+  if _game_sheet.visible:
+    if button==JOY_BUTTON_B:
+      _pad_close_menu()
+    elif button==JOY_BUTTON_DPAD_UP:
+      _pad_focus_menu(_pad_menu_index-1)
+    elif button==JOY_BUTTON_DPAD_DOWN:
+      _pad_focus_menu(_pad_menu_index+1)
+    elif button==JOY_BUTTON_A:
+      if _pad_menu_options.is_empty():
+        _pad_focus_menu(0)
+      if not _pad_menu_options.is_empty():
+        _pad_menu_options[_pad_menu_index].pressed.emit()
+    elif button==JOY_BUTTON_RIGHT_SHOULDER:
+      _open_game_menu("inventory")
+    elif button==JOY_BUTTON_LEFT_SHOULDER:
+      _open_game_menu("character")
+    return
+  match button:
+    JOY_BUTTON_A:
+      interact()
+    JOY_BUTTON_X:
+      gather_action()
+    JOY_BUTTON_Y:
+      dig()
+    JOY_BUTTON_B:
+      dash_action()
+    JOY_BUTTON_LEFT_SHOULDER:
+      toggle_perspective()
+    JOY_BUTTON_RIGHT_SHOULDER:
+      _open_game_menu("inventory")
+    JOY_BUTTON_LEFT_STICK:
+      dash_action()
+    JOY_BUTTON_RIGHT_STICK:
+      reset_camera()
+    JOY_BUTTON_DPAD_UP:
+      if camera_mode=="fly":
+        fly_up()
+      else:
+        zoom_in()
+    JOY_BUTTON_DPAD_DOWN:
+      if camera_mode=="fly":
+        fly_down()
+      else:
+        zoom_out()
+    JOY_BUTTON_DPAD_LEFT:
+      _open_game_menu("character")
+    JOY_BUTTON_DPAD_RIGHT:
+      _open_game_menu("cultivation")
+
 func _ui_button_at(p: Vector2) -> bool:
   for node in buttons.values():
     var button: Button = node
@@ -712,6 +915,10 @@ func _release_stick() -> void:
 func handle_input(event: InputEvent) -> void:
   if not _enabled:
     return
+  if event is InputEventJoypadButton:
+    if event.pressed and not event.is_echo() and event.device==_pad_device:
+      _pad_press_button(int(event.button_index))
+    return
   # All Android touchscreen touch/drags go through TRUE GUI hit-test zones.
   # Global input is only keyboard/mouse wheel and controller fallback.
   if event is InputEventMagnifyGesture:
@@ -855,9 +1062,26 @@ func step(delta: float) -> void:
   _fall_damage_cd=maxf(0.0,_fall_damage_cd-delta)
   var previous_ground_y: float=float(terrain.call("height_at",actor.position.x,actor.position.z))
   var input_axis: Vector2 = _joystick
+  # Touch joystick wins while a finger is actually manipulating it.
+  if _joystick_touch<0 and _pad_device>=0:
+    var pad_axis: Vector2=_pad_read_stick(JOY_AXIS_LEFT_X,JOY_AXIS_LEFT_Y)
+    _pad_last_move=pad_axis
+    if pad_axis.length()>0.005:
+      input_axis=pad_axis
   var keys: Vector2 = _keyboard_axis()
   if keys.length() > 0.01:
     input_axis = keys
+  if _pad_device>=0:
+    if not _game_sheet.visible:
+      var right_axis: Vector2=_pad_read_stick(JOY_AXIS_RIGHT_X,JOY_AXIS_RIGHT_Y)
+      # Pass the unprocessed hardware axis; filter it once inside look tick.
+      var raw_look:=Vector2(Input.get_joy_axis(_pad_device,JOY_AXIS_RIGHT_X),
+        Input.get_joy_axis(_pad_device,JOY_AXIS_RIGHT_Y))
+      if Input.get_connected_joypads().has(_pad_device):
+        _pad_apply_look(raw_look,delta)
+      _pad_poll_triggers()
+    elif _joystick_touch<0 and keys.length()<=0.01:
+      input_axis=Vector2.ZERO
   if input_axis.length() <= 0.08 and _auto_walking:
     var to_target: Vector3 = _auto_target - actor.position
     to_target.y = 0.0
@@ -1104,4 +1328,15 @@ func stats() -> Dictionary:
     "camera_mode":camera_mode,"god_view_available":true,"free_flight_available":true,
     "vertical_drag_inverted_for_phone":_view_pitch_reversed,
     "camera_collision_avoidance_hits":_camera_collision_hits,
-    "flight_distance":_flight_m}
+    "flight_distance":_flight_m,
+    "gamepad_connected":_pad_device>=0,
+    "gamepad_name":_pad_device_name,
+    "gamepad_deadzone":_pad_deadzone,
+    "gamepad_look_sensitivity":_pad_sensitivity,
+    "gamepad_invert_y":_pad_invert_y,
+    "gamepad_button_events":_pad_button_event_count,
+    "gamepad_move_filtered":_pad_last_move,
+    "gamepad_look_filtered":_pad_last_look,
+    "gamepad_touch_fallback":true,
+    "gamepad_hotplug_support":true,
+    "gamepad_menu_navigation":true}
