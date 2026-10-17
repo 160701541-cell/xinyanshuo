@@ -27,7 +27,16 @@ var _vertical_input: float = 0.0
 var _god_distance: float = 32.0
 var _god_rotation: float = 0.0
 var _flight_m: float = 0.0
-var _view_pitch_reversed: bool = true
+var _view_pitch_reversed: bool = false
+var _touch_look_inverted: bool=false
+var _touch_setting: Button
+var _quickbar_folded: bool=false
+var _quickbar_toggle: Button
+var _locked_target: Node3D
+var _locked_target_id: String=""
+var _locked_target_label: Label
+var _target_lock_button: Button
+var _open_icon_cache: Dictionary={}
 var _yaw: float = 0.43
 var _pitch: float = 0.38
 var _distance: float = 9.5
@@ -388,6 +397,46 @@ func _rounded(color: Color, radius: int) -> StyleBoxFlat:
   s.corner_radius_bottom_right = radius
   return s
 
+func _open_icon(name: String) -> Texture2D:
+  # Actual upstream Lucide open-source ISC SVGs are bundled in the signed
+  # Godot PCK, not fake hand-drawn copies or remote images loaded at runtime.
+  if _open_icon_cache.has(name):
+    return _open_icon_cache[name]
+  var location: String="res://canglan_rev187/ui/lucide/"+name+".svg"
+  if not FileAccess.file_exists(location):
+    return null
+  var svg: String=FileAccess.get_file_as_string(location)
+  svg=svg.replace("currentColor","#f1d9a2")
+  var image:=Image.new()
+  if image.load_svg_from_buffer(svg.to_utf8_buffer(),1.3)!=OK:
+    return null
+  var texture: Texture2D=ImageTexture.create_from_image(image)
+  _open_icon_cache[name]=texture
+  return texture
+
+func _apply_open_hud_style(button: Button, icon_key: String="") -> void:
+  button.add_theme_font_size_override("font_size",16)
+  button.add_theme_color_override("font_color",Color("#f1e7c9"))
+  button.add_theme_color_override("font_hover_color",Color("#fff5dd"))
+  button.add_theme_color_override("font_pressed_color",Color("#ffffff"))
+  var normal:=_rounded(Color("#142a32",0.94),11)
+  normal.border_color=Color("#b59e67",0.60)
+  normal.set_border_width_all(1)
+  normal.shadow_color=Color("#07161c",0.46)
+  normal.shadow_size=2
+  button.add_theme_stylebox_override("normal",normal)
+  var hover:=_rounded(Color("#245058",0.98),11)
+  hover.border_color=Color("#e3c38b")
+  hover.set_border_width_all(1)
+  button.add_theme_stylebox_override("hover",hover)
+  var pressed:=_rounded(Color("#32615b",0.98),11)
+  pressed.border_color=Color("#eac88a")
+  pressed.set_border_width_all(2)
+  button.add_theme_stylebox_override("pressed",pressed)
+  button.add_theme_stylebox_override("disabled",_rounded(Color("#1b2428",0.70),11))
+  if icon_key!="":
+    button.icon=_open_icon(icon_key)
+
 func _new_button(key: String, label: String, width: float, action: Callable) -> Button:
   var button := Button.new()
   button.name = key
@@ -395,7 +444,7 @@ func _new_button(key: String, label: String, width: float, action: Callable) -> 
   button.custom_minimum_size = Vector2(width,54)
   button.size = Vector2(width,54)
   button.mouse_filter = Control.MOUSE_FILTER_STOP
-  button.add_theme_font_size_override("font_size",21)
+  _apply_open_hud_style(button)
   button.pressed.connect(action)
   hud.add_child(button)
   buttons[key] = button
@@ -473,6 +522,22 @@ func _create_hud() -> void:
   _new_button("CameraLockButton","锁视角",103,Callable(self,"toggle_camera_lock"))
   _new_button("PhoneZoomInButton","放大＋",103,Callable(self,"zoom_in"))
   _new_button("PhoneZoomOutButton","缩小－",103,Callable(self,"zoom_out"))
+  (buttons["Iso45Button"] as Button).icon=_open_icon("compass")
+  (buttons["GodShortcutButton"] as Button).icon=_open_icon("eye")
+  (buttons["SoarAvatarButton"] as Button).icon=_open_icon("move-3d")
+  (buttons["PhoneZoomInButton"] as Button).icon=_open_icon("eye")
+  (buttons["DigButton"] as Button).icon=_open_icon("pickaxe")
+  _target_lock_button=_new_button("TargetLockButton","索敌",92,Callable(self,"toggle_target_lock"))
+  _target_lock_button.icon=_open_icon("crosshair")
+  _quickbar_toggle=_new_button("QuickBarFoldButton","收起",72,Callable(self,"toggle_quickbar"))
+  _quickbar_toggle.icon=_open_icon("menu")
+  _locked_target_label=Label.new()
+  _locked_target_label.name="ActualSelectedTargetNameHealthRealmPreview"
+  _locked_target_label.add_theme_font_size_override("font_size",17)
+  _locked_target_label.add_theme_color_override("font_color",Color("#f3d99d"))
+  _locked_target_label.mouse_filter=Control.MOUSE_FILTER_IGNORE
+  hud.add_child(_locked_target_label)
+  _locked_target_label.visible=false
   var caption := Label.new()
   caption.name = "InteractionResultLiveHUD"
   caption.add_theme_font_size_override("font_size",18)
@@ -723,6 +788,12 @@ func _build_game_hud() -> void:
   _pad_setting_invert.name="PadRightStickInvertSetting"
   _pad_setting_invert.pressed.connect(_toggle_pad_invert)
   v.add_child(_pad_setting_invert)
+  _touch_setting=Button.new()
+  _touch_setting.name="AndroidVerticalCameraDirectionToggle"
+  _touch_setting.pressed.connect(_toggle_touch_invert)
+  v.add_child(_touch_setting)
+  _load_touch_options()
+  _refresh_touch_option_label()
   _pad_setting_deadzone=Button.new()
   _pad_setting_deadzone.name="PadStickDeadzoneSetting"
   _pad_setting_deadzone.pressed.connect(_cycle_pad_deadzone)
@@ -776,9 +847,10 @@ func _add_game_action(key: String, label: String, callback: Callable) -> void:
   button.name="MobileGameplay_"+key
   button.text=label
   button.size=Vector2(89,57)
-  button.add_theme_font_size_override("font_size",18)
-  button.add_theme_stylebox_override("normal",_rounded(Color(0.09,0.21,0.19,0.86),11))
-  button.add_theme_stylebox_override("disabled",_rounded(Color(0.14,0.17,0.18,0.70),11))
+  _apply_open_hud_style(button,{
+    "GatherAction":"leaf","DigAction":"pickaxe","InteractAction":"eye",
+    "SwordAttack":"swords","LockedArt":"swords","SpiritBolt":"zap",
+    "SpiritWard":"shield","ViewAction":"compass"}.get(key,""))
   button.pressed.connect(callback)
   hud.add_child(button)
   _game_actions[key]=button
@@ -792,6 +864,27 @@ func _open_game_menu(mode: String) -> void:
   _refresh_game_hud()
   if _pad_device>=0:
     _pad_focus_menu(0)
+
+func _load_touch_options() -> void:
+  var cfg:=ConfigFile.new()
+  if cfg.load("user://canglan_touch_camera_v2.cfg")==OK:
+    _touch_look_inverted=bool(cfg.get_value("camera","invert_y",false))
+
+func _refresh_touch_option_label() -> void:
+  if _touch_setting!=null:
+    _touch_setting.text="触屏上下反转："+("已开启" if _touch_look_inverted else "关闭（上滑抬头）")
+
+func _toggle_touch_invert() -> void:
+  _touch_look_inverted=not _touch_look_inverted
+  var cfg:=ConfigFile.new()
+  cfg.set_value("camera","invert_y",_touch_look_inverted)
+  cfg.save("user://canglan_touch_camera_v2.cfg")
+  _refresh_touch_option_label()
+
+func toggle_quickbar() -> void:
+  _quickbar_folded=not _quickbar_folded
+  _quickbar_toggle.text="展开" if _quickbar_folded else "收起"
+  _layout_hud()
 
 func _refresh_game_hud() -> void:
   if _game_status==null or room==null:
@@ -868,7 +961,7 @@ func _refresh_game_hud() -> void:
   (buttons["CameraLockButton"] as Button).text="解锁视角" if _camera_angle_locked else "锁视角"
   (buttons["Iso45Button"] as Button).text="第三人称" if camera_mode=="iso" else "俯视45°"
   (buttons["SoarAvatarButton"] as Button).text=(
-    "着陆中" if _soar_landing else ("降落" if camera_mode=="soar" else "飞行"))
+    "再起飞" if _soar_landing else ("降落" if camera_mode=="soar" else "飞行"))
   (buttons["GodShortcutButton"] as Button).text="退出上帝" if camera_mode=="god" else "上帝"
   if _living_clock_label!=null:
     var clock: Dictionary=room.call("get_living_clock")
@@ -896,6 +989,7 @@ func _refresh_game_hud() -> void:
   _pad_setting_speed.visible=_game_sheet.visible and _game_sheet_mode=="settings"
   _pad_setting_invert.visible=_pad_setting_speed.visible
   _pad_setting_deadzone.visible=_pad_setting_speed.visible
+  _touch_setting.visible=_pad_setting_speed.visible
   _pad_hint.visible=_pad_device>=0 and not _game_sheet.visible
   if _game_sheet==null or not _game_sheet.visible:
     return
@@ -1752,7 +1846,12 @@ func _layout_hud() -> void:
     var quick: Button=buttons[quick_keys[i]]
     quick.position=Vector2(quick_start+float(i)*108.0,81)
     quick.size=Vector2(103,45)
-    quick.visible=true
+    quick.visible=not _quickbar_folded or quick_keys[i] in [
+      "Iso45Button","SoarAvatarButton","RealJumpButton"]
+  _quickbar_toggle.position=Vector2(size.x-76.0,81.0)
+  _quickbar_toggle.size=Vector2(72,45)
+  _target_lock_button.position=Vector2(maxf(450.0,size.x-515.0),81.0)
+  _target_lock_button.size=Vector2(92,45)
   # Keep flight Up/Down separately accessible beneath the right-side strip.
   (buttons["FlyUpButton"] as Button).position=Vector2(size.x-145,152)
   (buttons["FlyDownButton"] as Button).position=Vector2(size.x-145,208)
@@ -1772,6 +1871,8 @@ func _layout_hud() -> void:
     var row: int=int(idx/4)
     (_game_actions[action_keys[idx]] as Button).position=Vector2(
       size.x-392.0+float(col)*94.0,size.y-207.0+float(row)*66.0)
+  if _locked_target_label!=null:
+    _locked_target_label.position=Vector2(maxf(365.0,size.x*0.5-160.0),188.0)
   if _target_panel!=null:
     # Keep target HUD BELOW the always-on first row of seven view toggles.
     # Previously it sat under those buttons and concealed its own MP bar.
@@ -2267,14 +2368,17 @@ func turn_view(movement: Vector2) -> void:
   _yaw -= movement.x*0.0050
   # User phone feedback: drag DOWN must look DOWN, NEVER up.
   # Reverse rev186 vertical sense across first/third/god/fly.
+  var swipe_y: float=-movement.y if _touch_look_inverted else movement.y
+  # Orbit camera and view-through camera use opposite PITCH coordinate
+  # conventions. An upward finger motion must RAISE the sightline in both.
   if camera_mode=="first" or camera_mode=="fly":
-    _pitch=clampf(_pitch-movement.y*0.0029,-1.30,1.24)
+    _pitch=clampf(_pitch-swipe_y*0.0036,-1.42,1.42)
   elif camera_mode=="god":
-    _pitch=clampf(_pitch-movement.y*0.0029,0.65,1.52)
+    _pitch=clampf(_pitch+swipe_y*0.0036,0.20,1.52)
   elif camera_mode=="iso":
     _pitch=PI/4.0
   else:
-    _pitch=clampf(_pitch-movement.y*0.0029,0.08,1.20)
+    _pitch=clampf(_pitch+swipe_y*0.0036,-1.32,1.48)
   update_camera()
 
 func zoom_ratio(factor: float) -> void:
@@ -2453,6 +2557,12 @@ func toggle_camera_lock() -> void:
 func toggle_avatar_flight() -> void:
   if camera_mode=="soar":
     if _soar_landing:
+      # Landing may be interrupted to evade a blocking roof/NPC. The
+      # previous toggle returned immediately and stranded the player.
+      _soar_landing=false
+      _soar_target_altitude=maxf(3.0,_soar_altitude+2.0)
+      _layout_hud()
+      say("停止降落，重新御剑起飞")
       return
     _soar_landing=true
     _soar_target_altitude=0.0
