@@ -27,7 +27,7 @@ jobs:
         run: |
           set -euo pipefail
           python3 -m py_compile tools/asset_factory/rev208_intake_cc0_evergreen_understory.py
-      - name: Download eight exact individual CC0 pages and ACTUAL 3D GLBs
+      - name: Download eleven exact individual CC0 pages and ACTUAL 3D GLBs
         shell: bash
         run: |
           set -euo pipefail
@@ -37,14 +37,14 @@ jobs:
           from pathlib import Path
           d=Path(os.environ['ASSET_DIR']); m=json.loads((d/'manifest.json').read_text())
           assert m['release_policy']=='QUARANTINED_NO_SIGNING_NO_OTA'
-          assert set(m['items'])=={'pine','cypress','conifer','fern','hydrangea','rose','lavender','grass'}
+          assert set(m['items'])=={'pine','cypress','conifer','fern','hydrangea','rose','lavender','grass','medicinal_wood','medicinal_fire','medicinal_water'}
           for k,a in m['items'].items():
             b=(d/a['file']).read_bytes()
             assert b[:4]==b'glTF' and struct.unpack_from('<I',b,8)[0]==len(b)
             assert hashlib.sha256(b).hexdigest()==a['original_sha256']
             assert a['triangle_lod0']>100 and a['game_asset_approved'] is False
             assert a['license'].startswith('CC0')
-          print('PASS_REV208_REAL_8_VENDOR_CC0_SOURCE_BINARIES_QUARANTINED_FOR_GODOT')
+          print('PASS_REV208_REAL_11_VENDOR_CC0_SOURCE_BINARIES_QUARANTINED_FOR_GODOT')
           PY
       - name: Acquire exactly Godot 4.4.1 original Android engine version
         shell: bash
@@ -77,7 +77,10 @@ jobs:
               "hydrangea":Vector2(0.6,1.7),
               "rose":Vector2(0.5,1.5),
               "lavender":Vector2(0.3,1.2),
-              "grass":Vector2(0.6,1.6)
+              "grass":Vector2(0.6,1.6),
+              "medicinal_wood":Vector2(0.35,0.75),
+              "medicinal_fire":Vector2(0.3,0.7),
+              "medicinal_water":Vector2(0.4,0.75)
             }
             for kind in species:
               var source_path: String="res://hq_"+kind+"_cc0_lod0.glb"
@@ -130,13 +133,13 @@ jobs:
                 "_materials="+str(material_count))
               model.queue_free()
               await process_frame
-            print("PASS_REV208_EIGHT_REAL_BOTANICAL_GLBS_GODOT_441_IMPORTED_NO_PHONE_CLAIM")
+            print("PASS_REV208_ELEVEN_REAL_BOTANICAL_GLBS_GODOT_441_IMPORTED_NO_PHONE_CLAIM")
             quit(0)
           EOG
           timeout 165s /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless \
             --path "$ASSET_DIR" \
             --script res://verify_godot_rev208_botanical.gd | tee "$ASSET_DIR/godot_botanical_qa.log"
-          grep -Fq PASS_REV208_EIGHT_REAL_BOTANICAL_GLBS_GODOT_441_IMPORTED_NO_PHONE_CLAIM "$ASSET_DIR/godot_botanical_qa.log"
+          grep -Fq PASS_REV208_ELEVEN_REAL_BOTANICAL_GLBS_GODOT_441_IMPORTED_NO_PHONE_CLAIM "$ASSET_DIR/godot_botanical_qa.log"
           rm -f "$ASSET_DIR/project.godot" "$ASSET_DIR/verify_godot_rev208_botanical.gd" "$ASSET_DIR/godot_botanical_qa.log"
       - name: Commit ONLY SHA verified original 3D and provenance to rev208 Draft branch
         shell: bash
