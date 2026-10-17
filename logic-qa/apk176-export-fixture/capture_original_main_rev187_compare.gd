@@ -202,6 +202,40 @@ func _capture() -> void:
     _fail("REV198_TRUE_OPAQUE_CHARACTER_PIXELS_MISSING_FROM_45DEG_VIEW")
     return
   print("PASS_REV198_ACTUAL_OPAQUE_AVATAR_PIXELS_RENDER_IN_REAL_3D_THIRD_PERSON_AND_45DEG")
+  # rev200: original screenshot QA previously failed to show a user the
+  # NEW air animation/sword/wind and mistook hair UNDER the torso for hair
+  # on the head. Capture a real engine airborne view before OTA signing.
+  var head_hair: MeshInstance3D=player.get("actor").get_node_or_null(
+    "ActualCC0QuaterniusHairLongNOTArtificialHelmet")
+  if head_hair==null:
+    _fail("REV200_NO_HAIR_ON_REAL_RENDERED_AVATAR")
+    return
+  var hair_bounds: Vector2=room.call("_visible_bounds",head_hair)
+  var target_y: float=float(player.get("actor").position.y)+float(
+    player.get("actor").get_meta("actor_visual_height_m",0.0))
+  if hair_bounds.y<target_y-0.10 or hair_bounds.x<target_y-0.55:
+    _fail("REV200_SOURCES_HAIR_HIDDEN_IN_CHEST_WHILE_FACE_STILL_BARE_"+str(hair_bounds))
+    return
+  player.call("toggle_iso45")
+  player.call("toggle_avatar_flight")
+  player.set("_distance",6.5)
+  for i in range(12):
+    player.call("step",0.085)
+    await process_frame
+  player.call("update_camera")
+  for i in range(9):
+    await process_frame
+  await RenderingServer.frame_post_draw
+  var flying: Dictionary=player.call("stats")
+  if not bool(flying.get("actual_licensed_3d_flying_sword_visible",false)) or (
+      not bool(flying.get("actual_wind_particles_emitting",false))):
+    _fail("REV200_FLYING_GODOT_IMAGE_NOT_AN_ACTUAL_REAL_SWORD_AND_WIND_SCENE")
+    return
+  if not _save("real_apk176_rev200_actual_licensed_sword_soaring_visible_ground_altitude.png"):
+    _fail("REV200_GODOT_SKY_TRAVEL_RENDERED_FRAME_FAILURE")
+    return
+  print("PASS_REV200_ORIGINAL_REAL_GODOT_AIRBORNE_SWORD_WIND_HAIR_HEIGHT_UI_FRAME")
+  player.call("toggle_avatar_flight")
   print("PASS_REV197_ORIGINAL_GODOT_ENGINE_VISIBLE_ANIMATED_PLAYER_CLOSE_AND_45DEG_REAL_FRAMES")
   print("PASS_REV187_TWO_GENUINE_ENGINE_RENDERED_WORKSITE_FRAMES_NOT_PHONE_TESTS")
   base.queue_free()
