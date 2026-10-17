@@ -50,6 +50,10 @@ const HQ_MATURE_TREES: Dictionary={
   "linden":"res://canglan_rev187/hq_rev208/mature_linden_hq_lod0.glb"}
 # Additional source-authored actual 3D botanical forms, never WorldX 2D cutouts.
 # Intake manifest and GLB SHA verified by the QA-only staging pipeline.
+const HQ_REV208_MEDICINAL: Dictionary={
+  "herb_wood":"res://canglan_rev187/hq_rev208/hq_medicinal_wood_cc0_lod0.glb",
+  "herb_fire":"res://canglan_rev187/hq_rev208/hq_medicinal_fire_cc0_lod0.glb",
+  "herb_water":"res://canglan_rev187/hq_rev208/hq_medicinal_water_cc0_lod0.glb"}
 const HQ_REV208_BOTANICAL: Dictionary={
   "pine":"res://canglan_rev187/hq_rev208/hq_pine_cc0_lod0.glb",
   "cypress":"res://canglan_rev187/hq_rev208/hq_cypress_cc0_lod0.glb",
@@ -106,6 +110,7 @@ var asset_errors: Array[String] = []
 var asset_sources: Dictionary = {}
 var hq_mature_tree_sources: Dictionary={}
 var hq_mature_tree_visuals: Dictionary={}
+var hq_medicinal_source_templates: Dictionary={}
 var hq_botanical_sources: Dictionary={}
 var hq_botanical_visuals: Dictionary={}
 var hq_botanical_terrain_sites: Dictionary={}
@@ -664,6 +669,17 @@ func _load_assets() -> void:
       asset_errors.append("REV208_HQ_BOTANICAL_MESH_EMPTY_"+String(plant_kind))
       continue
     hq_botanical_sources[plant_kind]=botanical
+  for medicine_kind in HQ_REV208_MEDICINAL:
+    var source3d: Node3D=_parse_existing_cc0(String(
+      HQ_REV208_MEDICINAL[medicine_kind]))
+    if source3d==null or source3d.find_children(
+        "*","MeshInstance3D",true,false).is_empty():
+      asset_errors.append("REV208_INDEPENDENT_HERB_REAL_GLTF_MISSING_"+
+        String(medicine_kind))
+      if source3d!=null:
+        source3d.free()
+      continue
+    hq_medicinal_source_templates[medicine_kind]=source3d
   licensed_long_hair_source=_parse_existing_cc0(
     "res://canglan_rev187/quaternius_hair_long_static.glb")
   licensed_flying_sword_source=_parse_existing_cc0(
@@ -1099,7 +1115,13 @@ func _spawn_spirit_resource_nodes() -> void:
     if not spirit_resource_sources.has(prefab):
       asset_errors.append("REV206_SPIRIT_RESOURCE_NO_CC0_"+prefab)
       continue
-    var original: Node3D=spirit_resource_sources[prefab]
+    # True botanical real authored 3D flowers replace the existing three
+    # repeated source stems. Original herb/ore identity, inventory,
+    # renewal times and saved 13 finite resource nodes remain unchanged.
+    var high_detail: bool=hq_medicinal_source_templates.has(kind)
+    var original: Node3D=(
+      hq_medicinal_source_templates[kind] if high_detail
+      else spirit_resource_sources[prefab])
     var model: Node3D=original.duplicate()
     model.name=String(id)
     var x: float=float(data["x"])
@@ -1107,7 +1129,9 @@ func _spawn_spirit_resource_nodes() -> void:
     model.position=Vector3(x,float(
       terrain_world.call("height_at",x,z)),z)
     model.set_meta("rev206_actual_world_ore_or_herb",kind)
-    model.set_meta("source_license","Quaternius-CC0")
+    model.set_meta("source_license",
+      "CC0-Innerscene-botanical" if high_detail else "Quaternius-CC0")
+    model.set_meta("rev208_authored_independent_herb_stem",high_detail)
     model.set_meta("world_entity_id",String(id))
     world.add_child(model)
     var b: Vector2=_visible_bounds(model)
@@ -2078,6 +2102,7 @@ func stats() -> Dictionary:
     "rev208_hq_true_mature_tree_count":hq_mature_tree_visuals.size(),
     "rev208_hq_botanical_genuine_source_species":hq_botanical_sources.keys(),
     "rev208_hq_botanical_true_glb_count":hq_botanical_visuals.size(),
+    "rev208_hq_independent_spirit_herb_source_count":hq_medicinal_source_templates.size(),
     "rev208_hq_botanical_tree_trunk_colliders":hq_botanical_colliders.size(),
     "rev208_hq_botanical_valid_ground_sites":hq_botanical_terrain_sites.size(),
     "rev208_hq_botanical_placement_failures":hq_botanical_placement_failures.duplicate(),
@@ -2278,6 +2303,10 @@ func _exit_tree() -> void:
     if botanical is Node3D and is_instance_valid(botanical):
       (botanical as Node3D).free()
   hq_botanical_sources.clear()
+  for herb_template in hq_medicinal_source_templates.values():
+    if herb_template is Node3D and is_instance_valid(herb_template):
+      (herb_template as Node3D).free()
+  hq_medicinal_source_templates.clear()
   hq_botanical_visuals.clear()
   hq_botanical_terrain_sites.clear()
   hq_botanical_colliders.clear()
