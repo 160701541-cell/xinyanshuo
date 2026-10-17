@@ -473,6 +473,41 @@ func _capture() -> void:
       " saturation="+str(avg_saturation)+
       " samples="+str(actual_colors.size()))
     return
+  # rev206 genuine Godot4.4.1 physical flower/ore screen pixels,
+  # not generated scene illustrations or unlicensed rebuilt models.
+  var source_medicines: Dictionary=room.get("spirit_resource_visuals")
+  if source_medicines.size()!=13:
+    _fail("REV206_REAL_LICENSED_HERBAL_3D_OBJECTS_MISSING")
+    return
+  for scene_point in [
+      {"id":"CL-LINGCAO-W-01","x":-11.4,"z":-12.2,
+       "file":"real_apk176_rev206_spirit_herbs_original_quaternius.png"},
+      {"id":"CL-LINGSHI-01","x":25.2,"z":-27.5,
+       "file":"real_apk176_rev206_luminous_spirit_ore_true_3d.png"}]:
+    var id: String=String(scene_point["id"])
+    var original: Node3D=source_medicines[id]["model"]
+    if original==null or not original.visible or (
+        original.find_children("*","MeshInstance3D",true,false).is_empty()):
+      _fail("REV206_ORIGINAL_SPIRIT_PLANTS_OR_ORE_NOT_ACTUALLY_3D_RENDERED_"+id)
+      return
+    var x: float=float(scene_point["x"])
+    var z: float=float(scene_point["z"])
+    var foot_y: float=float(real_ground.call("height_at",x,z+4.6))
+    fighter.position=Vector3(x,foot_y+float(fighter.get_meta(
+      "actor_ground_offset_y",0.0)),z+4.6)
+    player.call("_set_mode","third")
+    player.set("_yaw",0.0)
+    player.set("_pitch",0.41)
+    player.set("_distance",8.8)
+    room.call("_sync_spirit_resource_visuals",fighter)
+    player.call("update_camera")
+    for rev206_frame in range(4):
+      await process_frame
+    await RenderingServer.frame_post_draw
+    if not _save(String(scene_point["file"])):
+      _fail("REV206_ACTUAL_GODOT_REAL_PLANT_ORE_TEXTURE_FRAME_MISSING_"+id)
+      return
+  print("PASS_REV206_GODOT_REAL_3D_WILD_MEDICINAL_HERB_AND_LUMINOUS_ORE_VIEW")
   print("PASS_REV207_ORIGINAL_APK176_GODOT_REAL_COLOR_512PBR_64TEXELS_IMAGES")
   print("PASS_REV197_ORIGINAL_GODOT_ENGINE_VISIBLE_ANIMATED_PLAYER_CLOSE_AND_45DEG_REAL_FRAMES")
   print("PASS_REV187_TWO_GENUINE_ENGINE_RENDERED_WORKSITE_FRAMES_NOT_PHONE_TESTS")
