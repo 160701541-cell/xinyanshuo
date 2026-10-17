@@ -18,6 +18,7 @@ const FILES := {
 	"res://canglan_rev187/player_controller.gd": "canglan_rev187/player_controller.gd",
 	"res://canglan_rev187/backpack.gd": "canglan_rev187/backpack.gd",
 	"res://canglan_rev187/spirit_resources.gd": "canglan_rev187/spirit_resources.gd",
+	"res://canglan_rev187/household_economy.gd": "canglan_rev187/household_economy.gd",
 	"res://canglan_rev187/cultivation_world.gd": "canglan_rev187/cultivation_world.gd",
 	"res://canglan_rev187/root_taxonomy.gd": "canglan_rev187/root_taxonomy.gd",
 	"res://canglan_rev187/city_population.gd": "canglan_rev187/city_population.gd",
@@ -79,6 +80,16 @@ func _initialize() -> void:
 		for item in known_names:
 			var rel: String="canglan_rev187/cc0_rev206/"+category+"/"+item+".glb"
 			files["res://"+rel]=rel
+	# Verified original Han houses/pagodas from 0AD, source CC BY-SA 3.0.
+	# NO European CC0 prefab can be claimed to be a Chinese resident home.
+	for han in ["han_house_a","han_house_b","han_house_c","han_house_d",
+			"han_pagoda","han_temple","han_shrine","han_academy","han_wall_gate"]:
+		var part: String="canglan_rev187/han_ccby_sa/"+han+".glb"
+		files["res://"+part]=part
+	for extra in ["ART_LICENSE_ATTRIBUTION.md","verified_real_han_art.json",
+			"upstream_manifest.json"]:
+		var original: String="canglan_rev187/han_ccby_sa/"+extra
+		files["res://"+original]=original
 	# Rev206 seven genuine source-hashed medicinal plants, mushrooms and
 	# mineral rock bodies. Never create a generic procedural resource model.
 	for item in ["flower","flower2","flower3","mushroom","bush"]:
