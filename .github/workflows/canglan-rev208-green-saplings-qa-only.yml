@@ -249,7 +249,7 @@ jobs:
           # 625-source-node -> 4 ORIGINAL PBR-surface mesh conversion. Don't
           # publish if one is missing, unlicensed, bad geometry or SHA mismatch.
           mkdir -p qa-stage/ota177/canglan_rev187/hq_rev208
-          cp game-source/apk176-ota177-candidate/assets/hq-rev208/vegetation/trees/mature_*_hq_lod0.glb \\
+          cp game-source/apk176-ota177-candidate/assets/hq-rev208/vegetation/trees/mature_*_hq_lod0.glb \
             qa-stage/ota177/canglan_rev187/hq_rev208/
           python3 - <<'PY'
           from pathlib import Path
