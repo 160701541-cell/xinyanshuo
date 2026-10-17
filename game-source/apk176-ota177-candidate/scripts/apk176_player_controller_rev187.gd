@@ -139,6 +139,7 @@ var _spar_enemy_mana_max: int=0
 var _spar_opponent_tag: Label3D
 var _spar_meters: Dictionary={}
 var _sword_cd: float=0.0
+var _attack_anim_seconds: float=0.0
 var _bolt_cd: float=0.0
 var _ward_cd: float=0.0
 var _ward_seconds: float=0.0
@@ -1190,6 +1191,24 @@ func _spawn_real_combat_hit(point: Vector3,tint: Color,power: int=1) -> void:
   # the timer; never retain a freed GPU object in a lambda capture.
   get_tree().create_timer(0.8).timeout.connect(puff.queue_free)
 
+func _show_actual_damage_number(point: Vector3,damage: int,tint: Color) -> void:
+  var number:=Label3D.new()
+  number.name="ActualTargetFloatingDamageFromFiniteHealthLedger"
+  number.text="-%d" % damage
+  number.font_size=38
+  number.pixel_size=0.006
+  number.billboard=BaseMaterial3D.BILLBOARD_ENABLED
+  number.modulate=tint
+  number.outline_size=8
+  number.position=point+Vector3.UP*1.53
+  world.add_child(number)
+  # A tween bound to its own label automatically stops on world unload,
+  # unlike a timer lambda capturing a potentially freed GPU scene node.
+  var motion: Tween=number.create_tween()
+  motion.tween_property(number,"position",number.position+Vector3.UP*0.54,0.58)
+  motion.parallel().tween_property(number,"modulate:a",0.0,0.58)
+  motion.tween_callback(number.queue_free)
+
 func _spar_damage_opponent(amount: int,spell_hit: bool=false) -> bool:
   if _spar_stage=="inactive" or _spar_stage=="victory" or (
       _spar_partner==null or not is_instance_valid(_spar_partner)):
@@ -1203,6 +1222,8 @@ func _spar_damage_opponent(amount: int,spell_hit: bool=false) -> bool:
     _spirit_bolt_impact_count+=1
   _spawn_real_combat_hit(_spar_partner.position+Vector3.UP*1.10,
     Color("#a1eef0") if spell_hit else Color("#f5c67d"),2)
+  _show_actual_damage_number(_spar_partner.position,dealt,
+    Color("#9deafa") if spell_hit else Color("#ffdc99"))
   _sync_spar_meters()
   if _spar_enemy_health<=0:
     _spar_stage="victory"
@@ -1238,6 +1259,7 @@ func sword_attack() -> bool:
     return false
   person["energy"]=int(person["energy"])-6
   _sword_cd=0.85
+  _attack_anim_seconds=0.55
   var slash:=MeshInstance3D.new()
   slash.name="ActualPlayerMortalSwordArcNotFakeSpell"
   var bright:=StandardMaterial3D.new()
@@ -1308,6 +1330,7 @@ func cast_spirit_bolt() -> Dictionary:
     say("无法施展灵息弹：" + String(debit.get("reason","未解锁")))
     return debit
   _bolt_cd=2.2
+  _attack_anim_seconds=0.58
   var projectile:=MeshInstance3D.new()
   projectile.name="RealTravelingRootColoredQiBoltManaPaidAndObstacleChecked"
   var sphere:=SphereMesh.new()
@@ -1456,6 +1479,7 @@ func cast_spirit_ward() -> Dictionary:
   return {"ok":true,"spent":int(debit["spent"]),"duration":_ward_seconds}
 
 func _step_spiritual_combat(delta: float) -> void:
+  _attack_anim_seconds=maxf(0.0,_attack_anim_seconds-delta)
   _sword_cd=maxf(0.0,_sword_cd-delta)
   _bolt_cd=maxf(0.0,_bolt_cd-delta)
   _ward_cd=maxf(0.0,_ward_cd-delta)
@@ -2728,6 +2752,15 @@ func _set_movement_animation(moving: bool) -> void:
     animator.speed_scale=1.0
   else:
     animator.speed_scale=1.0
+  # Do not keep doing idle road-walking while a real sword hit or
+  # mana-paid technique is being executed. Reuse existing bound Knight clips.
+  if _attack_anim_seconds>0.0 and camera_mode!="soar":
+    var attack: String=_knight_clip("|swordAttack")
+    if attack.is_empty():
+      attack=_knight_clip("|swordAttackJump")
+    if not attack.is_empty():
+      clip=attack
+      animator.speed_scale=1.12
   if not clip.is_empty() and animator.current_animation!=clip:
     animator.play(clip)
 
