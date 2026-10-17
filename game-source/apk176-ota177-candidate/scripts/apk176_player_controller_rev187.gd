@@ -432,7 +432,7 @@ func dash_action() -> bool:
     say("体力不足，无法疾步")
     return false
   var target: Vector3=actor.position+_forward()*2.0
-  if absf(target.x)>=41.0 or absf(target.z)>=41.0 or bool(terrain.call("is_water",target.x,target.z)):
+  if not bool(terrain.call("stream_contains_physical_chunk",target.x,target.z)) or bool(terrain.call("is_water",target.x,target.z)):
     say("前方地形无法通行")
     return false
   var surface_y: float=float(terrain.call("height_at",target.x,target.z))
@@ -449,6 +449,7 @@ func dash_action() -> bool:
   actor.position=Vector3(target.x,surface_y+float(actor.get_meta("actor_ground_offset_y",0.0)),target.z)
   _movement_m+=2.0
   _dash_cd=3.0
+  terrain.call("stream_around",actor.position)
   _set_movement_animation(true)
   update_camera()
   _refresh_game_hud()
@@ -1083,6 +1084,7 @@ func step(delta: float) -> void:
   _dash_cd=maxf(0.0,_dash_cd-delta)
   _gather_cd=maxf(0.0,_gather_cd-delta)
   _fall_damage_cd=maxf(0.0,_fall_damage_cd-delta)
+  terrain.call("stream_around",actor.position)
   var previous_ground_y: float=float(terrain.call("height_at",actor.position.x,actor.position.z))
   var input_axis: Vector2 = _joystick
   # Touch joystick wins while a finger is actually manipulating it.
@@ -1135,7 +1137,7 @@ func step(delta: float) -> void:
     var candidate: Vector3 = actor.position + motion*velocity*delta
     var nearby_height: float = float(terrain.call("height_at",candidate.x,candidate.z))
     var current_height: float = float(terrain.call("height_at",actor.position.x,actor.position.z))
-    if absf(candidate.x) < 42.0 and absf(candidate.z)<42.0 and not bool(terrain.call("is_water",candidate.x,candidate.z)):
+    if bool(terrain.call("stream_contains_physical_chunk",candidate.x,candidate.z)) and not bool(terrain.call("is_water",candidate.x,candidate.z)):
       if nearby_height-current_height <= 0.85:
         actor.position.x = candidate.x
         actor.position.z = candidate.z
