@@ -1,12 +1,12 @@
 {
   "schema": 1,
   "channel": "android-preview",
-  "revision": 197,
+  "revision": 198,
   "minimum_android_code": 1176,
   "maximum_android_code": 1176,
-  "sha256": "77345709523b15c2caaa73bb0cec208d0d88e7055e0aa537b17ba82ad0777aa3",
-  "size_bytes": 21777408,
-  "pack_url": "https://160701541-cell.github.io/xinyanshuo/android-preview/canglan-content-rev-197.pck",
-  "notes": "苍岚原APK176 rev197：修复P0手机操控：在正常游戏HUD永久显示俯视45°、上帝视角、真实角色飞行、跳跃、锁定视角、放大缩小；支持跨触摸区域双指缩放，第一人称独立FOV缩放；真实角色跳跃消耗体力、受重力落地，角色飞行能左右移动与升降并显示人物；第三人称和45度相机跟随实际带骨骼角色；运动使用完整人形胶囊物理扫掠，阻止穿过建筑和树石；摄影机球体避障，真实楼梯坡道可登，原NPC资源守恒及存档保留。原APK签名OTA自动加载，具体手机输入与性能仍待实机验收。",
-  "signature": "mPOVsnQ4ioY1eEJbC0ZRqJ/DJ7NqNEOGmwuhjS20PnhEx6Fv5KcqggD1Aq6/kx8Jtd10x8SVOWeT2mxXmQRCEiML8deni0X0YDMOV4IBN1xOzL5i8Jeb41YRF4F9iBg3r7FpgPgKGEB2pF1XYvzZAUgaJAJPbURnncEWSkIcVMhplT1sZ/cB6atnIaCq+TgDRY+CtXNH3mRKHTk/Ch+WWk4kMdyoH01cWYTK4tx7ZoI6Fu8DizSgf8paub0pJOwIBmx2nGM7G2a5mmNYHUqr2POW2ofL/8ALg7rCAqsXyGXrSAxvUgQPBiSLwK1zK8yLMVOfaWyJtNCBvBM41ilIBXz3Lvp13YXWQaW+qKo2r4KEiWSPrSgnFsiYPIEhTQhtgaUBL/rFi8Myd/4oAu4wFoKNScHEea4TLMZyv3gP3jtsPjOgCjiMe4avZZdzweQ2UpbHVnz6epRQvATZ/7tmTfWjW7e7wdHKiHvtJWocgi8YoMSinl9FNKLeOO8XH0Va"
+  "sha256": "02e5ddb16934aa3388d834ef6ead788e967b88ed377e452bcafee96983dc9bd8",
+  "size_bytes": 21779104,
+  "pack_url": "https://160701541-cell.github.io/xinyanshuo/android-preview/canglan-content-rev-198.pck",
+  "notes": "苍岚原APK176 rev198：根据真实Godot第三人称、45度镜头截图修复人物完全透明P0：原已授权骑士GLB实体材质Alpha=0，现修正为不透明，保持骨骼、动画与原人物NPC。新增严格真实引擎像素截图验收，保留rev197跳跃、角色飞行、镜头锁、双指缩放和物理碰撞。原APK签名热更新，手机实机仍待验收。",
+  "signature": "cpKywFLAnu4QRmDOeMJqwLNcg9vDeQ/4xqpm/0Az1OFwT8KNmOLKfwdCpFC+jzDqEgUz+PeXY8SFoL9o8XK2T2dryklTmR7MQ3dFd0qzrDwckyCT8pJFgfPAJAwlA3Nsv6TnW8q5SschFs/XV56wljkljnTATIwu1BC7dLAlM8uobCRVF5gmE+OlSlXFGBmIT6FIQtDRFwPryqa4aF+/TGDAyFz0F0tSJLZ/VkO/8XJ53v3iIkkuAlHLaascNN7BHF6YK5FrMFTOLtgUUU04+Kt1N+UFLTsQVymJPdjsfDUxJ/ZDx15Og+TLhgweLnGpLViDmDcuhswVMsfvKVQRc4w0H/uRLVtoE3upqteFjrZv9WzCotBXL0A3ip7DfKftTo6z9AD0zZgiRIR5vrv+mLCQCnSpu8RuYhuAzh0KTgAz19iRyQslVG++BYpJwC7NU781m9ZssUWiZLQDgE8WQ0xpWcHTf93psqLalzfFIR2kilnbKr5ElSwZa5pvPb+m"
 }
