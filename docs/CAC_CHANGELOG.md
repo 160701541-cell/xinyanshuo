@@ -1,5 +1,11 @@
 # CAC 工序变更与开发日志
 
+## 2026-10-18 / CAC-REV208-FOLIAGE-THIRD-PERSON-CLIPPING / 真植被必须不能遮挡玩家
+- rev208 Godot4.4.1原Main逻辑验收过关，但首轮 **真实Vulkan截图QA失败**（`39064557498`）：第三人称近镜头的真实人物像素被新增绿叶幼树冠层遮住，出现`FAIL_REV198_RENDERED_PLAYER_IS_STILL_INVISIBLE_NOT_MERE_SCENE_NODE`。`QA SUCCESS`不成立，因此rev208仍未签名/发布。
+- 真正修复`788717836ab19d7cac0f436a58d9e2d6fe1c4276`：生态散布器给主角原始出生位置`(1.5,7.0)`留8m可移动/可看清身体的出生林间空地，保留灵根检测台`(12,7)`周围5m视野/交互空间；真实建筑道路水体仍然禁止种植，没有删掉人物视觉QA门禁。
+- 后续仍需真实Godot主镜头和近景截图证明画面，且更高层应有树木遮挡角色时镜头自动透视/透明化，不能永远靠固定出生地排除。
+
+
 ## 2026-10-18 / CAC-REV208-GREEN-FOREST-ART-QUALITY / 真实Godot截图暴露红白菌体误当绿植（候选）
 - rev207在Godot4.4.1原手机游戏Main场景实渲截图 `real_apk176_rev207_vivid_cc0_texture_forest_wide.png` 中，新增201株源`Quaternius CC0 herb/bush.glb`实际外观为大量**巨型红白蘑菇样物体**，不是用户要求的森林绿叶灌木；局部土地仍疏。即使场景3D解析和材质哈希技术QA通过，**该美术效果仍不达用户验收标准**。不把引擎通过等同视觉满意。
 - rev208真正候选源码 `apk176_living_resource_world_rev187.gd` 改为复用先前已合法引入的`Kenney CC0 tree_oak.glb`原始树冠/叶色与UV/PBR，在0.26–0.47原比例生成密集灌木/幼树，不再把红白菌体错当翠绿植物，保留随机散布、≤210真源3D节点、≤14万真实三角预算、真实土壤/道路/建筑地基禁种、挖地后消隐。旧Quaternius红白菌/灵药模型不被篡改或删除，仍可作为独立稀有药材而非普通森林绿被。
