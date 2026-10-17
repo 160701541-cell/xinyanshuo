@@ -32,6 +32,25 @@ var water: MeshInstance3D
 var world_materials: Dictionary = {}
 var mesh_revisions: int = 0
 var river_enabled: bool = true
+# REV193: deterministic, physically collidable terrain chunks outside the
+# original 92m excavation square. Existing central NPC/economy stays intact.
+const STREAM_CHUNK_M: float = 46.0 # 23*2m; +/-46 seam is EXACTLY shared
+const STREAM_CELLS: int = 23
+const STREAM_CELL: float = 2.0
+const STREAM_RADIUS: int = 2
+const STREAM_MAX_ACTIVE: int = 36
+const STREAM_SAVE_SCHEMA: int = 1
+const STREAM_WORLD_SEED: int = 20261017
+var stream_chunks: Dictionary = {} # "cx:cz" -> Node3D containing visual+physics
+var stream_cut_cells: Dictionary = {} # "cx:cz:ix:iz" -> depth [1..8]
+var stream_center: Vector2i = Vector2i(999999,999999)
+var stream_save_path: String = "user://canglan_world_streamed_terrain_v1.json"
+var stream_save_ok: bool = true
+var stream_last_save_error: String = ""
+var stream_created: int = 0
+var stream_unloaded: int = 0
+var stream_saved_updates: int = 0
+var stream_terrain_mesh_triangles: int = 0
 
 func _ready() -> void:
   name = "PhysicalDeformable92mVillageStrata"
@@ -68,6 +87,269 @@ func _ready() -> void:
   _construct_terrain()
   _construct_pond()
   _construct_far_land()
+  _load_stream_deltas()
+  # Spawn first physical chunk ring before player movement begins; Godot
+  # tests are allowed to inspect true StaticBody3D collisions immediately.
+  stream_around(Vector3(0,0,10),true)
+
+# Deterministic 46m coordinate grid, matching the original centre border:
+# core world = chunks (0,0), (1,0), (0,1), (1,1).
+func _stream_coords(x: float,z: float) -> Vector2i:
+  return Vector2i(floori((x+HALF)/STREAM_CHUNK_M),
+    floori((z+HALF)/STREAM_CHUNK_M))
+
+func _stream_is_core(c: Vector2i) -> bool:
+  return c.x>=0 and c.x<=1 and c.y>=0 and c.y<=1
+
+func _stream_chunk_key(c: Vector2i) -> String:
+  return str(c.x)+":"+str(c.y)
+
+func _stream_cell_key(c: Vector2i,ix: int,iz: int) -> String:
+  return str(c.x)+":"+str(c.y)+":"+str(ix)+":"+str(iz)
+
+func _stream_cut_count(c: Vector2i,ix: int,iz: int) -> int:
+  return clampi(int(stream_cut_cells.get(_stream_cell_key(c,ix,iz),0)),0,MAX_CUTS)
+
+func _stream_local_cell(c: Vector2i,x: float,z: float) -> Vector2i:
+  return Vector2i(clampi(floori((x-(-HALF+float(c.x)*STREAM_CHUNK_M))/STREAM_CELL),0,STREAM_CELLS-1),
+    clampi(floori((z-(-HALF+float(c.y)*STREAM_CHUNK_M))/STREAM_CELL),0,STREAM_CELLS-1))
+
+func stream_contains_physical_chunk(x: float,z: float) -> bool:
+  var c: Vector2i=_stream_coords(x,z)
+  return _stream_is_core(c) or stream_chunks.has(_stream_chunk_key(c))
+
+func _stream_base_cell_height(c: Vector2i,ix: int,iz: int,x: float,z: float) -> float:
+  return far_height_at(x,z)-float(_stream_cut_count(c,ix,iz))*CUT_HEIGHT
+
+func _stream_chunk_mesh(c: Vector2i) -> ArrayMesh:
+  var ox: float=-HALF+float(c.x)*STREAM_CHUNK_M
+  var oz: float=-HALF+float(c.y)*STREAM_CHUNK_M
+  var top:=SurfaceTool.new()
+  top.begin(Mesh.PRIMITIVE_TRIANGLES)
+  var sides: Dictionary={}
+  for kind in ["topsoil","clay","gravel","weathered_rock"]:
+    var wall:=SurfaceTool.new()
+    wall.begin(Mesh.PRIMITIVE_TRIANGLES)
+    sides[kind]=wall
+  var sides_count: Dictionary={}
+  for kind in sides:
+    sides_count[kind]=0
+  for iz in range(STREAM_CELLS):
+    for ix in range(STREAM_CELLS):
+      var x: float=ox+float(ix)*STREAM_CELL
+      var z: float=oz+float(iz)*STREAM_CELL
+      var depth: int=_stream_cut_count(c,ix,iz)
+      var a:=Vector3(x,far_height_at(x,z)-float(depth)*CUT_HEIGHT,z)
+      var b:=Vector3(x+STREAM_CELL,far_height_at(x+STREAM_CELL,z)-float(depth)*CUT_HEIGHT,z)
+      var c1:=Vector3(x+STREAM_CELL,far_height_at(x+STREAM_CELL,z+STREAM_CELL)-float(depth)*CUT_HEIGHT,z+STREAM_CELL)
+      var d:=Vector3(x,far_height_at(x,z+STREAM_CELL)-float(depth)*CUT_HEIGHT,z+STREAM_CELL)
+      # Native visible AND collidable top geometry, world-space biome color.
+      for v in [a,d,c1,a,c1,b]:
+        top.set_color(ground_color_at(v.x,v.z) if depth==0 else STONE_COLORS["soil_dark"])
+        top.add_vertex(Vector3(v.x-ox,v.y,v.z-oz))
+      # Actual exposed soil walls around dug cells, including across chunk
+      # borders; do not fabricate terrain from a color-only decal.
+      var edges: Array[Vector2i]=[
+        Vector2i(1,0),Vector2i(-1,0),Vector2i(0,1),Vector2i(0,-1)]
+      for normal in edges:
+        var nx: int=ix+normal.x
+        var nz: int=iz+normal.y
+        var other: Vector2i=c
+        if nx<0:
+          other.x-=1
+          nx=STREAM_CELLS-1
+        elif nx>=STREAM_CELLS:
+          other.x+=1
+          nx=0
+        if nz<0:
+          other.y-=1
+          nz=STREAM_CELLS-1
+        elif nz>=STREAM_CELLS:
+          other.y+=1
+          nz=0
+        var neighbor_depth: int=_stream_cut_count(other,nx,nz)
+        if _stream_is_core(other):
+          # Old core geometry keeps its own physically excavated strata; at
+          # this seam stream deltas are only allowed on exterior cells.
+          neighbor_depth=0
+        if depth<=neighbor_depth:
+          continue
+        var pa: Vector2
+        var pb: Vector2
+        if normal==Vector2i(1,0):
+          pa=Vector2(x+STREAM_CELL,z)
+          pb=Vector2(x+STREAM_CELL,z+STREAM_CELL)
+        elif normal==Vector2i(-1,0):
+          pa=Vector2(x,z+STREAM_CELL)
+          pb=Vector2(x,z)
+        elif normal==Vector2i(0,1):
+          pa=Vector2(x+STREAM_CELL,z+STREAM_CELL)
+          pb=Vector2(x,z+STREAM_CELL)
+        else:
+          pa=Vector2(x,z)
+          pb=Vector2(x+STREAM_CELL,z)
+        for depth_layer in range(neighbor_depth,depth):
+          var layer_top: float=float(depth_layer)*CUT_HEIGHT
+          var layer_bottom: float=float(depth_layer+1)*CUT_HEIGHT
+          var kind: String=SOIL_KEYS[mini(depth_layer,SOIL_KEYS.size()-1)]
+          var surface: SurfaceTool=sides[kind]
+          var qa:=Vector3(pa.x-ox,far_height_at(pa.x,pa.y)-layer_top,pa.y-oz)
+          var qb:=Vector3(pb.x-ox,far_height_at(pb.x,pb.y)-layer_top,pb.y-oz)
+          var qc:=Vector3(pb.x-ox,far_height_at(pb.x,pb.y)-layer_bottom,pb.y-oz)
+          var qd:=Vector3(pa.x-ox,far_height_at(pa.x,pa.y)-layer_bottom,pa.y-oz)
+          _push_quad(surface,qa,qb,qc,qd)
+          sides_count[kind]=int(sides_count[kind])+1
+  top.generate_normals()
+  var output:=ArrayMesh.new()
+  var topmesh: ArrayMesh=top.commit()
+  if topmesh!=null:
+    output.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES,topmesh.surface_get_arrays(0))
+    output.surface_set_material(output.get_surface_count()-1,world_materials["natural_ground"])
+  for kind in sides:
+    if int(sides_count[kind])<=0:
+      continue
+    var wall: SurfaceTool=sides[kind]
+    wall.generate_normals()
+    var walls: ArrayMesh=wall.commit()
+    if walls!=null and walls.get_surface_count()>0:
+      output.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES,walls.surface_get_arrays(0))
+      output.surface_set_material(output.get_surface_count()-1,
+        world_materials["soil"] if kind=="topsoil" else world_materials[kind])
+  return output
+
+func _create_stream_chunk(c: Vector2i) -> void:
+  var key: String=_stream_chunk_key(c)
+  if _stream_is_core(c) or stream_chunks.has(key):
+    return
+  var root:=Node3D.new()
+  root.name="PersistentChunk_"+str(c.x)+"_"+str(c.y)
+  root.position=Vector3(-HALF+float(c.x)*STREAM_CHUNK_M,0,
+    -HALF+float(c.y)*STREAM_CHUNK_M)
+  var visible_mesh:=MeshInstance3D.new()
+  visible_mesh.name="ActualWalkableStreamedTerrainMesh"
+  visible_mesh.mesh=_stream_chunk_mesh(c)
+  root.add_child(visible_mesh)
+  var body:=StaticBody3D.new()
+  body.name="PhysicalStreamedTerrainCollision"
+  root.add_child(body)
+  var shape:=CollisionShape3D.new()
+  shape.name="RegeneratedStreamedSoilCollision"
+  shape.shape=visible_mesh.mesh.create_trimesh_shape()
+  body.add_child(shape)
+  # Draw chunks against existing far LOD. Shader/LOD replacement is a
+  # separate milestone; never claim these are fully textured biomes yet.
+  add_child(root)
+  stream_chunks[key]=root
+  stream_created+=1
+
+func _rebuild_stream_chunk(c: Vector2i) -> void:
+  var root: Node3D=stream_chunks.get(_stream_chunk_key(c)) as Node3D
+  if root==null:
+    return
+  var visual: MeshInstance3D=root.get_node("ActualWalkableStreamedTerrainMesh")
+  visual.mesh=_stream_chunk_mesh(c)
+  var collision_node: CollisionShape3D=root.get_node(
+    "PhysicalStreamedTerrainCollision/RegeneratedStreamedSoilCollision")
+  collision_node.shape=visual.mesh.create_trimesh_shape()
+
+func stream_around(position: Vector3, force: bool=false) -> void:
+  var center: Vector2i=_stream_coords(position.x,position.z)
+  if center==stream_center and not force:
+    return
+  stream_center=center
+  var required: Dictionary={}
+  for offset_z in range(-STREAM_RADIUS,STREAM_RADIUS+1):
+    for offset_x in range(-STREAM_RADIUS,STREAM_RADIUS+1):
+      var c:=Vector2i(center.x+offset_x,center.y+offset_z)
+      if not _stream_is_core(c):
+        required[_stream_chunk_key(c)]=c
+  # Unload the visual+collision node only; the authoritative cell deltas
+  # persist separately and will restore when returning to this location.
+  for id in stream_chunks.keys():
+    if not required.has(id):
+      var old_chunk: Node3D=stream_chunks[id]
+      old_chunk.queue_free()
+      stream_chunks.erase(id)
+      stream_unloaded+=1
+  for key in required:
+    if not stream_chunks.has(key):
+      _create_stream_chunk(required[key])
+  assert(stream_chunks.size()<=STREAM_MAX_ACTIVE)
+
+func _load_stream_deltas() -> void:
+  if not FileAccess.file_exists(stream_save_path):
+    return
+  var file:=FileAccess.open(stream_save_path,FileAccess.READ)
+  if file==null:
+    stream_save_ok=false
+    stream_last_save_error="STREAM_SAVE_READ_FAILED"
+    return
+  var parsed: Variant=JSON.parse_string(file.get_as_text())
+  if not parsed is Dictionary:
+    stream_save_ok=false
+    stream_last_save_error="STREAM_SAVE_INVALID_JSON"
+    return
+  var data: Dictionary=parsed
+  if int(data.get("schema",-1))!=STREAM_SAVE_SCHEMA or int(data.get("seed",-1))!=STREAM_WORLD_SEED:
+    stream_save_ok=false
+    stream_last_save_error="STREAM_SAVE_WRONG_SCHEMA_OR_WORLD_SEED"
+    return
+  var saved: Dictionary=data.get("cut_cells",{})
+  if saved.size()>100000:
+    stream_save_ok=false
+    stream_last_save_error="STREAM_SAVE_TOO_LARGE"
+    return
+  for key in saved:
+    var entry: Array=String(key).split(":")
+    if entry.size()!=4:
+      continue
+    var coord:=Vector2i(int(entry[0]),int(entry[1]))
+    var ix: int=int(entry[2])
+    var iz: int=int(entry[3])
+    var depth: int=int(saved[key])
+    if _stream_is_core(coord) or ix<0 or iz<0 or ix>=STREAM_CELLS or iz>=STREAM_CELLS or depth<=0 or depth>MAX_CUTS:
+      continue
+    stream_cut_cells[key]=depth
+
+func _save_stream_deltas() -> bool:
+  var json:=JSON.stringify({
+    "schema":STREAM_SAVE_SCHEMA,
+    "seed":STREAM_WORLD_SEED,
+    "cut_cells":stream_cut_cells}, "",false)
+  var temporary: String=stream_save_path+".tmp"
+  var file:=FileAccess.open(temporary,FileAccess.WRITE)
+  if file==null:
+    stream_save_ok=false
+    stream_last_save_error="STREAM_SAVE_OPEN_WRITE_FAILED"
+    return false
+  file.store_string(json)
+  file.flush()
+  file.close()
+  var old_absolute: String=ProjectSettings.globalize_path(temporary)
+  var new_absolute: String=ProjectSettings.globalize_path(stream_save_path)
+  if DirAccess.rename_absolute(old_absolute,new_absolute)!=OK:
+    stream_save_ok=false
+    stream_last_save_error="STREAM_SAVE_ATOMIC_RENAME_FAILED"
+    return false
+  stream_save_ok=true
+  stream_last_save_error=""
+  stream_saved_updates+=1
+  return true
+
+func _streamed_height_at(x: float,z: float) -> float:
+  var c: Vector2i=_stream_coords(x,z)
+  var local: Vector2i=_stream_local_cell(c,x,z)
+  var ox: float=-HALF+float(c.x)*STREAM_CHUNK_M
+  var oz: float=-HALF+float(c.y)*STREAM_CHUNK_M
+  var x0: float=ox+float(local.x)*STREAM_CELL
+  var z0: float=oz+float(local.y)*STREAM_CELL
+  var u: float=clampf((x-x0)/STREAM_CELL,0.0,1.0)
+  var v: float=clampf((z-z0)/STREAM_CELL,0.0,1.0)
+  var h: float=lerpf(lerpf(far_height_at(x0,z0),
+    far_height_at(x0+STREAM_CELL,z0),u),lerpf(
+    far_height_at(x0,z0+STREAM_CELL),
+    far_height_at(x0+STREAM_CELL,z0+STREAM_CELL),u),v)
+  return h-float(_stream_cut_count(c,local.x,local.y))*CUT_HEIGHT
 
 func _key(ix: int, iz: int) -> String:
   return str(ix) + ":" + str(iz)
