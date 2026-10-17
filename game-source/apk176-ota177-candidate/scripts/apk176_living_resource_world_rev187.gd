@@ -19,7 +19,7 @@ const ASSETS := {
   "door": "res://canglan_rev187/wood_door.glb",
   "worker": "res://canglan_rev187/animated_knight.glb"
 }
-const TOWN := "CL-REV187-HX-VILLAGE"
+const TOWN := "CL-REV186-HX-VILLAGE"
 const DEPOT := Vector3(0.0, 0.0, 10.0)
 const SITE := Vector3(0.0, 0.0, -3.0)
 const STAGES := [
