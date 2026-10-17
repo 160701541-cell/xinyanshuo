@@ -37,3 +37,26 @@ jobs:
             print('GLB_ACTUAL_HAIR_OR_HEAD_NAMES',hair)
           print('PASS_REV199_CC0_ASSET_PROBE_METADATA_NOT_RELEASE')
           PY
+      - name: Probe published CC0 animated-knight sword and helmet BEFORE packaging
+        run: |
+          set -euo pipefail
+          base='https://raw.githubusercontent.com/ilrein/warptracker/main/public/models'
+          for item in sword helmet; do
+            curl --fail --location --retry 3 --max-time 30 "$base/$item.glb" -o "/tmp/rev199-$item.glb"
+          done
+          python3 - <<'PY'
+          import json,struct,hashlib,pathlib
+          for label in ('sword','helmet'):
+            p=pathlib.Path('/tmp/rev199-'+label+'.glb')
+            b=p.read_bytes()
+            assert 500<len(b)<1000000 and b[:4]==b'glTF',p
+            json_len,tag=struct.unpack_from('<I4s',b,12)
+            assert tag==b'JSON'
+            j=json.loads(b[20:20+json_len])
+            print('EXISTING_OFFICIAL_PACK_CC0_CONVERTED_GLTF',label,'bytes',len(b),'sha256',hashlib.sha256(b).hexdigest())
+            print('ASSET_SOURCE_NAME',[(x.get('name'),x.get('mesh')) for x in j.get('nodes',[])])
+            print('MESH_DETAILS',[(x.get('name'),len(x.get('primitives',[]))) for x in j.get('meshes',[])])
+            print('MATERIAL',[(x.get('name'),x.get('pbrMetallicRoughness',{}).get('baseColorFactor')) for x in j.get('materials',[])])
+            print('MINMAX',[(a.get('min'),a.get('max')) for a in j.get('accessors',[]) if a.get('type')=='VEC3'][:12])
+          print('PASS_REV199_CC0_VERIFIED_EXISTING_BLADE_AND_HELMET_CANDIDATES')
+          PY
