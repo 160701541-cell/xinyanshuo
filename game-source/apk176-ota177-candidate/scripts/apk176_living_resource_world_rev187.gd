@@ -108,6 +108,11 @@ var spirit_resources: RefCounted
 var world_society: RefCounted
 var spirit_resource_sources: Dictionary={}
 var spirit_resource_visuals: Dictionary={}
+# Actual source-GLB understorey, GPU MultiMesh instancing with preserved UV
+# and vendor surface PBR. Count not conflated with harvestable medicine.
+var licensed_understory_count: int=0
+var licensed_understory_draw_parts: int=0
+var licensed_understory_triangle_budget: int=0
 const SPIRIT_CC0_SOURCES: Dictionary={
   "flower":"res://canglan_rev187/cc0_spirit/herb/flower.glb",
   "flower2":"res://canglan_rev187/cc0_spirit/herb/flower2.glb",
@@ -207,6 +212,7 @@ func _ready() -> void:
   else:
     _sync_mine_guardian_realms()
   _create_quality_hud()
+  _spawn_licensed_living_understory()
   _hide_old_render_world()
   _hide_original_debug_labels()
   quality = ManualQuality.new()
@@ -774,6 +780,102 @@ func quote_and_fund_near_house(point: Vector3) -> Dictionary:
     _add_event("真实仓库扣木%d石%d；%s排入NPC工期" % [
       int(result["spent_wood"]),int(result["spent_stone"]),best_id])
   return result
+
+# Each small shrub is genuine licensed Quaternius bush GLB geometry,
+# UV and PBR (not a fake homemade building/flat billboard), drawn as a
+# per-part MultiMesh to avoid one expensive draw node per plant.  The
+# engine's plantability mask excludes ponds, rock, paths and excavation.
+# This is decorative living understorey, NOT free harvestable inventory:
+# collectible medicine remains the strictly conserved spirit_resource ledger.
+func _spawn_licensed_living_understory() -> void:
+  if not spirit_resource_sources.has("bush") or quality==null:
+    asset_errors.append("REV207_UNDERSTORY_CC0_BUSH_NOT_IMPORTED")
+    return
+  var original: Node3D=spirit_resource_sources["bush"]
+  var meshes: Array[Node]=original.find_children("*","MeshInstance3D",true,false)
+  if meshes.is_empty():
+    asset_errors.append("REV207_UNDERSTORY_REAL_GLTF_SOURCE_HAS_NO_MESH")
+    return
+  var source_triangles: int=0
+  var actual_parts: Array[MeshInstance3D]=[]
+  for source in meshes:
+    var part: MeshInstance3D=source as MeshInstance3D
+    if part==null or part.mesh==null:
+      continue
+    actual_parts.append(part)
+    for idx in range(part.mesh.get_surface_count()):
+      var arrays: Array=part.mesh.surface_get_arrays(idx)
+      var indices: PackedInt32Array=arrays[Mesh.ARRAY_INDEX]
+      var vertices: PackedVector3Array=arrays[Mesh.ARRAY_VERTEX]
+      source_triangles+=int(indices.size()/3) if not indices.is_empty() else (
+        int(vertices.size()/3))
+  if actual_parts.is_empty() or source_triangles<=0:
+    asset_errors.append("REV207_UNDERSTORY_EMPTY_OR_NONTRIANGLE_LICENSED_GLTF")
+    return
+  # Hard source-aware mobile triangle budget: do not multiply a 20k-tri
+  # authored plant by 1,000 on phones. Conservative, deterministic upper
+  # bound; exact draw calls still depend on original GLB surface count.
+  var count: int=clampi(220000/maxi(1,source_triangles),24,980)
+  var random:=RandomNumberGenerator.new()
+  random.seed=20261018
+  var locations: Array[Transform3D]=[]
+  var attempts: int=0
+  while locations.size()<count and attempts<count*12:
+    attempts+=1
+    var x: float=random.randf_range(-42.0,42.0)
+    var z: float=random.randf_range(-42.0,42.0)
+    if not bool(quality.call("_natural_plantable",x,z)):
+      continue
+    # Keep the exact six real CC0 housing blueprints (including paid future
+    # houses), stair access and medical herb nodes free of rooted bushes.
+    var reserved: bool=false
+    for site in housing_blueprints.values():
+      var p: Vector3=site["at"]
+      if Vector2(x-p.x,z-p.z).length()<7.2:
+        reserved=true
+        break
+    if reserved:
+      continue
+    var no_collision: bool=true
+    for living_herb in spirit_resource_visuals.values():
+      var h: Node3D=living_herb["model"]
+      if Vector2(h.position.x-x,h.position.z-z).length()<1.6:
+        no_collision=false
+        break
+    if not no_collision:
+      continue
+    var scale_factor: float=random.randf_range(0.38,0.72)
+    var t:=Transform3D(Basis(Vector3.UP,random.randf_range(-PI,PI)).scaled(
+      Vector3.ONE*scale_factor),
+      Vector3(x,float(terrain_world.call("height_at",x,z)),z))
+    locations.append(t)
+  for part in actual_parts:
+    # Detached original GLTF source has no world transform; compose its
+    # existing authoring transform hierarchy without calling to_global().
+    var offset: Transform3D=Transform3D.IDENTITY
+    var cursor: Node3D=part
+    while cursor!=null and cursor!=original:
+      offset=cursor.transform*offset
+      cursor=cursor.get_parent() as Node3D
+    var batch:=MultiMesh.new()
+    batch.transform_format=MultiMesh.TRANSFORM_3D
+    batch.mesh=part.mesh
+    batch.instance_count=locations.size()
+    for i in range(locations.size()):
+      batch.set_instance_transform(i,locations[i]*offset)
+    var draw:=MultiMeshInstance3D.new()
+    draw.name="RealQuaterniusLicensedPBRUnderstoryBatched_"+str(
+      licensed_understory_draw_parts)
+    draw.multimesh=batch
+    draw.material_override=part.material_override
+    draw.cast_shadow=GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+    draw.visibility_range_end=73.0
+    world.add_child(draw)
+    licensed_understory_draw_parts+=1
+  licensed_understory_count=locations.size()
+  licensed_understory_triangle_budget=locations.size()*source_triangles
+  if licensed_understory_count<24:
+    asset_errors.append("REV207_UNDERSTORY_ALL_LICENSED_BUSHES_MISSING")
 
 func _spawn_spirit_resource_nodes() -> void:
   if spirit_resources==null or not bool(spirit_resources.get("_loaded")):
@@ -1725,6 +1827,9 @@ func stats() -> Dictionary:
       world_society.get("_loaded")) else 0,
     "rev207_mine_guardian_positions_linked":actual_wildlife.values().filter(
       func(v): return String(v.get("guarded_ore",""))!="").size(),
+    "rev207_real_cc0_shrub_understory":licensed_understory_count,
+    "rev207_real_cc0_shrub_draw_nodes":licensed_understory_draw_parts,
+    "rev207_real_cc0_shrub_triangles":licensed_understory_triangle_budget,
     "rev206_world_spirit_resource_visuals":spirit_resource_visuals.size(),
     "rev206_licensed_spirit_plant_rock_sources":spirit_resource_sources.size(),
     "rev206_native_animated_wildlife_count":_wildlife_anim_count,
