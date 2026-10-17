@@ -43,6 +43,10 @@ const STREAM_SAVE_SCHEMA: int = 1
 const STREAM_WORLD_SEED: int = 20261017
 var stream_chunks: Dictionary = {} # "cx:cz" -> Node3D containing visual+physics
 var stream_cut_cells: Dictionary = {} # "cx:cz:ix:iz" -> depth [1..8]
+# Historical streamed spoil derives ONCE from saved excavation depths.
+# Never re-mint resources when a chunk unloads/reloads or the app restarts.
+var stream_spoil_bag: Dictionary = {"topsoil":0,"clay":0,"gravel":0,"weathered_rock":0}
+var stream_removed_units: int = 0
 var stream_center: Vector2i = Vector2i(999999,999999)
 var stream_save_path: String = "user://canglan_world_streamed_terrain_v1.json"
 var stream_save_ok: bool = true
@@ -276,6 +280,27 @@ func stream_around(position: Vector3, force: bool=false) -> void:
       _create_stream_chunk(required[key])
   assert(stream_chunks.size()<=STREAM_MAX_ACTIVE)
 
+func _rebuild_stream_spoil_ledger() -> void:
+  for kind in stream_spoil_bag:
+    stream_spoil_bag[kind]=0
+  stream_removed_units=0
+  for key in stream_cut_cells:
+    var depth: int=clampi(int(stream_cut_cells[key]),0,MAX_CUTS)
+    stream_removed_units+=depth
+    for layer in range(depth):
+      var kind: String=SOIL_KEYS[layer]
+      stream_spoil_bag[kind]=int(stream_spoil_bag[kind])+1
+  var original_removed: int=0
+  for entry in cells.values():
+    original_removed+=int(entry["cuts"])
+  dug_units=original_removed+stream_removed_units
+
+func _total_soil_inventory() -> Dictionary:
+  var total: Dictionary=spoil_bag.duplicate(true)
+  for kind in stream_spoil_bag:
+    total[kind]=int(total.get(kind,0))+int(stream_spoil_bag[kind])
+  return total
+
 func _load_stream_deltas() -> void:
   if not FileAccess.file_exists(stream_save_path):
     return
@@ -310,6 +335,7 @@ func _load_stream_deltas() -> void:
     if _stream_is_core(coord) or ix<0 or iz<0 or ix>=STREAM_CELLS or iz>=STREAM_CELLS or depth<=0 or depth>MAX_CUTS:
       continue
     stream_cut_cells[key]=depth
+  _rebuild_stream_spoil_ledger()
 
 func _save_stream_deltas() -> bool:
   var json:=JSON.stringify({
@@ -722,8 +748,7 @@ func excavate_at(position: Vector3, actor_id: String = "CL-PLAYER-0184") -> Dict
       else:
         stream_cut_cells[key]=current
       return {"ok":false,"reason":"PERSISTENT_STREAM_SAVE_FAILED"}
-    spoil_bag[kind]=int(spoil_bag[kind])+1
-    dug_units+=1
+    _rebuild_stream_spoil_ledger()
     _rebuild_stream_chunk(c)
     # Refresh the adjacent chunk's geological cut wall if an edge was dug.
     if local.x==0:
@@ -777,10 +802,12 @@ func inventory_conserved() -> bool:
     if count<0 or count>MAX_CUTS:
       return false
     removed += count
-  var spoil_total: int = 0
-  for count in spoil_bag.values():
-    spoil_total += int(count)
-  return removed == dug_units and dug_units == spoil_total
+  # Saved per-chunk excavation is physical mass removed, not free material.
+  removed+=stream_removed_units
+  var spoil_total: int=0
+  for count in _total_soil_inventory().values():
+    spoil_total+=int(count)
+  return removed==dug_units and dug_units==spoil_total
 
 func stats() -> Dictionary:
   return {"real_heightfield":true,"continuous_shared_vertex_slopes":true,
@@ -797,6 +824,8 @@ func stats() -> Dictionary:
     "stream_chunks_created":stream_created,
     "stream_chunks_unloaded":stream_unloaded,
     "stream_delta_cells":stream_cut_cells.size(),
+    "stream_removed_soil_units":stream_removed_units,
+    "stream_spoil_persisted":stream_spoil_bag.duplicate(true),
     "stream_deltas_atomic_saved":stream_saved_updates,
     "stream_save_ok":stream_save_ok,
     "stream_last_save_error":stream_last_save_error,
@@ -805,7 +834,7 @@ func stats() -> Dictionary:
     "natural_terrace_walls":false,"layer_count":5,"real_water_basin":water!=null,
     "size_m":int(GRID*CELL),"cell_count":GRID*GRID,
     "excavation_units":dug_units,"cut_cells":cells.values().filter(func(x): return int(x["cuts"])>0).size(),
-    "spoil":spoil_bag.duplicate(true),
+    "spoil":_total_soil_inventory(),
     "strata_mass_conserved":inventory_conserved(),
     "foundation_ready":foundation_ready(),"max_dig_depth_m":CUT_HEIGHT*MAX_CUTS,
     "mesh_collision_rebuilt":mesh_revisions,"draw_surface_count":terrain.mesh.get_surface_count()}
