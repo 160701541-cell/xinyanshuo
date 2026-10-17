@@ -1,0 +1,134 @@
+name: Canglan rev187 Separate TEST Android APK - Never Replace Original
+on:
+  workflow_run:
+    workflows:
+      - Canglan ORIGINAL APK176 rev187 - Rich Kenney Terrain Sky Grass Fly God Camera FPS Caps and Original PCK
+    types: [completed]
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: canglan-rev187-unique-test-package
+  cancel-in-progress: true
+jobs:
+  android-rev187-test-apk:
+    if: github.repository == '160701541-cell/xinyanshuo' && (github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Set up official Android SDK and pinned Godot 4.4.1
+        shell: bash
+        run: |
+          set -euo pipefail
+          sdk="${ANDROID_SDK_ROOT:-${ANDROID_HOME:-/usr/local/lib/android/sdk}}"
+          manager="$(find "$sdk/cmdline-tools" -type f -name sdkmanager | sort -V | tail -1)"
+          test -x "$manager"
+          echo "ANDROID_SDK_ROOT=$sdk" >> "$GITHUB_ENV"
+          echo "ANDROID_HOME=$sdk" >> "$GITHUB_ENV"
+          "$manager" --sdk_root="$sdk" --install 'platform-tools' 'platforms;android-35' 'build-tools;35.0.0'
+          base=https://github.com/godotengine/godot/releases/download/4.4.1-stable
+          curl -fL --retry 3 "$base/Godot_v4.4.1-stable_linux.x86_64.zip" -o /tmp/godot.zip
+          curl -fL --retry 3 "$base/Godot_v4.4.1-stable_export_templates.tpz" -o /tmp/export.tpz
+          unzip -q /tmp/godot.zip -d /tmp
+          mkdir -p /tmp/godot-export "$HOME/.local/share/godot/export_templates/4.4.1.stable"
+          unzip -q /tmp/export.tpz -d /tmp/godot-export
+          cp -a /tmp/godot-export/templates/. "$HOME/.local/share/godot/export_templates/4.4.1.stable/"
+          chmod +x /tmp/Godot_v4.4.1-stable_linux.x86_64
+      - name: Ephemeral test key distinct from original game signature
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$HOME/.android" "$HOME/.config/godot" qa-test qa-output
+          keytool -genkeypair -keyalg RSA -keysize 2048 -validity 90 \
+            -keystore "$RUNNER_TEMP/canglan-rev187-test.keystore" -alias androiddebugkey \
+            -storepass android -keypass android -dname 'CN=Canglan Rev187 Test, O=Temporary QA, C=US'
+          cat > "$HOME/.config/godot/editor_settings-4.4.tres" <<EOF
+          [gd_resource type="EditorSettings" format=3]
+          [resource]
+          export/android/android_sdk_path = "$ANDROID_SDK_ROOT"
+          export/android/java_sdk_path = "$JAVA_HOME"
+          export/android/debug_keystore = "$RUNNER_TEMP/canglan-rev187-test.keystore"
+          export/android/debug_keystore_user = "androiddebugkey"
+          export/android/debug_keystore_pass = "android"
+          EOF
+          echo "GODOT_ANDROID_KEYSTORE_DEBUG_PATH=$RUNNER_TEMP/canglan-rev187-test.keystore" >> "$GITHUB_ENV"
+          echo "GODOT_ANDROID_KEYSTORE_DEBUG_USER=androiddebugkey" >> "$GITHUB_ENV"
+          echo "GODOT_ANDROID_KEYSTORE_DEBUG_PASSWORD=android" >> "$GITHUB_ENV"
+      - name: Stage same rev187 code and actual licensed Kenney and Quaternius assets
+        shell: bash
+        run: |
+          set -euo pipefail
+          cp -a game-source/apk176-ota177-candidate/qa-rev187/. qa-test/
+          mkdir -p qa-test/scripts qa-test/canglan_rev187 qa-test/Textures
+          cp game-source/apk176-ota177-candidate/scripts/apk176_living_resource_world_rev187.gd qa-test/scripts/
+          cp game-source/godot3d/scripts/worldbox_life_sim.gd qa-test/canglan_rev187/worldbox_life_sim.gd
+          for line in \
+            'apk176_ecology_succession_rev187.gd ecology_growth.gd' \
+            'apk176_kenney_visual_palette_rev187.gd visual_palette.gd' \
+            'apk176_kenney_multimesh_rev187.gd kenney_multimesh.gd' \
+            'apk176_strata_terrain_rev187.gd strata_terrain.gd' \
+            'apk176_player_controller_rev187.gd player_controller.gd' \
+            'apk176_quality_profiles_rev187.gd quality_profiles.gd'; do
+            set -- $line
+            cp "game-source/apk176-ota177-candidate/scripts/$1" "qa-test/canglan_rev187/$2"
+          done
+          cp game-source/godot3d/assets/free_cc0/kenney/3d/nature/tree_oak.glb qa-test/canglan_rev187/tree_oak.glb
+          cp game-source/godot3d/assets/free_cc0/kenney/3d/castle/rocks-small.glb qa-test/canglan_rev187/rocks_small.glb
+          cp game-source/godot3d/assets/free_cc0/kenney/3d/castle/tree-log.glb qa-test/canglan_rev187/tree_log.glb
+          cp game-source/godot3d/assets/free_cc0/kenney/3d/castle/wall-narrow-wood-fence.glb qa-test/canglan_rev187/wood_fence.glb
+          cp game-source/godot3d/assets/free_cc0/kenney/3d/castle/stairs-stone.glb qa-test/canglan_rev187/stone_steps.glb
+          cp game-source/godot3d/assets/free_cc0/kenney/3d/castle/door.glb qa-test/canglan_rev187/wood_door.glb
+          cp game-source/godot3d/assets/free_cc0/quaternius_knight/public/models/knight.glb qa-test/canglan_rev187/animated_knight.glb
+          curl -fL --retry 3 'https://raw.githubusercontent.com/shorepine/kenney/main/3d/castle/Textures/colormap.png' -o qa-test/Textures/colormap.png
+          grep -Fq 'package/unique_name="com.xinyanshuo.canglan.rev187.qa"' qa-test/export_presets.cfg
+          ! grep -Fq 'package/unique_name="org.canglan.ancient25d.preview"' qa-test/export_presets.cfg
+      - name: Smoke-test independent rev187 scene in actual Godot headless
+        shell: bash
+        run: |
+          set -euo pipefail
+          godot=/tmp/Godot_v4.4.1-stable_linux.x86_64
+          timeout 150s "$godot" --headless --editor --path qa-test --import > qa-output/import.log 2>&1 || { tail -100 qa-output/import.log; exit 1; }
+          timeout 75s "$godot" --headless --path qa-test --quit-after 35 --audio-driver Dummy > qa-output/world.log 2>&1 || { tail -100 qa-output/world.log; exit 1; }
+          if grep -Eq 'SCRIPT ERROR:|Parse Error:|ERROR:|Failed loading resource' qa-output/import.log qa-output/world.log; then
+            tail -100 qa-output/world.log; exit 1
+          fi
+          echo PASS_REV187_REAL_SCENE_TEST_PACKAGE_GODOT
+      - name: Export tested distinct ARM64 Android APK
+        shell: bash
+        run: |
+          set -euo pipefail
+          apk="$GITHUB_WORKSPACE/qa-output/Canglan-rev187-TEST-only.apk"
+          /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless --path qa-test \
+            --export-debug 'Android Canglan rev187 QA' "$apk" > qa-output/export.log 2>&1 || {
+              tail -120 qa-output/export.log;exit 1;
+            }
+          test -s "$apk"
+          unzip -t "$apk" | tail -2
+          "$ANDROID_SDK_ROOT/build-tools/35.0.0/aapt" dump badging "$apk" > qa-output/android-package.txt
+          grep -Fq "package: name='com.xinyanshuo.canglan.rev187.qa'" qa-output/android-package.txt
+          sha256sum "$apk" > qa-output/sha256.txt
+          echo PASS_REV187_SEPARATE_ANDROID_TEST_APK_PACKAGE_ID_SAVED
+      - name: Upload test APK and logs, never original signing keys
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: canglan-rev187-unique-test-applicationId
+          path: qa-output/
+          if-no-files-found: warn
+          compression-level: 0
+          retention-days: 14
+      - name: Release clearly labeled standalone QA prerelease
+        if: success()
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          gh release create canglan-rev187-independent-qa qa-output/Canglan-rev187-TEST-only.apk qa-output/sha256.txt \
+            --repo "$GITHUB_REPOSITORY" --title '苍岚 rev187【独立测试包】不覆盖原游戏' \
+            --notes '包名com.xinyanshuo.canglan.rev187.qa。相同核心场景代码与Kenney/Quaternius原模型，但不含原APK176存档和旧游戏Main；不能替代原版签名热更新，实机画面未验证。' --prerelease
