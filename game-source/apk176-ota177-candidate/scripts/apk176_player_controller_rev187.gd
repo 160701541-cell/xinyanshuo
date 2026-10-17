@@ -99,6 +99,11 @@ var _game_sheet_mode: String = ""
 var _player_health: int = 100
 var _health_bar: ProgressBar
 var _energy_bar: ProgressBar
+var _mana_bar: ProgressBar
+var _target_panel: PanelContainer
+var _target_status: Label
+var _target_health_bar: ProgressBar
+var _target_mana_bar: ProgressBar
 var _spirit_notice: Label
 var _game_actions: Dictionary = {}
 var _dash_cd: float = 0.0
@@ -125,6 +130,22 @@ var _spar_normal_dodges: int = 0
 var _spar_hits: int = 0
 var _spar_misses: int = 0
 var _spar_last_outcome: String = "inactive"
+# rev204: the practice opponent has a real finite HP ledger and a *truthful*
+# MP=0 mortal realm; the 12 seeded cultivators display persisted living MP.
+var _spar_enemy_health: int=110
+var _spar_enemy_health_max: int=110
+var _spar_enemy_mana: int=0
+var _spar_enemy_mana_max: int=0
+var _spar_opponent_tag: Label3D
+var _spar_meters: Dictionary={}
+var _sword_cd: float=0.0
+var _bolt_cd: float=0.0
+var _ward_cd: float=0.0
+var _ward_seconds: float=0.0
+var _ward_visual: MeshInstance3D
+var _spell_projectiles: Array[Dictionary]=[]
+var _combat_hit_count: int=0
+var _spirit_bolt_impact_count: int=0
 var _quality_sheet_button: Button
 var _developer_sheet_button: Button
 var _rest_sheet_button: Button
@@ -569,7 +590,7 @@ func _build_game_hud() -> void:
   var bg := PanelContainer.new()
   bg.name = "LiveGameVitalsRev188"
   bg.position = Vector2(16, 12)
-  bg.custom_minimum_size = Vector2(347, 122)
+  bg.custom_minimum_size = Vector2(347, 147)
   bg.add_theme_stylebox_override("panel",_rounded(Color(0.05,0.10,0.12,0.87),12))
   hud.add_child(bg)
   var margin := MarginContainer.new()
@@ -613,6 +634,20 @@ func _build_game_hud() -> void:
   _energy_bar.add_theme_stylebox_override("background",_rounded(Color("#243133"),5))
   _energy_bar.add_theme_stylebox_override("fill",_rounded(Color("#a8bc68"),5))
   stamina_row.add_child(_energy_bar)
+  var mana_row:=HBoxContainer.new()
+  meters.add_child(mana_row)
+  var mana_caption:=Label.new()
+  mana_caption.text="法力  "
+  mana_row.add_child(mana_caption)
+  _mana_bar=ProgressBar.new()
+  _mana_bar.name="RealSpiritManaFromCultivationLedgerNotFaked"
+  _mana_bar.max_value=12
+  _mana_bar.value=0
+  _mana_bar.show_percentage=false
+  _mana_bar.custom_minimum_size=Vector2(242,13)
+  _mana_bar.add_theme_stylebox_override("background",_rounded(Color("#243133"),5))
+  _mana_bar.add_theme_stylebox_override("fill",_rounded(Color("#4aadc7"),5))
+  mana_row.add_child(_mana_bar)
   _spirit_notice=Label.new()
   _spirit_notice.text="灵力：未检测灵根（未解锁）"
   _spirit_notice.add_theme_font_size_override("font_size",14)
@@ -662,11 +697,15 @@ func _build_game_hud() -> void:
   _add_game_action("DigAction","挖掘",Callable(self,"dig"))
   _add_game_action("InteractAction","互动",Callable(self,"interact"))
   _add_game_action("ViewAction","视角",Callable(self,"toggle_perspective"))
-  # Real mortal footwork practice is available without inventing a spirit root.
-  # Cultivation spells and sword arrays remain locked until implemented.
+  # Martial footwork remains available to mortals. Spiritual arts require
+  # an actually detected root, an earned layer and mana from the save ledger.
   _add_game_action("LockedArt","切磋",Callable(self,"practice_action"))
   _add_game_action("GuardAction","格挡",Callable(self,"guard_action"))
   _add_game_action("EvadeAction","闪避",Callable(self,"evade_action"))
+  _add_game_action("SwordAttack","剑击",Callable(self,"sword_attack"))
+  _add_game_action("SpiritBolt","灵息弹",Callable(self,"cast_spirit_bolt"))
+  _add_game_action("SpiritWard","护体灵障",Callable(self,"cast_spirit_ward"))
+  _create_opponent_target_hud()
   _pad_hint=Label.new()
   _pad_hint.name="AndroidGamepadHotplugAndMappings"
   _pad_hint.position=Vector2(16,139)
@@ -688,6 +727,47 @@ func _build_game_hud() -> void:
   v.add_child(_pad_setting_deadzone)
   _refresh_pad_option_labels()
   _refresh_game_hud()
+
+func _create_opponent_target_hud() -> void:
+  # Fixed screen HUD confirms who was selected. World-space head bars still
+  # follow the true target; this panel avoids unrecognizable microscopic bars.
+  _target_panel=PanelContainer.new()
+  _target_panel.name="ActualCombatTargetRealmHPMP"
+  _target_panel.custom_minimum_size=Vector2(275,99)
+  _target_panel.add_theme_stylebox_override("panel",_rounded(Color(0.06,0.10,0.15,0.87),11))
+  _target_panel.mouse_filter=Control.MOUSE_FILTER_IGNORE
+  var margin:=MarginContainer.new()
+  margin.add_theme_constant_override("margin_left",10)
+  margin.add_theme_constant_override("margin_right",10)
+  margin.add_theme_constant_override("margin_top",7)
+  margin.add_theme_constant_override("margin_bottom",7)
+  _target_panel.add_child(margin)
+  var column:=VBoxContainer.new()
+  column.add_theme_constant_override("separation",3)
+  margin.add_child(column)
+  _target_status=Label.new()
+  _target_status.add_theme_font_size_override("font_size",17)
+  column.add_child(_target_status)
+  for kind in ["health","mana"]:
+    var row:=HBoxContainer.new()
+    column.add_child(row)
+    var caption:=Label.new()
+    caption.text="生命  " if kind=="health" else "法力  "
+    row.add_child(caption)
+    var meter:=ProgressBar.new()
+    meter.name="LiveEnemyHealthNotCosmetic" if kind=="health" else "LiveEnemyManaNotCosmetic"
+    meter.show_percentage=false
+    meter.custom_minimum_size=Vector2(193,10)
+    meter.add_theme_stylebox_override("background",_rounded(Color("#1a282b"),4))
+    meter.add_theme_stylebox_override("fill",_rounded(
+      Color("#c66b62") if kind=="health" else Color("#55b5cd"),4))
+    row.add_child(meter)
+    if kind=="health":
+      _target_health_bar=meter
+    else:
+      _target_mana_bar=meter
+  hud.add_child(_target_panel)
+  _target_panel.visible=false
 
 func _add_game_action(key: String, label: String, callback: Callable) -> void:
   var button:=Button.new()
@@ -722,7 +802,15 @@ func _refresh_game_hud() -> void:
   var energy: int=int(person.get("energy",0))
   _health_bar.value=_player_health
   _energy_bar.value=energy
-  _game_status.text="心魇说 · 凡人   "+str(_player_health)+"/100"
+  var spiritual: RefCounted=room.get("cultivation")
+  var record: Dictionary=spiritual.call("public_player_status") if spiritual!=null else {}
+  var realm: String=String(record.get("realm","凡人"))
+  var level: int=int(record.get("layer",0))
+  var mana_now: int=int(record.get("mana",0))
+  _mana_bar.max_value=maxi(1,level*12)
+  _mana_bar.value=mana_now
+  _game_status.text="心魇说 · %s%s  %d/100" % [
+    realm,(" 第%d层" % level) if level>0 else "",_player_health]
   (_game_actions["DashAction"] as Button).disabled=_dash_cd>0.0 or energy<8
   (_game_actions["DashAction"] as Button).text="疾步 "+str(ceili(_dash_cd))+"秒" if _dash_cd>0.0 else "疾步"
   (_game_actions["GatherAction"] as Button).disabled=_gather_cd>0.0
@@ -732,9 +820,33 @@ func _refresh_game_hud() -> void:
   (_game_actions["EvadeAction"] as Button).disabled=_spar_stage=="inactive" or _dodge_cd>0 or energy<7
   (_game_actions["GuardAction"] as Button).text="防御中" if _guard_time>0 else "格挡"
   (_game_actions["EvadeAction"] as Button).text="闪避中" if _dodge_time>0 else "闪避"
-  var spiritual: RefCounted=room.get("cultivation")
+  (_game_actions["SwordAttack"] as Button).disabled=_spar_stage=="inactive" or _sword_cd>0.0 or energy<6
+  (_game_actions["SwordAttack"] as Button).text=("剑击 %d" % ceili(_sword_cd)) if _sword_cd>0.0 else "剑击"
+  var known: Array=record.get("known_arts",[])
+  var bolt_learned: bool=known.has("CL-ART-SPIRIT-BOLT-V1")
+  var ward_learned: bool=known.has("CL-ART-SPIRIT-WARD-V1")
+  (_game_actions["SpiritBolt"] as Button).disabled=(
+    _spar_stage=="inactive" or _bolt_cd>0.0 or not bolt_learned or mana_now<4)
+  (_game_actions["SpiritBolt"] as Button).text=(
+    "灵息弹 %d" % ceili(_bolt_cd) if _bolt_cd>0.0 else ("灵息弹" if bolt_learned else "灵息弹·未学"))
+  (_game_actions["SpiritWard"] as Button).disabled=(
+    _ward_cd>0.0 or not ward_learned or mana_now<6 or _ward_seconds>0.0)
+  (_game_actions["SpiritWard"] as Button).text=(
+    "灵障 %d" % ceili(_ward_cd) if _ward_cd>0.0 else ("护体灵障" if ward_learned else "灵障·未学"))
+  if _target_panel!=null:
+    _target_panel.visible=_spar_stage!="inactive"
+    if _spar_stage!="inactive":
+      _target_status.text="演武教习 · 凡人武者   %d/%d" % [
+        _spar_enemy_health,_spar_enemy_health_max]
+      _target_health_bar.max_value=_spar_enemy_health_max
+      _target_health_bar.value=_spar_enemy_health
+      _target_mana_bar.max_value=maxi(1,_spar_enemy_mana_max)
+      _target_mana_bar.value=_spar_enemy_mana
+      if _spar_opponent_tag!=null and is_instance_valid(_spar_opponent_tag):
+        _spar_opponent_tag.text="演武教习 · 凡人武者\n生命 %d/%d · 法力 %d/%d" % [
+          _spar_enemy_health,_spar_enemy_health_max,_spar_enemy_mana,_spar_enemy_mana_max]
+      _sync_spar_meters()
   if spiritual!=null and _root_exam_button!=null:
-    var record: Dictionary=spiritual.call("public_player_status")
     var tested: bool=bool(record.get("tested",false))
     _root_exam_button.text="复查灵根" if tested else "检测灵根"
     _meditate_button.text="停止吐纳" if bool(record.get("meditating",false)) else "吐纳修炼"
@@ -772,7 +884,8 @@ func _refresh_game_hud() -> void:
     else:
       _flight_altitude_label.visible=false
   if _spar_stage!="inactive":
-    _spirit_notice.text="凡人切磋 %s · %s" % [_spar_stage,_spar_last_outcome]
+    _spirit_notice.text="切磋 %s · %s  法力%d/%d" % [
+      _spar_stage,_spar_last_outcome,mana_now,level*12]
   elif spiritual==null:
     _spirit_notice.text="灵根：未检测（检测台尚未装载）"
   _quality_sheet_button.visible=_game_sheet!=null and _game_sheet.visible and _game_sheet_mode=="settings"
@@ -804,10 +917,14 @@ func _refresh_game_hud() -> void:
       if not bool(r.get("tested",false)):
         _game_sheet_body.text="灵根：尚未检测（检测前严格隐藏）\n请前往青色古石检测台，点击【检测灵根】\n凡人阶段仍可切磋、行走与御风测试"
       else:
-        _game_sheet_body.text="灵根：%s\n境界：%s %d层\n功法：%s\n灵气：%d  法力：%d  经脉负荷：%d\n真实世界小时里点击【吐纳修炼】积累灵气；满足条件点击【突破】" % [
+        var arts: Array=r.get("known_arts",[])
+        var unlocked: String=("灵息弹" if arts.has("CL-ART-SPIRIT-BOLT-V1") else "炼气一层领悟灵息弹")
+        unlocked+=", "+("护体灵障" if arts.has("CL-ART-SPIRIT-WARD-V1") else "炼气二层领悟护体灵障")
+        _game_sheet_body.text="灵根：%s\n境界：%s %d层\n功法：%s\n灵气：%d  法力：%d/%d  经脉负荷：%d\n法术：%s\n真实世界时辰吐纳回复法力；法术消耗真实法力并有冷却。" % [
           String(r.get("root_kind","未知")),String(r.get("realm","凡人")),
           int(r.get("layer",0)),String(r.get("method","无")),
-          int(r.get("qi",0)),int(r.get("mana",0)),int(r.get("stress",0))]
+          int(r.get("qi",0)),int(r.get("mana",0)),
+          int(r.get("layer",0))*12,int(r.get("stress",0)),unlocked]
   else:
     _game_sheet_title.text="菜单 · 系统设置"
     _game_sheet_body.text="横屏触控：左侧走路，右侧旋转\n视角按键：切第一/第三视角\n画质帧率和研发工具在下方设置"
@@ -1230,26 +1347,29 @@ func _layout_hud() -> void:
     tab.position=Vector2(menu_x+float(idx)*104.0,16)
     tab.size=Vector2(96,44)
   var action_keys:=["GatherAction","DashAction","DigAction","InteractAction",
-    "ViewAction","LockedArt","GuardAction","EvadeAction"]
+    "ViewAction","LockedArt","GuardAction","EvadeAction",
+    "SwordAttack","SpiritBolt","SpiritWard"]
   for idx in range(action_keys.size()):
     var col: int=idx%4
     var row: int=int(idx/4)
     (_game_actions[action_keys[idx]] as Button).position=Vector2(
-      size.x-392.0+float(col)*94.0,size.y-152.0+float(row)*66.0)
+      size.x-392.0+float(col)*94.0,size.y-207.0+float(row)*66.0)
+  if _target_panel!=null:
+    _target_panel.position=Vector2(maxf(370.0,size.x*0.5-137.0),15.0)
   notice.position=Vector2(minf(370.0,size.x*0.27),maxf(210.0,size.y-47.0))
   if _pad_hint!=null:
     _pad_hint.position=Vector2(16,139)
   if _root_exam_button!=null:
     var width: float=size.x
-    _root_exam_button.position=Vector2(width-392.0,size.y-213.0)
-    _meditate_button.position=Vector2(width-280.0,size.y-213.0)
-    _breakthrough_button.position=Vector2(width-168.0,size.y-213.0)
+    _root_exam_button.position=Vector2(width-392.0,size.y-271.0)
+    _meditate_button.position=Vector2(width-280.0,size.y-271.0)
+    _breakthrough_button.position=Vector2(width-168.0,size.y-271.0)
   if _living_seed_label!=null:
-    _living_seed_label.position=Vector2(19,232)
+    _living_seed_label.position=Vector2(19,263)
   if _living_clock_label!=null:
-    _living_clock_label.position=Vector2(19,148)
-    _living_speed_button.position=Vector2(19,183)
-    _local_ai_status_label.position=Vector2(127,191)
+    _living_clock_label.position=Vector2(19,172)
+    _living_speed_button.position=Vector2(19,209)
+    _local_ai_status_label.position=Vector2(127,217)
     _flight_altitude_label.position=Vector2(
       clampf(size.x*0.45,480.0,size.x-445.0),145)
 
