@@ -85,6 +85,9 @@ func start(site: String,town: RefCounted,village_id: String,
     prefab_ready: bool) -> Dictionary:
   if not SITES.has(site) or houses.has(site):
     return {"ok":false,"reason":"SITE_OCCUPIED_OR_INVALID"}
+  for pending in houses.values():
+    if String(pending.get("phase",""))=="building":
+      return {"ok":false,"reason":"A_REAL_HOME_IS_STILL_UNDER_CONSTRUCTION"}
   if town==null or not town.get("villages").has(village_id):
     return {"ok":false,"reason":"NO_VILLAGE"}
   if not prefab_ready:
@@ -108,8 +111,7 @@ func start(site: String,town: RefCounted,village_id: String,
     # Strict no-charge-on-failed-ledger write; refund the same warehouse.
     town.call("_add_stock",village_id,"wood",REQUIRED_WOOD)
     town.call("_add_stock",village_id,"stone",REQUIRED_STONE)
-    town.get("villages")[village_id]["construction"]["home"]=maxi(0,int(
-      town.get("villages")[village_id]["construction"].get("home",0))-1)
+    town.get("villages")[village_id]["construction"]["home"]=0
     return {"ok":false,"reason":"HOUSE_SAVE_FAILED_REFUNDED"}
   return {"ok":true,"site":site,"phase":"building",
     "materials_spent":{"wood":REQUIRED_WOOD,"stone":REQUIRED_STONE},
