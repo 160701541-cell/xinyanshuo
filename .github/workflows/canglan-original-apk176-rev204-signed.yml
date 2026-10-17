@@ -3,7 +3,7 @@
 # rev204 deployment activation: full original-APK176 Godot QA-only run 39029314179 SUCCESS;
 # official update manifest must be rev202 before immutable RSA rev204 signing.
 # rev204 source QA: run 39028126321 SUCCESS; production target original APK176 code1176.
-# PCK signing guarded by real Main engine tests, current revision=201 and pinned RSA key.
+# PCK signing guarded by real Main engine tests, official current revision=203 and original RSA key.
 name: Canglan ORIGINAL APK176 rev204 - Real Cultivation Combat HP MP Spells RSA Signed Update
 on:
   push:
@@ -422,7 +422,7 @@ jobs:
           assert feed['entries'][0]['revision']==203 and all(e['revision']!=204 for e in feed['entries'])
           now=datetime.now(timezone.utc).isoformat(timespec='seconds').replace('+00:00','Z')
           feed['entries'].insert(0,{
-              'revision':203,'first_seen_utc':now,'notes':before['notes'],
+              'revision':204,'first_seen_utc':now,'notes':before['notes'],
               'sha256':before['sha256'],'size_bytes':before['size_bytes'],
               'status':'signed_release','android_version_code':1176,
               'protocol':'RSA-3072 PKCS1-v1_5 / SHA-256',
