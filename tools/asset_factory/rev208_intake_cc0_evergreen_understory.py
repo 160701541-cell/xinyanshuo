@@ -62,7 +62,7 @@ def main(out):
     slug=entry["slug"]
     page=f"{BASE}/tools/library/3d-parts/{slug}"
     raw_page=fetch(page).decode("utf-8","replace")
-    if not re.search(r'(public domain\\s*\\(CC0\\)|CC0.*Free to use)',raw_page,re.I|re.S):
+    if not ("Public domain (CC0)" in raw_page and "Free to use" in raw_page):
       raise ValueError(f"CC0 exact-page proof absent: {page}")
     url=f"{BASE}/api/library/{slug}/download"
     data=fetch(url)
