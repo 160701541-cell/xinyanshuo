@@ -1,12 +1,12 @@
 {
   "schema": 1,
   "channel": "android-preview",
-  "revision": 187,
+  "revision": 188,
   "minimum_android_code": 1176,
   "maximum_android_code": 1176,
-  "sha256": "34558a8da86e99b684316e425e18c12dc0d8f4f766b96691f08e00b2de981d2a",
-  "size_bytes": 21688608,
-  "pack_url": "https://160701541-cell.github.io/xinyanshuo/android-preview/canglan-content-rev-187.pck",
-  "notes": "苍岚原APK176 rev187：取消五色限制，蓝色渐变天空与白云暖太阳淡蓝雾；真实远景地面、细草叶野花随开挖同步；镜头防穿模，右滑方向修正，上帝视角/自由飞行；帧率跟随屏幕最高120或手动30/60/90/120，可折叠单性能面板、建筑工标签；手机效果待实测。",
-  "signature": "eiSfVtKpQmPoBF5ann2evdtWXTb614Cf/K6Z5bv14J1ohOhEapqeT5XBJvroWbDOdSfOXi1drOyuE1v6cSwrMd2+DGkdMSnd7TFkGDZBFCafEGblM3nkfSlnyEwChwzHWaJABG6OKfMofSTvwsLKQiA4uneJvx8pIv+DSWgXP2ctyDZMhZjQbPbkbedP/bu0Mz7ham+f5peei4838AWKNkgTJdUArIuQgklaV3a6P4neDu/kq5b8JkhA9Ym364js8T9xcevVsKTN2HYCjx8iaWGr/z7IsIGvBUtgr6QRXyKSxK01+wan5Ha7PuwD+cNx1XukjumnKQsASEXM8An7SfLzGwoyPYYz5lpJgdEWgqHwdrjgIbxCZ29FWqhAQMaDjMnpYqMypVeCQeH8Hn1cHyNQ7unwdtLlSdsFHA8E/fz6MXiuK4cAYFIASVi9JO1IXsHeN1Gv9MuRjtAbEfHBXhtcciClcREynjDRJ2dlKnFmakz4gslSbqrZIH5NqJH7"
+  "sha256": "c859fd32201db72fdffbb27d2fdbe7829eb7f773ce6b6bd68785913d66117c87",
+  "size_bytes": 21709184,
+  "pack_url": "https://160701541-cell.github.io/xinyanshuo/android-preview/canglan-content-rev-188.pck",
+  "notes": "苍岚原APK176 rev188：真机P0首轮改进：默认角色HUD含生命、真实体力、背包/修炼和设置，采集和疾步有真实体力与冷却，仓库实物食物恢复生命，研发按钮默认隐藏。地形建筑人物缺陷仍待修复，手机继续QA。",
+  "signature": "m2mGU+sskZnXe4p0vnQxqTIKfQFIj30L4ylo1NJWy9XshF+fDTQIHpSmkgO3yco5Y6xhUzkCBnax7cj3ktkYr6nJ0i1lH4JT9DC2yoYxhi9bB/YHXWW2FToGi0A8PVfsOidhmmyrWbrbaUEkQ6absALeXXyfhpaOe7c5W9vBhbjjBsYNz4acMPTyxgqgBkHXcdqou1qU+c4aHqOMbCic8t03beOeNftMTj3o89ITYtre9S3wfqmhJwtW47hsudxxjM4EbdMGRe6sZ8nILlgzzpEtKrkzYLkk5jxiGc1LCb2B8UvUSUjBLtzuax2o5Yfb30K0TLzh4BQFt48CZjCNLkPaqgKVRysyahzuKqFjVyv5QgsZSYxbMjgbrA4/VRzk6oHKlulsXTB/BcPo3Unfd1SUbAbi/DBZxAndJBrdLBjrfd9TzLQAnkMLZkeifqJoF37l+DEoNjvtBZq5ZL6Tjamf1vd95i3fnX0hIin3r39zsVxAtAEMJ9AEM8CzkmtT"
 }
