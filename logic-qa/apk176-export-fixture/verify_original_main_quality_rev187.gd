@@ -1167,17 +1167,27 @@ func _run() -> void:
     return
   player.call("toggle_avatar_flight")
   if String(player.get("camera_mode"))!="soar" or not actor.visible or float(
-      player.get("_soar_altitude"))<2.9:
-    _fail(224,"REV197_FLIGHT_MUST_MOVE_VISIBLE_AVATAR_NOT_HIDE_CAMERA_ONLY")
+      player.get("_soar_altitude"))<0.85:
+    _fail(224,"REV199_TRUE_AVATAR_FLIGHT_MUST_TAKE_OFF_SMOOTHLY_AND_BE_VISIBLE")
+    return
+  var altitude_start: float=float(player.get("_soar_altitude"))
+  player.call("step",0.60)
+  if float(player.get("_soar_altitude"))<2.85:
+    _fail(225,"REV199_MUST_ACTUALLY_RISE_TO_INITIAL_THREE_METER_TARGET")
     return
   var altitude_before: float=float(player.get("_soar_altitude"))
   (game_hud.get_node("FlyUpButton") as Button).pressed.emit()
-  if float(player.get("_soar_altitude"))<=altitude_before+2.2:
-    _fail(225,"REV197_ACTUAL_AVATAR_FLY_UP_BUTTON_DOES_NOT_ASCEND")
+  if float(player.get("_soar_altitude"))>=altitude_before+0.01:
+    _fail(225,"REV199_ASCEND_SHOULD_NOT_JERK_TELEPORT")
+    return
+  player.call("step",0.61)
+  if float(player.get("_soar_altitude"))<altitude_before+1.5:
+    _fail(225,"REV199_ACTUAL_FLY_UP_TARGET_NOT_REACHED_SMOOTHLY")
     return
   (game_hud.get_node("FlyDownButton") as Button).pressed.emit()
-  if float(player.get("_soar_altitude"))>=altitude_before+0.1:
-    _fail(226,"REV197_ACTUAL_AVATAR_FLY_DOWN_BUTTON_DOES_NOT_DESCEND")
+  player.call("step",0.61)
+  if float(player.get("_soar_altitude"))>altitude_before+0.2:
+    _fail(226,"REV199_ACTUAL_FLY_DOWN_TARGET_NOT_REACHED_SMOOTHLY")
     return
   var flyer_before: Vector3=actor.position
   player.set("_yaw",0.0)
@@ -1190,9 +1200,12 @@ func _run() -> void:
     _fail(227,"REV197_AVATAR_FLY_JOYSTICK_ONLY_MOVED_A_HIDDEN_CAMERA")
     return
   player.call("toggle_avatar_flight")
-  player.call("step",0.01)
+  if player.get("camera_mode")!="soar" or not bool(player.get("_soar_landing")):
+    _fail(228,"REV199_TOGGLE_LANDING_INSTANT_TELEPORT_NOT_ALLOWED")
+    return
+  player.call("step",0.80)
   if player.get("camera_mode")!="third" or float(player.get("_soar_altitude"))!=0.0:
-    _fail(228,"REV197_FLIGHT_CANNOT_LAND_AND_RETURN_TO_NORMAL_WALK")
+    _fail(228,"REV199_FLYING_AVATAR_CANNOT_SOFT_LAND_AND_WALK")
     return
   var stairs: StaticBody3D=world.get_node_or_null(
       "ConstructionOccluder_LicensedWorksiteVisibleStoneApproach")
@@ -1236,6 +1249,80 @@ func _run() -> void:
   player.call("update_camera")
   player.call("_refresh_game_hud")
   print("PASS_REV197_REAL_ANDROID_TOUCH_PINCH_45DEG_VISIBLE_AVATAR_CAMERA_LOCK_JUMP_AVATAR_FLIGHT_STAIRS_AND_COLLISION")
+  # REV199 actual mobile P0 user feedback: previous test passed merely
+  # because the knight node existed, while flying showed an inert rigid pose,
+  # no height reference, no world acceleration and no offline AI install state.
+  var time_button: Button=game_hud.get_node_or_null(
+      "RealFullWorldAccelerationTimes1_5_20_100")
+  var clock_ui: Label=game_hud.get_node_or_null(
+      "ActualAuthoritativeWorldDayHourAndAcceleration")
+  var ai_ui: Label=game_hud.get_node_or_null(
+      "RealOfflineNPCNativeRuntimeStatusNotFakeLLM")
+  var height_ui: Label=game_hud.get_node_or_null(
+      "ActualAltitudeAGLVerticalSpeedAndWorldGroundReference")
+  if time_button==null or clock_ui==null or ai_ui==null or height_ui==null:
+    _fail(240,"REV199_REAL_TIME_AI_AND_AIR_HUD_MUST_BE_NATIVE_ALWAYS_VISIBLE_CONTROLS")
+    return
+  if not ai_ui.text.contains("不可用") or bool(room.call("get_living_clock").get(
+      "npc_model_loaded",true)):
+    _fail(241,"REV199_LOCAL_QWEN_NATIVE_ABSENT_MUST_NOT_PRETEND_TO_HAVE_AI")
+    return
+  var clock_before: Dictionary=room.call("get_living_clock")
+  var advanced_before: int=int(clock_before["whole_world_hours_processed"])
+  var sim_start_hour: int=int(econ.day-1)*24+int(econ.hour)
+  for i in range(3):
+    time_button.pressed.emit()
+  if int(room.get("world_time_scale"))!=100 or not clock_ui.text.contains("×100"):
+    _fail(242,"REV199_WORLD_SPEED_BUTTON_NOT_APPLIED_TO_REAL_SIM_TIME")
+    return
+  for i in range(12):
+    room.call("_process",0.12)
+  var clock_after: Dictionary=room.call("get_living_clock")
+  var advanced_after: int=int(clock_after["whole_world_hours_processed"])
+  var sim_end_hour: int=int(econ.day-1)*24+int(econ.hour)
+  if advanced_after-advanced_before!=10 or sim_end_hour-sim_start_hour!=10:
+    _fail(243,"REV199_TIME_ACCEL_ONLY_CHANGES_CLOCK_UI_WITHOUT_REAL_ECOLOGY_AND_NPCS_"+
+      str(clock_before)+"_"+str(clock_after))
+    return
+  if world.get_node_or_null("KenneySingleDirectionalSun")==null or (
+      not is_finite(float(room.get("sun_light").light_energy))):
+    _fail(244,"REV199_REAL_SKY_AND_LIGHT_MUST_ADVANCE_WITH_AUTHORITY_CLOCK")
+    return
+  time_button.pressed.emit()
+  if int(room.get("world_time_scale"))!=1:
+    _fail(245,"REV199_ACCEL_MUST_RESET_TO_1X_WITHOUT_LOSING_WORLD_TIME")
+    return
+  player.call("toggle_avatar_flight")
+  player.call("step",0.55)
+  var wind: GPUParticles3D=world.get_node_or_null(
+      "ActuallyEmittingMobileWindTrailWhileAvatarSoars")
+  var rune: MeshInstance3D=world.get_node_or_null(
+      "ActualSoaringFootWindRuneNotFakeSword")
+  var disk: MeshInstance3D=world.get_node_or_null(
+      "ActualGroundShadowAltitudeReferenceFromPhysicalTerrain")
+  var tether: MeshInstance3D=world.get_node_or_null(
+      "ContinuousAirToGroundAltitudeReferenceLine")
+  var p199: Dictionary=player.call("stats")
+  if wind==null or rune==null or disk==null or tether==null or (
+      not wind.emitting) or not rune.visible or not disk.visible or (
+      not tether.visible) or not height_ui.visible:
+    _fail(246,"REV199_NO_TRUE_WIND_AURA_GROUND_PROJECTION_ALTITUDE_GUIDE_DURING_SOAR")
+    return
+  if float(p199.get("avatar_soar_altitude_m",0))<2.5 or (
+      absf(float(tether.scale.y)-float(p199.get("avatar_soar_altitude_m",0)))>0.15):
+    _fail(247,"REV199_GROUND_HEIGHT_LINE_DOES_NOT_REFLECT_ACTUAL_AIR_ALTITUDE")
+    return
+  var visual_anim: String=String(p199.get("actual_knight_bone_animation",""))
+  if not (visual_anim.to_lower().contains("sword") or visual_anim.to_lower().contains("jump")):
+    _fail(248,"REV199_AVATAR_STILL_USES_DEFAULT_STIFF_WALK_IDLE_WHILE_SOARING_"+visual_anim)
+    return
+  player.call("toggle_avatar_flight")
+  player.call("step",0.75)
+  if player.get("camera_mode")!="third" or wind.emitting or disk.visible or (
+      height_ui.visible):
+    _fail(249,"REV199_STILL_HAS_GHOST_FLIGHT_EFFECTS_AFTER_ACTUAL_SOFT_LANDING")
+    return
+  print("PASS_REV199_REAL_WORLD_ACCELERATES_NPC_ECOLOGY_HOURS_DAY_NIGHT_AND_TRAINING_FLIGHT_WITH_VISIBLE_ALTITUDE_SPEED_AIR_TRAIL_AND_HONEST_OFFLINE_AI")
   room.call("_focus_builder")
   if not bool(room.get("_follow_builder")) or float(room.get("_camera_distance")) > 14.0:
     _fail(42,"BUTTON_MUST_ACTUALLY_FOCUS_VISIBLE_NPC")
