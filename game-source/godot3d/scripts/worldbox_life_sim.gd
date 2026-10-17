@@ -33,7 +33,7 @@ func create_village(code: String, initial: Dictionary = {}) -> bool:
 	for key in RESOURCE_KEYS:
 		stock[key] = maxi(0, int(initial.get(key, 0)))
 	villages[code] = {
-		"id": code, "stock": stock, "homes": maxi(1,int(initial.get("homes", 2))),
+		"id": code, "stock": stock, "homes": maxi(0,int(initial.get("homes", 0))),
 		"fields": maxi(0,int(initial.get("fields",1))), "workshops": 0,
 		"well": bool(initial.get("well",true)), "population": 0,
 		"health": 100, "prosperity": 0, "construction": {},
@@ -196,7 +196,11 @@ func gather_to_actor(actor_id: String, node_id: String) -> bool:
 	if int(person["energy"])<10:
 		return false
 	var resource: String = {"tree":"wood","stone":"stone","clay":"clay"}[source["kind"]]
-	var amount: int = mini(3,int(source["remaining"]))
+	# One genuine tree has FIVE logs and one actual rock pile TEN stones.
+	# No arbitrary 3-unit repeat-click "harvest" on a fully cut object.
+	var complete_node_yield: int = 5 if source["kind"]=="tree" else (
+		10 if source["kind"]=="stone" else 3)
+	var amount: int = mini(complete_node_yield,int(source["remaining"]))
 	source["remaining"] = int(source["remaining"])-amount
 	source["depleted"] = int(source["remaining"])==0
 	if int(source.get("regen_units", 0)) > 0 and int(source.get("next_regen_hour", -1)) < 0:
@@ -334,7 +338,7 @@ func _eat(person: Dictionary) -> void:
 func request_construction(village_id: String, kind: String) -> bool:
 	var bill: Dictionary = {}
 	match kind:
-		"home": bill={"wood":12,"stone":6}
+		"home": bill={"wood":200,"stone":150}
 		"field": bill={"wood":2,"water":4}
 		"workshop": bill={"wood":18,"stone":8,"clay":6}
 		_: return false
@@ -387,7 +391,7 @@ func tick() -> void:
 			if person["village_id"]==village_id:
 				avg_hunger+=int(person["hunger"])
 		avg_hunger=avg_hunger/maxi(1,int(village["population"]))
-		var capacity: int = int(village["homes"])*4
+		var capacity: int = int(village["homes"])*5
 		village["prosperity"]=clampi(30 + int(village["fields"])*3
 			+int(village["workshops"])*5+mini(20,int(village["stock"]["coin"])/5)
 			-maxi(0,int(village["population"])-capacity)*10-avg_hunger/2,0,100)
