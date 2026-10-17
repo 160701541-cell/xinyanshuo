@@ -24,6 +24,8 @@ const FILES := {
 	"res://canglan_rev187/stone_steps.glb": "canglan_rev187/stone_steps.glb",
 	"res://canglan_rev187/wood_door.glb": "canglan_rev187/wood_door.glb",
 	"res://canglan_rev187/animated_knight.glb": "canglan_rev187/animated_knight.glb",
+	"res://canglan_rev187/quaternius_hair_long_static.glb": "canglan_rev187/quaternius_hair_long_static.glb",
+	"res://canglan_rev187/quaternius_knight_sword.glb": "canglan_rev187/quaternius_knight_sword.glb",
 	# Castle Kit GLBs resolve this external palette relative to their own
 	# canglan_rev187 directory. The root alias remains for old loader paths.
 	"res://canglan_rev187/Textures/colormap.png": "canglan_rev187/Textures/colormap.png",
