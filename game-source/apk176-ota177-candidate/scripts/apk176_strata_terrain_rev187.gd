@@ -477,8 +477,8 @@ func _mat_for_depth(depth: float) -> String:
 func ground_color_at(x: float,z: float) -> Color:
   var low: float=0.5+0.5*sin(x*0.075+0.7*sin(z*0.11))*cos(z*0.092)
   var high: float=0.5+0.5*sin(x*0.39+z*0.28)*cos(z*0.43-x*0.19)
-  var grass_a:=Color("#648e5c")
-  var grass_b:=Color("#a0bc72")
+  var grass_a:=Color("#456d3d")
+  var grass_b:=Color("#8da55c")
   var grass:=grass_a.lerp(grass_b,clampf(0.23+0.54*low+0.23*high,0.0,1.0))
   # Narrow natural cart-road shoulders; no one-cell ochre checkerboard.
   var road_weight: float=0.0
@@ -490,8 +490,8 @@ func ground_color_at(x: float,z: float) -> Color:
     road_weight=maxf(road_weight,1.0-smoothstep(1.1,3.2,absf(z-(2.5-0.25*x))))
   var sand_dist: float=Vector2(x,z).distance_to(POND_CENTER)
   var shore_weight: float=1.0-smoothstep(POND_RADIUS+1.1,POND_RADIUS+4.5,sand_dist)
-  var soil:=Color("#b8a07b").lerp(Color("#a99276"),low*0.32)
-  var sand:=Color("#cdb896").lerp(Color("#c2ae84"),high*0.24)
+  var soil:=Color("#9a8666").lerp(Color("#ad956c"),low*0.35)
+  var sand:=Color("#c7ae80").lerp(Color("#bfa67c"),high*0.24)
   var mixed:=grass.lerp(sand,shore_weight*0.84)
   return mixed.lerp(soil,road_weight*0.95)
 
@@ -657,7 +657,7 @@ func _construct_far_land() -> void:
   far_parent.name="FarGroundAndMountainFoothills_AllCameraDirections_600m"
   add_child(far_parent)
   var far_material:=StandardMaterial3D.new()
-  far_material.albedo_color=Color("#83ad75")
+  far_material.albedo_color=Color("#648b60")
   far_material.roughness=1.0
   far_material.cull_mode=BaseMaterial3D.CULL_DISABLED
   var far_size: int=106
