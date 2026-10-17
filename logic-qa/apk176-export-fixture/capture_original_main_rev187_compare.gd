@@ -35,6 +35,33 @@ func _save(file_name: String) -> bool:
     " colors=",bins.size()," actual_camera=",camera.position)
   return true
 
+# REV191: the earlier "successful" Godot screenshots had a completely
+# INVISIBLE terrain mesh. At x=340..920, y=425..590, 83% of pixels were
+# exactly the SKY background. Fail REAL framebuffer acceptance on that.
+func _audit_visible_ground() -> bool:
+  var screenshot: Image=get_root().get_texture().get_image()
+  if screenshot==null or screenshot.get_width()<900 or screenshot.get_height()<600:
+    return false
+  var w: float=float(screenshot.get_width())/1280.0
+  var h: float=float(screenshot.get_height())/720.0
+  var sky: Color=screenshot.get_pixel(roundi(640*w),roundi(140*h))
+  var sky_like: int=0
+  var total: int=0
+  for yi in range(425,590,17):
+    for xi in range(340,920,17):
+      var c: Color=screenshot.get_pixel(roundi(float(xi)*w),roundi(float(yi)*h))
+      var delta: float=maxf(absf(c.r-sky.r),
+        maxf(absf(c.g-sky.g),absf(c.b-sky.b)))
+      if delta<0.051:
+        sky_like+=1
+      total+=1
+  var ratio: float=float(sky_like)/maxf(1.0,float(total))
+  print("REV191_REAL_RENDER_SOIL_VS_SKY_BLUE_VOID_PIXEL_RATIO ",ratio)
+  if ratio>0.48:
+    printerr("FAIL_REV191_GROUND_IS_STILL_INVISIBLE_SKY_BLUE_VOID ",ratio)
+    return false
+  return true
+
 func _capture() -> void:
   var out: String=OS.get_environment(OUT_ENV)
   var pack: String=OS.get_environment(PACK_ENV)
@@ -79,6 +106,9 @@ func _capture() -> void:
   for i in range(6):
     await process_frame
   await RenderingServer.frame_post_draw
+  if not _audit_visible_ground():
+    _fail("REV191_REAL_PHYSICAL_SOIL_IS_INVISIBLE_OR_BLUE_SKY_VOID")
+    return
   if not _save("real_apk176_rev187_worksite_same_position_wide.png"):
     _fail("WIDE_FRAME_TOO_MONOCHROMATIC_OR_SAVE_FAIL")
     return
