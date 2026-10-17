@@ -113,6 +113,7 @@ var _health_value: Label
 var _stamina_value: Label
 var _mana_value: Label
 var _numeric_target_vitals: Label
+var _house_build_button: Button
 var _target_panel: PanelContainer
 var _target_status: Label
 var _target_health_bar: ProgressBar
@@ -773,6 +774,7 @@ func _build_game_hud() -> void:
   _game_menu_button("背包",119,"inventory")
   _game_menu_button("修炼",222,"cultivation")
   _game_menu_button("菜单",325,"settings")
+  _game_menu_button("建造",428,"construction")
   _game_sheet=PanelContainer.new()
   _game_sheet.name="Rev188CharacterInventoryCultivationMenu"
   # Inventory/settings use a proper centered modal; old panel at (16,150)
@@ -803,6 +805,16 @@ func _build_game_hud() -> void:
   _game_sheet_body=Label.new()
   _game_sheet_body.add_theme_font_size_override("font_size",17)
   v.add_child(_game_sheet_body)
+  _house_build_button=Button.new()
+  _house_build_button.name="RealHanDwellingRequiresTwoHundredLogsOneHundredFiftyStone"
+  _house_build_button.text="建造汉式家宅  木200 / 石150｜可住5人"
+  _house_build_button.custom_minimum_size=Vector2(430,51)
+  _house_build_button.pressed.connect(func():
+    var answer: Dictionary=room.call("try_build_true_home")
+    say("建造进行中：已支付仓库木200石150，等待3世界时辰" if bool(answer.get("ok",false)) else (
+      "家宅不能建造："+String(answer.get("reason","建造失败"))))
+    _refresh_game_hud())
+  v.add_child(_house_build_button)
   _inventory_list=ItemList.new()
   _inventory_list.name="ActualSourcedBackpack24StackSelectableSlots"
   _inventory_list.custom_minimum_size=Vector2(430,112)
@@ -1099,6 +1111,8 @@ func _deposit_backpack() -> void:
   _refresh_game_hud()
 
 func _open_game_menu(mode: String) -> void:
+  if _house_build_button!=null:
+    _house_build_button.visible=mode=="construction"
   if _game_sheet_mode==mode and _game_sheet.visible:
     _game_sheet.visible=false
     return
@@ -1349,6 +1363,20 @@ func _refresh_game_hud() -> void:
     else:
       _game_sheet_body.text=String(_backpack.call("describe"))
       _refresh_inventory_list()
+  elif _game_sheet_mode=="construction":
+    _game_sheet_title.text="中式住宅 · 真实工料与入住"
+    var ledger: RefCounted=room.get("housing")
+    var stock: Dictionary=room.get("sim").villages[
+      "CL-REV186-HX-VILLAGE"]["stock"]
+    var status_h: Dictionary=ledger.call("stats") if ledger!=null else {}
+    _game_sheet_body.text="已建成%d栋｜已住%d人｜最多%d人\n新建一栋必须实际支付原木200、石块150；\n一棵树仅5木、一处石堆仅10石。\n当前仓库：木%d／200  石%d／150\n施工需3个世界时辰，未付款不会生成房屋。\n房屋只用合法授权汉式3D模型。" % [
+      int(status_h.get("houses_finished",0)),
+      int(status_h.get("residents_assigned",0)),
+      int(status_h.get("housing_capacity",0)),
+      int(stock.get("wood",0)),int(stock.get("stone",0))]
+    _house_build_button.disabled=not (ledger!=null and (
+      ledger.call("affordable",stock))) or room.get("han_sources").size()<4
+    _house_build_button.visible=true
   elif _game_sheet_mode=="cultivation":
     _game_sheet_title.text="修炼 · 灵根与境界"
     if spiritual==null:
@@ -2272,8 +2300,8 @@ func _layout_hud() -> void:
   (buttons["FlyDownButton"] as Button).position=Vector2(size.x-145,208)
   # Original always-on game HUD is not a developer-only QA control.
   # Five compact top-right tabs, not ten QA buttons scattered over scenery.
-  var menu_names:=["角色","背包","修炼","菜单"]
-  var menu_x: float=maxf(365.0,size.x-4.0*104.0-22.0)
+  var menu_names:=["角色","背包","修炼","菜单","建造"]
+  var menu_x: float=maxf(365.0,size.x-float(menu_names.size())*104.0-22.0)
   for idx in range(menu_names.size()):
     var tab: Button=hud.get_node("GameMenu_"+menu_names[idx]) as Button
     tab.position=Vector2(menu_x+float(idx)*104.0,16)
