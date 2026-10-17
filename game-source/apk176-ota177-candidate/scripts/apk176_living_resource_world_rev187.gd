@@ -804,10 +804,14 @@ func quote_and_fund_near_house(point: Vector3) -> Dictionary:
 # bushes and retains exact textured UV/normal maps. We cap the mobile draw
 # budget rather than claiming one batch when no legitimate batch exists.
 func _spawn_licensed_living_understory() -> void:
-  if not spirit_resource_sources.has("bush") or quality==null:
-    asset_errors.append("REV207_UNDERSTORY_CC0_BUSH_NOT_IMPORTED")
+  if not asset_sources.has("tree") or quality==null:
+    asset_errors.append("REV208_UNDERSTORY_CC0_GREEN_OAK_NOT_IMPORTED")
     return
-  var original: Node3D=spirit_resource_sources["bush"]
+  # Screenshot QA of rev207 showed red-and-white fungal mushroom props
+  # (vendor file named bush.glb), NOT actual green leafy shrubs. The
+  # already-verified Kenney oak source has real green leaf geometry, so
+  # reuse its authoring meshes and materials at natural young-tree scale.
+  var original: Node3D=asset_sources["tree"]
   var part_nodes: Array[Node]=original.find_children("*","MeshInstance3D",true,false)
   var source_triangles: int=0
   var surface_count: int=0
@@ -853,14 +857,14 @@ func _spawn_licensed_living_understory() -> void:
     if excluded:
       continue
     var model: Node3D=original.duplicate()
-    model.name="RealQuaterniusLicensedUnderstory_%03d" % licensed_understory_count
+    model.name="RealKenneyLicensedGreenUnderstory_%03d" % licensed_understory_count
     var y: float=float(terrain_world.call("height_at",x,z))
     model.position=Vector3(x,y,z)
     model.rotation.y=rng.randf_range(-PI,PI)
-    model.scale=Vector3.ONE*rng.randf_range(0.38,0.72)
-    model.set_meta("source_license","Quaternius-CC0")
+    model.scale=Vector3.ONE*rng.randf_range(0.26,0.47)
+    model.set_meta("source_license","Kenney-CC0")
     model.set_meta("never_free_inventory",true)
-    model.set_meta("source_prefab","bush.glb")
+    model.set_meta("source_prefab","tree_oak.glb")
     world.add_child(model)
     licensed_understory_locations.append(Vector3(x,y,z))
     licensed_understory_instances.append(model)
