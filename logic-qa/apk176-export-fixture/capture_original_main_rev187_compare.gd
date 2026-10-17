@@ -305,7 +305,7 @@ func _capture() -> void:
     return
   if String(player.get("_locked_target_kind"))!="spar" or int(
       player.get("_kenney_ui_asset_count"))!=10 or not bool(
-      game_hud.get_meta("kenney_ui_cc0_loaded",false)):
+      (player.get("hud") as Control).get_meta("kenney_ui_cc0_loaded",false)):
     _fail("REV205_TRUE_TARGET_LOCK_AND_AUTHENTIC_KENNEY_UI_NOT_VISIBLE_IN_ORIGINAL_ENGINE")
     return
   for i in range(2):
