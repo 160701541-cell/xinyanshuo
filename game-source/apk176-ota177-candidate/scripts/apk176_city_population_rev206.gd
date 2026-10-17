@@ -127,14 +127,18 @@ func advance_city_day(city_id: String) -> Dictionary:
   city["residents_simulated_only"]=new_total
   city["food_requirement_per_day"]=new_total
   city["cohort_day"]=int(city["cohort_day"])+1
+  # Keep all aggregated dimensions conserved after births, deaths and
+  # migration. No virtual person is individually instantiated.
+  var districts: Dictionary=city["districts"]
+  districts["suburbs"]=int(districts["suburbs"])+actual_delta
+  var cohort: Dictionary=city["age_cohorts"]
+  cohort["children"]=int(new_total*0.24)
+  cohort["adults"]=int(new_total*0.57)
+  cohort["elders"]=new_total-int(cohort["children"])-int(cohort["adults"])
   if actual_delta>=0:
     city["born_total"]=int(city["born_total"])+actual_delta
-    # Adds no assets, coins or food; births add future mouths to feed.
-    city["age_cohorts"]["children"]=int(city["age_cohorts"]["children"])+actual_delta
   else:
     city["died_total"]=int(city["died_total"])-actual_delta
-    city["age_cohorts"]["elders"]=maxi(0,
-      int(city["age_cohorts"]["elders"])+actual_delta)
   city["migrated_total"]=int(city["migrated_total"])+migration
   report_count+=1
   return {"ok":true,"before":count,"after":new_total,
@@ -162,5 +166,8 @@ func assert_city_bounds(city_id: String) -> bool:
   var sum: int=0
   for value in (city["districts"] as Dictionary).values():
     sum+=int(value)
-  return sum==int(city["mortal_population"]) or (
-    int(city["cohort_day"])>1 and sum>0)
+  var cohorts: Dictionary=city["age_cohorts"]
+  var actual_cohort_total: int=0
+  for value in cohorts.values():
+    actual_cohort_total+=int(value)
+  return sum==pop and actual_cohort_total==pop
