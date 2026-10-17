@@ -163,7 +163,9 @@ func _pick_region(for_birth: bool,iteration: int) -> Dictionary:
   for trial in range(REGION_COUNT):
     var index: int=(starting+iteration*37+trial*17)%REGION_COUNT
     var row: Dictionary=regions["CL-REGION-%03d" % index]
-    if int(row["adults"])>=2 if for_birth else int(row["elders"])+int(row["adults"])>1:
+    var eligible: bool=int(row["adults"])>=2 if for_birth else (
+      int(row["elders"])+int(row["adults"])>1)
+    if eligible:
       return row
   return {}
 
@@ -189,11 +191,8 @@ func _advance_month() -> void:
       spiritual_birth_fraction-=10000
       r["roots"]=int(r["roots"])+1
       spirit_births+=1
-    body_birth_fraction+=600
-    if body_birth_fraction>=10000 and int(r["body_practitioners"])<(
-        int(r["people"])-int(r["roots"])):
-      body_birth_fraction-=10000
-      r["body_practitioners"]=int(r["body_practitioners"])+1
+    # Children may inherit a physical constitution but are not recorded
+    # as trained adult body-refiners on the day they are born.
   _birth_offset=(_birth_offset+41)%REGION_COUNT
   for i in range(natural_deaths):
     var d: Dictionary=_pick_region(false,i)
@@ -222,6 +221,12 @@ func _advance_month() -> void:
       row["children"]=int(row["children"])-age_up
       row["adults"]=int(row["adults"])+age_up-retire
       row["elders"]=int(row["elders"])+retire
+      # A subset of newly adult, rootless mortals begins body refinement.
+      body_birth_fraction+=age_up*600
+      var new_body: int=body_birth_fraction/10000
+      body_birth_fraction=body_birth_fraction%10000
+      row["body_practitioners"]=mini(int(row["people"])-int(
+        row["roots"]),int(row["body_practitioners"])+new_body)
   for row in regions.values():
     var density: int=int(row["forest_density_bp"])
     # Seeds naturally disperse and regrow, up to biomass/canopy carrying
