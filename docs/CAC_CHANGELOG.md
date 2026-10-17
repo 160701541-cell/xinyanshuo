@@ -1,5 +1,10 @@
 # CAC 工序变更与开发日志
 
+## 2026-10-18 / CAC-P0-HQ-ART-LOCK-AND-NAMED-MORTALITY-CENSUS / 直接执行用户最高P0：真WorldX尝试及修士死亡扣地区人口
+- **HQ-Art-Lock #001 真实接入**：新增 `tools/asset_factory/worldx_rev208_hq_character_v2.mjs` + `test_worldx_rev208_hq_character_v2.mjs` + `.github/workflows/canglan-rev208-hq-character-worldx-v2-qa.yml`，使用公开仓库先前验证过的**固定WorldX上游 prompt-loader** 与 SiliconFlow/Kolors API，固定单次最多生成**一张高精国风男性主角正面全身母版**，附提示词、原像素文件、SHA、运行号；密钥由 GitHub Actions Secret 提供，缺失 `BLOCKED_PROVIDER`，不得自动付费重试。图片记录状态必须是 `GENERATED_UNAPPROVED`，禁止说已接高精GLB或通过审美/手机；此轮执行结果需单独检查真实 CI。
+- **Combat-Life #031 地区人口连动真实源码增量**：`apk176_living_regions_rev207.gd` 增加首次死亡的唯一修士ID死亡账本 `named_deaths`，可根据被杀修士炼气或炼体身份从现有500区/5000人统计池中依法扣除一名成年人、根性/炼体存量、地区死亡数与总死亡数，带事务前后守恒核验和原子存盘；重复死因回调不会再次扣人口。`apk176_cultivation_world_rev201.gd` 在真正HP归零前调用世界死亡账本，记录身份、死亡世界时辰、死亡地区；下次初始化时即使被中断，也以持久地区死亡记录纠正人形状态防止复活。原Main `apk176_living_resource_world_rev187.gd` 主场景真正接入启动对账；原真实QA `verify_original_main_quality_rev187.gd` 加入地区账本精确 `-1`、重复杀害不可二次扣减、地区文件加载和测试恢复检查。
+- **诚实状态**：本批次为真实源代码/严格QA增量提交，**此条提交尚未看到最新严格Godot4.4.1 原Main QA结论**，不可写P0已PASS；先前`39065966234`只验证旧版修士HP/尸体死亡。世界统计不能冒充5000个真实渲染人；本批主角仍**未获得实际WorldX可采信图片或高精真3D模型**，用户美术门禁依然P0 FAIL。rev208 PR #14保持Draft、不得签名上线；官网rev207维持不变。
+
 ## 2026-10-18 / CAC-HQ-ART-ECOLOGY-REPORT-MANDATORY / 用户上传正式高精美术与生态替换执行报告，最高P0执行规范落库
 - **用户新最高要求已写入唯一公开仓库 main，绝非仅聊天记忆/临时口头承诺**：完整用户原报告 `docs/CANGLAN_HQ_ART_ECOLOGY_EXECUTION_REPORT_USER_20261018.md`；逐项ID/质量出口/完成与阻塞状态 `docs/CAC_REV208_HQ_EXECUTION_CHECKLIST_20261018.md`；`AGENTS.md`、`docs/DEVELOPMENT_EXECUTION_RULES.md` 已提升为最高优先级美术发布门禁；WorldX风格 `tools/asset_factory/CANGLAN_WORLDX_STYLE_LOCK_V2_HQ3D.md` 替代低饱和固定斜俯视v1，旧文件已显式标为历史文档。
 - **质量路线冻结**：不能再用Quaternius Knight做近景主角/核心修士；不得用Kenney矮小橡树批量缩放冒充成熟森林；不以`bush.glb`红白菌体冒充绿灌木；树干叶片/地面/衣料与真实灵草必须拥有不同PBR/真实尺度/独立轮廓；WorldXAI仅产经审查的高质量四视母版/贴图美术参考，需进一步成为真实可蒙皮高精GLB才算游戏资产。真实第一/第三自由镜头与古风发髻衣装是硬标准。
