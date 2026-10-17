@@ -155,7 +155,7 @@ func _capture() -> void:
     var foot_y: float=float(opening_terrain.call(
       "height_at",facing.x,facing.z+7.0))
     opening_actor.position=Vector3(facing.x,foot_y+float(
-      fighter.get_meta("actor_ground_offset_y",0.0)),facing.z+7.0)
+      opening_actor.get_meta("actor_ground_offset_y",0.0)),facing.z+7.0)
     player.call("_set_mode","third")
     player.set("_yaw",0.0)
     player.set("_pitch",0.24)
