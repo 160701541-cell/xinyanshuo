@@ -486,10 +486,10 @@ func player_breakthrough() -> Dictionary:
 
 func advance_world_hour() -> void:
   total_hours+=1
-  # True statistical city life uses the SAME hour ticker as all 12 live NPCs,
-  # but advances aggregate 80k population only once per simulated day.
-  if city_population!=null and total_hours%24==0:
-    city_population.call("advance_city_day","CL-CITY-HEXI-0001")
+  # Rev207 overrides the old 80k demo city with 5k humans distributed
+  # over 50,000 km². The old city ledger remains read-only in old save
+  # files for backward compatibility, but must NEVER advance or contribute
+  # ghost births alongside the authoritative regional world simulation.
   # This is the same sim.tick() hour already advanced by the original world
   # clock. No second phantom clock can advance qi without economic time.
   if bool(player_data.get("meditating",false)) and (
@@ -658,6 +658,21 @@ func visual_root_signature() -> Dictionary:
     player_data.get("root_profile",{}))
 
 func city_census() -> Dictionary:
+  if room!=null:
+    var living: RefCounted=room.get("world_society")
+    if living!=null and bool(living.get("_loaded")):
+      var actual: Dictionary=living.call("stats")
+      return {"population":int(actual["population"]),
+        "mortal_population":int(actual["population"]),
+        "area_km2":int(actual["area_km2"]),
+        "regions":int(actual["regions"]),
+        "rooted_mortals":int(actual["rooted_mortals"]),
+        "body_cultivators":int(actual["body_cultivators"]),
+        "residents_simulated_only":int(actual["population"]),
+        "live_physical_scene_nodes":0,
+        "legacy_city_80k_not_active":true}
+  # Detached legacy QA and saves can still inspect their old city shape;
+  # actual game never uses it for today's authoritative 5k world census.
   if city_population==null:
     return {}
   return city_population.call("describe_city","CL-CITY-HEXI-0001")
@@ -665,7 +680,8 @@ func city_census() -> Dictionary:
 func stats() -> Dictionary:
   return {"world_seed":world_seed,
     "seed_is_persistent":FileAccess.file_exists(SAVE_PATH),
-    "all_normal_spirit_roots_guaranteed":true,
+    "all_normal_spirit_roots_guaranteed":false,
+    "rev207_player_root_guaranteed_other_mortals_statistical":true,
     "root_catalog_element_count":int(root_catalog.call("catalog_size")) if root_catalog!=null else 0,
     "city_population_record":city_census(),
     "cultivator_count":npc_visuals.size(),
