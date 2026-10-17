@@ -1,5 +1,14 @@
 # CAC 工序变更与开发日志
 
+## 2026-10-18 / CAC-3D-206-LIVE / 原APK176 rev206正式热更新已完成、官网公网上线
+- ✅ 真正发布成功：PR #12 合并正式 `main`：`25408b71a9aac51e9ea4aea8fe8e9567c800cba1`；Godot 4.4.1原APK176 Main严格验收与RSA发布流水线 `39057810555` **SUCCESS**，和旧APK176 `versionCode1176`兼容，未重复打APK，未篡改旧 rev205 不可变PCK。
+- ✅ 原签名清单 `android-preview/latest.json` 版本rev206；唯一正式新补丁 `android-preview/canglan-content-rev-206.pck`，实际大小 `35,782,624` 字节、SHA256 `d2b2fbd4a34b8dfeb90d20f1e302ff01803adf5b8c811aed78759d1b478ba022`，RSA-3072验签通过；合法来源Quaternius灵草/矿石物件与Kenney树林石矿GPU批次载入真主场景。
+- ✅ 官网页面真正上线：`39058075233` **SUCCESS**，运行在真实GitHub Pages CDN验证 `PASS_CURRENT_ORIGINAL_APK176_PUBLIC_HTTPS_RSA_SHA256_AND_RANGE`，`live_revision=206`、`pck_bytes=35782624`、SHA完全一致、HTTP Range实际`206`。原游戏内点击“检查更新→下载安装资源补丁”可以下载rev206测试，不需重新安装旧APK。
+- ✅ 实际Godot移动Vulkan/Linux渲染截帧：`art/actual-engine-capture/canglan-rev206-real-spirit-herbs-godot-linux.png`、`canglan-rev206-spirit-ore-godot-linux.png`、`canglan-rev206-vivid-cc0-forest-godot-linux.png`、`canglan-rev206-backpack-godot-linux.png`；均为真引擎画面**非安卓实机照片**。修复首次52棵树、20石矿超过40/12资源池，新增真实CC0灵草灵石、保存、炼丹、再生、九叶密草与住宅必须库存/工时付费；仍有用户未确认的整体国风美术质量和NPC行动丰富度。
+- 🔴 **Android手机实机画面/点击/帧率/发热尚未验收**，不得称已获用户认可。用户2026-10-18 `docs/REV208_PHONE_SCREENSHOT_P0_PERMANENT_MASTER_20261018.md`所有P0标准继续有效。下一版本优先修高可见性/操作/资源生态及真实性，不接受免费房屋、NPC发呆或UI数字缺失。
+- 网站研发日志专项修复：此前`site.js`只识别`CAC-(PROC|3D)-数字`且取反序最老24条，Pages又漏传`docs/CAC_CHANGELOG.md`，导致正式rev206工程日志未在首页显示；补上公开CAC文件、按原日志自顶向下最新24条展示，`data/updates.json`标记已实际验签但手机仍待验收；对Docs/site/数据变更单独触发Pages重部署，不修改原PCK或RSA签名。
+
+
 ## 2026-10-18 / CAC-REV206-ORIGINAL-GODOT-GREEN / 候选引擎验收绿灯，正式签名需main发布
 - 正式 **rev205** 不变。rev206唯一分支真实CI `39057568955` (HEAD `e567b58007d18ffda5819b48090a21c98aeb64ab`) 结果 **SUCCESS**：Godot 4.4.1原APK176 Main物理世界、完整源PCK构建、全部52真实树/20石头GPU实例、草地三档密度/真实PBR、七份Quaternius灵草矿石、13处资源有限采挖/储存/炼丹再生、32灵根、统计人口和其他累计复测均通过；实际Godot Linux Vulkan 1280×720截帧步骤通过。**这不是Android手机实机验收，也不是rev206签名发布证明。**
 - 真正修复九叶草3D mesh `c5336cdb19ad2a9c90744ee144767f7b02c54841`，从6根短细针进化为九叶立体密叶体；保留每手机画质档独立密度、MultiMesh批绘与植物物理区归属。旧QA错误假定320/4500草实例已按当前真实源正确更新，不放宽实例验收。
