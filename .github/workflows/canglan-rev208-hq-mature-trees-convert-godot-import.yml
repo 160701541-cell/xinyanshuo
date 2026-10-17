@@ -1,0 +1,145 @@
+name: Canglan REV208 P0 3 detailed CC0 mature trees 4-PBR-surface real Godot4.4 import (QUARANTINED)
+on:
+  push:
+    branches: [feat/rev208-green-kenney-saplings-vegetation]
+    paths:
+      - '.github/workflows/canglan-rev208-hq-mature-trees-convert-godot-import.yml'
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: canglan-rev208-3-real-mature-tree-convert-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  source-sha-verify-merge-godot-44-import:
+    if: github.repository == '160701541-cell/xinyanshuo'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 16
+    env:
+      ASSET_DIR: game-source/apk176-ota177-candidate/assets/hq-rev208/vegetation/trees
+    steps:
+      - uses: actions/checkout@v4
+      - name: Prepare real SHA pinned licensed source triangle+surface converter
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m pip -q install 'trimesh>=4.0,<5' 'numpy>=1.25,<3'
+          python3 -m py_compile tools/asset_factory/rev208_intake_real_mature_cc0_trees.py tools/asset_factory/rev208_optimize_mature_cc0_trees.py
+      - name: Download exactly three source CC0 originals and bake all 625 geometry transforms into 4 PBR meshes, no fake primitives
+        run: |
+          set -euo pipefail
+          python3 tools/asset_factory/rev208_optimize_mature_cc0_trees.py "$ASSET_DIR"
+      - name: Verify reproducible SHA, real meter dimensions, source provenance and mobile draw surface bounds
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          import os,hashlib,json
+          root=Path(os.environ['ASSET_DIR'])
+          m=json.loads((root/'manifest.json').read_text())
+          assert len(m['items'])==3 and m['art_approval']=='PENDING_REAL_GODOT_AND_USER'
+          for kind,item in m['items'].items():
+            b=(root/item['file']).read_bytes()
+            assert b[:4]==b'glTF' and hashlib.sha256(b).hexdigest()==item['converted_sha256']
+            assert item['source_height_m']>7.5 and item['source_height_m']<12
+            assert item['render_meshes']==4 and item['triangle_lod0']>100000
+            assert item['game_asset_approved'] is False and item['triangle_lod1']=='NOT_PRODUCED'
+          print('PASS_HQ_TREE_CC0_SOURCE_SHA_3_REAL_HIGH_MESH_TREE_GLTF2_UNAPPROVED')
+          PY
+      - name: Install original project version Godot 4.4.1 to validate all 3 actual GLB assets
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl -fL --retry 2 --connect-timeout 20 \
+            https://github.com/godotengine/godot/releases/download/4.4.1-stable/Godot_v4.4.1-stable_linux.x86_64.zip \
+            -o /tmp/godot-hq.zip
+          unzip -q /tmp/godot-hq.zip -d /tmp
+          chmod +x /tmp/Godot_v4.4.1-stable_linux.x86_64
+      - name: Import PBR and high-detail real 8-9m tree scenes in unmodified Godot GLTFDocument, never export/ship phone content
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat > "$ASSET_DIR/project.godot" <<'EOP'
+          config_version=5
+          [application]
+          config/name="Canglan HQ Tree GLB Strict Import QA"
+          EOP
+          cat > "$ASSET_DIR/verify_hq_import.gd" <<'EOG'
+          extends SceneTree
+          func _initialize() -> void:
+            call_deferred("_run")
+          func _run() -> void:
+            for kind in ["oak","maple","linden"]:
+              var path: String="res://mature_"+kind+"_hq_lod0.glb"
+              var raw: PackedByteArray=FileAccess.get_file_as_bytes(path)
+              var document:=GLTFDocument.new()
+              var state:=GLTFState.new()
+              if document.append_from_buffer(raw,"res://",state)!=OK:
+                printerr("FAIL_HQ_TREE_GLB_GODOT_IMPORT_"+kind)
+                quit(19)
+                return
+              var tree: Node3D=document.generate_scene(state)
+              if tree==null:
+                printerr("FAIL_HQ_TREE_GLTF_SCENE_GENERATION_"+kind)
+                quit(20)
+                return
+              get_root().add_child(tree)
+              var meshes: Array[Node]=tree.find_children("*","MeshInstance3D",true,false)
+              if meshes.size()!=4:
+                printerr("FAIL_HQ_TREE_SOURCE_MESH_MERGE_NOT_FOUR_"+kind+"_got_"+str(meshes.size()))
+                quit(21)
+                return
+              var highest: float=-INF
+              var lowest: float=INF
+              var faces: int=0
+              for m in meshes:
+                var visual: MeshInstance3D=m as MeshInstance3D
+                if visual.mesh==null:
+                  continue
+                for i in range(visual.mesh.get_surface_count()):
+                  var arrays: Array=visual.mesh.surface_get_arrays(i)
+                  faces+=int((arrays[Mesh.ARRAY_INDEX] as PackedInt32Array).size()/3)
+                var b: AABB=visual.get_aabb()
+                for corner in range(8):
+                  var p: Vector3=visual.to_global(b.get_endpoint(corner))
+                  highest=maxf(highest,p.y)
+                  lowest=minf(lowest,p.y)
+              if highest-lowest<7.5 or highest-lowest>12.0 or faces<100000:
+                printerr("FAIL_HQ_TREE_NOT_GENUINE_MATURE_REAL_3D_"+kind+"_height_"+str(highest-lowest)+"_tris_"+str(faces))
+                quit(22)
+                return
+              print("PASS_HQ_REAL_CC0_GODOT_441_MATURE_TREE_"+kind+
+                "_mesh_parts_"+str(meshes.size())+"_height_m_"+str(highest-lowest)+
+                "_source_triangles_"+str(faces))
+              tree.queue_free()
+              await process_frame
+            quit(0)
+          EOG
+          timeout 120s /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless --path "$ASSET_DIR" \
+            --script res://verify_hq_import.gd | tee "$ASSET_DIR/godot_hq_import_qa.log"
+          for kind in oak maple linden; do
+            grep -Fq "PASS_HQ_REAL_CC0_GODOT_441_MATURE_TREE_$kind" "$ASSET_DIR/godot_hq_import_qa.log"
+          done
+          rm "$ASSET_DIR/project.godot" "$ASSET_DIR/verify_hq_import.gd" "$ASSET_DIR/godot_hq_import_qa.log"
+      - name: Commit ONLY SOURCE-VERIFIED/Godot-PARSED 3 GLBs to rev208 feature branch with manifest explicitly NOT ART APPROVED
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name canglan-hq-cc0-tree-intake
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add "$ASSET_DIR"
+          if git diff --cached --quiet; then
+            echo 'No changed HQ tree binary source'; exit 0
+          fi
+          git commit -m 'assets(P0 rev208): pinned CC0 three 8-9m detailed Godot4.4 imported mature trees (visual approval pending)'
+          git pull --rebase origin feat/rev208-green-kenney-saplings-vegetation
+          git push origin HEAD:feat/rev208-green-kenney-saplings-vegetation
+      - name: Preserve original QA manifest and three converted assets independent of commit
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: CANGLAN-REV208-GODOT441-REAL-HQ-TREE-INTAKE-UNAPPROVED-${{ github.run_id }}
+          path: ${{ env.ASSET_DIR }}/
+          if-no-files-found: warn
+          retention-days: 30
