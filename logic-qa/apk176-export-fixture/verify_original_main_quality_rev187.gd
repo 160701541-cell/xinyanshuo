@@ -892,6 +892,8 @@ func _run() -> void:
   if Vector2(actor.position.x-before_move.x,actor.position.z-before_move.z).length()<1.0:
     _fail(68,"LEFT_ANALOG_MOVE_DID_NOT_MOVE_ACTUAL_PLAYER_ENTITY")
     return
+  var previous_camera_mode: String=String(player.get("camera_mode"))
+  player.call("_set_mode","third")
   var drag_start: float=float(player.get("_pitch"))
   player.call("turn_view",Vector2(0,32))
   if float(player.get("_pitch"))<=drag_start:
@@ -913,7 +915,7 @@ func _run() -> void:
   if float(player.get("_pitch"))<=0.20:
     _fail(333,"REV205_FIRST_PERSON_UP_SWIPE_MUST_RAISE_TRUE_LENS_TO_SKY")
     return
-  player.call("_set_mode","third")
+  player.call("_set_mode",previous_camera_mode)
   var before_yaw: float = float(player.get("_yaw"))
   var zone: Control = player.get("_look_zone")
   if zone==null or zone.mouse_filter!=Control.MOUSE_FILTER_STOP:
