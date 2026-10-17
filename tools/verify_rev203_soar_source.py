@@ -9,7 +9,7 @@ def verify(text: str) -> None:
         "Avatar's ascend and descend controls must both be visible when soaring")
     assert 'if camera_mode=="soar" and mode!="soar" and _soar_altitude>0.045:' in text, (
         "Switching camera modes must not erase midair altitude")
-    assert '    _soar_landing=true\n    _soar_target_altitude=0.0\n    say("请先平稳降落，再切换视角")\n    _layout_hud()' in text, (
+    assert '    _soar_landing=true\n    _soar_hold_axis=0.0\n    _soar_hold_seconds=0.0\n    _soar_target_altitude=0.0\n    say("请先平稳降落，再切换视角")\n    _layout_hud()' in text, (
         "Mode switch must start descent and refuse premature mode change")
     assert '    _soar_altitude=0.0\n    _soar_target_altitude=3.0' in text, (
         "Takeoff must begin at terrain level, not teleport 0.9m")
