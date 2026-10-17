@@ -1448,5 +1448,23 @@ func _exit_tree() -> void:
   if licensed_flying_sword_source!=null and is_instance_valid(licensed_flying_sword_source):
     licensed_flying_sword_source.free()
   licensed_flying_sword_source=null
+  # Rev206 CC0 prefabs add 14 freestanding GLTFDocument.generate_scene()
+  # templates. Each duplicate was parented to the world; templates were
+  # NOT parented and must be explicitly freed exactly once on scene exit.
+  # Otherwise headless Godot reports leaked 20 DummyMeshes, 137 materials,
+  # multiple RIDs / ObjectDB instances and FAILS the release QA. This is
+  # a real source lifetime fix, not hiding/suppressing engine ERROR logs.
+  var unique_sources: Dictionary={}
+  for collection in [finished_prefab_sources,licensed_outfits,
+      native_wildlife_sources]:
+    for original in (collection as Dictionary).values():
+      if original is Node3D and is_instance_valid(original):
+        unique_sources[(original as Node3D).get_instance_id()]=original
+  for original in unique_sources.values():
+    if is_instance_valid(original) and (original as Node3D).get_parent()==null:
+      (original as Node3D).free()
+  finished_prefab_sources.clear()
+  licensed_outfits.clear()
+  native_wildlife_sources.clear()
   _hidden_game_world.clear()
   _old_profiler_nodes.clear()
