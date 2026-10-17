@@ -638,7 +638,13 @@ func _pad_focus_menu(index: int) -> void:
   _pad_menu_options.clear()
   if _game_sheet==null or not _game_sheet.visible:
     return
-  for node in _game_sheet.find_children("*","Button",true,false):
+  # Quality/FPS popup belongs to the original CanvasLayer, not to the
+  # player menu: focus its REAL native Godot Buttons while that popup is open.
+  var menu_root: Control=_game_sheet
+  var quality_popup: Control=room.get("quality_menu") as Control
+  if quality_popup!=null and quality_popup.visible:
+    menu_root=quality_popup
+  for node in menu_root.find_children("*","Button",true,false):
     var button: Button=node as Button
     if button.is_visible_in_tree() and not button.disabled:
       _pad_menu_options.append(button)
@@ -662,17 +668,28 @@ func _pad_press_button(button: int) -> void:
     return
   _pad_button_event_count+=1
   if button==JOY_BUTTON_START:
-    _open_game_menu("settings")
+    if _game_sheet.visible and bool(room.get("quality_menu_visible")):
+      room.call("_toggle_quality_settings")
+      _pad_close_menu()
+    else:
+      _open_game_menu("settings")
     return
   if button==JOY_BUTTON_BACK:
-    if _game_sheet.visible:
+    if bool(room.get("quality_menu_visible")):
+      room.call("_toggle_quality_settings")
+      _pad_focus_menu(0)
+    elif _game_sheet.visible:
       _pad_close_menu()
     else:
       _open_game_menu("character")
     return
   if _game_sheet.visible:
     if button==JOY_BUTTON_B:
-      _pad_close_menu()
+      if bool(room.get("quality_menu_visible")):
+        room.call("_toggle_quality_settings")
+        _pad_focus_menu(0)
+      else:
+        _pad_close_menu()
     elif button==JOY_BUTTON_DPAD_UP:
       _pad_focus_menu(_pad_menu_index-1)
     elif button==JOY_BUTTON_DPAD_DOWN:
@@ -681,7 +698,10 @@ func _pad_press_button(button: int) -> void:
       if _pad_menu_options.is_empty():
         _pad_focus_menu(0)
       if not _pad_menu_options.is_empty():
+        var was_quality: bool=bool(room.get("quality_menu_visible"))
         _pad_menu_options[_pad_menu_index].pressed.emit()
+        if was_quality!=bool(room.get("quality_menu_visible")):
+          _pad_focus_menu(0)
     elif button==JOY_BUTTON_RIGHT_SHOULDER:
       _open_game_menu("inventory")
     elif button==JOY_BUTTON_LEFT_SHOULDER:
