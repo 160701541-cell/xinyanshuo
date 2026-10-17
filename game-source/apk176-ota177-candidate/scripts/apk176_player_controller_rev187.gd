@@ -51,6 +51,11 @@ var _auto_npc_id: String = ""
 var _auto_walking: bool = false
 var _touch_tap_count: int = 0
 var _hud_flash: float = 0.0
+var _game_status: Label
+var _game_sheet: PanelContainer
+var _game_sheet_title: Label
+var _game_sheet_body: Label
+var _game_sheet_mode: String = ""
 
 func initialize(active_room: Node) -> void:
   room = active_room
@@ -171,7 +176,97 @@ func _create_hud() -> void:
   caption.text = "左摇杆走路 · 右边滑动看世界 · 双指缩放 · 可切第一视角"
   hud.add_child(caption)
   notice = caption
+  _build_game_hud()
   _layout_hud()
+
+
+# rev188 candidate: never fabricate HP, MP or skill state before combat exists.
+func _game_menu_button(label: String, x: float, mode: String) -> void:
+  var b := Button.new()
+  b.name = "GameMenu_" + label
+  b.text = label
+  b.position = Vector2(x, 98)
+  b.size = Vector2(96, 42)
+  b.add_theme_font_size_override("font_size",18)
+  b.pressed.connect(func(): _open_game_menu(mode))
+  hud.add_child(b)
+
+func _build_game_hud() -> void:
+  var bg := PanelContainer.new()
+  bg.name = "LiveGameVitalsRev188"
+  bg.position = Vector2(16, 12)
+  bg.custom_minimum_size = Vector2(330, 78)
+  bg.add_theme_stylebox_override("panel",_rounded(Color(0.05,0.10,0.12,0.87),12))
+  hud.add_child(bg)
+  var margin := MarginContainer.new()
+  margin.add_theme_constant_override("margin_left",12)
+  margin.add_theme_constant_override("margin_right",12)
+  margin.add_theme_constant_override("margin_top",8)
+  margin.add_theme_constant_override("margin_bottom",8)
+  bg.add_child(margin)
+  _game_status=Label.new()
+  _game_status.add_theme_font_size_override("font_size",17)
+  _game_status.text="心魇说 · 凡人\n体力载入中 · 生命/灵力未实现"
+  margin.add_child(_game_status)
+  _game_menu_button("角色",16,"character")
+  _game_menu_button("背包",119,"inventory")
+  _game_menu_button("修炼",222,"cultivation")
+  _game_sheet=PanelContainer.new()
+  _game_sheet.name="Rev188CharacterInventoryCultivationMenu"
+  _game_sheet.position=Vector2(16,150)
+  _game_sheet.custom_minimum_size=Vector2(355,220)
+  _game_sheet.visible=false
+  _game_sheet.add_theme_stylebox_override("panel",_rounded(Color(0.06,0.11,0.13,0.95),12))
+  hud.add_child(_game_sheet)
+  var v:=VBoxContainer.new()
+  v.add_theme_constant_override("separation",9)
+  _game_sheet.add_child(v)
+  _game_sheet_title=Label.new()
+  _game_sheet_title.add_theme_font_size_override("font_size",22)
+  v.add_child(_game_sheet_title)
+  _game_sheet_body=Label.new()
+  _game_sheet_body.add_theme_font_size_override("font_size",17)
+  v.add_child(_game_sheet_body)
+  var close:=Button.new()
+  close.text="关闭"
+  close.pressed.connect(func(): _game_sheet.visible=false)
+  v.add_child(close)
+  _refresh_game_hud()
+
+func _open_game_menu(mode: String) -> void:
+  if _game_sheet_mode==mode and _game_sheet.visible:
+    _game_sheet.visible=false
+    return
+  _game_sheet_mode=mode
+  _game_sheet.visible=true
+  _refresh_game_hud()
+
+func _refresh_game_hud() -> void:
+  if _game_status==null or room==null:
+    return
+  var sim = room.get("sim")
+  if sim==null:
+    return
+  var persons: Dictionary=sim.get("citizens")
+  var person: Dictionary=persons.get(PLAYER_ID,{})
+  var energy: int=int(person.get("energy",0))
+  _game_status.text="心魇说 · 凡人  |  体力 "+str(energy)+"\n生命：未接入    灵力：未觉醒"
+  if _game_sheet==null or not _game_sheet.visible:
+    return
+  if _game_sheet_mode=="character":
+    _game_sheet_title.text="角色 · 当前状态"
+    _game_sheet_body.text="体力："+str(energy)+"\n身份：村庄居民\n生命／灵力／装备：尚未实现"
+  elif _game_sheet_mode=="inventory":
+    _game_sheet_title.text="背包 · 真实采集物资"
+    var carried: Dictionary=sim.get("carried_by_actor")
+    if carried.has(PLAYER_ID):
+      var item: Dictionary=carried[PLAYER_ID]
+      _game_sheet_body.text="携带："+String(item.get("kind","未知"))+" ×"+str(item.get("amount",0))+"\n回仓库点击「互动」交付"
+    else:
+      _game_sheet_body.text="随身背包空\n靠近树木、石块点击「互动」采集"
+  else:
+    _game_sheet_title.text="修炼 · 凡人"
+    _game_sheet_body.text="灵根检测：未开放\n功法／招式／灵力：尚未接入\n没有虚构的技能数值"
 
 func _layout_hud() -> void:
   if hud == null:
@@ -579,6 +674,7 @@ func step(delta: float) -> void:
     _hud_flash = maxf(0,_hud_flash-delta)
     if _hud_flash<=0:
       notice.text = "左摇杆移动 | 右侧看世界 | 双指缩放 | 互动/挖掘"
+  _refresh_game_hud()
   _layout_hud()
 
 func _set_movement_animation(moving: bool) -> void:
