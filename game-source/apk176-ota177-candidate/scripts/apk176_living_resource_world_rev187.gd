@@ -148,6 +148,11 @@ func _ready() -> void:
   _seed_resources()
   _place_completed_cc0_village()
   _make_workers()
+  # Assign a real resident identity to the completed, placeable licensed
+  # house. Interior furnishing/access is a separate feature, not faked.
+  if finished_prefabs.has("CL-HOME-V206-001"):
+    (finished_prefabs["CL-HOME-V206-001"] as Node3D).set_meta(
+      "assigned_resident_ids",["CL-NPC-0184-03"])
   # Each physical original prefabricated home is represented in actual
   # economy capacity, not a pretend construction progress meter.
   sim.villages[TOWN]["homes"]=5
@@ -1290,9 +1295,12 @@ func stats() -> Dictionary:
     "worker_visual_heights_m": {
       "woodcutter": float(workers["CL-NPC-0184-01"]["node"].get_meta("actor_visual_height_m",0.0)) if workers.has("CL-NPC-0184-01") else 0.0,
       "quarryman": float(workers["CL-NPC-0184-02"]["node"].get_meta("actor_visual_height_m",0.0)) if workers.has("CL-NPC-0184-02") else 0.0,
-      "builder": float(workers["CL-NPC-0184-03"]["node"].get_meta("actor_visual_height_m",0.0)) if workers.has("CL-NPC-0184-03") else 0.0
+      "steward":float(workers["CL-NPC-0184-03"]["node"].get_meta("actor_visual_height_m",0.0)) if workers.has("CL-NPC-0184-03") else 0.0
     },
-    "not_whole_finished_house":false, "save_unchanged":true}
+    "not_whole_finished_house":false, "save_unchanged":true,
+    "original_licensed_complete_houses_used":true,
+    "persistent_city_population_is_statistical_only":cultivation!=null and int(
+      cultivation.call("city_census").get("population",0))>=10000}
 
 
 func _visible_bounds(actor: Node3D) -> Vector2:
