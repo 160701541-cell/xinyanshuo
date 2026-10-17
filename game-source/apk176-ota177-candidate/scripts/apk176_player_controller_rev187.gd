@@ -30,7 +30,7 @@ var _flight_m: float = 0.0
 var _view_pitch_reversed: bool = false
 var _touch_look_inverted: bool=false
 var _touch_setting: Button
-var _quickbar_folded: bool=false
+var _quickbar_folded: bool=true
 var _quickbar_toggle: Button
 var _locked_target: Node3D
 var _locked_target_id: String=""
@@ -542,7 +542,7 @@ func _create_hud() -> void:
   (buttons["DigButton"] as Button).icon=_open_icon("pickaxe")
   _target_lock_button=_new_button("TargetLockButton","索敌",92,Callable(self,"toggle_target_lock"))
   _target_lock_button.icon=_open_icon("crosshair")
-  _quickbar_toggle=_new_button("QuickBarFoldButton","收起",72,Callable(self,"toggle_quickbar"))
+  _quickbar_toggle=_new_button("QuickBarFoldButton","展开",72,Callable(self,"toggle_quickbar"))
   _quickbar_toggle.icon=_open_icon("menu")
   _locked_target_label=Label.new()
   _locked_target_label.name="ActualSelectedTargetNameHealthRealmPreview"
@@ -2081,14 +2081,26 @@ func _layout_hud() -> void:
     var tab: Button=hud.get_node("GameMenu_"+menu_names[idx]) as Button
     tab.position=Vector2(menu_x+float(idx)*104.0,16)
     tab.size=Vector2(96,44)
-  var action_keys:=["GatherAction","DashAction","DigAction","InteractAction",
+  # Contextual skill dock: 7 world actions in normal play, 6 combat arts
+  # only while an authentic opponent exists. Never draw 12 keys over scenery.
+  var all_keys: Array[String]=["GatherAction","DashAction","DigAction","InteractAction",
     "ViewAction","LockedArt","GuardAction","EvadeAction",
     "SwordAttack","SpiritBolt","SpiritWard","PlantSapling"]
+  var combat_open: bool=_spar_stage!="inactive"
+  var action_keys: Array[String]=(
+    ["GuardAction","EvadeAction","SwordAttack","SpiritBolt","SpiritWard","LockedArt"]
+    if combat_open else
+    ["GatherAction","DashAction","DigAction","InteractAction",
+    "ViewAction","LockedArt","PlantSapling"])
+  for key in all_keys:
+    (_game_actions[key] as Button).visible=action_keys.has(key)
   for idx in range(action_keys.size()):
     var col: int=idx%4
     var row: int=int(idx/4)
-    (_game_actions[action_keys[idx]] as Button).position=Vector2(
-      size.x-392.0+float(col)*94.0,size.y-207.0+float(row)*66.0)
+    var bar: Button=_game_actions[action_keys[idx]]
+    bar.position=Vector2(size.x-392.0+float(col)*94.0,
+      size.y-130.0+float(row)*62.0)
+    bar.size=Vector2(89,54)
   if _locked_target_label!=null:
     _locked_target_label.position=Vector2(maxf(365.0,size.x*0.5-160.0),188.0)
   if _target_panel!=null:
@@ -2100,15 +2112,24 @@ func _layout_hud() -> void:
     _pad_hint.position=Vector2(16,139)
   if _root_exam_button!=null:
     var width: float=size.x
-    _root_exam_button.position=Vector2(width-392.0,size.y-271.0)
-    _meditate_button.position=Vector2(width-280.0,size.y-271.0)
-    _breakthrough_button.position=Vector2(width-168.0,size.y-271.0)
+    var altar_near: bool=room.get("cultivation")!=null and bool(
+      room.get("cultivation").call("at_altar"))
+    var in_cultivation: bool=_game_sheet!=null and _game_sheet.visible and (
+      _game_sheet_mode=="cultivation")
+    _root_exam_button.visible=altar_near or in_cultivation
+    _meditate_button.visible=in_cultivation
+    _breakthrough_button.visible=in_cultivation
+    _root_exam_button.position=Vector2(width-392.0,size.y-243.0)
+    _meditate_button.position=Vector2(width-280.0,size.y-243.0)
+    _breakthrough_button.position=Vector2(width-168.0,size.y-243.0)
   if _living_seed_label!=null:
+    _living_seed_label.visible=dev
     _living_seed_label.position=Vector2(19,263)
   if _living_clock_label!=null:
     _living_clock_label.position=Vector2(19,172)
     _living_speed_button.position=Vector2(19,209)
     _local_ai_status_label.position=Vector2(127,217)
+    _local_ai_status_label.visible=dev
     _flight_altitude_label.position=Vector2(
       clampf(size.x*0.45,480.0,size.x-445.0),145)
 
