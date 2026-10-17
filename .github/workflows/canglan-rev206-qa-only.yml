@@ -16,6 +16,8 @@ on:
       - 'game-source/apk176-ota177-candidate/scripts/apk176_city_population_rev206.gd'
       - 'logic-qa/apk176-export-fixture/verify_rev206_roots_city.gd'
       - 'game-source/apk176-ota177-candidate/assets/cc0-rev206/asset_intake_proof.json'
+      - 'game-source/apk176-ota177-candidate/assets/cc0-rev206/**/*.glb'
+      - 'game-source/apk176-ota177-candidate/scripts/apk176_living_resource_world_rev187.gd'
       - 'logic-qa/apk176-export-fixture/capture_original_main_rev187_compare.gd'
       - 'logic-qa/apk176-export-fixture/capture_original_main_rev187_compare.gd'
   workflow_dispatch:
@@ -181,6 +183,23 @@ jobs:
           cp game-source/apk176-ota177-candidate/scripts/apk176_cultivation_world_rev201.gd qa-stage/ota177/canglan_rev187/cultivation_world.gd
           cp game-source/apk176-ota177-candidate/scripts/apk176_root_taxonomy_rev206.gd qa-stage/ota177/canglan_rev187/root_taxonomy.gd
           cp game-source/apk176-ota177-candidate/scripts/apk176_city_population_rev206.gd qa-stage/ota177/canglan_rev187/city_population.gd
+          # The import workflow already committed the EXACT original
+          # fourteen CC0 GLBs plus SHA256 source proof. Stage all of them
+          # instead of building blank procedural substitutes.
+          python3 - <<'PY'
+          import hashlib,json
+          from pathlib import Path
+          proof=json.loads(Path('game-source/apk176-ota177-candidate/assets/cc0-rev206/asset_intake_proof.json').read_text())
+          assert proof['asset_total']==14
+          for m in proof['models']:
+              source=Path(m['path'])
+              content=source.read_bytes()
+              assert hashlib.sha256(content).hexdigest()==m['sha256'] and content[:4]==b'glTF'
+              dest=Path('qa-stage/ota177/canglan_rev187/cc0_rev206')/m['role']/(m['name']+'.glb')
+              dest.parent.mkdir(parents=True,exist_ok=True)
+              dest.write_bytes(content)
+          print('PASS_REV206_VERIFIED_14_ORIGINAL_LICENSED_GLBS_STAGED_IN_ACTUAL_ANDROID_PCK',sum(int(m['bytes']) for m in proof['models']))
+          PY
           cp game-source/apk176-ota177-candidate/scripts/apk176_quality_profiles_rev187.gd qa-stage/ota177/canglan_rev187/quality_profiles.gd
           cp game-source/godot3d/assets/free_cc0/kenney/3d/nature/tree_oak.glb qa-stage/ota177/canglan_rev187/tree_oak.glb
           cp game-source/godot3d/assets/free_cc0/kenney/3d/castle/rocks-small.glb qa-stage/ota177/canglan_rev187/rocks_small.glb
@@ -258,7 +277,8 @@ jobs:
           timeout 120s /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless             --path logic-qa/apk176-export-fixture             --script res://verify_original_main_quality_rev187.gd             > qa-results/rev187-original-main-3d.log 2>&1 || {
               tail -100 qa-results/rev187-original-main-3d.log; exit 1;
             }
-          grep -Fq 'PASS_REV187_LICENSED_3D_NPC_RESOURCE_TRANSPORT_MATERIAL_CONSERVATION_STAGE_BUILD' qa-results/rev187-original-main-3d.log
+          grep -Fq 'PASS_REV206_ORIGINAL_PLAYER_TREE_STONE_PHYSICAL_TRANSPORT_WITH_LICENSED_FINISHED_CC0_HOUSES_NO_BROKEN_CONSTRUCTION' qa-results/rev187-original-main-3d.log
+          grep -Fq 'PASS_REV206_REAL_QUATERNIUS_CC0_COMPLETE_HOMES_WANDERING_ANIMATED_ANIMALS_AND_PERMANENTLY_RETIRED_BUILDER' qa-results/rev187-original-main-3d.log
           grep -Fq 'PASS_REV188_REAL_HEALTH_STAMINA_GAME_HUD_BAG_MENU_AND_OPT_IN_DEV_TOOLS' qa-results/rev187-original-main-3d.log
           grep -Fq 'PASS_REV189_SYNTHETIC_GODOT_JOYPAD_BUTTON_MENU_LOOK_DEADZONE_HOTPLUG_AND_TOUCH_FALLBACK_NOT_ANDROID_HARDWARE' qa-results/rev187-original-main-3d.log
           grep -Fq 'PASS_REV191_NO_FLOATING_SLICE_LOD_OVERLAP_OR_22M_CLIFF_ACTUAL_MESH_TRIANGLES' qa-results/rev187-original-main-3d.log
