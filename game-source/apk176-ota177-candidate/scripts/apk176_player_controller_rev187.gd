@@ -1186,9 +1186,9 @@ func _spawn_real_combat_hit(point: Vector3,tint: Color,power: int=1) -> void:
   puff.draw_pass_1=quad
   world.add_child(puff)
   puff.emitting=true
-  get_tree().create_timer(0.8).timeout.connect(func():
-    if is_instance_valid(puff):
-      puff.queue_free())
+  # Object-bound Callable auto-disconnects if the world is closed before
+  # the timer; never retain a freed GPU object in a lambda capture.
+  get_tree().create_timer(0.8).timeout.connect(puff.queue_free)
 
 func _spar_damage_opponent(amount: int,spell_hit: bool=false) -> bool:
   if _spar_stage=="inactive" or _spar_stage=="victory" or (
@@ -1258,9 +1258,7 @@ func sword_attack() -> bool:
   slash.position=actor.position+_forward()*1.15+Vector3.UP*1.05
   slash.rotation=Vector3(PI*0.55,actor.rotation.y,0)
   world.add_child(slash)
-  get_tree().create_timer(0.28).timeout.connect(func():
-    if is_instance_valid(slash):
-      slash.queue_free())
+  get_tree().create_timer(0.28).timeout.connect(slash.queue_free)
   _spar_damage_opponent(10)
   _refresh_game_hud()
   return true
