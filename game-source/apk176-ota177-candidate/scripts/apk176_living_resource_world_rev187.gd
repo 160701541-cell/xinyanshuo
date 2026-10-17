@@ -2093,6 +2093,15 @@ func _exit_tree() -> void:
     if is_instance_valid(source):
       source.free()
   asset_sources.clear()
+  # REV208 genuine tall PBR oak/maple/linden are three MORE independently
+  # allocated 4-mesh GLTFDocument templates. None is attached to the world.
+  # The precise 12 leaked DummyMesh+DummyMaterial RIDs in run 39069780173
+  # reveal they must be freed during ORIGINAL Main exit, not filtered in CI.
+  for source in hq_mature_tree_sources.values():
+    if source is Node3D and is_instance_valid(source):
+      (source as Node3D).free()
+  hq_mature_tree_sources.clear()
+  hq_mature_tree_visuals.clear()
   # rev199: two more GLTFDocument-generated meshes were created as
   # freestanding source templates (hair+sword), not children of world.
   # Without explicit release Godot aborts at exit with 2 DummyMesh
