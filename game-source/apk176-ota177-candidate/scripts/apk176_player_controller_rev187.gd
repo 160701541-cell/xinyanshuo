@@ -52,6 +52,7 @@ var _soar_landing: bool=false
 var _air_velocity: Vector3=Vector3.ZERO
 var _air_display_speed: float=0.0
 var _fly_last_anim: String=""
+var _flight_sword: Node3D
 var _flight_rune: MeshInstance3D
 var _flight_shadow: MeshInstance3D
 var _flight_altitude_beam: MeshInstance3D
@@ -165,6 +166,13 @@ func initialize(active_room: Node) -> void:
 # hand-built character/weapon/structure. This is an honest mortal test-flight
 # "御风" preview until actual spirit root, relic ownership and sword GLB exist.
 func _create_flight_environment_vfx() -> void:
+  var authentic: Node3D=room.get("licensed_flying_sword_source")
+  if authentic!=null:
+    _flight_sword=authentic.duplicate() as Node3D
+    _flight_sword.name="ActualQuaterniusKnightCC0FlyingSwordUnderPlayerFeet"
+    _flight_sword.visible=false
+    _flight_sword.scale=Vector3.ONE*0.63
+    world.add_child(_flight_sword)
   var jade:=StandardMaterial3D.new()
   jade.shading_mode=BaseMaterial3D.SHADING_MODE_UNSHADED
   jade.transparency=BaseMaterial3D.TRANSPARENCY_ALPHA
@@ -257,7 +265,7 @@ func _create_flight_environment_vfx() -> void:
 
 func _sync_flight_world_cues(delta: float) -> void:
   var soaring: bool=camera_mode=="soar"
-  for node in [_flight_rune,_flight_shadow,_flight_altitude_beam]:
+  for node in [_flight_sword,_flight_rune,_flight_shadow,_flight_altitude_beam]:
     if node!=null:
       node.visible=soaring
   if _flight_wind_particles!=null:
@@ -266,6 +274,13 @@ func _sync_flight_world_cues(delta: float) -> void:
     return
   var ground_y: float=_ground_surface_y(actor.position.x,actor.position.z)
   var foot_y: float=actor.position.y+0.13
+  if _flight_sword!=null:
+    # Authentic sword originally points along local +Y. Rest it flat with
+    # the tip projecting in front of the REAL feet, not glued to camera.
+    _flight_sword.rotation=Vector3(PI/2.0,actor.rotation.y,0.0)
+    var blade_dir: Vector3=Vector3(sin(actor.rotation.y),0,cos(actor.rotation.y))
+    _flight_sword.position=Vector3(actor.position.x,foot_y-0.20,
+      actor.position.z)-blade_dir*0.96
   _flight_rune.position=Vector3(actor.position.x,foot_y,actor.position.z)
   _flight_rune.rotation.y+=delta*1.5
   _flight_shadow.position=Vector3(actor.position.x,ground_y+0.095,actor.position.z)
@@ -313,6 +328,7 @@ func _spawn_player() -> void:
   actor.position = Vector3(1.5,0,7.0)
   world.add_child(actor)
   room.call("_normalize_worker_height",actor)
+  room.call("_attach_real_cc0_long_hair",actor,0)
   actor.position.y = float(terrain.call("height_at",actor.position.x,actor.position.z)) + float(actor.get_meta("actor_ground_offset_y",0.0))
   actor.set_meta("entity_id",PLAYER_ID)
   actor.set_meta("controllable",true)
@@ -657,7 +673,7 @@ func _refresh_game_hud() -> void:
     if camera_mode=="soar":
       var ground_m: float=_ground_surface_y(actor.position.x,actor.position.z)
       _flight_altitude_label.visible=true
-      _flight_altitude_label.text="御风测试 · 高度 %.1f m  ▴ %.1f m/s\n地面 %.1f m   速度 %.1f m/s" % [
+      _flight_altitude_label.text="御剑外观测试 · 离地 %.1f m  ▴ %.1f m/s\n地面 %.1f m  航速 %.1f m/s" % [
         _soar_altitude,(_soar_target_altitude-_soar_altitude)*3.2,
         ground_m,_air_display_speed]
     else:
@@ -1682,7 +1698,7 @@ func _set_mode(mode: String) -> void:
     _air_velocity=Vector3.ZERO
     _pitch=0.70
     _distance=11.0
-    say("御风试飞（非御剑）：有地面投影和真实高度｜升高、降低、降落")
+    say("御剑外观试飞：真CC0飞剑和高度参照，功法法力未解锁")
   elif mode=="iso":
     _yaw=PI/4.0
     _pitch=PI/4.0
@@ -2018,13 +2034,11 @@ func _set_movement_animation(moving: bool) -> void:
     return
   var clip: String=walking if moving else idle
   if camera_mode=="soar":
-    # The existing CC0 knight GLB (confirmed Godot-4 import) actually owns
-    # Idle_swordRight / Run_swordRight / Jump bone animations. No frozen
-    # default T-pose or counterfeit hand-drawn humanoid is substituted.
-    clip=_knight_clip("|Run_swordRight") if moving else _knight_clip("|Idle_swordRight")
+    # Real prebound aerial Jump/swordAttackJump clip, no road-running in air.
+    clip=_knight_clip("|swordAttackJump") if moving else _knight_clip("|Jump")
     if clip.is_empty():
-      clip=_knight_clip("|Jump")
-    animator.speed_scale=0.80
+      clip=_knight_clip("|Idle_swordRight")
+    animator.speed_scale=0.75
   elif _jump_height>0.05:
     clip=_knight_clip("|Jump")
     animator.speed_scale=1.0
@@ -2233,6 +2247,7 @@ func stats() -> Dictionary:
     "avatar_soar_landing":_soar_landing,
     "actual_wind_particles_emitting":_flight_wind_particles!=null and _flight_wind_particles.emitting,
     "flight_altitude_world_reference":_flight_altitude_beam!=null,
+    "actual_licensed_3d_flying_sword_visible":_flight_sword!=null and _flight_sword.visible,
     "flight_ground_shadow_real_height":_flight_shadow!=null,
     "actual_knight_bone_animation":animator.current_animation if animator!=null else "",
     "avatar_soar_distance_m":_soar_distance_m,
