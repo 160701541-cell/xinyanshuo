@@ -599,6 +599,18 @@ func _place_completed_cc0_village() -> void:
       18 if kind=="inn" else 0))
     instance.set_meta("assigned_resident_ids",[])
     world.add_child(instance)
+    # Vendor GLB geometry varies in scale and origin. Normalize actual world
+    # mesh height, align base to the physical 3D terrain after scaling.
+    var bounds: Vector2=_visible_bounds(instance)
+    var source_height: float=bounds.y-bounds.x
+    var intended_m: float=8.0 if kind=="inn" else (
+      4.0 if kind=="gazebo" else 5.0)
+    if source_height>0.10 and is_finite(source_height):
+      instance.scale*=clampf(intended_m/source_height,0.08,6.0)
+      var real_bbox: Vector2=_visible_bounds(instance)
+      instance.position.y+=float(terrain_world.call(
+        "height_at",at.x,at.z))-real_bbox.x
+    instance.set_meta("source_ready_meters",intended_m)
     finished_prefabs[instance.name]=instance
   _add_event("村落使用%d座完整CC0房屋和亭阁；旧脚手架施工停止" % [
     finished_prefabs.size()])
@@ -625,6 +637,17 @@ func _spawn_native_animals() -> void:
     critter.set_meta("species",kind)
     critter.set_meta("wildlife_entity_id",String(element[2]))
     world.add_child(critter)
+    var bounds: Vector2=_visible_bounds(critter)
+    var measured: float=bounds.y-bounds.x
+    var target_height: float={
+      "wolf":1.2,"fox":0.72,"deer":1.8,"cow":1.65}.get(kind,1.4)
+    if measured>0.10 and is_finite(measured):
+      critter.scale*=clampf(target_height/measured,0.04,8.0)
+      var new_bounds: Vector2=_visible_bounds(critter)
+      critter.position.y+=float(terrain_world.call("height_at",
+        at.x,at.z))-new_bounds.x
+    critter.set_meta("feet_ground_offset",
+      critter.position.y-float(terrain_world.call("height_at",at.x,at.z)))
     var clips: Array[Node]=critter.find_children("*","AnimationPlayer",true,false)
     var animator: AnimationPlayer=clips[0] as AnimationPlayer if not clips.is_empty() else null
     var idle_clip: String=""
@@ -680,7 +703,8 @@ func _step_native_animals(delta: float) -> void:
     else:
       record["activity"]="休息"
     actor.position.y=float(terrain_world.call("height_at",
-      actor.position.x,actor.position.z))
+      actor.position.x,actor.position.z))+float(
+        actor.get_meta("feet_ground_offset",0.0))
     var animator: AnimationPlayer=record["animator"]
     if animator!=null:
       var selected: String=String(record["walk"]) if moving else String(record["idle"])
