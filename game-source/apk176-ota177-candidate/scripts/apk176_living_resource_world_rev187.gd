@@ -2270,6 +2270,17 @@ func _exit_tree() -> void:
       (source as Node3D).free()
   hq_mature_tree_sources.clear()
   hq_mature_tree_visuals.clear()
+  # Exact Godot4.4.1 original-Main run 39078316397 detected 442 leaked
+  # source GLTF meshes (18+143+94+4+25+50+78+30). The eight vendor
+  # source templates are unparented, whereas their forest instances are
+  # parented to world; release templates explicitly before RenderServer.
+  for botanical in hq_botanical_sources.values():
+    if botanical is Node3D and is_instance_valid(botanical):
+      (botanical as Node3D).free()
+  hq_botanical_sources.clear()
+  hq_botanical_visuals.clear()
+  hq_botanical_terrain_sites.clear()
+  hq_botanical_colliders.clear()
   # rev199: two more GLTFDocument-generated meshes were created as
   # freestanding source templates (hair+sword), not children of world.
   # Without explicit release Godot aborts at exit with 2 DummyMesh
