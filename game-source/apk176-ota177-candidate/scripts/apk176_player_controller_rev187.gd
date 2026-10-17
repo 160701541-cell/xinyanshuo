@@ -808,6 +808,7 @@ func _build_game_hud() -> void:
   _house_build_button=Button.new()
   _house_build_button.name="RealHanDwellingRequiresTwoHundredLogsOneHundredFiftyStone"
   _house_build_button.text="建造汉式家宅  木200 / 石150｜可住5人"
+  _house_build_button.visible=false
   _house_build_button.custom_minimum_size=Vector2(430,51)
   _house_build_button.pressed.connect(func():
     var answer: Dictionary=room.call("try_build_true_home")
