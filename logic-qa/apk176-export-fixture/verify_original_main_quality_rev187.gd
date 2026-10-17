@@ -383,17 +383,68 @@ func _run() -> void:
   if not terrain.call("stats").get("no_infinite_gray_void",false):
     _fail(111,"LOCAL_WORLD_EDGE_IS_STILL_A_FLOATING_THIN_CARD")
     return
-  if terrain.get_node_or_null("FarGroundAndMountainFoothills_AllCameraDirections_600m")==null or terrain.get_node_or_null("RealEarthCrustBorderSkirtNotFloatingThinSheet")==null:
-    _fail(112,"MISSING_ACTUAL_BACKGROUND_GROUND_MOUNTAINS_AND_CRUST")
+  var stitched_far: Node3D=terrain.get_node_or_null("FarGroundAndMountainFoothills_AllCameraDirections_600m") as Node3D
+  if stitched_far==null or terrain.get_node_or_null("RealEarthCrustBorderSkirtNotFloatingThinSheet")!=null:
+    _fail(112,"REV191_DISALLOW_VISIBLE_VERTICAL_MAP_EDGE_AND_OLD_22M_CRUST_SKIRT")
     return
+  if stitched_far.get_meta("far_terrain_overlaps_local_square",true) or int(stitched_far.get_meta("far_stitched_seam_quads",0))<32:
+    _fail(167,"REV191_FAR_TERRAIN_LOD_MUST_BE_GEOMETRICALLY_CLIPPED_TO_CENTER_BOUNDARY")
+    return
+  if not terrain.call("stats").get("far_seam_stitched",false) or terrain.call("stats").get("infinite_streaming_complete",true):
+    _fail(168,"REV191_NO_FALSE_CLAIMS_ABOUT_MINECRAFT_LIKE_STREAMING")
+    return
+  # Enumerate the genuine far-field triangles. Every exterior polygon stays
+  # outside the central diggable square, and every +/-46m border vertex has
+  # the EXACT elevation of the central unexcavated mesh it touches.
+  var seam_samples: int=0
+  var edge_error: float=0.0
+  var overlaps: int=0
+  for far_part in stitched_far.get_children():
+    if not far_part is MeshInstance3D:
+      continue
+    var mesh: Mesh=far_part.mesh
+    if mesh==null:
+      continue
+    for surface in range(mesh.get_surface_count()):
+      var vertices: PackedVector3Array=mesh.surface_get_arrays(surface)[Mesh.ARRAY_VERTEX]
+      for idx in range(0,vertices.size(),3):
+        if idx+2>=vertices.size():
+          break
+        var a3: Vector3=vertices[idx]
+        var b3: Vector3=vertices[idx+1]
+        var c3: Vector3=vertices[idx+2]
+        var mid: Vector3=(a3+b3+c3)/3.0
+        if absf(mid.x)<45.9999 and absf(mid.z)<45.9999:
+          overlaps+=1
+        for vertex in [a3,b3,c3]:
+          if (absf(absf(vertex.x)-46.0)<0.001 and absf(vertex.z)<=46.001) or (
+              absf(absf(vertex.z)-46.0)<0.001 and absf(vertex.x)<=46.001):
+            seam_samples+=1
+            edge_error=maxf(edge_error,absf(vertex.y-float(terrain.call("_base_at",vertex.x,vertex.z))))
+  if overlaps>0 or seam_samples<75 or edge_error>0.002:
+    _fail(169,"REV191_VISIBLE_MAP_SEAM_OR_RENDER_OVERLAP_"+str(overlaps)+"_"+
+      str(seam_samples)+"_"+str(edge_error))
+    return
+  print("PASS_REV191_NO_FLOATING_SLICE_LOD_OVERLAP_OR_22M_CLIFF_ACTUAL_MESH_TRIANGLES",seam_samples)
   var grass_visual: MultiMeshInstance3D=world.get_node("FineFiveLeafGrassTuftsTerrainConforming")
   var actual_grass: Mesh=grass_visual.multimesh.mesh
   if actual_grass.get_surface_count()<1:
     _fail(113,"NO_REAL_MULTIBLADE_GRASS_GEOMETRY")
     return
   var grass_verts: PackedVector3Array=actual_grass.surface_get_arrays(0)[Mesh.ARRAY_VERTEX]
-  if grass_verts.size()<15:
-    _fail(114,"FIVE_THIN_GRASS_LEAVES_NEEDED_NOT_RECTANGLE")
+  if grass_verts.size()<75:
+    _fail(114,"REV191_MORE_THAN_5_SPARSE_THIN_GRASS_STUBBLE_BLADES_REQUIRED")
+    return
+  var grass_extent: float=0.0
+  for blade in grass_verts:
+    grass_extent=maxf(grass_extent,Vector2(blade.x,blade.z).length())
+  if grass_extent<0.24:
+    _fail(170,"REV191_GRASS_MUST_HAVE_BROAD_NATURAL_TUFT_PROFILE_NOT_TOOTHPICK_STUBBLE")
+    return
+  var grass_quality: RefCounted=room.get("quality")
+  var meadow_points: Array=grass_quality.get("grass_points") if grass_quality!=null else []
+  if meadow_points.size()!=4500:
+    _fail(171,"REV191_NATIVE_GRASS_BATCH_MUST_STILL_COVER_LOCAL_MEADOW")
     return
   var max_grass_height: float=0
   for vertex in grass_verts:
