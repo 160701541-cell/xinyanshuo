@@ -317,6 +317,19 @@ jobs:
               exit 1
             fi
           done
+          # Rendering QA must parse BEFORE costly 145s LavaPipe Vulkan capture.
+          # Rev208 caught an out-of-scope fighter variable after 2 minutes;
+          # this prevents repeating that avoidable non-graphical failure.
+          timeout 20s /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless \
+            --path logic-qa/apk176-export-fixture --check-only \
+            --script res://capture_original_main_rev187_compare.gd \
+            > qa-results/rev208-screenshot-parse.log 2>&1 || {
+              cat qa-results/rev208-screenshot-parse.log; exit 1;
+            }
+          if grep -Eq 'SCRIPT ERROR:|Parse Error:|Parser Error:|ERROR:' qa-results/rev208-screenshot-parse.log; then
+            cat qa-results/rev208-screenshot-parse.log; exit 1
+          fi
+          echo PASS_REV208_SCREENSHOT_SCRIPT_COMPILED_BEFORE_MOBILE_VULKAN_ART_QA
           echo PASS_REV187_ALL_ACTUAL_GODOT_SCRIPTS_PARSE_COMPILATION
       - name: Godot 4.4.1 13 real finite herbal/stone nodes, 108h actual regrowth, saved medicine consumed
         shell: bash
@@ -452,6 +465,15 @@ jobs:
           grep -Fq 'PASS_REV205_GENUINE_GODOT_1280X720_LUCIDE_UI_TARGET_LOCK_AND_FINITE_BACKPACK_FRAMES' qa-results/rev187-real-worksite/render.log
           grep -Fq 'PASS_REV207_ORIGINAL_APK176_GODOT_REAL_COLOR_512PBR_64TEXELS_IMAGES' qa-results/rev187-real-worksite/render.log
           grep -Fq 'PASS_REV206_GODOT_REAL_3D_WILD_MEDICINAL_HERB_AND_LUMINOUS_ORE_VIEW' qa-results/rev187-real-worksite/render.log
+          grep -Fq 'PASS_REV208_THREE_TRUE_8_9M_PBR_TREE_GODOT441_ORIGINAL_MAIN_RENDERED_SCREENSHOTS' qa-results/rev187-real-worksite/render.log
+          grep -Fq 'REV208_TRUE_GODOT_COMPARISON_CAMERA_TIME_OVERRIDE_12H_RESTORE_' qa-results/rev187-real-worksite/render.log
+          grep -Fq 'PASS_REV208_REAL_GODOT_CAMERA_CORPSE_FRAME_TRUE_MORTALITY_POPULATION_MINUS_ONE' qa-results/rev187-real-worksite/render.log
+          for f in real_godot_rev208_mature_oak_8m_vs_avatar.png \
+              real_godot_rev208_mature_maple_9m_vs_avatar.png \
+              real_godot_rev208_mature_linden_8m_vs_avatar.png \
+              real_godot_rev208_npc_death_state.png; do
+            test -s "qa-results/rev187-real-worksite/$f"
+          done
           test -s qa-results/rev187-real-worksite/real_apk176_rev206_spirit_herbs_original_quaternius.png
           test -s qa-results/rev187-real-worksite/real_apk176_rev206_luminous_spirit_ore_true_3d.png
           test -s qa-results/rev187-real-worksite/real_apk176_rev207_vivid_cc0_texture_forest_wide.png
