@@ -5,6 +5,11 @@ extends RefCounted
 ## Minable finite 3D ore and living herbs regenerate from WORLD TIME alone.
 const SAVE_PATH: String="user://canglan_spirit_resources_rev206.json"
 const SCHEMA: int=206
+# Additive saved-world extension; the original 13 licensed nodes remain
+# byte-identical and their existing inventories/conservation are preserved.
+const MAX_LOCAL_HERB_NODES: int=64
+const WILD_HERB_SPREAD_HOURS: int=720
+const WILD_HERB_PREFIX: String="CL-WILD-LINGCAO-R207-"
 const RESOURCE_DEFS: Dictionary={
   "herb_wood":{"display":"青木灵草","prefab":"flower","max":4,
     "renew_hours":18,"color":"#32b95b","mana_required":0},
@@ -62,9 +67,28 @@ func initialize() -> bool:
       _last_error="SPIRIT_RESOURCES_INVALID_SAVE_PRESERVE_FILE"
       return false
     var saved: Dictionary=raw.get("nodes",{})
-    if not (saved is Dictionary) or saved.size()!=nodes.size():
+    if not saved is Dictionary or saved.size()<nodes.size() or (
+        saved.size()>MAX_LOCAL_HERB_NODES+4):
       _last_error="SPIRIT_RESOURCES_IDENTITY_SET_MISMATCH"
       return false
+    # Preserve naturally self-seeded plants across boots. Existing rev206
+    # installed saves have ONLY the 13 original rows and migrate unchanged.
+    for extra_id in saved:
+      if nodes.has(extra_id):
+        continue
+      var extra: Variant=saved[extra_id]
+      if not String(extra_id).begins_with(WILD_HERB_PREFIX) or (
+          not extra is Dictionary) or not RESOURCE_DEFS.has(
+          String(extra.get("kind",""))) or String(extra["kind"])=="spirit_stone" or (
+          absf(float(extra.get("x",999.0)))>44.0) or (
+          absf(float(extra.get("z",999.0)))>44.0) or (
+          int(extra.get("max",0))!=2):
+        _last_error="SPIRIT_RESOURCES_INVALID_NATIVE_SPREAD_NODE"
+        return false
+      nodes[extra_id]={
+        "id":String(extra_id),"kind":String(extra["kind"]),
+        "remaining":0,"hours_since_growth":0,
+        "x":float(extra["x"]),"z":float(extra["z"]),"max":2}
     var total: int=0
     for id in nodes:
       if not saved.has(id) or not saved[id] is Dictionary:
@@ -176,10 +200,57 @@ func advance_world_hour() -> void:
       row["hours_since_growth"]=0
       grown_this_hour+=1
   grown_total+=grown_this_hour
+  if world_hours%WILD_HERB_SPREAD_HOURS==0:
+    _spread_living_herbs()
   # Explicitly record every eventful regrowth and day boundary, not every
   # rendered frame; nodes continue counting while player is elsewhere.
   if grown_this_hour>0 or world_hours%24==0:
     _save()
+
+# Deterministic wind/pollinator spread: an actual new GLB herb appears
+# only after 30 world days, in untouched soil away from reserved housing,
+# central roads, current nodes and the village worksite. No free loot or
+# one-click resurrection. Source plant persists when its leaves are picked.
+func _spread_living_herbs() -> void:
+  if nodes.size()>=MAX_LOCAL_HERB_NODES:
+    return
+  var kinds: Array[String]=["herb_wood","herb_water","herb_fire","mushroom"]
+  var cycle: int=world_hours/WILD_HERB_SPREAD_HOURS
+  var chosen_kind: String=kinds[cycle%kinds.size()]
+  for attempt in range(48):
+    var rank: int=cycle*61+attempt*29
+    var x: float=-42.0+float(posmod(rank*23+101,840))/10.0
+    var z: float=-42.0+float(posmod(rank*17+479,840))/10.0
+    # Roads and a 7m construction buffer around each real house blueprint.
+    if absf(x)<9.0 or absf(x)>44.0 or absf(z)>44.0:
+      continue
+    var on_building: bool=false
+    for site in [
+        Vector2(-7.0,-18.0),Vector2(4.8,-24.0),
+        Vector2(-5.0,25.0),Vector2(4.0,31.0),
+        Vector2(-6.0,-31.0),Vector2(-2.0,37.0)]:
+      if Vector2(x,z).distance_to(site)<8.0:
+        on_building=true
+        break
+    if on_building:
+      continue
+    var too_close: bool=false
+    for existing in nodes.values():
+      if Vector2(x-float(existing["x"]),z-float(existing["z"])).length()<3.2:
+        too_close=true
+        break
+    if too_close:
+      continue
+    var id: String=WILD_HERB_PREFIX+("%04d" % cycle)
+    if nodes.has(id):
+      return
+    nodes[id]={"id":id,"kind":chosen_kind,
+      "remaining":1,"hours_since_growth":0,
+      "x":x,"z":z,"max":2}
+    # One living newborn plant creates one biological unit by actual growth
+    # over 720h, not by a player tapping an empty inventory button.
+    grown_total+=1
+    return
 
 func conservation_ok() -> bool:
   if not _loaded:
