@@ -906,9 +906,13 @@ func _on_understory_terrain_changed(at: Vector3,radius: float) -> void:
     for draw_idx in range(licensed_understory_draws.size()):
       var batch: MultiMesh=licensed_understory_draws[draw_idx].multimesh
       # Source transform stored independently per immutable vendor mesh part.
+      # An exactly-singular zero Basis can roundtrip as IDENTITY in the
+      # Godot4.4 MultiMesh buffer, rendering a full bush at world origin.
+      # Use a tiny but invertible source-agnostic 0.1-mm mesh below grade.
+      var hidden: Transform3D=Transform3D(Basis.IDENTITY.scaled(
+        Vector3.ONE*0.0001),Vector3(0.0,-6.0,0.0))
       batch.set_instance_transform(idx,original*licensed_understory_source_offsets[
-        draw_idx] if valid else Transform3D(
-          Basis.IDENTITY.scaled(Vector3.ZERO),Vector3.ZERO))
+        draw_idx] if valid else hidden)
 
 func _living_shrub_count() -> int:
   if licensed_understory_draws.is_empty():
