@@ -965,48 +965,54 @@ func _run() -> void:
   if alive_after_mining<24 or alive_after_mining>shrub_count:
     _fail(376,"REV207_PHYSICAL_EXCAVATION_CAUSED_ALL_REAL_BUSHES_TO_DISAPPEAR")
     return
+  # OpenGL/Vulkan MultiMesh rejects singular "hide" transforms by
+  # roundtripping them as full-size IDENTITY meshes at world origin.
+  # Assert the actual GPU-facing visible count, not a fake zero matrix.
+  var real_slot_mapping: Array=room.get("licensed_understory_render_indices")
+  var unplantable: Dictionary=room.get("licensed_understory_unplantable")
+  if real_slot_mapping.size()!=alive_after_mining or (
+      unplantable.size()+alive_after_mining!=shrub_count):
+    _fail(379,"REV207_DUG_SOIL_VISIBILITY_COUNT_OR_INDICES_NOT_CONSERVED")
+    return
+  var seen_source_ids: Dictionary={}
+  for logical_index in real_slot_mapping:
+    var biological_id: int=int(logical_index)
+    if seen_source_ids.has(biological_id) or biological_id<0 or (
+        biological_id>=shrub_count) or unplantable.has(biological_id):
+      _fail(380,"REV207_SHRUB_VISIBLE_INSTANCES_DUPLICATE_OR_NO_LONGER_PLANTABLE")
+      return
+    seen_source_ids[biological_id]=true
   for mesh_index in range(shrubs.size()):
     var shrub_batch: MultiMeshInstance3D=shrubs[mesh_index] as MultiMeshInstance3D
     if shrub_batch.multimesh==null or shrub_batch.multimesh.mesh==null or (
-        shrub_batch.multimesh.instance_count!=shrub_count):
-      _fail(371,"REV207_CC0_SHRUB_SOURCE_OR_BATCH_TRANSFORMS_MISSING")
+        shrub_batch.multimesh.instance_count!=shrub_count) or (
+        shrub_batch.multimesh.visible_instance_count!=alive_after_mining):
+      _fail(371,"REV207_CC0_SHRUB_REAL_RENDER_VISIBLE_INSTANCE_COUNT_MISMATCH")
       return
-    var active_in_part: int=0
-    for instance_index in range(shrub_count):
-      var tx: Transform3D=shrub_batch.multimesh.get_instance_transform(instance_index)
-      var planted: Transform3D=biologic_sites[instance_index]
+    for active_slot in range(alive_after_mining):
+      var biological_id: int=int(real_slot_mapping[active_slot])
+      var tx: Transform3D=shrub_batch.multimesh.get_instance_transform(active_slot)
+      var planted: Transform3D=biologic_sites[biological_id]
       var valid_ground: bool=bool(room.get("quality").call(
         "_natural_plantable",planted.origin.x,planted.origin.z))
-      var grown: bool=absf(tx.basis.determinant())>0.0000001
-      if grown:
-        active_in_part+=1
-        # Real GLB authored pivots are NOT necessarily at biological soil
-        # centre. Compare the exact mesh-authoring transform composition.
-        var expected_tx: Transform3D=planted*part_offsets[mesh_index]
-        if not tx.is_equal_approx(expected_tx):
-          _fail(372,"REV207_SOURCE_GLTF_LOCAL_AUTHORING_TRANSFORM_NOT_PRESERVED_"+
-            str({"mesh":mesh_index,"slot":instance_index,
-              "actual":tx,"expected":expected_tx,
-              "logical":planted,"source_offset":part_offsets[mesh_index],
-              "position_delta":tx.origin.distance_to(expected_tx.origin)}))
-          return
-        if not valid_ground:
-          _fail(373,"REV207_REAL_CC0_SHRUB_ON_PATH_POND_OR_EXCAVATED_SOIL_"+str(
-            planted.origin))
-          return
-      elif valid_ground:
-        _fail(377,"REV207_REAL_BUSH_WAS_HIDDEN_ON_VIABLE_SOIL")
+      var expected_tx: Transform3D=planted*part_offsets[mesh_index]
+      if absf(tx.basis.determinant())<0.0000001 or (
+          not tx.is_equal_approx(expected_tx)):
+        _fail(372,"REV207_SOURCE_GLTF_TRANSFORM_NOT_IN_VISIBLE_COMPACTED_GPU_SLOT_"+
+          str({"mesh":mesh_index,"slot":active_slot,"source_id":biological_id,
+            "actual":tx,"expected":expected_tx}))
         return
-      if instance_index%17==0:
+      if not valid_ground:
+        _fail(373,"REV207_REAL_CC0_SHRUB_ON_PATH_POND_OR_EXCAVATED_SOIL_"+str(
+          planted.origin))
+        return
+      if active_slot%17==0:
         var at: Vector3=planted.origin
         for blueprint in (room.get("housing_blueprints") as Dictionary).values():
           var home: Vector3=blueprint["at"]
           if Vector2(at.x-home.x,at.z-home.z).length()<7.1:
             _fail(374,"REV207_REAL_SHRUB_IGNORES_FUTURE_BUILDING_FOOTPRINT")
             return
-    if active_in_part!=alive_after_mining:
-      _fail(378,"REV207_GODOT_GEOMETRY_PARTS_NOT_SYNCED_TO_SAME_LIVING_SOIL")
-      return
   print("PASS_REV207_TRUE_LICENSED_QUATERNIUS_SHRUB_UNDERSTORY_DENSE_NONBUILDING_GPU_BATCH_GEOMETRY")
   print("PASS_REV207_TRUE_MAIN_50000KM2_5000_ROOT_RATIO_BODY_CULTIVATION_5_SECTS_4_REAL_ORE_BEAST_GUARDS")
   if not bool(report.get("persistent_city_population_is_statistical_only",false)):
