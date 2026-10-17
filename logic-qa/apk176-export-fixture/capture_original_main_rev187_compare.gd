@@ -213,6 +213,43 @@ func _capture() -> void:
       _fail("REV208_BOTANICAL_ACTUAL_MAIN_GODOT_IMAGE_EMPTY_"+desired_kind)
       return
   print("PASS_REV208_THREE_REAL_GODOT441_ORIGINAL_MAIN_EVERGREEN_AND_FERN_ART_EVIDENCE_UNAPPROVED")
+  # HQ-021 TRUE in-game source-authored fern + grass GPU pool screenshot,
+  # not an image-generation, a Blender render or a marketing mock-up.
+  var floor_pool: Node3D=room.get("forest_floor_pool")
+  if floor_pool==null or not floor_pool.get("initialized"):
+    _fail("REV208_REAL_HABITAT_CELLS_GPU_3D_PREVIEW_ABSENT")
+    return
+  var floor_locations: Dictionary=floor_pool.get("position_by_id")
+  var native_fern_site: Vector3=Vector3.ZERO
+  var fern_found: bool=false
+  for floor_id in floor_locations:
+    if String(floor_id).contains("FLOOR-fern"):
+      native_fern_site=floor_locations[floor_id]["xz"]
+      fern_found=true
+      break
+  if not fern_found:
+    _fail("REV208_NO_PHYSICALLY_PLANTED_FERN_FOR_GODOT_ECOLOGY_IMAGE")
+    return
+  var floor_y: float=float(opening_terrain.call("height_at",
+    native_fern_site.x,native_fern_site.z+4.6))
+  opening_actor.position=Vector3(native_fern_site.x,floor_y+float(
+    opening_actor.get_meta("actor_ground_offset_y",0.0)),
+    native_fern_site.z+4.6)
+  player.call("_set_mode","third")
+  player.set("_yaw",0.0)
+  player.set("_pitch",0.40)
+  player.set("_distance",6.8)
+  floor_pool.call("sync_visibility",opening_actor.position,
+    String(room.get("quality").get("selected")))
+  room.call("_sync_rev208_botanical_visibility",opening_actor.position)
+  player.call("update_camera")
+  for hq_floor_frame in range(5):
+    await process_frame
+  await RenderingServer.frame_post_draw
+  if not _save("real_godot_rev208_32m_vendor_fern_grass_gpu_floor_main.png"):
+    _fail("REV208_MISSING_ACTUAL_MAIN_VENDOR_GREEN_FOREST_FLOOR_FRAME")
+    return
+  print("PASS_REV208_REAL_GODOT441_ORIGINAL_APK176_HQ021_FERN_GRASS_GPU_ECOLOGY_FRAME_PENDING_ART_QA")
   opening_actor.position=opening_actor_pos
   room.get("sim").hour=qa_old_hour
   room.call("_sync_living_daylight")
