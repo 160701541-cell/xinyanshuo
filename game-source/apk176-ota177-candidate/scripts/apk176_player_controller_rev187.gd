@@ -121,6 +121,8 @@ var _inventory_deposit_button: Button
 var _inventory_craft_sword_button: Button
 var _inventory_craft_pick_button: Button
 var _inventory_equip_button: Button
+var _equipment_slot_buttons: Dictionary={}
+var _equipment_slot_row: HBoxContainer
 var _game_actions: Dictionary = {}
 var _dash_cd: float = 0.0
 var _gather_cd: float = 0.0
@@ -765,12 +767,25 @@ func _build_game_hud() -> void:
   v.add_child(_game_sheet_body)
   _inventory_list=ItemList.new()
   _inventory_list.name="ActualSourcedBackpack24StackSelectableSlots"
-  _inventory_list.custom_minimum_size=Vector2(430,144)
+  _inventory_list.custom_minimum_size=Vector2(430,112)
   _inventory_list.max_columns=4
   _inventory_list.same_column_width=true
   _inventory_list.select_mode=ItemList.SELECT_SINGLE
   _inventory_list.item_selected.connect(_on_inventory_item_selected)
   v.add_child(_inventory_list)
+  _equipment_slot_row=HBoxContainer.new()
+  _equipment_slot_row.name="LiveEquipmentSlotsWeaponToolArmorRing"
+  _equipment_slot_row.add_theme_constant_override("separation",5)
+  for slot in ["weapon","tool","armor","ring"]:
+    var equip_slot:=Button.new()
+    equip_slot.name="ActualEquipment_"+slot
+    equip_slot.custom_minimum_size=Vector2(100,44)
+    equip_slot.pressed.connect(Callable(self,"_unequip_backpack_slot").bind(slot))
+    _apply_open_hud_style(equip_slot,
+      {"weapon":"swords","tool":"pickaxe","armor":"shield","ring":"book-open"}[slot])
+    _equipment_slot_row.add_child(equip_slot)
+    _equipment_slot_buttons[slot]=equip_slot
+  v.add_child(_equipment_slot_row)
   _inventory_craft_sword_button=Button.new()
   _inventory_craft_sword_button.text="木剑：消耗3木"
   _inventory_craft_sword_button.pressed.connect(func(): _craft_backpack("rough_wood_sword"))
@@ -910,6 +925,16 @@ func _add_game_action(key: String, label: String, callback: Callable) -> void:
 func _refresh_inventory_list() -> void:
   if _inventory_list==null:
     return
+  if _backpack!=null and _equipment_slot_buttons.size()==4:
+    var equipped: Dictionary=_backpack.call("snapshot")["equipment"]
+    for slot in _equipment_slot_buttons:
+      var item: String=String(equipped.get(slot,""))
+      var caption: String={
+        "weapon":"武器","tool":"工具","armor":"防具","ring":"饰品"}[slot]
+      var text_value: String=String(_backpack.call("display_name",item)) if item!="" else "空"
+      var button: Button=_equipment_slot_buttons[slot]
+      button.text=caption+"："+text_value
+      button.disabled=item==""
   _inventory_list.clear()
   if _backpack==null:
     return
@@ -940,6 +965,13 @@ func _craft_backpack(kind: String) -> void:
   say("成功制作："+kind if bool(response.get("ok",false)) else (
     "制作失败："+String(response.get("reason","材料不足"))))
   _refresh_game_hud()
+
+func _unequip_backpack_slot(slot: String) -> void:
+  if _backpack==null:
+    return
+  if bool(_backpack.call("unequip",slot)):
+    say("已卸下"+slot)
+    _refresh_game_hud()
 
 func _equip_backpack_selection() -> void:
   if _backpack==null or _inventory_selected_kind=="":
@@ -1179,6 +1211,7 @@ func _refresh_game_hud() -> void:
   var inventory_open: bool=_game_sheet!=null and _game_sheet.visible and _game_sheet_mode=="inventory"
   if _inventory_list!=null:
     _inventory_list.visible=inventory_open
+    _equipment_slot_row.visible=inventory_open
     _inventory_craft_sword_button.visible=inventory_open
     _inventory_craft_pick_button.visible=inventory_open
     _inventory_equip_button.visible=inventory_open
