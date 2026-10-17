@@ -373,6 +373,9 @@ jobs:
           grep -Fq 'PASS_REV204_REAL_GODOT_RENDERED_MANA_PAID_SPIRIT_BOLT_IN_FLIGHT' qa-results/rev187-real-worksite/render.log
           grep -Fq 'PASS_REV204_REAL_GODOT_MIDFLIGHT_AND_IMPACT_FINITE_MANA_REAL_HP_DAMAGE_FRAMES' qa-results/rev187-real-worksite/render.log
           grep -Fq 'PASS_REV205_GENUINE_GODOT_1280X720_LUCIDE_UI_TARGET_LOCK_AND_FINITE_BACKPACK_FRAMES' qa-results/rev187-real-worksite/render.log
+          grep -Fq 'PASS_REV207_ORIGINAL_APK176_GODOT_REAL_COLOR_512PBR_64TEXELS_IMAGES' qa-results/rev187-real-worksite/render.log
+          test -s qa-results/rev187-real-worksite/real_apk176_rev207_vivid_cc0_texture_forest_wide.png
+          test -s qa-results/rev187-real-worksite/real_apk176_rev207_dense_tiny_pixel_cc0_pbr_house_close.png
           test -s qa-results/rev187-real-worksite/real_apk176_rev205_genuine_open_source_hud_target_lock.png
           test -s qa-results/rev187-real-worksite/real_apk176_rev205_real_backpack_lucide_equipment.png
           test -s qa-results/rev187-real-worksite/real_apk176_rev204_qi_bolt_real_impact_damage.png
