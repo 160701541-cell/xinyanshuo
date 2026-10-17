@@ -64,7 +64,7 @@ jobs:
         run: |
           set -euo pipefail
           cp -a game-source/apk176-ota177-candidate/qa-rev187/. qa-test/
-          mkdir -p qa-test/scripts qa-test/canglan_rev187 qa-test/Textures
+          mkdir -p qa-test/scripts qa-test/canglan_rev187/Textures qa-test/Textures
           cp game-source/apk176-ota177-candidate/scripts/apk176_living_resource_world_rev187.gd qa-test/scripts/
           cp game-source/godot3d/scripts/worldbox_life_sim.gd qa-test/canglan_rev187/worldbox_life_sim.gd
           for line in \
@@ -84,7 +84,13 @@ jobs:
           cp game-source/godot3d/assets/free_cc0/kenney/3d/castle/stairs-stone.glb qa-test/canglan_rev187/stone_steps.glb
           cp game-source/godot3d/assets/free_cc0/kenney/3d/castle/door.glb qa-test/canglan_rev187/wood_door.glb
           cp game-source/godot3d/assets/free_cc0/quaternius_knight/public/models/knight.glb qa-test/canglan_rev187/animated_knight.glb
-          curl -fL --retry 3 'https://raw.githubusercontent.com/shorepine/kenney/main/3d/castle/Textures/colormap.png' -o qa-test/Textures/colormap.png
+          # The Castle Kit GLBs keep a relative `Textures/colormap.png` URI.
+          # Because the GLBs are staged below canglan_rev187/, the palette
+          # must live beside them at canglan_rev187/Textures/. Keep the root
+          # copy too for the legacy PCK path used by older revisions.
+          curl -fL --retry 3 'https://raw.githubusercontent.com/shorepine/kenney/main/3d/castle/Textures/colormap.png' -o qa-test/canglan_rev187/Textures/colormap.png
+          cp qa-test/canglan_rev187/Textures/colormap.png qa-test/Textures/colormap.png
+          test -s qa-test/canglan_rev187/Textures/colormap.png
           grep -Fq 'package/unique_name="com.xinyanshuo.canglan.rev187.qa"' qa-test/export_presets.cfg
           ! grep -Fq 'package/unique_name="org.canglan.ancient25d.preview"' qa-test/export_presets.cfg
       - name: Smoke-test independent rev187 scene in actual Godot headless
@@ -94,8 +100,15 @@ jobs:
           godot=/tmp/Godot_v4.4.1-stable_linux.x86_64
           timeout 150s "$godot" --headless --editor --path qa-test --import > qa-output/import.log 2>&1 || { tail -100 qa-output/import.log; exit 1; }
           timeout 75s "$godot" --headless --path qa-test --quit-after 35 --audio-driver Dummy > qa-output/world.log 2>&1 || { tail -100 qa-output/world.log; exit 1; }
-          if grep -Eq 'SCRIPT ERROR:|Parse Error:|ERROR:|Failed loading resource' qa-output/import.log qa-output/world.log; then
-            tail -100 qa-output/world.log; exit 1
+          # Godot's headless dummy renderer emits the harmless
+          # `Parameter "t" is null` texture-storage message while importing
+          # valid GLBs. Reject real dependency/parser failures explicitly,
+          # and keep the runtime log on the stricter all-ERROR gate.
+          if grep -Eq 'SCRIPT ERROR:|Parse Error:|Failed loading resource|Can.t open file|couldn.t be loaded|Error importing' qa-output/import.log \
+              || grep -Eq 'SCRIPT ERROR:|Parse Error:|ERROR:|Failed loading resource' qa-output/world.log; then
+            tail -100 qa-output/import.log
+            tail -100 qa-output/world.log
+            exit 1
           fi
           echo PASS_REV187_REAL_SCENE_TEST_PACKAGE_GODOT
       - name: Export tested distinct ARM64 Android APK

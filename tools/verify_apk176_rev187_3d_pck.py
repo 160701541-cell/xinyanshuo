@@ -23,6 +23,7 @@ REQUIRED = {
     "canglan_rev187/strata_terrain.gd",
     "canglan_rev187/player_controller.gd",
     "canglan_rev187/quality_profiles.gd",
+    "canglan_rev187/Textures/colormap.png",
     "Textures/colormap.png",
 }
 BASE_DIR = Path(__file__).resolve().parents[1]
@@ -88,9 +89,11 @@ def audit(path: Path) -> dict:
             raise ValueError("BLOCKED: corrupted GLB header " + model_path)
         if hashlib.sha256(value).hexdigest() != hashlib.sha256(source.read_bytes()).hexdigest():
             raise ValueError("BLOCKED: altered/non-licensed staged model " + model_path)
-    palette = found["Textures/colormap.png"]
+    palette = found["canglan_rev187/Textures/colormap.png"]
     if palette[:8] != bytes.fromhex("89504e470d0a1a0a") or len(palette) < 128:
         raise ValueError("BLOCKED: official Kenney external palette is missing or corrupt")
+    if found["Textures/colormap.png"] != palette:
+        raise ValueError("BLOCKED: legacy and GLB-relative Kenney palettes differ")
     scene = found["scenes/main_original_quality_rev187.tscn"]
     if (b"apk176_living_resource_world_rev187.gd" not in scene
             or b"export-3ad5c15c4f3250da0cc7c1af1770d85f-main.scn" not in scene):
