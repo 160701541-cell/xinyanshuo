@@ -3716,12 +3716,29 @@ func _safe_camera_position(target: Vector3, desired: Vector3) -> Vector3:
   var space:=world.get_world_3d().direct_space_state
   var direction: Vector3=travel.normalized()
   var adjusted: Vector3=desired
+  # REV208 P0: when the player's HEAD is touching a genuine nearby NPC,
+  # 8m tree collision or doorframe, a swept camera sphere can START INSIDE
+  # that collider and report 0% safe travel. That incorrectly snaps the
+  # lens INTO the avatar (real Godot screenshot audit saw distance 0.25m).
+  # Ignore ONLY those solids already overlapping the ORIGINAL camera pivot;
+  # later walls/trunks remain fully physical swept obstacles.
+  var initially_overlapping: Array[RID]=[]
+  var start_test:=PhysicsShapeQueryParameters3D.new()
+  start_test.shape=_camera_sphere
+  start_test.transform=Transform3D(Basis(),target)
+  start_test.collision_mask=2
+  start_test.margin=0.0
+  for overlap in space.intersect_shape(start_test,16):
+    var inside_rid: RID=overlap.get("rid",RID())
+    if inside_rid.is_valid():
+      initially_overlapping.append(inside_rid)
   # Use a real swept sphere, not only a thin zero-width ray. The actual
   # camera has a near plane; a center-line ray previously let walls intrude.
   var cast:=PhysicsShapeQueryParameters3D.new()
   cast.shape=_camera_sphere
   cast.transform=Transform3D(Basis(),target)
   cast.collision_mask=2
+  cast.exclude=initially_overlapping
   cast.motion=travel
   cast.margin=0.02
   var safe: PackedFloat32Array=space.cast_motion(cast)
@@ -3731,6 +3748,7 @@ func _safe_camera_position(target: Vector3, desired: Vector3) -> Vector3:
     _camera_collision_hits+=1
   else:
     var ray:=PhysicsRayQueryParameters3D.create(target,desired,2)
+    ray.exclude=initially_overlapping
     var hit: Dictionary=space.intersect_ray(ray)
     if not hit.is_empty():
       adjusted=target+direction*maxf(0.68,target.distance_to(hit["position"])-0.42)
