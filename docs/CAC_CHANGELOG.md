@@ -1,5 +1,11 @@
 # CAC 工序变更与开发日志
 
+## 2026-10-18 / CAC-REV207-LIVE-EXCAVATED-SHRUBS / 草木不能长在被挖走的地上
+- 严格原APK176 Main QA `39061896938` 返回 **FAIL**：`REV207_REAL_CC0_SHRUB_ON_PATH_POND_OR_CUT_SOIL`。实际问题是用户挖矿/挖地后，授权Quaternius灌木的初始GPU实例仍保留，可能飘在已挖地表；不能靠删掉检测“通过”。
+- 修复`d4265b4557050b7ce71c0b526272e3ab01f85910`：每个原厂MeshInstance3D复制为MultiMesh批绘时保存真实土壤位置与原作者GLB本地坐标变换，监听原Godot真实地层`terrain_cell_changed`，在挖开的地块即时更新所有灌木子网格，取消已经不再适合生长的GPU实例；其余森林和房屋位置不能被改动。
+- QA `c890b12c40afe06486dc5329c02ba0b0da3f3180`：按植株**土壤逻辑坐标**而不是原始艺术mesh偏移作为建筑/道路/挖掘判断，测试三维网格的真实world-transform与作者相对偏移是否完整保留，活株GPU实例是否随开挖退出、剩余树木在场、所有子mesh一致。最新提交仍须原Godot QA复测；截至记录时没有发布rev207。
+
+
 ## 2026-10-18 / CAC-REV207-SHRUB-INIT-ORDER / 检查出首帧生态渲染依赖顺序并真实修复
 - GitHub Actions `39061700710` 原APK176 Godot 4.4.1全场景QA **FAIL**：`REV207_UNDERSTORY_CC0_BUSH_NOT_IMPORTED`，已确认真实开源 bush.glb 已被加载，不是缺许可或资源路径；根因是新增灌木渲染调用早于`quality = ManualQuality.new()`初始化，而合法可种区域判定需要quality实例。
 - 真正修改原`_ready()`顺序（提交`4794a0800bc1b084862480e17964c64b71c2e833`）：在原树木、石矿、角色、原Main、质量/流式草地均初始化后，再创建真实授权灌木MultiMesh，保留全部源模型/PBR和QA门禁，不删检测、不放宽真实GLB要求。
