@@ -24,7 +24,7 @@ PIN = {
  "tile_roughness.png":("T_RoundTiles_Roughness.png","625b67a09c51c5db00c8500bb473002d8fc82367"),
  "timber_albedo.png":("T_WoodTrim_BaseColor.png","3547da835b7b1aa89e27e98c68b1582bd203ef93"),
  "timber_normal.png":("T_WoodTrim_Normal.png","f959c6344604f28800497bb276f70043aee0fea2"),
- "timber_roughness.png":("T_WoodTrim_Roughness.png","0dd5136db0bac8f968604a8a1bebfa47b4ea776f"),
+ "timber_roughness.png":("T_WoodTrim_Roughness.png","ce396e8c01df5bb1d7a584e46e696a9904223f41"),
 }
 TARGET_RESOLUTION=512
 MAX_OUTPUT_BYTES=9*1024*1024
