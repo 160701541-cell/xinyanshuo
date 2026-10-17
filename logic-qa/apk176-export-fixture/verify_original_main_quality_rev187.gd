@@ -2120,6 +2120,72 @@ func _run() -> void:
   actor.position=restored_loc
   print("PASS_REV206_REAL_MAIN_HAS_PERSISTENT_LICENCED_MEDICINAL_PLANTS_ORE_AND_TOUCH_MINING")
   print("PASS_REV205_TRUE_ORIGINAL_TOUCH_CAMERA_FLIGHT_RESTART_LOCK_ON_BAG_AND_ICONS")
+  # REV208 mandatory real Godot original Main lethal NPC test. The existing
+  # training NPC remains nonlethal: this test targets an independent living
+  # cultivator with canonical persisted ID, real collision and true sword LOS.
+  var killed_id: String="CL-XIUXIAN-001"
+  var cult_state: Dictionary=spir.get("npc_data")[killed_id]
+  var saved_cult_state: Dictionary=cult_state.duplicate(true)
+  var cult_actor: Node3D=spir.get("npc_visuals")[killed_id]["actor"]
+  var cult_collider: StaticBody3D=spir.get("npc_colliders")[killed_id]
+  var hero_saved_position: Vector3=actor.position
+  var hero_saved_yaw: float=float(player.get("_yaw"))
+  var hero_saved_stamina: int=int(econ.citizens["CL-PLAYER-0184-0001"]["energy"])
+  econ.citizens["CL-PLAYER-0184-0001"]["energy"]=100
+  var sword_hit: bool=false
+  for approach in range(12):
+    var radians: float=TAU*float(approach)/12.0
+    var place: Vector3=cult_actor.position+Vector3(
+      sin(radians)*2.12,0.0,cos(radians)*2.12)
+    actor.position=place
+    player.set("_yaw",atan2(sin(radians),cos(radians)))
+    player.set("_locked_target_id",killed_id)
+    player.set("_sword_cd",0.0)
+    if bool(player.call("sword_attack")):
+      sword_hit=true
+      break
+  if not sword_hit or int(cult_state["health"])>=int(saved_cult_state["health"]) or (
+      int(cult_state["hostility"])<100) or (
+      int(econ.citizens["CL-PLAYER-0184-0001"]["energy"])!=94):
+    _fail(380,"REV208_REAL_CULTIVATOR_SWORD_HIT_NOT_LEGAL_STAMINA_PAID_COLLISION_CHECKED")
+    return
+  var mortality: Dictionary=spir.call(
+    "apply_npc_damage",killed_id,999,"CL-PLAYER-0184-0001:lethal")
+  if not bool(mortality.get("ok",false)) or not bool(mortality.get("dead",false)) or (
+      not bool(mortality.get("persisted",false))) or (
+      int(cult_state["health"])!=0) or (
+      String(cult_state["schedule"])!="陨落") or cult_collider.collision_layer!=0 or (
+      cult_actor.get_meta("actually_dead",false)!=true):
+    _fail(381,"REV208_REAL_NPC_DEATH_NOT_PERSISTED_PRONE_WITH_COLLISION_DISABLED_"+str(mortality))
+    return
+  var postmortem: Dictionary=spir.call(
+    "apply_npc_damage",killed_id,100,"repeat_after_death")
+  if bool(postmortem.get("ok",true)):
+    _fail(382,"REV208_DEAD_CULTIVATOR_COULD_BE_ATTACKED_OR_REVIVED")
+    return
+  var CultivationSaved: GDScript=spir.get_script() as GDScript
+  var newborn_clone: RefCounted=CultivationSaved.new()
+  newborn_clone.call("_load_or_initialize")
+  var saved_dead: Dictionary=newborn_clone.get("npc_data").get(killed_id,{})
+  if int(saved_dead.get("health",-1))!=0 or String(
+      saved_dead.get("death_by",""))!="CL-PLAYER-0184-0001:lethal":
+    _fail(383,"REV208_NPC_TRUE_DEATH_NOT_RELOADED_WITH_CANONICAL_ID")
+    return
+  # QA is isolated: do not permanently kill a test citizen or overwrite a
+  # local playtest save. No test-only enemy is inserted into the real world.
+  spir.get("npc_data")[killed_id]=saved_cult_state
+  cult_actor.rotation.x=0.0
+  cult_actor.set_meta("actually_dead",false)
+  cult_collider.collision_layer=2
+  (spir.get("npc_labels")[killed_id] as Label3D).modulate=Color.WHITE
+  spir.call("update_visible_npcs",0.02)
+  spir.call("save_state")
+  player.call("_clear_target_lock")
+  player.set("_sword_cd",0.0)
+  actor.position=hero_saved_position
+  player.set("_yaw",hero_saved_yaw)
+  econ.citizens["CL-PLAYER-0184-0001"]["energy"]=hero_saved_stamina
+  print("PASS_REV208_REAL_LETHAL_CULTIVATOR_SWORD_COLLISION_DEATH_PERSISTENCE_AND_CORPSE")
   room.call("_focus_builder")
   if not bool(room.get("_follow_builder")) or float(room.get("_camera_distance")) > 14.0:
     _fail(42,"BUTTON_MUST_ACTUALLY_FOCUS_VISIBLE_NPC")
