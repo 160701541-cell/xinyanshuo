@@ -46,6 +46,15 @@ func _ready() -> void:
     # geological exposure while physics remains the same triangle mesh.
     mat.cull_mode = BaseMaterial3D.CULL_DISABLED
     world_materials[kind] = mat
+  # One smooth vertex-colored biome skin for the unexcavated soil.
+  # Previous per-cell random material choices rendered as an enormous
+  # brown/green 2m CHECKERBOARD in the first genuine rev191 Godot capture.
+  var ground_mat:=StandardMaterial3D.new()
+  ground_mat.albedo_color=Color.WHITE
+  ground_mat.vertex_color_use_as_albedo=true
+  ground_mat.cull_mode=BaseMaterial3D.CULL_DISABLED
+  ground_mat.roughness=0.96
+  world_materials["natural_ground"]=ground_mat
   terrain = MeshInstance3D.new()
   terrain.name = "REAL_DEFORMABLE_TERRAIN_NOT_PLANE"
   terrain.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_ON
@@ -155,6 +164,34 @@ func _mat_for_depth(depth: float) -> String:
     return "gravel"
   return "weathered_rock"
 
+# Actual continuous grass/sand/soil biome colors. One world-space color
+# field evaluated at shared vertices; no random material per 2m cell.
+func ground_color_at(x: float,z: float) -> Color:
+  var low: float=0.5+0.5*sin(x*0.075+0.7*sin(z*0.11))*cos(z*0.092)
+  var high: float=0.5+0.5*sin(x*0.39+z*0.28)*cos(z*0.43-x*0.19)
+  var grass_a:=Color("#648e5c")
+  var grass_b:=Color("#a0bc72")
+  var grass:=grass_a.lerp(grass_b,clampf(0.23+0.54*low+0.23*high,0.0,1.0))
+  # Narrow natural cart-road shoulders; no one-cell ochre checkerboard.
+  var road_weight: float=0.0
+  if z>=-20.0 and z<=23.0:
+    road_weight=maxf(road_weight,1.0-smoothstep(2.6,5.0,absf(x)))
+  if x>=-23.0 and x<=6.0:
+    road_weight=maxf(road_weight,1.0-smoothstep(1.1,3.2,absf(z-10.5)))
+  if x>=-4.0 and x<=25.0:
+    road_weight=maxf(road_weight,1.0-smoothstep(1.1,3.2,absf(z-(2.5-0.25*x))))
+  var sand_dist: float=Vector2(x,z).distance_to(POND_CENTER)
+  var shore_weight: float=1.0-smoothstep(POND_RADIUS+1.1,POND_RADIUS+4.5,sand_dist)
+  var soil:=Color("#b8a07b").lerp(Color("#a99276"),low*0.32)
+  var sand:=Color("#cdb896").lerp(Color("#c2ae84"),high*0.24)
+  var mixed:=grass.lerp(sand,shore_weight*0.84)
+  return mixed.lerp(soil,road_weight*0.95)
+
+func _push_ground_quad(surface: SurfaceTool,a:Vector3,b:Vector3,c:Vector3,d:Vector3) -> void:
+  for p in [a,b,c,a,c,d]:
+    surface.set_color(ground_color_at(p.x,p.z))
+    surface.add_vertex(p)
+
 func _push_triangle(surface: SurfaceTool, a: Vector3,b: Vector3,c: Vector3) -> void:
   surface.add_vertex(a)
   surface.add_vertex(b)
@@ -173,6 +210,9 @@ func _construct_terrain() -> void:
     var builder := SurfaceTool.new()
     builder.begin(Mesh.PRIMITIVE_TRIANGLES)
     builders[kind] = builder
+  var ground_builder:=SurfaceTool.new()
+  ground_builder.begin(Mesh.PRIMITIVE_TRIANGLES)
+  builders["natural_ground"]=ground_builder
   var edges: Array[Vector2i] = [Vector2i(1,0),Vector2i(-1,0),
     Vector2i(0,1),Vector2i(0,-1)]
   for iz in range(GRID):
@@ -188,7 +228,10 @@ func _construct_terrain() -> void:
       var b := Vector3(right,_base_at(right,top)-depth,top)
       var c := Vector3(right,_base_at(right,bottom)-depth,bottom)
       var d := Vector3(left,_base_at(left,bottom)-depth,bottom)
-      _push_quad(builders[_material_for(ix,iz)],a,d,c,b)
+      if cuts==0:
+        _push_ground_quad(builders["natural_ground"],a,d,c,b)
+      else:
+        _push_quad(builders[_material_for(ix,iz)],a,d,c,b)
       # Exposed strata exist ONLY where a cell is genuinely dug LOWER
       # than the adjacent cell (or at the outer 3m deep geological boundary).
       for direction in edges:
@@ -428,6 +471,7 @@ func stats() -> Dictionary:
   return {"real_heightfield":true,"continuous_shared_vertex_slopes":true,
     "no_infinite_gray_void":true,"surrounding_far_land_m":636,
     "far_seam_stitched":true,"far_cliff_skirt_removed":true,
+    "continuous_vertex_biome":true,"checkerboard_cell_materials_removed":true,
     "infinite_streaming_complete":false,
     "recolors_unlimited":true,
     "natural_terrace_walls":false,"layer_count":5,"real_water_basin":water!=null,
