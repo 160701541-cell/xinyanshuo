@@ -3086,7 +3086,28 @@ func update_camera() -> void:
     if camera_mode=="iso":
       _pitch=PI/4.0
     desired.y=maxf(desired.y,_ground_surface_y(desired.x,desired.z)+0.7)
-    camera.position=_safe_camera_position(target,desired)
+    var resolved_camera: Vector3=_safe_camera_position(target,desired)
+    # P0 from *actual* rev205 Godot render: a close worksite wall squeezed
+    # the 5.2m third-person camera to 0.62m INSIDE the 1.8m knight model,
+    # filling the entire phone with an enormous body. Try reachable
+    # non-clipping shoulder angles before accepting such a broken view.
+    if camera_mode in ["third","soar"] and chase_distance>3.6 and (
+        resolved_camera.distance_to(target)<2.0):
+      var best_camera: Vector3=resolved_camera
+      var best_distance: float=resolved_camera.distance_to(target)
+      for angle in [-0.68,0.68,-1.24,1.24,-2.15,2.15,3.10]:
+        var rotated: Vector3=offset.rotated(Vector3.UP,float(angle))
+        var alternate: Vector3=target+rotated*chase_distance
+        alternate.y=maxf(alternate.y,_ground_surface_y(alternate.x,alternate.z)+0.7)
+        var safe_alternate: Vector3=_safe_camera_position(target,alternate)
+        var clearance: float=safe_alternate.distance_to(target)
+        if clearance>best_distance+0.12:
+          best_distance=clearance
+          best_camera=safe_alternate
+        if best_distance>chase_distance*0.90:
+          break
+      resolved_camera=best_camera
+    camera.position=resolved_camera
     # An orbit below the feet is collision-clamped by terrain. Aim the lens
     # towards the sky in that case instead of pinning it to the torso.
     var sight_target: Vector3=target+Vector3.UP*(
