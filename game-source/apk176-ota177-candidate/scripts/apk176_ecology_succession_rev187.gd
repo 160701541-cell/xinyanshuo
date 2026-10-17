@@ -112,8 +112,10 @@ func plant_first_available() -> String:
   # Keep newly planted groves entirely to the LEFT of the transport road.
   # A natural grove is planted in spaced cells; each tree still comes from an
   # actually harvested and withdrawn seed, never respawned ex nihilo.
-  for i in range(28):
-    var p := Vector3(-29.0 + float(i%7)*2.75,0,22.5 + float(int(i/7))*3.8)
+  for i in range(96):
+    var col: int = i % 8
+    var row: int = int(i / 8)
+    var p := Vector3(-39.0 + float(col)*3.9,0,3.0 + float(row)*3.9)
     if _valid_new_tree_location(p) and p.x <= -11.0:
       return plant_one_seed(p)
   return ""
