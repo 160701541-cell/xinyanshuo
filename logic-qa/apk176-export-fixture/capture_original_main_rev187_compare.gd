@@ -421,10 +421,55 @@ func _capture() -> void:
   if painter==null or int(painter.call("summary").get("material_maps_loaded",0))!=9:
     _fail("REV207_REAL_VENDOR_TEXTURES_WERE_NOT_BOUND_TO_RUNTIME_PBR")
     return
-  var house: Node3D=room.get("finished_prefabs").get("CL-HOME-V206-001",null)
-  if house==null or not is_instance_valid(house):
-    _fail("REV207_COMPLETE_LICENSED_HOUSE_MISSING_FOR_VISIBLE_PBR_CLOSE_FRAME")
+  # 2026-10-18 user rejected 6 houses magically placed for free.
+  # This QA frame shows a REAL construction cycle funded ONLY by actually
+  # exhausting registered 5-wood trees / 10-stone boulders and waiting 8
+  # world hours with a worker. It does not depict the startup village as
+  # already constructed, and no debug inventory cheat grants free material.
+  var economic=room.get("sim")
+  var actor_id: String="CL-PLAYER-0184-0001"
+  var stock: Dictionary=economic.villages["CL-REV186-HX-VILLAGE"]["stock"]
+  var registered_resources: Array=economic.natural_nodes.keys()
+  registered_resources.sort()
+  for resource in registered_resources:
+    var role: String=String(economic.natural_nodes[resource]["kind"])
+    if role=="tree" and int(stock["wood"])>=200:
+      continue
+    if role=="stone" and int(stock["stone"])>=150:
+      continue
+    var attempts: int=0
+    while int(economic.natural_nodes[resource]["remaining"])>0 and (
+        attempts<5):
+      economic.citizens[actor_id]["energy"]=100
+      if not economic.gather_to_actor(actor_id,String(resource)):
+        _fail("REV208_REAL_SOURCE_TREE_ORE_FINITE_GATHER_FAILED_"+String(resource))
+        return
+      if not economic.deliver_carried(actor_id):
+        _fail("REV208_REAL_RESOURCE_LOADED_NOT_ACTUALLY_PAID_INTO_STOCK")
+        return
+      attempts+=1
+  if int(stock["wood"])<200 or int(stock["stone"])<150:
+    _fail("REV208_MINIMUM_40_TREES_AND_15_STONES_NOT_GENUINELY_AVAILABLE")
     return
+  var fund: Dictionary=room.call(
+    "quote_and_fund_near_house",Vector3(-7.0,0.0,-18.0))
+  if not bool(fund.get("ok",false)) or int(fund.get(
+      "spent_wood",0))!=200 or int(fund.get("spent_stone",0))!=150:
+    _fail("REV208_200WOOD150STONE_HOUSE_COULD_NOT_BE_PAID_"+str(fund))
+    return
+  var ledger: RefCounted=room.get("housing")
+  for hour in range(8):
+    economic.tick()
+    var completed: Array=ledger.call("advance_one_world_hour",1)
+    for id in completed:
+      room.call("_materialize_paid_house",String(id))
+  var house: Node3D=room.get("finished_prefabs").get("CL-HOME-V206-001",null)
+  if house==null or not is_instance_valid(house) or not (
+      bool(ledger.get("sites")["CL-HOME-V206-001"]["completed"])):
+    _fail("REV208_PAID_REAL_HOUSE_NOT_VISIBLE_AFTER_NPC_WORK_HOURS")
+    return
+  print("PASS_REV208_REAL_GODOT_HOUSE_COST_40_TREES_15_PILES_200WOOD_150STONE_8_WORK_HOURS")
+
   var real_ground: Node3D=room.get("terrain_world")
   player.call("_set_mode","third")
   var art_target: Vector3=house.position
