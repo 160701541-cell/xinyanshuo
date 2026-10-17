@@ -1014,6 +1014,27 @@ func practice_action() -> Dictionary:
   _spar_telegraph.position=Vector3(target.x,h+0.055,target.z)
   _spar_telegraph.visible=false
   world.add_child(_spar_telegraph)
+  # One mortal teacher is a real physical training opponent, NOT a
+  # secret cultivator with magically minted mana. Spirit NPCs in the actual
+  # world independently have their own real realm/HP/MP above their heads.
+  _spar_enemy_health_max=110
+  _spar_enemy_health=110
+  _spar_enemy_mana_max=0
+  _spar_enemy_mana=0
+  _spar_opponent_tag=Label3D.new()
+  _spar_opponent_tag.name="RealMortalSparOpponentRealmHealthManaAboveHead"
+  _spar_opponent_tag.font_size=24
+  _spar_opponent_tag.pixel_size=0.0042
+  _spar_opponent_tag.billboard_mode=BaseMaterial3D.BILLBOARD_ENABLED
+  _spar_opponent_tag.visibility_range_end=21.0
+  world.add_child(_spar_opponent_tag)
+  for kind in ["hp","mana"]:
+    _spar_meters[kind+"_back"]=_new_spar_meter(
+      "Spar_"+kind+"_BG",Color("#111921"))
+    _spar_meters[kind+"_fill"]=_new_spar_meter(
+      "Spar_"+kind+"_Fill",
+      Color("#c76f63") if kind=="hp" else Color("#61bed7"))
+  _sync_spar_meters()
   _spar_stage="recover"
   _spar_timer=0.82
   _guard_time=0.0
@@ -1024,12 +1045,22 @@ func practice_action() -> Dictionary:
   return {"ok":true,"active":true,"opponent":_spar_partner.name}
 
 func stop_practice() -> void:
-  for node in [_spar_partner,_spar_collision,_spar_telegraph]:
+  for node in [_spar_partner,_spar_collision,_spar_telegraph,_spar_opponent_tag]:
     if node!=null and is_instance_valid(node):
       node.queue_free()
   _spar_partner=null
   _spar_collision=null
   _spar_telegraph=null
+  _spar_opponent_tag=null
+  for bar in _spar_meters.values():
+    if bar!=null and is_instance_valid(bar):
+      (bar as Node).queue_free()
+  _spar_meters.clear()
+  for projectile in _spell_projectiles:
+    var mesh: Node3D=projectile.get("node",null)
+    if mesh!=null and is_instance_valid(mesh):
+      mesh.queue_free()
+  _spell_projectiles.clear()
   _spar_stage="inactive"
   _spar_timer=0
   _guard_time=0
@@ -1085,6 +1116,300 @@ func evade_action() -> bool:
   update_camera()
   _refresh_game_hud()
   return true
+
+func _new_spar_meter(label: String,tint: Color) -> MeshInstance3D:
+  var node:=MeshInstance3D.new()
+  node.name="RealWorldDuelOpponentVitals_"+label
+  var plane:=QuadMesh.new()
+  plane.size=Vector2(0.92,0.095)
+  var material:=StandardMaterial3D.new()
+  material.shading_mode=BaseMaterial3D.SHADING_MODE_UNSHADED
+  material.billboard_mode=BaseMaterial3D.BILLBOARD_ENABLED
+  material.cull_mode=BaseMaterial3D.CULL_DISABLED
+  material.albedo_color=tint
+  plane.material=material
+  node.mesh=plane
+  node.cast_shadow=GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+  node.visibility_range_end=21.0
+  world.add_child(node)
+  return node
+
+func _sync_spar_meters() -> void:
+  if _spar_partner==null or not is_instance_valid(_spar_partner):
+    return
+  var position: Vector3=_spar_partner.position
+  if _spar_opponent_tag!=null and is_instance_valid(_spar_opponent_tag):
+    _spar_opponent_tag.position=position+Vector3.UP*2.23
+  for key in ["hp","mana"]:
+    if not _spar_meters.has(key+"_back"):
+      continue
+    var current: int=_spar_enemy_health if key=="hp" else _spar_enemy_mana
+    var maximum: int=_spar_enemy_health_max if key=="hp" else _spar_enemy_mana_max
+    var ratio: float=clampf(float(current)/float(maxi(1,maximum)),0.0,1.0)
+    var y: float=1.95 if key=="hp" else 1.81
+    var bg: MeshInstance3D=_spar_meters[key+"_back"]
+    var fill: MeshInstance3D=_spar_meters[key+"_fill"]
+    bg.position=position+Vector3(0,y,0.01)
+    fill.position=position+Vector3(-0.46*(1.0-ratio),y,0.03)
+    fill.scale.x=maxf(0.001,ratio)
+    fill.visible=maximum>0 and ratio>0.001
+
+func _spawn_real_combat_hit(point: Vector3,tint: Color,power: int=1) -> void:
+  # Actual physical-world particles, not a full-screen filter or fake log.
+  # One-shot bounded 10..24 particles; no per-particle lights on phones.
+  var puff:=GPUParticles3D.new()
+  puff.name="ActualSwordOrSpiritProjectileWorldImpact"
+  puff.one_shot=true
+  puff.amount=mini(24,10+power*3)
+  puff.lifetime=0.34
+  puff.explosiveness=1.0
+  puff.position=point
+  var material:=ParticleProcessMaterial.new()
+  material.emission_shape=ParticleProcessMaterial.EMISSION_SHAPE_SPHERE
+  material.emission_sphere_radius=0.15
+  material.gravity=Vector3(0,-0.7,0)
+  material.initial_velocity_min=1.2
+  material.initial_velocity_max=2.8
+  puff.process_material=material
+  var quad:=QuadMesh.new()
+  quad.size=Vector2(0.13,0.13)
+  var glow:=StandardMaterial3D.new()
+  glow.shading_mode=BaseMaterial3D.SHADING_MODE_UNSHADED
+  glow.billboard_mode=BaseMaterial3D.BILLBOARD_ENABLED
+  glow.cull_mode=BaseMaterial3D.CULL_DISABLED
+  glow.transparency=BaseMaterial3D.TRANSPARENCY_ALPHA
+  glow.albedo_color=tint
+  glow.emission_enabled=true
+  glow.emission=tint
+  glow.emission_energy_multiplier=2.0
+  quad.material=glow
+  puff.draw_pass_1=quad
+  world.add_child(puff)
+  puff.emitting=true
+  get_tree().create_timer(0.8).timeout.connect(func():
+    if is_instance_valid(puff):
+      puff.queue_free())
+
+func _spar_damage_opponent(amount: int,spell_hit: bool=false) -> bool:
+  if _spar_stage=="inactive" or _spar_stage=="victory" or (
+      _spar_partner==null or not is_instance_valid(_spar_partner)):
+    return false
+  var dealt: int=mini(_spar_enemy_health,maxi(0,amount))
+  if dealt<=0:
+    return false
+  _spar_enemy_health-=dealt
+  _combat_hit_count+=1
+  if spell_hit:
+    _spirit_bolt_impact_count+=1
+  _spawn_real_combat_hit(_spar_partner.position+Vector3.UP*1.10,
+    Color("#a1eef0") if spell_hit else Color("#f5c67d"),2)
+  _sync_spar_meters()
+  if _spar_enemy_health<=0:
+    _spar_stage="victory"
+    _spar_timer=0.8
+    if _spar_telegraph!=null and is_instance_valid(_spar_telegraph):
+      _spar_telegraph.visible=false
+    _spar_last_outcome="获胜：对练者失去继续战斗能力"
+    say("你赢得切磋！对方认输，训练模式不造成死亡或凭空掉宝")
+  else:
+    _spar_last_outcome="命中对练者 -%d生命" % dealt
+  _refresh_game_hud()
+  return true
+
+func sword_attack() -> bool:
+  if _spar_stage in ["inactive","victory"] or _sword_cd>0.0 or (
+      _spar_partner==null or not is_instance_valid(_spar_partner)):
+    return false
+  var person: Dictionary=room.get("sim").citizens.get(PLAYER_ID,{})
+  if int(person.get("energy",0))<6:
+    say("剑击需要6体力")
+    return false
+  var toward: Vector3=_spar_partner.position-actor.position
+  toward.y=0.0
+  if toward.length()>3.05 or toward.length()<0.2 or (
+      toward.normalized().dot(_forward())<0.12):
+    say("剑击须面对三米内的真实切磋目标")
+    return false
+  var ray:=PhysicsRayQueryParameters3D.create(
+    actor.position+Vector3.UP*0.92,_spar_partner.position+Vector3.UP*0.92,2)
+  var hit: Dictionary=world.get_world_3d().direct_space_state.intersect_ray(ray)
+  if not hit.is_empty() and hit.get("collider")!=_spar_collision:
+    say("障碍物挡住了攻击，不能隔墙造成伤害")
+    return false
+  person["energy"]=int(person["energy"])-6
+  _sword_cd=0.85
+  var slash:=MeshInstance3D.new()
+  slash.name="ActualPlayerMortalSwordArcNotFakeSpell"
+  var arc:=TorusMesh.new()
+  arc.inner_radius=0.88
+  arc.outer_radius=1.02
+  arc.rings=24
+  arc.ring_segments=8
+  var bright:=StandardMaterial3D.new()
+  bright.shading_mode=BaseMaterial3D.SHADING_MODE_UNSHADED
+  bright.transparency=BaseMaterial3D.TRANSPARENCY_ALPHA
+  bright.cull_mode=BaseMaterial3D.CULL_DISABLED
+  bright.albedo_color=Color("#f7dfa4",0.78)
+  bright.emission_enabled=true
+  bright.emission=Color("#eec47b")
+  bright.emission_energy_multiplier=1.8
+  arc.material=bright
+  slash.mesh=arc
+  slash.position=actor.position+_forward()*1.15+Vector3.UP*1.05
+  slash.rotation=Vector3(PI*0.55,actor.rotation.y,0)
+  world.add_child(slash)
+  get_tree().create_timer(0.28).timeout.connect(func():
+    if is_instance_valid(slash):
+      slash.queue_free())
+  _spar_damage_opponent(10)
+  _refresh_game_hud()
+  return true
+
+func _art_tint() -> Color:
+  var spiritual: RefCounted=room.get("cultivation")
+  if spiritual==null:
+    return Color("#88e8f1")
+  var kind: String=String(spiritual.call("public_player_status").get("root_kind",""))
+  if kind.begins_with("火"):
+    return Color("#ff945f")
+  if kind.begins_with("木"):
+    return Color("#a2e18a")
+  if kind.begins_with("金"):
+    return Color("#f4dfa0")
+  if kind.begins_with("土"):
+    return Color("#e0b57f")
+  return Color("#7dc9f0")
+
+func cast_spirit_bolt() -> Dictionary:
+  if _spar_stage in ["inactive","victory"] or _bolt_cd>0.0 or (
+      _spar_partner==null or not is_instance_valid(_spar_partner)):
+    return {"ok":false,"reason":"NO_COMBAT_TARGET_OR_COOLDOWN"}
+  var target: Vector3=_spar_partner.position+Vector3.UP*1.10
+  var source: Vector3=actor.position+Vector3.UP*1.24
+  if source.distance_to(target)>9.2:
+    return {"ok":false,"reason":"TARGET_OUT_OF_RANGE"}
+  var ray:=PhysicsRayQueryParameters3D.create(source,target,2)
+  var block: Dictionary=world.get_world_3d().direct_space_state.intersect_ray(ray)
+  if not block.is_empty() and block.get("collider")!=_spar_collision:
+    return {"ok":false,"reason":"WALL_BLOCKS_SPELL"}
+  var spiritual: RefCounted=room.get("cultivation")
+  if spiritual==null:
+    return {"ok":false,"reason":"NO_CULTIVATION_AUTHORITY"}
+  var debit: Dictionary=spiritual.call("spend_player_mana_for_art",
+    "CL-ART-SPIRIT-BOLT-V1")
+  if not bool(debit.get("ok",false)):
+    say("无法施展灵息弹：" + String(debit.get("reason","未解锁")))
+    return debit
+  _bolt_cd=2.2
+  var projectile:=MeshInstance3D.new()
+  projectile.name="RealTravelingRootColoredQiBoltManaPaidAndObstacleChecked"
+  var sphere:=SphereMesh.new()
+  sphere.radius=0.18
+  sphere.height=0.36
+  sphere.radial_segments=10
+  sphere.rings=5
+  var paint:=StandardMaterial3D.new()
+  paint.shading_mode=BaseMaterial3D.SHADING_MODE_UNSHADED
+  paint.albedo_color=_art_tint()
+  paint.emission_enabled=true
+  paint.emission=_art_tint()
+  paint.emission_energy_multiplier=2.8
+  sphere.material=paint
+  projectile.mesh=sphere
+  projectile.position=source
+  projectile.cast_shadow=GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+  world.add_child(projectile)
+  _spell_projectiles.append({
+    "node":projectile,"distance_left":9.5,
+    "damage":14+int(spiritual.call("public_player_status").get("layer",1))*4})
+  say("灵息弹：法力真实消耗4，飞行命中后才扣对方生命")
+  _refresh_game_hud()
+  return {"ok":true,"spent":int(debit["spent"]),"projectile":projectile}
+
+func _step_spell_projectiles(delta: float) -> void:
+  var remaining: Array[Dictionary]=[]
+  for shot in _spell_projectiles:
+    var missile: MeshInstance3D=shot.get("node",null)
+    if missile==null or not is_instance_valid(missile):
+      continue
+    if _spar_stage in ["inactive","victory"] or (
+        _spar_partner==null or not is_instance_valid(_spar_partner)):
+      missile.queue_free()
+      continue
+    var from: Vector3=missile.position
+    var to: Vector3=_spar_partner.position+Vector3.UP*1.10
+    var span: Vector3=to-from
+    var progress: float=minf(span.length(),18.0*delta)
+    var proposed: Vector3=from+span.normalized()*progress if span.length()>0.001 else to
+    var query:=PhysicsRayQueryParameters3D.create(from,proposed,2)
+    var hit: Dictionary=world.get_world_3d().direct_space_state.intersect_ray(query)
+    if not hit.is_empty() and hit.get("collider")!=_spar_collision:
+      _spawn_real_combat_hit(from,Color("#8fa8be"),1)
+      missile.queue_free()
+      continue
+    shot["distance_left"]=float(shot["distance_left"])-progress
+    missile.position=proposed
+    if progress>=span.length()-0.20 or (
+        not hit.is_empty() and hit.get("collider")==_spar_collision):
+      _spar_damage_opponent(int(shot["damage"]),true)
+      missile.queue_free()
+      continue
+    if float(shot["distance_left"])<=0.0:
+      missile.queue_free()
+      continue
+    remaining.append(shot)
+  _spell_projectiles=remaining
+
+func cast_spirit_ward() -> Dictionary:
+  if _ward_cd>0.0 or _ward_seconds>0.0 or camera_mode in ["god","fly"]:
+    return {"ok":false,"reason":"SHIELD_ON_COOLDOWN_OR_INVALID_MODE"}
+  var spiritual: RefCounted=room.get("cultivation")
+  if spiritual==null:
+    return {"ok":false,"reason":"NO_CULTIVATION_AUTHORITY"}
+  var debit: Dictionary=spiritual.call("spend_player_mana_for_art",
+    "CL-ART-SPIRIT-WARD-V1")
+  if not bool(debit.get("ok",false)):
+    say("无法施展护体灵障：" + String(debit.get("reason","未学会")))
+    return debit
+  _ward_cd=12.0
+  _ward_seconds=6.0
+  if _ward_visual==null or not is_instance_valid(_ward_visual):
+    _ward_visual=MeshInstance3D.new()
+    _ward_visual.name="ActualSixSecondSpiritWardSphereBlocksMortalStrikeDamage"
+    var shell:=SphereMesh.new()
+    shell.radius=1.04
+    shell.height=2.08
+    shell.radial_segments=20
+    shell.rings=9
+    var blue:=StandardMaterial3D.new()
+    blue.shading_mode=BaseMaterial3D.SHADING_MODE_UNSHADED
+    blue.transparency=BaseMaterial3D.TRANSPARENCY_ALPHA
+    blue.cull_mode=BaseMaterial3D.CULL_DISABLED
+    blue.albedo_color=Color("#83dcdf",0.16)
+    blue.emission_enabled=true
+    blue.emission=Color("#7edaf1")
+    blue.emission_energy_multiplier=1.25
+    shell.material=blue
+    _ward_visual.mesh=shell
+    _ward_visual.cast_shadow=GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+    world.add_child(_ward_visual)
+  _ward_visual.position=actor.position+Vector3.UP*1.00
+  say("护体灵障：消耗6法力，六秒内削减七成切磋伤害")
+  _refresh_game_hud()
+  return {"ok":true,"spent":int(debit["spent"]),"duration":_ward_seconds}
+
+func _step_spiritual_combat(delta: float) -> void:
+  _sword_cd=maxf(0.0,_sword_cd-delta)
+  _bolt_cd=maxf(0.0,_bolt_cd-delta)
+  _ward_cd=maxf(0.0,_ward_cd-delta)
+  _ward_seconds=maxf(0.0,_ward_seconds-delta)
+  if _ward_visual!=null and is_instance_valid(_ward_visual):
+    if _ward_seconds<=0.0:
+      _ward_visual.queue_free()
+      _ward_visual=null
+    else:
+      _ward_visual.position=actor.position+Vector3.UP*1.00
+  _step_spell_projectiles(delta)
 
 func _spar_feedback(tint: Color) -> void:
   # Bounded one-shot actual impact, no per-particle dynamic light.
@@ -1158,16 +1483,16 @@ func _spar_resolve_hit() -> void:
     else:
       _spar_normal_guards+=1
       _spar_last_outcome="格挡"
-      apply_player_damage(3)
-      say("普通格挡：受到3点冲击伤害")
+      apply_player_damage(maxi(1,ceili(3.0*0.30)) if _ward_seconds>0.0 else 3)
+      say("普通格挡：护体灵障减伤" if _ward_seconds>0.0 else "普通格挡：受到3点冲击伤害")
       _spar_feedback(Color("#f5d6a0"))
     _guard_time=0.0
   else:
     _spar_hits+=1
     _spar_last_outcome="受击"
-    apply_player_damage(12)
+    apply_player_damage(maxi(1,ceili(12.0*0.30)) if _ward_seconds>0.0 else 12)
     _spar_feedback(Color("#f29d84"))
-    say("切磋失误：实际扣除12点生命")
+    say("护体灵障挡住七成冲击" if _ward_seconds>0.0 else "切磋失误：实际扣除12点生命")
   if _player_health<=0:
     stop_practice()
 
@@ -1177,6 +1502,11 @@ func _spar_tick(delta: float) -> void:
   _dodge_time=maxf(0.0,_dodge_time-delta)
   _dodge_cd=maxf(0.0,_dodge_cd-delta)
   if _spar_stage=="inactive" or _spar_partner==null:
+    return
+  if _spar_stage=="victory":
+    _spar_timer=maxf(0.0,_spar_timer-delta)
+    if _spar_timer<=0.0:
+      stop_practice()
     return
   if not is_instance_valid(_spar_partner):
     stop_practice()
@@ -2195,6 +2525,7 @@ func step(delta: float) -> void:
   _gather_cd=maxf(0.0,_gather_cd-delta)
   _fall_damage_cd=maxf(0.0,_fall_damage_cd-delta)
   _spar_tick(delta)
+  _step_spiritual_combat(delta)
   terrain.call("stream_around",actor.position)
   _step_jump(delta)
   _step_soar_altitude(delta)
