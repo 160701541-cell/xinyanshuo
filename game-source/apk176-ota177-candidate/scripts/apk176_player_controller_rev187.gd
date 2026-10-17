@@ -140,6 +140,7 @@ var _spar_opponent_tag: Label3D
 var _spar_meters: Dictionary={}
 var _sword_cd: float=0.0
 var _attack_anim_seconds: float=0.0
+var _combat_camera_pull: float=0.0
 var _bolt_cd: float=0.0
 var _ward_cd: float=0.0
 var _ward_seconds: float=0.0
@@ -1480,6 +1481,12 @@ func cast_spirit_ward() -> Dictionary:
 
 func _step_spiritual_combat(delta: float) -> void:
   _attack_anim_seconds=maxf(0.0,_attack_anim_seconds-delta)
+  # Focus living duel actors without hijacking the user's normal zoom value.
+  # Moving closer is gradual and restores their chosen distance on exit.
+  var desired_pull: float=-(maxf(0.0,_distance-6.4)) if (
+    _spar_stage!="inactive" and camera_mode=="third") else 0.0
+  _combat_camera_pull=lerpf(_combat_camera_pull,desired_pull,
+    clampf(delta*4.8,0.0,1.0))
   _sword_cd=maxf(0.0,_sword_cd-delta)
   _bolt_cd=maxf(0.0,_bolt_cd-delta)
   _ward_cd=maxf(0.0,_ward_cd-delta)
@@ -1768,7 +1775,7 @@ func _layout_hud() -> void:
   if _target_panel!=null:
     # Keep target HUD BELOW the always-on first row of seven view toggles.
     # Previously it sat under those buttons and concealed its own MP bar.
-    _target_panel.position=Vector2(maxf(370.0,size.x*0.5-137.0),139.0)
+    _target_panel.position=Vector2(maxf(380.0,size.x-392.0),139.0)
   notice.position=Vector2(minf(370.0,size.x*0.27),maxf(210.0,size.y-47.0))
   if _pad_hint!=null:
     _pad_hint.position=Vector2(16,139)
@@ -2833,6 +2840,7 @@ func update_camera() -> void:
     var offset:=Vector3(sin(_yaw)*cos(_pitch),
       sin(_pitch),cos(_yaw)*cos(_pitch))
     var chase_distance: float=_distance+_soar_camera_extra if camera_mode=="soar" else _distance
+    chase_distance=maxf(3.4,chase_distance+_combat_camera_pull)
     var desired: Vector3=target+offset*chase_distance
     if camera_mode=="iso":
       _pitch=PI/4.0
