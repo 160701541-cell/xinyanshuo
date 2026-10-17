@@ -333,8 +333,8 @@ func _capture() -> void:
     _fail("REV204_REAL_MANA_PAID_QI_PROJECTILE_NOT_SPAWNED_IN_ENGINE")
     return
   player.call("_step_spell_projectiles",0.050)
-  var flying: Array=player.get("_spell_projectiles")
-  if flying.size()!=1 or (not is_instance_valid(flying[0]["node"])):
+  var active_bolts: Array=player.get("_spell_projectiles")
+  if active_bolts.size()!=1 or (not is_instance_valid(active_bolts[0]["node"])):
     _fail("REV204_MAGIC_PROJECTILE_DISAPPEARED_BEFORE_TRUE_MIDAIR_CAPTURE")
     return
   var impact_health_before: int=int(player.get("_spar_enemy_health"))
