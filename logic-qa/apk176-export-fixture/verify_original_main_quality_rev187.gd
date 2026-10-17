@@ -253,7 +253,7 @@ func _run() -> void:
   if not terrain.call("stats").get("no_infinite_gray_void",false):
     _fail(111,"LOCAL_WORLD_EDGE_IS_STILL_A_FLOATING_THIN_CARD")
     return
-  if world.get_node_or_null("FarGroundAndMountainFoothills_AllCameraDirections_600m")==null or world.get_node_or_null("RealEarthCrustBorderSkirtNotFloatingThinSheet")==null:
+  if terrain.get_node_or_null("FarGroundAndMountainFoothills_AllCameraDirections_600m")==null or terrain.get_node_or_null("RealEarthCrustBorderSkirtNotFloatingThinSheet")==null:
     _fail(112,"MISSING_ACTUAL_BACKGROUND_GROUND_MOUNTAINS_AND_CRUST")
     return
   var grass_visual: MultiMeshInstance3D=world.get_node("FineFiveLeafGrassTuftsTerrainConforming")
