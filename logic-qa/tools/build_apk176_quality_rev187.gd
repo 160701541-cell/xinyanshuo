@@ -18,6 +18,7 @@ const FILES := {
 	"res://canglan_rev187/player_controller.gd": "canglan_rev187/player_controller.gd",
 	"res://canglan_rev187/backpack.gd": "canglan_rev187/backpack.gd",
 	"res://canglan_rev187/spirit_resources.gd": "canglan_rev187/spirit_resources.gd",
+	"res://canglan_rev187/living_regions.gd": "canglan_rev187/living_regions.gd",
 	"res://canglan_rev187/paid_housing.gd": "canglan_rev187/paid_housing.gd",
 	"res://canglan_rev187/cultivation_world.gd": "canglan_rev187/cultivation_world.gd",
 	"res://canglan_rev187/root_taxonomy.gd": "canglan_rev187/root_taxonomy.gd",
