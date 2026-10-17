@@ -6,6 +6,7 @@ on:
       - '.github/workflows/canglan-rev206-spirit-qa-only.yml'
       - 'game-source/apk176-ota177-candidate/scripts/apk176_player_controller_rev187.gd'
       - 'game-source/apk176-ota177-candidate/scripts/apk176_spirit_resources_rev206.gd'
+      - 'game-source/apk176-ota177-candidate/scripts/apk176_paid_housing_rev208.gd'
       - 'logic-qa/apk176-export-fixture/verify_rev206_spirit_resources.gd'
       - 'game-source/apk176-ota177-candidate/assets/cc0-spirit-rev206/**'
       - 'logic-qa/apk176-export-fixture/verify_original_main_quality_rev187.gd'
@@ -201,6 +202,7 @@ jobs:
           cp game-source/apk176-ota177-candidate/scripts/apk176_player_controller_rev187.gd qa-stage/ota177/canglan_rev187/player_controller.gd
           cp game-source/apk176-ota177-candidate/scripts/apk176_backpack_rev205.gd qa-stage/ota177/canglan_rev187/backpack.gd
           cp game-source/apk176-ota177-candidate/scripts/apk176_spirit_resources_rev206.gd qa-stage/ota177/canglan_rev187/spirit_resources.gd
+          cp game-source/apk176-ota177-candidate/scripts/apk176_paid_housing_rev208.gd qa-stage/ota177/canglan_rev187/paid_housing.gd
           python3 - <<'PY'
           from pathlib import Path
           import json,hashlib
@@ -278,7 +280,7 @@ jobs:
         run: |
           set -euo pipefail
           printf 'config_version=5\n' > qa-stage/ota177/project.godot
-          for script in strata_terrain vivid_material quality_profiles player_controller backpack spirit_resources cultivation_world root_taxonomy city_population visual_palette kenney_multimesh ecology_growth; do
+          for script in strata_terrain vivid_material quality_profiles player_controller backpack spirit_resources paid_housing cultivation_world root_taxonomy city_population visual_palette kenney_multimesh ecology_growth; do
             echo "GODOT_GDSCRIPT_COMPILE_CHECK $script"
             if ! timeout 35s /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless \
                 --path qa-stage/ota177 --check-only --script "res://canglan_rev187/$script.gd" \
