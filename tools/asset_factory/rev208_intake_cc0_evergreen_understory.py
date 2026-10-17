@@ -9,7 +9,9 @@ import json
 import re
 import struct
 import sys
+import time
 from pathlib import Path
+from urllib.error import HTTPError
 from urllib.request import Request, urlopen
 
 BASE="https://www.innerscene.com"
@@ -29,12 +31,24 @@ ASSETS={
 }
 MAX=19_000_000
 def fetch(url):
-  with urlopen(Request(url,headers={"User-Agent":"Canglan-REV208-HQCC0/1","Accept":"*/*"}),timeout=50) as resp:
-    body=resp.read(MAX+1)
-    if len(body)>MAX: raise ValueError("asset above verified download limit")
-    if resp.geturl().split("/")[2] not in ("www.innerscene.com","innerscene.com"):
-      raise ValueError("unexpected redirect host")
-    return body
+  # The vendor explicitly returned HTTP 429 in GH run 39078571156.
+  # Bounded 429/5xx retry only, never bypass license proof or change host.
+  for attempt in range(6):
+    try:
+      with urlopen(Request(url,headers={
+          "User-Agent":"Canglan-REV208-HQCC0/1","Accept":"*/*"}),timeout=50) as resp:
+        body=resp.read(MAX+1)
+        if len(body)>MAX: raise ValueError("asset above verified download limit")
+        if resp.geturl().split("/")[2] not in ("www.innerscene.com","innerscene.com"):
+          raise ValueError("unexpected redirect host")
+        return body
+    except HTTPError as exc:
+      if exc.code not in (429,500,502,503,504) or attempt==5:
+        raise
+      delay=min(90.0,5.0*(2**attempt))
+      print("REV208_VENDOR_RATE_LIMIT_RETRY",exc.code,"seconds",delay,flush=True)
+      time.sleep(delay)
+  raise RuntimeError("unreachable")
 def glb_stats(b):
   if len(b)<28 or b[:4]!=b"glTF": raise ValueError("not a binary GLTF2 model")
   magic,version,n=struct.unpack_from("<4sII",b,0)
@@ -61,8 +75,21 @@ def main(out):
   out=Path(out);out.mkdir(parents=True,exist_ok=True)
   manifest={"schema":1,"revision":208,"art_approval":"PENDING_REAL_GODOT_AND_USER",
     "release_policy":"QUARANTINED_NO_SIGNING_NO_OTA","items":{}}
+  old_manifest={}
+  if (out/"manifest.json").exists():
+    old_manifest=json.loads((out/"manifest.json").read_text(encoding="utf-8")).get("items",{})
   for key,entry in ASSETS.items():
     slug=entry["slug"]
+    pinned=old_manifest.get(key,{})
+    if (pinned.get("source_name")==slug and pinned.get("license","").startswith("CC0")
+        and pinned.get("source_page")==f"{BASE}/tools/library/3d-parts/{slug}"
+        and pinned.get("file") and (out/pinned["file"]).is_file()):
+      old_data=(out/pinned["file"]).read_bytes()
+      if hashlib.sha256(old_data).hexdigest()==pinned.get("original_sha256") and (
+          glb_stats(old_data)["triangle_lod0"]==pinned.get("triangle_lod0")):
+        manifest["items"][key]=pinned
+        print("REV208_REUSE_SOURCE_SHA_AND_LICENSE_ALREADY_PROVEN",key,flush=True)
+        continue
     page=f"{BASE}/tools/library/3d-parts/{slug}"
     raw_page=fetch(page).decode("utf-8","replace")
     if not ("Public domain (CC0)" in raw_page and "Free to use" in raw_page):
@@ -87,7 +114,8 @@ def main(out):
       "godot_import_notes":"PENDING_ORIGINAL_MAIN_IMPORT_AND_REAL_RENDER",
       "game_asset_approved":False
     }
-    print("REV208_SOURCE_CC0_REAL_GLTF",key,digest,"tris",details["triangle_lod0"])
+    print("REV208_SOURCE_CC0_REAL_GLTF",key,digest,"tris",details["triangle_lod0"],flush=True)
+    time.sleep(2.0)
   (out/"manifest.json").write_text(json.dumps(manifest,ensure_ascii=False,indent=2)+"\n",encoding="utf-8")
   print("PASS_REV208_CC0_11_PHYSICAL_VENDOR_3D_FOLIAGE_AND_MEDICINAL_SOURCES_NOT_ART_APPROVED")
 if __name__=="__main__":
