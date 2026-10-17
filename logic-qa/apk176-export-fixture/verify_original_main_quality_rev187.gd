@@ -948,6 +948,42 @@ func _run() -> void:
   if not bool(depot_interaction.get("ok",false)):
     _fail(78,"WAREHOUSE_INTERACTION_BUTTON_IS_NONFUNCTIONAL")
     return
+  # rev195 reference-study implementation: the actual stamina-paid mortal
+  # dash (NOT fake spellcasting) must emit small, transient mobile VFX.
+  var restored_hero_pos: Vector3=actor.position
+  var restored_yaw: float=float(player.get("_yaw"))
+  var traveler: Dictionary=econ.citizens["CL-PLAYER-0184-0001"]
+  var old_energy: int=int(traveler["energy"])
+  var dash_test_point:=Vector3(29.0,float(terrain.call("height_at",29.0,29.0)),29.0)
+  actor.position=dash_test_point
+  player.set("_yaw",PI)
+  player.set("_dash_cd",0.0)
+  traveler["energy"]=30
+  var dash_used: bool=bool(player.call("dash_action"))
+  var motion_shards: Array[Node]=world.find_children(
+      "ActualMortalDashFootworkMotionShards","GPUParticles3D",true,false)
+  if not dash_used or motion_shards.size()!=1:
+    _fail(196,"REV195_REAL_STAMINA_DASH_DID_NOT_SPAWN_ACTUAL_MOBILE_MOVEMENT_SHARDS")
+    return
+  var dash_vfx: GPUParticles3D=motion_shards[0] as GPUParticles3D
+  if not dash_vfx.one_shot or dash_vfx.amount!=14 or dash_vfx.lifetime>0.40:
+    _fail(197,"REV195_DASH_VFX_NOT_ONE_SHOT_OR_OVERDRAWS_MOBILE")
+    return
+  if int(traveler["energy"])!=22 or actor.position.z<30.8:
+    _fail(198,"REV195_DASH_VFX_APPEARED_WITHOUT_REAL_STAMINA_DEBIT_AND_MOVEMENT")
+    return
+  var trail_count: int=motion_shards.size()
+  var failed_second_dash: bool=bool(player.call("dash_action"))
+  if failed_second_dash or world.find_children(
+      "ActualMortalDashFootworkMotionShards","GPUParticles3D",true,false).size()!=trail_count:
+    _fail(199,"REV195_COOLDOWN_ACTION_IS_MINTING_FALSE_SKILL_TRAILS")
+    return
+  traveler["energy"]=old_energy
+  actor.position=restored_hero_pos
+  player.set("_yaw",restored_yaw)
+  player.set("_dash_cd",0.0)
+  player.call("update_camera")
+  print("PASS_REV195_REAL_MORTAL_DASH_MOBILE_VFX_REQUIRES_SUCCESS_AND_STAMINA_DEBIT")
   room.call("_focus_builder")
   if not bool(room.get("_follow_builder")) or float(room.get("_camera_distance")) > 14.0:
     _fail(42,"BUTTON_MUST_ACTUALLY_FOCUS_VISIBLE_NPC")
