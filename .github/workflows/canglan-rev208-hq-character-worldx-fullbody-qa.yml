@@ -4,6 +4,8 @@ on:
     branches: [feat/rev208-green-kenney-saplings-vegetation]
     paths:
       - '.github/workflows/canglan-rev208-hq-character-worldx-fullbody-qa.yml'
+      - 'tools/asset_factory/worldx_rev208_hq_character_fullbody_v2.mjs'
+      - 'tools/asset_factory/test_worldx_rev208_hq_fullbody_v2.mjs'
   workflow_dispatch:
 permissions:
   contents: read
