@@ -15,6 +15,7 @@ const FILES := {
 	"res://canglan_rev187/kenney_multimesh.gd": "canglan_rev187/kenney_multimesh.gd",
 	"res://canglan_rev187/strata_terrain.gd": "canglan_rev187/strata_terrain.gd",
 	"res://canglan_rev187/player_controller.gd": "canglan_rev187/player_controller.gd",
+	"res://canglan_rev187/cultivation_world.gd": "canglan_rev187/cultivation_world.gd",
 	"res://canglan_rev187/quality_profiles.gd": "canglan_rev187/quality_profiles.gd",
 	"res://canglan_rev187/worldbox_life_sim.gd": "canglan_rev187/worldbox_life_sim.gd",
 	"res://canglan_rev187/tree_oak.glb": "canglan_rev187/tree_oak.glb",
