@@ -1282,5 +1282,15 @@ func _exit_tree() -> void:
     if is_instance_valid(source):
       source.free()
   asset_sources.clear()
+  # rev199: two more GLTFDocument-generated meshes were created as
+  # freestanding source templates (hair+sword), not children of world.
+  # Without explicit release Godot aborts at exit with 2 DummyMesh
+  # +9 Materials+2 Shaders still allocated. Cleanup is a real P0 gate.
+  if licensed_long_hair_source!=null and is_instance_valid(licensed_long_hair_source):
+    licensed_long_hair_source.free()
+  licensed_long_hair_source=null
+  if licensed_flying_sword_source!=null and is_instance_valid(licensed_flying_sword_source):
+    licensed_flying_sword_source.free()
+  licensed_flying_sword_source=null
   _hidden_game_world.clear()
   _old_profiler_nodes.clear()
