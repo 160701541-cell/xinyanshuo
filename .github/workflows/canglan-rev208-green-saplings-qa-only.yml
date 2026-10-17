@@ -447,6 +447,7 @@ jobs:
           grep -Fq 'PASS_REV208_NO_FREE_HOUSES_200WOOD150STONE_FIVE_RESIDENTS_AND_FOUR_TRUE_LARGE_YAO_BEASTS' qa-results/rev187-original-main-3d.log
           grep -Fq 'PASS_REV206_REAL_QUATERNIUS_CC0_SOURCE_HOUSES_REAL_YAO_BEASTS_PERSISTENT_PAID_WORKER_BUILDING' qa-results/rev187-original-main-3d.log
           grep -Fq 'PASS_REV208_REAL_INDEPENDENT_MEDICINAL_HERB_STEMS_CC0_PERSISTED_IDS' qa-results/rev187-original-main-3d.log
+          grep -Fq 'PASS_REV208_HQ021_REAL_VENDOR_CC0_32M_HABITAT_BATCH_GPU_TRANSFORMS_NO_IDENTITY_GHOSTS_SWAP_REMOVE' qa-results/rev187-original-main-3d.log
           grep -Fq 'PASS_REV208_3_ACTUAL_8M_MATURE_VENDOR_PBR_TREES_REPLACE_THREE_NATURAL_IDS' qa-results/rev187-original-main-3d.log
           grep -Fq 'PASS_REV208_REMAINING_49_KENNEY_LOD_TREES_20_STONES_GPU_BUFFERS_RETAINED' qa-results/rev187-original-main-3d.log
           grep -Fq 'PASS_REV207_TRUE_MAIN_50000KM2_5000_ROOT_RATIO_BODY_CULTIVATION_5_SECTS_4_REAL_ORE_BEAST_GUARDS' qa-results/rev187-original-main-3d.log
@@ -534,12 +535,14 @@ jobs:
           grep -Fq 'REV208_TRUE_GODOT_COMPARISON_CAMERA_TIME_OVERRIDE_12H_RESTORE_' qa-results/rev187-real-worksite/render.log
           grep -Fq 'PASS_REV208_REAL_GODOT_CAMERA_CORPSE_FRAME_TRUE_MORTALITY_POPULATION_MINUS_ONE' qa-results/rev187-real-worksite/render.log
           grep -Fq 'PASS_REV208_THREE_REAL_GODOT441_ORIGINAL_MAIN_EVERGREEN_AND_FERN_ART_EVIDENCE_UNAPPROVED' qa-results/rev187-real-worksite/render.log
+          grep -Fq 'PASS_REV208_REAL_GODOT441_ORIGINAL_APK176_HQ021_FERN_GRASS_GPU_ECOLOGY_FRAME_PENDING_ART_QA' qa-results/rev187-real-worksite/render.log
           for f in real_godot_rev208_mature_oak_8m_vs_avatar.png \
               real_godot_rev208_mature_maple_9m_vs_avatar.png \
               real_godot_rev208_mature_linden_8m_vs_avatar.png \
               real_godot_rev208_hq_pine_forest_actual_main.png \
               real_godot_rev208_hq_cypress_grove_actual_main.png \
               real_godot_rev208_hq_fern_understory_actual_main.png \
+              real_godot_rev208_32m_vendor_fern_grass_gpu_floor_main.png \
               real_godot_rev208_npc_death_state.png; do
             test -s "qa-results/rev187-real-worksite/$f"
           done
@@ -576,6 +579,13 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          # A slow historical renderer MUST NOT overwrite or rebase
+          # authentic screenshots from a newer source commit.
+          remote_sha="$(git ls-remote origin refs/heads/feat/rev208-green-kenney-saplings-vegetation | cut -f1)"
+          if [ "$remote_sha" != "$GITHUB_SHA" ]; then
+            echo "REV208_STALE_OLD_RENDER_SCREENSHOTS_ONLY_AS_GITHUB_ARTIFACT_NOT_COMMITTED"
+            exit 0
+          fi
           snapshot_dir=art/actual-engine-capture/rev208-candidate
           source_dir=qa-results/rev187-real-worksite
           mkdir -p "$snapshot_dir"
@@ -585,6 +595,7 @@ jobs:
                       real_godot_rev208_hq_pine_forest_actual_main.png \
                       real_godot_rev208_hq_cypress_grove_actual_main.png \
                       real_godot_rev208_hq_fern_understory_actual_main.png \
+              real_godot_rev208_32m_vendor_fern_grass_gpu_floor_main.png \
                       real_godot_rev208_npc_death_state.png \
                       real_apk176_rev206_spirit_herbs_original_quaternius.png \
                       real_apk176_rev207_vivid_cc0_texture_forest_wide.png; do
@@ -610,7 +621,14 @@ jobs:
             exit 0
           fi
           git commit -m "art(rev208 Draft): true unretouched Godot441 original APK176 forest and player comparisons"
-          git pull --rebase origin feat/rev208-green-kenney-saplings-vegetation
+          # Unchanged pinned CI source must remain the current branch head.
+          # A competing source write makes push fail safely instead of rebasing
+          # binary PNG evidence from an old source snapshot.
+          remote_after="$(git ls-remote origin refs/heads/feat/rev208-green-kenney-saplings-vegetation | cut -f1)"
+          if [ "$remote_after" != "$GITHUB_SHA" ]; then
+            echo "REV208_SOURCE_CHANGED_AFTER_CAPTURE_NO_STALE_EVIDENCE_PUSH"
+            exit 0
+          fi
           git push origin HEAD:feat/rev208-green-kenney-saplings-vegetation
           echo PASS_REV208_ORIGINAL_MAIN_UNALTERED_GODOT_SCREENSHOTS_ONLY_IN_DRAFT_PR_NO_OTA
       - name: Preserve real engine QA logs and comparison screenshots (no signed content)
