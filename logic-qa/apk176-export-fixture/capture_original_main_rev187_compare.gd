@@ -257,12 +257,26 @@ func _capture() -> void:
     return
   print("PASS_REV203_REAL_GODOT_RENDERED_LICENCED_SWORD_BANK_AND_GROUND_REFERENCE")
   player.call("toggle_avatar_flight")
-  for i in range(16):
+  # The screenshot worksite may lie over a solid building occluder. Move
+  # the QA camera/hero to the exact known open 29m practice site BEFORE
+  # the real physical landing tick; do not bypass any flight collisions or
+  # make the game appear to support landing through blocked roofs.
+  var training_ground: Node3D=player.get("actor")
+  var physical_ground_y: float=float(room.get("terrain_world").call(
+    "height_at",29.0,29.0))
+  training_ground.position=Vector3(29.0,physical_ground_y+
+    float(training_ground.get_meta("actor_ground_offset_y",0.0))+
+    float(player.get("_soar_altitude")),29.0)
+  var physical_descent_frames: int=0
+  for i in range(20):
     player.call("step",0.12)
+    physical_descent_frames+=1
     if String(player.get("camera_mode"))=="third":
       break
   if String(player.get("camera_mode"))!="third":
-    _fail("REV204_VISUAL_COMBAT_CANNOT_LEAVE_AVATAR_FLYING_IN_MID_AIR")
+    _fail("REV204_PHYSICAL_LANDING_AT_DRY_OPEN_PRACTICE_SITE_FAILED height="+
+      str(player.get("_soar_altitude"))+" frames="+str(physical_descent_frames)+
+      " blocked="+str(player.get("_blocked_wall_steps")))
     return
   # Capture the actual original game's martial duel target HUD and **world**
   # HP/MP overhead bars, then the physically moving spiritual projectile.
