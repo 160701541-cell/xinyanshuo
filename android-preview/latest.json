@@ -1,12 +1,12 @@
 {
   "schema": 1,
   "channel": "android-preview",
-  "revision": 201,
+  "revision": 202,
   "minimum_android_code": 1176,
   "maximum_android_code": 1176,
-  "sha256": "245762e18945383660ecf6a100760be993d86259f25753ac5f41121ffe27c687",
-  "size_bytes": 22037120,
-  "pack_url": "https://160701541-cell.github.io/xinyanshuo/android-preview/canglan-content-rev-201.pck",
-  "notes": "苍岚原APK176 rev201：世界灵脉种子存档、12名真实GLB修士独立作息，古石灵根检测台靠近交互后揭示灵根；已测灵根可按世界小时吐纳积累修为、消耗实际体力并突破炼气，存档保留。沿用已有御风飞剑/昼夜加速；本地Qwen因原APK缺原生推理库仍不可用，需签名APK升级。",
-  "signature": "eXpJS+coGac45FiZiGSovuUKz2kH/Hu4Yo4X7gn0w1Ae0/Ne6esFKkzs+GyIFFSEx7qaN8x7F0d6V29KDAqYE0oqq+8rDn3pMqNJjlWA86FaNdbTZ4ehnQbyiueIR8zlS5iuXZctfxdDZYca4Vxrqd/zUzYLHgalz/DJXeuAzWBnitZSZI0M+Fey8qCIvppD4RZdnWAsSNLvcPFtS8+6lp32cvibgdnACXEzUJ0BtehpgL2PwI/bhSim4oAKn2Yw/jfxUqRLgQdH5iC+JdV6jKnJXApd7+3p3PfPG59MF9wtlNM4s5opJSqtqGni32j1frOpJF0fcRPcW2IDC5PL5UNZ4hGZZVTr5tLcvRkUlthIxPlkZgt7u1UwlbqamWXjyKcVBRMRGqJN5afzWeZ5UTUaKueXpXkZbxvMwMOkwA3uUhnU/A9jPxai4UEHoddMb+nMDSS1OMZRPcantj4mSmTLn5VbzQWfYRp7QIxVceTFqeJ3haSGrJyyRWBaGM2n"
+  "sha256": "4a9376cf922c0e213481e78cec170b4995f24c5e84b4ff0184e28df0ec5d94de",
+  "size_bytes": 22037600,
+  "pack_url": "https://160701541-cell.github.io/xinyanshuo/android-preview/canglan-content-rev-202.pck",
+  "notes": "苍岚原APK176 rev202：修复御风飞行升高按钮不可见、起飞高度瞬变和空中切换视角瞬间坠落，降落时禁用升降操作；完整保留rev201灵根、修炼、12名修士及原有存档。本地AI仍需原生APK升级。",
+  "signature": "jsB1CxlSbTi7v8RRhNHVDgQ1lkRSK1LiGSkFZLCmT8AU5IQ2jRhCPhRs3dyUkRSlOMKNPVokDFYPz60GT9TTKNAq/lE2cMNw4BPDVuKjUSXQRuu3cAoHCzZQ/W/Itd9TF2LtpikjNZcO1FthCdiLblRbT6aVNd3NF9q+tKQvdY7DkK3vZpKIAF5+SUz4iXzMSZ5yQjXbDwR1mJn38/dkqQwfpbqerx62kyxxnaHTb2Pd3X3CHNo+JxdedAxvttWHjfKwgYTQduNSXZ8GvfVS/qTKggmLCZSmxXHBi6Y16/ERdoM1wisPVQQ0FBHRU42lKRAvzBcvp1te5vMFRFePxgFw7+4K7IxPjXfWDtAupSqMQF89FO7q4TgQVtv+FEijjnlzszPfg8pKrqwafmxCLCx9PCeA7mcLdyBAzcn7WbPHfTjqQyvWGohjk0BoQvK1Vxpt56NXGBdfT0ZauIU0cXgQYGZe+pBclBIkFdao+Z0asgVig6yC9Mvl80F7ub8L"
 }
