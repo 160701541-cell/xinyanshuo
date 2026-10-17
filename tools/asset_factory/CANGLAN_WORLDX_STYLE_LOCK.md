@@ -1,5 +1,7 @@
 # 《苍岚》WorldX 专用视觉规范 / Canglan WorldX Style Lock v1
 
+> 🚫 **已被用户 2026-10-18 明确废止为正式主视觉标准（只留历史记录）**。此v1规范的“低饱和柔和画风、固定斜俯视、独立PNG四合院即核心目标、暂停高精3D”的内容不能再用来生成rev208正式素材或覆盖用户最新要求。必须以 [`CANGLAN_WORLDX_STYLE_LOCK_V2_HQ3D.md`](CANGLAN_WORLDX_STYLE_LOCK_V2_HQ3D.md)、[用户完整执行报告](../../docs/CANGLAN_HQ_ART_ECOLOGY_EXECUTION_REPORT_USER_20261018.md) 和 [P0执行清单](../../docs/CAC_REV208_HQ_EXECUTION_CHECKLIST_20261018.md) 为准。旧文仅历史溯源。
+
 **用途**：供 WorldX 原生地图生成器的 `userPrompt`、`additionalConstraints` 和角色生成器的 `worldVisualContext` 使用。此文档不代表已经生成或验收任何新图片。
 
 ## 唯一目标画风
