@@ -890,12 +890,12 @@ func _run() -> void:
     _fail(71,"MINUS_BUTTON_DID_NOT_ZOOM_REAL_CAMERA")
     return
   player.call("toggle_perspective")
-  if not bool(player.get("is_first_person")) or actor.visible:
-    _fail(72,"FIRST_PERSON_DID_NOT_HIDE_OWN_CHARACTER_AND_ENTER_EYE_CAMERA")
+  if not bool(player.get("is_first_person")) or not actor.visible:
+    _fail(72,"REV197_FIRST_PERSON_SHOULD_NOT_DELETE_WHOLE_AVATAR_BODY")
     return
-  if not is_equal_approx(room.get("camera").position.y,
-    float(terrain.call("height_at",actor.position.x,actor.position.z))+1.65):
-    _fail(73,"FIRST_PERSON_CAMERA_IS_NOT_AT_PLAYER_HEAD")
+  if absf(float(room.get("camera").position.y)-
+      float(actor.position.y)-1.58)>0.035:
+    _fail(73,"REV197_FIRST_PERSON_EYE_CAMERA_NOT_AT_VISIBLE_AVATAR_HEAD_HEIGHT")
     return
   player.call("toggle_perspective")
   if bool(player.get("is_first_person")) or not actor.visible:
@@ -1059,6 +1059,168 @@ func _run() -> void:
   player.call("_refresh_game_hud")
   player.call("update_camera")
   print("PASS_REV196_REAL_OPPONENT_TELEGRAPH_PERFECT_GUARD_NORMAL_GUARD_TRUE_EVADE_DAMAGE_STAMINA_WITHOUT_SPIRIT_MAGIC")
+  # rev197 P0 phone usability regression: test real UI nodes AND the
+  # actual physical movement/camera state, not only declared feature flags.
+  var v197: Array[String]=["Iso45Button","GodShortcutButton",
+    "SoarAvatarButton","RealJumpButton","CameraLockButton",
+    "PhoneZoomInButton","PhoneZoomOutButton"]
+  for key in v197:
+    var control: Button=game_hud.get_node_or_null(key)
+    if control==null or not control.visible or not control.is_visible_in_tree():
+      _fail(212,"REV197_ESSENTIAL_PHONE_CAMERA_JUMP_FLIGHT_BUTTON_HIDDEN_"+key)
+      return
+  var human_meshes: Array[Node]=actor.find_children("*","MeshInstance3D",true,false)
+  if not actor.visible or human_meshes.is_empty() or float(actor.get_meta(
+      "actor_visual_height_m",0.0))<1.5:
+    _fail(213,"REV197_REAL_3D_CHARACTER_NOT_VISIBLE_OR_WITHOUT_LICENSED_MESH")
+    return
+  player.call("toggle_iso45")
+  var topdown_camera: Camera3D=room.get("camera")
+  var head: Vector3=actor.position+Vector3.UP*1.0
+  if String(player.get("camera_mode"))!="iso" or absf(float(player.get("_pitch"))-PI/4.0)>0.001 or (
+      topdown_camera.is_position_behind(head)):
+    _fail(214,"REV197_REAL_FOLLOWING_45_DEGREE_CHARACTER_CAMERA_NOT_AVAILABLE")
+    return
+  var projected: Vector2=topdown_camera.unproject_position(head)
+  var scene_pixels: Vector2=Vector2(viewport.size)
+  if projected.x<scene_pixels.x*0.12 or projected.x>scene_pixels.x*0.88 or (
+      projected.y<scene_pixels.y*0.12 or projected.y>scene_pixels.y*0.88):
+    _fail(215,"REV197_MAIN_CHARACTER_IS_OUTSIDE_45DEG_SCREEN_"+str(projected))
+    return
+  player.call("toggle_camera_lock")
+  var locked_yaw: float=float(player.get("_yaw"))
+  player.call("turn_view",Vector2(50,55))
+  if not is_equal_approx(float(player.get("_yaw")),locked_yaw):
+    _fail(216,"REV197_CAMERA_ANGLE_LOCK_STILL_ALLOWS_ACCIDENTAL_DRAG")
+    return
+  var near_distance: float=float(player.get("_distance"))
+  var plus: Button=game_hud.get_node("PhoneZoomInButton")
+  plus.pressed.emit()
+  if float(player.get("_distance"))>=near_distance:
+    _fail(217,"REV197_VISIBLE_PLUS_BUTTON_DID_NOT_MOVE_REAL_CAMERA")
+    return
+  var after_plus: float=float(player.get("_distance"))
+  (game_hud.get_node("PhoneZoomOutButton") as Button).pressed.emit()
+  if float(player.get("_distance"))<=after_plus:
+    _fail(218,"REV197_VISIBLE_MINUS_BUTTON_DID_NOT_MOVE_REAL_CAMERA")
+    return
+  player.call("toggle_camera_lock")
+  var before_pinch: float=float(player.get("_distance"))
+  var touch_a:=InputEventScreenTouch.new()
+  touch_a.index=32
+  touch_a.position=Vector2(560,280)
+  touch_a.pressed=true
+  var touch_b:=InputEventScreenTouch.new()
+  touch_b.index=33
+  touch_b.position=Vector2(750,295)
+  touch_b.pressed=true
+  player.call("handle_input",touch_a)
+  player.call("handle_input",touch_b)
+  var zoom_drag:=InputEventScreenDrag.new()
+  zoom_drag.index=33
+  zoom_drag.position=Vector2(890,295)
+  zoom_drag.relative=Vector2(140,0)
+  player.call("handle_input",zoom_drag)
+  touch_a.pressed=false
+  touch_b.pressed=false
+  player.call("handle_input",touch_b)
+  player.call("handle_input",touch_a)
+  if int(player.get("_pinch_zoom_events"))<1 or float(player.get("_distance"))>=before_pinch:
+    _fail(219,"REV197_REAL_CROSS_ZONE_TWO_FINGER_PINCH_STILL_CANNOT_ZOOM")
+    return
+  player.call("toggle_iso45")
+  if String(player.get("camera_mode"))!="third":
+    _fail(220,"REV197_45DEG_CAMERA_CANNOT_RETURN_TO_VISIBLE_THIRD_PERSON")
+    return
+  var rev197_before: Vector3=actor.position
+  var rev197_energy: int=int(mortal["energy"])
+  actor.position=Vector3(29.0,float(terrain.call("height_at",29,29))+
+    float(actor.get_meta("actor_ground_offset_y",0.0)),29)
+  mortal["energy"]=100
+  if not bool(player.call("jump_action")) or int(mortal["energy"])!=96:
+    _fail(221,"REV197_REAL_JUMP_DID_NOT_START_OR_USE_REAL_STAMINA")
+    return
+  player.call("step",0.10)
+  if float(player.get("_jump_height"))<0.23 or actor.position.y<=float(
+      terrain.call("height_at",actor.position.x,actor.position.z))+0.23:
+    _fail(222,"REV197_JUMP_IS_BUTTON_ONLY_WITHOUT_REAL_PLAYER_HEIGHT")
+    return
+  for i in range(16):
+    player.call("step",0.075)
+  if float(player.get("_jump_height"))>0.001 or int(player.get("_landing_count"))<1:
+    _fail(223,"REV197_GRAVITY_JUMP_NOT_LANDING_BACK_ON_PHYSICAL_TERRAIN")
+    return
+  player.call("toggle_avatar_flight")
+  if String(player.get("camera_mode"))!="soar" or not actor.visible or float(
+      player.get("_soar_altitude"))<2.9:
+    _fail(224,"REV197_FLIGHT_MUST_MOVE_VISIBLE_AVATAR_NOT_HIDE_CAMERA_ONLY")
+    return
+  var altitude_before: float=float(player.get("_soar_altitude"))
+  (game_hud.get_node("FlyUpButton") as Button).pressed.emit()
+  if float(player.get("_soar_altitude"))<=altitude_before+2.2:
+    _fail(225,"REV197_ACTUAL_AVATAR_FLY_UP_BUTTON_DOES_NOT_ASCEND")
+    return
+  (game_hud.get_node("FlyDownButton") as Button).pressed.emit()
+  if float(player.get("_soar_altitude"))>=altitude_before+0.1:
+    _fail(226,"REV197_ACTUAL_AVATAR_FLY_DOWN_BUTTON_DOES_NOT_DESCEND")
+    return
+  var flyer_before: Vector3=actor.position
+  player.set("_yaw",0.0)
+  player.set("_joystick",Vector2(0.0,-1.0))
+  player.call("step",0.15)
+  player.set("_joystick",Vector2.ZERO)
+  if Vector2(actor.position.x-flyer_before.x,
+      actor.position.z-flyer_before.z).length()<0.6 or (
+      actor.position.y<float(terrain.call("height_at",actor.position.x,actor.position.z))+1.8):
+    _fail(227,"REV197_AVATAR_FLY_JOYSTICK_ONLY_MOVED_A_HIDDEN_CAMERA")
+    return
+  player.call("toggle_avatar_flight")
+  player.call("step",0.01)
+  if player.get("camera_mode")!="third" or float(player.get("_soar_altitude"))!=0.0:
+    _fail(228,"REV197_FLIGHT_CANNOT_LAND_AND_RETURN_TO_NORMAL_WALK")
+    return
+  var stairs: StaticBody3D=world.get_node_or_null(
+      "ConstructionOccluder_LicensedWorksiteVisibleStoneApproach")
+  if stairs==null or stairs.collision_layer!=4 or stairs.get_node_or_null(
+      "CollisionShape3D")==null:
+    _fail(229,"REV197_STAIR_SHOULD_HAVE_WALKABLE_RAMP_NOT_TALL_BLOCKING_CUBE")
+    return
+  var testwall:=StaticBody3D.new()
+  testwall.name="REV197_REAL_COLLISION_TEMP_BARRIER"
+  testwall.collision_layer=2
+  testwall.collision_mask=0
+  testwall.position=actor.position+Vector3(0,0.95,-0.52)
+  var testwall_shape:=CollisionShape3D.new()
+  var testwall_box:=BoxShape3D.new()
+  testwall_box.size=Vector3(2.0,1.9,0.18)
+  testwall_shape.shape=testwall_box
+  testwall.add_child(testwall_shape)
+  world.add_child(testwall)
+  await process_frame # Register an actual PhysicsServer body for cast_motion
+  var wall_begin: Vector3=actor.position
+  var blocked_before: int=int(player.get("_blocked_wall_steps"))
+  player.set("_yaw",0.0)
+  player.set("_joystick",Vector2(0.0,-1.0))
+  player.call("step",0.21)
+  player.set("_joystick",Vector2.ZERO)
+  if actor.position.z<wall_begin.z-0.42 or int(player.get(
+      "_blocked_wall_steps"))<=blocked_before:
+    _fail(230,"REV197_REAL_SWEPT_PLAYER_CAPSULE_STILL_PHASES_THROUGH_WALL")
+    return
+  var wished_camera: Vector3=actor.position+Vector3.UP*1.18+Vector3(0,1.4,-3.0)
+  var blocked_view: Vector3=player.call("_safe_camera_position",
+    actor.position+Vector3.UP*1.18,wished_camera)
+  if blocked_view.distance_to(actor.position+Vector3.UP*1.18)>2.80:
+    _fail(231,"REV197_CAMERA_CLIPS_THROUGH_A_COLLIDABLE_WALL")
+    return
+  testwall.queue_free()
+  await process_frame
+  actor.position=rev197_before
+  mortal["energy"]=rev197_energy
+  player.call("reset_camera")
+  player.call("update_camera")
+  player.call("_refresh_game_hud")
+  print("PASS_REV197_REAL_ANDROID_TOUCH_PINCH_45DEG_VISIBLE_AVATAR_CAMERA_LOCK_JUMP_AVATAR_FLIGHT_STAIRS_AND_COLLISION")
   room.call("_focus_builder")
   if not bool(room.get("_follow_builder")) or float(room.get("_camera_distance")) > 14.0:
     _fail(42,"BUTTON_MUST_ACTUALLY_FOCUS_VISIBLE_NPC")
