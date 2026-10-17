@@ -1791,6 +1791,19 @@ func _run() -> void:
       " visible="+str(player.get("_game_sheet").visible)+
       " count="+str(item_grid.item_count if item_grid!=null else -1))
     return
+  var equipped_weapon: Button=game_hud.get_node_or_null(
+      "Rev188CharacterInventoryCultivationMenu/Rev205RealBackpackAndCharacterGameSheet/LiveEquipmentSlotsWeaponToolArmorRing/ActualEquipment_weapon")
+  var unequipped_armor: Button=game_hud.get_node_or_null(
+      "Rev188CharacterInventoryCultivationMenu/Rev205RealBackpackAndCharacterGameSheet/LiveEquipmentSlotsWeaponToolArmorRing/ActualEquipment_armor")
+  if equipped_weapon==null or unequipped_armor==null or (
+      equipped_weapon.disabled or not unequipped_armor.disabled or (
+      not equipped_weapon.text.contains("粗木剑"))):
+    _fail(322,"REV205_GEAR_STILL_TEXT_ONLY_NOT_REAL_4_SLOT_EQUIPMENT_WITH_GATED_ITEMS")
+    return
+  equipped_weapon.pressed.emit()
+  if String(backpack.call("snapshot")["equipment"]["weapon"])!="":
+    _fail(323,"REV205_EQUIPMENT_SLOT_UNEQUIP_DOES_NOT_UPDATE_REAL_SAVE_LEDGER")
+    return
   player.call("_open_game_menu","inventory")
   # Restore the QA-only ledger to avoid changing subsequent world assertions.
   backpack.set("items",contents_before)
