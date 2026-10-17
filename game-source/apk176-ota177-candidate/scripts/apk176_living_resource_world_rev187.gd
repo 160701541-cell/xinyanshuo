@@ -14,6 +14,7 @@ const VividMaterials = preload("res://canglan_rev187/vivid_material.gd")
 const CultivationWorld = preload("res://canglan_rev187/cultivation_world.gd")
 const SpiritResources = preload("res://canglan_rev187/spirit_resources.gd")
 const PaidHousing = preload("res://canglan_rev187/paid_housing.gd")
+const LivingRegions = preload("res://canglan_rev187/living_regions.gd")
 const ASSETS := {
   "tree": "res://canglan_rev187/tree_oak.glb",
   "stone": "res://canglan_rev187/rocks_small.glb",
@@ -102,6 +103,9 @@ var housing: RefCounted
 var housing_blueprints: Dictionary={}
 var house_entry_colliders: Dictionary={}
 var spirit_resources: RefCounted
+# Authoritative offscreen world: 50,000 km² / initially 5,000 humans.
+# Old 80,000-person city remains a backward-compatibility save snapshot only.
+var world_society: RefCounted
 var spirit_resource_sources: Dictionary={}
 var spirit_resource_visuals: Dictionary={}
 const SPIRIT_CC0_SOURCES: Dictionary={
@@ -197,6 +201,9 @@ func _ready() -> void:
   # world or invented resource/financial ledger is created.
   cultivation=CultivationWorld.new()
   cultivation.call("initialize",self)
+  world_society=LivingRegions.new()
+  if not bool(world_society.call("initialize",int(cultivation.get("world_seed")))):
+    asset_errors.append("REV207_WORLD_50000KM2_MORTAL_ECOLOGY_SAVE_LOAD_FAILED")
   _create_quality_hud()
   _hide_old_render_world()
   _hide_original_debug_labels()
@@ -870,13 +877,14 @@ func harvest_real_spirit_resource(point: Vector3,
   return response
 
 func _spawn_native_animals() -> void:
-  # At most four active true animated animals. The offscreen population of
-  # 10000..250000 humans exists ONLY in statistical memory, NEVER nodes.
+  # Four physical CC0 spiritual beast leaders truly GUARD four physical
+  # ore veins, a few metres away from each node. Their invisible wild packs
+  # breed and cultivate in a bounded regional ledger, never 5000 3D nodes.
   var animals: Array=[
-    ["wolf",Vector3(32.0,0.0,-34.0),"CL-WILDLIFE-WOLF-01"],
-    ["fox",Vector3(-34.0,0.0,-31.0),"CL-WILDLIFE-FOX-01"],
-    ["deer",Vector3(-32.0,0.0,32.0),"CL-WILDLIFE-DEER-01"],
-    ["cow",Vector3(31.0,0.0,34.0),"CL-WILDLIFE-COW-01"]]
+    ["wolf",Vector3(25.2,0.0,-31.0),"CL-WILDLIFE-WOLF-01"],
+    ["fox",Vector3(26.4,0.0,30.3),"CL-WILDLIFE-FOX-01"],
+    ["deer",Vector3(18.2,0.0,37.1),"CL-WILDLIFE-DEER-01"],
+    ["cow",Vector3(33.2,0.0,3.8),"CL-WILDLIFE-COW-01"]]
   for element in animals:
     var kind: String=element[0]
     if not native_wildlife_sources.has(kind):
@@ -890,6 +898,11 @@ func _spawn_native_animals() -> void:
     critter.set_meta("animal_not_human_citizen",true)
     critter.set_meta("species",kind)
     critter.set_meta("wildlife_entity_id",String(element[2]))
+    critter.set_meta("ore_guardian_territory",true)
+    # Match the exact living ore position in the original physical scene.
+    var guard_index: int=animals.find(element)
+    critter.set_meta("guarded_spirit_ore",String(
+      LivingRegions.MINE_GUARDS[guard_index]["ore"]))
     world.add_child(critter)
     var bounds: Vector2=_visible_bounds(critter)
     var measured: float=bounds.y-bounds.x
@@ -958,8 +971,40 @@ func _spawn_native_animals() -> void:
       "aggressive":bool(plan["hostile"]),"damage":int(plan["damage"]),
       "attack_cooldown":1.2,"attack_windup":0.0,
       "loot_available":false,"state":"patrol",
+      "guarded_ore":String(critter.get_meta("guarded_spirit_ore")),
       "collider":solid,"head_label":label,
       "animator":animator,"idle":idle_clip,"walk":walk_clip}
+
+# Same world-time ticker as NPC cultivation, seasonal vegetation and
+# mine guardians. The available physical CC0 leader meshes are updated with
+# actual realm, HP/MP ceiling and combat damage after slow breakthroughs.
+func _sync_mine_guardian_realms() -> void:
+  if world_society==null or not bool(world_society.get("_loaded")):
+    return
+  var packs: Dictionary=world_society.get("beast_packs")
+  for id in actual_wildlife:
+    if not packs.has(id):
+      continue
+    var pack: Dictionary=packs[id]
+    var beast: Dictionary=actual_wildlife[id]
+    if int(beast["health"])<=0:
+      continue
+    var layer: int=int(pack["layer"])
+    var role: String=String(beast["species"])
+    var base: Dictionary=YAO_BEAST_SPEC[role]
+    var new_health: int=int(base["max_health"])+maxi(0,layer-1)*16
+    var new_mana: int=int(base["max_mana"])+maxi(0,layer-1)*10
+    var health_increase: int=new_health-int(beast["max_health"])
+    var mana_increase: int=new_mana-int(beast["max_mana"])
+    beast["max_health"]=new_health
+    beast["health"]=mini(new_health,maxi(1,int(beast["health"])+maxi(0,health_increase)))
+    beast["max_mana"]=new_mana
+    beast["mana"]=mini(new_mana,maxi(0,int(beast["mana"])+maxi(0,mana_increase)))
+    beast["damage"]=int(base["damage"])+maxi(0,layer-1)*2
+    beast["realm"]=String(pack["realm"])
+    beast["age_days"]=int(pack["age_months"])*30
+    (beast["node"] as Node3D).set_meta("beast_realm",String(beast["realm"]))
+    _sync_beast_vitals(beast)
 
 func apply_yao_beast_damage(id: String,damage: int,
     element: String="sword") -> Dictionary:
@@ -982,6 +1027,8 @@ func apply_yao_beast_damage(id: String,damage: int,
     beast["loot_available"]=true
     beast["aggressive"]=false
     _beast_deaths+=1
+    if world_society!=null and bool(world_society.get("_loaded")):
+      world_society.call("record_guardian_death",id)
     var solid: StaticBody3D=beast["collider"]
     if is_instance_valid(solid):
       solid.collision_layer=0
@@ -1555,6 +1602,11 @@ func _process(delta: float) -> void:
       cultivation.call("advance_world_hour")
     if spirit_resources!=null:
       spirit_resources.call("advance_world_hour")
+    if world_society!=null and bool(world_society.get("_loaded")):
+      var month_before: int=int(world_society.get("months"))
+      world_society.call("advance_world_hour")
+      if int(world_society.get("months"))!=month_before:
+        _sync_mine_guardian_realms()
     _total_accelerated_hours+=1
     advanced+=1
   if advanced>0:
@@ -1658,6 +1710,12 @@ func stats() -> Dictionary:
     "rev208_true_yao_beast_real_hit_events":_beast_hit_events,
     "rev208_yao_beast_deaths":_beast_deaths,
     "rev206_real_spirit_herbs_ore":spirit_resources.call("stats") if spirit_resources!=null else {},
+    "rev207_real_living_world":world_society.call("stats") if world_society!=null else {},
+    "rev207_authoritative_mortal_population":int(world_society.call(
+      "population")) if world_society!=null and bool(
+      world_society.get("_loaded")) else 0,
+    "rev207_mine_guardian_positions_linked":actual_wildlife.values().filter(
+      func(v): return String(v.get("guarded_ore",""))!="").size(),
     "rev206_world_spirit_resource_visuals":spirit_resource_visuals.size(),
     "rev206_licensed_spirit_plant_rock_sources":spirit_resource_sources.size(),
     "rev206_native_animated_wildlife_count":_wildlife_anim_count,
@@ -1712,8 +1770,9 @@ func stats() -> Dictionary:
     },
     "not_whole_finished_house":false, "save_unchanged":true,
     "original_licensed_complete_houses_used":true,
-    "persistent_city_population_is_statistical_only":cultivation!=null and int(
-      cultivation.call("city_census").get("population",0))>=10000}
+    "persistent_city_population_is_statistical_only":world_society!=null and (
+      int(world_society.call("stats").get("area_km2",0))==50000) and (
+      int(world_society.call("stats").get("real_loaded_human_scene_nodes",-1))==0)}
 
 
 func _visible_bounds(actor: Node3D) -> Vector2:
