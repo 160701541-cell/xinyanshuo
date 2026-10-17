@@ -1,12 +1,12 @@
 {
   "schema": 1,
   "channel": "android-preview",
-  "revision": 206,
+  "revision": 207,
   "minimum_android_code": 1176,
   "maximum_android_code": 1176,
-  "sha256": "d2b2fbd4a34b8dfeb90d20f1e302ff01803adf5b8c811aed78759d1b478ba022",
-  "size_bytes": 35782624,
-  "pack_url": "https://160701541-cell.github.io/xinyanshuo/android-preview/canglan-content-rev-206.pck",
-  "notes": "苍岚原APK176增量rev206：修复52棵树20个石矿原Kenney真实MultiMesh资源槽位及新生树扩容可见性；七份CC0灵药菌草与灵石原始GLB，13处有限资源采挖、背包入账、炼丹真实消耗、世界时间生长；保留32属性灵根法术、索敌、飞剑和原存档。完整房屋须真实库存付费及NPC工期，住宅室内、更多动画及手机实机仍待验收。",
-  "signature": "LOmwNZc1UdzvQfp1+IkkTDHnGC4/fBRCVmvtd+I8cBNtyQf5Y0/NezQbuktsJgJyNYlennAQO0tfbv7iu/hUpTe2FKgJ8Rmkah12a55mmuLzyipbr4fLPRAd1vS+IlJdQHHP+D74H+hd1UUivWEtMeInHLqJ433wyFPYi2rIqJb98P4BzH2epVY5ocZ+NXLUGX06V3oc3HyIGRSFwlEpjzBY3V1+E5N7+BTKw3Ido2yLIgQyTgdgpQ4ZnfVLRW5iNLWzFDjBvLZXmEv9B+zg6sLNDyI0RaJD5Cd9+PesxE6LniIQFOqm74yetG4CB/I/QLxozn2L6a6hRaVDX3YMdEfsqWn3I522DEQO/BBpW+pz5UexrwXyPvwruUfaVHaakW12oOHjCR/Icx3E2pT6kSn/jOL2Yo2KcVPE3S4nNzKYemKZEpgvaEYYE8uwbBw5DQqHY8Cz6r+9yHSS2uv4WXzOKCxowhXDOOMD+pR5X+tvl01gZK+Hm8WHfuA9BElc"
+  "sha256": "db64972a0615abbe0600919220398d11853b83cbd4c57121b125f12b10262812",
+  "size_bytes": 35815712,
+  "pack_url": "https://160701541-cell.github.io/xinyanshuo/android-preview/canglan-content-rev-207.pck",
+  "notes": "苍岚原APK176 rev207：开局真实世界账本改为五万平方公里、五千凡人，保留玩家灵根但普通凡人只有少量灵根，其他可炼体；500个百平方公里生态块按世界时辰生育死亡、草木种子扩散永不全球断种；五个修行宗门与十四门专业基础；四只真实3D妖兽分别巡守四个灵矿，妖兽群受资源制约自然繁衍、修炼突破；野生灵草可采量为零时活植株仍可见，每三十世界日自然扩散新真实GLB灵草；保留rev206有限背包采矿炼丹战斗索敌飞剑、原存档。大世界真实3D旅行、御兽符箓UI与Android实机验收未完成。",
+  "signature": "W9fmfwU3Fr3mWa2WmDmHH0VzaENC2Hy58hrugszzdLLFIFd5btaG+Kd+8Pq2mv41Sr4MF5FhwpGW5ZyDIG7QKCNArqROP/bV4XkVLD5yEbnqb8kVhVYQeKXqboMb1Vn/wVG5zK+HEc0B4XqZ7/rA5510spG5vd7Qih1DhsxmTwugnp7Tciq93wZmMA/mKqvx371SPZwmInmlsD9XWVH7NCDr+TN3YQmZ9xaJ8zLFuwuf4ze6/YgXxujbgPJ+VgRJDT8L6Gfu7Kwm2bVoiwzdtkIZIiXFzzlv3xouxAT4GamxjfDGOxDka1sz/JBi+4rub/008cBn+KSdf/+QyTHATr1NOz8DFUUoNngbA0potkqhx/qk/DjotYMfet3IEfQjyH01Emy0dnKRo6ZtwBJ8mtB/CLroTgAKnU68daYDbq01IoKR7WzKIKv5ZKLaNgPCTEOU0Dw9tMinrqizd5uaxhZMr4bUYaop/jqA6GCdh0yDt+l1F7zit8Bi24Fy6WFz"
 }
