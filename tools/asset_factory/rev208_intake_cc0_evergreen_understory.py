@@ -17,7 +17,7 @@ BASE="https://www.innerscene.com"
 ASSETS={
  "pine":{"slug":"mature-scots-pine-tree-280307e1","layer":"mature","height_range":[15.0,21.0],"author":"Innerscene"},
  "cypress":{"slug":"columnar-cypress-tree-46fad033","layer":"mature","height_range":[10.0,14.0],"author":"Innerscene"},
- "conifer":{"slug":"conifer-detailed-needles-ca8e7cef","layer":"mature","height_range":[7.5,9.0],"author":"Innerscene"},
+ "conifer":{"slug":"mature-norway-spruce-tree-48c2566f","layer":"mature","height_range":[14.0,18.0],"author":"Innerscene"},
  "fern":{"slug":"fern-clumps-82a87bea","layer":"groundcover","height_range":[0.1,1.5],"author":"Rob Tuytel and Rico Cilliers (Poly Haven)"},
  "hydrangea":{"slug":"flowering-hydrangea-shrub-af2da5d3","layer":"shrub","height_range":[0.6,1.7],"author":"Innerscene"},
  "rose":{"slug":"flowering-rose-bush-a9534324","layer":"shrub","height_range":[0.5,1.5],"author":"Innerscene"},
