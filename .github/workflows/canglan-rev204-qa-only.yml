@@ -302,6 +302,8 @@ jobs:
           grep -Fq 'PASS_REV203_REAL_GODOT_RENDERED_LICENCED_SWORD_BANK_AND_GROUND_REFERENCE' qa-results/rev187-real-worksite/render.log
           grep -Fq 'PASS_REV204_REAL_GODOT_RENDERED_OPPONENT_OVERHEAD_HP_MP_AND_SWORD_IMPACT' qa-results/rev187-real-worksite/render.log
           grep -Fq 'PASS_REV204_REAL_GODOT_RENDERED_MANA_PAID_SPIRIT_BOLT_IN_FLIGHT' qa-results/rev187-real-worksite/render.log
+          grep -Fq 'PASS_REV204_REAL_GODOT_MIDFLIGHT_AND_IMPACT_FINITE_MANA_REAL_HP_DAMAGE_FRAMES' qa-results/rev187-real-worksite/render.log
+          test -s qa-results/rev187-real-worksite/real_apk176_rev204_qi_bolt_real_impact_damage.png
           test -s qa-results/rev187-real-worksite/real_apk176_rev204_opponent_realm_hp_mp_sword_sparks.png
           test -s qa-results/rev187-real-worksite/real_apk176_rev204_mana_paid_qi_bolt_midair.png
           grep -Fq 'PASS_REV197_ORIGINAL_GODOT_ENGINE_VISIBLE_ANIMATED_PLAYER_CLOSE_AND_45DEG_REAL_FRAMES' qa-results/rev187-real-worksite/render.log
