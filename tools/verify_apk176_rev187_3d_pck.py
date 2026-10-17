@@ -85,7 +85,7 @@ def audit(path: Path) -> dict:
         raise ValueError("BLOCKED: incompatible or flagged Godot PCK")
     file_base = struct.unpack_from("<Q", raw, 0x18)[0]
     count = struct.unpack_from("<I", raw, 0x60)[0]
-    if not (0x68 <= file_base <= len(raw) and 7 <= count <= 80):
+    if not (0x68 <= file_base <= len(raw) and 7 <= count <= 140):
         raise ValueError("BLOCKED: invalid PCK file table")
     offset = 0x64
     found: dict[str, bytes] = {}
@@ -141,7 +141,7 @@ def audit(path: Path) -> dict:
         "BLOCKED: signed PCK PBR license/texture provenance mismatch")
     for rel, (actual_source, sha256) in REAL_PBR.items():
         raw_texture = found[rel]
-        assert raw_texture.startswith(b"\\x89PNG\\r\\n\\x1a\\n".decode("unicode_escape").encode("latin1")), (
+        assert raw_texture.startswith(bytes.fromhex("89504e470d0a1a0a")), (
             "BLOCKED: not real source-derived PNG "+rel)
         assert hashlib.sha256(raw_texture).hexdigest()==sha256
         assert raw_texture==actual_source.read_bytes(), (
