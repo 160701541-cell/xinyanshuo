@@ -96,6 +96,19 @@ func _run() -> void:
   if hair.material_override==null or (hair.material_override as StandardMaterial3D).albedo_color.a<0.95:
     _fail(252,"REV199_HAIR_MUST_BE_ACTUAL_OPAQUE_BLACK_HAIR_NOT_A_FAKE_UI_LABEL")
     return
+  # rev200: previous hair node & 3080 vertices QA falsely passed while the
+  # GLB nested below a Knight root scaled 5.6->1.8m; hair was IN TORSO.
+  # Require genuine WORLD-SPACE hair bounds over top of the 1.8m actual
+  # avatar, and reject cosmetic hair assembled far above the scalp.
+  var hair_bounds: Vector2=room.call("_visible_bounds",hair)
+  var hero_world_top: float=float(original_hero.position.y)+float(
+    original_hero.get_meta("actor_visual_height_m",0.0))
+  if hair_bounds.x<hero_world_top-0.50 or hair_bounds.x>hero_world_top+0.02 or (
+      hair_bounds.y<hero_world_top-0.11 or hair_bounds.y>hero_world_top+0.40):
+    _fail(254,"REV200_SCENE_TREE_HAIR_EXISTS_BUT_ACTUAL_HEAD_IS_STILL_BALD_"+
+      str(hair_bounds)+"_player_head_y_"+str(hero_world_top))
+    return
+  print("PASS_REV200_REAL_CC0_HAIR_BOUNDS_FOLLOW_LICENSED_3D_AVATAR_HEAD",hair_bounds)
   var sword_source: Node3D=room.get("licensed_flying_sword_source")
   var sword_meshes: Array[Node]=sword_source.find_children("*","MeshInstance3D",true,false)
   if sword_meshes.is_empty() or (sword_meshes[0] as MeshInstance3D).mesh.get_surface_count()<3:
