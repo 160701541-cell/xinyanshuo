@@ -2162,6 +2162,23 @@ func _run() -> void:
   var saved_cult_state: Dictionary=cult_state.duplicate(true)
   var cult_actor: Node3D=spir.get("npc_visuals")[killed_id]["actor"]
   var cult_collider: StaticBody3D=spir.get("npc_colliders")[killed_id]
+  # Real mobile world foliage, beasts and other walking cultivators can
+  # temporarily block EVERY reachable direction around a wandering NPC.
+  # That's a valid LOS combat denial, not an attack-system regression.
+  # Keep the SAME actual humanoid ID/GLB/StaticBody3D but temporarily
+  # stage it in the physically verified open 29m sparring patch for a
+  # deterministic integration hit. Preserve/restore real game anchors.
+  var original_cult_pos: Vector3=cult_actor.position
+  var original_collider_pos: Vector3=cult_collider.position
+  var original_cult_anchor: Vector3=spir.get("npc_visuals")[killed_id]["anchor"]
+  var open_duel_position: Vector3=Vector3(29.0,float(
+    room.get("terrain_world").call("height_at",29.0,29.0))+float(
+    cult_actor.get_meta("actor_ground_offset_y",0.0)),29.0)
+  cult_actor.position=open_duel_position
+  cult_collider.position=open_duel_position+Vector3.UP*0.84
+  spir.get("npc_visuals")[killed_id]["anchor"]=Vector3(29.0,0.0,29.0)
+  await physics_frame
+  await process_frame
   var hero_saved_position: Vector3=actor.position
   var hero_saved_yaw: float=float(player.get("_yaw"))
   var hero_saved_stamina: int=int(econ.citizens["CL-PLAYER-0184-0001"]["energy"])
@@ -2235,6 +2252,9 @@ func _run() -> void:
     _fail(387,"REV208_ISOLATED_QA_MUST_ROLLBACK_NAMED_MORTALITY_WORLD_FILE")
     return
   cult_actor.rotation.x=0.0
+  cult_actor.position=original_cult_pos
+  cult_collider.position=original_collider_pos
+  spir.get("npc_visuals")[killed_id]["anchor"]=original_cult_anchor
   cult_actor.set_meta("actually_dead",false)
   cult_collider.collision_layer=2
   (spir.get("npc_labels")[killed_id] as Label3D).modulate=Color.WHITE
