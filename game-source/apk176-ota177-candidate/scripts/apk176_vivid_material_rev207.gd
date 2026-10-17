@@ -233,6 +233,109 @@ func upgrade_completed_cc0_model(root: Node3D,model_name: String,
     "genuine_source_preserved":true}
   return model_material_roles[model_name]
 
+func upgrade_han_ccby_source(root: Node3D,model: String) -> Dictionary:
+  # 0 A.D. original ancient Han glTF mesh has zero embedded texture images,
+  # so it previously appeared as the same pale untextured material. Keep
+  # existing Chinese geometry while adding nine genuine CC0 diffuse/normal/
+  # roughness wall/wood/tile images as lawful *derived* CC-BY-SA 3.0 art.
+  # Do not substitute a western medieval mesh or generate any 3D geometry.
+  var wall: Texture2D=_load_png("plaster_albedo.png")
+  var roof: Texture2D=_load_png("tile_albedo.png")
+  var wood: Texture2D=_load_png("timber_albedo.png")
+  var wall_normal: Texture2D=_load_png("plaster_normal.png")
+  var roof_normal: Texture2D=_load_png("tile_normal.png")
+  var wood_normal: Texture2D=_load_png("timber_normal.png")
+  var plaster_orm: Texture2D=_load_png("plaster_orm.png")
+  var tiles_rough: Texture2D=_load_png("tile_roughness.png")
+  var wood_rough: Texture2D=_load_png("timber_roughness.png")
+  if wall==null or roof==null or wood==null or wall_normal==null or (
+      roof_normal==null or wood_normal==null or plaster_orm==null or (
+      tiles_rough==null or wood_rough==null)):
+    return {"ok":false,"reason":"NINE_ORIGINAL_REAL_CC0_PBR_IMAGES_MISSING"}
+  var han_shader:=Shader.new()
+  han_shader.code="""
+shader_type spatial;
+render_mode depth_draw_opaque, cull_back;
+uniform sampler2D plaster_map : source_color, repeat_enable, filter_nearest_mipmap;
+uniform sampler2D roof_map : source_color, repeat_enable, filter_nearest_mipmap;
+uniform sampler2D timber_map : source_color, repeat_enable, filter_nearest_mipmap;
+uniform sampler2D plaster_normal : hint_normal, repeat_enable, filter_linear_mipmap;
+uniform sampler2D roof_normal : hint_normal, repeat_enable, filter_linear_mipmap;
+uniform sampler2D timber_normal : hint_normal, repeat_enable, filter_linear_mipmap;
+uniform sampler2D plaster_orm : repeat_enable, filter_linear_mipmap;
+uniform sampler2D roof_rough : repeat_enable, filter_linear_mipmap;
+uniform sampler2D timber_rough : repeat_enable, filter_linear_mipmap;
+uniform float stone_base_world_y=0.0;
+uniform float roof_transition_world_y=2.1;
+varying vec3 world_point;
+varying vec3 world_normal;
+void vertex() {
+  world_point=(MODEL_MATRIX*vec4(VERTEX,1.0)).xyz;
+  world_normal=normalize(MODEL_NORMAL_MATRIX*NORMAL);
+}
+void fragment() {
+  // 512 texels per 8 m world repeat => 64 dense surface texels/metre.
+  vec2 uv_v=world_point.xz*0.125;
+  vec2 uv_w=world_point.xy*0.125;
+  float roof_weight=smoothstep(roof_transition_world_y,
+    roof_transition_world_y+1.0,world_point.y)
+    *smoothstep(0.40,0.85,world_normal.y);
+  float column_weight=(1.0-roof_weight)*
+    (1.0-smoothstep(0.35,0.88,abs(world_normal.y)));
+  // Keep solid vivid teak pillars narrow, never paint the whole house brown.
+  float grain=abs(sin(world_point.x*1.45)*cos(world_point.z*1.10));
+  float timber_weight=column_weight*smoothstep(0.72,0.92,grain)*0.64;
+  vec3 plaster=texture(plaster_map,uv_w).rgb*vec3(0.91,0.86,0.78);
+  vec3 tiled=texture(roof_map,uv_v).rgb*vec3(0.46,0.72,0.87);
+  vec3 timber=texture(timber_map,uv_w).rgb*vec3(0.72,0.47,0.29);
+  ALBEDO=mix(mix(plaster,timber,timber_weight),tiled,roof_weight);
+  vec3 base_normal=texture(plaster_normal,uv_w).rgb;
+  vec3 tile_n=texture(roof_normal,uv_v).rgb;
+  vec3 wood_n=texture(timber_normal,uv_w).rgb;
+  NORMAL_MAP=mix(mix(base_normal,wood_n,timber_weight),tile_n,roof_weight);
+  NORMAL_MAP_DEPTH=0.32;
+  float rough_plaster=texture(plaster_orm,uv_w).g;
+  float rough_tile=texture(roof_rough,uv_v).r;
+  float rough_wood=texture(timber_rough,uv_w).r;
+  ROUGHNESS=clamp(mix(mix(rough_plaster,rough_wood,timber_weight),
+    rough_tile,roof_weight),0.52,0.96);
+  METALLIC=0.0;
+}
+"""
+  var modified: int=0
+  for child in root.find_children("*","MeshInstance3D",true,false):
+    var part: MeshInstance3D=child as MeshInstance3D
+    if part.mesh==null:
+      continue
+    for i in range(part.mesh.get_surface_count()):
+      var original: Material=part.get_active_material(i)
+      # If a future original Han art update includes genuine PBR maps,
+      # honor it first instead of replacing that with a fallback shader.
+      if original is StandardMaterial3D and (
+          (original as StandardMaterial3D).albedo_texture!=null):
+        continue
+      var shader_mat:=ShaderMaterial.new()
+      shader_mat.resource_name="RealSourceHanCCBYSA_PBR_64TexelsPerMetre_"+model
+      shader_mat.shader=han_shader
+      shader_mat.set_shader_parameter("plaster_map",wall)
+      shader_mat.set_shader_parameter("roof_map",roof)
+      shader_mat.set_shader_parameter("timber_map",wood)
+      shader_mat.set_shader_parameter("plaster_normal",wall_normal)
+      shader_mat.set_shader_parameter("roof_normal",roof_normal)
+      shader_mat.set_shader_parameter("timber_normal",wood_normal)
+      shader_mat.set_shader_parameter("plaster_orm",plaster_orm)
+      shader_mat.set_shader_parameter("roof_rough",tiles_rough)
+      shader_mat.set_shader_parameter("timber_rough",wood_rough)
+      shader_mat.set_shader_parameter("roof_transition_world_y",2.0)
+      part.set_surface_override_material(i,shader_mat)
+      modified+=1
+  model_material_roles[model]={
+    "category":"real_ancient_Han_CC_BY_SA_3.0",
+    "original_shape_kept":true,"source_3d_vendor":"0AD_WildfireGames",
+    "pbr_source_images":9,"surfaces_textured":modified,
+    "material_license":"CC-BY-SA-3.0_Han_mesh_with_CC0_derivative_PBR"}
+  return {"ok":modified>0,"textured_surfaces":modified}
+
 func summary() -> Dictionary:
   return {
     "material_maps_loaded":image_cache.size(),
