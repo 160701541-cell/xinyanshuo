@@ -1,10 +1,25 @@
 {
   "schema": 1,
   "channel": "signed-releases",
-  "updated_at": "2026-10-17T13:16:20Z",
+  "updated_at": "2026-10-17T16:55:12Z",
   "source": "android-preview/latest.json; RSA original APK key + official HTTPS PCK",
   "verification": "Godot signed manifest, Pages PCK SHA256 and real Android updater Range HTTP verified in GitHub Actions; user Android device visual/performance QA pending.",
   "entries": [
+    {
+      "revision": 205,
+      "first_seen_utc": "2026-10-17T16:55:12Z",
+      "notes": "苍岚原APK176累计rev205：现成CC0房屋、服饰及真实动物，取消旧破房施工；九张源核对PBR贴图与64细像素每米地表，更浓绿色和蓝天；开源图标精简UI、索敌、镜头反向修正、御剑复飞、真实背包装备；32系灵根/法术，玩家及常规NPC必有灵根，每城1万至25万人数据模拟；保留旧存档和rev204法术。室内住宅、完整灵兽和本地AI仍待完成。",
+      "sha256": "91da8e9379cfe3decf9725ef6f637c21adf1fa85fcc4aa23085d6a6dd66b9637",
+      "size_bytes": 34968416,
+      "status": "signed_release",
+      "android_version_code": 1176,
+      "protocol": "RSA-3072 PKCS1-v1_5 / SHA-256",
+      "remote_https_verified": false,
+      "remote_range_206_verified": false,
+      "ci_run": 39051286400,
+      "android_real_device_qa": "pending",
+      "engine_visual_proof": "art/actual-engine-capture/canglan-rev205-lucide-target-lock-godot-linux.png"
+    },
     {
       "revision": 204,
       "first_seen_utc": "2026-10-17T13:16:20Z",
