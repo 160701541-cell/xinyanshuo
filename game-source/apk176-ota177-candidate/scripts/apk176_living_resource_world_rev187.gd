@@ -890,6 +890,9 @@ func _process(delta: float) -> void:
     _update_status()
     _hide_original_debug_labels()
     if quality!=null:
+      # Keep vegetation child nodes aligned with real loaded physical chunks.
+      # No separate far-away cosmetic terrain creates unlimited memory usage.
+      quality.call("sync_streamed_meadows")
       quality.call("update_diagnostics")
       quality_warning.visible=quality_details_visible and quality_warning.visible
 
