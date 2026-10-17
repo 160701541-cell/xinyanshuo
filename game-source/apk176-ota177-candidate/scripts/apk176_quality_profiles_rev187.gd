@@ -341,7 +341,10 @@ func sync_streamed_meadows() -> void:
     return
   var loaded: Dictionary=terrain.get("stream_chunks")
   for key in streamed_meadows.keys():
-    if not loaded.has(key) or not is_instance_valid(streamed_meadows[key]):
+    var entry: MultiMeshInstance3D=streamed_meadows[key]
+    if not loaded.has(key) or not is_instance_valid(entry) or entry.is_queued_for_deletion() or entry.get_parent()!=loaded[key]:
+      # The streamer can evict and recreate the SAME chunk coordinates
+      # within one frame. An old queue_free() node is not the new terrain.
       streamed_meadows.erase(key)
       streamed_meadow_points.erase(key)
       streamed_meadow_rotations.erase(key)
