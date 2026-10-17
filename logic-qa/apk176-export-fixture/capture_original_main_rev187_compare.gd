@@ -385,6 +385,11 @@ func _capture() -> void:
   var econ=room.get("sim")
   var resource_id: String=""
   for id in econ.natural_nodes:
+    # A photography QA session must still harvest a TRUE finite tree,
+    # but must NOT fell any of the three unchanged mature species before
+    # taking the same-session physical 8-9m tree-vs-avatar comparisons.
+    if room.get("hq_mature_tree_visuals").has(id):
+      continue
     if String(econ.natural_nodes[id].get("kind",""))=="tree" and int(
         econ.natural_nodes[id].get("remaining",0))>=3:
       resource_id=String(id)
