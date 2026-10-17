@@ -156,6 +156,45 @@ func _run() -> void:
   if not pc.get("first_person_available",false) or int(pc.get("zoom_buttons",0))!=2:
     _fail(63,"NO_FIRST_PERSON_ZOOM_AND_TOUCH_LOOK")
     return
+  # rev188 user phone QA regression: normal HUD MUST replace QA controls.
+  var game_hud: Control=player.get("hud") as Control
+  if game_hud==null:
+    _fail(141,"REV188_PLAYER_HUD_MISSING")
+    return
+  for key in ["LiveGameVitalsRev188","GameMenu_角色","GameMenu_背包",
+      "GameMenu_修炼","GameMenu_菜单","MobileGameplay_GatherAction",
+      "MobileGameplay_DashAction","MobileGameplay_DigAction",
+      "MobileGameplay_InteractAction","MobileGameplay_ViewAction"]:
+    if game_hud.get_node_or_null(key)==null:
+      _fail(142,"REV188_REQUIRED_PLAYER_HUD_CONTROL_MISSING_"+key)
+      return
+  if bool(room.get("developer_ui_visible")) or ui.get_node("ProductionInspector").visible:
+    _fail(143,"REV188_DEBUG_QA_CONTROLS_SHOULD_BE_HIDDEN_IN_NORMAL_GAMEPLAY")
+    return
+  var gauges: ProgressBar=game_hud.get_node("LiveGameVitalsRev188/MarginContainer/VBoxContainer/RealHealthFromFallDamageAndFood")
+  var stamina: ProgressBar=game_hud.get_node("LiveGameVitalsRev188/MarginContainer/VBoxContainer/ActualWorldCitizenEnergy")
+  if gauges==null or stamina==null or int(gauges.value)!=100:
+    _fail(144,"REV188_MOBILE_HEALTH_OR_STAMINA_GAUGE_NOT_REAL")
+    return
+  if int(stamina.value)!=int(econ.citizens["CL-PLAYER-0184-0001"]["energy"]):
+    _fail(145,"REV188_PLAYER_STAMINA_NOT_BOUND_TO_WORLD_SIM")
+    return
+  if int(player.call("apply_player_damage",17))!=83 or int(gauges.value)!=83:
+    _fail(146,"REV188_DAMAGE_MUST_CHANGE_REAL_HP_AND_ACTUAL_HUD")
+    return
+  player.set("_player_health",100)
+  player.call("_refresh_game_hud")
+  player.call("_open_game_menu","inventory")
+  if not game_hud.get_node("Rev188CharacterInventoryCultivationMenu").visible:
+    _fail(147,"REV188_BAG_MENU_CANNOT_OPEN")
+    return
+  player.call("_open_game_menu","inventory")
+  room.call("_set_dev_ui_visible",true)
+  if not ui.get_node("ProductionInspector").visible:
+    _fail(148,"REV188_DEVELOPER_TOOLS_CANNOT_BE_REOPENED")
+    return
+  room.call("_set_dev_ui_visible",false)
+  print("PASS_REV188_REAL_HEALTH_STAMINA_GAME_HUD_BAG_MENU_AND_OPT_IN_DEV_TOOLS")
   var render_frame: TextureRect = ui.get_node("RealWorldViewportContainer")
   if render_frame==null or render_frame.texture==null or render_frame.stretch_mode!=TextureRect.STRETCH_SCALE:
     _fail(64,"NATIVE_RESOLUTION_UI_NEEDS_3D_ONLY_RESIZABLE_SUBVIEWPORT_TEXTURE")
