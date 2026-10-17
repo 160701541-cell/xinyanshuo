@@ -20,6 +20,24 @@ const ASSETS := {
   "door": "res://canglan_rev187/wood_door.glb",
   "worker": "res://canglan_rev187/animated_knight.glb"
 }
+# Rev206 prefabricated whole CC0 houses/outfits/animals, NOT buildings
+# assembled from single fence poles or custom AI meshes. Exactly these
+# binaries are pinned upstream in asset_intake_proof.json.
+const READY_MADE_CC0: Dictionary={
+  "house_1":"res://canglan_rev187/cc0_rev206/building/house_1.glb",
+  "house_2":"res://canglan_rev187/cc0_rev206/building/house_2.glb",
+  "house_3":"res://canglan_rev187/cc0_rev206/building/house_3.glb",
+  "house_4":"res://canglan_rev187/cc0_rev206/building/house_4.glb",
+  "inn":"res://canglan_rev187/cc0_rev206/building/inn.glb",
+  "gazebo":"res://canglan_rev187/cc0_rev206/building/gazebo.glb",
+  "monk":"res://canglan_rev187/cc0_rev206/character_clothing_rig/monk.glb",
+  "wizard":"res://canglan_rev187/cc0_rev206/character_clothing_rig/wizard.glb",
+  "wolf":"res://canglan_rev187/cc0_rev206/animal/wolf.glb",
+  "fox":"res://canglan_rev187/cc0_rev206/animal/fox.glb",
+  "deer":"res://canglan_rev187/cc0_rev206/animal/deer.glb",
+  "cow":"res://canglan_rev187/cc0_rev206/animal/cow.glb",
+  "dragon":"res://canglan_rev187/cc0_rev206/monster/dragon.glb",
+  "goleling":"res://canglan_rev187/cc0_rev206/monster/goleling.glb"}
 const TOWN := "CL-REV186-HX-VILLAGE"
 const DEPOT := Vector3(0.0, 0.0, 10.0)
 const SITE := Vector3(0.0, 0.0, -3.0)
@@ -75,6 +93,12 @@ var licensed_flying_sword_source: Node3D
 var _licensed_hair_attachments: int=0
 var _licensed_actor_zero_alpha_fixed: int = 0
 var natural_meshes: Dictionary = {}
+var finished_prefabs: Dictionary={}
+var finished_prefab_sources: Dictionary={}
+var licensed_outfits: Dictionary={}
+var native_wildlife_sources: Dictionary={}
+var actual_wildlife: Dictionary={}
+var _wildlife_anim_count: int=0
 # rev197: cheap real world collisions for already-licensed instanced trunks
 # and stones; they follow harvesting/growth without duplicating GLB rendering.
 var natural_colliders: Dictionary = {}
@@ -126,7 +150,9 @@ func _ready() -> void:
   _initialize_batches()
   _create_landscape()
   _seed_resources()
+  _place_completed_cc0_village()
   _make_workers()
+  _spawn_native_animals()
   _create_playable_player()
   # Initialized only AFTER the real player, terrain, original NPC economy,
   # CC0 animated rigs and original site/collision are live. No parallel
@@ -529,6 +555,137 @@ func _load_assets() -> void:
     _repair_licensed_opaque_character_model(licensed_flying_sword_source)
   if licensed_long_hair_source==null or licensed_flying_sword_source==null:
     asset_errors.append("REV199_MISSING_REAL_CC0_HAIR_SWORD_NOT_SELF_MODELED")
+  # Complete and licensed models are checked by SHA256 at packaging. No
+  # "if missing, procedurally rebuild" fallback: missing assets BLOCK the QA.
+  for model_id in READY_MADE_CC0:
+    var original: Node3D=_parse_existing_cc0(
+      String(READY_MADE_CC0[model_id]))
+    if original==null:
+      asset_errors.append("REV206_MISSING_GENUINE_CC0_"+String(model_id))
+      continue
+    if model_id in ["house_1","house_2","house_3","house_4",
+        "inn","gazebo"]:
+      finished_prefab_sources[model_id]=original
+    elif model_id in ["monk","wizard"]:
+      licensed_outfits[model_id]=original
+    else:
+      native_wildlife_sources[model_id]=original
+
+func _place_completed_cc0_village() -> void:
+  # Replaces unfinished NPC-built 3m shacks with actual complete CC0
+  # buildings. Existing original warehouse and terrain stay real.
+  # Each complete house is one original licensed GLB, no house assembly.
+  var sites: Array=[
+    ["house_1",Vector3(-7.0,0.0,-18.0),-0.12,"CL-HOME-V206-001"],
+    ["house_2",Vector3( 4.8,0.0,-24.0), 0.28,"CL-HOME-V206-002"],
+    ["house_3",Vector3(-5.0,0.0, 25.0), 0.42,"CL-HOME-V206-003"],
+    ["house_4",Vector3( 4.0,0.0, 31.0),-0.20,"CL-HOME-V206-004"],
+    ["inn",Vector3(-6.0,0.0,-31.0),0.10,"CL-INN-V206-001"],
+    ["gazebo",Vector3(-2.0,0.0,37.0),0.35,"CL-GAZEBO-V206-001"]]
+  for config in sites:
+    var kind: String=config[0]
+    if not finished_prefab_sources.has(kind):
+      continue
+    var at: Vector3=config[1]
+    var instance: Node3D=(finished_prefab_sources[kind] as Node3D).duplicate()
+    instance.name=String(config[3])
+    instance.position=Vector3(at.x,
+      float(terrain_world.call("height_at",at.x,at.z)),at.z)
+    instance.rotation.y=float(config[2])
+    instance.set_meta("source_license","Quaternius-CC0")
+    instance.set_meta("completed_prefab_not_npc_assembly",true)
+    instance.set_meta("building_type",kind)
+    instance.set_meta("resident_capacity",4 if kind.begins_with("house") else (
+      18 if kind=="inn" else 0))
+    instance.set_meta("assigned_resident_ids",[])
+    world.add_child(instance)
+    finished_prefabs[instance.name]=instance
+  _add_event("村落使用%d座完整CC0房屋和亭阁；旧脚手架施工停止" % [
+    finished_prefabs.size()])
+
+func _spawn_native_animals() -> void:
+  # At most four active true animated animals. The offscreen population of
+  # 10000..250000 humans exists ONLY in statistical memory, NEVER nodes.
+  var animals: Array=[
+    ["wolf",Vector3(32.0,0.0,-34.0),"CL-WILDLIFE-WOLF-01"],
+    ["fox",Vector3(-34.0,0.0,-31.0),"CL-WILDLIFE-FOX-01"],
+    ["deer",Vector3(-32.0,0.0,32.0),"CL-WILDLIFE-DEER-01"],
+    ["cow",Vector3(31.0,0.0,34.0),"CL-WILDLIFE-COW-01"]]
+  for element in animals:
+    var kind: String=element[0]
+    if not native_wildlife_sources.has(kind):
+      continue
+    var at: Vector3=element[1]
+    var critter: Node3D=(native_wildlife_sources[kind] as Node3D).duplicate()
+    critter.name=String(element[2])
+    critter.position=Vector3(at.x,
+      float(terrain_world.call("height_at",at.x,at.z)),at.z)
+    critter.set_meta("source_license","Quaternius-CC0")
+    critter.set_meta("animal_not_human_citizen",true)
+    critter.set_meta("species",kind)
+    critter.set_meta("wildlife_entity_id",String(element[2]))
+    world.add_child(critter)
+    var clips: Array[Node]=critter.find_children("*","AnimationPlayer",true,false)
+    var animator: AnimationPlayer=clips[0] as AnimationPlayer if not clips.is_empty() else null
+    var idle_clip: String=""
+    var walk_clip: String=""
+    if animator!=null:
+      var choices: PackedStringArray=animator.get_animation_list()
+      for clip in choices:
+        if idle_clip=="" and clip.to_lower().contains("idle"):
+          idle_clip=clip
+        if walk_clip=="" and (clip.to_lower().contains("walk") or (
+            clip.to_lower().contains("run"))):
+          walk_clip=clip
+      if idle_clip=="" and choices.size()>0:
+        idle_clip=choices[0]
+      if walk_clip=="" and choices.size()>1:
+        walk_clip=choices[1]
+      if idle_clip!="":
+        animator.play(idle_clip)
+      _wildlife_anim_count+=1 if choices.size()>0 else 0
+    actual_wildlife[critter.name]={
+      "node":critter,"species":kind,"spawn":critter.position,
+      "wander_angle":float(actual_wildlife.size())*1.71,
+      "timer":0.0,"activity":"休息","age_days":16,
+      "health":45 if kind=="wolf" else 32,
+      "animator":animator,"idle":idle_clip,"walk":walk_clip}
+
+func _step_native_animals(delta: float) -> void:
+  for record in actual_wildlife.values():
+    var actor: Node3D=record["node"]
+    if not is_instance_valid(actor):
+      continue
+    var speed: float=1.4 if String(record["species"])=="wolf" else 1.0
+    record["timer"]=float(record["timer"])+delta
+    var moving: bool=fmod(float(record["timer"]),17.0)>5.0
+    var home: Vector3=record["spawn"]
+    if moving:
+      var angle: float=float(record["wander_angle"])+(
+        float(int(float(record["timer"])/17.0))*1.27)
+      var toward: Vector3=home+Vector3(
+        sin(angle)*3.8,0.0,cos(angle)*3.8)
+      var delta_pos: Vector3=toward-actor.position
+      delta_pos.y=0
+      if delta_pos.length()>0.40:
+        var next: Vector3=actor.position+delta_pos.normalized()*
+          minf(speed*delta,delta_pos.length())
+        if bool(terrain_world.call(
+            "stream_contains_physical_chunk",next.x,next.z)) and not (
+            bool(terrain_world.call("is_water",next.x,next.z))):
+          actor.position.x=next.x
+          actor.position.z=next.z
+          actor.rotation.y=atan2(delta_pos.x,delta_pos.z)
+        record["activity"]="游走"
+    else:
+      record["activity"]="休息"
+    actor.position.y=float(terrain_world.call("height_at",
+      actor.position.x,actor.position.z))
+    var animator: AnimationPlayer=record["animator"]
+    if animator!=null:
+      var selected: String=String(record["walk"]) if moving else String(record["idle"])
+      if selected!="" and animator.current_animation!=selected:
+        animator.play(selected)
 
 func _initialize_batches() -> void:
   batch_renderer = KenneyMultiMesh.new()
