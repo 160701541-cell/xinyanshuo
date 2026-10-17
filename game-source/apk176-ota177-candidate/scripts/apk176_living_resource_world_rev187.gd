@@ -907,22 +907,42 @@ func _rebuild_visible_shrub_gpu_slots() -> void:
   for draw_idx in range(licensed_understory_draws.size()):
     var mm: MultiMesh=licensed_understory_draws[draw_idx].multimesh
     var source: Transform3D=licensed_understory_source_offsets[draw_idx]
-    # Configure exact visible slot count FIRST: in GPU/RenderingServer it
-    # may reallocate instance visibility data and reset transform payloads.
-    # Then write every live GLB authored transform AFTER the visibility map.
+    # Bulk-upload the complete SOURCE GLB authoring transform buffer.
+    # Godot's RenderingServer can return default IDENTITY in headless mode
+    # after repeated per-instance writes on an imported PBR MultiMesh.
+    # The full buffer is atomic, retains real UV/normal/PBR geometry and
+    # prevents a partially initialized 3D population in the phone renderer.
+    var vertex_stride: int=12
+    var bytes: PackedFloat32Array=PackedFloat32Array()
+    bytes.resize(mm.instance_count*vertex_stride)
+    for i in range(mm.instance_count):
+      var tx: Transform3D=Transform3D.IDENTITY
+      if i<licensed_understory_render_indices.size():
+        var original_id: int=licensed_understory_render_indices[i]
+        tx=licensed_understory_locations[original_id]*source
+      var o: int=i*vertex_stride
+      bytes[o+0]=tx.basis.x.x
+      bytes[o+1]=tx.basis.y.x
+      bytes[o+2]=tx.basis.z.x
+      bytes[o+3]=tx.origin.x
+      bytes[o+4]=tx.basis.x.y
+      bytes[o+5]=tx.basis.y.y
+      bytes[o+6]=tx.basis.z.y
+      bytes[o+7]=tx.origin.y
+      bytes[o+8]=tx.basis.x.z
+      bytes[o+9]=tx.basis.y.z
+      bytes[o+10]=tx.basis.z.z
+      bytes[o+11]=tx.origin.z
+    mm.set_buffer(bytes)
     mm.visible_instance_count=licensed_understory_render_indices.size()
-    for active_slot in range(licensed_understory_render_indices.size()):
-      var natural_id: int=licensed_understory_render_indices[active_slot]
-      var authored: Transform3D=licensed_understory_locations[natural_id]*source
-      mm.set_instance_transform(active_slot,authored)
-      if active_slot==0 and draw_idx==0:
-        print("REV207_MULTIMESH_DEBUG_WRITE",
-          " count=",mm.instance_count," visible=",mm.visible_instance_count,
-          " fmt=",mm.transform_format," vertex=",mm.mesh.get_surface_count(),
-          " saved=",mm.get_instance_transform(0)," input=",authored,
-          " drawid=",licensed_understory_draws[draw_idx].get_instance_id())
-    # Slots beyond visible count are fully culled by Godot and cannot
-    # erroneously materialize a monster-size shrub at world origin.
+    if draw_idx==0 and mm.visible_instance_count>0:
+      print("REV207_BULK_VENDOR_GLTF_SHRUB_BUFFER_PROOF",
+        " visible=",mm.visible_instance_count,
+        " uploaded=",bytes.size(),
+        " actual=",mm.get_instance_transform(0),
+        " target=",licensed_understory_locations[
+          licensed_understory_render_indices[0]]*source)
+
 
 func _on_understory_terrain_changed(at: Vector3,radius: float) -> void:
   if quality==null or licensed_understory_draws.is_empty():
