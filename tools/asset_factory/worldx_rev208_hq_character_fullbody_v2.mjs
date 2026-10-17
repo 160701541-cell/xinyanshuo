@@ -81,7 +81,8 @@ export async function produce(upstream,output){
  const response=await fetch('https://api.siliconflow.cn/v1/images/generations',{
    method:'POST',headers:{Authorization:'Bearer '+process.env.SILICONFLOW_API_KEY,
      'Content-Type':'application/json'},
-   body:JSON.stringify({model:IMAGE_MODEL,prompt,image_size:'768x1024',batch_size:1,\n      guidance_scale:8.5,negative_prompt:'close-up face, headshot, portrait bust shot, waist-up shot, medium shot, cropped legs, cut-off feet, cut-off boots, oversized face, multiple views, multiple people'}),
+   body:JSON.stringify({model:IMAGE_MODEL,prompt,image_size:'768x1024',batch_size:1,
+      guidance_scale:8.5,negative_prompt:'close-up face, headshot, portrait bust shot, waist-up shot, medium shot, cropped legs, cut-off feet, cut-off boots, oversized face, multiple views, multiple people'}),
    signal:AbortSignal.timeout(150000)});
  if(!response.ok)throw Error('PROVIDER_HTTP_'+response.status+' no retry');
  const url=(await response.json()).images?.[0]?.url;
