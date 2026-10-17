@@ -95,7 +95,8 @@ func set_fps_mode(mode: String, save: bool=true) -> bool:
   fps_mode=mode
   # Always enable VSync; the hardware/Android window refresh rate is
   # authoritative. "Follow" never accidentally reads 30 and caps at 30.
-  DisplayServer.window_set_vsync_mode(DisplayServer.VSYNC_ENABLED)
+  if DisplayServer.get_name() != "headless":
+    DisplayServer.window_set_vsync_mode(DisplayServer.VSYNC_ENABLED)
   Engine.max_fps = 120 if mode=="跟随刷新率" else int(mode)
   if save:
     _save_settings()
