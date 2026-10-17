@@ -111,8 +111,9 @@ func generate(seed: int,entity_id: String,role: String="citizen") -> Dictionary:
     var mythic: Array=["混沌","鸿蒙","虚无","因果","轮回","造化"]
     variant=String(mythic[rng.randi_range(0,mythic.size()-1)])
   elif rare<0.065:
-    var mutations: Array=MUTATIONS.keys().filter(func(k): return k not in [
-      "混沌","鸿蒙","虚无","因果","轮回","造化"])
+    var mutations: Array=["火风","木雷","雷火","水冰","阴冰",
+      "阴阳","风雷","金磁","木毒","水魂","星空","空时",
+      "生死","光暗","五行均衡"]
     variant=String(mutations[rng.randi_range(0,mutations.size()-1)])
   if variant!="":
     roots=MUTATIONS[variant].duplicate()
@@ -139,7 +140,7 @@ func generate(seed: int,entity_id: String,role: String="citizen") -> Dictionary:
     body=CONSTITUTIONS[rng.randi_range(1,CONSTITUTIONS.size()-1)]
   var kind: String=variant+"灵根" if variant!="" else (
     String(roots[0])+"灵根" if roots.size()==1 else (
-    "".join(roots)+"杂灵根"))
+    "".join(PackedStringArray(roots))+"杂灵根"))
   return {"schema":SCHEMA,"entity_id":entity_id,"has_root":true,
     "kind":kind,"roots":roots,"root_weights":scores,"grade":grade,
     "constitution":body,"detected":false,"origin":"birth_stable",
@@ -181,6 +182,16 @@ func migrate_existing(seed: int,entity_id: String,kind: String,
   generated["has_root"]=true
   return generated
 
+func catalog_size() -> int:
+  return ELEMENTS.size()
+
+func supported_root_names() -> Array:
+  var names: Array=ELEMENTS.keys()
+  for name in MUTATIONS:
+    if not names.has(name):
+      names.append(name)
+  return names
+
 func has_root(profile: Dictionary) -> bool:
   return bool(profile.get("has_root",false)) and (
     not (profile.get("roots",[]) as Array).is_empty())
@@ -205,7 +216,7 @@ func describe(profile: Dictionary) -> String:
   var effect: Dictionary=signature(profile)
   return "%s · %s · %s｜主属性%s：%s，命中附带%s；天赋体质%s" % [
     String(profile.get("kind","")),String(profile.get("grade","凡品")),
-    "/".join(roots),String(effect.get("primary","")),
+    "/".join(PackedStringArray(roots)),String(effect.get("primary","")),
     String(effect.get("terrain","")),String(effect.get("debuff","")),
     String(profile.get("constitution","凡体"))]
 
