@@ -80,6 +80,28 @@ func _run() -> void:
         _fail(233,"REV198_SOLID_LICENSED_KNIGHT_STILL_HAS_ZERO_ALPHA_SURFACE_"+str(surface))
         return
   print("PASS_REV198_REAL_LICENSED_KNIGHT_ARMOR_SKIN_OPACITY_REPAIRED")
+  # REV199: do not fake a hair/sword as procedural models; require the
+  # two real immutable Git-blob-verified CC0 Quaternius GLB sources.
+  if not bool(first.get("real_cc0_long_hair_attached_to_entities",0)>=4) or (
+      not bool(first.get("real_cc0_sword_loaded",false))):
+    _fail(250,"REV199_USER_SAW_BARE_BALD_HEAD_AND_NO_REAL_CC0_SWORD")
+    return
+  var original_hero: Node3D=room.get("controls").get("actor")
+  var hair: MeshInstance3D=original_hero.get_node_or_null(
+    "ActualCC0QuaterniusHairLongNOTArtificialHelmet")
+  if hair==null or hair.mesh==null or hair.mesh.surface_get_arrays(0)[
+      Mesh.ARRAY_VERTEX].size()<2800:
+    _fail(251,"REV199_CC0_HAIRSTYLE_GEOMETRY_NOT_ACTUALLY_ON_PLAYER_HEAD")
+    return
+  if hair.material_override==null or (hair.material_override as StandardMaterial3D).albedo_color.a<0.95:
+    _fail(252,"REV199_HAIR_MUST_BE_ACTUAL_OPAQUE_BLACK_HAIR_NOT_A_FAKE_UI_LABEL")
+    return
+  var sword_source: Node3D=room.get("licensed_flying_sword_source")
+  var sword_meshes: Array[Node]=sword_source.find_children("*","MeshInstance3D",true,false)
+  if sword_meshes.is_empty() or (sword_meshes[0] as MeshInstance3D).mesh.get_surface_count()<3:
+    _fail(253,"REV199_FLYING_SWORD_NOT_THE_REAL_MULTI_MATERIAL_LICENSED_QUATERNIUS_GLB")
+    return
+  print("PASS_REV199_IMMUTABLE_AUTHENTIC_CC0_LONG_HAIR_PLAYER_AND_NPC_PLUS_REAL_MULTIMATERIAL_FLYING_SWORD")
   if not (first.get("missing_assets", []) as Array).is_empty():
     _fail(10, "SOME_LICENSED_GLB_OR_TEXTURES_MISSING")
     return
@@ -1303,9 +1325,11 @@ func _run() -> void:
   var tether: MeshInstance3D=world.get_node_or_null(
       "ContinuousAirToGroundAltitudeReferenceLine")
   var p199: Dictionary=player.call("stats")
-  if wind==null or rune==null or disk==null or tether==null or (
-      not wind.emitting) or not rune.visible or not disk.visible or (
-      not tether.visible) or not height_ui.visible:
+  var real_sword: Node3D=world.get_node_or_null(
+      "ActualQuaterniusKnightCC0FlyingSwordUnderPlayerFeet")
+  if wind==null or rune==null or disk==null or tether==null or real_sword==null or (
+      not real_sword.visible) or not wind.emitting or not rune.visible or (
+      not disk.visible) or not tether.visible or not height_ui.visible:
     _fail(246,"REV199_NO_TRUE_WIND_AURA_GROUND_PROJECTION_ALTITUDE_GUIDE_DURING_SOAR")
     return
   if float(p199.get("avatar_soar_altitude_m",0))<2.5 or (
