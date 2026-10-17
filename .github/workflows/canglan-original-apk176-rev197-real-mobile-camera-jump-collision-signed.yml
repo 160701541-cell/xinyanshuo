@@ -286,6 +286,9 @@ jobs:
               tail -125 qa-results/rev187-real-worksite/render.log; exit 1;
             }
           grep -Fq 'PASS_REV187_TWO_GENUINE_ENGINE_RENDERED_WORKSITE_FRAMES_NOT_PHONE_TESTS' qa-results/rev187-real-worksite/render.log
+          grep -Fq 'PASS_REV197_ORIGINAL_GODOT_ENGINE_VISIBLE_ANIMATED_PLAYER_CLOSE_AND_45DEG_REAL_FRAMES' qa-results/rev187-real-worksite/render.log
+          test -s qa-results/rev187-real-worksite/real_apk176_rev197_licensed_player_visible_close.png
+          test -s qa-results/rev187-real-worksite/real_apk176_rev197_follow_player_45deg_view.png
           if grep -Eq 'SCRIPT ERROR:|Parse Error:|ERROR:|FAIL_REV187|Failed loading resource' qa-results/rev187-real-worksite/render.log; then
             tail -100 qa-results/rev187-real-worksite/render.log; exit 1
           fi
