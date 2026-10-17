@@ -813,6 +813,7 @@ func _build_game_hud() -> void:
   _add_game_action("SwordAttack","剑击",Callable(self,"sword_attack"))
   _add_game_action("SpiritBolt","灵息弹",Callable(self,"cast_spirit_bolt"))
   _add_game_action("SpiritWard","护体灵障",Callable(self,"cast_spirit_ward"))
+  _add_game_action("PlantSapling","植树",Callable(self,"plant_real_sapling"))
   _create_opponent_target_hud()
   _pad_hint=Label.new()
   _pad_hint.name="AndroidGamepadHotplugAndMappings"
@@ -891,7 +892,8 @@ func _add_game_action(key: String, label: String, callback: Callable) -> void:
   _apply_open_hud_style(button,{
     "GatherAction":"leaf","DigAction":"pickaxe","InteractAction":"eye",
     "SwordAttack":"swords","LockedArt":"swords","SpiritBolt":"zap",
-    "SpiritWard":"shield","ViewAction":"compass"}.get(key,""))
+    "SpiritWard":"shield","ViewAction":"compass",
+    "PlantSapling":"leaf"}.get(key,""))
   button.pressed.connect(callback)
   hud.add_child(button)
   _game_actions[key]=button
@@ -1106,6 +1108,10 @@ func _refresh_game_hud() -> void:
     _ward_cd>0.0 or not ward_learned or mana_now<6 or _ward_seconds>0.0)
   (_game_actions["SpiritWard"] as Button).text=(
     "灵障 %d" % ceili(_ward_cd) if _ward_cd>0.0 else ("护体灵障" if ward_learned else "灵障·未学"))
+  var village: Dictionary=sim.get("villages").get(String(person.get("village_id","")),{})
+  var seed_stock: int=int(village.get("stock",{}).get("tree_seed",0))
+  (_game_actions["PlantSapling"] as Button).disabled=seed_stock<=0
+  (_game_actions["PlantSapling"] as Button).text="植树 ×%d" % seed_stock
   if _target_panel!=null:
     _target_panel.visible=_spar_stage!="inactive"
     if _spar_stage!="inactive":
@@ -1210,6 +1216,32 @@ func _refresh_game_hud() -> void:
     _game_sheet_body.text="横屏触控：左侧走路，右侧旋转\n视角按键：切第一/第三视角\n画质帧率和研发工具在下方设置"
 
 # Real mortal actions, consuming the same finite-resource ledger as NPCs.
+func plant_real_sapling() -> Dictionary:
+  if actor==null or camera_mode in ["soar","fly","god"]:
+    return {"ok":false,"reason":"MUST_PLANT_ON_WALKABLE_GROUND"}
+  var eco: RefCounted=room.get("eco")
+  var sim: RefCounted=room.get("sim")
+  if eco==null or sim==null:
+    return {"ok":false,"reason":"NO_REAL_ECOLOGY"}
+  var point: Vector3=actor.position+_forward()*1.7
+  if not bool(terrain.call("stream_contains_physical_chunk",point.x,point.z)) or (
+      bool(terrain.call("is_water",point.x,point.z))):
+    say("树苗只能种在真实可走、非水域地块")
+    return {"ok":false,"reason":"NO_PHYSICAL_SOIL"}
+  var birth_id: String=String(eco.call(
+    "plant_one_seed",Vector3(point.x,0.0,point.z)))
+  if birth_id.is_empty():
+    say("缺种子或附近建筑/树木太密，无法栽种")
+    return {"ok":false,"reason":"NO_SEED_OR_TOO_CLOSE"}
+  var sapling: Node3D=room.call("_place_asset","tree",birth_id,
+    Vector3(point.x,0.0,point.z),0.10)
+  if sapling!=null:
+    room.get("natural_meshes")[birth_id]=sapling
+    sapling.set_meta("resource_id",birth_id)
+  say("真实消耗村庄种子×1，树苗将随世界时辰长成树")
+  _refresh_game_hud()
+  return {"ok":true,"id":birth_id,"actual_seed_spent":1}
+
 func gather_action() -> Dictionary:
   if _gather_cd>0.0:
     return {"ok":false,"reason":"COOLDOWN"}
@@ -2051,7 +2083,7 @@ func _layout_hud() -> void:
     tab.size=Vector2(96,44)
   var action_keys:=["GatherAction","DashAction","DigAction","InteractAction",
     "ViewAction","LockedArt","GuardAction","EvadeAction",
-    "SwordAttack","SpiritBolt","SpiritWard"]
+    "SwordAttack","SpiritBolt","SpiritWard","PlantSapling"]
   for idx in range(action_keys.size()):
     var col: int=idx%4
     var row: int=int(idx/4)
@@ -2472,6 +2504,22 @@ func tap_world(screen_position: Vector2) -> Dictionary:
       best_id = ""
       worker_id=String(id)
       best_pos=other.position
+  var cultivation_system: RefCounted=room.get("cultivation")
+  if cultivation_system!=null:
+    var visible: Dictionary=cultivation_system.get("npc_visuals")
+    for id in visible:
+      var other: Node3D=visible[id]["actor"]
+      if other==null or not is_instance_valid(other):
+        continue
+      if camera.is_position_behind(other.position+Vector3.UP*1.0):
+        continue
+      var pixel: Vector2=camera.unproject_position(other.position+Vector3.UP*1.0)
+      var gap: float=touch_pixel.distance_to(pixel)
+      if gap<nearest:
+        nearest=gap
+        best_id=""
+        worker_id=String(id)
+        best_pos=other.position
   if best_id.is_empty() and worker_id.is_empty():
     return {"ok":false,"reason":"NO_TARGET_UNDER_FINGER"}
   _touch_tap_count += 1
@@ -3219,6 +3267,25 @@ func interact() -> Dictionary:
     else:
       say("采集材料已暂存携带槽，请去仓库交付")
     return {"ok":true,"action":"gather","entity_id":best_id}
+  var spiritual: RefCounted=room.get("cultivation")
+  if spiritual!=null:
+    var cultivators: Dictionary=spiritual.get("npc_visuals")
+    var records: Dictionary=spiritual.get("npc_data")
+    for spirit_id in cultivators:
+      if not _auto_npc_id.is_empty() and String(spirit_id)!=_auto_npc_id:
+        continue
+      var person: Node3D=cultivators[spirit_id]["actor"]
+      if person!=null and is_instance_valid(person) and (
+          person.position.distance_to(point)<3.3):
+        var detail: Dictionary=records.get(spirit_id,{})
+        _auto_npc_id=""
+        var speech: String="%s · %s%d层｜正在%s｜身份%s" % [
+          String(detail.get("name","修士")),String(detail.get("realm","凡人")),
+          int(detail.get("layer",0)),String(detail.get("schedule","休息")),
+          String(detail.get("sect","独行"))]
+        say("交谈："+speech+"（规则NPC；本地大模型尚未加载）")
+        return {"ok":true,"action":"cultivator_dialogue",
+          "entity_id":String(spirit_id),"identity":detail.duplicate(true)}
   for npc_id in room.get("workers"):
     if not _auto_npc_id.is_empty() and npc_id != _auto_npc_id:
       continue
