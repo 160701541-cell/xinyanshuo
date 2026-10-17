@@ -942,78 +942,66 @@ func _run() -> void:
         int(living.get("region_built_bp",-1))!=0):
       _fail(364,"REV207_UNPAID_HOUSE_CANNOT_CLEAR_WILDERNESS_AND_GRASS")
       return
-  # Native source-vendor 3D shrubs really cover walkable physical ground.
-  # Cost stays bounded on phones even when the authored GLB is detailed;
-  # every MultiMesh transform must avoid all actual reserved house plots.
-  var shrubs: Array[Node]=world.find_children(
-    "RealQuaterniusLicensedPBRUnderstoryBatched_*",
-    "MultiMeshInstance3D",true,false)
+  # Source-hashed Quaternius source GLBs do not admit a valid instancing
+  # transform in this Godot build (even bulk GPU writes return IDENTITY).
+  # Require ACTUAL physically positioned vendor mesh scene instances:
+  # all original UVs/materials, 200 genuine visual bushes (no fake labels).
+  var real_plants: Array=room.get("licensed_understory_instances")
+  var soil_sites: Array=room.get("licensed_understory_locations")
   var shrub_count: int=int(report.get("rev207_real_cc0_shrub_understory",0))
-  if shrub_count<24 or shrub_count>980 or shrubs.is_empty() or (
-      shrubs.size()!=int(report.get("rev207_real_cc0_shrub_draw_nodes",-1))) or (
-      int(report.get("rev207_real_cc0_shrub_triangles",999999))>350000):
-    _fail(370,"REV207_VIVID_UNDERSTORY_NOT_REAL_LICENSED_BOUNDED_MULTIMESH_"+str({
-      "shrubs":shrub_count,"parts":shrubs.size(),"triangles":report.get(
-      "rev207_real_cc0_shrub_triangles",0)}))
+  var each_surfaces: int=int(room.get("licensed_understory_surfaces_per_plant"))
+  if shrub_count<96 or shrub_count>210 or shrub_count!=real_plants.size() or (
+      soil_sites.size()!=shrub_count) or each_surfaces<1 or (
+      int(report.get("rev207_real_cc0_shrub_draw_nodes",-1))!=(
+      shrub_count*each_surfaces)) or int(report.get(
+      "rev207_real_cc0_shrub_triangles",999999))>140000:
+    _fail(370,"REV207_UNDERSTORY_NOT_TRUE_SOURCE_BOUNDED_MODELS_"+str({
+      "bushes":shrub_count,"visuals":real_plants.size(),
+      "triangles":report.get("rev207_real_cc0_shrub_triangles",0)}))
     return
-  var biologic_sites: Array=room.get("licensed_understory_locations")
-  var part_offsets: Array=room.get("licensed_understory_source_offsets")
-  if biologic_sites.size()!=shrub_count or part_offsets.size()!=shrubs.size():
-    _fail(375,"REV207_RENDERED_SHRUB_GPU_SLOTS_NOT_BOUND_TO_REAL_SOIL_LOCATIONS")
-    return
-  var alive_after_mining: int=int(report.get("rev207_real_cc0_shrub_live_after_terrain_edits",-1))
-  if alive_after_mining<24 or alive_after_mining>shrub_count:
-    _fail(376,"REV207_PHYSICAL_EXCAVATION_CAUSED_ALL_REAL_BUSHES_TO_DISAPPEAR")
-    return
-  # OpenGL/Vulkan MultiMesh rejects singular "hide" transforms by
-  # roundtripping them as full-size IDENTITY meshes at world origin.
-  # Assert the actual GPU-facing visible count, not a fake zero matrix.
-  var real_slot_mapping: Array=room.get("licensed_understory_render_indices")
-  var unplantable: Dictionary=room.get("licensed_understory_unplantable")
-  if real_slot_mapping.size()!=alive_after_mining or (
-      unplantable.size()+alive_after_mining!=shrub_count):
-    _fail(379,"REV207_DUG_SOIL_VISIBILITY_COUNT_OR_INDICES_NOT_CONSERVED")
-    return
-  var seen_source_ids: Dictionary={}
-  for logical_index in real_slot_mapping:
-    var biological_id: int=int(logical_index)
-    if seen_source_ids.has(biological_id) or biological_id<0 or (
-        biological_id>=shrub_count) or unplantable.has(biological_id):
-      _fail(380,"REV207_SHRUB_VISIBLE_INSTANCES_DUPLICATE_OR_NO_LONGER_PLANTABLE")
+  var healthy_stems: int=0
+  for plant_index in range(real_plants.size()):
+    var plant: Node3D=real_plants[plant_index]
+    var site_pos: Vector3=soil_sites[plant_index]
+    if not is_instance_valid(plant) or not plant.is_inside_tree() or (
+        plant.get_parent()!=world) or (
+        String(plant.get_meta("source_license",""))!="Quaternius-CC0") or (
+        String(plant.get_meta("source_prefab",""))!="bush.glb") or (
+        plant.find_children("*","MeshInstance3D",true,false).is_empty()):
+      _fail(371,"REV207_VEGETATION_NOT_REAL_LICENSED_GLTF_3D_MESH_"+str(
+        plant_index))
       return
-    seen_source_ids[biological_id]=true
-  for mesh_index in range(shrubs.size()):
-    var shrub_batch: MultiMeshInstance3D=shrubs[mesh_index] as MultiMeshInstance3D
-    if shrub_batch.multimesh==null or shrub_batch.multimesh.mesh==null or (
-        shrub_batch.multimesh.instance_count!=shrub_count) or (
-        shrub_batch.multimesh.visible_instance_count!=alive_after_mining):
-      _fail(371,"REV207_CC0_SHRUB_REAL_RENDER_VISIBLE_INSTANCE_COUNT_MISMATCH")
+    if absf(plant.position.x-site_pos.x)>0.01 or (
+        absf(plant.position.z-site_pos.z)>0.01):
+      _fail(372,"REV207_REAL_GLTF_MODEL_NOT_AT_PLANTED_SOIL_XZ")
       return
-    for active_slot in range(alive_after_mining):
-      var biological_id: int=int(real_slot_mapping[active_slot])
-      var tx: Transform3D=shrub_batch.multimesh.get_instance_transform(active_slot)
-      var planted: Transform3D=biologic_sites[biological_id]
-      var valid_ground: bool=bool(room.get("quality").call(
-        "_natural_plantable",planted.origin.x,planted.origin.z))
-      var expected_tx: Transform3D=planted*part_offsets[mesh_index]
-      if absf(tx.basis.determinant())<0.0000001 or (
-          not tx.is_equal_approx(expected_tx)):
-        _fail(372,"REV207_SOURCE_GLTF_TRANSFORM_NOT_IN_VISIBLE_COMPACTED_GPU_SLOT_"+
-          str({"mesh":mesh_index,"slot":active_slot,"source_id":biological_id,
-            "actual":tx,"expected":expected_tx}))
+    var expected_visible: bool=bool(room.get("quality").call(
+      "_natural_plantable",site_pos.x,site_pos.z))
+    if plant.visible!=expected_visible:
+      _fail(373,"REV207_BUSH_NOT_RESPONDING_TO_LIVE_PHYSICAL_EXCAVATION_"+str({
+        "index":plant_index,"plant_visible":plant.visible,
+        "soil_is_plantable":expected_visible,"site":site_pos}))
+      return
+    if plant.visible:
+      healthy_stems+=1
+      if absf(plant.position.y-float(terrain.call(
+          "height_at",site_pos.x,site_pos.z)))>0.35:
+        _fail(375,"REV207_ACTUAL_CC0_BUSH_IS_FLOATING_OVER_REAL_SOIL")
         return
-      if not valid_ground:
-        _fail(373,"REV207_REAL_CC0_SHRUB_ON_PATH_POND_OR_EXCAVATED_SOIL_"+str(
-          planted.origin))
-        return
-      if active_slot%17==0:
-        var at: Vector3=planted.origin
-        for blueprint in (room.get("housing_blueprints") as Dictionary).values():
-          var home: Vector3=blueprint["at"]
-          if Vector2(at.x-home.x,at.z-home.z).length()<7.1:
-            _fail(374,"REV207_REAL_SHRUB_IGNORES_FUTURE_BUILDING_FOOTPRINT")
-            return
-  print("PASS_REV207_TRUE_LICENSED_QUATERNIUS_SHRUB_UNDERSTORY_DENSE_NONBUILDING_GPU_BATCH_GEOMETRY")
+    if plant_index%13==0:
+      for blueprint in (room.get("housing_blueprints") as Dictionary).values():
+        var home: Vector3=blueprint["at"]
+        if Vector2(plant.position.x-home.x,
+            plant.position.z-home.z).length()<7.1:
+          _fail(374,"REV207_LIVING_BUSH_INSIDE_FUTURE_RESIDENTIAL_FOOTPRINT")
+          return
+  if healthy_stems<85 or healthy_stems!=int(report.get(
+      "rev207_real_cc0_shrub_live_after_terrain_edits",-1)):
+    _fail(376,"REV207_LICENCED_WILDERNESS_GREEN_COVERAGE_WAS_MINED_AWAY_"+str({
+      "healthy":healthy_stems,"reported":report.get(
+      "rev207_real_cc0_shrub_live_after_terrain_edits",-1)}))
+    return
+  print("PASS_REV207_TRUE_LICENSED_QUATERNIUS_SHRUB_UNDERSTORY_NONBUILDING_BOUNDED_REAL_SOURCE_GLTF_GEOMETRY")
   print("PASS_REV207_TRUE_MAIN_50000KM2_5000_ROOT_RATIO_BODY_CULTIVATION_5_SECTS_4_REAL_ORE_BEAST_GUARDS")
   if not bool(report.get("persistent_city_population_is_statistical_only",false)):
     _fail(331,"REV207_5000_MORTALS_MUST_BE_STATISTICAL_NOT_5000_GODOT_NODES")
