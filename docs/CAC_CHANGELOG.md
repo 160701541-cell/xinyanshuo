@@ -1,5 +1,20 @@
 # CAC 工序变更与开发日志
 
+## 2026-10-18 / CAC-REV206-ORIGINAL-GODOT-GREEN / 候选引擎验收绿灯，正式签名需main发布
+- 正式 **rev205** 不变。rev206唯一分支真实CI `39057568955` (HEAD `e567b58007d18ffda5819b48090a21c98aeb64ab`) 结果 **SUCCESS**：Godot 4.4.1原APK176 Main物理世界、完整源PCK构建、全部52真实树/20石头GPU实例、草地三档密度/真实PBR、七份Quaternius灵草矿石、13处资源有限采挖/储存/炼丹再生、32灵根、统计人口和其他累计复测均通过；实际Godot Linux Vulkan 1280×720截帧步骤通过。**这不是Android手机实机验收，也不是rev206签名发布证明。**
+- 真正修复九叶草3D mesh `c5336cdb19ad2a9c90744ee144767f7b02c54841`，从6根短细针进化为九叶立体密叶体；保留每手机画质档独立密度、MultiMesh批绘与植物物理区归属。旧QA错误假定320/4500草实例已按当前真实源正确更新，不放宽实例验收。
+- CI绿色前另发现原完整Main正常退出但流水线在查找废弃`PASS_REV206_REAL_QUATERNIUS_CC0_COMPLETE_HOMES_...`日志标志时失败。改为真实`PASS_REV208_NO_FREE_HOUSES_200WOOD150STONE_FIVE_RESIDENTS_AND_FOUR_TRUE_LARGE_YAO_BEASTS`和`PASS_REV206_REAL_QUATERNIUS_CC0_SOURCE_HOUSES...`并保留全部原QA门禁。
+- 已建立 PR #12；`.github/workflows/canglan-original-apk176-rev206-signed.yml`为仅main可运行的原APK176原场景二次QA、RSA签名、原更新清单安全版本推进、不可变PCK原子发布流程；签名提交由GITHUB_TOKEN产生的`[skip ci]`不会自动激活Pages，故显式`gh workflow run canglan-official-pages-ota-deploy.yml --ref main`，并由rev206公开HTTP证据工作流在Pages部署完成后检验RSA、SHA256、Range206。
+- 工作日志此刻 rev206 **候选引擎QA PASS，正式PCK签名/公网验签/手机实测尚不可标通过**。禁止误报版本已发布。
+
+## 2026-10-18 / CAC-3D-206-BATCH-P0 / 真正的树林矿石MultiMesh槽位修复（候选，尚未发布）
+- 唯一仓库：`160701541-cell/xinyanshuo`，工作分支 `feat/rev206-herbs-spirit-ores-real-ecology-crafting`；官网/正式 `main` 的最新版仍为**已签名rev205**，不得把候选称为可在手机更新。
+- 复核真实失败QA run `39055302165` / job `117461953120`：**原APK176真实Godot主场景**共生成52棵树、20处石矿，但开源Kenney多实例渲染器仅分配40棵树、12处石矿，直接造成12棵树（编号040–051）和8处石矿（012–019）虽然有账本却不显示；不是缺少外部GLB下载。拒绝靠关闭严苛QA跳过。
+- 修复 commit `98dda159c8c14dff6b6a8dfe02c5426e26191fc9`：`scripts/apk176_kenney_multimesh_rev187.gd` 将真实首次容量扩到64/32（保留自然播种增长预留）；资源增加时有界增长（树上限256、石上限128），扩容后逐个恢复原有真实GLB的Transform/自然颜色；超过手机容量硬上限必须显式拒绝并记录，不虚构无限生成。开源许可、源模型、主游戏经济数据均不改。
+- 回归门禁 commit `c2f3238d0204f39144518ee16e833f77b9e71832`：在 `verify_original_main_quality_rev187.gd` 新增原Godot Main实例化检查，验证全部52/20资源实体有物理ID、实际MultiMesh绘制槽位和非零变换，模拟林木再生矿石扩容，比较已有实体坐标和着色均不丢失。新的检测标记 `PASS_REV206_ALL_52_TREES_20_STONES_REAL_DRAWABLE_BATCH_SLOTS_GROW_WITHOUT_LOSS`。
+- 已启动分支自动Godot严格QA run `39056806305`（启动时in_progress）；只有真实返回success才写PASS。**本记录时rev206仍非正式签名发布**；原Main/渲染截图/PCK签名/公网RSA与HTTP206/Android真机验收状态分别为PENDING/PENDING/BLOCKED/BLOCKED/BLOCKED。新草药灵矿炼丹功能同一候选已具基础，但仍受整个Godot Main严格验收门禁约束。
+
+
 
 ## 2026-10-18 / CAC-3D-207 / 原APK176开源整屋/野生动物/高色度PBR真实细密材质 + 可玩基础交互
 - 玩家反馈最高优先P0：**不要再生成新房或让NPC日复一日维修重复小破房；优先合法开源现成建筑、服饰、动物，材质必须有真实纹理和高饱和色彩，近景像素高密度不是满屏超大马赛克**。本轮原游戏代码优先处理这些可见缺陷；用户不需要自行重复推动。

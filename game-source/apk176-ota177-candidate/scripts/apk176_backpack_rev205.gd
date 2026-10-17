@@ -8,11 +8,22 @@ const MAX_STACK: int=999
 const RECIPES: Dictionary={
   "rough_wood_sword":{"cost":{"wood":3},"slot":"weapon","name":"粗木剑"},
   "stone_pick":{"cost":{"wood":2,"stone":2},"slot":"tool","name":"石镐"},
+  "healing_pill":{"cost":{"herb_wood":2,"mushroom":1},
+    "slot":"consumable","name":"青木回春丹"},
+  "mana_pill":{"cost":{"herb_water":2,"spirit_stone":1},
+    "slot":"consumable","name":"凝神回元丹"},
+  "focus_ring":{"cost":{"spirit_stone":2,"wood":1},
+    "slot":"ring","name":"聚灵指环"},
 }
 const NAMES: Dictionary={
   "wood":"原木","stone":"石块","clay":"黏土","grain":"粮食",
   "topsoil":"泥土","sand":"细沙","bedrock":"基岩碎片",
-  "herb":"草药","spirit_stone":"灵石",
+  "herb":"草药","spirit_stone":"下品灵石",
+  "herb_wood":"青木灵草","herb_fire":"赤焰灵花",
+  "herb_water":"寒露灵花","mushroom":"凝露灵芝",
+  "healing_pill":"青木回春丹","mana_pill":"凝神回元丹",
+  "focus_ring":"聚灵指环",
+  "beast_core":"妖丹原胚（真实妖兽掉落）",
   "rough_wood_sword":"粗木剑","stone_pick":"石镐",
 }
 var items: Dictionary={}
@@ -145,10 +156,26 @@ func craft(recipe_id: String) -> Dictionary:
     return {"ok":false,"reason":last_error}
   return {"ok":true,"recipe":recipe_id,"spent":cost}
 
+func consume_item(kind: String,count: int=1) -> bool:
+  if count<=0 or amount(kind)<count:
+    return false
+  var old: Dictionary=items.duplicate(true)
+  var left: int=amount(kind)-count
+  if left==0:
+    items.erase(kind)
+  else:
+    items[kind]=left
+  if not _save():
+    items=old
+    return false
+  return true
+
 func equip(kind: String) -> Dictionary:
   if not RECIPES.has(kind) or amount(kind)<=0:
     return {"ok":false,"reason":"NO_CRAFTED_GEAR_IN_BAG"}
   var slot: String=String(RECIPES[kind]["slot"])
+  if not equipment.has(slot):
+    return {"ok":false,"reason":"NOT_A_GEAR_SLOT"}
   var old: Dictionary=equipment.duplicate(true)
   equipment[slot]=kind
   if not _save():
@@ -181,7 +208,8 @@ func describe() -> String:
     String(NAMES.get(String(equipment["tool"]),"无")) if equipment["tool"]!="" else "无",
     String(NAMES.get(String(equipment["armor"]),"无")) if equipment["armor"]!="" else "无",
     String(NAMES.get(String(equipment["ring"]),"无")) if equipment["ring"]!="" else "无"])
-  lines.append("图纸：粗木剑（3木） / 石镐（2木+2石）")
+  lines.append("图纸：粗木剑、石镐、青木回春丹、凝神回元丹、聚灵指环")
+  lines.append("灵药需实际采摘灵草；灵石需挖掘矿脉，药剂消耗真实库存。")
   return "\n".join(lines)
 
 func snapshot() -> Dictionary:

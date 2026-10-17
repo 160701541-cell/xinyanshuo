@@ -12,6 +12,8 @@ const PlayerControl = preload("res://canglan_rev187/player_controller.gd")
 const ManualQuality = preload("res://canglan_rev187/quality_profiles.gd")
 const VividMaterials = preload("res://canglan_rev187/vivid_material.gd")
 const CultivationWorld = preload("res://canglan_rev187/cultivation_world.gd")
+const SpiritResources = preload("res://canglan_rev187/spirit_resources.gd")
+const PaidHousing = preload("res://canglan_rev187/paid_housing.gd")
 const ASSETS := {
   "tree": "res://canglan_rev187/tree_oak.glb",
   "stone": "res://canglan_rev187/rocks_small.glb",
@@ -96,7 +98,32 @@ var finished_prefab_sources: Dictionary={}
 var licensed_outfits: Dictionary={}
 var native_wildlife_sources: Dictionary={}
 var actual_wildlife: Dictionary={}
+var housing: RefCounted
+var housing_blueprints: Dictionary={}
+var house_entry_colliders: Dictionary={}
+var spirit_resources: RefCounted
+var spirit_resource_sources: Dictionary={}
+var spirit_resource_visuals: Dictionary={}
+const SPIRIT_CC0_SOURCES: Dictionary={
+  "flower":"res://canglan_rev187/cc0_spirit/herb/flower.glb",
+  "flower2":"res://canglan_rev187/cc0_spirit/herb/flower2.glb",
+  "flower3":"res://canglan_rev187/cc0_spirit/herb/flower3.glb",
+  "mushroom":"res://canglan_rev187/cc0_spirit/herb/mushroom.glb",
+  "bush":"res://canglan_rev187/cc0_spirit/herb/bush.glb",
+  "rock1":"res://canglan_rev187/cc0_spirit/ore/rock1.glb",
+  "rock2":"res://canglan_rev187/cc0_spirit/ore/rock2.glb"}
 var _wildlife_anim_count: int=0
+var _beast_hit_events: int=0
+var _beast_deaths: int=0
+const YAO_BEAST_SPEC: Dictionary={
+  "wolf":{"name":"苍牙山狼妖","realm":"炼气三层","root":"风灵根",
+    "max_health":185,"max_mana":64,"size":2.7,"damage":9,"hostile":true},
+  "fox":{"name":"赤瞳灵狐妖","realm":"炼气二层","root":"火灵根",
+    "max_health":165,"max_mana":80,"size":2.4,"damage":8,"hostile":true},
+  "deer":{"name":"碧角灵鹿妖","realm":"炼气一层","root":"木灵根",
+    "max_health":145,"max_mana":52,"size":2.9,"damage":7,"hostile":false},
+  "cow":{"name":"磐甲蛮牛妖","realm":"炼气四层","root":"土灵根",
+    "max_health":320,"max_mana":90,"size":3.8,"damage":14,"hostile":false}}
 # rev197: cheap real world collisions for already-licensed instanced trunks
 # and stones; they follow harvesting/growth without duplicating GLB rendering.
 var natural_colliders: Dictionary = {}
@@ -145,21 +172,24 @@ func _ready() -> void:
   palette = NaturalPalette.new()
   vivid_materials=VividMaterials.new()
   vivid_materials.call("initialize")
+  housing=PaidHousing.new()
+  if not bool(housing.call("initialize")):
+    asset_errors.append("REV208_PAID_HOUSE_LEDGER_LOAD_FAILURE")
   _build_interface()
   _load_assets()
+  spirit_resources=SpiritResources.new()
+  if not bool(spirit_resources.call("initialize")):
+    asset_errors.append("REV206_SPIRIT_RESOURCES_SAVE_LOAD_FAILED")
   _initialize_batches()
   _create_landscape()
   _seed_resources()
+  _spawn_spirit_resource_nodes()
   _place_completed_cc0_village()
   _make_workers()
-  # Assign a real resident identity to the completed, placeable licensed
-  # house. Interior furnishing/access is a separate feature, not faked.
-  if finished_prefabs.has("CL-HOME-V206-001"):
-    (finished_prefabs["CL-HOME-V206-001"] as Node3D).set_meta(
-      "assigned_resident_ids",["CL-NPC-0184-03"])
-  # Each physical original prefabricated home is represented in actual
-  # economy capacity, not a pretend construction progress meter.
-  sim.villages[TOWN]["homes"]=5
+  # New houses are STRICTLY paid and constructed; no visual CC0 house
+  # or real residential capacity exists merely because a source GLB loads.
+  sim.villages[TOWN]["homes"]=int(housing.call("stats").get(
+    "actually_completed_houses",0))
   _spawn_native_animals()
   _create_playable_player()
   # Initialized only AFTER the real player, terrain, original NPC economy,
@@ -571,6 +601,17 @@ func _load_assets() -> void:
     asset_errors.append("REV199_MISSING_REAL_CC0_HAIR_SWORD_NOT_SELF_MODELED")
   # Complete and licensed models are checked by SHA256 at packaging. No
   # "if missing, procedurally rebuild" fallback: missing assets BLOCK the QA.
+  # Source CC0 textured flowers, fungus, bushes and complete mineral rocks.
+  # Users should see real meshes and embedded vendor PBR/material textures.
+  for model_id in SPIRIT_CC0_SOURCES:
+    var source: Node3D=_parse_existing_cc0(
+      String(SPIRIT_CC0_SOURCES[model_id]))
+    if source==null:
+      asset_errors.append("REV206_SPIRIT_MESH_NOT_GENUINE_"+String(model_id))
+      continue
+    vivid_materials.call("upgrade_completed_cc0_model",source,
+      String(model_id),"natural_source")
+    spirit_resource_sources[model_id]=source
   for model_id in READY_MADE_CC0:
     var original: Node3D=_parse_existing_cc0(
       String(READY_MADE_CC0[model_id]))
@@ -592,48 +633,241 @@ func _load_assets() -> void:
       native_wildlife_sources[model_id]=original
 
 func _place_completed_cc0_village() -> void:
-  # Replaces unfinished NPC-built 3m shacks with actual complete CC0
-  # buildings. Existing original warehouse and terrain stay real.
-  # Each complete house is one original licensed GLB, no house assembly.
-  var sites: Array=[
+  # Source CC0 prefabs remain uninstantiated until finite village warehouse
+  # spends EXACT material bill and worker completes the required game hours.
+  # A blueprint is ONLY a text site marker, never a finished building.
+  var specs: Array=[
     ["house_1",Vector3(-7.0,0.0,-18.0),-0.12,"CL-HOME-V206-001"],
     ["house_2",Vector3( 4.8,0.0,-24.0), 0.28,"CL-HOME-V206-002"],
     ["house_3",Vector3(-5.0,0.0, 25.0), 0.42,"CL-HOME-V206-003"],
     ["house_4",Vector3( 4.0,0.0, 31.0),-0.20,"CL-HOME-V206-004"],
     ["inn",Vector3(-6.0,0.0,-31.0),0.10,"CL-INN-V206-001"],
     ["gazebo",Vector3(-2.0,0.0,37.0),0.35,"CL-GAZEBO-V206-001"]]
-  for config in sites:
-    var kind: String=config[0]
-    if not finished_prefab_sources.has(kind):
+  for config in specs:
+    var id: String=String(config[3])
+    housing_blueprints[id]={"kind":String(config[0]),"at":config[1],
+      "yaw":float(config[2])}
+    if bool(housing.get("sites")[id]["completed"]):
+      _materialize_paid_house(id)
       continue
-    var at: Vector3=config[1]
-    var instance: Node3D=(finished_prefab_sources[kind] as Node3D).duplicate()
-    instance.name=String(config[3])
-    instance.position=Vector3(at.x,
-      float(terrain_world.call("height_at",at.x,at.z)),at.z)
-    instance.rotation.y=float(config[2])
-    instance.set_meta("source_license","Quaternius-CC0")
-    instance.set_meta("completed_prefab_not_npc_assembly",true)
-    instance.set_meta("building_type",kind)
-    instance.set_meta("resident_capacity",4 if kind.begins_with("house") else (
-      18 if kind=="inn" else 0))
-    instance.set_meta("assigned_resident_ids",[])
-    world.add_child(instance)
-    # Vendor GLB geometry varies in scale and origin. Normalize actual world
-    # mesh height, align base to the physical 3D terrain after scaling.
-    var bounds: Vector2=_visible_bounds(instance)
-    var source_height: float=bounds.y-bounds.x
-    var intended_m: float=8.0 if kind=="inn" else (
-      4.0 if kind=="gazebo" else 5.0)
-    if source_height>0.10 and is_finite(source_height):
-      instance.scale*=clampf(intended_m/source_height,0.08,6.0)
-      var real_bbox: Vector2=_visible_bounds(instance)
-      instance.position.y+=float(terrain_world.call(
-        "height_at",at.x,at.z))-real_bbox.x
-    instance.set_meta("source_ready_meters",intended_m)
-    finished_prefabs[instance.name]=instance
-  _add_event("村落使用%d座完整CC0房屋和亭阁；旧脚手架施工停止" % [
-    finished_prefabs.size()])
+    var tag:=Label3D.new()
+    tag.name="OnlyBluePrintNoFreeConstructedHouse_"+id
+    tag.text="住宅图纸：木200 / 石150 / 5人" if id.begins_with(
+      "CL-HOME") else "公共建筑蓝图 · 施工需真实资源"
+    tag.font_size=35
+    tag.pixel_size=0.008
+    tag.billboard=BaseMaterial3D.BILLBOARD_ENABLED
+    tag.modulate=Color("#dfbb74")
+    var pos: Vector3=config[1]
+    tag.position=Vector3(pos.x,float(terrain_world.call(
+      "height_at",pos.x,pos.z))+1.2,pos.z)
+    tag.visibility_range_end=14.0
+    world.add_child(tag)
+    housing_blueprints[id]["marker"]=tag
+  _add_event("6项真实建造蓝图；木200石150，NPC付费施工后才显示原版整屋")
+
+func _materialize_paid_house(id: String) -> bool:
+  if finished_prefabs.has(id) or not housing_blueprints.has(id):
+    return false
+  if not bool(housing.get("sites")[id]["paid"]) or not (
+      bool(housing.get("sites")[id]["completed"])):
+    return false
+  var site: Dictionary=housing_blueprints[id]
+  var kind: String=String(site["kind"])
+  if not finished_prefab_sources.has(kind):
+    return false
+  var at: Vector3=site["at"]
+  var house: Node3D=(finished_prefab_sources[kind] as Node3D).duplicate()
+  house.name=id
+  house.position=Vector3(at.x,float(terrain_world.call(
+    "height_at",at.x,at.z)),at.z)
+  house.rotation.y=float(site["yaw"])
+  house.set_meta("source_license","Quaternius-CC0")
+  house.set_meta("no_free_material_building",true)
+  house.set_meta("building_type",kind)
+  house.set_meta("resident_capacity",int(housing.get("sites")[
+    id]["real_resident_capacity"]))
+  house.set_meta("assigned_resident_ids",(housing.get("sites")[
+    id]["residents"] as Array).duplicate())
+  world.add_child(house)
+  var bounds: Vector2=_visible_bounds(house)
+  var height: float=bounds.y-bounds.x
+  var intended: float=8.0 if kind=="inn" else (
+    4.0 if kind=="gazebo" else 5.0)
+  if height>0.10 and is_finite(height):
+    house.scale*=clampf(intended/height,0.08,6.0)
+    var after: Vector2=_visible_bounds(house)
+    house.position.y+=float(terrain_world.call("height_at",
+      at.x,at.z))-after.x
+  house.set_meta("source_ready_meters",intended)
+  finished_prefabs[id]=house
+  if kind.begins_with("house"):
+    sim.villages[TOWN]["homes"]=int(sim.villages[TOWN]["homes"])+1
+  # The collider matches a furnished WALKABLE ENTRY opening at the
+  # front, while exterior walls/corners stop the original swept capsule.
+  # Only completed paid houses receive collision.
+  _add_house_shell_collision(id,house)
+  if housing_blueprints[id].has("marker"):
+    var marker: Label3D=housing_blueprints[id]["marker"]
+    if is_instance_valid(marker):
+      marker.visible=false
+  return true
+
+func _add_house_shell_collision(id: String,house: Node3D) -> void:
+  var base: StaticBody3D=StaticBody3D.new()
+  base.name="RealPaidDwellingCollisionDoorGap_"+id
+  base.collision_layer=2
+  base.collision_mask=0
+  base.position=house.position
+  base.rotation.y=house.rotation.y
+  world.add_child(base)
+  # Four exterior walls made from cheap independent physical primitives,
+  # not a sealed whole-house collision cube. Front doorway has 1.6m gap.
+  var is_house: bool=String(house.get_meta(
+    "building_type","")).begins_with("house")
+  var edge: float=3.15 if is_house else 4.4
+  for edge_spec in [
+    ["back",Vector3(0,1.5,-edge),Vector3(edge*2,3.0,0.34)],
+    ["left",Vector3(-edge,1.5,0),Vector3(0.34,3.0,edge*2)],
+    ["right",Vector3(edge,1.5,0),Vector3(0.34,3.0,edge*2)],
+    ["front_left",Vector3(-edge*0.67,1.5,edge),
+      Vector3(edge*0.65,3.0,0.34)],
+    ["front_right",Vector3(edge*0.67,1.5,edge),
+      Vector3(edge*0.65,3.0,0.34)]]:
+    var hit: CollisionShape3D=CollisionShape3D.new()
+    hit.name="NonPhantomActualHouseWall_"+String(edge_spec[0])
+    hit.position=edge_spec[1]
+    var shape: BoxShape3D=BoxShape3D.new()
+    shape.size=edge_spec[2]
+    hit.shape=shape
+    base.add_child(hit)
+  house_entry_colliders[id]=base
+
+func quote_and_fund_near_house(point: Vector3) -> Dictionary:
+  if housing==null or not bool(housing.get("_loaded")):
+    return {"ok":false,"reason":"HOUSE_LEDGER_NOT_AVAILABLE"}
+  var best_id: String=""
+  var best: float=3.2
+  for id in housing_blueprints:
+    var p: Vector3=housing_blueprints[id]["at"]
+    var dist: float=Vector2(point.x-p.x,point.z-p.z).length()
+    if dist<best:
+      best=dist
+      best_id=String(id)
+  if best_id.is_empty():
+    return {"ok":false,"reason":"NO_HOUSE_BLUEPRINT_NEARBY"}
+  if bool(housing.get("sites")[best_id]["completed"]):
+    var occupied: Dictionary=housing.call("quote",best_id)
+    occupied["reason"]="HOUSE_ALREADY_COMPLETED"
+    return occupied
+  var result: Dictionary=housing.call("try_fund",best_id,sim,TOWN)
+  if bool(result.get("ok",false)):
+    _add_event("真实仓库扣木%d石%d；%s排入NPC工期" % [
+      int(result["spent_wood"]),int(result["spent_stone"]),best_id])
+  return result
+
+func _spawn_spirit_resource_nodes() -> void:
+  if spirit_resources==null or not bool(spirit_resources.get("_loaded")):
+    return
+  var records: Dictionary=spirit_resources.get("nodes")
+  var recipes: Dictionary=SpiritResources.RESOURCE_DEFS
+  for id in records:
+    var data: Dictionary=records[id]
+    var kind: String=String(data["kind"])
+    var prefab: String=String(recipes[kind]["prefab"])
+    if not spirit_resource_sources.has(prefab):
+      asset_errors.append("REV206_SPIRIT_RESOURCE_NO_CC0_"+prefab)
+      continue
+    var original: Node3D=spirit_resource_sources[prefab]
+    var model: Node3D=original.duplicate()
+    model.name=String(id)
+    var x: float=float(data["x"])
+    var z: float=float(data["z"])
+    model.position=Vector3(x,float(
+      terrain_world.call("height_at",x,z)),z)
+    model.set_meta("rev206_actual_world_ore_or_herb",kind)
+    model.set_meta("source_license","Quaternius-CC0")
+    model.set_meta("world_entity_id",String(id))
+    world.add_child(model)
+    var b: Vector2=_visible_bounds(model)
+    var current_height: float=b.y-b.x
+    var target_height: float=1.25 if kind=="spirit_stone" else (
+      0.72 if kind=="mushroom" else 0.85)
+    if current_height>0.05:
+      model.scale*=clampf(target_height/current_height,0.05,6.0)
+      b=_visible_bounds(model)
+      model.position.y+=float(
+        terrain_world.call("height_at",x,z))-b.x
+    # Vendor base-color texture/normal/roughness remains in effect. A
+    # carefully colored mineral luminescence makes ore distinguishable.
+    if kind=="spirit_stone":
+      for child in model.find_children("*","MeshInstance3D",true,false):
+        var mesh: MeshInstance3D=child as MeshInstance3D
+        if mesh.mesh==null:
+          continue
+        for surface in range(mesh.mesh.get_surface_count()):
+          var previous: Material=mesh.get_active_material(surface)
+          if previous is StandardMaterial3D:
+            var mat: StandardMaterial3D=(previous as StandardMaterial3D).duplicate(
+              true) as StandardMaterial3D
+            mat.albedo_color=mat.albedo_color.lerp(Color("#329f9a"),0.48)
+            mat.emission_enabled=true
+            mat.emission=Color("#3ad1bf")
+            mat.emission_energy_multiplier=0.72
+            mesh.set_surface_override_material(surface,mat)
+    var tag:=Label3D.new()
+    tag.name="ActualRespawningWildHerbOrSpiritOre"
+    tag.text=String(recipes[kind]["display"])
+    tag.font_size=38
+    tag.pixel_size=0.012
+    tag.billboard=BaseMaterial3D.BILLBOARD_ENABLED
+    tag.modulate=Color(String(recipes[kind]["color"]))
+    tag.outline_size=7
+    tag.no_depth_test=false
+    tag.position=Vector3(0,2.1,0)
+    tag.visible=false
+    model.add_child(tag)
+    model.visible=int(data["remaining"])>0
+    spirit_resource_visuals[id]={"model":model,"caption":tag,
+      "kind":kind,"display":String(recipes[kind]["display"])}
+  _add_event("已生成%d株实体野生灵药/矿脉；全部由实际CC0花草岩石绘制" % [
+    spirit_resource_visuals.size()])
+
+func _sync_spirit_resource_visuals(hero: Node3D=null) -> void:
+  if spirit_resources==null:
+    return
+  var ledger: Dictionary=spirit_resources.get("nodes")
+  for id in spirit_resource_visuals:
+    var visual: Dictionary=spirit_resource_visuals[id]
+    var entity: Node3D=visual["model"]
+    if not is_instance_valid(entity):
+      continue
+    var remaining: int=int(ledger[id]["remaining"])
+    entity.visible=remaining>0
+    var tag: Label3D=visual["caption"]
+    if entity.visible and hero!=null:
+      var distance: float=Vector2(
+        entity.position.x-hero.position.x,
+        entity.position.z-hero.position.z).length()
+      tag.visible=distance<7.0
+      if tag.visible:
+        tag.text=String(visual["display"])+" ×%d [采集]" % remaining
+    else:
+      tag.visible=false
+
+func harvest_real_spirit_resource(point: Vector3,
+    backpack: RefCounted) -> Dictionary:
+  if spirit_resources==null or not bool(spirit_resources.get("_loaded")):
+    return {"ok":false,"reason":"NO_REAL_RESOURCE_WORLD"}
+  var nearest: Dictionary=spirit_resources.call(
+    "get_nearest_resource",point,3.1)
+  if nearest.is_empty():
+    return {"ok":false,"reason":"NO_NEARBY_SPIRIT_RESOURCE"}
+  var response: Dictionary=spirit_resources.call(
+    "harvest",String(nearest["id"]),backpack)
+  if bool(response.get("ok",false)):
+    _sync_spirit_resource_visuals()
+  return response
 
 func _spawn_native_animals() -> void:
   # At most four active true animated animals. The offscreen population of
@@ -659,8 +893,7 @@ func _spawn_native_animals() -> void:
     world.add_child(critter)
     var bounds: Vector2=_visible_bounds(critter)
     var measured: float=bounds.y-bounds.x
-    var target_height: float={
-      "wolf":1.2,"fox":0.72,"deer":1.8,"cow":1.65}.get(kind,1.4)
+    var target_height: float=float(YAO_BEAST_SPEC[kind]["size"])
     if measured>0.10 and is_finite(measured):
       critter.scale*=clampf(target_height/measured,0.04,8.0)
       var new_bounds: Vector2=_visible_bounds(critter)
@@ -687,49 +920,182 @@ func _spawn_native_animals() -> void:
       if idle_clip!="":
         animator.play(idle_clip)
       _wildlife_anim_count+=1 if choices.size()>0 else 0
+    var plan: Dictionary=YAO_BEAST_SPEC[kind]
+    var solid: StaticBody3D=StaticBody3D.new()
+    solid.name="ActualYaoBeastBodyCollider_"+String(element[2])
+    solid.collision_layer=2
+    solid.collision_mask=0
+    solid.position=critter.position+Vector3.UP*(
+      target_height*0.50)
+    var capsule:=CollisionShape3D.new()
+    capsule.name="PhysicalRaisedSpiritualBeastNotDecorativeAnimal"
+    var physics:=CapsuleShape3D.new()
+    physics.radius=maxf(0.45,target_height*0.27)
+    physics.height=maxf(1.25,target_height*0.87)
+    capsule.shape=physics
+    solid.add_child(capsule)
+    world.add_child(solid)
+    var label:=Label3D.new()
+    label.name="ActualYaoBeastRealmRootCurrentMaxHPMP_"+String(element[2])
+    label.billboard=BaseMaterial3D.BILLBOARD_ENABLED
+    label.font_size=30
+    label.pixel_size=0.0052
+    label.outline_size=8
+    label.visibility_range_end=25.0
+    label.position=critter.position+Vector3.UP*(target_height+0.65)
+    world.add_child(label)
+    critter.set_meta("actual_spirit_monster",true)
+    critter.set_meta("beast_realm",String(plan["realm"]))
     actual_wildlife[critter.name]={
       "node":critter,"species":kind,"spawn":critter.position,
       "wander_angle":float(actual_wildlife.size())*1.71,
-      "timer":0.0,"activity":"休息","age_days":16,
-      "health":45 if kind=="wolf" else 32,
+      "timer":0.0,"activity":"巡游","age_days":16,
+      "name":String(plan["name"]),"realm":String(plan["realm"]),
+      "root":String(plan["root"]),
+      "health":int(plan["max_health"]),"max_health":int(plan["max_health"]),
+      "mana":int(plan["max_mana"]),"max_mana":int(plan["max_mana"]),
+      "body_height":target_height,
+      "aggressive":bool(plan["hostile"]),"damage":int(plan["damage"]),
+      "attack_cooldown":1.2,"attack_windup":0.0,
+      "loot_available":false,"state":"patrol",
+      "collider":solid,"head_label":label,
       "animator":animator,"idle":idle_clip,"walk":walk_clip}
 
+func apply_yao_beast_damage(id: String,damage: int,
+    element: String="sword") -> Dictionary:
+  if not actual_wildlife.has(id):
+    return {"ok":false,"reason":"NO_REAL_YAO_BEAST"}
+  var beast: Dictionary=actual_wildlife[id]
+  if int(beast["health"])<=0 or damage<=0:
+    return {"ok":false,"reason":"ALREADY_DEAD_OR_ZERO_DAMAGE"}
+  var resisted: int=0
+  if element!="sword" and String(beast["root"]).contains(element):
+    resisted=roundi(float(damage)*0.28)
+  var dealt: int=mini(int(beast["health"]),maxi(1,damage-resisted))
+  beast["health"]=int(beast["health"])-dealt
+  beast["aggressive"]=true # Surviving a first attack causes real hostility.
+  beast["attack_cooldown"]=maxf(0.3,float(beast["attack_cooldown"]))
+  _beast_hit_events+=1
+  if int(beast["health"])<=0:
+    beast["state"]="dead"
+    beast["activity"]="陨落"
+    beast["loot_available"]=true
+    beast["aggressive"]=false
+    _beast_deaths+=1
+    var solid: StaticBody3D=beast["collider"]
+    if is_instance_valid(solid):
+      solid.collision_layer=0
+    var animator: AnimationPlayer=beast["animator"]
+    if animator!=null:
+      animator.stop()
+  _sync_beast_vitals(beast)
+  return {"ok":true,"id":id,"actual_damage":dealt,
+    "remaining_hp":int(beast["health"]),"max_hp":int(beast["max_health"]),
+    "element_resisted":resisted,"defeated":bool(
+      beast["state"]=="dead")}
+
+func loot_defeated_yao_beast(point: Vector3,backpack: RefCounted) -> Dictionary:
+  if backpack==null:
+    return {"ok":false,"reason":"NO_REAL_BACKPACK"}
+  for id in actual_wildlife:
+    var beast: Dictionary=actual_wildlife[id]
+    var entity: Node3D=beast["node"]
+    if beast["state"]=="dead" and bool(beast[
+        "loot_available"]) and entity.position.distance_to(point)<3.0:
+      if not bool(backpack.call("_add","beast_core",1)):
+        return {"ok":false,"reason":"BAG_FULL_NO_DUPLICATED_BEAST_DROP"}
+      beast["loot_available"]=false
+      _sync_beast_vitals(beast)
+      return {"ok":true,"action":"loot_beast",
+        "kind":"beast_core","source_entity_id":String(id)}
+  return {"ok":false,"reason":"NO_DEFEATED_LOOT_WITHIN_REACH"}
+
+func _sync_beast_vitals(beast: Dictionary) -> void:
+  var tag: Label3D=beast["head_label"]
+  if tag!=null and is_instance_valid(tag):
+    tag.text="%s · %s · %s\n生命 %d/%d  法力 %d/%d · %s" % [
+      String(beast["name"]),String(beast["realm"]),
+      String(beast["root"]),int(beast["health"]),
+      int(beast["max_health"]),int(beast["mana"]),
+      int(beast["max_mana"]),String(beast["state"])]
+    var node: Node3D=beast["node"]
+    tag.position=node.position+Vector3.UP*(
+      float(beast["body_height"])+0.64)
+
 func _step_native_animals(delta: float) -> void:
-  for record in actual_wildlife.values():
-    var actor: Node3D=record["node"]
+  var hero: Node3D=controls.get("actor") if controls!=null else null
+  for beast in actual_wildlife.values():
+    var actor: Node3D=beast["node"]
     if not is_instance_valid(actor):
       continue
-    var speed: float=1.4 if String(record["species"])=="wolf" else 1.0
-    record["timer"]=float(record["timer"])+delta
-    var moving: bool=fmod(float(record["timer"]),17.0)>5.0
-    var home: Vector3=record["spawn"]
-    if moving:
-      var angle: float=float(record["wander_angle"])+(
-        float(int(float(record["timer"])/17.0))*1.27)
-      var toward: Vector3=home+Vector3(
-        sin(angle)*3.8,0.0,cos(angle)*3.8)
-      var delta_pos: Vector3=toward-actor.position
-      delta_pos.y=0
-      if delta_pos.length()>0.40:
-        var next: Vector3=actor.position+delta_pos.normalized()*minf(
-          speed*delta,delta_pos.length())
-        if bool(terrain_world.call(
-            "stream_contains_physical_chunk",next.x,next.z)) and not (
-            bool(terrain_world.call("is_water",next.x,next.z))):
-          actor.position.x=next.x
-          actor.position.z=next.z
-          actor.rotation.y=atan2(delta_pos.x,delta_pos.z)
-        record["activity"]="游走"
+    if int(beast["health"])<=0:
+      _sync_beast_vitals(beast)
+      continue
+    beast["timer"]=float(beast["timer"])+delta
+    beast["attack_cooldown"]=maxf(0.0,
+      float(beast["attack_cooldown"])-delta)
+    var home: Vector3=beast["spawn"]
+    var position_target: Vector3=home
+    var dist: float=999.0
+    if hero!=null and is_instance_valid(hero):
+      dist=Vector2(actor.position.x-hero.position.x,
+        actor.position.z-hero.position.z).length()
+    var chase: bool=bool(beast["aggressive"]) and dist<12.0
+    if chase:
+      position_target=hero.position
+      beast["state"]="alert" if dist>2.6 else "attack"
     else:
-      record["activity"]="休息"
+      var angle: float=float(beast["wander_angle"])+(
+        float(int(float(beast["timer"])/17.0))*1.27)
+      position_target=home+Vector3(sin(angle)*3.8,0.0,cos(angle)*3.8)
+      beast["state"]="patrol" if fmod(float(
+        beast["timer"]),17.0)>5.0 else "rest"
+    var moving: bool=beast["state"] in ["alert","patrol"]
+    if moving:
+      var diff: Vector3=position_target-actor.position
+      diff.y=0.0
+      if diff.length()>0.48:
+        var speed: float=2.0 if chase else 1.15
+        var candidate: Vector3=actor.position+diff.normalized()*minf(
+          speed*delta,diff.length())
+        if bool(terrain_world.call("stream_contains_physical_chunk",
+            candidate.x,candidate.z)) and not (
+            bool(terrain_world.call("is_water",candidate.x,candidate.z))):
+          actor.position.x=candidate.x
+          actor.position.z=candidate.z
+          actor.rotation.y=atan2(diff.x,diff.z)
+    elif beast["state"]=="attack" and float(beast[
+        "attack_cooldown"])<=0.0 and hero!=null:
+      # Actual HP decrement, not just a hostile label / attack animation.
+      var bullet_path:=PhysicsRayQueryParameters3D.create(
+        actor.position+Vector3.UP*1.25,hero.position+Vector3.UP*0.95,2)
+      bullet_path.exclude=[(beast["collider"] as StaticBody3D).get_rid()]
+      var blocked: Dictionary=world.get_world_3d().direct_space_state.intersect_ray(
+        bullet_path)
+      if not blocked.is_empty():
+        beast["state"]="alert"
+        continue
+      var hit_player: int=int(controls.call(
+        "apply_player_damage",int(beast["damage"])))
+      beast["attack_cooldown"]=2.2
+      beast["mana"]=maxi(0,int(beast["mana"])-(
+        3 if int(beast["mana"])>=3 else 0))
+      beast["activity"]="冲撞命中"
+      _add_event(String(beast["name"])+" 真实攻击玩家："+str(hit_player))
     actor.position.y=float(terrain_world.call("height_at",
       actor.position.x,actor.position.z))+float(
         actor.get_meta("feet_ground_offset",0.0))
-    var animator: AnimationPlayer=record["animator"]
+    var hitbox: StaticBody3D=beast["collider"]
+    if is_instance_valid(hitbox):
+      hitbox.position=actor.position+Vector3.UP*(
+        float(beast["body_height"])*0.5)
+    var animator: AnimationPlayer=beast["animator"]
     if animator!=null:
-      var selected: String=String(record["walk"]) if moving else String(record["idle"])
-      if selected!="" and animator.current_animation!=selected:
-        animator.play(selected)
+      var clip: String=String(beast["walk"]) if moving else String(
+        beast["idle"])
+      if clip!="" and animator.current_animation!=clip:
+        animator.play(clip)
+    _sync_beast_vitals(beast)
 
 func _initialize_batches() -> void:
   batch_renderer = KenneyMultiMesh.new()
@@ -871,7 +1237,7 @@ func _seed_resources() -> void:
   # Two natural-shaped GROVES, not an equidistant test grid. All trees are
   # kept outside the 7m center road and outside the construction exclusion.
   var groves := [Vector2(-22.0,-13.0),Vector2(-21.0,22.0)]
-  for index in range(12):
+  for index in range(52):
     var center: Vector2 = groves[int(index % groves.size())]
     var spread: float = rng.randf_range(1.5, 7.0)
     var angle: float = rng.randf_range(-PI, PI)
@@ -880,7 +1246,7 @@ func _seed_resources() -> void:
     if z > 7.0 and z < 14.0:
       z += 7.0
     var entity_id := "CL-TREE-0184-%03d" % index
-    assert(sim.register_natural_node(entity_id, TOWN, "tree", 12))
+    assert(sim.register_natural_node(entity_id, TOWN, "tree", 5))
     assert(sim.register_resource_position(entity_id, Vector3(x,
       float(terrain_world.call("height_at",x,z)),z)))
     assert(eco.register_tree(entity_id))
@@ -890,7 +1256,7 @@ func _seed_resources() -> void:
       natural_meshes[entity_id] = instance
   # Two mineral outcrops (right-hand side), all outside the main road.
   var quarry_groups := [Vector2(21.0,-15.0),Vector2(23.0,19.0)]
-  for index in range(9):
+  for index in range(20):
     var center: Vector2 = quarry_groups[int(index % quarry_groups.size())]
     var spread: float = rng.randf_range(1.0,6.5)
     var angle: float = rng.randf_range(-PI, PI)
@@ -899,7 +1265,7 @@ func _seed_resources() -> void:
     if z > 7.0 and z < 14.0:
       z -= 8.0
     var entity_id := "CL-STONE-0184-%03d" % index
-    assert(sim.register_natural_node(entity_id, TOWN, "stone", 18))
+    assert(sim.register_natural_node(entity_id, TOWN, "stone", 10))
     assert(sim.register_resource_position(entity_id, Vector3(x,
       float(terrain_world.call("height_at",x,z)),z)))
     assert(eco.register_stone(entity_id))
@@ -1056,6 +1422,15 @@ func _move_steward(worker: Dictionary, delta: float) -> void:
   # The old perpetual tiny-hut constructor is retired. This actual licensed
   # NPC has a home and a finite daily route, receives no fictitious tools.
   var home: Node3D=finished_prefabs.get("CL-HOME-V206-001",null)
+  # Workers are not merely staring at an unfinished home. If the wood+
+  # stone were paid, they physically commute to the site during workdays.
+  for bid in housing_blueprints:
+    var source: Dictionary=housing.get("sites")[bid]
+    if bool(source["paid"]) and not bool(source["completed"]):
+      worker["phase"]="licensed_paid_house_building"
+      worker["target"]=housing_blueprints[bid]["at"]
+      _navigate(worker,delta)
+      return
   var night: bool=int(sim.hour)>=19 or int(sim.hour)<6
   worker["home_id"]="CL-HOME-V206-001"
   worker["phase"]="home_rest" if night else "inspecting_prefab_houses"
@@ -1078,8 +1453,8 @@ func _update_status() -> void:
     return
   var village: Dictionary = sim.villages[TOWN]
   var stock: Dictionary = village["stock"]
-  var build: String="%d座正版CC0整屋/客栈/亭阁，禁止旧破屋施工" % [
-    finished_prefabs.size()]
+  var build: String="已完工%d栋 · 施工蓝图%d个 · 标准住宅200木150石/住5人" % [
+    finished_prefabs.size(),housing_blueprints.size()-finished_prefabs.size()]
   var terrain_state: Dictionary = terrain_world.call("stats") if terrain_world!=null else {}
   status.text = ("木 %d  石 %d  树种库存 %d  伐倒产种 %d\n" +
     "入库 %d  种下 %d  地下矿脉露出 %d\n" +
@@ -1172,8 +1547,14 @@ func _process(delta: float) -> void:
     _economy_clock-=12.0
     sim.tick()
     eco.advance_ecology_hours(1)
+    if housing!=null:
+      var paid_finished: Array=housing.call("advance_one_world_hour",1)
+      for built_id in paid_finished:
+        _materialize_paid_house(String(built_id))
     if cultivation!=null:
       cultivation.call("advance_world_hour")
+    if spirit_resources!=null:
+      spirit_resources.call("advance_world_hour")
     _total_accelerated_hours+=1
     advanced+=1
   if advanced>0:
@@ -1210,6 +1591,7 @@ func _process(delta: float) -> void:
     _sync_resource_collisions()
   if _clock >= 0.5:
     _clock=0.0
+    _sync_spirit_resource_visuals(hero)
     _update_status()
     _hide_original_debug_labels()
     if quality!=null:
@@ -1266,7 +1648,18 @@ func stats() -> Dictionary:
     "whole_world_speed_includes_npc_construction":false,
     "rev206_perpetual_house_construction_retired":true,
     "rev206_cc0_completed_building_count":finished_prefabs.size(),
+    "rev208_paid_construction_actual":housing.call("stats") if housing!=null else {},
+    "rev208_genuine_unpaid_house_blueprints":housing_blueprints.size(),
+    "rev208_paid_house_physics_colliders":house_entry_colliders.size(),
     "rev206_native_wildlife_count":actual_wildlife.size(),
+    "rev208_true_yao_beast_counts":actual_wildlife.size(),
+    "rev208_true_yao_beast_collision_count":actual_wildlife.values().filter(
+      func(v): return is_instance_valid(v["collider"])).size(),
+    "rev208_true_yao_beast_real_hit_events":_beast_hit_events,
+    "rev208_yao_beast_deaths":_beast_deaths,
+    "rev206_real_spirit_herbs_ore":spirit_resources.call("stats") if spirit_resources!=null else {},
+    "rev206_world_spirit_resource_visuals":spirit_resource_visuals.size(),
+    "rev206_licensed_spirit_plant_rock_sources":spirit_resource_sources.size(),
     "rev206_native_animated_wildlife_count":_wildlife_anim_count,
     "rev206_outfit_source_count":licensed_outfits.size(),
     "rev206_completed_house_occupancy":(finished_prefabs.get(
@@ -1456,7 +1849,7 @@ func _exit_tree() -> void:
   # a real source lifetime fix, not hiding/suppressing engine ERROR logs.
   var unique_sources: Dictionary={}
   for collection in [finished_prefab_sources,licensed_outfits,
-      native_wildlife_sources]:
+      native_wildlife_sources,spirit_resource_sources]:
     for original in (collection as Dictionary).values():
       if original is Node3D and is_instance_valid(original):
         unique_sources[(original as Node3D).get_instance_id()]=original
@@ -1466,5 +1859,7 @@ func _exit_tree() -> void:
   finished_prefab_sources.clear()
   licensed_outfits.clear()
   native_wildlife_sources.clear()
+  spirit_resource_sources.clear()
+  spirit_resource_visuals.clear()
   _hidden_game_world.clear()
   _old_profiler_nodes.clear()

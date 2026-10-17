@@ -2,8 +2,8 @@ extends SceneTree
 ## Actual exported APK176 compiled MAIN with rev187 real resource economy.
 ## No fake "pass" without 7 real GLBs, original base scene, three animated
 ## character skeletons, conservation and actual physical stage construction.
-const INITIAL_WOOD: int = 12 * 12
-const INITIAL_STONE: int = 9 * 18
+const INITIAL_WOOD: int = 52 * 5
+const INITIAL_STONE: int = 20 * 10
 const PHASE_WOOD := [0, 9, 6, 3]
 const PHASE_STONE := [6, 0, 0, 3]
 
@@ -116,8 +116,54 @@ func _run() -> void:
     return
   print("PASS_REV199_IMMUTABLE_AUTHENTIC_CC0_LONG_HAIR_PLAYER_AND_NPC_PLUS_REAL_MULTIMATERIAL_FLYING_SWORD")
   if not (first.get("missing_assets", []) as Array).is_empty():
-    _fail(10, "SOME_LICENSED_GLB_OR_TEXTURES_MISSING")
+    _fail(10, "SOME_LICENSED_GLB_OR_TEXTURES_MISSING_"+str(first.get("missing_assets",[])))
     return
+  # rev206 capacity regression: source assets are present, but a 40-tree /
+  # 12-stone MultiMesh silently omitted IDs 040..051 / 012..019 in a real
+  # Godot scene. Prove EVERY registered living resource has a GPU slot.
+  var physical_batch: Node3D=room.get("batch_renderer")
+  var used_slots: Dictionary=first.get("kenney_batch",{}).get("role_capacity_used",{})
+  var available_slots: Dictionary=first.get("kenney_batch",{}).get("role_instance_capacity",{})
+  var physical_nodes: Dictionary=room.get("natural_meshes")
+  if physical_batch==null or int(used_slots.get("tree",0))!=52 or (
+      int(used_slots.get("stone",0))!=20) or (
+      int(available_slots.get("tree",0))<52) or (
+      int(available_slots.get("stone",0))<20) or (
+      physical_nodes.size()!=72):
+    _fail(342,"REV206_NATURAL_NODE_COUNT_OR_MULTIMESH_CAPACITY_NOT_REAL_"+
+      str({"used":used_slots,"capacity":available_slots,"visuals":physical_nodes.size()}))
+    return
+  var real_group_parts: Dictionary=physical_batch.get("group_parts")
+  for check in [
+      {"kind":"tree","id":"CL-TREE-0184-051","slot":51,"growth":70},
+      {"kind":"stone","id":"CL-STONE-0184-019","slot":19,"growth":36}]:
+    var kind: String=String(check["kind"])
+    var entity_id: String=String(check["id"])
+    var expected_slot: int=int(check["slot"])
+    var proxy: Node3D=physical_nodes.get(entity_id,null)
+    var meshes: Array=real_group_parts.get(kind,[])
+    if proxy==null or not is_instance_valid(proxy) or meshes.is_empty() or (
+        int(proxy.get_meta("kenney_batch_slot",-1))!=expected_slot):
+      _fail(343,"REV206_LAST_RESOURCE_ID_IS_MISSING_A_REAL_KENNEY_GPU_SLOT_"+entity_id)
+      return
+    var gpu: MultiMesh=meshes[0]["multi"]
+    if gpu.mesh==null or gpu.instance_count<=expected_slot or (
+        absf(gpu.get_instance_transform(expected_slot).basis.determinant())<0.00001):
+      _fail(344,"REV206_LAST_NATURAL_ID_EXISTS_AS_DATA_BUT_IS_NOT_DRAWABLE_"+entity_id)
+      return
+    var previous_color: Color=gpu.get_instance_color(expected_slot)
+    var previous_transform: Transform3D=gpu.get_instance_transform(expected_slot)
+    # Simulate late regeneration: expanding the real licensed GLB buffer
+    # must restore EVERY existing tree/stone position and per-ID tint.
+    if not bool(physical_batch.call("_grow_capacity",kind,int(check["growth"]))):
+      _fail(345,"REV206_NATURAL_MULTIMESH_FAILED_SAFE_REAL_BUFFER_GROWTH_"+kind)
+      return
+    if gpu.instance_count<int(check["growth"]) or (
+        not gpu.get_instance_color(expected_slot).is_equal_approx(previous_color)) or (
+        not gpu.get_instance_transform(expected_slot).is_equal_approx(previous_transform)):
+      _fail(346,"REV206_GROWTH_ERASED_OLD_SOURCE_MESH_COLOR_OR_TRANSFORM_"+kind)
+      return
+  print("PASS_REV206_ALL_52_TREES_20_STONES_REAL_DRAWABLE_BATCH_SLOTS_GROW_WITHOUT_LOSS")
   if int(first.get("visible_actor_labels",0)) != 3:
     _fail(27, "MISSING_VISIBLE_NPC_WORKER_JOB_LABELS")
     return
@@ -127,7 +173,7 @@ func _run() -> void:
     if actual_height < 1.5 or actual_height > 2.2:
       _fail(28, "NPC_NOT_SCALED_TO_VISIBLE_REAL_HEIGHT_" + profession + "_" + str(actual_height))
       return
-  if int(first.get("worker_count",0)) != 3 or int(first.get("resource_node_count",0)) != 21:
+  if int(first.get("worker_count",0)) != 3 or int(first.get("resource_node_count",0)) != 72:
     _fail(11, "NPC_AND_FINITE_RESOURCE_IDENTITIES_MISSING")
     return
   # The entire point of this version is that static Kenney GLBs must NO
@@ -450,9 +496,19 @@ func _run() -> void:
   var visible_stream_tufts: int=0
   for id in streamed:
     var field: MultiMeshInstance3D=streamed[id]
-    if not is_instance_valid(field) or field.multimesh.instance_count!=320 or (
-        field.get_parent()!=initial_loaded[id]):
-      _fail(188,"REV194_STREAMED_GRASS_NOT_PARENTED_TO_PHYSICAL_CHUNK")
+    if not is_instance_valid(field) or field.get_parent()!=initial_loaded[id]:
+      _fail(188,"REV194_STREAMED_GRASS_NOT_PARENTED_TO_PHYSICAL_CHUNK_"+str(id))
+      return
+    # rev206 source raised physical tuft density 320 -> 460 per chunk.
+    # The former test rejected FULLY PARENTED real grass as a fake missing
+    # node; require real mesh capacity AND the high-tier drawn-instance count.
+    if field.multimesh==null or field.multimesh.mesh==null or (
+        field.multimesh.instance_count!=460) or (
+        field.multimesh.visible_instance_count!=330):
+      _fail(352,"REV206_DENSE_STREAMED_GRASS_REAL_CHUNK_GPU_INSTANCE_MISMATCH_"+str({
+        "chunk":id,
+        "allocated":field.multimesh.instance_count if field.multimesh!=null else -1,
+        "drawn":field.multimesh.visible_instance_count if field.multimesh!=null else -1}))
       return
     for i in range(field.multimesh.instance_count):
       var t: Transform3D=field.multimesh.get_instance_transform(i)
@@ -482,11 +538,11 @@ func _run() -> void:
     return
   var profiles: Array = [
     {"key":"极致画质","scale":1.0,"msaa":Viewport.MSAA_4X,"shadows":100.0,
-     "draw":1500,"triangles":1500000,"grass":4500,"grass_m":80.0,"fireflies":100,"clouds":9},
+     "draw":1500,"triangles":1500000,"grass":10800,"stream_grass":460,"grass_m":80.0,"fireflies":100,"clouds":9},
     {"key":"高档","scale":0.96,"msaa":Viewport.MSAA_2X,"shadows":60.0,
-     "draw":800,"triangles":600000,"grass":2400,"grass_m":40.0,"fireflies":60,"clouds":5},
+     "draw":800,"triangles":600000,"grass":7200,"stream_grass":330,"grass_m":40.0,"fireflies":60,"clouds":5},
     {"key":"普通","scale":0.80,"msaa":Viewport.MSAA_DISABLED,"shadows":30.0,
-     "draw":400,"triangles":300000,"grass":1100,"grass_m":20.0,"fireflies":20,"clouds":2}
+     "draw":400,"triangles":300000,"grass":3200,"stream_grass":155,"grass_m":20.0,"fireflies":20,"clouds":2}
   ]
   for expected in profiles:
     if not quality.call("apply",String(expected["key"]),true):
@@ -508,8 +564,19 @@ func _run() -> void:
     var flies: GPUParticles3D=world.get_node("NaturalWarmMobileFireflyParticlesTiered")
     var clouds: MultiMeshInstance3D=world.get_node("RealBlueSkySoftWhiteCumulusCards")
     if grass.multimesh.visible_instance_count!=int(expected["grass"]) or absf(grass.visibility_range_end-float(expected["grass_m"]))>0.1:
-      _fail(87,"GRASS_DENSITY_AND_DISTANCE_NEED_PER_TIER_SCALE")
+      _fail(87,"GRASS_DENSITY_AND_DISTANCE_NEED_PER_TIER_SCALE_"+String(expected["key"])+
+        "_actual_"+str(grass.multimesh.visible_instance_count))
       return
+    # The 2026-10-18 denser grass source now allocates 10,800/7,200/3,200
+    # nearby tufts plus 460/330/155 physical chunks per active profile.
+    # Test GPU-visible numbers, not a stale constant from rev187.
+    for meadow in (quality.get("streamed_meadows") as Dictionary).values():
+      var chunk_meadow: MultiMeshInstance3D=meadow
+      if not is_instance_valid(chunk_meadow) or (
+          chunk_meadow.multimesh.visible_instance_count!=int(expected["stream_grass"])):
+        _fail(353,"REV206_PHYSICAL_MEADOW_DRAW_DENSITY_DOES_NOT_SCALE_WITH_PROFILE_"+
+          String(expected["key"]))
+        return
     if flies.amount!=int(expected["fireflies"]) or clouds.multimesh.visible_instance_count!=int(expected["clouds"]):
       _fail(88,"PARTICLE_AND_CLOUD_COMPLEXITY_MUST_TIER_SCALE")
       return
@@ -549,7 +616,9 @@ func _run() -> void:
       int(evidence.get("micro_texels_per_metre",0))!=64):
     _fail(334,"REV207_GENUINE_512PX_QUATERNIUS_PBR_OR_WORLD_TINY_PIXEL_MATERIAL_MISSING_"+str(evidence))
     return
-  var a_real_roof: Node3D=room.get("finished_prefabs").get("CL-HOME-V206-001",null)
+  # Material QA tests the source GLB; it is ILLEGAL to display one
+  # unpaid 200wood/150stone residence for camera or QA convenience.
+  var a_real_roof: Node3D=room.get("finished_prefab_sources").get("house_1",null)
   if a_real_roof==null:
     _fail(335,"REV207_ART_MUST_USE_REAL_QUATERNIUS_SOURCE_HOUSE_GLTF")
     return
@@ -711,7 +780,7 @@ func _run() -> void:
     return
   var grass_quality: RefCounted=room.get("quality")
   var meadow_points: Array=grass_quality.get("grass_points") if grass_quality!=null else []
-  if meadow_points.size()!=4500:
+  if meadow_points.size()!=10800:
     _fail(171,"REV191_NATIVE_GRASS_BATCH_MUST_STILL_COVER_LOCAL_MEADOW")
     return
   var max_grass_height: float=0
@@ -802,44 +871,58 @@ func _run() -> void:
     _fail(325,"REV206_STILL_SPAWNS_DYSFUNCTIONAL_BUILDING_WORKER")
     return
   var report: Dictionary = room.call("stats")
-  if not bool(report.get("rev206_perpetual_house_construction_retired",false)) or (
-      int(report.get("rev206_cc0_completed_building_count",0))!=6):
-    _fail(326,"REV206_SIX_GENUINE_FINISHED_BUILDINGS_MUST_REPLACE_TINY_SHACKS")
+  var actual_house: RefCounted=room.get("housing")
+  var paid: Dictionary=actual_house.call("stats")
+  if int(report.get("rev206_cc0_completed_building_count",-1))!=0 or (
+      int(paid.get("unpaid_blueprints",-1))!=6) or (
+      int(paid.get("standard_house_wood",0))!=200) or (
+      int(paid.get("standard_house_stone",0))!=150) or (
+      int(paid.get("standard_house_capacity",0))!=5):
+    _fail(326,"REV208_P0_NO_FREE_HOMES_200WOOD150STONE_FIVE_BEDS_NOT_ENFORCED_"+str(paid))
     return
   if int(report.get("rev206_native_wildlife_count",0))!=4 or (
       int(report.get("rev206_native_animated_wildlife_count",0))!=4) or (
       int(report.get("rev206_outfit_source_count",0))!=2):
-    _fail(327,"REV206_GENUINE_ANIMATED_ANIMALS_OR_LICENSED_OUTFITS_MISSING")
+    _fail(327,"REV208_TRUE_LICENSED_GLBS_NOT_IMPORTED")
+    return
+  if room.get("finished_prefab_sources").size()!=6:
+    _fail(328,"REV208_MISSING_REAL_SIX_COMPLETE_SOURCE_BUILDINGS_IN_LIBRARY")
     return
   for house_id in ["CL-HOME-V206-001","CL-HOME-V206-002",
       "CL-HOME-V206-003","CL-HOME-V206-004",
       "CL-INN-V206-001","CL-GAZEBO-V206-001"]:
-    var full_home: Node3D=room.get("finished_prefabs").get(house_id,null)
-    if full_home==null or not is_instance_valid(full_home) or not (
-        bool(full_home.get_meta("completed_prefab_not_npc_assembly",false))):
-      _fail(328,"REV206_MISSING_SOURCE_COMPLETE_ORIGINAL_CC0_HOUSE_"+house_id)
+    if room.get("finished_prefabs").has(house_id):
+      _fail(329,"REV208_WHOLE_LICENSED_SOURCE_PREFAB_CANNOT_APPEAR_BEFORE_PAID_WOOD_STONE_"+house_id)
       return
-    var bounds: Vector2=room.call("_visible_bounds",full_home)
-    if bounds.y-bounds.x<2.5 or bounds.y-bounds.x>10.0:
-      _fail(329,"REV206_FINISHED_VENDOR_HOUSE_FLOATS_OR_HAS_WRONG_METERS_"+str(bounds))
+    var blueprint: Dictionary=actual_house.call("quote",house_id,{})
+    if not bool(blueprint.get("ok",false)) or bool(
+        blueprint.get("completed",true)):
+      _fail(330,"REV208_LICENSED_BUILDING_BLUEPRINT_IS_NOT_UNPAID_"+house_id)
       return
-  var resident_home: Node3D=room.get("finished_prefabs")["CL-HOME-V206-001"]
-  if not (resident_home.get_meta("assigned_resident_ids",[]) as Array).has(
-      "CL-NPC-0184-03"):
-    _fail(330,"REV206_COMPLETE_HOUSE_NEVER_ASSIGNED_TO_REAL_STEWARD")
-    return
+  for b in room.get("actual_wildlife").values():
+    if int(b.get("health",0))<=0 or int(b.get("mana",0))<=0 or (
+        int(b.get("max_health",0))<=0 or int(b.get("max_mana",0))<=0) or (
+        not is_instance_valid(b.get("collider",null))) or (
+        not String(b.get("name","")).contains("妖")):
+      _fail(351,"REV208_SMALL_ORDINARY_ANIMAL_WITHOUT_REAL_BEAST_REALM_HP_MP_COLLIDER")
+      return
+  print("PASS_REV208_NO_FREE_HOUSES_200WOOD150STONE_FIVE_RESIDENTS_AND_FOUR_TRUE_LARGE_YAO_BEASTS")
   if not bool(report.get("persistent_city_population_is_statistical_only",false)):
     _fail(331,"REV206_CITY_80000_RESIDENTS_MUST_NOT_BE_80000_GODOT_NODES")
     return
-  print("PASS_REV206_REAL_QUATERNIUS_CC0_COMPLETE_HOMES_WANDERING_ANIMATED_ANIMALS_AND_PERMANENTLY_RETIRED_BUILDER")
+  print("PASS_REV206_REAL_QUATERNIUS_CC0_SOURCE_HOUSES_REAL_YAO_BEASTS_PERSISTENT_PAID_WORKER_BUILDING")
   if not (report.get("native_resolution_ui",false) and report.get("no_auto_quality_switch",false)):
     _fail(91,"UI_SCALED_WITH_3D_OR_AUTOMATIC_QUALITY_DOWNGRADE")
     return
   if int(report["harvests"]) < 4 or int(report["deliveries"]) < 4:
     _fail(19, "NPC_MUST_ACTUALLY_WALK_TO_RESOURCES_AND_DELIVER")
     return
-  if int(report.get("built_cc0_parts",0))!=6:
-    _fail(20,"REV206_ONLY_COMPLETE_CC0_PREFABS_NOT_CUSTOM_SCAFFOLD_PARTS")
+  # rev208: six real vendor source houses are loaded as assets, but
+  # none may be rendered or counted as a finished shelter before the
+  # original economy has paid its finite wood/stone bill and NPC hours.
+  if int(report.get("built_cc0_parts",-1))!=0 or (
+      (room.get("finished_prefabs") as Dictionary).size()!=0):
+    _fail(20,"REV208_UNPAID_HOUSE_CANNOT_CLAIM_SIX_FINISHED_CC0_BUILDS")
     return
   if not observed_live_tree_seed_rewards or not observed_planting:
     _fail(30,"TREE_MUST_ONLY_DROP_ONE_SEED_WHEN_FULLY_CUT_AND_REAL_SEED_MUST_GERMINATE")
@@ -1830,7 +1913,7 @@ func _run() -> void:
     _fail(319,"REV205_REAL_WOOD_PAID_CRAFT_AND_EQUIPMENT_SLOT_NOT_FUNCTIONAL")
     return
   var item_grid: ItemList=game_hud.get_node_or_null(
-      "Rev188CharacterInventoryCultivationMenu/Rev205RealBackpackAndCharacterGameSheet/ActualSourcedBackpack24StackSelectableSlots")
+      "Rev188CharacterInventoryCultivationMenu/Rev206RealScrollableCharacterSheet/Rev205RealBackpackAndCharacterGameSheet/ActualSourcedBackpack24StackSelectableSlots")
   if player.get("_game_sheet").visible and String(
       player.get("_game_sheet_mode"))=="inventory":
     player.call("_open_game_menu","inventory")
@@ -1842,9 +1925,9 @@ func _run() -> void:
       " count="+str(item_grid.item_count if item_grid!=null else -1))
     return
   var equipped_weapon: Button=game_hud.get_node_or_null(
-      "Rev188CharacterInventoryCultivationMenu/Rev205RealBackpackAndCharacterGameSheet/LiveEquipmentSlotsWeaponToolArmorRing/ActualEquipment_weapon")
+      "Rev188CharacterInventoryCultivationMenu/Rev206RealScrollableCharacterSheet/Rev205RealBackpackAndCharacterGameSheet/LiveEquipmentSlotsWeaponToolArmorRing/ActualEquipment_weapon")
   var unequipped_armor: Button=game_hud.get_node_or_null(
-      "Rev188CharacterInventoryCultivationMenu/Rev205RealBackpackAndCharacterGameSheet/LiveEquipmentSlotsWeaponToolArmorRing/ActualEquipment_armor")
+      "Rev188CharacterInventoryCultivationMenu/Rev206RealScrollableCharacterSheet/Rev205RealBackpackAndCharacterGameSheet/LiveEquipmentSlotsWeaponToolArmorRing/ActualEquipment_armor")
   if equipped_weapon==null or unequipped_armor==null or (
       equipped_weapon.disabled or not unequipped_armor.disabled or (
       not equipped_weapon.text.contains("粗木剑"))):
@@ -1862,6 +1945,48 @@ func _run() -> void:
   econ.citizens["CL-PLAYER-0184-0001"]["energy"]=saved_energy
   actor.position=restored_loc
   player.call("update_camera")
+  var wild: RefCounted=room.get("spirit_resources")
+  var plants: Dictionary=room.get("spirit_resource_visuals")
+  if wild==null or plants.size()!=13 or not bool(
+      wild.call("conservation_ok")) or int(
+      wild.call("stats").get("live_spirit_stone_units",0))!=12:
+    _fail(346,"REV206_REAL_PHYSICAL_MEDICINAL_RESOURCE_NODES_NOT_CONSERVED")
+    return
+  for id in plants:
+    var mesh: Node3D=plants[id]["model"]
+    if mesh==null or not is_instance_valid(mesh) or (
+        mesh.find_children("*","MeshInstance3D",true,false).is_empty()) or (
+        mesh.get_meta("source_license","")!="Quaternius-CC0"):
+      _fail(347,"REV206_MEDICINE_ORE_MISSING_REAL_QUATERNIUS_MESH_AND_LICENSE")
+      return
+  actor.position=Vector3(-11.4,float(terrain.call(
+    "height_at",-11.4,-12.2)),-12.2)
+  econ.citizens["CL-PLAYER-0184-0001"]["energy"]=100
+  var herbs_before: int=int(backpack.call("amount","herb_wood"))
+  var picked: Dictionary=player.call("interact")
+  if not bool(picked.get("ok",false)) or String(
+      picked.get("kind",""))!="herb_wood" or int(
+      backpack.call("amount","herb_wood"))!=herbs_before+1 or (
+      int(picked.get("energy_spent",0))!=3):
+    _fail(348,"REV206_PLAYER_TOUCH_DID_NOT_HARVEST_REAL_HERB_WITH_STAMINA_"+str(picked))
+    return
+  if not bool(wild.call("conservation_ok")):
+    _fail(349,"REV206_REAL_SPIRIT_ORE_HERB_FINITE_MATERIAL_DEBIT_FAILED")
+    return
+  player.call("_open_game_menu","inventory")
+  var sheet_scroll: ScrollContainer=game_hud.get_node_or_null(
+    "Rev188CharacterInventoryCultivationMenu/Rev206RealScrollableCharacterSheet")
+  if sheet_scroll==null or not bool(player.get(
+      "_spirit_craft_row").visible) or (
+      sheet_scroll.custom_minimum_size.y>478):
+    _fail(350,"REV206_REAL_MEDICINE_CRAFT_BUTTONS_CLIPPED_OFF_PHONE")
+    return
+  player.call("_open_game_menu","inventory")
+  backpack.set("items",contents_before)
+  backpack.set("equipment",gear_before)
+  backpack.call("_save")
+  actor.position=restored_loc
+  print("PASS_REV206_REAL_MAIN_HAS_PERSISTENT_LICENCED_MEDICINAL_PLANTS_ORE_AND_TOUCH_MINING")
   print("PASS_REV205_TRUE_ORIGINAL_TOUCH_CAMERA_FLIGHT_RESTART_LOCK_ON_BAG_AND_ICONS")
   room.call("_focus_builder")
   if not bool(room.get("_follow_builder")) or float(room.get("_camera_distance")) > 14.0:

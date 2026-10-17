@@ -1,0 +1,93 @@
+{
+  "schema": 206,
+  "source": "https://raw.githubusercontent.com/Papyszoo/CC0-Public-Domain-Models/main/",
+  "asset_total": 7,
+  "total_bytes": 754196,
+  "committed_under_license": "CC0-1.0",
+  "models": [
+    {
+      "name": "flower",
+      "sha256": "93f2f31e341eef7ec90c027eae055ce961202e4761ae576a2b7ac20d57ef9fce",
+      "source_blob_sha1": "3d3b7abbe3db49b8d70534343a07186aba135fed",
+      "bytes": 143968,
+      "meshes": 1,
+      "animations": 0,
+      "materials": 1,
+      "license": "CC0-1.0",
+      "role": "herb",
+      "path": "game-source/apk176-ota177-candidate/assets/cc0-spirit-rev206/herb/flower.glb"
+    },
+    {
+      "name": "flower2",
+      "sha256": "85d035e95c0cb4190194de8211f759172f8b4d1db00b281b145258d86cfeed1a",
+      "source_blob_sha1": "8e0f4b60c150e71f3c03a8134494225d15c9a67e",
+      "bytes": 148136,
+      "meshes": 1,
+      "animations": 0,
+      "materials": 1,
+      "license": "CC0-1.0",
+      "role": "herb",
+      "path": "game-source/apk176-ota177-candidate/assets/cc0-spirit-rev206/herb/flower2.glb"
+    },
+    {
+      "name": "flower3",
+      "sha256": "bef4df0608f7ae329b239bec7fdb4c802883dae5b51f34fd10a1bf407b1c5dd6",
+      "source_blob_sha1": "ea0e6e509951f6cfa671e0c8d24c6e98ebf52087",
+      "bytes": 149992,
+      "meshes": 1,
+      "animations": 0,
+      "materials": 1,
+      "license": "CC0-1.0",
+      "role": "herb",
+      "path": "game-source/apk176-ota177-candidate/assets/cc0-spirit-rev206/herb/flower3.glb"
+    },
+    {
+      "name": "mushroom",
+      "sha256": "3fb623d189537d9bee408b23514d35d0244de8ff37c38eb4b14e291bb391422a",
+      "source_blob_sha1": "557025b5f0a99bd420c0fbac5ab50dffc2821da4",
+      "bytes": 141788,
+      "meshes": 1,
+      "animations": 0,
+      "materials": 1,
+      "license": "CC0-1.0",
+      "role": "herb",
+      "path": "game-source/apk176-ota177-candidate/assets/cc0-spirit-rev206/herb/mushroom.glb"
+    },
+    {
+      "name": "bush",
+      "sha256": "5b27749976c6ba41ea2dc70c7dc9e0105f2003b04ba66fb2ac3bd438335dcb04",
+      "source_blob_sha1": "2f3cad58a2ecea96dc1b9f87f43ff8fa27de8c87",
+      "bytes": 162756,
+      "meshes": 1,
+      "animations": 0,
+      "materials": 1,
+      "license": "CC0-1.0",
+      "role": "herb",
+      "path": "game-source/apk176-ota177-candidate/assets/cc0-spirit-rev206/herb/bush.glb"
+    },
+    {
+      "name": "rock1",
+      "sha256": "eb36288c3f79c1c6cb220410defde807e8159d87e4af5dfebc3221b9bce94c92",
+      "source_blob_sha1": "cc9f4cf2726f0ce3294e8a40e50c8ff5b761fd0e",
+      "bytes": 3720,
+      "meshes": 1,
+      "animations": 0,
+      "materials": 1,
+      "license": "CC0-1.0",
+      "role": "ore",
+      "path": "game-source/apk176-ota177-candidate/assets/cc0-spirit-rev206/ore/rock1.glb"
+    },
+    {
+      "name": "rock2",
+      "sha256": "58a95865e5694a436a84e69d835179192ee226ad310562909c1fb20cfb593571",
+      "source_blob_sha1": "7136308356b7f49bb7e7650ee1a0cc500ac68a25",
+      "bytes": 3836,
+      "meshes": 1,
+      "animations": 0,
+      "materials": 1,
+      "license": "CC0-1.0",
+      "role": "ore",
+      "path": "game-source/apk176-ota177-candidate/assets/cc0-spirit-rev206/ore/rock2.glb"
+    }
+  ]
+}

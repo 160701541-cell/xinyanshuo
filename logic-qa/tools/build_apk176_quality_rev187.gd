@@ -17,6 +17,8 @@ const FILES := {
 	"res://canglan_rev187/vivid_material.gd": "canglan_rev187/vivid_material.gd",
 	"res://canglan_rev187/player_controller.gd": "canglan_rev187/player_controller.gd",
 	"res://canglan_rev187/backpack.gd": "canglan_rev187/backpack.gd",
+	"res://canglan_rev187/spirit_resources.gd": "canglan_rev187/spirit_resources.gd",
+	"res://canglan_rev187/paid_housing.gd": "canglan_rev187/paid_housing.gd",
 	"res://canglan_rev187/cultivation_world.gd": "canglan_rev187/cultivation_world.gd",
 	"res://canglan_rev187/root_taxonomy.gd": "canglan_rev187/root_taxonomy.gd",
 	"res://canglan_rev187/city_population.gd": "canglan_rev187/city_population.gd",
@@ -78,6 +80,14 @@ func _initialize() -> void:
 		for item in known_names:
 			var rel: String="canglan_rev187/cc0_rev206/"+category+"/"+item+".glb"
 			files["res://"+rel]=rel
+	# Rev206 seven genuine source-hashed medicinal plants, mushrooms and
+	# mineral rock bodies. Never create a generic procedural resource model.
+	for item in ["flower","flower2","flower3","mushroom","bush"]:
+		var rel: String="canglan_rev187/cc0_spirit/herb/"+item+".glb"
+		files["res://"+rel]=rel
+	for item in ["rock1","rock2"]:
+		var rel: String="canglan_rev187/cc0_spirit/ore/"+item+".glb"
+		files["res://"+rel]=rel
 	for i in range(8):
 		for pattern in ["hd2d/worldx/nav_%03d.json", "hd2d/worldx/zones_%03d.json",
 				"hd2d/worldx/worldx_%03d.png"]:

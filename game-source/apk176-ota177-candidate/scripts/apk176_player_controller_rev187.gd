@@ -107,6 +107,16 @@ var _game_sheet_body: Label
 var _game_sheet_mode: String = ""
 var _player_health: int = 100
 var _health_bar: ProgressBar
+var _hp_number: Label
+var _stamina_number: Label
+var _mana_number: Label
+var _sitting_in_world: bool=false
+var _sitting_skeleton: Skeleton3D
+var _sitting_rest_poses: Dictionary={}
+var _sitting_visual_origin: Vector3=Vector3.ZERO
+var _sitting_bones_modified: int=0
+var _enemy_hp_number: Label
+var _enemy_mana_number: Label
 var _energy_bar: ProgressBar
 var _mana_bar: ProgressBar
 var _target_panel: PanelContainer
@@ -123,6 +133,9 @@ var _inventory_craft_pick_button: Button
 var _inventory_equip_button: Button
 var _equipment_slot_buttons: Dictionary={}
 var _equipment_slot_row: HBoxContainer
+var _spirit_craft_row: HBoxContainer
+var _spirit_use_row: HBoxContainer
+var _real_inventory_scroll: ScrollContainer
 var _game_actions: Dictionary = {}
 var _dash_cd: float = 0.0
 var _gather_cd: float = 0.0
@@ -646,11 +659,114 @@ func _try_root_examination() -> Dictionary:
   _refresh_game_hud()
   return answer
 
+func _set_visible_crossleg_pose(enabled: bool) -> void:
+  if enabled==_sitting_in_world:
+    return
+  if enabled:
+    if actor==null or camera_mode in ["soar","fly","god"] or (
+        _soar_altitude>0.05 or _jump_height>0.05) or (
+        bool(terrain.call("is_water",actor.position.x,actor.position.z))):
+      return
+    var rigs: Array[Node]=actor.find_children("*","Skeleton3D",true,false)
+    if rigs.is_empty():
+      return # Honest engine-QA failure: no valid licensed skeletal rig.
+    _sitting_skeleton=rigs[0] as Skeleton3D
+    _sitting_visual_origin=_sitting_skeleton.position
+    _sitting_rest_poses.clear()
+    _sitting_bones_modified=0
+    if animator!=null:
+      animator.stop()
+    for i in range(_sitting_skeleton.get_bone_count()):
+      var n: String=_sitting_skeleton.get_bone_name(i).to_lower()
+      var left: bool=n.contains("left") or n.ends_with("_l") or (
+        n.begins_with("l_"))
+      var right: bool=n.contains("right") or n.ends_with("_r") or (
+        n.begins_with("r_"))
+      var swing: float=1.0 if left else -1.0
+      var cross: bool=false
+      var pitch: float=0.0
+      var roll: float=0.0
+      if n.contains("upperleg") or n.contains("thigh") or n.contains("upleg"):
+        pitch=1.14
+        roll=swing*0.62
+        cross=true
+      elif n.contains("lowerleg") or n.contains("calf") or n.contains("shin"):
+        pitch=-1.91
+        roll=-swing*0.25
+        cross=true
+      elif n.contains("foot") and (left or right):
+        pitch=0.63
+        cross=true
+      elif n.contains("spine") and not n.contains("spine1"):
+        pitch=-0.08
+        cross=true
+      elif (n.contains("upperarm") or n.contains("shoulder")) and (
+          left or right):
+        pitch=0.52
+        roll=-swing*0.34
+        cross=true
+      elif n.contains("forearm") and (left or right):
+        pitch=-0.55
+        cross=true
+      if not cross:
+        continue
+      var old_rotation: Quaternion=_sitting_skeleton.get_bone_pose_rotation(i)
+      _sitting_rest_poses[i]=old_rotation
+      var seated_rotation: Quaternion=old_rotation * Quaternion(
+        Vector3.RIGHT,pitch) * Quaternion(Vector3.FORWARD,roll)
+      _sitting_skeleton.set_bone_pose_rotation(i,seated_rotation.normalized())
+      _sitting_bones_modified+=1
+    if _sitting_bones_modified<4:
+      _sitting_skeleton=null
+      return
+    _sitting_skeleton.position.y=_sitting_visual_origin.y-0.42
+    _sitting_in_world=true
+    actor.set_meta("sitting_actual_skeleton_bones",_sitting_bones_modified)
+    actor.set_meta("meditating_sitting_crosslegs",true)
+  else:
+    if _sitting_skeleton!=null and is_instance_valid(_sitting_skeleton):
+      for idx in _sitting_rest_poses:
+        _sitting_skeleton.set_bone_pose_rotation(int(idx),
+          _sitting_rest_poses[idx])
+      _sitting_skeleton.position=_sitting_visual_origin
+    _sitting_rest_poses.clear()
+    _sitting_skeleton=null
+    _sitting_in_world=false
+    if actor!=null:
+      actor.set_meta("meditating_sitting_crosslegs",false)
+    _set_movement_animation(false)
+
+func _interrupt_world_meditation() -> void:
+  if not _sitting_in_world:
+    return
+  var system: RefCounted=room.get("cultivation")
+  if system!=null and bool(system.get("player_data").get(
+      "meditating",false)):
+    system.call("toggle_player_meditation")
+  _set_visible_crossleg_pose(false)
+  say("行动打断盘坐，修炼已停止")
+
 func _try_meditation() -> Dictionary:
   var system: RefCounted=room.get("cultivation")
   if system==null:
     return {"ok":false,"message":"灵气修行系统还未加载"}
+  # Open, walkable physical soil is enough: no arbitrary safe-area field
+  # or altar/sect restriction. Only in-air, underwater and active combat
+  # conflict with a grounded cross-legged body.
+  if not bool(system.get("player_data").get("meditating",false)) and (
+      camera_mode in ["soar","fly","god"] or _jump_height>0.05 or (
+      _spar_stage!="inactive") or bool(terrain.call(
+        "is_water",actor.position.x,actor.position.z))):
+    return {"ok":false,"message":"请先站稳地面；野外任何可站立地块均能盘坐"}
   var answer: Dictionary=system.call("toggle_player_meditation")
+  if bool(answer.get("ok",false)):
+    var start: bool=bool(answer.get("meditating",false))
+    _set_visible_crossleg_pose(start)
+    if start and not _sitting_in_world:
+      # Never claim actual seated animation if this licensed rig lacks
+      # recognizable thigh/knee bones. Return to previous saved state.
+      system.call("toggle_player_meditation")
+      return {"ok":false,"message":"真人骨骼盘坐动作尚未加载，已取消本次吐纳"}
   say(String(answer.get("message","吐纳失败")))
   _refresh_game_hud()
   return answer
@@ -704,10 +820,16 @@ func _build_game_hud() -> void:
   _health_bar.max_value=100
   _health_bar.value=100
   _health_bar.show_percentage=false
-  _health_bar.custom_minimum_size=Vector2(242,13)
+  _health_bar.custom_minimum_size=Vector2(183,15)
   _health_bar.add_theme_stylebox_override("background",_rounded(Color("#243133"),5))
   _health_bar.add_theme_stylebox_override("fill",_rounded(Color("#b95f59"),5))
   hp_row.add_child(_health_bar)
+  _hp_number=Label.new()
+  _hp_number.name="VisibleExactHeroHealthCurrentMaximum"
+  _hp_number.text="100 / 100"
+  _hp_number.custom_minimum_size=Vector2(79,19)
+  _hp_number.horizontal_alignment=HORIZONTAL_ALIGNMENT_RIGHT
+  hp_row.add_child(_hp_number)
   var stamina_row:=HBoxContainer.new()
   meters.add_child(stamina_row)
   var energy_caption:=Label.new()
@@ -718,10 +840,16 @@ func _build_game_hud() -> void:
   _energy_bar.max_value=100
   _energy_bar.value=100
   _energy_bar.show_percentage=false
-  _energy_bar.custom_minimum_size=Vector2(242,13)
+  _energy_bar.custom_minimum_size=Vector2(183,15)
   _energy_bar.add_theme_stylebox_override("background",_rounded(Color("#243133"),5))
   _energy_bar.add_theme_stylebox_override("fill",_rounded(Color("#a8bc68"),5))
   stamina_row.add_child(_energy_bar)
+  _stamina_number=Label.new()
+  _stamina_number.name="VisibleExactHeroStaminaCurrentMaximum"
+  _stamina_number.text="100 / 100"
+  _stamina_number.custom_minimum_size=Vector2(79,19)
+  _stamina_number.horizontal_alignment=HORIZONTAL_ALIGNMENT_RIGHT
+  stamina_row.add_child(_stamina_number)
   var mana_row:=HBoxContainer.new()
   meters.add_child(mana_row)
   var mana_caption:=Label.new()
@@ -732,10 +860,16 @@ func _build_game_hud() -> void:
   _mana_bar.max_value=12
   _mana_bar.value=0
   _mana_bar.show_percentage=false
-  _mana_bar.custom_minimum_size=Vector2(242,13)
+  _mana_bar.custom_minimum_size=Vector2(183,15)
   _mana_bar.add_theme_stylebox_override("background",_rounded(Color("#243133"),5))
   _mana_bar.add_theme_stylebox_override("fill",_rounded(Color("#4aadc7"),5))
   mana_row.add_child(_mana_bar)
+  _mana_number=Label.new()
+  _mana_number.name="VisibleExactHeroManaCurrentMaximum"
+  _mana_number.text="0 / 0"
+  _mana_number.custom_minimum_size=Vector2(79,19)
+  _mana_number.horizontal_alignment=HORIZONTAL_ALIGNMENT_RIGHT
+  mana_row.add_child(_mana_number)
   _spirit_notice=Label.new()
   _spirit_notice.text="灵力：未检测灵根（未解锁）"
   _spirit_notice.add_theme_font_size_override("font_size",14)
@@ -750,7 +884,7 @@ func _build_game_hud() -> void:
   # Inventory/settings use a proper centered modal; old panel at (16,150)
   # overlapped real player vitals, world clock and other phone labels.
   _game_sheet.position=Vector2(360,136)
-  _game_sheet.custom_minimum_size=Vector2(462,245)
+  _game_sheet.custom_minimum_size=Vector2(462,470)
   _game_sheet.visible=false
   var sheet_skin:=_rounded(Color(0.045,0.095,0.12,0.98),15)
   sheet_skin.border_color=Color("#b29a69")
@@ -759,10 +893,16 @@ func _build_game_hud() -> void:
   sheet_skin.shadow_size=12
   _game_sheet.add_theme_stylebox_override("panel",sheet_skin)
   hud.add_child(_game_sheet)
+  # rev206: all actual recipes and equipment fit a SCROLLABLE 3D-game
+  # modal, never spill off the bottom edge of a 720px landscape phone.
+  _real_inventory_scroll=ScrollContainer.new()
+  _real_inventory_scroll.name="Rev206RealScrollableCharacterSheet"
+  _real_inventory_scroll.custom_minimum_size=Vector2(447,451)
+  _game_sheet.add_child(_real_inventory_scroll)
   var v:=VBoxContainer.new()
   v.name="Rev205RealBackpackAndCharacterGameSheet"
-  v.add_theme_constant_override("separation",9)
-  _game_sheet.add_child(v)
+  v.add_theme_constant_override("separation",8)
+  _real_inventory_scroll.add_child(v)
   _game_sheet_title=Label.new()
   _game_sheet_title.add_theme_font_size_override("font_size",22)
   v.add_child(_game_sheet_title)
@@ -798,6 +938,34 @@ func _build_game_hud() -> void:
   _inventory_craft_pick_button.text="石镐：消耗2木2石"
   _inventory_craft_pick_button.pressed.connect(func(): _craft_backpack("stone_pick"))
   v.add_child(_inventory_craft_pick_button)
+  # Medicine and ring recipes: require actual herb/ore items previously
+  # acquired in the real 3D world, never a menu-given free currency.
+  _spirit_craft_row=HBoxContainer.new()
+  _spirit_craft_row.name="RealHerbAndSpiritOreRecipeRow"
+  _spirit_craft_row.add_theme_constant_override("separation",5)
+  for recipe in ["healing_pill","mana_pill","focus_ring"]:
+    var craft_button:=Button.new()
+    craft_button.name="Craft_"+recipe
+    craft_button.text={
+      "healing_pill":"炼回春丹",
+      "mana_pill":"炼回元丹",
+      "focus_ring":"炼聚灵戒"}[recipe]
+    craft_button.custom_minimum_size=Vector2(140,45)
+    craft_button.pressed.connect(Callable(self,"_craft_backpack").bind(recipe))
+    _apply_open_hud_style(craft_button,"leaf" if recipe!="focus_ring" else "shield")
+    _spirit_craft_row.add_child(craft_button)
+  v.add_child(_spirit_craft_row)
+  _spirit_use_row=HBoxContainer.new()
+  _spirit_use_row.name="ConsumablePillsRealBag"
+  for item in ["healing_pill","mana_pill"]:
+    var use_button:=Button.new()
+    use_button.name="Consume_"+item
+    use_button.text="服回春丹（疗伤）" if item=="healing_pill" else "服回元丹（回法）"
+    use_button.custom_minimum_size=Vector2(213,43)
+    use_button.pressed.connect(Callable(self,"_consume_real_medicine").bind(item))
+    _apply_open_hud_style(use_button,"leaf")
+    _spirit_use_row.add_child(use_button)
+  v.add_child(_spirit_use_row)
   _inventory_equip_button=Button.new()
   _inventory_equip_button.text="装备选中的武器／工具"
   _inventory_equip_button.pressed.connect(_equip_backpack_selection)
@@ -842,6 +1010,7 @@ func _build_game_hud() -> void:
   _add_game_action("SpiritBolt","灵息弹",Callable(self,"cast_spirit_bolt"))
   _add_game_action("SpiritWard","护体灵障",Callable(self,"cast_spirit_ward"))
   _add_game_action("PlantSapling","植树",Callable(self,"plant_real_sapling"))
+  _add_game_action("WorldMeditation","盘坐修炼",Callable(self,"_try_meditation"))
   _create_opponent_target_hud()
   _pad_hint=Label.new()
   _pad_hint.name="AndroidGamepadHotplugAndMappings"
@@ -876,7 +1045,7 @@ func _create_opponent_target_hud() -> void:
   # follow the true target; this panel avoids unrecognizable microscopic bars.
   _target_panel=PanelContainer.new()
   _target_panel.name="ActualCombatTargetRealmHPMP"
-  _target_panel.custom_minimum_size=Vector2(275,99)
+  _target_panel.custom_minimum_size=Vector2(365,99)
   _target_panel.add_theme_stylebox_override("panel",_rounded(Color(0.06,0.10,0.15,0.87),11))
   _target_panel.mouse_filter=Control.MOUSE_FILTER_IGNORE
   var margin:=MarginContainer.new()
@@ -905,6 +1074,18 @@ func _create_opponent_target_hud() -> void:
     meter.add_theme_stylebox_override("fill",_rounded(
       Color("#c66b62") if kind=="health" else Color("#55b5cd"),4))
     row.add_child(meter)
+    var exact_number:=Label.new()
+    exact_number.name=(
+      "VisibleEnemyHealthCurrentMaximum" if kind=="health" else
+      "VisibleEnemyManaCurrentMaximum")
+    exact_number.custom_minimum_size=Vector2(90,19)
+    exact_number.text="0 / 0"
+    exact_number.horizontal_alignment=HORIZONTAL_ALIGNMENT_RIGHT
+    row.add_child(exact_number)
+    if kind=="health":
+      _enemy_hp_number=exact_number
+    else:
+      _enemy_mana_number=exact_number
     if kind=="health":
       _target_health_bar=meter
     else:
@@ -921,7 +1102,7 @@ func _add_game_action(key: String, label: String, callback: Callable) -> void:
     "GatherAction":"leaf","DigAction":"pickaxe","InteractAction":"eye",
     "SwordAttack":"swords","LockedArt":"swords","SpiritBolt":"zap",
     "SpiritWard":"shield","ViewAction":"compass",
-    "PlantSapling":"leaf"}.get(key,""))
+    "PlantSapling":"leaf","WorldMeditation":"book-open"}.get(key,""))
   button.pressed.connect(callback)
   hud.add_child(button)
   _game_actions[key]=button
@@ -969,6 +1150,43 @@ func _craft_backpack(kind: String) -> void:
   say("成功制作："+kind if bool(response.get("ok",false)) else (
     "制作失败："+String(response.get("reason","材料不足"))))
   _refresh_game_hud()
+
+func _consume_real_medicine(kind: String) -> Dictionary:
+  if _backpack==null or not ["healing_pill","mana_pill"].has(kind):
+    return {"ok":false,"reason":"INVALID_MEDICINE"}
+  if int(_backpack.call("amount",kind))<1:
+    say("背包没有真正炼出的丹药")
+    return {"ok":false,"reason":"NO_ACTUAL_PILL"}
+  if kind=="healing_pill":
+    if _player_health>=100:
+      return {"ok":false,"reason":"HEALTH_ALREADY_FULL"}
+    if not bool(_backpack.call("consume_item",kind,1)):
+      return {"ok":false,"reason":"MEDICINE_SAVE_FAILED"}
+    var healed: int=mini(35,100-_player_health)
+    _player_health+=healed
+    say("真正消耗青木回春丹×1，恢复%d生命" % healed)
+    _refresh_game_hud()
+    return {"ok":true,"consumed":kind,"healed":healed}
+  var spiritual: RefCounted=room.get("cultivation")
+  if spiritual==null:
+    return {"ok":false,"reason":"NO_CULTIVATION_SYSTEM"}
+  var status: Dictionary=spiritual.call("public_player_status")
+  if not bool(status.get("tested",false)) or int(
+      status.get("layer",0))<=0 or int(status.get("mana",0))>=(
+      int(status.get("layer",0))*12):
+    say("只有已检测且真正修炼的修士，法力未满才能服用回元丹")
+    return {"ok":false,"reason":"NO_REAL_MANA_TO_RESTORE"}
+  if not bool(_backpack.call("consume_item",kind,1)):
+    return {"ok":false,"reason":"MEDICINE_SAVE_FAILED"}
+  var restored: Dictionary=spiritual.call("restore_mana_from_real_pill")
+  if not bool(restored.get("ok",false)):
+    # The caller did not benefit from the pill; refund exactly one.
+    assert(bool(_backpack.call("_add",kind,1)))
+    return {"ok":false,"reason":"MANA_SAVE_FAILED_REFUNDED"}
+  say("真正消耗凝神回元丹×1，恢复%d法力" % int(restored["restored"]))
+  _refresh_game_hud()
+  return {"ok":true,"consumed":kind,
+    "mana_restored":int(restored["restored"])}
 
 func _unequip_backpack_slot(slot: String) -> void:
   if _backpack==null:
@@ -1056,8 +1274,23 @@ func toggle_target_lock() -> void:
         candidate=person
         candidate_id=String(id)
         best=range_m
+  # Real monsters have their own faction, realm, HP and mana; neutral
+  # cultivators remain protected unless actively attacking the player.
+  var beasts: Dictionary=room.get("actual_wildlife")
+  for beast_id in beasts:
+    var info: Dictionary=beasts[beast_id]
+    if int(info.get("health",0))<=0:
+      continue
+    var body: Node3D=info["node"]
+    if not is_instance_valid(body):
+      continue
+    var delta_m: float=actor.position.distance_to(body.position)
+    if delta_m>1.2 and delta_m<best:
+      candidate=body
+      candidate_id=String(beast_id)
+      best=delta_m
   if candidate==null:
-    say("附近没有能够锁定的实体人物")
+    say("附近没有能够锁定的实体人物或妖兽")
     return
   _locked_target=candidate
   _locked_target_id=candidate_id
@@ -1065,7 +1298,9 @@ func toggle_target_lock() -> void:
   _target_lock_button.text="解锁"
   _auto_walking=false
   _follow_npc=false
-  say("目标已锁定；中立修士不能被随意攻击")
+  say("已锁定妖兽，招式可真实消耗体力法力战斗" if (
+    room.get("actual_wildlife").has(candidate_id)) else (
+    "目标已锁定；中立修士不能被随意攻击"))
 
 func _clear_target_lock() -> void:
   _locked_target=null
@@ -1089,7 +1324,12 @@ func _step_target_lock(delta: float) -> void:
     return
   var desired_yaw: float=atan2(-displacement.x,-displacement.z)
   _yaw=lerp_angle(_yaw,desired_yaw,clampf(delta*5.0,0.0,1.0))
-  if _locked_target_id=="CL-TRAINING-DUEL":
+  if room.get("actual_wildlife").has(_locked_target_id):
+    var b: Dictionary=room.get("actual_wildlife")[_locked_target_id]
+    _locked_target_label.text="⚔ %s · %s\n生命 %d/%d  法力 %d/%d" % [
+      String(b["name"]),String(b["realm"]),int(b["health"]),
+      int(b["max_health"]),int(b["mana"]),int(b["max_mana"])]
+  elif _locked_target_id=="CL-TRAINING-DUEL":
     _locked_target_label.text="◎ 演武教习 · 凡人  血 %d/%d  法力 0" % [
       _spar_enemy_health,_spar_enemy_health_max]
   else:
@@ -1122,6 +1362,8 @@ func _refresh_game_hud() -> void:
   var energy: int=int(person.get("energy",0))
   _health_bar.value=_player_health
   _energy_bar.value=energy
+  _hp_number.text="%d / %d" % [_player_health,100]
+  _stamina_number.text="%d / %d" % [energy,100]
   var spiritual: RefCounted=room.get("cultivation")
   var record: Dictionary=spiritual.call("public_player_status") if spiritual!=null else {}
   var realm: String=String(record.get("realm","凡人"))
@@ -1129,6 +1371,7 @@ func _refresh_game_hud() -> void:
   var mana_now: int=int(record.get("mana",0))
   _mana_bar.max_value=maxi(1,player_level*12)
   _mana_bar.value=mana_now
+  _mana_number.text="%d / %d" % [mana_now,maxi(0,player_level*12)]
   _game_status.text="心魇说 · %s%s  %d/100" % [
     realm,(" 第%d层" % player_level) if player_level>0 else "",_player_health]
   (_game_actions["DashAction"] as Button).disabled=_dash_cd>0.0 or energy<8
@@ -1140,13 +1383,18 @@ func _refresh_game_hud() -> void:
   (_game_actions["EvadeAction"] as Button).disabled=_spar_stage=="inactive" or _dodge_cd>0 or energy<7
   (_game_actions["GuardAction"] as Button).text="防御中" if _guard_time>0 else "格挡"
   (_game_actions["EvadeAction"] as Button).text="闪避中" if _dodge_time>0 else "闪避"
-  (_game_actions["SwordAttack"] as Button).disabled=_spar_stage=="inactive" or _sword_cd>0.0 or energy<6
+  var beast_combat: bool=room.get("actual_wildlife").has(
+    _locked_target_id) and int(room.get("actual_wildlife")[
+    _locked_target_id].get("health",0))>0
+  (_game_actions["SwordAttack"] as Button).disabled=(
+    (_spar_stage=="inactive" and not beast_combat) or _sword_cd>0.0 or energy<6)
   (_game_actions["SwordAttack"] as Button).text=("剑击 %d" % ceili(_sword_cd)) if _sword_cd>0.0 else "剑击"
   var known: Array=record.get("known_arts",[])
   var bolt_learned: bool=known.has("CL-ART-SPIRIT-BOLT-V1")
   var ward_learned: bool=known.has("CL-ART-SPIRIT-WARD-V1")
   (_game_actions["SpiritBolt"] as Button).disabled=(
-    _spar_stage=="inactive" or _bolt_cd>0.0 or not bolt_learned or mana_now<4)
+    (_spar_stage=="inactive" and not beast_combat) or (
+    _bolt_cd>0.0 or not bolt_learned or mana_now<4))
   (_game_actions["SpiritBolt"] as Button).text=(
     "灵息弹 %d" % ceili(_bolt_cd) if _bolt_cd>0.0 else ("灵息弹" if bolt_learned else "灵息弹·未学"))
   (_game_actions["SpiritWard"] as Button).disabled=(
@@ -1157,15 +1405,31 @@ func _refresh_game_hud() -> void:
   var seed_stock: int=int(village.get("stock",{}).get("tree_seed",0))
   (_game_actions["PlantSapling"] as Button).disabled=seed_stock<=0
   (_game_actions["PlantSapling"] as Button).text="植树 ×%d" % seed_stock
+  (_game_actions["WorldMeditation"] as Button).text=(
+    "结束盘坐" if bool(record.get("meditating",false)) else "盘坐修炼")
   if _target_panel!=null:
-    _target_panel.visible=_spar_stage!="inactive"
-    if _spar_stage!="inactive":
+    _target_panel.visible=_spar_stage!="inactive" or beast_combat
+    if beast_combat:
+      var beast: Dictionary=room.get("actual_wildlife")[_locked_target_id]
+      _target_status.text="%s · %s · %s" % [
+        String(beast["name"]),String(beast["realm"]),String(beast["root"])]
+      _target_health_bar.max_value=int(beast["max_health"])
+      _target_health_bar.value=int(beast["health"])
+      _target_mana_bar.max_value=maxi(1,int(beast["max_mana"]))
+      _target_mana_bar.value=int(beast["mana"])
+      _enemy_hp_number.text="%d / %d" % [
+        int(beast["health"]),int(beast["max_health"])]
+      _enemy_mana_number.text="%d / %d" % [
+        int(beast["mana"]),int(beast["max_mana"])]
+    elif _spar_stage!="inactive":
       _target_status.text="演武教习 · 凡人武者   %d/%d" % [
         _spar_enemy_health,_spar_enemy_health_max]
       _target_health_bar.max_value=_spar_enemy_health_max
       _target_health_bar.value=_spar_enemy_health
       _target_mana_bar.max_value=maxi(1,_spar_enemy_mana_max)
       _target_mana_bar.value=_spar_enemy_mana
+      _enemy_hp_number.text="%d / %d" % [_spar_enemy_health,_spar_enemy_health_max]
+      _enemy_mana_number.text="%d / %d" % [_spar_enemy_mana,_spar_enemy_mana_max]
       if _spar_opponent_tag!=null and is_instance_valid(_spar_opponent_tag):
         _spar_opponent_tag.text="演武教习 · 凡人武者\n生命 %d/%d · 法力 %d/%d" % [
           _spar_enemy_health,_spar_enemy_health_max,_spar_enemy_mana,_spar_enemy_mana_max]
@@ -1216,6 +1480,8 @@ func _refresh_game_hud() -> void:
   if _inventory_list!=null:
     _inventory_list.visible=inventory_open
     _equipment_slot_row.visible=inventory_open
+    _spirit_craft_row.visible=inventory_open
+    _spirit_use_row.visible=inventory_open
     _inventory_craft_sword_button.visible=inventory_open
     _inventory_craft_pick_button.visible=inventory_open
     _inventory_equip_button.visible=inventory_open
@@ -1600,6 +1866,8 @@ func _spar_damage_opponent(amount: int,spell_hit: bool=false) -> bool:
   return true
 
 func sword_attack() -> bool:
+  if room.get("actual_wildlife").has(_locked_target_id):
+    return _sword_attack_yao_beast()
   if _spar_stage in ["inactive","victory"] or _sword_cd>0.0 or (
       _spar_partner==null or not is_instance_valid(_spar_partner)):
     return false
@@ -1656,6 +1924,49 @@ func sword_attack() -> bool:
   _refresh_game_hud()
   return true
 
+func _sword_attack_yao_beast() -> bool:
+  var beasts: Dictionary=room.get("actual_wildlife")
+  if not beasts.has(_locked_target_id) or _sword_cd>0.0:
+    return false
+  var info: Dictionary=beasts[_locked_target_id]
+  if int(info.get("health",0))<=0:
+    return false
+  var hero: Dictionary=room.get("sim").citizens.get(PLAYER_ID,{})
+  if int(hero.get("energy",0))<6:
+    say("真实剑击需要6体力")
+    return false
+  var body: Node3D=info["node"]
+  var delta_xz:=Vector2(body.position.x-actor.position.x,
+    body.position.z-actor.position.z)
+  if delta_xz.length()>3.4 or delta_xz.length()<0.6:
+    say("妖兽不在近战范围，或距离过近无法挥剑")
+    return false
+  var hit_ray:=PhysicsRayQueryParameters3D.create(
+    actor.position+Vector3.UP*1.0,
+    body.position+Vector3.UP*float(info["body_height"])*0.47,2)
+  var encountered: Dictionary=world.get_world_3d().direct_space_state.intersect_ray(
+    hit_ray)
+  if not encountered.is_empty() and encountered.get(
+      "collider")!=info["collider"]:
+    say("山石或院墙遮挡攻击，不能隔墙穿模伤害妖兽")
+    return false
+  hero["energy"]=int(hero["energy"])-6
+  _sword_cd=0.85
+  _attack_anim_seconds=0.57
+  var hit: Dictionary=room.call(
+    "apply_yao_beast_damage",_locked_target_id,12,"sword")
+  if bool(hit.get("ok",false)):
+    _spawn_real_combat_hit(body.position+Vector3.UP*1.2,
+      Color("#f8cb75"),3)
+    _show_actual_damage_number(body.position,
+      int(hit["actual_damage"]),Color("#f9ca78"))
+    say("真剑击命中%s：-%d生命（余%d/%d）" % [
+      String(info["name"]),int(hit["actual_damage"]),
+      int(hit["remaining_hp"]),int(hit["max_hp"])])
+    _refresh_game_hud()
+    return true
+  return false
+
 func _root_effect() -> Dictionary:
   var spiritual: RefCounted=room.get("cultivation")
   if spiritual==null:
@@ -1666,16 +1977,25 @@ func _art_tint() -> Color:
   return Color(String(_root_effect().get("color","#88e8f1")))
 
 func cast_spirit_bolt() -> Dictionary:
-  if _spar_stage in ["inactive","victory"] or _bolt_cd>0.0 or (
-      _spar_partner==null or not is_instance_valid(_spar_partner)):
-    return {"ok":false,"reason":"NO_COMBAT_TARGET_OR_COOLDOWN"}
-  var target: Vector3=_spar_partner.position+Vector3.UP*1.10
+  var wild_beasts: Dictionary=room.get("actual_wildlife")
+  var shooting_beast: bool=wild_beasts.has(_locked_target_id) and int(
+    wild_beasts.get(_locked_target_id,{}).get("health",0))>0
+  if _bolt_cd>0.0 or (not shooting_beast and (
+      _spar_stage in ["inactive","victory"] or _spar_partner==null or (
+      not is_instance_valid(_spar_partner)))):
+    return {"ok":false,"reason":"NO_REAL_COMBAT_TARGET_OR_COOLDOWN"}
+  var target: Vector3=(
+    (wild_beasts[_locked_target_id]["node"] as Node3D).position+
+    Vector3.UP*1.20 if shooting_beast else (
+    _spar_partner.position+Vector3.UP*1.10))
   var source: Vector3=actor.position+Vector3.UP*1.24
   if source.distance_to(target)>9.2:
     return {"ok":false,"reason":"TARGET_OUT_OF_RANGE"}
   var ray:=PhysicsRayQueryParameters3D.create(source,target,2)
   var block: Dictionary=world.get_world_3d().direct_space_state.intersect_ray(ray)
-  if not block.is_empty() and block.get("collider")!=_spar_collision:
+  var expected: Object=(
+    wild_beasts[_locked_target_id]["collider"] if shooting_beast else _spar_collision)
+  if not block.is_empty() and block.get("collider")!=expected:
     return {"ok":false,"reason":"WALL_BLOCKS_SPELL"}
   var spiritual: RefCounted=room.get("cultivation")
   if spiritual==null:
@@ -1758,6 +2078,7 @@ func cast_spirit_bolt() -> Dictionary:
   var cast_effect: Dictionary=_root_effect()
   _spell_projectiles.append({
     "node":projectile,"distance_left":9.5,
+    "beast_id":_locked_target_id if shooting_beast else "",
     "damage":14+int(spiritual.call("public_player_status").get("layer",1))*4,
     "root_effect":String(cast_effect.get("effect","none")),
     "root_debuff":String(cast_effect.get("debuff","无")),
@@ -1771,6 +2092,50 @@ func _step_spell_projectiles(delta: float) -> void:
   for shot in _spell_projectiles:
     var missile: MeshInstance3D=shot.get("node",null)
     if missile==null or not is_instance_valid(missile):
+      continue
+    var projectile_beast_id: String=String(shot.get("beast_id",""))
+    if projectile_beast_id!="":
+      var wild: Dictionary=room.get("actual_wildlife")
+      if not wild.has(projectile_beast_id) or int(wild[
+          projectile_beast_id].get("health",0))<=0:
+        missile.queue_free()
+        continue
+      var monster: Dictionary=wild[projectile_beast_id]
+      var monster_actor: Node3D=monster["node"]
+      if not is_instance_valid(monster_actor):
+        missile.queue_free()
+        continue
+      var from_m: Vector3=missile.position
+      var destination: Vector3=monster_actor.position+Vector3.UP*1.20
+      var gap: Vector3=destination-from_m
+      var travel: float=minf(gap.length(),18.0*delta)
+      var to_m: Vector3=from_m+gap.normalized()*travel if (
+        gap.length()>0.001) else destination
+      var ray:=PhysicsRayQueryParameters3D.create(from_m,to_m,2)
+      var struck: Dictionary=world.get_world_3d().direct_space_state.intersect_ray(ray)
+      if not struck.is_empty() and struck.get(
+          "collider")!=monster["collider"]:
+        _spawn_real_combat_hit(from_m,Color("#7896a0"),2)
+        missile.queue_free()
+        continue
+      shot["distance_left"]=float(shot["distance_left"])-travel
+      missile.position=to_m
+      if travel>=gap.length()-0.18 or (
+          not struck.is_empty() and struck.get("collider")==monster["collider"]):
+        var dealt: Dictionary=room.call(
+          "apply_yao_beast_damage",projectile_beast_id,
+          int(shot["damage"]),String(shot.get("root_effect","none")))
+        if bool(dealt.get("ok",false)):
+          _spawn_real_combat_hit(to_m,shot.get("root_color",Color("#8de1ed")),4)
+          _show_actual_damage_number(to_m,int(dealt["actual_damage"]),
+            Color("#afeef7"))
+          _spirit_bolt_impact_count+=1
+        missile.queue_free()
+        continue
+      if float(shot["distance_left"])<=0.0:
+        missile.queue_free()
+        continue
+      remaining.append(shot)
       continue
     if _spar_stage in ["inactive","victory"] or (
         _spar_partner==null or not is_instance_valid(_spar_partner)):
@@ -2098,6 +2463,8 @@ func dash_action() -> bool:
   return true
 
 func apply_player_damage(amount: int) -> int:
+  if amount>0 and _sitting_in_world:
+    _interrupt_world_meditation()
   _player_health=maxi(0,_player_health-maxi(0,amount))
   if actor!=null:
     actor.set_meta("health",_player_health)
@@ -2173,13 +2540,13 @@ func _layout_hud() -> void:
   # only while an authentic opponent exists. Never draw 12 keys over scenery.
   var all_keys: Array[String]=["GatherAction","DashAction","DigAction","InteractAction",
     "ViewAction","LockedArt","GuardAction","EvadeAction",
-    "SwordAttack","SpiritBolt","SpiritWard","PlantSapling"]
+    "SwordAttack","SpiritBolt","SpiritWard","PlantSapling","WorldMeditation"]
   var combat_open: bool=_spar_stage!="inactive"
   var action_keys: Array=(
     ["GuardAction","EvadeAction","SwordAttack","SpiritBolt","SpiritWard","LockedArt"]
     if combat_open else
     ["GatherAction","DashAction","DigAction","InteractAction",
-    "ViewAction","LockedArt","PlantSapling"])
+    "ViewAction","LockedArt","PlantSapling","WorldMeditation"])
   for key in all_keys:
     (_game_actions[key] as Button).visible=action_keys.has(key)
   for idx in range(action_keys.size()):
@@ -2192,6 +2559,9 @@ func _layout_hud() -> void:
   if _locked_target_label!=null:
     _locked_target_label.position=Vector2(maxf(365.0,size.x*0.5-160.0),188.0)
   if _game_sheet!=null:
+    if _real_inventory_scroll!=null:
+      _real_inventory_scroll.custom_minimum_size=Vector2(
+        435.0,clampf(size.y-207.0,285.0,478.0))
     # Occupy a deliberate center-left modal area, below the tabs and away
     # from top-left HP/SP, preserving a usable 720p landscape viewport.
     _game_sheet.position=Vector2(clampf(size.x*0.35,260.0,
@@ -2204,7 +2574,7 @@ func _layout_hud() -> void:
         ["GuardAction","EvadeAction","SwordAttack","SpiritBolt","SpiritWard","LockedArt"].has(key)
         if _spar_stage!="inactive" else [
         "GatherAction","DashAction","DigAction","InteractAction",
-        "ViewAction","LockedArt","PlantSapling"].has(key))
+        "ViewAction","LockedArt","PlantSapling","WorldMeditation"].has(key))
     if _living_clock_label!=null:
       _living_clock_label.visible=not modal_open
       _living_speed_button.visible=not modal_open
@@ -2213,7 +2583,7 @@ func _layout_hud() -> void:
   if _target_panel!=null:
     # Keep target HUD BELOW the always-on first row of seven view toggles.
     # Previously it sat under those buttons and concealed its own MP bar.
-    _target_panel.position=Vector2(maxf(380.0,size.x-392.0),139.0)
+    _target_panel.position=Vector2(maxf(380.0,size.x-410.0),139.0)
   notice.position=Vector2(minf(370.0,size.x*0.27),maxf(210.0,size.y-47.0))
   if _pad_hint!=null:
     _pad_hint.position=Vector2(16,139)
@@ -3118,6 +3488,11 @@ func step(delta: float) -> void:
       _pad_poll_triggers()
     elif _joystick_touch<0 and keys.length()<=0.01:
       input_axis=Vector2.ZERO
+  if _sitting_in_world and input_axis.length()>0.08:
+    _interrupt_world_meditation()
+  if _sitting_in_world:
+    input_axis=Vector2.ZERO
+    _auto_walking=false
   if input_axis.length() <= 0.08 and _auto_walking:
     var to_target: Vector3 = _auto_target - actor.position
     to_target.y = 0.0
@@ -3218,6 +3593,8 @@ func step(delta: float) -> void:
   _layout_hud()
 
 func _set_movement_animation(moving: bool) -> void:
+  if _sitting_in_world:
+    return # Hold the actual cross-legged Skeleton3D bone pose.
   if animator==null:
     return
   var clip: String=walking if moving else idle
@@ -3334,6 +3711,30 @@ func interact() -> Dictionary:
   var eco = room.get("eco")
   # The unique player/world/entity system IDs stay in the authoritative
   # simulation ledger. Do not display them as giant in-world labels.
+  # Finite warehouse-paid Chinese residential construction.
+  # The artist-provided complete source GLB is displayed ONLY after
+  # 200 wood + 150 stone were debited and an NPC finished its work time.
+  var build: Dictionary=room.call("quote_and_fund_near_house",point)
+  if String(build.get("reason",""))!="NO_HOUSE_BLUEPRINT_NEARBY" and (
+      String(build.get("reason",""))!="HOUSE_LEDGER_NOT_AVAILABLE"):
+    if bool(build.get("ok",false)) and build.has("spent_wood"):
+      say("住宅施工入队：真实扣木%d、石%d；工期%d世界时辰，完工住5人" % [
+        int(build["spent_wood"]),int(build["spent_stone"]),
+        int(build["hours_until_house"])])
+    elif String(build.get("reason",""))=="MISSING_ACTUAL_WOOD_OR_STONE":
+      say("建造缺材料：现有木%d/%d、石%d/%d；先采集并运到仓库" % [
+        int(build.get("stock_wood",0)),int(build.get("need_wood",200)),
+        int(build.get("stock_stone",0)),int(build.get("need_stone",150))])
+    else:
+      say("院落：施工必须消耗原料并等待NPC完工（%s）" % [
+        String(build.get("reason","已入队"))])
+    return build
+  var beast_loot: Dictionary=room.call(
+    "loot_defeated_yao_beast",point,_backpack)
+  if bool(beast_loot.get("ok",false)):
+    say("实际击败妖兽后拾取妖丹原胚 ×1")
+    _refresh_game_hud()
+    return beast_loot
   var depot := Vector3(0,0,10)
   if Vector2(point.x-depot.x,point.z-depot.z).length()<3.8:
     var delivered: bool = sim.deliver_carried(PLAYER_ID)
@@ -3348,6 +3749,33 @@ func interact() -> Dictionary:
     say("仓库：靠近树石互动采集，再带物资回来交付")
     _interaction_count += 1
     return {"ok":true,"action":"warehouse_information"}
+  # Spiritual herb/ore nodes are genuine licensed meshes attached to
+  # independently conserved world-time ledgers. Clicks do not create items.
+  var spiritual_resources: RefCounted=room.get("spirit_resources")
+  if spiritual_resources!=null and _backpack!=null:
+    var nearby: Dictionary=spiritual_resources.call(
+      "get_nearest_resource",point,3.0)
+    if not nearby.is_empty():
+      var node_kind: String=String(nearby["kind"])
+      var equipped: Dictionary=_backpack.call("snapshot")["equipment"]
+      if node_kind=="spirit_stone" and String(equipped.get("tool",""))!="stone_pick":
+        say("下品灵石矿需要背包装备真正制作的石镐才能开采")
+        return {"ok":false,"reason":"SPIRIT_ORE_REQUIRES_EQUIPPED_PICK"}
+      var citizen: Dictionary=sim.get("citizens")[PLAYER_ID]
+      var cost: int=5 if node_kind=="spirit_stone" else 3
+      if int(citizen.get("energy",0))<cost:
+        return {"ok":false,"reason":"NOT_ENOUGH_REAL_STAMINA"}
+      var picked: Dictionary=room.call(
+        "harvest_real_spirit_resource",point,_backpack)
+      if bool(picked.get("ok",false)):
+        citizen["energy"]=int(citizen["energy"])-cost
+        _interaction_count+=1
+        say("%s ×1 收入真实背包；剩余矿/草%d份（体力-%d）" % [
+          String(picked["item_name"]),int(picked["remaining"]),cost])
+        _refresh_game_hud()
+        picked["action"]="gather"
+        picked["energy_spent"]=cost
+      return picked
   var best_id: String = ""
   var best_distance: float = 3.3
   var nodes: Dictionary = sim.get("natural_nodes")
@@ -3434,6 +3862,15 @@ func interact() -> Dictionary:
 func dig() -> Dictionary:
   if actor == null:
     return {"ok":false,"reason":"PLAYER_NOT_SPAWNED"}
+  # Mining nearby finite CC0 spirit ore takes precedence over digging
+  # geology only when the player is standing beside the actual ore mesh.
+  var source: RefCounted=room.get("spirit_resources")
+  if source!=null and _backpack!=null:
+    var target_ore: Dictionary=source.call(
+      "get_nearest_resource",actor.position,3.0)
+    if not target_ore.is_empty() and String(
+        target_ore.get("kind",""))=="spirit_stone":
+      return interact()
   var target: Vector3 = actor.position + _forward()*1.65
   var result: Dictionary = terrain.call("excavate_at",target,PLAYER_ID)
   if not bool(result.get("ok",false)):

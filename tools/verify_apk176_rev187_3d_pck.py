@@ -25,6 +25,8 @@ REQUIRED = {
     "canglan_rev187/vivid_material.gd",
     "canglan_rev187/player_controller.gd",
     "canglan_rev187/backpack.gd",
+    "canglan_rev187/spirit_resources.gd",
+    "canglan_rev187/paid_housing.gd",
     "canglan_rev187/root_taxonomy.gd",
     "canglan_rev187/city_population.gd",
     "canglan_rev187/quality_profiles.gd",
@@ -58,6 +60,19 @@ for item in CC0_PROOF["models"]:
     key = "canglan_rev187/cc0_rev206/" + item["role"] + "/" + item["name"] + ".glb"
     CC0_MODELS[key] = (BASE_DIR / item["path"], item["sha256"])
 REQUIRED.update(CC0_MODELS)
+# REV206: exact artist CC0 plant, mushroom and ore-body GLBs (source hashes).
+SPIRIT_ROOT = BASE_DIR / "game-source/apk176-ota177-candidate/assets/cc0-spirit-rev206"
+SPIRIT_PROOF = json.loads((SPIRIT_ROOT / "asset_intake_proof.json").read_text())
+assert SPIRIT_PROOF["asset_total"] == 7
+assert SPIRIT_PROOF["committed_under_license"] == "CC0-1.0"
+SPIRIT_MODELS = {
+    "canglan_rev187/cc0_spirit/" + m["role"] + "/" + m["name"] + ".glb":
+        (BASE_DIR / m["path"], m["sha256"])
+    for m in SPIRIT_PROOF["models"]
+}
+assert len(SPIRIT_MODELS)==7
+REQUIRED.update(SPIRIT_MODELS)
+
 # Nine 512px source-verified original Quaternius CC0 albedo/normal/ORM maps:
 # a missing, corrupted or substituted white flat map is a HARD release fail.
 PBR_ROOT = BASE_DIR / "game-source/apk176-ota177-candidate/materials/rev207"
@@ -137,6 +152,18 @@ def audit(path: Path) -> dict:
             "BLOCKED: Altered original Quaternius CC0 model: " + model_path)
         assert packed == source.read_bytes(), (
             "BLOCKED: Original model packed with changed content: " + model_path)
+    for model_path,(source,expected_sha256) in SPIRIT_MODELS.items():
+        packed = found[model_path]
+        assert packed[:4]==b"glTF" and len(packed)>=120
+        assert struct.unpack_from("<I",packed,8)[0]==len(packed)
+        assert hashlib.sha256(packed).hexdigest()==expected_sha256, (
+            "BLOCKED: altered source-licensed spirit resource "+model_path)
+        assert packed==source.read_bytes(), (
+            "BLOCKED: non-original CC0 herb ore prefab "+model_path)
+    assert b"get_nearest_resource" in found["canglan_rev187/spirit_resources.gd"]
+    assert b"conservation_ok" in found["canglan_rev187/spirit_resources.gd"]
+    assert b"HOUSE_WOOD: int=200" in found["canglan_rev187/paid_housing.gd"]
+    assert b"HOUSE_STONE: int=150" in found["canglan_rev187/paid_housing.gd"]
     assert json.loads(found["canglan_rev187/materials_rev207/manifest.json"]) == PBR_PROOF, (
         "BLOCKED: signed PCK PBR license/texture provenance mismatch")
     for rel, (actual_source, sha256) in REAL_PBR.items():

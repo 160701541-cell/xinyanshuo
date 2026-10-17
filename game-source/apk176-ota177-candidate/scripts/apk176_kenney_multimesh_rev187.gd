@@ -2,9 +2,23 @@ extends Node3D
 ## rev187. One MultiMeshInstance3D per source GLB mesh part (not per object).
 ## Works with real licensed multi-surface Kenney assets; one part may have
 ## multiple surfaces and thus >1 draw. Never claim one draw for the whole GLB.
+# 52 physical trees and 20 stone outcrops are placed at world start in
+# _seed_resources(). Old 40/12 pools silently dropped the last 12/8 IDs.
+# Keep spare space for regrowth and avoid paying a reallocation on boot.
+const INITIAL_CAPACITY := {
+  "tree": 64,
+  "stone": 32,
+  "timber": 24,
+  "fence": 12,
+  "steps": 18,
+  "door": 4
+}
+# Hard mobile safety ceiling: later seedlings can grow the pool but an
+# unbounded save or corrupt spawn batch must NOT exhaust phone memory.
+# Regional streaming is required before exceeding these limits.
 const MAX_CAPACITY := {
-  "tree": 40, # 12 originals + <=24 seed descendants + small reserve
-  "stone": 12,
+  "tree": 256,
+  "stone": 128,
   "timber": 24,
   "fence": 12,
   "steps": 18,
@@ -24,7 +38,7 @@ var palette_lookup: RefCounted
 
 func initialize(source_by_role: Dictionary, palette: RefCounted) -> bool:
   palette_lookup = palette
-  for role in MAX_CAPACITY:
+  for role in INITIAL_CAPACITY:
     if not source_by_role.has(role):
       rejected.append("BATCH_SOURCE_ABSENT_" + role)
       continue
@@ -52,7 +66,7 @@ func initialize(source_by_role: Dictionary, palette: RefCounted) -> bool:
       multimesh.mesh = palette.call("palettize_static_mesh", part.mesh, role, String(part.name))
       # Allocate exactly once. Each instance can be hidden using a zero
       # transform, without reallocation or making another draw call.
-      multimesh.instance_count = int(MAX_CAPACITY[role])
+      multimesh.instance_count = int(INITIAL_CAPACITY[role])
       for n in range(multimesh.instance_count):
         multimesh.set_instance_transform(n, invisible_transform)
       var draw := MultiMeshInstance3D.new()
@@ -73,13 +87,42 @@ func initialize(source_by_role: Dictionary, palette: RefCounted) -> bool:
     proxies[role] = []
   return rejected.is_empty()
 
+# MultiMesh.instance_count resets the GPU instance buffer. Rehydrate every
+# existing transform and per-entity tint after expanding; otherwise mature
+# trees vanish or lose their color when a new sapling uses the last slot.
+func _grow_capacity(role: String, required: int) -> bool:
+  if not group_parts.has(role):
+    rejected.append("BATCH_GROW_ROLE_ABSENT_" + role)
+    return false
+  var entries: Array = group_parts[role]
+  var old_capacity: int = (entries[0]["multi"] as MultiMesh).instance_count
+  if required <= old_capacity:
+    return true
+  var ceiling: int = int(MAX_CAPACITY[role])
+  if required > ceiling:
+    rejected.append("BATCH_HARD_LIMIT_" + role + "_" + str(required))
+    return false
+  var new_capacity: int = mini(ceiling, maxi(required, old_capacity * 2))
+  var existing: Array = proxies[role]
+  for entry in entries:
+    var gpu: MultiMesh = entry["multi"]
+    gpu.instance_count = new_capacity
+    for idx in range(new_capacity):
+      gpu.set_instance_transform(idx, invisible_transform)
+    for idx in range(existing.size()):
+      var original: Node3D = existing[idx]
+      if is_instance_valid(original):
+        gpu.set_instance_color(idx, palette_lookup.call(
+          "instance_variant", role, String(original.name)))
+  sync_role(role)
+  return true
+
 func register(role: String, object_name: String, position: Vector3, model_scale: float) -> Node3D:
   if not group_parts.has(role):
     rejected.append("BATCH_ROLE_NOT_CONFIGURED_" + role)
     return null
   var slot: int = int(capacity_used[role])
-  if slot >= int(MAX_CAPACITY[role]):
-    rejected.append("BATCH_CAPACITY_EXHAUSTED_" + role)
+  if not _grow_capacity(role, slot + 1):
     return null
   var proxy := Node3D.new()
   proxy.name = object_name
@@ -129,4 +172,13 @@ func stats() -> Dictionary:
     "single_mesh_nodes_replaced":live*maxi(1,source_mesh_parts),
     "batched_world_objects":live,
     "role_capacity_used":capacity_used.duplicate(true),
+    "role_instance_capacity":_current_capacities(),
     "batch_errors":rejected.duplicate()}
+
+func _current_capacities() -> Dictionary:
+  var out: Dictionary = {}
+  for role in group_parts:
+    var parts: Array = group_parts[role]
+    if not parts.is_empty():
+      out[role] = (parts[0]["multi"] as MultiMesh).instance_count
+  return out

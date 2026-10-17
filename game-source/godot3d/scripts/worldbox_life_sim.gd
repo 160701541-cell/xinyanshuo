@@ -387,7 +387,7 @@ func tick() -> void:
 			if person["village_id"]==village_id:
 				avg_hunger+=int(person["hunger"])
 		avg_hunger=avg_hunger/maxi(1,int(village["population"]))
-		var capacity: int = int(village["homes"])*4
+		var capacity: int = int(village["homes"])*5 # rev208 each genuinely built house beds five people
 		village["prosperity"]=clampi(30 + int(village["fields"])*3
 			+int(village["workshops"])*5+mini(20,int(village["stock"]["coin"])/5)
 			-maxi(0,int(village["population"])-capacity)*10-avg_hunger/2,0,100)

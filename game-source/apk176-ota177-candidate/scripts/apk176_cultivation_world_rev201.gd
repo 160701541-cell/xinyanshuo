@@ -625,6 +625,23 @@ func spend_player_mana_for_art(art: String) -> Dictionary:
     return {"ok":false,"reason":"SAVE_FAILED_REVERTED"}
   return {"ok":true,"spent":cost,"mana":int(player_data["mana"]),"art":art}
 
+func restore_mana_from_real_pill() -> Dictionary:
+  # A world-collected/made medicine restores finite mana only for an
+  # awakened cultivator, never grants free root, cultivation or spell XP.
+  if not bool(player_data.get("tested",false)) or int(
+      player_data.get("layer",0))<=0:
+    return {"ok":false,"reason":"NOT_YET_QI_REFINER"}
+  var maximum: int=int(player_data.get("layer",0))*12
+  var before: int=int(player_data.get("mana",0))
+  if before>=maximum:
+    return {"ok":false,"reason":"MANA_ALREADY_FULL"}
+  var restored: int=mini(12,maximum-before)
+  player_data["mana"]=before+restored
+  if not save_state():
+    player_data["mana"]=before
+    return {"ok":false,"reason":"CULTIVATION_SAVE_FAILED"}
+  return {"ok":true,"restored":restored,"mana":int(player_data["mana"])}
+
 func public_player_status() -> Dictionary:
   var safe: Dictionary=player_data.duplicate(true)
   safe.erase("latent_root_profile")
