@@ -110,6 +110,11 @@ var _health_bar: ProgressBar
 var _hp_number: Label
 var _stamina_number: Label
 var _mana_number: Label
+var _sitting_in_world: bool=false
+var _sitting_skeleton: Skeleton3D
+var _sitting_rest_poses: Dictionary={}
+var _sitting_visual_origin: Vector3=Vector3.ZERO
+var _sitting_bones_modified: int=0
 var _enemy_hp_number: Label
 var _enemy_mana_number: Label
 var _energy_bar: ProgressBar
@@ -654,11 +659,114 @@ func _try_root_examination() -> Dictionary:
   _refresh_game_hud()
   return answer
 
+func _set_visible_crossleg_pose(enabled: bool) -> void:
+  if enabled==_sitting_in_world:
+    return
+  if enabled:
+    if actor==null or camera_mode in ["soar","fly","god"] or (
+        _soar_altitude>0.05 or _jump_height>0.05) or (
+        bool(terrain.call("is_water",actor.position.x,actor.position.z))):
+      return
+    var rigs: Array[Node]=actor.find_children("*","Skeleton3D",true,false)
+    if rigs.is_empty():
+      return # Honest engine-QA failure: no valid licensed skeletal rig.
+    _sitting_skeleton=rigs[0] as Skeleton3D
+    _sitting_visual_origin=_sitting_skeleton.position
+    _sitting_rest_poses.clear()
+    _sitting_bones_modified=0
+    if animator!=null:
+      animator.stop()
+    for i in range(_sitting_skeleton.get_bone_count()):
+      var n: String=_sitting_skeleton.get_bone_name(i).to_lower()
+      var left: bool=n.contains("left") or n.ends_with("_l") or (
+        n.begins_with("l_"))
+      var right: bool=n.contains("right") or n.ends_with("_r") or (
+        n.begins_with("r_"))
+      var swing: float=1.0 if left else -1.0
+      var cross: bool=false
+      var pitch: float=0.0
+      var roll: float=0.0
+      if n.contains("upperleg") or n.contains("thigh") or n.contains("upleg"):
+        pitch=1.14
+        roll=swing*0.62
+        cross=true
+      elif n.contains("lowerleg") or n.contains("calf") or n.contains("shin"):
+        pitch=-1.91
+        roll=-swing*0.25
+        cross=true
+      elif n.contains("foot") and (left or right):
+        pitch=0.63
+        cross=true
+      elif n.contains("spine") and not n.contains("spine1"):
+        pitch=-0.08
+        cross=true
+      elif (n.contains("upperarm") or n.contains("shoulder")) and (
+          left or right):
+        pitch=0.52
+        roll=-swing*0.34
+        cross=true
+      elif n.contains("forearm") and (left or right):
+        pitch=-0.55
+        cross=true
+      if not cross:
+        continue
+      var old_rotation: Quaternion=_sitting_skeleton.get_bone_pose_rotation(i)
+      _sitting_rest_poses[i]=old_rotation
+      var seated_rotation: Quaternion=old_rotation * Quaternion(
+        Vector3.RIGHT,pitch) * Quaternion(Vector3.FORWARD,roll)
+      _sitting_skeleton.set_bone_pose_rotation(i,seated_rotation.normalized())
+      _sitting_bones_modified+=1
+    if _sitting_bones_modified<4:
+      _sitting_skeleton=null
+      return
+    _sitting_skeleton.position.y=_sitting_visual_origin.y-0.42
+    _sitting_in_world=true
+    actor.set_meta("sitting_actual_skeleton_bones",_sitting_bones_modified)
+    actor.set_meta("meditating_sitting_crosslegs",true)
+  else:
+    if _sitting_skeleton!=null and is_instance_valid(_sitting_skeleton):
+      for idx in _sitting_rest_poses:
+        _sitting_skeleton.set_bone_pose_rotation(int(idx),
+          _sitting_rest_poses[idx])
+      _sitting_skeleton.position=_sitting_visual_origin
+    _sitting_rest_poses.clear()
+    _sitting_skeleton=null
+    _sitting_in_world=false
+    if actor!=null:
+      actor.set_meta("meditating_sitting_crosslegs",false)
+    _set_movement_animation(false)
+
+func _interrupt_world_meditation() -> void:
+  if not _sitting_in_world:
+    return
+  var system: RefCounted=room.get("cultivation")
+  if system!=null and bool(system.get("player_data").get(
+      "meditating",false)):
+    system.call("toggle_player_meditation")
+  _set_visible_crossleg_pose(false)
+  say("行动打断盘坐，修炼已停止")
+
 func _try_meditation() -> Dictionary:
   var system: RefCounted=room.get("cultivation")
   if system==null:
     return {"ok":false,"message":"灵气修行系统还未加载"}
+  # Open, walkable physical soil is enough: no arbitrary safe-area field
+  # or altar/sect restriction. Only in-air, underwater and active combat
+  # conflict with a grounded cross-legged body.
+  if not bool(system.get("player_data").get("meditating",false)) and (
+      camera_mode in ["soar","fly","god"] or _jump_height>0.05 or (
+      _spar_stage!="inactive") or bool(terrain.call(
+        "is_water",actor.position.x,actor.position.z))):
+    return {"ok":false,"message":"请先站稳地面；野外任何可站立地块均能盘坐"}
   var answer: Dictionary=system.call("toggle_player_meditation")
+  if bool(answer.get("ok",false)):
+    var start: bool=bool(answer.get("meditating",false))
+    _set_visible_crossleg_pose(start)
+    if start and not _sitting_in_world:
+      # Never claim actual seated animation if this licensed rig lacks
+      # recognizable thigh/knee bones. Return to previous saved state.
+      system.call("toggle_player_meditation")
+      return {"ok":false,"message":"真人骨骼盘坐动作尚未加载，已取消本次吐纳"}
   say(String(answer.get("message","吐纳失败")))
   _refresh_game_hud()
   return answer
@@ -902,6 +1010,7 @@ func _build_game_hud() -> void:
   _add_game_action("SpiritBolt","灵息弹",Callable(self,"cast_spirit_bolt"))
   _add_game_action("SpiritWard","护体灵障",Callable(self,"cast_spirit_ward"))
   _add_game_action("PlantSapling","植树",Callable(self,"plant_real_sapling"))
+  _add_game_action("WorldMeditation","盘坐修炼",Callable(self,"_try_meditation"))
   _create_opponent_target_hud()
   _pad_hint=Label.new()
   _pad_hint.name="AndroidGamepadHotplugAndMappings"
@@ -993,7 +1102,7 @@ func _add_game_action(key: String, label: String, callback: Callable) -> void:
     "GatherAction":"leaf","DigAction":"pickaxe","InteractAction":"eye",
     "SwordAttack":"swords","LockedArt":"swords","SpiritBolt":"zap",
     "SpiritWard":"shield","ViewAction":"compass",
-    "PlantSapling":"leaf"}.get(key,""))
+    "PlantSapling":"leaf","WorldMeditation":"book-open"}.get(key,""))
   button.pressed.connect(callback)
   hud.add_child(button)
   _game_actions[key]=button
@@ -1269,6 +1378,8 @@ func _refresh_game_hud() -> void:
   var seed_stock: int=int(village.get("stock",{}).get("tree_seed",0))
   (_game_actions["PlantSapling"] as Button).disabled=seed_stock<=0
   (_game_actions["PlantSapling"] as Button).text="植树 ×%d" % seed_stock
+  (_game_actions["WorldMeditation"] as Button).text=(
+    "结束盘坐" if bool(record.get("meditating",false)) else "盘坐修炼")
   if _target_panel!=null:
     _target_panel.visible=_spar_stage!="inactive"
     if _spar_stage!="inactive":
@@ -2214,6 +2325,8 @@ func dash_action() -> bool:
   return true
 
 func apply_player_damage(amount: int) -> int:
+  if amount>0 and _sitting_in_world:
+    _interrupt_world_meditation()
   _player_health=maxi(0,_player_health-maxi(0,amount))
   if actor!=null:
     actor.set_meta("health",_player_health)
@@ -2289,13 +2402,13 @@ func _layout_hud() -> void:
   # only while an authentic opponent exists. Never draw 12 keys over scenery.
   var all_keys: Array[String]=["GatherAction","DashAction","DigAction","InteractAction",
     "ViewAction","LockedArt","GuardAction","EvadeAction",
-    "SwordAttack","SpiritBolt","SpiritWard","PlantSapling"]
+    "SwordAttack","SpiritBolt","SpiritWard","PlantSapling","WorldMeditation"]
   var combat_open: bool=_spar_stage!="inactive"
   var action_keys: Array=(
     ["GuardAction","EvadeAction","SwordAttack","SpiritBolt","SpiritWard","LockedArt"]
     if combat_open else
     ["GatherAction","DashAction","DigAction","InteractAction",
-    "ViewAction","LockedArt","PlantSapling"])
+    "ViewAction","LockedArt","PlantSapling","WorldMeditation"])
   for key in all_keys:
     (_game_actions[key] as Button).visible=action_keys.has(key)
   for idx in range(action_keys.size()):
@@ -2323,7 +2436,7 @@ func _layout_hud() -> void:
         ["GuardAction","EvadeAction","SwordAttack","SpiritBolt","SpiritWard","LockedArt"].has(key)
         if _spar_stage!="inactive" else [
         "GatherAction","DashAction","DigAction","InteractAction",
-        "ViewAction","LockedArt","PlantSapling"].has(key))
+        "ViewAction","LockedArt","PlantSapling","WorldMeditation"].has(key))
     if _living_clock_label!=null:
       _living_clock_label.visible=not modal_open
       _living_speed_button.visible=not modal_open
@@ -3237,6 +3350,11 @@ func step(delta: float) -> void:
       _pad_poll_triggers()
     elif _joystick_touch<0 and keys.length()<=0.01:
       input_axis=Vector2.ZERO
+  if _sitting_in_world and input_axis.length()>0.08:
+    _interrupt_world_meditation()
+  if _sitting_in_world:
+    input_axis=Vector2.ZERO
+    _auto_walking=false
   if input_axis.length() <= 0.08 and _auto_walking:
     var to_target: Vector3 = _auto_target - actor.position
     to_target.y = 0.0
@@ -3337,6 +3455,8 @@ func step(delta: float) -> void:
   _layout_hud()
 
 func _set_movement_animation(moving: bool) -> void:
+  if _sitting_in_world:
+    return # Hold the actual cross-legged Skeleton3D bone pose.
   if animator==null:
     return
   var clip: String=walking if moving else idle
