@@ -75,6 +75,13 @@ var workers: Dictionary = {}
 var _hidden_game_world: Array[Node3D] = []
 var _clock: float = 0.0
 var _economy_clock: float = 0.0
+# rev199: The WHOLE authoritative world clock can run faster, not just
+# visual day/night. Every tick still spends and produces real inventory.
+const WORLD_SPEEDS: Array[int]=[1,5,20,100]
+var world_time_scale: int=1
+var _total_accelerated_hours: int=0
+var local_npc_ai_state: String="unavailable_missing_native_android_llama"
+var _daylight_last_hour: int=-1
 var _camera_yaw: float = 0.40
 var _camera_pitch: float = 0.47
 var _camera_distance: float = 19.5
@@ -121,6 +128,7 @@ func _ready() -> void:
   quality.call("initialize",self)
   _set_dev_ui_visible(false)
   _update_camera()
+  _sync_living_daylight()
   _update_status()
   set_meta("prototype", "REUSABLE_MATERIALS_AND_INDEPENDENT_WORKERS")
   set_meta("mutates_original_save", false)
@@ -922,23 +930,69 @@ func _input(event: InputEvent) -> void:
   if not _closed and controls != null:
     controls.call("handle_input",event)
 
+func cycle_world_time_scale() -> int:
+  var idx: int=WORLD_SPEEDS.find(world_time_scale)
+  world_time_scale=WORLD_SPEEDS[(idx+1)%WORLD_SPEEDS.size()]
+  # Never reset the partial hour; the entire world stays on one clock.
+  _update_status()
+  return world_time_scale
+
+func _sync_living_daylight() -> void:
+  # Only step the sky on a TRUE economy-hour boundary, not per FPS frame.
+  var h: int=int(sim.hour)
+  if h==_daylight_last_hour or scene_environment==null:
+    return
+  _daylight_last_hour=h
+  var radians: float=(float(h)-6.0)/24.0*TAU
+  var altitude: float=sin(radians)*90.0
+  var daylight: float=clampf(sin(radians),0.0,1.0)
+  # Twilight is not a gray fog overlay. Dusk becomes blue and the moonlit
+  # night has only ~22% ambient. One directional sun, no mobile raytracing.
+  sun_light.rotation_degrees=Vector3(-maxf(8.0,altitude),-55.0,0)
+  sun_light.light_energy=0.16+daylight*0.97
+  sun_light.light_color=Color("#ffdfb5").lerp(Color("#fff0dd"),daylight)
+  var backdrop: ProceduralSkyMaterial=scene_environment.sky.sky_material
+  backdrop.sky_top_color=Color("#102944").lerp(Color("#147ec7"),daylight)
+  backdrop.sky_horizon_color=Color("#274869").lerp(Color("#b9e7ff"),daylight)
+  backdrop.ground_horizon_color=Color("#213d50").lerp(Color("#83bbaa"),daylight)
+  backdrop.ground_bottom_color=Color("#223846").lerp(Color("#527d61"),daylight)
+  scene_environment.fog_light_color=Color("#283e5a").lerp(Color("#8fb5c5"),daylight)
+  scene_environment.ambient_light_energy=0.18+daylight*0.28
+
+func get_living_clock() -> Dictionary:
+  return {"day":int(sim.day),"hour":int(sim.hour),
+    "minutes":clampi(roundi(_economy_clock/12.0*60.0),0,59),
+    "speed_multiplier":world_time_scale,
+    "whole_world_hours_processed":_total_accelerated_hours,
+    "npc_model_loaded":false,
+    "npc_ai_status":local_npc_ai_state,
+    "npc_real_rule_simulation":true}
+
 func _process(delta: float) -> void:
   if _closed:
     return
   if controls != null:
     controls.call("step",delta)
   _clock += delta
-  _economy_clock += delta
-  if _economy_clock >= 12.0:
-    _economy_clock = 0
+  var accelerated_delta: float=clampf(delta,0.0,0.10)*float(world_time_scale)
+  # Loop EACH skipped hour through the SAME sim, ecology and inventory
+  # state transitions. Do not jump a visual clock past unpaid production.
+  _economy_clock+=accelerated_delta
+  var advanced: int=0
+  while _economy_clock>=12.0 and advanced<32:
+    _economy_clock-=12.0
     sim.tick()
     eco.advance_ecology_hours(1)
+    _total_accelerated_hours+=1
+    advanced+=1
+  if advanced>0:
     _refresh_ecology_meshes()
+  _sync_living_daylight()
   for worker in workers.values():
     if String(worker["kind"]) == "builder":
-      _move_builder(worker, delta)
+      _move_builder(worker, accelerated_delta)
     else:
-      _move_gatherer(worker, delta)
+      _move_gatherer(worker, accelerated_delta)
   var hero: Node3D = controls.get("actor") if controls!=null else null
   var visible_label_distance: float = float(quality.call("render_profile").get("name_distance",13.0)) if quality!=null else 13.0
   for code in workers:
@@ -1013,6 +1067,10 @@ func stats() -> Dictionary:
   var stock: Dictionary = sim.villages[TOWN]["stock"]
   return {"revision": 187, "world_seed": 20261017,
     "worker_count": workers.size(), "resource_node_count": sim.natural_nodes.size(),
+    "living_clock":get_living_clock(),
+    "whole_world_speed_includes_npc_construction":true,
+    "local_gguf_installed":false,
+    "native_llama_bridge_present":ClassDB.class_exists("CanglanLocalLLM"),
     "source_assets": asset_sources.size(), "missing_assets": asset_errors.duplicate(),
     "licensed_animated_body_materials_fixed_from_alpha_zero":_licensed_actor_zero_alpha_fixed,
     "animation_reports": animation_report.duplicate(true),
