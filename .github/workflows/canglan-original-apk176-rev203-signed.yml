@@ -395,9 +395,35 @@ jobs:
               shutil.copyfile(src,Path('art/actual-engine-capture')/output)
               print('PASS_GENUINE_REV203_REAL_GODOT_ENGINE_FRAME_READY_FOR_PUBLIC_VIEW',output,len(raw))
           PY
+          # Keep the website signed-release history in the very SAME atomic
+          # commit as manifest/PCK, rather than show a stale release card.
+          python3 - <<'PY'
+          import json,os
+          from datetime import datetime,timezone
+          from pathlib import Path
+          p=Path('data/updates.json')
+          feed=json.loads(p.read_text(encoding='utf-8'))
+          before=json.loads(Path('android-preview/latest.json').read_text(encoding='utf-8'))
+          assert feed['schema']==1 and feed['channel']=='signed-releases'
+          assert before['revision']==203
+          assert feed['entries'][0]['revision']==202 and all(e['revision']!=203 for e in feed['entries'])
+          now=datetime.now(timezone.utc).isoformat(timespec='seconds').replace('+00:00','Z')
+          feed['entries'].insert(0,{
+              'revision':203,'first_seen_utc':now,'notes':before['notes'],
+              'sha256':before['sha256'],'size_bytes':before['size_bytes'],
+              'status':'signed_release','android_version_code':1176,
+              'protocol':'RSA-3072 PKCS1-v1_5 / SHA-256',
+              'remote_https_verified':False,'remote_range_206_verified':False,
+              'ci_run':int(os.environ['GITHUB_RUN_ID']),
+              'android_real_device_qa':'pending',
+              'engine_visual_proof':'art/actual-engine-capture/canglan-rev203-soar-bank-godot-linux.png'})
+          feed['updated_at']=now
+          p.write_text(json.dumps(feed,ensure_ascii=False,indent=2)+'\\n',encoding='utf-8')
+          print('PASS_REV203_RELEASE_FEED_ATOMIC_WITH_SIGNED_PACK',before['sha256'])
+          PY
           git config user.name 'canglan-original-apk176-ota-release'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add android-preview/latest.json android-preview/canglan-content-rev-203.pck art/actual-engine-capture/canglan-rev203-*.png
+          git add android-preview/latest.json android-preview/canglan-content-rev-203.pck art/actual-engine-capture/canglan-rev203-*.png data/updates.json
           git commit -m 'release(official): APK176 RSA signed REV203 continuous soar control real sword banking and camera [skip ci]'
           # main may advance while QA runs; rebase ONLY if production is still rev202.
           for attempt in 1 2 3; do
