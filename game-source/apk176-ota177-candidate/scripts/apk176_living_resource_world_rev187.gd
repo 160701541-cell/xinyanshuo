@@ -113,6 +113,17 @@ const SPIRIT_CC0_SOURCES: Dictionary={
   "rock1":"res://canglan_rev187/cc0_spirit/ore/rock1.glb",
   "rock2":"res://canglan_rev187/cc0_spirit/ore/rock2.glb"}
 var _wildlife_anim_count: int=0
+var _beast_hit_events: int=0
+var _beast_deaths: int=0
+const YAO_BEAST_SPEC: Dictionary={
+  "wolf":{"name":"苍牙山狼妖","realm":"炼气三层","root":"风灵根",
+    "max_health":185,"max_mana":64,"size":2.7,"damage":9,"hostile":true},
+  "fox":{"name":"赤瞳灵狐妖","realm":"炼气二层","root":"火灵根",
+    "max_health":165,"max_mana":80,"size":2.4,"damage":8,"hostile":true},
+  "deer":{"name":"碧角灵鹿妖","realm":"炼气一层","root":"木灵根",
+    "max_health":145,"max_mana":52,"size":2.9,"damage":7,"hostile":false},
+  "cow":{"name":"磐甲蛮牛妖","realm":"炼气四层","root":"土灵根",
+    "max_health":320,"max_mana":90,"size":3.8,"damage":14,"hostile":false}}
 # rev197: cheap real world collisions for already-licensed instanced trunks
 # and stones; they follow harvesting/growth without duplicating GLB rendering.
 var natural_colliders: Dictionary = {}
@@ -882,8 +893,7 @@ func _spawn_native_animals() -> void:
     world.add_child(critter)
     var bounds: Vector2=_visible_bounds(critter)
     var measured: float=bounds.y-bounds.x
-    var target_height: float={
-      "wolf":1.2,"fox":0.72,"deer":1.8,"cow":1.65}.get(kind,1.4)
+    var target_height: float=float(YAO_BEAST_SPEC[kind]["size"])
     if measured>0.10 and is_finite(measured):
       critter.scale*=clampf(target_height/measured,0.04,8.0)
       var new_bounds: Vector2=_visible_bounds(critter)
@@ -910,49 +920,174 @@ func _spawn_native_animals() -> void:
       if idle_clip!="":
         animator.play(idle_clip)
       _wildlife_anim_count+=1 if choices.size()>0 else 0
+    var plan: Dictionary=YAO_BEAST_SPEC[kind]
+    var solid: StaticBody3D=StaticBody3D.new()
+    solid.name="ActualYaoBeastBodyCollider_"+String(element[2])
+    solid.collision_layer=2
+    solid.collision_mask=0
+    solid.position=critter.position+Vector3.UP*(
+      target_height*0.50)
+    var capsule:=CollisionShape3D.new()
+    capsule.name="PhysicalRaisedSpiritualBeastNotDecorativeAnimal"
+    var physics:=CapsuleShape3D.new()
+    physics.radius=maxf(0.45,target_height*0.27)
+    physics.height=maxf(1.25,target_height*0.87)
+    capsule.shape=physics
+    solid.add_child(capsule)
+    world.add_child(solid)
+    var label:=Label3D.new()
+    label.name="ActualYaoBeastRealmRootCurrentMaxHPMP_"+String(element[2])
+    label.billboard=BaseMaterial3D.BILLBOARD_ENABLED
+    label.font_size=30
+    label.pixel_size=0.0052
+    label.outline_size=8
+    label.visibility_range_end=25.0
+    label.position=critter.position+Vector3.UP*(target_height+0.65)
+    world.add_child(label)
+    critter.set_meta("actual_spirit_monster",true)
+    critter.set_meta("beast_realm",String(plan["realm"]))
     actual_wildlife[critter.name]={
       "node":critter,"species":kind,"spawn":critter.position,
       "wander_angle":float(actual_wildlife.size())*1.71,
-      "timer":0.0,"activity":"休息","age_days":16,
-      "health":45 if kind=="wolf" else 32,
+      "timer":0.0,"activity":"巡游","age_days":16,
+      "name":String(plan["name"]),"realm":String(plan["realm"]),
+      "root":String(plan["root"]),
+      "health":int(plan["max_health"]),"max_health":int(plan["max_health"]),
+      "mana":int(plan["max_mana"]),"max_mana":int(plan["max_mana"]),
+      "body_height":target_height,
+      "aggressive":bool(plan["hostile"]),"damage":int(plan["damage"]),
+      "attack_cooldown":1.2,"attack_windup":0.0,
+      "loot_available":false,"state":"patrol",
+      "collider":solid,"head_label":label,
       "animator":animator,"idle":idle_clip,"walk":walk_clip}
 
+func apply_yao_beast_damage(id: String,damage: int,
+    element: String="sword") -> Dictionary:
+  if not actual_wildlife.has(id):
+    return {"ok":false,"reason":"NO_REAL_YAO_BEAST"}
+  var beast: Dictionary=actual_wildlife[id]
+  if int(beast["health"])<=0 or damage<=0:
+    return {"ok":false,"reason":"ALREADY_DEAD_OR_ZERO_DAMAGE"}
+  var resisted: int=0
+  if element!="sword" and String(beast["root"]).contains(element):
+    resisted=roundi(float(damage)*0.28)
+  var dealt: int=mini(int(beast["health"]),maxi(1,damage-resisted))
+  beast["health"]=int(beast["health"])-dealt
+  beast["aggressive"]=true # Surviving a first attack causes real hostility.
+  beast["attack_cooldown"]=maxf(0.3,float(beast["attack_cooldown"]))
+  _beast_hit_events+=1
+  if int(beast["health"])<=0:
+    beast["state"]="dead"
+    beast["activity"]="陨落"
+    beast["loot_available"]=true
+    beast["aggressive"]=false
+    _beast_deaths+=1
+    var solid: StaticBody3D=beast["collider"]
+    if is_instance_valid(solid):
+      solid.collision_layer=0
+    var animator: AnimationPlayer=beast["animator"]
+    if animator!=null:
+      animator.stop()
+  _sync_beast_vitals(beast)
+  return {"ok":true,"id":id,"actual_damage":dealt,
+    "remaining_hp":int(beast["health"]),"max_hp":int(beast["max_health"]),
+    "element_resisted":resisted,"defeated":bool(
+      beast["state"]=="dead")}
+
+func loot_defeated_yao_beast(point: Vector3,backpack: RefCounted) -> Dictionary:
+  if backpack==null:
+    return {"ok":false,"reason":"NO_REAL_BACKPACK"}
+  for id in actual_wildlife:
+    var beast: Dictionary=actual_wildlife[id]
+    var entity: Node3D=beast["node"]
+    if beast["state"]=="dead" and bool(beast[
+        "loot_available"]) and entity.position.distance_to(point)<3.0:
+      if not bool(backpack.call("_add","beast_core",1)):
+        return {"ok":false,"reason":"BAG_FULL_NO_DUPLICATED_BEAST_DROP"}
+      beast["loot_available"]=false
+      _sync_beast_vitals(beast)
+      return {"ok":true,"action":"loot_beast",
+        "kind":"beast_core","source_entity_id":String(id)}
+  return {"ok":false,"reason":"NO_DEFEATED_LOOT_WITHIN_REACH"}
+
+func _sync_beast_vitals(beast: Dictionary) -> void:
+  var tag: Label3D=beast["head_label"]
+  if tag!=null and is_instance_valid(tag):
+    tag.text="%s · %s · %s\n生命 %d/%d  法力 %d/%d · %s" % [
+      String(beast["name"]),String(beast["realm"]),
+      String(beast["root"]),int(beast["health"]),
+      int(beast["max_health"]),int(beast["mana"]),
+      int(beast["max_mana"]),String(beast["state"])]
+    var node: Node3D=beast["node"]
+    tag.position=node.position+Vector3.UP*(
+      float(beast["body_height"])+0.64)
+
 func _step_native_animals(delta: float) -> void:
-  for record in actual_wildlife.values():
-    var actor: Node3D=record["node"]
+  var hero: Node3D=controls.get("actor") if controls!=null else null
+  for beast in actual_wildlife.values():
+    var actor: Node3D=beast["node"]
     if not is_instance_valid(actor):
       continue
-    var speed: float=1.4 if String(record["species"])=="wolf" else 1.0
-    record["timer"]=float(record["timer"])+delta
-    var moving: bool=fmod(float(record["timer"]),17.0)>5.0
-    var home: Vector3=record["spawn"]
-    if moving:
-      var angle: float=float(record["wander_angle"])+(
-        float(int(float(record["timer"])/17.0))*1.27)
-      var toward: Vector3=home+Vector3(
-        sin(angle)*3.8,0.0,cos(angle)*3.8)
-      var delta_pos: Vector3=toward-actor.position
-      delta_pos.y=0
-      if delta_pos.length()>0.40:
-        var next: Vector3=actor.position+delta_pos.normalized()*minf(
-          speed*delta,delta_pos.length())
-        if bool(terrain_world.call(
-            "stream_contains_physical_chunk",next.x,next.z)) and not (
-            bool(terrain_world.call("is_water",next.x,next.z))):
-          actor.position.x=next.x
-          actor.position.z=next.z
-          actor.rotation.y=atan2(delta_pos.x,delta_pos.z)
-        record["activity"]="游走"
+    if int(beast["health"])<=0:
+      _sync_beast_vitals(beast)
+      continue
+    beast["timer"]=float(beast["timer"])+delta
+    beast["attack_cooldown"]=maxf(0.0,
+      float(beast["attack_cooldown"])-delta)
+    var home: Vector3=beast["spawn"]
+    var position_target: Vector3=home
+    var dist: float=999.0
+    if hero!=null and is_instance_valid(hero):
+      dist=Vector2(actor.position.x-hero.position.x,
+        actor.position.z-hero.position.z).length()
+    var chase: bool=bool(beast["aggressive"]) and dist<12.0
+    if chase:
+      position_target=hero.position
+      beast["state"]="alert" if dist>2.6 else "attack"
     else:
-      record["activity"]="休息"
+      var angle: float=float(beast["wander_angle"])+(
+        float(int(float(beast["timer"])/17.0))*1.27)
+      position_target=home+Vector3(sin(angle)*3.8,0.0,cos(angle)*3.8)
+      beast["state"]="patrol" if fmod(float(
+        beast["timer"]),17.0)>5.0 else "rest"
+    var moving: bool=beast["state"] in ["alert","patrol"]
+    if moving:
+      var diff: Vector3=position_target-actor.position
+      diff.y=0.0
+      if diff.length()>0.48:
+        var speed: float=2.0 if chase else 1.15
+        var candidate: Vector3=actor.position+diff.normalized()*minf(
+          speed*delta,diff.length())
+        if bool(terrain_world.call("stream_contains_physical_chunk",
+            candidate.x,candidate.z)) and not (
+            bool(terrain_world.call("is_water",candidate.x,candidate.z))):
+          actor.position.x=candidate.x
+          actor.position.z=candidate.z
+          actor.rotation.y=atan2(diff.x,diff.z)
+    elif beast["state"]=="attack" and float(beast[
+        "attack_cooldown"])<=0.0 and hero!=null:
+      # Actual HP decrement, not just a hostile label / attack animation.
+      var hit_player: Dictionary=controls.call(
+        "apply_player_damage",int(beast["damage"]))
+      beast["attack_cooldown"]=2.2
+      beast["mana"]=maxi(0,int(beast["mana"])-(
+        3 if int(beast["mana"])>=3 else 0))
+      beast["activity"]="冲撞命中"
+      _add_event(String(beast["name"])+" 真实攻击玩家："+str(hit_player))
     actor.position.y=float(terrain_world.call("height_at",
       actor.position.x,actor.position.z))+float(
         actor.get_meta("feet_ground_offset",0.0))
-    var animator: AnimationPlayer=record["animator"]
+    var hitbox: StaticBody3D=beast["collider"]
+    if is_instance_valid(hitbox):
+      hitbox.position=actor.position+Vector3.UP*(
+        float(beast["body_height"])*0.5)
+    var animator: AnimationPlayer=beast["animator"]
     if animator!=null:
-      var selected: String=String(record["walk"]) if moving else String(record["idle"])
-      if selected!="" and animator.current_animation!=selected:
-        animator.play(selected)
+      var clip: String=String(beast["walk"]) if moving else String(
+        beast["idle"])
+      if clip!="" and animator.current_animation!=clip:
+        animator.play(clip)
+    _sync_beast_vitals(beast)
 
 func _initialize_batches() -> void:
   batch_renderer = KenneyMultiMesh.new()
@@ -1509,6 +1644,11 @@ func stats() -> Dictionary:
     "rev208_genuine_unpaid_house_blueprints":housing_blueprints.size(),
     "rev208_paid_house_physics_colliders":house_entry_colliders.size(),
     "rev206_native_wildlife_count":actual_wildlife.size(),
+    "rev208_true_yao_beast_counts":actual_wildlife.size(),
+    "rev208_true_yao_beast_collision_count":actual_wildlife.values().filter(
+      func(v): return is_instance_valid(v["collider"])).size(),
+    "rev208_true_yao_beast_real_hit_events":_beast_hit_events,
+    "rev208_yao_beast_deaths":_beast_deaths,
     "rev206_real_spirit_herbs_ore":spirit_resources.call("stats") if spirit_resources!=null else {},
     "rev206_world_spirit_resource_visuals":spirit_resource_visuals.size(),
     "rev206_licensed_spirit_plant_rock_sources":spirit_resource_sources.size(),
