@@ -42,6 +42,12 @@ const READY_MADE_CC0: Dictionary={
   "cow":"res://canglan_rev187/cc0_rev206/animal/cow.glb",
   "dragon":"res://canglan_rev187/cc0_rev206/monster/dragon.glb",
   "goleling":"res://canglan_rev187/cc0_rev206/monster/goleling.glb"}
+# Rev208 REAL adult-tree species must be actual CC0 vendor high-detail meshes.
+# These contain 8-9m measured natural geometry, NOT scaled Kenney saplings.
+const HQ_MATURE_TREES: Dictionary={
+  "oak":"res://canglan_rev187/hq_rev208/mature_oak_hq_lod0.glb",
+  "maple":"res://canglan_rev187/hq_rev208/mature_maple_hq_lod0.glb",
+  "linden":"res://canglan_rev187/hq_rev208/mature_linden_hq_lod0.glb"}
 const TOWN := "CL-REV186-HX-VILLAGE"
 const DEPOT := Vector3(0.0, 0.0, 10.0)
 const SITE := Vector3(0.0, 0.0, -3.0)
@@ -87,6 +93,8 @@ var status: Label
 var animation_report: Dictionary = {}
 var asset_errors: Array[String] = []
 var asset_sources: Dictionary = {}
+var hq_mature_tree_sources: Dictionary={}
+var hq_mature_tree_visuals: Dictionary={}
 # rev199 genuinely licensed CC0 hair and real sword are separate scene
 # sources; they MUST NOT inflate 7 original economy/batch material sources.
 var licensed_long_hair_source: Node3D
@@ -618,6 +626,16 @@ func _load_assets() -> void:
     vivid_materials.call("upgrade_completed_cc0_model",art,
       String(role),"character_clothing_rig" if role=="worker" else "natural_source")
     asset_sources[role] = art
+  for tree_kind in HQ_MATURE_TREES:
+    var source: Node3D=_parse_existing_cc0(String(HQ_MATURE_TREES[tree_kind]))
+    if source==null:
+      asset_errors.append("REV208_P0_GENUINE_MATURE_TREE_MISSING_"+String(tree_kind))
+      continue
+    var meshes: Array[Node]=source.find_children("*","MeshInstance3D",true,false)
+    if meshes.size()!=4:
+      asset_errors.append("REV208_P0_HQ_VENDOR_PBR_NOT_FOUR_SURFACES_"+String(tree_kind))
+      continue
+    hq_mature_tree_sources[tree_kind]=source
   licensed_long_hair_source=_parse_existing_cc0(
     "res://canglan_rev187/quaternius_hair_long_static.glb")
   licensed_flying_sword_source=_parse_existing_cc0(
@@ -1418,6 +1436,37 @@ func _create_landscape() -> void:
     depot_marker.set_meta("decor_not_game_stock", true)
   _place_asset("steps", "LicensedWorksiteVisibleStoneApproach", SITE + Vector3(0,0,5), 1.6)
 
+func _place_hq_mature_resource_tree(tree_kind: String,id: String,
+    pos: Vector3) -> Node3D:
+  # This is a TRUE visual replacement, not a Kenney tree drawn underneath.
+  # The stable original tree ID, ecological age, harvest inventory and
+  # 3D collision remain identical to the existing saved world semantics.
+  if not hq_mature_tree_sources.has(tree_kind):
+    asset_errors.append("REV208_HQ_TREE_SOURCE_NOT_IMPORTED_"+tree_kind)
+    return null
+  var actor: Node3D=(hq_mature_tree_sources[tree_kind] as Node3D).duplicate()
+  actor.name="RealInnersceneCC0MatureTree_%s_%s" % [tree_kind,id]
+  actor.position=pos
+  actor.scale=Vector3.ONE
+  actor.set_meta("provider","Innerscene CC0 exact-source-sha")
+  actor.set_meta("source_license","CC0")
+  actor.set_meta("hq_rev208_mature_tree",true)
+  actor.set_meta("hq_rev208_tree_kind",tree_kind)
+  actor.set_meta("material_source","four-actual-vendor-PBR-materials")
+  actor.set_meta("resource_id",id)
+  world.add_child(actor)
+  var measured: Vector2=_visible_bounds(actor)
+  if measured.y-measured.x<7.5 or measured.y-measured.x>12.0:
+    asset_errors.append("REV208_HQ_MATURE_TREE_NOT_ACTUAL_8_TO_12_METERS_"+tree_kind)
+    actor.queue_free()
+    return null
+  var floor_y: float=float(terrain_world.call("height_at",pos.x,pos.z))
+  actor.position.y+=floor_y-measured.x
+  actor.set_meta("source_visual_height_m",measured.y-measured.x)
+  hq_mature_tree_visuals[id]=actor
+  _register_resource_collision(id,actor,"tree")
+  return actor
+
 func _seed_resources() -> void:
   var rng := RandomNumberGenerator.new()
   rng.seed = 1802026
@@ -1437,7 +1486,11 @@ func _seed_resources() -> void:
     assert(sim.register_resource_position(entity_id, Vector3(x,
       float(terrain_world.call("height_at",x,z)),z)))
     assert(eco.register_tree(entity_id))
-    var instance := _place_asset("tree", entity_id, Vector3(x,0,z), rng.randf_range(1.45,2.2))
+    var hq_kind: String=["oak","maple","linden"][index] if index<3 else ""
+    var instance: Node3D=(
+      _place_hq_mature_resource_tree(hq_kind,entity_id,Vector3(x,0,z))
+      if index<3 else _place_asset("tree",entity_id,
+        Vector3(x,0,z),rng.randf_range(1.45,2.2)))
     if instance != null:
       instance.set_meta("resource_id", entity_id)
       natural_meshes[entity_id] = instance
@@ -1859,6 +1912,9 @@ func stats() -> Dictionary:
       world_society.get("_loaded")) else 0,
     "rev207_mine_guardian_positions_linked":actual_wildlife.values().filter(
       func(v): return String(v.get("guarded_ore",""))!="").size(),
+    "rev208_hq_true_mature_tree_count":hq_mature_tree_visuals.size(),
+    "rev208_hq_true_mature_tree_sources":hq_mature_tree_sources.size(),
+    "rev208_hq_genuine_species":HQ_MATURE_TREES.keys(),
     "rev207_real_cc0_shrub_understory":licensed_understory_count,
     "rev207_real_cc0_shrub_draw_nodes":licensed_understory_draw_parts,
     "rev207_real_cc0_shrub_triangles":licensed_understory_triangle_budget,
