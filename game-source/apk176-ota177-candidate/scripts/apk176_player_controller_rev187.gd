@@ -1858,9 +1858,13 @@ func toggle_camera_lock() -> void:
 
 func toggle_avatar_flight() -> void:
   if camera_mode=="soar":
+    if _soar_landing:
+      return
     _soar_landing=true
     _soar_target_altitude=0.0
-    _air_velocity=Vector3.ZERO
+    # Keep current air velocity; step() eases horizontal motion to rest.
+    # Clearing this vector here causes a sudden midair braking jolt.
+    _layout_hud()
     say("正在平稳降落，观察脚下的地面投影")
   else:
     _set_mode("soar")
