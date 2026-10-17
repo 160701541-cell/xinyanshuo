@@ -192,6 +192,45 @@ func _run() -> void:
       _fail(404,"REV208_HQ_MATURE_TREE_HAS_NO_REAL_GAME_COLLIDER_"+code)
       return
   print("PASS_REV208_3_ACTUAL_8M_MATURE_VENDOR_PBR_TREES_REPLACE_THREE_NATURAL_IDS")
+  # Extra source-authored conifers and understory live INSIDE original Main.
+  # They cannot fabricate the authoritative 52-tree resource ledger.
+  var botanicals: Dictionary=room.get("hq_botanical_visuals")
+  var bot_sources: Dictionary=room.get("hq_botanical_sources")
+  var bot_sites: Dictionary=room.get("hq_botanical_terrain_sites")
+  var bot_trunks: Dictionary=room.get("hq_botanical_colliders")
+  if bot_sources.size()!=8 or botanicals.size()<12 or (
+      botanicals.size()!=bot_sites.size()) or bot_trunks.size()<3:
+    _fail(407,"REV208_REAL_PINE_CYPRESS_FERN_UNDERSTORY_NOT_IN_ORIGINAL_MAIN_"+
+      str({"sources":bot_sources.size(),"actual":botanicals.size(),
+        "sites":bot_sites.size(),"trunks":bot_trunks.size()}))
+    return
+  var natural_kinds: Dictionary={}
+  for bot_id in botanicals:
+    var botanical: Node3D=botanicals[bot_id]
+    if not is_instance_valid(botanical) or not botanical.is_inside_tree() or (
+        botanical.get_parent()!=world) or (
+        String(botanical.get_meta("world_entity_id",""))!=String(bot_id)) or (
+        not String(botanical.get_meta("source_license","")).begins_with("CC0")):
+      _fail(408,"REV208_UNLICENSED_OR_GHOST_BOTANICAL_NODE_"+String(bot_id))
+      return
+    var species: String=String(botanical.get_meta("hq_rev208_vendor_cc0_botanical",""))
+    natural_kinds[species]=int(natural_kinds.get(species,0))+1
+    var bounds: Vector2=room.call("_visible_bounds",botanical)
+    if species in ["pine","cypress","conifer"] and bounds.y-bounds.x<7.0:
+      _fail(409,"REV208_PINE_CYPRESS_MODEL_NOT_REAL_MATURE_SIZE_"+String(bot_id))
+      return
+  for required in ["pine","cypress","conifer","fern","hydrangea","rose",
+      "lavender","grass"]:
+    if int(natural_kinds.get(required,0))<1:
+      _fail(410,"REV208_VENDOR_PLANT_LAYER_NOT_PHYSICALLY_PLACED_"+required)
+      return
+  if int(first.get("resource_node_count",0))!=72 or (
+      int(first.get("rev208_hq_botanical_true_glb_count",-1))!=botanicals.size()):
+    _fail(411,"REV208_FOREST_DECORATION_MINTED_FAKE_RESOURCES_OR_NOT_REPORTED")
+    return
+  print("PASS_REV208_ACTUAL_ORIGINAL_MAIN_REAL_PINE_CYPRESS_FERN_AND_FIVE_GREEN_PLANT_SOURCES_NO_FAKE_INVENTORY")
+  print("REV208_HQ_ART_STATUS_PENDING_CHARACTER_PBR_SPIRIT_HERBS_ANDROID_USER_REVIEW")
+
   print("PASS_REV208_REMAINING_49_KENNEY_LOD_TREES_20_STONES_GPU_BUFFERS_RETAINED")
   if int(first.get("visible_actor_labels",0)) != 3:
     _fail(27, "MISSING_VISIBLE_NPC_WORKER_JOB_LABELS")
