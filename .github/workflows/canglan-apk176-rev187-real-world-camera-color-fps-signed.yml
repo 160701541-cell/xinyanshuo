@@ -196,6 +196,25 @@ jobs:
             tail -110 qa-results/rev187-build.log; exit 1;
           }
           python3 tools/verify_apk176_rev187_3d_pck.py qa-results/canglan-apk176-rev187-3d-UNSIGNED.pck
+      - name: Parse-check ALL rev187 GDScript in a physical Godot project before testing APK PCK
+        shell: bash
+        run: |
+          set -euo pipefail
+          printf 'config_version=5\n' > qa-stage/ota177/project.godot
+          for script in strata_terrain quality_profiles player_controller visual_palette kenney_multimesh ecology_growth; do
+            echo "GODOT_GDSCRIPT_COMPILE_CHECK $script"
+            if ! timeout 35s /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless \
+                --path qa-stage/ota177 --check-only --script "res://canglan_rev187/$script.gd" \
+                > "qa-results/rev187-parse-$script.log" 2>&1; then
+              cat "qa-results/rev187-parse-$script.log"
+              exit 1
+            fi
+            if grep -Eq 'SCRIPT ERROR:|Parse Error:|Parser Error:|ERROR:' "qa-results/rev187-parse-$script.log"; then
+              cat "qa-results/rev187-parse-$script.log"
+              exit 1
+            fi
+          done
+          echo PASS_REV187_ALL_ACTUAL_GODOT_SCRIPTS_PARSE_COMPILATION
       - name: QA actual APK176 Main runs animated workers, finite resources and material-paid staged 3D construction
         env:
           CANGLAN_QA_PCK_PATH: ${{ github.workspace }}/qa-results/canglan-apk176-rev187-3d-UNSIGNED.pck
