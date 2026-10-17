@@ -170,6 +170,7 @@ jobs:
           cp game-source/apk176-ota177-candidate/scripts/apk176_kenney_multimesh_rev187.gd qa-stage/ota177/canglan_rev187/kenney_multimesh.gd
           cp game-source/apk176-ota177-candidate/scripts/apk176_strata_terrain_rev187.gd qa-stage/ota177/canglan_rev187/strata_terrain.gd
           cp game-source/apk176-ota177-candidate/scripts/apk176_player_controller_rev187.gd qa-stage/ota177/canglan_rev187/player_controller.gd
+          cp game-source/apk176-ota177-candidate/scripts/apk176_cultivation_world_rev201.gd qa-stage/ota177/canglan_rev187/cultivation_world.gd
           cp game-source/apk176-ota177-candidate/scripts/apk176_quality_profiles_rev187.gd qa-stage/ota177/canglan_rev187/quality_profiles.gd
           cp game-source/godot3d/assets/free_cc0/kenney/3d/nature/tree_oak.glb qa-stage/ota177/canglan_rev187/tree_oak.glb
           cp game-source/godot3d/assets/free_cc0/kenney/3d/castle/rocks-small.glb qa-stage/ota177/canglan_rev187/rocks_small.glb
@@ -248,6 +249,7 @@ jobs:
           grep -Fq 'PASS_REV198_REAL_LICENSED_KNIGHT_ARMOR_SKIN_OPACITY_REPAIRED' qa-results/rev187-original-main-3d.log
           grep -Fq 'PASS_REV199_IMMUTABLE_AUTHENTIC_CC0_LONG_HAIR_PLAYER_AND_NPC_PLUS_REAL_MULTIMATERIAL_FLYING_SWORD' qa-results/rev187-original-main-3d.log
           grep -Fq 'PASS_REV200_REAL_CC0_HAIR_BOUNDS_FOLLOW_LICENSED_3D_AVATAR_HEAD' qa-results/rev187-original-main-3d.log
+          grep -Fq 'PASS_REV201_ACTUAL_LICENSED_ALTAR_HIDDEN_DETERMINISTIC_ROOT_12_AUTONOMOUS_CULTIVATORS_REAL_HOUR_MEDITATION_QI_AND_BREAKTHROUGH_SAVED' qa-results/rev187-original-main-3d.log
           grep -Fq 'PASS_REV199_REAL_WORLD_ACCELERATES_NPC_ECOLOGY_HOURS_DAY_NIGHT_AND_TRAINING_FLIGHT_WITH_VISIBLE_ALTITUDE_SPEED_AIR_TRAIL_AND_HONEST_OFFLINE_AI' qa-results/rev187-original-main-3d.log
           grep -Fq 'PASS_REV187_PHONE_VISIBILITY_TREE_SEED_BEDROCK_EXCLUSION_AND_TECTONIC_MILLIONS_OF_YEARS' qa-results/rev187-original-main-3d.log
           grep -Fq 'PASS_REV187_UNLIMITED_NATURAL_MULTIHUE_KENNEY_MESH_BATCH_SINGLE_WARM_SUN' qa-results/rev187-original-main-3d.log
@@ -323,7 +325,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          python3 logic-qa/release-gate/sign_pck_release.py             --pack qa-results/canglan-apk176-rev187-3d-UNSIGNED.pck             --revision 200 --minimum-android-code 1176 --maximum-android-code 1176             --pack-url 'https://160701541-cell.github.io/xinyanshuo/android-preview/canglan-content-rev-200.pck'             --notes '苍岚原APK176 rev200：修复真实Godot截图发现的rev199黑色CC0头发缩小藏进胸口，按模型骨骼比例把真实3000顶点长发放到头顶；验收需实际人物3D世界头部高度和真实引擎45度、第三人称、空中御剑帧通过。保留真正授权飞剑、骨骼飞行动作、速度高度地面参考、风粒及全世界1/5/20/100倍时间，NPC/生态/施工随时间推进。本地Qwen缺安卓原生库不伪称已下载。手机实机待验收。'             --unsigned-template             --output qa-results/rev200-unsigned.json
+          python3 logic-qa/release-gate/sign_pck_release.py             --pack qa-results/canglan-apk176-rev187-3d-UNSIGNED.pck             --revision 200 --minimum-android-code 1176 --maximum-android-code 1176             --pack-url 'https://160701541-cell.github.io/xinyanshuo/android-preview/canglan-content-rev-200.pck'             --notes '苍岚原APK176 rev200：修复真人Godot截图发现的CC0长发缩到胸口而脸部秃头，校正世界头部坐标和45°、第三人称、空中飞剑截图；保留飞行风粒、高度速度HUD与全世界1/5/20/100倍时间。原APK本地AI仍缺Android推理库，修仙数据须后续正式审核；手机验收待完成。'             --unsigned-template             --output qa-results/rev200-unsigned.json
           python3 - <<'PY'
           import json,pathlib
           p=pathlib.Path('qa-results/rev200-unsigned.json')
