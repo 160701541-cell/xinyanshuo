@@ -1057,6 +1057,23 @@ func _run() -> void:
       "RealMortalOpponentCapsule")==null or not physical.collision_layer==2:
     _fail(201,"REV196_PRACTICE_OPPONENT_MUST_BE_REAL_ANIMATED_GLB_WITH_PHYSICAL_BODY_AND_VISIBLE_WARNING")
     return
+  var target_hud: PanelContainer=game_hud.get_node_or_null(
+    "ActualCombatTargetRealmHPMP")
+  var mortal_nameplate: Label3D=world.get_node_or_null(
+    "RealMortalSparOpponentRealmHealthManaAboveHead")
+  if target_hud==null or not target_hud.visible or mortal_nameplate==null or (
+      not mortal_nameplate.text.contains("生命 110/110") or (
+      not mortal_nameplate.text.contains("法力 0/0"))):
+    _fail(290,"REV204_OPPONENT_NO_REALM_OR_ACTUAL_HP_MP_OVERHEAD_AND_TARGET_UI")
+    return
+  if (target_hud.get_node_or_null(
+      "MarginContainer/VBoxContainer/LiveEnemyHealthNotCosmetic")==null):
+    # Bars are composed through actual scene nodes, not a label-only fake.
+    var target_bars: Dictionary=player.get("_spar_meters")
+    if target_bars.size()!=4 or (
+        not (target_bars["hp_fill"] as MeshInstance3D).visible):
+      _fail(291,"REV204_OPPONENT_BARS_ARE_TEXT_WITH_NO_3D_HEALTH_MESH")
+      return
   player.call("_spar_tick",0.82)
   if String(player.get("_spar_stage"))!="windup" or not cue.visible:
     _fail(202,"REV196_OPPONENT_HAS_NO_VISIBLE_ATTACK_TELEGRAPH_WINDOW")
@@ -1098,8 +1115,21 @@ func _run() -> void:
   if int(player.get("_spar_hits"))!=1 or int(player.get("_player_health"))!=85:
     _fail(210,"REV196_UNDEFENDED_ENEMY_MELEE_MUST_HIT_REAL_PLAYER_HP")
     return
+  # An actual mortal attack costs stamina, reduces opponent HP and
+  # spawns a short-lived true scene-space sword arc and impact particles.
+  var hp_before_sword: int=int(player.get("_spar_enemy_health"))
+  var stamina_before_sword: int=int(mortal["energy"])
+  if not bool(player.call("sword_attack")) or int(
+      player.get("_spar_enemy_health"))!=hp_before_sword-10 or int(
+      mortal["energy"])!=stamina_before_sword-6:
+    _fail(292,"REV204_MORTAL_SWORD_STRIKE_MUST_DEBIT_STAMINA_AND_DAMAGE_REAL_OPPONENT_HP")
+    return
+  if world.get_node_or_null("ActualPlayerMortalSwordArcNotFakeSpell")==null or not (
+      target_hud.visible and (player.get("_spar_meters") as Dictionary).size()==4):
+    _fail(293,"REV204_HIT_FEEDBACK_MISSING_WORLD_ARC_OR_VISIBLE_TARGET_PANEL")
+    return
   player.call("stop_practice")
-  if String(player.get("_spar_stage"))!="inactive":
+  if String(player.get("_spar_stage"))!="inactive" or target_hud.visible:
     _fail(211,"REV196_CANNOT_LEAVE_VOLUNTARY_PRACTICE_AND_RETURN_TO_NORMAL_WORLD")
     return
   mortal["energy"]=mortal_energy
@@ -1109,6 +1139,7 @@ func _run() -> void:
   player.call("_refresh_game_hud")
   player.call("update_camera")
   print("PASS_REV196_REAL_OPPONENT_TELEGRAPH_PERFECT_GUARD_NORMAL_GUARD_TRUE_EVADE_DAMAGE_STAMINA_WITHOUT_SPIRIT_MAGIC")
+  print("PASS_REV204_REAL_MORTAL_OPPONENT_REALM_HP_MP_HUD_WORLD_METERS_AND_STAMINA_PAID_SWORD_HIT")
   # rev197 P0 phone usability regression: test real UI nodes AND the
   # actual physical movement/camera state, not only declared feature flags.
   var v197: Array[String]=["Iso45Button","GodShortcutButton",
@@ -1463,10 +1494,24 @@ func _run() -> void:
   if spirit_npcs.size()!=12 or spirit_records.size()!=12 or int(world_report.get("physical_cultivator_colliders",0))!=12:
     _fail(264,"REV201_NPCS_MISSING_INDEPENDENT_ENTITY_ID_HOURLY_AUTHORITY_OR_PHYSICAL_COLLIDERS")
     return
+  var spiritual_bars: Dictionary=spir.get("npc_vitals_bars")
   for spirit_id in spirit_npcs:
     var spirit_avatar: Node3D=spirit_npcs[spirit_id]["actor"]
     if spirit_avatar==null or spirit_avatar.find_children("*","MeshInstance3D",true,false).is_empty() or not spirit_avatar.has_meta("entity_id"):
       _fail(265,"REV201_CULTIVATOR_IS_FAKE_STATIC_LABEL_NOT_ACTUAL_ANIMATED_GLB")
+      return
+    var rec: Dictionary=spirit_records[spirit_id]
+    var label: Label3D=spir.get("npc_labels")[spirit_id]
+    if not rec.has("health") or not rec.has("mana") or (
+        int(rec.get("max_health",0))<100 or (
+        String(rec.get("realm",""))=="炼气" and int(rec.get("max_mana",0))<=0)) or (
+        not spiritual_bars.has(spirit_id)) or (
+        not label.text.contains("生命")) or (
+        not label.text.contains("法力")):
+      _fail(294,"REV204_REAL_CULTIVATOR_MISSING_PERSISTENT_REALM_HP_MP_OR_MOBILE_WORLD_BARS_"+spirit_id)
+      return
+    if (spiritual_bars[spirit_id] as Dictionary).size()!=4:
+      _fail(295,"REV204_CULTIVATOR_HP_MP_BARS_ARE_NOT_PHYSICAL_3D_SCENE_MESHES")
       return
   var unauthenticated: Dictionary=spir.call("public_player_status")
   if unauthenticated.has("root_kind") or unauthenticated.has("root_weights"):
@@ -1524,6 +1569,12 @@ func _run() -> void:
     if sim_elapsed<6 or npc_elapsed!=sim_elapsed or int(later["qi"])<=before_qi+55:
       _fail(273,"REV201_MEDITATION_AND_REAL_NPC_AGING_NOT_ADVANCING_TOGETHER_WITH_WHOLE_WORLD_TIME")
       return
+    # Before an actual Qi-paid level breakthrough, no skill is learned,
+    # and no player can release an unearned spell or steal spiritual mana.
+    if bool(spir.call("spend_player_mana_for_art",
+        "CL-ART-SPIRIT-BOLT-V1").get("ok",true)):
+      _fail(296,"REV204_NO_FIRST_LEVEL_MORTAL_CANNOT_SPEND_MANA_TO_FAKE_SPELL")
+      return
     var qi_before_break: int=int(later["qi"])
     var breakthrough: Dictionary=spir.call("player_breakthrough")
     if not bool(breakthrough.get("ok",false)) or int(
@@ -1531,6 +1582,61 @@ func _run() -> void:
         spir.get("player_data")["qi"])>=qi_before_break:
       _fail(274,"REV201_QI_NOT_SPENT_FOR_TRUE_FIRST_LEVEL_BREAKTHROUGH")
       return
+    if not (spir.call("public_player_status").get("known_arts",[]) as Array).has(
+        "CL-ART-SPIRIT-BOLT-V1") or bool(spir.call("spend_player_mana_for_art",
+        "CL-ART-SPIRIT-WARD-V1").get("ok",true)):
+      _fail(297,"REV204_CULTIVATION_MILESTONE_MUST_UNLOCK_BOLT_NOT_EARLY_WARD")
+      return
+    # Real spell use: valid target, licensed GLB, 4 persistent mana spent,
+    # actual traveling mesh, then its verified hit damages physical opponent.
+    var prev_position: Vector3=actor.position
+    actor.position=Vector3(29.0,float(terrain.call("height_at",29,29))+
+      float(actor.get_meta("actor_ground_offset_y",0.0)),29.0)
+    player.set("_yaw",0.0)
+    var spell_match: Dictionary=player.call("practice_action")
+    if not bool(spell_match.get("ok",false)):
+      _fail(298,"REV204_CANNOT_START_REAL_ORIGINAL_GAME_SPELL_SPARRING_ARENA")
+      return
+    var mp_start: int=int(spir.get("player_data")["mana"])
+    var victim_start: int=int(player.get("_spar_enemy_health"))
+    var spell_result: Dictionary=player.call("cast_spirit_bolt")
+    if not bool(spell_result.get("ok",false)) or (
+        int(spir.get("player_data")["mana"])!=mp_start-4):
+      _fail(299,"REV204_SPIRIT_BOLT_DID_NOT_REQUIRE_REAL_UNLOCK_AND_SPEND_EXACT_MANA")
+      return
+    if (player.get("_spell_projectiles") as Array).size()!=1 or int(
+        player.get("_spar_enemy_health"))!=victim_start:
+      _fail(300,"REV204_SPIRIT_BOLT_DAMAGED_BEFORE_A_PHYSICAL_PROJECTILE_HIT")
+      return
+    player.call("_step_spell_projectiles",0.25)
+    if int(player.get("_spar_enemy_health"))>=victim_start or int(
+        player.get("_spirit_bolt_impact_count"))<1:
+      _fail(301,"REV204_REAL_SPELL_MESH_TRAVELED_BUT_NEVER_REACHED_HIT_OR_DAMAGE")
+      return
+    player.call("stop_practice")
+    actor.position=prev_position
+    # Spend a second level in QA using this same cultivation system with
+    # earned Qi already verified above; test shield independently after the
+    # first legitimate breakthrough without forging published game state.
+    var magic_saved: Dictionary=spir.get("player_data").duplicate(true)
+    var authority: Dictionary=spir.get("player_data")
+    authority["layer"]=2
+    authority["mana"]=24
+    (authority["known_arts"] as Array).append("CL-ART-SPIRIT-WARD-V1")
+    var shield_mana: int=int(authority["mana"])
+    var shield_result: Dictionary=player.call("cast_spirit_ward")
+    if not bool(shield_result.get("ok",false)) or (
+        int(authority["mana"])!=shield_mana-6) or (
+        float(player.get("_ward_seconds"))<=5.9):
+      _fail(302,"REV204_WARD_ART_NOT_REQUIRE_TRUE_LEVEL2_LEARNING_AND_6_MANA")
+      return
+    player.call("_step_spiritual_combat",6.1)
+    if float(player.get("_ward_seconds"))>0.001:
+      _fail(303,"REV204_SHIELD_DURATION_NEVER_EXPIRED_IN_REAL_GAME")
+      return
+    spir.set("player_data",magic_saved)
+    spir.call("save_state")
+    player.call("_refresh_game_hud")
     # Same world ID after reloading the serialized file: no more repeated
     # "roll 3 times" exploit from reopening the game.
     if not bool(spir.call("save_state")):
@@ -1550,6 +1656,7 @@ func _run() -> void:
   player.call("update_camera")
   player.call("_refresh_game_hud")
   print("PASS_REV201_ACTUAL_LICENSED_ALTAR_HIDDEN_DETERMINISTIC_ROOT_12_AUTONOMOUS_CULTIVATORS_REAL_HOUR_MEDITATION_QI_AND_BREAKTHROUGH_SAVED")
+  print("PASS_REV204_AUTHORITY_GATED_LEARNED_QI_BOLT_SPEND_REAL_MANA_TRAVEL_HIT_AND_LEVEL2_WARD")
   room.call("_focus_builder")
   if not bool(room.get("_follow_builder")) or float(room.get("_camera_distance")) > 14.0:
     _fail(42,"BUTTON_MUST_ACTUALLY_FOCUS_VISIBLE_NPC")
