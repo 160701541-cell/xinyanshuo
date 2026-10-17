@@ -114,6 +114,13 @@ var _target_status: Label
 var _target_health_bar: ProgressBar
 var _target_mana_bar: ProgressBar
 var _spirit_notice: Label
+var _backpack: RefCounted
+var _inventory_list: ItemList
+var _inventory_selected_kind: String=""
+var _inventory_deposit_button: Button
+var _inventory_craft_sword_button: Button
+var _inventory_craft_pick_button: Button
+var _inventory_equip_button: Button
 var _game_actions: Dictionary = {}
 var _dash_cd: float = 0.0
 var _gather_cd: float = 0.0
@@ -195,6 +202,12 @@ func initialize(active_room: Node) -> void:
   _camera_sphere=SphereShape3D.new()
   _camera_sphere.radius=0.24
   _load_pad_options()
+  var bag_script: GDScript=load(
+    "res://canglan_rev187/backpack.gd") as GDScript
+  if bag_script==null:
+    push_error("P0: actual persistent backpack script not in signed original APK PCK")
+  else:
+    _backpack=bag_script.new()
   _create_hud()
   if not Input.joy_connection_changed.is_connected(_on_pad_hotplug):
     Input.joy_connection_changed.connect(_on_pad_hotplug)
@@ -727,7 +740,7 @@ func _build_game_hud() -> void:
   _game_sheet=PanelContainer.new()
   _game_sheet.name="Rev188CharacterInventoryCultivationMenu"
   _game_sheet.position=Vector2(16,150)
-  _game_sheet.custom_minimum_size=Vector2(405,245)
+  _game_sheet.custom_minimum_size=Vector2(435,245)
   _game_sheet.visible=false
   _game_sheet.add_theme_stylebox_override("panel",_rounded(Color(0.06,0.11,0.13,0.95),12))
   hud.add_child(_game_sheet)
@@ -740,6 +753,33 @@ func _build_game_hud() -> void:
   _game_sheet_body=Label.new()
   _game_sheet_body.add_theme_font_size_override("font_size",17)
   v.add_child(_game_sheet_body)
+  _inventory_list=ItemList.new()
+  _inventory_list.name="ActualSourcedBackpack24StackSelectableSlots"
+  _inventory_list.custom_minimum_size=Vector2(409,174)
+  _inventory_list.max_columns=4
+  _inventory_list.same_column_width=true
+  _inventory_list.select_mode=ItemList.SELECT_SINGLE
+  _inventory_list.item_selected.connect(_on_inventory_item_selected)
+  v.add_child(_inventory_list)
+  _inventory_craft_sword_button=Button.new()
+  _inventory_craft_sword_button.text="木剑：消耗3木"
+  _inventory_craft_sword_button.pressed.connect(func(): _craft_backpack("rough_wood_sword"))
+  v.add_child(_inventory_craft_sword_button)
+  _inventory_craft_pick_button=Button.new()
+  _inventory_craft_pick_button.text="石镐：消耗2木2石"
+  _inventory_craft_pick_button.pressed.connect(func(): _craft_backpack("stone_pick"))
+  v.add_child(_inventory_craft_pick_button)
+  _inventory_equip_button=Button.new()
+  _inventory_equip_button.text="装备选中的武器／工具"
+  _inventory_equip_button.pressed.connect(_equip_backpack_selection)
+  v.add_child(_inventory_equip_button)
+  _inventory_deposit_button=Button.new()
+  _inventory_deposit_button.text="在仓库交付背包原材料"
+  _inventory_deposit_button.pressed.connect(_deposit_backpack)
+  v.add_child(_inventory_deposit_button)
+  for b in [_inventory_craft_sword_button,_inventory_craft_pick_button,
+      _inventory_equip_button,_inventory_deposit_button]:
+    _apply_open_hud_style(b,"backpack")
   var close:=Button.new()
   close.text="关闭"
   close.pressed.connect(func(): _game_sheet.visible=false)
@@ -854,6 +894,61 @@ func _add_game_action(key: String, label: String, callback: Callable) -> void:
   button.pressed.connect(callback)
   hud.add_child(button)
   _game_actions[key]=button
+
+func _refresh_inventory_list() -> void:
+  if _inventory_list==null:
+    return
+  _inventory_list.clear()
+  if _backpack==null:
+    return
+  var bag: Dictionary=_backpack.call("snapshot")["items"]
+  var sorted: Array=bag.keys()
+  sorted.sort()
+  for kind in sorted:
+    var amount: int=int(bag[kind])
+    var index: int=_inventory_list.add_item("%s ×%d" % [
+      String(_backpack.get("NAMES").get(kind,kind)),amount])
+    _inventory_list.set_item_metadata(index,String(kind))
+    _inventory_list.set_item_tooltip(index,String(kind)+"  ×"+str(amount))
+  if bag.is_empty():
+    _inventory_list.add_item("空背包 · 从真实资源处采集")
+
+func _on_inventory_item_selected(index: int) -> void:
+  if _backpack==null:
+    return
+  _inventory_selected_kind=String(_inventory_list.get_item_metadata(index))
+  _game_sheet_body.text="%s：%d件。可用于真实材料图纸；装备需先制作。" % [
+    _inventory_selected_kind,int(_backpack.call("amount",_inventory_selected_kind))]
+
+func _craft_backpack(kind: String) -> void:
+  if _backpack==null:
+    return
+  var response: Dictionary=_backpack.call("craft",kind)
+  say("成功制作："+kind if bool(response.get("ok",false)) else (
+    "制作失败："+String(response.get("reason","材料不足"))))
+  _refresh_game_hud()
+
+func _equip_backpack_selection() -> void:
+  if _backpack==null or _inventory_selected_kind=="":
+    say("请先在背包选中装备")
+    return
+  var result: Dictionary=_backpack.call("equip",_inventory_selected_kind)
+  say("成功装备："+_inventory_selected_kind if bool(result.get("ok",false)) else (
+    "无法装备："+String(result.get("reason",""))))
+  _refresh_game_hud()
+
+func _deposit_backpack() -> void:
+  if _backpack==null or actor==null:
+    return
+  var depot:=Vector3(0,0,10)
+  if Vector2(actor.position.x-depot.x,actor.position.z-depot.z).length()>3.8:
+    say("背包材料必须运到真实村庄仓库才能入库")
+    return
+  var result: Dictionary=_backpack.call(
+    "deposit_at_warehouse",room.get("sim"),PLAYER_ID)
+  say("已将背包材料交付真实仓库" if bool(result.get("ok",false)) else (
+    "交付失败："+String(result.get("reason",""))))
+  _refresh_game_hud()
 
 func _open_game_menu(mode: String) -> void:
   if _game_sheet_mode==mode and _game_sheet.visible:
@@ -1064,6 +1159,13 @@ func _refresh_game_hud() -> void:
       _spar_stage,_spar_last_outcome,mana_now,player_level*12]
   elif spiritual==null:
     _spirit_notice.text="灵根：未检测（检测台尚未装载）"
+  var inventory_open: bool=_game_sheet!=null and _game_sheet.visible and _game_sheet_mode=="inventory"
+  if _inventory_list!=null:
+    _inventory_list.visible=inventory_open
+    _inventory_craft_sword_button.visible=inventory_open
+    _inventory_craft_pick_button.visible=inventory_open
+    _inventory_equip_button.visible=inventory_open
+    _inventory_deposit_button.visible=inventory_open
   _quality_sheet_button.visible=_game_sheet!=null and _game_sheet.visible and _game_sheet_mode=="settings"
   _developer_sheet_button.visible=_quality_sheet_button.visible
   _rest_sheet_button.visible=_game_sheet.visible and _game_sheet_mode=="character"
@@ -1078,13 +1180,12 @@ func _refresh_game_hud() -> void:
     _game_sheet_title.text="角色 · 当前状态"
     _game_sheet_body.text="生命："+str(_player_health)+"/100  体力："+str(energy)+"/100\n饥饿："+str(person.get("hunger",0))+"  年龄："+str(person.get("age",21))+"\n身份：凡人旅者  灵根尚未鉴定\n当前生命可受跌落伤害、消耗食物恢复"
   elif _game_sheet_mode=="inventory":
-    _game_sheet_title.text="背包 · 真实采集物资"
-    var carried: Dictionary=sim.get("carried_by_actor")
-    if carried.has(PLAYER_ID):
-      var item: Dictionary=carried[PLAYER_ID]
-      _game_sheet_body.text="携带："+String(item.get("kind","未知"))+" ×"+str(item.get("amount",0))+"\n回仓库点击「互动」交付"
+    _game_sheet_title.text="背包 · 真实物品与装备"
+    if _backpack==null:
+      _game_sheet_body.text="背包账本加载失败，已禁止制造假物品"
     else:
-      _game_sheet_body.text="随身背包空\n靠近树木、石块点击「互动」采集"
+      _game_sheet_body.text=String(_backpack.call("describe"))
+      _refresh_inventory_list()
   elif _game_sheet_mode=="cultivation":
     _game_sheet_title.text="修炼 · 灵根与境界"
     if spiritual==null:
@@ -3056,8 +3157,11 @@ func interact() -> Dictionary:
   # The unique player/world/entity system IDs stay in the authoritative
   # simulation ledger. Do not display them as giant in-world labels.
   var depot := Vector3(0,0,10)
-  if point.distance_to(depot)<3.8:
+  if Vector2(point.x-depot.x,point.z-depot.z).length()<3.8:
     var delivered: bool = sim.deliver_carried(PLAYER_ID)
+    if not delivered and _backpack!=null:
+      var bag_out: Dictionary=_backpack.call("deposit_at_warehouse",sim,PLAYER_ID)
+      delivered=bool(bag_out.get("ok",false))
     if delivered:
       var seed_amount: int = eco.delivered_seed_from_actor(PLAYER_ID)
       say("木石真实入库！种子入库 " + str(seed_amount))
@@ -3087,8 +3191,13 @@ func interact() -> Dictionary:
     _auto_resource_id = ""
   if not best_id.is_empty():
     if sim.get("carried_by_actor").has(PLAYER_ID):
-      say("背包已装材料！回到仓库交付才能再采集")
+      say("暂存材料未入背包：请先交付仓库")
       return {"ok":false,"reason":"PLAYER_CARRYING"}
+    if _backpack!=null and not bool(_backpack.call("can_add",
+        {"tree":"wood","stone":"stone","clay":"clay"}.get(
+        String(nodes[best_id]["kind"]),String(nodes[best_id]["kind"])),3)):
+      say("背包已满或单堆达到上限")
+      return {"ok":false,"reason":"BACKPACK_FULL"}
     if not sim.gather_to_actor(PLAYER_ID,best_id):
       say("暂无体力或物资被占用")
       return {"ok":false,"reason":"HARVEST_GATE"}
@@ -3098,7 +3207,15 @@ func interact() -> Dictionary:
     if room.get("natural_meshes").has(best_id) and int(target["remaining"])<=0:
       (room.get("natural_meshes")[best_id] as Node3D).visible = false
     _interaction_count += 1
-    say("你采集了 " + best_id + "，材料在随身背包，必须送仓库")
+    if _backpack!=null:
+      var gathered: Dictionary=_backpack.call("absorb_carried",sim,PLAYER_ID)
+      if not bool(gathered.get("ok",false)):
+        say("材料暂存携带槽，背包写入失败；可去仓库交付")
+        return {"ok":true,"action":"gather_carried","entity_id":best_id}
+      say("采集到 %s ×%d，已进入真实背包" % [
+        String(gathered["kind"]),int(gathered["amount"])])
+    else:
+      say("采集材料已暂存携带槽，请去仓库交付")
     return {"ok":true,"action":"gather","entity_id":best_id}
   for npc_id in room.get("workers"):
     if not _auto_npc_id.is_empty() and npc_id != _auto_npc_id:
@@ -3126,6 +3243,10 @@ func dig() -> Dictionary:
     say("此处不可挖：可能是道路、仓库、河水或已到坚硬基岩")
     return result
   _dig_count += 1
+  if _backpack!=null:
+    if not bool(_backpack.call("_add",String(result["kind"]),1)):
+      say("地层已挖但背包已满，开挖料留在地面需后续拾取")
+      return result
   # Excavated 2x2m cells yield a finite ledger entry from the exact
   # removed subsurface layer, not free raw resources from an interaction.
   say("挖出" + String(result["kind"]) + "×1 / 深" + str(result["depth_m"]) + "米；露出真实土层")
