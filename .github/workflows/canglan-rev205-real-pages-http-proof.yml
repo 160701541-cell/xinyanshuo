@@ -1,6 +1,6 @@
-# rev205 original-APK176 signed production run 39030030956 SUCCESS;
+# rev205 will be published only after original APK176 full Godot, signed RSA and asset QA PASS.
 # independently prove live HTTPS RSA/SHA256/full bytes/HTTP206 after Pages deploy.
-name: Canglan APK176 rev205 - Real Cultivation Combat HTTPS RSA Full PCK Proof
+name: Canglan APK176 rev205 - Genuine Kenney Mobile UI HTTPS RSA Full PCK Proof
 on:
   push:
     branches: [main]
