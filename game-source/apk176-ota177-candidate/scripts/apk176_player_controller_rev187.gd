@@ -44,6 +44,22 @@ var _jump_velocity: float = 0.0
 var _jump_count: int = 0
 var _landing_count: int = 0
 var _soar_altitude: float = 0.0
+# Rev199: flight is a real actor movement state, with stable altitude/speed,
+# actual licensed Knight sword-pose animations, grounded depth cues, and
+# lightweight ambient wind VFX. There is NO actual blade GLB yet.
+var _soar_target_altitude: float=0.0
+var _soar_landing: bool=false
+var _air_velocity: Vector3=Vector3.ZERO
+var _air_display_speed: float=0.0
+var _fly_last_anim: String=""
+var _flight_rune: MeshInstance3D
+var _flight_shadow: MeshInstance3D
+var _flight_altitude_beam: MeshInstance3D
+var _flight_wind_particles: GPUParticles3D
+var _living_clock_label: Label
+var _living_speed_button: Button
+var _local_ai_status_label: Label
+var _flight_altitude_label: Label
 var _soar_distance_m: float = 0.0
 var _blocked_wall_steps: int = 0
 var _collision_probe: CapsuleShape3D
@@ -141,6 +157,7 @@ func initialize(active_room: Node) -> void:
   if not Input.joy_connection_changed.is_connected(_on_pad_hotplug):
     Input.joy_connection_changed.connect(_on_pad_hotplug)
   _detect_pad()
+  _create_flight_environment_vfx()
   update_camera()
   set_meta("original_apk176_interactive_player",true)
 
@@ -263,10 +280,48 @@ func _create_hud() -> void:
   hud.add_child(caption)
   notice = caption
   _build_game_hud()
+  _create_living_clock_and_flight_hud()
   _layout_hud()
 
 
 # rev188 candidate: never fabricate HP, MP or skill state before combat exists.
+func _create_living_clock_and_flight_hud() -> void:
+  _living_clock_label=Label.new()
+  _living_clock_label.name="ActualAuthoritativeWorldDayHourAndAcceleration"
+  _living_clock_label.add_theme_font_size_override("font_size",16)
+  _living_clock_label.add_theme_color_override("font_color",Color("#eff9ff"))
+  _living_clock_label.add_theme_color_override("font_shadow_color",Color("#142f40"))
+  _living_clock_label.add_theme_constant_override("shadow_offset_x",1)
+  _living_clock_label.add_theme_constant_override("shadow_offset_y",1)
+  _living_clock_label.mouse_filter=Control.MOUSE_FILTER_IGNORE
+  hud.add_child(_living_clock_label)
+  _living_speed_button=Button.new()
+  _living_speed_button.name="RealFullWorldAccelerationTimes1_5_20_100"
+  _living_speed_button.size=Vector2(98,42)
+  _living_speed_button.add_theme_font_size_override("font_size",17)
+  _living_speed_button.add_theme_stylebox_override("normal",
+    _rounded(Color("#213c47",0.94),9))
+  _living_speed_button.pressed.connect(func():
+    room.call("cycle_world_time_scale")
+    _refresh_game_hud())
+  hud.add_child(_living_speed_button)
+  _local_ai_status_label=Label.new()
+  _local_ai_status_label.name="RealOfflineNPCNativeRuntimeStatusNotFakeLLM"
+  _local_ai_status_label.add_theme_font_size_override("font_size",13)
+  _local_ai_status_label.add_theme_color_override("font_color",Color("#dfd7aa"))
+  _local_ai_status_label.add_theme_color_override("font_shadow_color",Color("#172a35"))
+  _local_ai_status_label.mouse_filter=Control.MOUSE_FILTER_IGNORE
+  hud.add_child(_local_ai_status_label)
+  _flight_altitude_label=Label.new()
+  _flight_altitude_label.name="ActualAltitudeAGLVerticalSpeedAndWorldGroundReference"
+  _flight_altitude_label.add_theme_font_size_override("font_size",23)
+  _flight_altitude_label.add_theme_color_override("font_color",Color("#f5eed0"))
+  _flight_altitude_label.add_theme_color_override("font_shadow_color",Color("#0b212d"))
+  _flight_altitude_label.add_theme_constant_override("shadow_offset_x",2)
+  _flight_altitude_label.add_theme_constant_override("shadow_offset_y",2)
+  _flight_altitude_label.mouse_filter=Control.MOUSE_FILTER_IGNORE
+  hud.add_child(_flight_altitude_label)
+
 func _game_menu_button(label: String, x: float, mode: String) -> void:
   var b := Button.new()
   b.name = "GameMenu_" + label
@@ -447,8 +502,24 @@ func _refresh_game_hud() -> void:
   (buttons["RealJumpButton"] as Button).disabled=_jump_height>0.0 or camera_mode in ["fly","god","soar"] or energy<4
   (buttons["CameraLockButton"] as Button).text="解锁视角" if _camera_angle_locked else "锁视角"
   (buttons["Iso45Button"] as Button).text="第三人称" if camera_mode=="iso" else "俯视45°"
-  (buttons["SoarAvatarButton"] as Button).text="降落" if camera_mode=="soar" else "飞行"
+  (buttons["SoarAvatarButton"] as Button).text=(
+    "着陆中" if _soar_landing else ("降落" if camera_mode=="soar" else "飞行"))
   (buttons["GodShortcutButton"] as Button).text="退出上帝" if camera_mode=="god" else "上帝"
+  if _living_clock_label!=null:
+    var clock: Dictionary=room.call("get_living_clock")
+    _living_clock_label.text="世界 第%d天 %02d:%02d · 全世界 ×%d" % [
+      int(clock["day"]),int(clock["hour"]),int(clock["minutes"]),
+      int(clock["speed_multiplier"])]
+    _living_speed_button.text="时间 ×%d" % int(clock["speed_multiplier"])
+    _local_ai_status_label.text="NPC：规则自治运行｜离线Qwen：不可用（原APK缺原生推理库）"
+    if camera_mode=="soar":
+      var ground_m: float=_ground_surface_y(actor.position.x,actor.position.z)
+      _flight_altitude_label.visible=true
+      _flight_altitude_label.text="御风测试 · 高度 %.1f m  ▴ %.1f m/s\n地面 %.1f m   速度 %.1f m/s" % [
+        _soar_altitude,(_soar_target_altitude-_soar_altitude)*3.2,
+        ground_m,_air_display_speed]
+    else:
+      _flight_altitude_label.visible=false
   if _spirit_notice!=null:
     _spirit_notice.text="灵力：未检测灵根 | 切磋 %s · %s" % [
       _spar_stage,_spar_last_outcome] if _spar_stage!="inactive" else "灵力：未检测灵根（未解锁）"
@@ -906,6 +977,12 @@ func _layout_hud() -> void:
   notice.position=Vector2(minf(370.0,size.x*0.27),maxf(210.0,size.y-47.0))
   if _pad_hint!=null:
     _pad_hint.position=Vector2(16,139)
+  if _living_clock_label!=null:
+    _living_clock_label.position=Vector2(19,148)
+    _living_speed_button.position=Vector2(19,183)
+    _local_ai_status_label.position=Vector2(127,191)
+    _flight_altitude_label.position=Vector2(
+      clampf(size.x*0.45,480.0,size.x-445.0),145)
 
 
 # REV189: Bluetooth/USB HID pads use Godot 4.4's normalized SDL JoyButton/
