@@ -1977,16 +1977,25 @@ func _art_tint() -> Color:
   return Color(String(_root_effect().get("color","#88e8f1")))
 
 func cast_spirit_bolt() -> Dictionary:
-  if _spar_stage in ["inactive","victory"] or _bolt_cd>0.0 or (
-      _spar_partner==null or not is_instance_valid(_spar_partner)):
-    return {"ok":false,"reason":"NO_COMBAT_TARGET_OR_COOLDOWN"}
-  var target: Vector3=_spar_partner.position+Vector3.UP*1.10
+  var wild_beasts: Dictionary=room.get("actual_wildlife")
+  var shooting_beast: bool=wild_beasts.has(_locked_target_id) and int(
+    wild_beasts.get(_locked_target_id,{}).get("health",0))>0
+  if _bolt_cd>0.0 or (not shooting_beast and (
+      _spar_stage in ["inactive","victory"] or _spar_partner==null or (
+      not is_instance_valid(_spar_partner)))):
+    return {"ok":false,"reason":"NO_REAL_COMBAT_TARGET_OR_COOLDOWN"}
+  var target: Vector3=(
+    (wild_beasts[_locked_target_id]["node"] as Node3D).position+
+    Vector3.UP*1.20 if shooting_beast else (
+    _spar_partner.position+Vector3.UP*1.10))
   var source: Vector3=actor.position+Vector3.UP*1.24
   if source.distance_to(target)>9.2:
     return {"ok":false,"reason":"TARGET_OUT_OF_RANGE"}
   var ray:=PhysicsRayQueryParameters3D.create(source,target,2)
   var block: Dictionary=world.get_world_3d().direct_space_state.intersect_ray(ray)
-  if not block.is_empty() and block.get("collider")!=_spar_collision:
+  var expected: Object=(
+    wild_beasts[_locked_target_id]["collider"] if shooting_beast else _spar_collision)
+  if not block.is_empty() and block.get("collider")!=expected:
     return {"ok":false,"reason":"WALL_BLOCKS_SPELL"}
   var spiritual: RefCounted=room.get("cultivation")
   if spiritual==null:
@@ -2069,6 +2078,7 @@ func cast_spirit_bolt() -> Dictionary:
   var cast_effect: Dictionary=_root_effect()
   _spell_projectiles.append({
     "node":projectile,"distance_left":9.5,
+    "beast_id":_locked_target_id if shooting_beast else "",
     "damage":14+int(spiritual.call("public_player_status").get("layer",1))*4,
     "root_effect":String(cast_effect.get("effect","none")),
     "root_debuff":String(cast_effect.get("debuff","无")),
@@ -2082,6 +2092,50 @@ func _step_spell_projectiles(delta: float) -> void:
   for shot in _spell_projectiles:
     var missile: MeshInstance3D=shot.get("node",null)
     if missile==null or not is_instance_valid(missile):
+      continue
+    var projectile_beast_id: String=String(shot.get("beast_id",""))
+    if projectile_beast_id!="":
+      var wild: Dictionary=room.get("actual_wildlife")
+      if not wild.has(projectile_beast_id) or int(wild[
+          projectile_beast_id].get("health",0))<=0:
+        missile.queue_free()
+        continue
+      var monster: Dictionary=wild[projectile_beast_id]
+      var monster_actor: Node3D=monster["node"]
+      if not is_instance_valid(monster_actor):
+        missile.queue_free()
+        continue
+      var from_m: Vector3=missile.position
+      var destination: Vector3=monster_actor.position+Vector3.UP*1.20
+      var gap: Vector3=destination-from_m
+      var travel: float=minf(gap.length(),18.0*delta)
+      var to_m: Vector3=from_m+gap.normalized()*travel if (
+        gap.length()>0.001) else destination
+      var ray:=PhysicsRayQueryParameters3D.create(from_m,to_m,2)
+      var struck: Dictionary=world.get_world_3d().direct_space_state.intersect_ray(ray)
+      if not struck.is_empty() and struck.get(
+          "collider")!=monster["collider"]:
+        _spawn_real_combat_hit(from_m,Color("#7896a0"),2)
+        missile.queue_free()
+        continue
+      shot["distance_left"]=float(shot["distance_left"])-travel
+      missile.position=to_m
+      if travel>=gap.length()-0.18 or (
+          not struck.is_empty() and struck.get("collider")==monster["collider"]):
+        var dealt: Dictionary=room.call(
+          "apply_yao_beast_damage",projectile_beast_id,
+          int(shot["damage"]),String(shot.get("root_effect","none")))
+        if bool(dealt.get("ok",false)):
+          _spawn_real_combat_hit(to_m,shot.get("root_color",Color("#8de1ed")),4)
+          _show_actual_damage_number(to_m,int(dealt["actual_damage"]),
+            Color("#afeef7"))
+          _spirit_bolt_impact_count+=1
+        missile.queue_free()
+        continue
+      if float(shot["distance_left"])<=0.0:
+        missile.queue_free()
+        continue
+      remaining.append(shot)
       continue
     if _spar_stage in ["inactive","victory"] or (
         _spar_partner==null or not is_instance_valid(_spar_partner)):
