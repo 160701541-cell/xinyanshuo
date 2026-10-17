@@ -1100,7 +1100,10 @@ func _pad_press_button(button: int) -> void:
     return
   match button:
     JOY_BUTTON_A:
-      interact()
+      if _spar_stage=="inactive":
+        jump_action()
+      else:
+        interact()
     JOY_BUTTON_X:
       gather_action()
     JOY_BUTTON_Y:
@@ -1132,9 +1135,9 @@ func _pad_press_button(button: int) -> void:
       else:
         zoom_out()
     JOY_BUTTON_DPAD_LEFT:
-      _open_game_menu("character")
+      toggle_iso45()
     JOY_BUTTON_DPAD_RIGHT:
-      _open_game_menu("cultivation")
+      toggle_avatar_flight()
 
 func _ui_button_at(p: Vector2) -> bool:
   for node in buttons.values():
@@ -1328,6 +1331,9 @@ func _release_stick() -> void:
 func handle_input(event: InputEvent) -> void:
   if not _enabled:
     return
+  if event is InputEventScreenTouch or event is InputEventScreenDrag:
+    _track_global_touch(event)
+    return
   if event is InputEventJoypadButton:
     if event.pressed and not event.is_echo() and event.device==_pad_device:
       _pad_press_button(int(event.button_index))
@@ -1356,7 +1362,10 @@ func handle_input(event: InputEvent) -> void:
     elif event.keycode == KEY_R:
       guard_action()
     elif event.keycode == KEY_SPACE:
-      evade_action()
+      if _spar_stage!="inactive":
+        evade_action()
+      else:
+        jump_action()
     elif event.keycode == KEY_T:
       practice_action()
     elif event.keycode == KEY_EQUAL:
@@ -1365,6 +1374,8 @@ func handle_input(event: InputEvent) -> void:
       zoom_out()
 
 func turn_view(movement: Vector2) -> void:
+  if _camera_angle_locked:
+    return
   _follow_npc = false
   room.set("_follow_builder",false)
   _yaw -= movement.x*0.0050
@@ -1374,19 +1385,26 @@ func turn_view(movement: Vector2) -> void:
     _pitch=clampf(_pitch-movement.y*0.0029,-1.30,1.24)
   elif camera_mode=="god":
     _pitch=clampf(_pitch-movement.y*0.0029,0.65,1.52)
+  elif camera_mode=="iso":
+    _pitch=PI/4.0
   else:
     _pitch=clampf(_pitch-movement.y*0.0029,0.08,1.20)
   update_camera()
 
 func zoom_ratio(factor: float) -> void:
-  if factor<=0.0 or camera_mode=="first":
+  if factor<=0.0:
+    return
+  if camera_mode=="first":
+    _first_fov=clampf(_first_fov/maxf(factor,0.08),33.0,78.0)
+    camera.fov=_first_fov
+    update_camera()
     return
   if camera_mode=="god":
     _god_distance=clampf(_god_distance/maxf(factor,0.08),8.0,175.0)
   elif camera_mode=="fly":
     _flight_position += Vector3(0,clampf((factor-1.0)*2.0,-4.0,4.0),0)
   else:
-    _distance=clampf(_distance/maxf(factor,0.08),2.3,65.0)
+    _distance=clampf(_distance/maxf(factor,0.08),3.3,86.0)
     room.set("_camera_distance",_distance)
   update_camera()
 
@@ -1403,18 +1421,26 @@ func toggle_god_view() -> void:
   _set_mode("third" if camera_mode=="god" else "god")
 
 func toggle_fly_view() -> void:
+  # Diagnostic free-camera remains available from developer controls.
   _set_mode("third" if camera_mode=="fly" else "fly")
 
 func _set_mode(mode: String) -> void:
-  if not ["first","third","god","fly"].has(mode):
+  if not ["first","third","god","fly","iso","soar"].has(mode):
     return
+  if camera_mode=="soar" and mode!="soar":
+    _soar_altitude=0.0
   camera_mode=mode
   is_first_person=mode=="first"
+  _first_fov=57.0 if mode!="first" else _first_fov
+  if camera!=null:
+    camera.fov=_first_fov if mode=="first" else 57.0
   _auto_walking=false
   room.set("_follow_builder",false)
   _follow_npc=false
   if actor!=null:
-    actor.visible=not is_first_person
+    # The whole rig was hidden in first-person, leaving neither arms nor
+    # legs; keep the licensed character mesh alive in every camera mode.
+    actor.visible=true
   if mode=="god":
     _god_focus=actor.position if actor!=null else Vector3.ZERO
     _god_distance=maxf(_god_distance,23.0)
@@ -1424,16 +1450,27 @@ func _set_mode(mode: String) -> void:
     _flight_position=camera.position if camera!=null else Vector3(1,12,7)
     _flight_position.y=maxf(_flight_position.y,4.5)
     _pitch=0.0
-    say("自由飞行：左摇杆前后左右 · 升高/降低自由穿行")
+    say("摄影机飞行：玩家留在世界原位，升高／降低自由看")
+  elif mode=="soar":
+    _soar_altitude=3.0
+    _pitch=0.47
+    _distance=9.5
+    say("角色飞行测试：左摇杆移动｜右边看｜升高和降低")
+  elif mode=="iso":
+    _yaw=PI/4.0
+    _pitch=PI/4.0
+    _distance=16.0
+    say("45°俯视：玩家可见、跟随移动，仍可缩放")
   elif mode=="first":
     _pitch=0.0
     say("第一视角：手指向下滑=向下看，向上滑=抬头")
   else:
     _pitch=0.38
-    say("第三视角：镜头自动避开建材和墙壁")
+    _distance=9.5
+    say("第三视角：角色可见、左右移动、相机防穿墙")
   (buttons["PerspectiveButton"] as Button).text="第三视角" if mode=="first" else "第一视角"
   (buttons["GodViewButton"] as Button).text="退出上帝" if mode=="god" else "上帝视角"
-  (buttons["FlyViewButton"] as Button).text="退出飞行" if mode=="fly" else "自由飞行"
+  (buttons["FlyViewButton"] as Button).text="退出摄影机飞行" if mode=="fly" else "自由摄影机"
   update_camera()
   _layout_hud()
 
@@ -1441,15 +1478,23 @@ func fly_up() -> void:
   if camera_mode=="fly":
     _flight_position.y=minf(130.0,_flight_position.y+2.5)
     _flight_m+=2.5
-    update_camera()
+  elif camera_mode=="soar":
+    _soar_altitude=minf(90.0,_soar_altitude+2.5)
+    _flight_m+=2.5
+    actor.position.y=_ground_surface_y(actor.position.x,actor.position.z)+float(actor.get_meta("actor_ground_offset_y",0.0))+_soar_altitude
+  update_camera()
 
 func fly_down() -> void:
   if camera_mode=="fly":
     _flight_position.y=maxf(1.0,_flight_position.y-2.5)
     _flight_m+=2.5
-    update_camera()
+  elif camera_mode=="soar":
+    _soar_altitude=maxf(0.8,_soar_altitude-2.5)
+    actor.position.y=_ground_surface_y(actor.position.x,actor.position.z)+float(actor.get_meta("actor_ground_offset_y",0.0))+_soar_altitude
+  update_camera()
 
 func reset_camera() -> void:
+  _camera_angle_locked=false
   _yaw=0.43
   _pitch=0.38
   _distance=14.0
@@ -1457,6 +1502,145 @@ func reset_camera() -> void:
   _auto_walking=false
   _set_mode("third")
   say("镜头已复位：你没有被固定在建筑或镜头里面")
+
+# rev197 camera/locomotion: 45-degree is a FOLLOWING player camera;
+# god view is a separate map camera, while avatar flight moves real character.
+func toggle_iso45() -> void:
+  _set_mode("third" if camera_mode=="iso" else "iso")
+
+func toggle_camera_lock() -> void:
+  _camera_angle_locked=not _camera_angle_locked
+  say("镜头方向已锁定，移动和双指缩放仍可操作" if _camera_angle_locked
+    else "镜头方向已解锁，右手可以转动")
+  _refresh_game_hud()
+
+func toggle_avatar_flight() -> void:
+  _set_mode("third" if camera_mode=="soar" else "soar")
+
+func _ground_surface_y(x: float,z: float) -> float:
+  var normal: float=float(terrain.call("height_at",x,z))
+  # Stair ramp bodies live on walkable-only layer 3 (bit 4). They must
+  # contribute to feet height without blocking the player's capsule.
+  var query:=PhysicsRayQueryParameters3D.create(
+    Vector3(x,normal+2.1,z),Vector3(x,normal-0.35,z),4)
+  var stair: Dictionary=world.get_world_3d().direct_space_state.intersect_ray(query)
+  if not stair.is_empty() and (stair["normal"] as Vector3).y>0.50:
+    return maxf(normal,float((stair["position"] as Vector3).y))
+  return normal
+
+func _can_actor_move_to(target: Vector3,override_y: float=INF) -> bool:
+  if not bool(terrain.call("stream_contains_physical_chunk",target.x,target.z)):
+    return false
+  if _collision_probe==null or world==null:
+    return false
+  var expected_height: float=_ground_surface_y(target.x,target.z)
+  var at_y: float=expected_height+_jump_height+_soar_altitude if not is_finite(override_y) else override_y
+  var current_ground: float=_ground_surface_y(actor.position.x,actor.position.z)
+  var current_y: float=current_ground+_jump_height+_soar_altitude
+  var q:=PhysicsShapeQueryParameters3D.new()
+  q.shape=_collision_probe
+  q.collision_mask=2 # real construction walls / NPCs, NOT earth or stairs
+  q.margin=0.015
+  q.transform=Transform3D(Basis(),Vector3(actor.position.x,current_y+0.84,actor.position.z))
+  var space:=world.get_world_3d().direct_space_state
+  var end_query:=PhysicsShapeQueryParameters3D.new()
+  end_query.shape=_collision_probe
+  end_query.collision_mask=2
+  end_query.margin=0.015
+  end_query.transform=Transform3D(Basis(),Vector3(target.x,at_y+0.84,target.z))
+  if not space.intersect_shape(end_query,1).is_empty():
+    _blocked_wall_steps+=1
+    return false
+  q.motion=Vector3(target.x-actor.position.x,at_y-current_y,target.z-actor.position.z)
+  var allowed: PackedFloat32Array=space.cast_motion(q)
+  if allowed.size()>0 and allowed[0]<0.97:
+    _blocked_wall_steps+=1
+    return false
+  return true
+
+func jump_action() -> bool:
+  if actor==null or _jump_height>0.0 or _jump_velocity>0.0 or camera_mode in ["god","fly","soar"]:
+    return false
+  var sim=room.get("sim")
+  var person: Dictionary=sim.citizens.get(PLAYER_ID,{})
+  if int(person.get("energy",0))<4:
+    say("跳跃需要4点体力")
+    return false
+  # Prevent head/hat clipping through a low roof before jumping.
+  var h: float=_ground_surface_y(actor.position.x,actor.position.z)
+  var probe:=PhysicsRayQueryParameters3D.create(
+    Vector3(actor.position.x,h+1.72,actor.position.z),
+    Vector3(actor.position.x,h+2.90,actor.position.z),2)
+  if not world.get_world_3d().direct_space_state.intersect_ray(probe).is_empty():
+    say("头顶有障碍，不能跳进屋顶")
+    return false
+  person["energy"]=int(person["energy"])-4
+  _jump_velocity=5.4
+  _jump_count+=1
+  say("已起跳：可在空中用左摇杆调整落点")
+  return true
+
+func _step_jump(delta: float) -> void:
+  if _jump_velocity<=0.0 and _jump_height<=0.0:
+    return
+  var last_height: float=_jump_height
+  _jump_velocity-=15.0*delta
+  _jump_height=maxf(0.0,_jump_height+_jump_velocity*delta)
+  if _jump_height>last_height:
+    var h: float=_ground_surface_y(actor.position.x,actor.position.z)
+    var roof:=PhysicsRayQueryParameters3D.create(
+      Vector3(actor.position.x,h+last_height+1.69,actor.position.z),
+      Vector3(actor.position.x,h+_jump_height+1.81,actor.position.z),2)
+    if not world.get_world_3d().direct_space_state.intersect_ray(roof).is_empty():
+      _jump_height=last_height
+      _jump_velocity=0.0
+  if _jump_height<=0.0:
+    _jump_height=0.0
+    _jump_velocity=0.0
+    _landing_count+=1
+
+func _touch_is_world(p: Vector2) -> bool:
+  # Never count joystick, tabs, sheets or game-action buttons as pinch.
+  if joystick_ring!=null and joystick_ring.get_global_rect().has_point(p):
+    return false
+  if _game_sheet!=null and _game_sheet.visible and _game_sheet.get_global_rect().has_point(p):
+    return false
+  for node in buttons.values():
+    var b: Button=node
+    if b.visible and b.get_global_rect().has_point(p):
+      return false
+  for node in _game_actions.values():
+    var action: Button=node
+    if action.visible and action.get_global_rect().has_point(p):
+      return false
+  for tab in ["角色","背包","修炼","菜单"]:
+    var menu: Button=hud.get_node_or_null("GameMenu_"+tab)
+    if menu!=null and menu.get_global_rect().has_point(p):
+      return false
+  return true
+
+func _track_global_touch(event: InputEvent) -> void:
+  if event is InputEventScreenTouch:
+    if event.pressed:
+      if _touch_is_world(event.position):
+        _touches_global[event.index]=event.position
+    else:
+      _touches_global.erase(event.index)
+    _last_pinch=-1.0
+    if _touches_global.size()>=2:
+      var pair: Array=_touches_global.values()
+      _last_pinch=(pair[0] as Vector2).distance_to(pair[1] as Vector2)
+  elif event is InputEventScreenDrag and _touches_global.has(event.index):
+    _touches_global[event.index]=event.position
+    if _touches_global.size()>=2:
+      var pair: Array=_touches_global.values()
+      var distance_now: float=(pair[0] as Vector2).distance_to(pair[1] as Vector2)
+      if _last_pinch>8.0 and distance_now>8.0:
+        var ratio: float=clampf(distance_now/_last_pinch,0.75,1.33)
+        if absf(ratio-1.0)>0.001:
+          zoom_ratio(ratio)
+          _pinch_zoom_events+=1
+      _last_pinch=distance_now
 
 func _forward() -> Vector3:
   return Vector3(-sin(_yaw),0,-cos(_yaw))
