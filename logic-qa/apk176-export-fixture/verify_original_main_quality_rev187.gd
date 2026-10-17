@@ -148,6 +148,79 @@ func _run() -> void:
   if float(terrain.call("height_at",-9.0,-28.0)) >= -0.72:
     _fail(61,"POND_IS_A_FAKE_BLUE_GROUND_PLANE")
     return
+  # REV193 genuine deterministic exterior mesh + collision + persisted mining.
+  # Simulating a far-view background is insufficient: the actual player
+  # must cross the old x=46 wall on a physically loaded and diggable chunk.
+  var start_chunks: Dictionary=terrain.get("stream_chunks")
+  if start_chunks.size()<12 or start_chunks.size()>36 or not bool(terrain.call(
+      "stream_contains_physical_chunk",55.0,12.0)):
+    _fail(174,"REV193_NO_PHYSICAL_46M_EXTERIOR_STREAMED_CHUNKS")
+    return
+  for world_pos in [Vector2(46.0,12.0),Vector2(-46.0,12.0),
+      Vector2(12.0,46.0),Vector2(12.0,-46.0)]:
+    var edge: Vector2=world_pos
+    var xa: float=edge.x
+    var za: float=edge.y
+    var side_x: float=0.001 if absf(absf(xa)-46.0)<0.001 else 0.0
+    var side_z: float=0.001 if absf(absf(za)-46.0)<0.001 else 0.0
+    var a_height: float=float(terrain.call("height_at",xa-side_x,za-side_z))
+    var b_height: float=float(terrain.call("height_at",xa+side_x,za+side_z))
+    if absf(a_height-b_height)>0.025:
+      _fail(175,"REV193_STREAM_AND_CORE_STITCH_DIFFER_IN_HEIGHT_"+str(edge))
+      return
+  var exterior: Vector3=Vector3(75.0,0.0,11.0)
+  terrain.call("stream_around",exterior,true)
+  var exterior_key: String=terrain.call("_stream_chunk_key",
+    terrain.call("_stream_coords",exterior.x,exterior.z))
+  var chunk_root: Node3D=(terrain.get("stream_chunks") as Dictionary).get(exterior_key)
+  if chunk_root==null or chunk_root.get_node_or_null(
+      "PhysicalStreamedTerrainCollision/RegeneratedStreamedSoilCollision")==null:
+    _fail(176,"REV193_EXTERIOR_CHUNK_HAS_NO_ACTUAL_PHYSICAL_COLLISION_SHAPE")
+    return
+  var collision_shape: CollisionShape3D=chunk_root.get_node(
+      "PhysicalStreamedTerrainCollision/RegeneratedStreamedSoilCollision")
+  if collision_shape.shape==null or not collision_shape.shape is ConcavePolygonShape3D:
+    _fail(177,"REV193_CHUNK_COLLISION_IS_NOT_GENERATED_FROM_TERRAIN_TRIMESH")
+    return
+  var external_height_before: float=float(terrain.call("height_at",exterior.x,exterior.z))
+  var resources_before: int=int((terrain.get("spoil_bag") as Dictionary).get("topsoil",0))
+  var original_save_path: String=String(terrain.get("stream_save_path"))
+  terrain.set("stream_save_path","user://rev193_qa_ephemeral_deltas.json")
+  (terrain.get("stream_cut_cells") as Dictionary).clear()
+  var excavation: Dictionary=terrain.call("excavate_at",exterior,"CL-PLAYER-0184-0001")
+  if not bool(excavation.get("ok",false)) or not bool(excavation.get("persistent",false)):
+    _fail(178,"REV193_EXTERIOR_PHYSICAL_EXCAVATION_CANNOT_PERSIST")
+    return
+  if absf(float(terrain.call("height_at",exterior.x,exterior.z))-
+      (external_height_before-0.45))>0.002:
+    _fail(179,"REV193_EXTERIOR_MESH_AND_HEIGHTFIELD_DISAGREE_AFTER_DIG")
+    return
+  if int((terrain.get("spoil_bag") as Dictionary).get("topsoil",0))!=resources_before+1:
+    _fail(180,"REV193_EXTERIOR_MINING_DOES_NOT_PRODUCE_CONSERVED_SOIL")
+    return
+  terrain.call("stream_around",Vector3(460,0,460),true)
+  if (terrain.get("stream_chunks") as Dictionary).has(exterior_key):
+    _fail(181,"REV193_STREAM_MUST_UNLOAD_FAR_PHYSICAL_COLLISION")
+    return
+  (terrain.get("stream_cut_cells") as Dictionary).clear()
+  terrain.call("_load_stream_deltas") # reload actual JSON from user:// save
+  var loaded_cut: int=int((terrain.get("stream_cut_cells") as Dictionary).get(
+    String(excavation.get("cell","")),0))
+  if loaded_cut!=1:
+    _fail(182,"REV193_MINED_CHUNK_DELTA_DOES_NOT_SURVIVE_FILE_RELOAD")
+    return
+  terrain.call("stream_around",exterior,true)
+  if absf(float(terrain.call("height_at",exterior.x,exterior.z))-
+      (external_height_before-0.45))>0.002:
+    _fail(183,"REV193_MINED_CHUNK_REPOPULATED_INSTEAD_OF_RESTORING_WORLD")
+    return
+  terrain.call("stream_around",Vector3(0,0,10),true)
+  terrain.set("stream_save_path",original_save_path)
+  (terrain.get("stream_cut_cells") as Dictionary).clear()
+  if int((terrain.get("stream_chunks") as Dictionary).size())>36:
+    _fail(184,"REV193_CHUNK_PHYSICS_MEMORY_UNBOUNDED")
+    return
+  print("PASS_REV193_DETERMINISTIC_WALKABLE_PHYSICAL_CHUNKS_NO_92M_WALL_AND_PERSISTED_MINING")
   var player: Node = room.get("controls")
   var pc: Dictionary = player.call("stats") if player != null else {}
   if not pc.get("player_exists",false) or not pc.get("joystick_exists",false):
@@ -156,6 +229,25 @@ func _run() -> void:
   if not pc.get("first_person_available",false) or int(pc.get("zoom_buttons",0))!=2:
     _fail(63,"NO_FIRST_PERSON_ZOOM_AND_TOUCH_LOOK")
     return
+  # Cross the previous 42m player clamp using the genuine input pathway.
+  var hero: Node3D=player.get("actor")
+  var saved_position: Vector3=hero.position
+  var saved_yaw: float=float(player.get("_yaw"))
+  hero.position=Vector3(45.65,
+    float(terrain.call("height_at",45.65,12.0))+float(hero.get_meta("actor_ground_offset_y",0.0)),12.0)
+  player.set("_yaw",-PI/2.0)
+  player.set("_joystick",Vector2(0.0,-1.0))
+  player.call("step",0.50)
+  player.set("_joystick",Vector2.ZERO)
+  if hero.position.x<=46.01 or hero.position.x>=52.0 or not bool(
+      terrain.call("stream_contains_physical_chunk",hero.position.x,hero.position.z)):
+    _fail(185,"REV193_REAL_PLAYER_STILL_STOPPED_AT_ORIGINAL_46M_TERRAIN_BORDER")
+    return
+  hero.position=saved_position
+  player.set("_yaw",saved_yaw)
+  player.call("update_camera")
+  terrain.call("stream_around",hero.position,true)
+  print("PASS_REV193_ORIGINAL_PLAYER_ACTUALLY_WALKED_ACROSS_46M_WORLD_BOUNDARY")
   # rev188 user phone QA regression: normal HUD MUST replace QA controls.
   var game_hud: Control=player.get("hud") as Control
   if game_hud==null:
