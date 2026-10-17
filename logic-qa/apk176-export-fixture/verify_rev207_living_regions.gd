@@ -54,9 +54,10 @@ func _run() -> void:
         int(pack["population"])<2):
       _fail("ORE_SPECIES_GUARDIAN_MISSING")
       return
+  var catalog: Array=packed.get_script_constant_map()["DISCIPLINES"]
   for sect in (model.get("sects") as Dictionary).values():
-    if not (model.get("DISCIPLINES") as Array).has(sect["primary"]) or (
-        not (model.get("DISCIPLINES") as Array).has(sect["secondary"])):
+    if not catalog.has(sect["primary"]) or (
+        not catalog.has(sect["secondary"])):
       _fail("REAL_SECT_DISCIPLINE_CATALOG_MISSING")
       return
   print("PASS_REV207_REAL_WORLD_INITIAL_50000_KM2_500_REGIONS_5000_MORTALS_ONLY_125_SPIRIT_ROOTS_OTHER_CAN_BODY_REFINE")
