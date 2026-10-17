@@ -387,7 +387,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          python3 logic-qa/release-gate/sign_pck_release.py             --pack qa-results/canglan-apk176-rev187-3d-UNSIGNED.pck             --revision 205 --minimum-android-code 1176 --maximum-android-code 1176             --pack-url 'https://160701541-cell.github.io/xinyanshuo/android-preview/canglan-content-rev-205.pck'             --notes '《苍岚》原APK176累计正式rev205：开源Quaternius原GLB完整房屋6处、四种带骨骼动画动物、角色服饰素材，取消旧破房反复施工；九张512像素合法CC0原始材质贴图含瓦片木纹墙壁/法线/粗糙度，真实64细像素/米可挖地形、更深绿森林、真蓝天与1.30饱和度；手机UI接入Lucide许可证矢量图标、快捷栏可折叠、反向视角修复、飞剑降落中再起飞、真实修士索敌；24格存档背包物品采集、制作、装备与仓库交付；玩家和正常NPC必有隐藏灵根、32类灵根属性和特效、役属劳工允许无灵根、每城1万—25万真人数据统计（默认本城8万人）；保留rev204法术和旧存档。修仙建筑内部/完整灵兽妖兽体系/本地AI尚未开发或完成手机验收。'             --unsigned-template             --output qa-results/rev205-unsigned.json
+          python3 logic-qa/release-gate/sign_pck_release.py             --pack qa-results/canglan-apk176-rev187-3d-UNSIGNED.pck             --revision 205 --minimum-android-code 1176 --maximum-android-code 1176             --pack-url 'https://160701541-cell.github.io/xinyanshuo/android-preview/canglan-content-rev-205.pck'             --notes '苍岚原APK176累计rev205：现成CC0房屋、服饰及真实动物，取消旧破房施工；九张源核对PBR贴图与64细像素每米地表，更浓绿色和蓝天；开源图标精简UI、索敌、镜头反向修正、御剑复飞、真实背包装备；32系灵根/法术，玩家及常规NPC必有灵根，每城1万至25万人数据模拟；保留旧存档和rev204法术。室内住宅、完整灵兽和本地AI仍待完成。'             --unsigned-template             --output qa-results/rev205-unsigned.json
           python3 - <<'PY'
           import json,pathlib
           p=pathlib.Path('qa-results/rev205-unsigned.json')
