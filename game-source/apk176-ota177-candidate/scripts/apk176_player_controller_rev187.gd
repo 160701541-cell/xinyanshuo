@@ -123,6 +123,9 @@ var _inventory_craft_pick_button: Button
 var _inventory_equip_button: Button
 var _equipment_slot_buttons: Dictionary={}
 var _equipment_slot_row: HBoxContainer
+var _spirit_craft_row: HBoxContainer
+var _spirit_use_row: HBoxContainer
+var _real_inventory_scroll: ScrollContainer
 var _game_actions: Dictionary = {}
 var _dash_cd: float = 0.0
 var _gather_cd: float = 0.0
@@ -750,7 +753,7 @@ func _build_game_hud() -> void:
   # Inventory/settings use a proper centered modal; old panel at (16,150)
   # overlapped real player vitals, world clock and other phone labels.
   _game_sheet.position=Vector2(360,136)
-  _game_sheet.custom_minimum_size=Vector2(462,245)
+  _game_sheet.custom_minimum_size=Vector2(462,470)
   _game_sheet.visible=false
   var sheet_skin:=_rounded(Color(0.045,0.095,0.12,0.98),15)
   sheet_skin.border_color=Color("#b29a69")
@@ -759,10 +762,16 @@ func _build_game_hud() -> void:
   sheet_skin.shadow_size=12
   _game_sheet.add_theme_stylebox_override("panel",sheet_skin)
   hud.add_child(_game_sheet)
+  # rev206: all actual recipes and equipment fit a SCROLLABLE 3D-game
+  # modal, never spill off the bottom edge of a 720px landscape phone.
+  _real_inventory_scroll=ScrollContainer.new()
+  _real_inventory_scroll.name="Rev206RealScrollableCharacterSheet"
+  _real_inventory_scroll.custom_minimum_size=Vector2(447,451)
+  _game_sheet.add_child(_real_inventory_scroll)
   var v:=VBoxContainer.new()
   v.name="Rev205RealBackpackAndCharacterGameSheet"
-  v.add_theme_constant_override("separation",9)
-  _game_sheet.add_child(v)
+  v.add_theme_constant_override("separation",8)
+  _real_inventory_scroll.add_child(v)
   _game_sheet_title=Label.new()
   _game_sheet_title.add_theme_font_size_override("font_size",22)
   v.add_child(_game_sheet_title)
@@ -798,6 +807,34 @@ func _build_game_hud() -> void:
   _inventory_craft_pick_button.text="石镐：消耗2木2石"
   _inventory_craft_pick_button.pressed.connect(func(): _craft_backpack("stone_pick"))
   v.add_child(_inventory_craft_pick_button)
+  # Medicine and ring recipes: require actual herb/ore items previously
+  # acquired in the real 3D world, never a menu-given free currency.
+  _spirit_craft_row=HBoxContainer.new()
+  _spirit_craft_row.name="RealHerbAndSpiritOreRecipeRow"
+  _spirit_craft_row.add_theme_constant_override("separation",5)
+  for recipe in ["healing_pill","mana_pill","focus_ring"]:
+    var craft_button:=Button.new()
+    craft_button.name="Craft_"+recipe
+    craft_button.text={
+      "healing_pill":"炼回春丹",
+      "mana_pill":"炼回元丹",
+      "focus_ring":"炼聚灵戒"}[recipe]
+    craft_button.custom_minimum_size=Vector2(140,45)
+    craft_button.pressed.connect(Callable(self,"_craft_backpack").bind(recipe))
+    _apply_open_hud_style(craft_button,"leaf" if recipe!="focus_ring" else "shield")
+    _spirit_craft_row.add_child(craft_button)
+  v.add_child(_spirit_craft_row)
+  _spirit_use_row=HBoxContainer.new()
+  _spirit_use_row.name="ConsumablePillsRealBag"
+  for item in ["healing_pill","mana_pill"]:
+    var use_button:=Button.new()
+    use_button.name="Consume_"+item
+    use_button.text="服回春丹（疗伤）" if item=="healing_pill" else "服回元丹（回法）"
+    use_button.custom_minimum_size=Vector2(213,43)
+    use_button.pressed.connect(Callable(self,"_consume_real_medicine").bind(item))
+    _apply_open_hud_style(use_button,"leaf")
+    _spirit_use_row.add_child(use_button)
+  v.add_child(_spirit_use_row)
   _inventory_equip_button=Button.new()
   _inventory_equip_button.text="装备选中的武器／工具"
   _inventory_equip_button.pressed.connect(_equip_backpack_selection)
@@ -969,6 +1006,43 @@ func _craft_backpack(kind: String) -> void:
   say("成功制作："+kind if bool(response.get("ok",false)) else (
     "制作失败："+String(response.get("reason","材料不足"))))
   _refresh_game_hud()
+
+func _consume_real_medicine(kind: String) -> Dictionary:
+  if _backpack==null or not ["healing_pill","mana_pill"].has(kind):
+    return {"ok":false,"reason":"INVALID_MEDICINE"}
+  if int(_backpack.call("amount",kind))<1:
+    say("背包没有真正炼出的丹药")
+    return {"ok":false,"reason":"NO_ACTUAL_PILL"}
+  if kind=="healing_pill":
+    if _player_health>=100:
+      return {"ok":false,"reason":"HEALTH_ALREADY_FULL"}
+    if not bool(_backpack.call("consume_item",kind,1)):
+      return {"ok":false,"reason":"MEDICINE_SAVE_FAILED"}
+    var healed: int=mini(35,100-_player_health)
+    _player_health+=healed
+    say("真正消耗青木回春丹×1，恢复%d生命" % healed)
+    _refresh_game_hud()
+    return {"ok":true,"consumed":kind,"healed":healed}
+  var spiritual: RefCounted=room.get("cultivation")
+  if spiritual==null:
+    return {"ok":false,"reason":"NO_CULTIVATION_SYSTEM"}
+  var status: Dictionary=spiritual.call("public_player_status")
+  if not bool(status.get("tested",false)) or int(
+      status.get("layer",0))<=0 or int(status.get("mana",0))>=(
+      int(status.get("layer",0))*12):
+    say("只有已检测且真正修炼的修士，法力未满才能服用回元丹")
+    return {"ok":false,"reason":"NO_REAL_MANA_TO_RESTORE"}
+  if not bool(_backpack.call("consume_item",kind,1)):
+    return {"ok":false,"reason":"MEDICINE_SAVE_FAILED"}
+  var restored: Dictionary=spiritual.call("restore_mana_from_real_pill")
+  if not bool(restored.get("ok",false)):
+    # The caller did not benefit from the pill; refund exactly one.
+    assert(bool(_backpack.call("_add",kind,1)))
+    return {"ok":false,"reason":"MANA_SAVE_FAILED_REFUNDED"}
+  say("真正消耗凝神回元丹×1，恢复%d法力" % int(restored["restored"]))
+  _refresh_game_hud()
+  return {"ok":true,"consumed":kind,
+    "mana_restored":int(restored["restored"])}
 
 func _unequip_backpack_slot(slot: String) -> void:
   if _backpack==null:
@@ -1216,6 +1290,8 @@ func _refresh_game_hud() -> void:
   if _inventory_list!=null:
     _inventory_list.visible=inventory_open
     _equipment_slot_row.visible=inventory_open
+    _spirit_craft_row.visible=inventory_open
+    _spirit_use_row.visible=inventory_open
     _inventory_craft_sword_button.visible=inventory_open
     _inventory_craft_pick_button.visible=inventory_open
     _inventory_equip_button.visible=inventory_open
@@ -2192,6 +2268,9 @@ func _layout_hud() -> void:
   if _locked_target_label!=null:
     _locked_target_label.position=Vector2(maxf(365.0,size.x*0.5-160.0),188.0)
   if _game_sheet!=null:
+    if _real_inventory_scroll!=null:
+      _real_inventory_scroll.custom_minimum_size=Vector2(
+        435.0,clampf(size.y-207.0,285.0,478.0))
     # Occupy a deliberate center-left modal area, below the tabs and away
     # from top-left HP/SP, preserving a usable 720p landscape viewport.
     _game_sheet.position=Vector2(clampf(size.x*0.35,260.0,
@@ -3348,6 +3427,33 @@ func interact() -> Dictionary:
     say("仓库：靠近树石互动采集，再带物资回来交付")
     _interaction_count += 1
     return {"ok":true,"action":"warehouse_information"}
+  # Spiritual herb/ore nodes are genuine licensed meshes attached to
+  # independently conserved world-time ledgers. Clicks do not create items.
+  var spiritual_resources: RefCounted=room.get("spirit_resources")
+  if spiritual_resources!=null and _backpack!=null:
+    var nearby: Dictionary=spiritual_resources.call(
+      "get_nearest_resource",point,3.0)
+    if not nearby.is_empty():
+      var node_kind: String=String(nearby["kind"])
+      var equipped: Dictionary=_backpack.call("snapshot")["equipment"]
+      if node_kind=="spirit_stone" and String(equipped.get("tool",""))!="stone_pick":
+        say("下品灵石矿需要背包装备真正制作的石镐才能开采")
+        return {"ok":false,"reason":"SPIRIT_ORE_REQUIRES_EQUIPPED_PICK"}
+      var citizen: Dictionary=sim.get("citizens")[PLAYER_ID]
+      var cost: int=5 if node_kind=="spirit_stone" else 3
+      if int(citizen.get("energy",0))<cost:
+        return {"ok":false,"reason":"NOT_ENOUGH_REAL_STAMINA"}
+      var picked: Dictionary=room.call(
+        "harvest_real_spirit_resource",point,_backpack)
+      if bool(picked.get("ok",false)):
+        citizen["energy"]=int(citizen["energy"])-cost
+        _interaction_count+=1
+        say("%s ×1 收入真实背包；剩余矿/草%d份（体力-%d）" % [
+          String(picked["item_name"]),int(picked["remaining"]),cost])
+        _refresh_game_hud()
+        picked["action"]="gather"
+        picked["energy_spent"]=cost
+      return picked
   var best_id: String = ""
   var best_distance: float = 3.3
   var nodes: Dictionary = sim.get("natural_nodes")
@@ -3434,6 +3540,15 @@ func interact() -> Dictionary:
 func dig() -> Dictionary:
   if actor == null:
     return {"ok":false,"reason":"PLAYER_NOT_SPAWNED"}
+  # Mining nearby finite CC0 spirit ore takes precedence over digging
+  # geology only when the player is standing beside the actual ore mesh.
+  var source: RefCounted=room.get("spirit_resources")
+  if source!=null and _backpack!=null:
+    var target_ore: Dictionary=source.call(
+      "get_nearest_resource",actor.position,3.0)
+    if not target_ore.is_empty() and String(
+        target_ore.get("kind",""))=="spirit_stone":
+      return interact()
   var target: Vector3 = actor.position + _forward()*1.65
   var result: Dictionary = terrain.call("excavate_at",target,PLAYER_ID)
   if not bool(result.get("ok",false)):
