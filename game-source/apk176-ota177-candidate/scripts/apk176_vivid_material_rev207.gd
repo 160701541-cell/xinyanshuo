@@ -174,7 +174,7 @@ func upgrade_completed_cc0_model(root: Node3D,model_name: String,
       continue
     for surface in range(instance.mesh.get_surface_count()):
       var source_material: Material=instance.get_active_material(surface)
-      if not source_material is StandardMaterial3D:
+      if not (source_material is StandardMaterial3D):
         continue # Preserve third-party custom shaders/transparent effects.
       var existing: StandardMaterial3D=source_material as StandardMaterial3D
       var material: StandardMaterial3D=existing.duplicate(true) as StandardMaterial3D
@@ -217,7 +217,7 @@ func upgrade_completed_cc0_model(root: Node3D,model_name: String,
         BaseMaterial3D.TEXTURE_FILTER_NEAREST_WITH_MIPMAPS_ANISOTROPIC
         if category=="building" else
         BaseMaterial3D.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS_ANISOTROPIC)
-      material.texture_repeat=BaseMaterial3D.TEXTURE_REPEAT_ENABLED
+      material.texture_repeat=true
       material.roughness=maxf(0.28,material.roughness)
       if material.normal_texture!=null:
         normal_mapped_surfaces+=1
