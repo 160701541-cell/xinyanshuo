@@ -107,6 +107,11 @@ var _game_sheet_body: Label
 var _game_sheet_mode: String = ""
 var _player_health: int = 100
 var _health_bar: ProgressBar
+var _hp_number: Label
+var _stamina_number: Label
+var _mana_number: Label
+var _enemy_hp_number: Label
+var _enemy_mana_number: Label
 var _energy_bar: ProgressBar
 var _mana_bar: ProgressBar
 var _target_panel: PanelContainer
@@ -707,10 +712,16 @@ func _build_game_hud() -> void:
   _health_bar.max_value=100
   _health_bar.value=100
   _health_bar.show_percentage=false
-  _health_bar.custom_minimum_size=Vector2(242,13)
+  _health_bar.custom_minimum_size=Vector2(183,15)
   _health_bar.add_theme_stylebox_override("background",_rounded(Color("#243133"),5))
   _health_bar.add_theme_stylebox_override("fill",_rounded(Color("#b95f59"),5))
   hp_row.add_child(_health_bar)
+  _hp_number=Label.new()
+  _hp_number.name="VisibleExactHeroHealthCurrentMaximum"
+  _hp_number.text="100 / 100"
+  _hp_number.custom_minimum_size=Vector2(79,19)
+  _hp_number.horizontal_alignment=HORIZONTAL_ALIGNMENT_RIGHT
+  hp_row.add_child(_hp_number)
   var stamina_row:=HBoxContainer.new()
   meters.add_child(stamina_row)
   var energy_caption:=Label.new()
@@ -721,10 +732,16 @@ func _build_game_hud() -> void:
   _energy_bar.max_value=100
   _energy_bar.value=100
   _energy_bar.show_percentage=false
-  _energy_bar.custom_minimum_size=Vector2(242,13)
+  _energy_bar.custom_minimum_size=Vector2(183,15)
   _energy_bar.add_theme_stylebox_override("background",_rounded(Color("#243133"),5))
   _energy_bar.add_theme_stylebox_override("fill",_rounded(Color("#a8bc68"),5))
   stamina_row.add_child(_energy_bar)
+  _stamina_number=Label.new()
+  _stamina_number.name="VisibleExactHeroStaminaCurrentMaximum"
+  _stamina_number.text="100 / 100"
+  _stamina_number.custom_minimum_size=Vector2(79,19)
+  _stamina_number.horizontal_alignment=HORIZONTAL_ALIGNMENT_RIGHT
+  stamina_row.add_child(_stamina_number)
   var mana_row:=HBoxContainer.new()
   meters.add_child(mana_row)
   var mana_caption:=Label.new()
@@ -735,10 +752,16 @@ func _build_game_hud() -> void:
   _mana_bar.max_value=12
   _mana_bar.value=0
   _mana_bar.show_percentage=false
-  _mana_bar.custom_minimum_size=Vector2(242,13)
+  _mana_bar.custom_minimum_size=Vector2(183,15)
   _mana_bar.add_theme_stylebox_override("background",_rounded(Color("#243133"),5))
   _mana_bar.add_theme_stylebox_override("fill",_rounded(Color("#4aadc7"),5))
   mana_row.add_child(_mana_bar)
+  _mana_number=Label.new()
+  _mana_number.name="VisibleExactHeroManaCurrentMaximum"
+  _mana_number.text="0 / 0"
+  _mana_number.custom_minimum_size=Vector2(79,19)
+  _mana_number.horizontal_alignment=HORIZONTAL_ALIGNMENT_RIGHT
+  mana_row.add_child(_mana_number)
   _spirit_notice=Label.new()
   _spirit_notice.text="灵力：未检测灵根（未解锁）"
   _spirit_notice.add_theme_font_size_override("font_size",14)
@@ -913,7 +936,7 @@ func _create_opponent_target_hud() -> void:
   # follow the true target; this panel avoids unrecognizable microscopic bars.
   _target_panel=PanelContainer.new()
   _target_panel.name="ActualCombatTargetRealmHPMP"
-  _target_panel.custom_minimum_size=Vector2(275,99)
+  _target_panel.custom_minimum_size=Vector2(365,99)
   _target_panel.add_theme_stylebox_override("panel",_rounded(Color(0.06,0.10,0.15,0.87),11))
   _target_panel.mouse_filter=Control.MOUSE_FILTER_IGNORE
   var margin:=MarginContainer.new()
@@ -942,6 +965,18 @@ func _create_opponent_target_hud() -> void:
     meter.add_theme_stylebox_override("fill",_rounded(
       Color("#c66b62") if kind=="health" else Color("#55b5cd"),4))
     row.add_child(meter)
+    var exact_number:=Label.new()
+    exact_number.name=(
+      "VisibleEnemyHealthCurrentMaximum" if kind=="health" else
+      "VisibleEnemyManaCurrentMaximum")
+    exact_number.custom_minimum_size=Vector2(90,19)
+    exact_number.text="0 / 0"
+    exact_number.horizontal_alignment=HORIZONTAL_ALIGNMENT_RIGHT
+    row.add_child(exact_number)
+    if kind=="health":
+      _enemy_hp_number=exact_number
+    else:
+      _enemy_mana_number=exact_number
     if kind=="health":
       _target_health_bar=meter
     else:
@@ -1196,6 +1231,8 @@ func _refresh_game_hud() -> void:
   var energy: int=int(person.get("energy",0))
   _health_bar.value=_player_health
   _energy_bar.value=energy
+  _hp_number.text="%d / %d" % [_player_health,100]
+  _stamina_number.text="%d / %d" % [energy,100]
   var spiritual: RefCounted=room.get("cultivation")
   var record: Dictionary=spiritual.call("public_player_status") if spiritual!=null else {}
   var realm: String=String(record.get("realm","凡人"))
@@ -1203,6 +1240,7 @@ func _refresh_game_hud() -> void:
   var mana_now: int=int(record.get("mana",0))
   _mana_bar.max_value=maxi(1,player_level*12)
   _mana_bar.value=mana_now
+  _mana_number.text="%d / %d" % [mana_now,maxi(0,player_level*12)]
   _game_status.text="心魇说 · %s%s  %d/100" % [
     realm,(" 第%d层" % player_level) if player_level>0 else "",_player_health]
   (_game_actions["DashAction"] as Button).disabled=_dash_cd>0.0 or energy<8
@@ -1240,6 +1278,8 @@ func _refresh_game_hud() -> void:
       _target_health_bar.value=_spar_enemy_health
       _target_mana_bar.max_value=maxi(1,_spar_enemy_mana_max)
       _target_mana_bar.value=_spar_enemy_mana
+      _enemy_hp_number.text="%d / %d" % [_spar_enemy_health,_spar_enemy_health_max]
+      _enemy_mana_number.text="%d / %d" % [_spar_enemy_mana,_spar_enemy_mana_max]
       if _spar_opponent_tag!=null and is_instance_valid(_spar_opponent_tag):
         _spar_opponent_tag.text="演武教习 · 凡人武者\n生命 %d/%d · 法力 %d/%d" % [
           _spar_enemy_health,_spar_enemy_health_max,_spar_enemy_mana,_spar_enemy_mana_max]
@@ -2292,7 +2332,7 @@ func _layout_hud() -> void:
   if _target_panel!=null:
     # Keep target HUD BELOW the always-on first row of seven view toggles.
     # Previously it sat under those buttons and concealed its own MP bar.
-    _target_panel.position=Vector2(maxf(380.0,size.x-392.0),139.0)
+    _target_panel.position=Vector2(maxf(380.0,size.x-410.0),139.0)
   notice.position=Vector2(minf(370.0,size.x*0.27),maxf(210.0,size.y-47.0))
   if _pad_hint!=null:
     _pad_hint.position=Vector2(16,139)
