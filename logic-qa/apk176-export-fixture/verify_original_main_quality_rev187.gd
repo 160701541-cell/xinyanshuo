@@ -984,7 +984,11 @@ func _run() -> void:
         # centre. Compare the exact mesh-authoring transform composition.
         var expected_tx: Transform3D=planted*part_offsets[mesh_index]
         if not tx.is_equal_approx(expected_tx):
-          _fail(372,"REV207_SOURCE_GLTF_LOCAL_AUTHORING_TRANSFORM_NOT_PRESERVED")
+          _fail(372,"REV207_SOURCE_GLTF_LOCAL_AUTHORING_TRANSFORM_NOT_PRESERVED_"+
+            str({"mesh":mesh_index,"slot":instance_index,
+              "actual":tx,"expected":expected_tx,
+              "logical":planted,"source_offset":part_offsets[mesh_index],
+              "position_delta":tx.origin.distance_to(expected_tx.origin)}))
           return
         if not valid_ground:
           _fail(373,"REV207_REAL_CC0_SHRUB_ON_PATH_POND_OR_EXCAVATED_SOIL_"+str(
