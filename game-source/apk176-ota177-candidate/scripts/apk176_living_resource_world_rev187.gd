@@ -264,7 +264,8 @@ func _ready() -> void:
   # in compact per-species/per-habitat-cell GPU pools (not colored quads).
   forest_floor_pool=HQForestFloorPool.new()
   if not bool(forest_floor_pool.call("initialize",
-      world,terrain_world,quality,hq_botanical_sources)):
+      world,terrain_world,quality,hq_botanical_sources,
+      housing_blueprints,spirit_resource_visuals)):
     asset_errors.append("REV208_HQ021_ACTUAL_VENDOR_FERN_GRASS_GPU_POOL_FAILED")
     forest_floor_pool.free()
     forest_floor_pool=null
