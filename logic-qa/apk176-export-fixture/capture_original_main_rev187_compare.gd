@@ -364,6 +364,55 @@ func _capture() -> void:
   player.call("stop_practice")
   arts.set("player_data",saved)
   arts.call("save_state")
+  player.call("_set_mode","third")
+  var real_person: Node3D=arts.get("npc_visuals")["CL-XIUXIAN-001"]["actor"]
+  var source_hero_pos: Vector3=fighter.position
+  fighter.position=real_person.position+Vector3(2.7,0,0.8)
+  player.call("toggle_target_lock")
+  for i in range(8):
+    player.call("step",0.10)
+    await process_frame
+  if player.get("_locked_target")==null or not (
+      player.get("_locked_target_label") as Label).visible:
+    _fail("REV205_TARGET_LOCK_ICON_CAMERA_AND_REALM_NOT_REACHABLE_IN_REAL_RENDER")
+    return
+  await RenderingServer.frame_post_draw
+  if not _save("real_apk176_rev205_genuine_open_source_hud_target_lock.png"):
+    _fail("REV205_GENUINE_LUCIDE_TARGET_LOCK_ENGINE_FRAME_MISSING")
+    return
+  player.call("toggle_target_lock")
+  # Real physical forest harvest, not test-instantiated bag freebies.
+  var econ=room.get("sim")
+  var resource_id: String=""
+  for id in econ.natural_nodes:
+    if String(econ.natural_nodes[id].get("kind",""))=="tree" and int(
+        econ.natural_nodes[id].get("remaining",0))>=3:
+      resource_id=String(id)
+      break
+  if resource_id=="":
+    _fail("REV205_REAL_LICENSED_FOREST_RESOURCE_NOT_PRESENT_FOR_BAG_FRAME")
+    return
+  fighter.position=econ.resource_positions[resource_id]
+  player.set("_auto_resource_id",resource_id)
+  econ.citizens["CL-PLAYER-0184-0001"]["energy"]=100
+  var harvested: Dictionary=player.call("interact")
+  if not bool(harvested.get("ok",false)):
+    _fail("REV205_REAL_RESOURCE_NOT_RECEIVED_IN_PERSONAL_BAG_"+str(harvested))
+    return
+  player.call("_open_game_menu","inventory")
+  for i in range(3):
+    await process_frame
+  await RenderingServer.frame_post_draw
+  var actual_bag_list: ItemList=player.get("_inventory_list")
+  if actual_bag_list==null or not actual_bag_list.visible or actual_bag_list.item_count==0:
+    _fail("REV205_SOURCE_BASED_BACKPACK_GRID_NOT_VISIBLE_IN_REAL_GODOT_SCREENSHOT")
+    return
+  if not _save("real_apk176_rev205_real_backpack_lucide_equipment.png"):
+    _fail("REV205_REAL_INVENTORY_AND_EQUIPMENT_ENGINE_FRAME_MISSING")
+    return
+  player.call("_open_game_menu","inventory")
+  fighter.position=source_hero_pos
+  print("PASS_REV205_GENUINE_GODOT_1280X720_LUCIDE_UI_TARGET_LOCK_AND_FINITE_BACKPACK_FRAMES")
   print("PASS_REV197_ORIGINAL_GODOT_ENGINE_VISIBLE_ANIMATED_PLAYER_CLOSE_AND_45DEG_REAL_FRAMES")
   print("PASS_REV187_TWO_GENUINE_ENGINE_RENDERED_WORKSITE_FRAMES_NOT_PHONE_TESTS")
   base.queue_free()
