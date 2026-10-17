@@ -13,6 +13,17 @@ const ManualQuality = preload("res://canglan_rev187/quality_profiles.gd")
 const VividMaterials = preload("res://canglan_rev187/vivid_material.gd")
 const CultivationWorld = preload("res://canglan_rev187/cultivation_world.gd")
 const SpiritResources = preload("res://canglan_rev187/spirit_resources.gd")
+const HouseholdLedger = preload("res://canglan_rev187/household_economy.gd")
+const HAN_CHINESE_ORIGINAL: Dictionary={
+  "han_house_a":"res://canglan_rev187/han_ccby_sa/han_house_a.glb",
+  "han_house_b":"res://canglan_rev187/han_ccby_sa/han_house_b.glb",
+  "han_house_c":"res://canglan_rev187/han_ccby_sa/han_house_c.glb",
+  "han_house_d":"res://canglan_rev187/han_ccby_sa/han_house_d.glb",
+  "han_pagoda":"res://canglan_rev187/han_ccby_sa/han_pagoda.glb",
+  "han_temple":"res://canglan_rev187/han_ccby_sa/han_temple.glb",
+  "han_shrine":"res://canglan_rev187/han_ccby_sa/han_shrine.glb",
+  "han_academy":"res://canglan_rev187/han_ccby_sa/han_academy.glb",
+  "han_wall_gate":"res://canglan_rev187/han_ccby_sa/han_wall_gate.glb"}
 const ASSETS := {
   "tree": "res://canglan_rev187/tree_oak.glb",
   "stone": "res://canglan_rev187/rocks_small.glb",
@@ -93,6 +104,11 @@ var _licensed_hair_attachments: int=0
 var _licensed_actor_zero_alpha_fixed: int = 0
 var natural_meshes: Dictionary = {}
 var finished_prefabs: Dictionary={}
+var han_sources: Dictionary={}
+var housing: RefCounted
+var blueprint_labels: Dictionary={}
+var _entered_housing: String=""
+var _han_collision_count: int=0
 var finished_prefab_sources: Dictionary={}
 var licensed_outfits: Dictionary={}
 var native_wildlife_sources: Dictionary={}
@@ -159,6 +175,10 @@ func _ready() -> void:
   vivid_materials.call("initialize")
   _build_interface()
   _load_assets()
+  _load_original_han_architecture()
+  housing=HouseholdLedger.new()
+  if not bool(housing.call("initialize")):
+    asset_errors.append("REV206_HAN_HOUSING_PERSISTENCE_INVALID")
   spirit_resources=SpiritResources.new()
   if not bool(spirit_resources.call("initialize")):
     asset_errors.append("REV206_SPIRIT_RESOURCES_SAVE_LOAD_FAILED")
@@ -167,15 +187,18 @@ func _ready() -> void:
   _seed_resources()
   _spawn_spirit_resource_nodes()
   _place_completed_cc0_village()
+  # Restore ONLY houses for which the saved building receipt proves real
+  # wood=200 and stone=150 were spent in a former session. Do not spawn
+  # unpurchased medieval prefabs to fill scenery.
+  sim.villages[TOWN]["homes"]=int(
+    housing.call("stats").get("houses_finished",0))
+  var pending_home: int=0
+  for entry in housing.get("houses").values():
+    if String(entry.get("phase",""))=="building":
+      pending_home=maxi(pending_home,int(entry.get("hours_remaining",0)))
+  if pending_home>0:
+    sim.villages[TOWN]["construction"]["home"]=pending_home
   _make_workers()
-  # Assign a real resident identity to the completed, placeable licensed
-  # house. Interior furnishing/access is a separate feature, not faked.
-  if finished_prefabs.has("CL-HOME-V206-001"):
-    (finished_prefabs["CL-HOME-V206-001"] as Node3D).set_meta(
-      "assigned_resident_ids",["CL-NPC-0184-03"])
-  # Each physical original prefabricated home is represented in actual
-  # economy capacity, not a pretend construction progress meter.
-  sim.villages[TOWN]["homes"]=5
   _spawn_native_animals()
   _create_playable_player()
   # Initialized only AFTER the real player, terrain, original NPC economy,
@@ -618,49 +641,133 @@ func _load_assets() -> void:
     else:
       native_wildlife_sources[model_id]=original
 
-func _place_completed_cc0_village() -> void:
-  # Replaces unfinished NPC-built 3m shacks with actual complete CC0
-  # buildings. Existing original warehouse and terrain stay real.
-  # Each complete house is one original licensed GLB, no house assembly.
-  var sites: Array=[
-    ["house_1",Vector3(-7.0,0.0,-18.0),-0.12,"CL-HOME-V206-001"],
-    ["house_2",Vector3( 4.8,0.0,-24.0), 0.28,"CL-HOME-V206-002"],
-    ["house_3",Vector3(-5.0,0.0, 25.0), 0.42,"CL-HOME-V206-003"],
-    ["house_4",Vector3( 4.0,0.0, 31.0),-0.20,"CL-HOME-V206-004"],
-    ["inn",Vector3(-6.0,0.0,-31.0),0.10,"CL-INN-V206-001"],
-    ["gazebo",Vector3(-2.0,0.0,37.0),0.35,"CL-GAZEBO-V206-001"]]
-  for config in sites:
-    var kind: String=config[0]
-    if not finished_prefab_sources.has(kind):
+func _load_original_han_architecture() -> void:
+  # 0 A.D. original source art by Wildfire Games/creators, CC BY-SA 3.0.
+  # Each binary is source SHA1 and output SHA256 checked before packaging.
+  # No western Quaternius MedievalVillage house may fill this slot.
+  for name in HAN_CHINESE_ORIGINAL:
+    var template: Node3D=_parse_existing_cc0(String(HAN_CHINESE_ORIGINAL[name]))
+    if template==null:
+      asset_errors.append("REV206_REAL_CHINESE_HAN_MODEL_MISSING_"+String(name))
       continue
-    var at: Vector3=config[1]
-    var instance: Node3D=(finished_prefab_sources[kind] as Node3D).duplicate()
-    instance.name=String(config[3])
-    instance.position=Vector3(at.x,
-      float(terrain_world.call("height_at",at.x,at.z)),at.z)
-    instance.rotation.y=float(config[2])
-    instance.set_meta("source_license","Quaternius-CC0")
-    instance.set_meta("completed_prefab_not_npc_assembly",true)
-    instance.set_meta("building_type",kind)
-    instance.set_meta("resident_capacity",4 if kind.begins_with("house") else (
-      18 if kind=="inn" else 0))
-    instance.set_meta("assigned_resident_ids",[])
-    world.add_child(instance)
-    # Vendor GLB geometry varies in scale and origin. Normalize actual world
-    # mesh height, align base to the physical 3D terrain after scaling.
-    var bounds: Vector2=_visible_bounds(instance)
-    var source_height: float=bounds.y-bounds.x
-    var intended_m: float=8.0 if kind=="inn" else (
-      4.0 if kind=="gazebo" else 5.0)
-    if source_height>0.10 and is_finite(source_height):
-      instance.scale*=clampf(intended_m/source_height,0.08,6.0)
-      var real_bbox: Vector2=_visible_bounds(instance)
-      instance.position.y+=float(terrain_world.call(
-        "height_at",at.x,at.z))-real_bbox.x
-    instance.set_meta("source_ready_meters",intended_m)
-    finished_prefabs[instance.name]=instance
-  _add_event("村落使用%d座完整CC0房屋和亭阁；旧脚手架施工停止" % [
-    finished_prefabs.size()])
+    if vivid_materials!=null:
+      vivid_materials.call("upgrade_han_ccby_source",template,String(name))
+    han_sources[name]=template
+
+func _chinese_housing_mesh_name(site: String) -> String:
+  var names: Array[String]=[
+    "han_house_a","han_house_b","han_house_c","han_house_d"]
+  var order: Array=HouseholdLedger.SITES.keys()
+  order.sort()
+  return names[order.find(site)] if order.has(site) else ""
+
+func _create_physical_han_collisions(root: Node3D) -> int:
+  var added: int=0
+  for child in root.find_children("*","MeshInstance3D",true,false):
+    var art: MeshInstance3D=child as MeshInstance3D
+    if art.mesh==null:
+      continue
+    # Use exact original vendor triangles, NOT an invented giant solid
+    # rectangular box obstructing the house doorway or its walking floor.
+    var shape: ConcavePolygonShape3D=art.mesh.create_trimesh_shape()
+    if shape==null:
+      continue
+    var solid:=StaticBody3D.new()
+    solid.name="TrueOriginalHanArchitecturalWallAndRoofCollision"
+    solid.collision_layer=2
+    solid.collision_mask=0
+    var c:=CollisionShape3D.new()
+    c.shape=shape
+    solid.add_child(c)
+    art.add_child(solid)
+    added+=1
+  _han_collision_count+=added
+  return added
+
+func _spawn_paid_han_house(site: String) -> bool:
+  if finished_prefabs.has(site):
+    return true
+  var key: String=_chinese_housing_mesh_name(site)
+  if not han_sources.has(key):
+    return false
+  var row: Dictionary=housing.get("houses").get(site,{})
+  if String(row.get("phase",""))!="complete" or int(
+      row.get("paid_wood",0))!=200 or int(row.get("paid_stone",0))!=150:
+    return false
+  var layout: Array=HouseholdLedger.SITES[site]["position"]
+  var x: float=float(layout[0])
+  var z: float=float(layout[1])
+  var source: Node3D=han_sources[key]
+  var node: Node3D=source.duplicate()
+  node.name=site
+  node.position=Vector3(x,float(terrain_world.call("height_at",x,z)),z)
+  node.set_meta("original_architecture","AncientHan-0AD-CC-BY-SA-3.0")
+  node.set_meta("paid_wood",200)
+  node.set_meta("paid_stone",150)
+  node.set_meta("resident_capacity",5)
+  node.set_meta("house_building_state","complete")
+  node.set_meta("assigned_resident_ids",row.get("residents",[]))
+  # Visible house must be within plausible original metres, touching
+  # the landscape—not ungrounded huge or floating imported pivot.
+  world.add_child(node)
+  var bounds: Vector2=_visible_bounds(node)
+  var height: float=bounds.y-bounds.x
+  if height>0.15 and is_finite(height):
+    node.scale*=clampf(5.8/height,0.07,5.0)
+    var grounded: Vector2=_visible_bounds(node)
+    node.position.y+=float(terrain_world.call("height_at",x,z))-grounded.x
+  _create_physical_han_collisions(node)
+  finished_prefabs[site]=node
+  if blueprint_labels.has(site):
+    (blueprint_labels[site] as Label3D).visible=false
+  return true
+
+func _place_completed_cc0_village() -> void:
+  # Legacy western source models are licensed but not stylistically approved:
+  # they are deliberately NOT spawned, nor accepted as free homes.
+  for site in HouseholdLedger.SITES:
+    var label:=Label3D.new()
+    label.name="BuildableActualHanHouseSite_"+String(site)
+    label.text="中式家宅地基｜木200 石150\n一栋最多住5人"
+    label.font_size=26
+    label.pixel_size=0.009
+    label.modulate=Color("#e2c78f")
+    label.billboard=BaseMaterial3D.BILLBOARD_ENABLED
+    label.outline_size=6
+    label.visibility_range_end=18.0
+    var pos: Array=HouseholdLedger.SITES[site]["position"]
+    label.position=Vector3(float(pos[0]),float(
+      terrain_world.call("height_at",float(pos[0]),float(pos[1])))+1.6,
+      float(pos[1]))
+    world.add_child(label)
+    blueprint_labels[site]=label
+  for site in housing.get("houses"):
+    if String(housing.get("houses")[site].get("phase",""))=="complete":
+      _spawn_paid_han_house(String(site))
+  _add_event("已清理6座凭空生成的欧式房；改为真木石付费汉式住房地基")
+
+func try_build_true_home() -> Dictionary:
+  if housing==null or controls==null:
+    return {"ok":false,"reason":"WORLD_NOT_READY"}
+  var site: String=housing.call("get_next_site")
+  if site.is_empty():
+    return {"ok":false,"reason":"ALL_SITES_FULL"}
+  var name: String=_chinese_housing_mesh_name(site)
+  var paid: Dictionary=housing.call("start",site,sim,TOWN,
+    han_sources.has(name))
+  if bool(paid.get("ok",false)):
+    _add_event("真实建造中：扣仓库木200石150，需3世界时辰；房屋容量5人")
+  return paid
+
+func _advance_true_housing_hour() -> void:
+  if housing==null:
+    return
+  var finished: Array=housing.call("advance_world_hour")
+  for site in finished:
+    if _spawn_paid_han_house(String(site)):
+      _add_event("汉式住房竣工："+String(site)+"｜容量5人")
+    else:
+      asset_errors.append("REV206_PAID_HOUSE_BUILT_BUT_MISSING_CHINESE_MESH")
 
 func _spawn_spirit_resource_nodes() -> void:
   if spirit_resources==null or not bool(spirit_resources.get("_loaded")):
@@ -1308,6 +1415,7 @@ func _process(delta: float) -> void:
     _economy_clock-=12.0
     sim.tick()
     eco.advance_ecology_hours(1)
+    _advance_true_housing_hour()
     if cultivation!=null:
       cultivation.call("advance_world_hour")
     if spirit_resources!=null:
@@ -1405,6 +1513,9 @@ func stats() -> Dictionary:
     "whole_world_speed_includes_npc_construction":false,
     "rev206_perpetual_house_construction_retired":true,
     "rev206_cc0_completed_building_count":finished_prefabs.size(),
+    "rev206_han_houses_paid_conserved":housing.call("stats") if housing!=null else {},
+    "rev206_actual_chinese_han_sources":han_sources.size(),
+    "rev206_han_architecture_real_collisions":_han_collision_count,
     "rev206_native_wildlife_count":actual_wildlife.size(),
     "rev206_real_spirit_herbs_ore":spirit_resources.call("stats") if spirit_resources!=null else {},
     "rev206_world_spirit_resource_visuals":spirit_resource_visuals.size(),
@@ -1598,7 +1709,7 @@ func _exit_tree() -> void:
   # a real source lifetime fix, not hiding/suppressing engine ERROR logs.
   var unique_sources: Dictionary={}
   for collection in [finished_prefab_sources,licensed_outfits,
-      native_wildlife_sources,spirit_resource_sources]:
+      native_wildlife_sources,spirit_resource_sources,han_sources]:
     for original in (collection as Dictionary).values():
       if original is Node3D and is_instance_valid(original):
         unique_sources[(original as Node3D).get_instance_id()]=original
@@ -1609,6 +1720,7 @@ func _exit_tree() -> void:
   licensed_outfits.clear()
   native_wildlife_sources.clear()
   spirit_resource_sources.clear()
+  han_sources.clear()
   spirit_resource_visuals.clear()
   _hidden_game_world.clear()
   _old_profiler_nodes.clear()
