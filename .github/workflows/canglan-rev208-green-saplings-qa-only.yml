@@ -286,6 +286,10 @@ jobs:
             assert entry['game_asset_approved'] is False
             assert entry['license'].startswith('CC0')
             assert entry['triangle_lod0']>=100
+            if kind=='conifer':
+              assert entry['source_name']=='mature-norway-spruce-tree-48c2566f'
+              assert 10000<entry['triangle_lod0']<80000
+              assert entry['meshes']<120, 'old 1551 mesh 248k conifer prohibited in mobile candidate'
             (dest/entry['file']).write_bytes(data)
           print('PASS_REV208_REAL_INDIVIDUALLY_LICENSED_EIGHT_BOTANICAL_GLBS_STAGED_IN_ORIGINAL_APK176_MAIN_UNAPPROVED')
           PY
