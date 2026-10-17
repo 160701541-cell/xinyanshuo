@@ -23,6 +23,7 @@ const NAMES: Dictionary={
   "herb_water":"寒露灵花","mushroom":"凝露灵芝",
   "healing_pill":"青木回春丹","mana_pill":"凝神回元丹",
   "focus_ring":"聚灵指环",
+  "beast_core":"妖丹原胚（真实妖兽掉落）",
   "rough_wood_sword":"粗木剑","stone_pick":"石镐",
 }
 var items: Dictionary={}
