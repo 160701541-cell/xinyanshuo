@@ -121,6 +121,60 @@ func _capture() -> void:
   player.set("_yaw",0.55)
   player.set("_pitch",-0.22)
   player.call("update_camera")
+  # Photograph real mature trees IMMEDIATELY after new-game load, before
+  # the test advances 90*0.7 world simulation ticks. In the former test,
+  # real working lumberjacks had already FELLED the nearby tree IDs, so
+  # the legitimate source models were invisible; no dummy foliage may
+  # be resurrected just for screenshots.
+  var opening_actor: Node3D=player.get("actor")
+  var opening_terrain: Node3D=room.get("terrain_world")
+  var opening_actor_pos: Vector3=opening_actor.position
+  var opening_distance: float=float(player.get("_distance"))
+  # P0 HQ-ECOLOGY: exactly three CC0 originally authored mature trees
+  # are photographed INSIDE THE ORIGINAL APK176 Main at human scale,
+  # not via a fake Blender model viewer or WorldX concept image.
+  var hq_species: Dictionary=room.get("hq_mature_tree_visuals")
+  for species_frame in [
+      {"id":"CL-TREE-0184-000","species":"oak",
+       "file":"real_godot_rev208_mature_oak_8m_vs_avatar.png"},
+      {"id":"CL-TREE-0184-001","species":"maple",
+       "file":"real_godot_rev208_mature_maple_9m_vs_avatar.png"},
+      {"id":"CL-TREE-0184-002","species":"linden",
+       "file":"real_godot_rev208_mature_linden_8m_vs_avatar.png"}]:
+    var tree_id: String=String(species_frame["id"])
+    var mature_tree: Node3D=hq_species.get(tree_id,null)
+    if mature_tree==null or not mature_tree.visible or (
+        not bool(mature_tree.get_meta("hq_rev208_mature_tree",false))):
+      _fail("REV208_MATURE_FOREST_ACTUAL_MAIN_SOURCE_NOT_VISIBLE_"+tree_id)
+      return
+    var original_human_scale: Vector2=room.call("_visible_bounds",mature_tree)
+    if original_human_scale.y-original_human_scale.x<7.5:
+      _fail("REV208_HIGH_DETAIL_REAL_TREE_SHORTER_THAN_7_5M_"+tree_id)
+      return
+    var facing: Vector3=mature_tree.position
+    var foot_y: float=float(opening_terrain.call(
+      "height_at",facing.x,facing.z+7.0))
+    opening_actor.position=Vector3(facing.x,foot_y+float(
+      fighter.get_meta("actor_ground_offset_y",0.0)),facing.z+7.0)
+    player.call("_set_mode","third")
+    player.set("_yaw",0.0)
+    player.set("_pitch",0.24)
+    player.set("_distance",14.0)
+    player.call("update_camera")
+    for hq_render_frame in range(5):
+      await process_frame
+    await RenderingServer.frame_post_draw
+    if not _save(String(species_frame["file"])):
+      _fail("REV208_MAIN_GENUINE_PBR_MATURE_TREE_IMAGE_MISSING_"+tree_id)
+      return
+  print("PASS_REV208_THREE_TRUE_8_9M_PBR_TREE_GODOT441_ORIGINAL_MAIN_RENDERED_SCREENSHOTS")
+  opening_actor.position=opening_actor_pos
+  player.call("_set_mode","fly")
+  player.set("_flight_position",Vector3(16,9,22))
+  player.set("_yaw",0.55)
+  player.set("_pitch",-0.22)
+  player.set("_distance",opening_distance)
+  player.call("update_camera")
   for i in range(90):
     room.call("_process",0.70)
     await process_frame
@@ -558,44 +612,6 @@ func _capture() -> void:
       _fail("REV206_ACTUAL_GODOT_REAL_PLANT_ORE_TEXTURE_FRAME_MISSING_"+id)
       return
   print("PASS_REV206_GODOT_REAL_3D_WILD_MEDICINAL_HERB_AND_LUMINOUS_ORE_VIEW")
-  # P0 HQ-ECOLOGY: exactly three CC0 originally authored mature trees
-  # are photographed INSIDE THE ORIGINAL APK176 Main at human scale,
-  # not via a fake Blender model viewer or WorldX concept image.
-  var hq_species: Dictionary=room.get("hq_mature_tree_visuals")
-  for species_frame in [
-      {"id":"CL-TREE-0184-000","species":"oak",
-       "file":"real_godot_rev208_mature_oak_8m_vs_avatar.png"},
-      {"id":"CL-TREE-0184-001","species":"maple",
-       "file":"real_godot_rev208_mature_maple_9m_vs_avatar.png"},
-      {"id":"CL-TREE-0184-002","species":"linden",
-       "file":"real_godot_rev208_mature_linden_8m_vs_avatar.png"}]:
-    var tree_id: String=String(species_frame["id"])
-    var mature_tree: Node3D=hq_species.get(tree_id,null)
-    if mature_tree==null or not mature_tree.visible or (
-        not bool(mature_tree.get_meta("hq_rev208_mature_tree",false))):
-      _fail("REV208_MATURE_FOREST_ACTUAL_MAIN_SOURCE_NOT_VISIBLE_"+tree_id)
-      return
-    var original_human_scale: Vector2=room.call("_visible_bounds",mature_tree)
-    if original_human_scale.y-original_human_scale.x<7.5:
-      _fail("REV208_HIGH_DETAIL_REAL_TREE_SHORTER_THAN_7_5M_"+tree_id)
-      return
-    var facing: Vector3=mature_tree.position
-    var foot_y: float=float(real_ground.call(
-      "height_at",facing.x,facing.z+7.0))
-    fighter.position=Vector3(facing.x,foot_y+float(
-      fighter.get_meta("actor_ground_offset_y",0.0)),facing.z+7.0)
-    player.call("_set_mode","third")
-    player.set("_yaw",0.0)
-    player.set("_pitch",0.24)
-    player.set("_distance",14.0)
-    player.call("update_camera")
-    for hq_render_frame in range(5):
-      await process_frame
-    await RenderingServer.frame_post_draw
-    if not _save(String(species_frame["file"])):
-      _fail("REV208_MAIN_GENUINE_PBR_MATURE_TREE_IMAGE_MISSING_"+tree_id)
-      return
-  print("PASS_REV208_THREE_TRUE_8_9M_PBR_TREE_GODOT441_ORIGINAL_MAIN_RENDERED_SCREENSHOTS")
   # P0 041 evidence: show the actual licensed original Main cultivator
   # fallen IN THE WORLD after real HP=0 and real 5000-census death debit.
   # Screenshot will NEVER substitute a photo of a model or concept art.
