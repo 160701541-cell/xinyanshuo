@@ -7,6 +7,7 @@ const Economy = preload("res://canglan_rev187/worldbox_life_sim.gd")
 const Ecology = preload("res://canglan_rev187/ecology_growth.gd")
 const NaturalPalette = preload("res://canglan_rev187/visual_palette.gd")
 const KenneyMultiMesh = preload("res://canglan_rev187/kenney_multimesh.gd")
+const HQForestFloorPool = preload("res://canglan_rev187/hq_forest_floor_pool_rev208.gd")
 const RealSoilTerrain = preload("res://canglan_rev187/strata_terrain.gd")
 const PlayerControl = preload("res://canglan_rev187/player_controller.gd")
 const ManualQuality = preload("res://canglan_rev187/quality_profiles.gd")
@@ -111,6 +112,7 @@ var asset_sources: Dictionary = {}
 var hq_mature_tree_sources: Dictionary={}
 var hq_mature_tree_visuals: Dictionary={}
 var hq_medicinal_source_templates: Dictionary={}
+var forest_floor_pool: Node3D
 var hq_botanical_sources: Dictionary={}
 var hq_botanical_visuals: Dictionary={}
 var hq_botanical_terrain_sites: Dictionary={}
@@ -258,6 +260,14 @@ func _ready() -> void:
   # call ran before quality existed and rejected all genuine bush sources.
   _spawn_licensed_living_understory()
   _spawn_rev208_hq_botanical_ecology()
+  # Actual CC0 fern + original PBR grass GLB meshes are physically instanced
+  # in compact per-species/per-habitat-cell GPU pools (not colored quads).
+  forest_floor_pool=HQForestFloorPool.new()
+  if not bool(forest_floor_pool.call("initialize",
+      world,terrain_world,quality,hq_botanical_sources)):
+    asset_errors.append("REV208_HQ021_ACTUAL_VENDOR_FERN_GRASS_GPU_POOL_FAILED")
+    forest_floor_pool.free()
+    forest_floor_pool=null
   terrain_world.connect("terrain_cell_changed",
     Callable(self,"_on_understory_terrain_changed"))
   _set_dev_ui_visible(false)
@@ -954,6 +964,8 @@ func _on_understory_terrain_changed(at: Vector3,radius: float) -> void:
   if quality==null:
     return
   _sync_rev208_botanical_terrain(at,radius)
+  if forest_floor_pool!=null:
+    forest_floor_pool.call("on_terrain_changed",at,radius)
   for index in range(licensed_understory_instances.size()):
     var pos: Vector3=licensed_understory_locations[index]
     if Vector2(pos.x-at.x,pos.z-at.z).length()>radius+1.5:
@@ -2017,6 +2029,9 @@ func _process(delta: float) -> void:
     if _hq_botanical_clock>=0.5:
       _hq_botanical_clock=0.0
       _sync_rev208_botanical_visibility(hero.position)
+      if forest_floor_pool!=null:
+        forest_floor_pool.call("sync_visibility",hero.position,
+          String(quality.get("selected")))
   _render_sync_counter += delta
   if _render_sync_counter >= 0.10:
     _render_sync_counter = 0.0
@@ -2102,6 +2117,8 @@ func stats() -> Dictionary:
     "rev208_hq_true_mature_tree_count":hq_mature_tree_visuals.size(),
     "rev208_hq_botanical_genuine_source_species":hq_botanical_sources.keys(),
     "rev208_hq_botanical_true_glb_count":hq_botanical_visuals.size(),
+    "rev208_hq021_original_vendor_gpu_forest_floor":(
+      forest_floor_pool.call("stats") if forest_floor_pool!=null else {}),
     "rev208_hq_independent_spirit_herb_source_count":hq_medicinal_source_templates.size(),
     "rev208_hq_botanical_tree_trunk_colliders":hq_botanical_colliders.size(),
     "rev208_hq_botanical_valid_ground_sites":hq_botanical_terrain_sites.size(),
