@@ -205,6 +205,7 @@ func _run() -> void:
         "sites":bot_sites.size(),"trunks":bot_trunks.size()}))
     return
   var natural_kinds: Dictionary={}
+  var rev208_real_hq_botanical_mesh_surfaces: int=0
   for bot_id in botanicals:
     var botanical: Node3D=botanicals[bot_id]
     if not is_instance_valid(botanical) or not botanical.is_inside_tree() or (
@@ -215,6 +216,14 @@ func _run() -> void:
       return
     var species: String=String(botanical.get_meta("hq_rev208_vendor_cc0_botanical",""))
     natural_kinds[species]=int(natural_kinds.get(species,0))+1
+    # Strictly count REAL Godot drawable Mesh surfaces in the original
+    # PCK, not source JSON estimates or a duplicated decorative scene.
+    var real_mesh_nodes: Array[Node]=botanical.find_children(
+      "*","MeshInstance3D",true,false)
+    for real_mesh_node in real_mesh_nodes:
+      var real_mesh_instance: MeshInstance3D=real_mesh_node as MeshInstance3D
+      if real_mesh_instance!=null and real_mesh_instance.mesh!=null:
+        rev208_real_hq_botanical_mesh_surfaces+=real_mesh_instance.mesh.get_surface_count()
     var bounds: Vector2=room.call("_visible_bounds",botanical)
     if species in ["pine","cypress","conifer"] and bounds.y-bounds.x<7.0:
       _fail(409,"REV208_PINE_CYPRESS_MODEL_NOT_REAL_MATURE_SIZE_"+String(bot_id))
@@ -228,6 +237,13 @@ func _run() -> void:
       int(first.get("rev208_hq_botanical_true_glb_count",-1))!=botanicals.size()):
     _fail(411,"REV208_FOREST_DECORATION_MINTED_FAKE_RESOURCES_OR_NOT_REPORTED")
     return
+  if rev208_real_hq_botanical_mesh_surfaces>150 or (
+      rev208_real_hq_botanical_mesh_surfaces<20):
+    _fail(414,"REV208_BOTANICAL_REAL_GODOT_ANDROID_TOO_MANY_DRAW_PARTS_"+
+      str(rev208_real_hq_botanical_mesh_surfaces))
+    return
+  print("PASS_REV208_ORIGINAL_MAIN_11_CC0_PBR_GODOT_DRAWABLE_STATIC_BOTANICAL_SURFACES_UNDER_150 "+
+    str(rev208_real_hq_botanical_mesh_surfaces))
   print("PASS_REV208_ACTUAL_ORIGINAL_MAIN_REAL_PINE_CYPRESS_FERN_AND_FIVE_GREEN_PLANT_SOURCES_NO_FAKE_INVENTORY")
   print("REV208_HQ_ART_STATUS_PENDING_CHARACTER_PBR_SPIRIT_HERBS_ANDROID_USER_REVIEW")
 
