@@ -918,6 +918,9 @@ func handle_input(event: InputEvent) -> void:
   if event is InputEventJoypadButton:
     if event.pressed and not event.is_echo() and event.device==_pad_device:
       _pad_press_button(int(event.button_index))
+      # Consume standardized gamepad actions once: Godot's default ui_accept
+      # may otherwise also activate a focused button on the same frame.
+      room.get_viewport().set_input_as_handled()
     return
   # All Android touchscreen touch/drags go through TRUE GUI hit-test zones.
   # Global input is only keyboard/mouse wheel and controller fallback.
@@ -1073,7 +1076,6 @@ func step(delta: float) -> void:
     input_axis = keys
   if _pad_device>=0:
     if not _game_sheet.visible:
-      var right_axis: Vector2=_pad_read_stick(JOY_AXIS_RIGHT_X,JOY_AXIS_RIGHT_Y)
       # Pass the unprocessed hardware axis; filter it once inside look tick.
       var raw_look:=Vector2(Input.get_joy_axis(_pad_device,JOY_AXIS_RIGHT_X),
         Input.get_joy_axis(_pad_device,JOY_AXIS_RIGHT_Y))
