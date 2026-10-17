@@ -33,6 +33,9 @@ var seed: int=WORLD_SEED_DEFAULT
 var regions: Dictionary={}
 var sects: Dictionary={}
 var beast_packs: Dictionary={}
+# Revision-compatible exactly-once death journal for physically represented
+# citizens: counts already belong to the original 5,000, not extra bodies.
+var named_deaths: Dictionary={}
 var hours: int=0
 var months: int=0
 var born_total: int=0
@@ -57,6 +60,7 @@ func initialize(world_seed: int=WORLD_SEED_DEFAULT) -> bool:
   regions.clear()
   sects.clear()
   beast_packs.clear()
+  named_deaths.clear()
   var weights: Array[int]=[]
   var total_weight: int=0
   for n in range(REGION_COUNT):
@@ -146,6 +150,7 @@ func initialize(world_seed: int=WORLD_SEED_DEFAULT) -> bool:
     regions=stored
     sects=saved_sects
     beast_packs=saved_packs
+    named_deaths=old.get("named_deaths",{})
     hours=maxi(0,int(old.get("hours",0)))
     months=maxi(0,int(old.get("months",0)))
     born_total=maxi(0,int(old.get("born_total",0)))
@@ -297,6 +302,58 @@ func record_guardian_death(beast_id: String) -> void:
     p["died_total"]=int(p["died_total"])+1
     _save()
 
+func record_named_cultivator_death(id: String,is_spirit_rooted: bool,
+    is_body_cultivator: bool,source: String) -> Dictionary:
+  # Physical visitors to the starting village are named citizens *within*
+  # the preexisting offscreen census; they are not 12 more invented humans.
+  # A cultivator may be temporarily visiting the village from a home sect
+  # region. Choose the deterministic first home with matching occupation.
+  # Journal IDs guard against kill->restart->kill or late callbacks.
+  if not _loaded or not id.begins_with("CL-XIUXIAN-"):
+    return {"ok":false,"reason":"REGIONS_NOT_READY_OR_INVALID_NAMED_ID"}
+  if named_deaths.has(id):
+    return {"ok":true,"already_recorded":true,
+      "region_id":String(named_deaths[id].get("region_id",""))}
+  var start: int=_noise(int(id.right(3)),71)%REGION_COUNT
+  var chosen_id: String=""
+  for step in range(REGION_COUNT):
+    var test_id: String="CL-REGION-%03d" % ((start+step*37)%REGION_COUNT)
+    var r: Dictionary=regions[test_id]
+    if int(r.get("adults",0))<1 or int(r.get("people",0))<1:
+      continue
+    if is_spirit_rooted and int(r.get("roots",0))<=0:
+      continue
+    if is_body_cultivator and int(r.get("body_practitioners",0))<=0:
+      continue
+    chosen_id=test_id
+    break
+  if chosen_id.is_empty():
+    return {"ok":false,"reason":"NO_ELIGIBLE_EXISTING_CENSUS_CITIZEN"}
+  var region: Dictionary=regions[chosen_id]
+  var snapshot: Dictionary=region.duplicate(true)
+  var old_died: int=died_total
+  region["people"]=int(region["people"])-1
+  region["adults"]=int(region["adults"])-1
+  region["deaths"]=int(region["deaths"])+1
+  if is_spirit_rooted:
+    region["roots"]=int(region["roots"])-1
+  if is_body_cultivator:
+    region["body_practitioners"]=int(region["body_practitioners"])-1
+  died_total+=1
+  named_deaths[id]={"region_id":chosen_id,
+    "at_hour":hours,"rooted":is_spirit_rooted,
+    "body_cultivator":is_body_cultivator,"cause":source}
+  # Durable region update happens before the visible actor's death save.
+  # A subsequent game start repairs any second-ledger interrupted commit
+  # from this named journal instead of resurrecting an already-debited NPC.
+  if not conservation_ok() or not _save():
+    regions[chosen_id]=snapshot
+    died_total=old_died
+    named_deaths.erase(id)
+    return {"ok":false,"reason":"CENSUS_CONSERVATION_OR_DISK_FAILURE_"+_last_error}
+  return {"ok":true,"already_recorded":false,
+    "region_id":chosen_id,"new_world_population":population()}
+
 func population() -> int:
   var tally: int=0
   for row in regions.values():
@@ -360,7 +417,8 @@ func _save() -> bool:
     "spirit_births":spirit_births,
     "spiritual_birth_fraction":spiritual_birth_fraction,
     "body_birth_fraction":body_birth_fraction,
-    "birth_offset":_birth_offset,"death_offset":_death_offset}
+    "birth_offset":_birth_offset,"death_offset":_death_offset,
+    "named_deaths":named_deaths}
   var writer:=FileAccess.open(SAVE_PATH+".tmp",FileAccess.WRITE)
   if writer==null:
     _last_error="REGIONS_WRITE_FAILED"
@@ -400,7 +458,8 @@ func stats() -> Dictionary:
     "root_ratio_basis_points":ROOT_BASIS_POINTS,
     "without_spirit_root":population()-root_population(),
     "body_cultivators":body_cultivator_population(),
-    "births":born_total,"deaths":died_total,"months":months,
+    "births":born_total,"deaths":died_total,
+    "named_confirmed_deaths":named_deaths.size(),"months":months,
     "hours":hours,"factions":sects.size(),
     "disciplines":DISCIPLINES.size(),
     "herb_seed_bank":seeds,"wild_herb_plants":plants,
