@@ -67,6 +67,27 @@ var _fall_damage_cd: float = 0.0
 var _quality_sheet_button: Button
 var _developer_sheet_button: Button
 var _rest_sheet_button: Button
+# REV189: Godot 4.4 standard SDL-mapped Xbox/PS/Nintendo/USB/Bluetooth pad.
+# Android hardware behavior remains subject to real device HID mapping QA.
+const PAD_DEFAULT_DEADZONE: float = 0.19
+const PAD_LOOK_PIXELS_PER_SECOND: float = 205.0
+var _pad_device: int = -1
+var _pad_device_name: String = ""
+var _pad_deadzone: float = PAD_DEFAULT_DEADZONE
+var _pad_sensitivity: float = 1.0
+var _pad_invert_y: bool = false
+var _pad_trigger_left_latched: bool = false
+var _pad_trigger_right_latched: bool = false
+var _pad_hint: Label
+var _pad_setting_speed: Button
+var _pad_setting_invert: Button
+var _pad_setting_deadzone: Button
+var _pad_menu_index: int = 0
+var _pad_menu_options: Array[Button] = []
+var _pad_button_event_count: int = 0
+var _pad_last_move: Vector2 = Vector2.ZERO
+var _pad_last_look: Vector2 = Vector2.ZERO
+var _pad_status: String = "未连接"
 
 func initialize(active_room: Node) -> void:
   room = active_room
@@ -75,7 +96,11 @@ func initialize(active_room: Node) -> void:
   terrain = room.get("terrain_world")
   name = "PlayerActualTouchAndPerspectiveController"
   _spawn_player()
+  _load_pad_options()
   _create_hud()
+  if not Input.joy_connection_changed.is_connected(_on_pad_hotplug):
+    Input.joy_connection_changed.connect(_on_pad_hotplug)
+  _detect_pad()
   update_camera()
   set_meta("original_apk176_interactive_player",true)
 
@@ -302,6 +327,26 @@ func _build_game_hud() -> void:
   _add_game_action("ViewAction","视角",Callable(self,"toggle_perspective"))
   _add_game_action("LockedArt","招式锁定",func(): _open_game_menu("cultivation"))
   (_game_actions["LockedArt"] as Button).disabled=true
+  _pad_hint=Label.new()
+  _pad_hint.name="AndroidGamepadHotplugAndMappings"
+  _pad_hint.position=Vector2(16,139)
+  _pad_hint.add_theme_font_size_override("font_size",14)
+  _pad_hint.add_theme_color_override("font_color",Color("#e0edd4"))
+  _pad_hint.mouse_filter=Control.MOUSE_FILTER_IGNORE
+  hud.add_child(_pad_hint)
+  _pad_setting_speed=Button.new()
+  _pad_setting_speed.name="PadRightStickSpeedSetting"
+  _pad_setting_speed.pressed.connect(_cycle_pad_sensitivity)
+  v.add_child(_pad_setting_speed)
+  _pad_setting_invert=Button.new()
+  _pad_setting_invert.name="PadRightStickInvertSetting"
+  _pad_setting_invert.pressed.connect(_toggle_pad_invert)
+  v.add_child(_pad_setting_invert)
+  _pad_setting_deadzone=Button.new()
+  _pad_setting_deadzone.name="PadStickDeadzoneSetting"
+  _pad_setting_deadzone.pressed.connect(_cycle_pad_deadzone)
+  v.add_child(_pad_setting_deadzone)
+  _refresh_pad_option_labels()
   _refresh_game_hud()
 
 func _add_game_action(key: String, label: String, callback: Callable) -> void:
@@ -323,6 +368,8 @@ func _open_game_menu(mode: String) -> void:
   _game_sheet_mode=mode
   _game_sheet.visible=true
   _refresh_game_hud()
+  if _pad_device>=0:
+    _pad_focus_menu(0)
 
 func _refresh_game_hud() -> void:
   if _game_status==null or room==null:
@@ -343,6 +390,10 @@ func _refresh_game_hud() -> void:
   _quality_sheet_button.visible=_game_sheet!=null and _game_sheet.visible and _game_sheet_mode=="settings"
   _developer_sheet_button.visible=_quality_sheet_button.visible
   _rest_sheet_button.visible=_game_sheet.visible and _game_sheet_mode=="character"
+  _pad_setting_speed.visible=_game_sheet.visible and _game_sheet_mode=="settings"
+  _pad_setting_invert.visible=_pad_setting_speed.visible
+  _pad_setting_deadzone.visible=_pad_setting_speed.visible
+  _pad_hint.visible=_pad_device>=0 and not _game_sheet.visible
   if _game_sheet==null or not _game_sheet.visible:
     return
   if _game_sheet_mode=="character":
@@ -462,6 +513,8 @@ func _layout_hud() -> void:
     (_game_actions[action_keys[idx]] as Button).position=Vector2(
       size.x-295.0+float(col)*94.0,size.y-152.0+float(row)*66.0)
   notice.position=Vector2(minf(370.0,size.x*0.27),maxf(210.0,size.y-47.0))
+  if _pad_hint!=null:
+    _pad_hint.position=Vector2(16,139)
 
 func _ui_button_at(p: Vector2) -> bool:
   for node in buttons.values():
