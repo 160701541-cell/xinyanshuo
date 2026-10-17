@@ -10,6 +10,7 @@ const KenneyMultiMesh = preload("res://canglan_rev187/kenney_multimesh.gd")
 const RealSoilTerrain = preload("res://canglan_rev187/strata_terrain.gd")
 const PlayerControl = preload("res://canglan_rev187/player_controller.gd")
 const ManualQuality = preload("res://canglan_rev187/quality_profiles.gd")
+const CultivationWorld = preload("res://canglan_rev187/cultivation_world.gd")
 const ASSETS := {
   "tree": "res://canglan_rev187/tree_oak.glb",
   "stone": "res://canglan_rev187/rocks_small.glb",
@@ -34,6 +35,7 @@ var palette: RefCounted
 var batch_renderer: Node3D
 var terrain_world: Node3D
 var controls: Node
+var cultivation: RefCounted
 var quality: RefCounted
 var sun_light: DirectionalLight3D
 var scene_environment: Environment
@@ -126,6 +128,11 @@ func _ready() -> void:
   _seed_resources()
   _make_workers()
   _create_playable_player()
+  # Initialized only AFTER the real player, terrain, original NPC economy,
+  # CC0 animated rigs and original site/collision are live. No parallel
+  # world or invented resource/financial ledger is created.
+  cultivation=CultivationWorld.new()
+  cultivation.call("initialize",self)
   _create_quality_hud()
   _hide_old_render_world()
   _hide_original_debug_labels()
@@ -1025,7 +1032,9 @@ func get_living_clock() -> Dictionary:
     "whole_world_hours_processed":_total_accelerated_hours,
     "npc_model_loaded":false,
     "npc_ai_status":local_npc_ai_state,
-    "npc_real_rule_simulation":true}
+    "npc_real_rule_simulation":true,
+    "generated_spiritual_seed":int(cultivation.get("world_seed")) if cultivation!=null else 0,
+    "real_cultivator_npc_count":int(cultivation.call("stats").get("cultivator_count",0)) if cultivation!=null else 0}
 
 func _process(delta: float) -> void:
   if _closed:
@@ -1045,6 +1054,8 @@ func _process(delta: float) -> void:
     _economy_clock-=12.0
     sim.tick()
     eco.advance_ecology_hours(1)
+    if cultivation!=null:
+      cultivation.call("advance_world_hour")
     _total_accelerated_hours+=1
     advanced+=1
   if advanced>0:
@@ -1055,6 +1066,8 @@ func _process(delta: float) -> void:
       _move_builder(worker, accelerated_delta)
     else:
       _move_gatherer(worker, accelerated_delta)
+  if cultivation!=null:
+    cultivation.call("update_visible_npcs",accelerated_delta)
   var hero: Node3D = controls.get("actor") if controls!=null else null
   var visible_label_distance: float = float(quality.call("render_profile").get("name_distance",13.0)) if quality!=null else 13.0
   for code in workers:
@@ -1130,6 +1143,7 @@ func stats() -> Dictionary:
   return {"revision": 187, "world_seed": 20261017,
     "worker_count": workers.size(), "resource_node_count": sim.natural_nodes.size(),
     "living_clock":get_living_clock(),
+    "spiritual_world":cultivation.call("stats") if cultivation!=null else {},
     "whole_world_speed_includes_npc_construction":true,
     "local_gguf_installed":false,
     "native_llama_bridge_present":ClassDB.class_exists("CanglanLocalLLM"),
