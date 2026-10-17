@@ -52,6 +52,22 @@ func _initialize() -> void:
 		var rel: String = "canglan_rev187/ui/lucide/" + icon + ".svg"
 		files["res://" + rel] = rel
 	files["res://canglan_rev187/ui/lucide/LICENSE"] = "canglan_rev187/ui/lucide/LICENSE"
+	# All native ready-made CC0 buildings, outfits and animated fauna. They
+	# are unmodified original vendor GLBs, pinned by source-file SHA256 in
+	# asset_intake_proof.json. Missing one MUST fail PCK construction.
+	for category in ["building","character_clothing_rig","animal","monster"]:
+		var known_names: Array=[]
+		if category=="building":
+			known_names=["house_1","house_2","house_3","house_4","inn","gazebo"]
+		elif category=="character_clothing_rig":
+			known_names=["monk","wizard"]
+		elif category=="animal":
+			known_names=["wolf","fox","deer","cow"]
+		else:
+			known_names=["dragon","goleling"]
+		for item in known_names:
+			var rel: String="canglan_rev187/cc0_rev206/"+category+"/"+item+".glb"
+			files["res://"+rel]=rel
 	for i in range(8):
 		for pattern in ["hd2d/worldx/nav_%03d.json", "hd2d/worldx/zones_%03d.json",
 				"hd2d/worldx/worldx_%03d.png"]:
