@@ -1,12 +1,12 @@
 {
   "schema": 1,
   "channel": "android-preview",
-  "revision": 198,
+  "revision": 199,
   "minimum_android_code": 1176,
   "maximum_android_code": 1176,
-  "sha256": "02e5ddb16934aa3388d834ef6ead788e967b88ed377e452bcafee96983dc9bd8",
-  "size_bytes": 21779104,
-  "pack_url": "https://160701541-cell.github.io/xinyanshuo/android-preview/canglan-content-rev-198.pck",
-  "notes": "苍岚原APK176 rev198：根据真实Godot第三人称、45度镜头截图修复人物完全透明P0：原已授权骑士GLB实体材质Alpha=0，现修正为不透明，保持骨骼、动画与原人物NPC。新增严格真实引擎像素截图验收，保留rev197跳跃、角色飞行、镜头锁、双指缩放和物理碰撞。原APK签名热更新，手机实机仍待验收。",
-  "signature": "cpKywFLAnu4QRmDOeMJqwLNcg9vDeQ/4xqpm/0Az1OFwT8KNmOLKfwdCpFC+jzDqEgUz+PeXY8SFoL9o8XK2T2dryklTmR7MQ3dFd0qzrDwckyCT8pJFgfPAJAwlA3Nsv6TnW8q5SschFs/XV56wljkljnTATIwu1BC7dLAlM8uobCRVF5gmE+OlSlXFGBmIT6FIQtDRFwPryqa4aF+/TGDAyFz0F0tSJLZ/VkO/8XJ53v3iIkkuAlHLaascNN7BHF6YK5FrMFTOLtgUUU04+Kt1N+UFLTsQVymJPdjsfDUxJ/ZDx15Og+TLhgweLnGpLViDmDcuhswVMsfvKVQRc4w0H/uRLVtoE3upqteFjrZv9WzCotBXL0A3ip7DfKftTo6z9AD0zZgiRIR5vrv+mLCQCnSpu8RuYhuAzh0KTgAz19iRyQslVG++BYpJwC7NU781m9ZssUWiZLQDgE8WQ0xpWcHTf93psqLalzfFIR2kilnbKr5ElSwZa5pvPb+m"
+  "sha256": "b7452c1ef8fcb821274f2f39281e722f7a48c1649ae54c88ffcf76c88ddc4612",
+  "size_bytes": 22010976,
+  "pack_url": "https://160701541-cell.github.io/xinyanshuo/android-preview/canglan-content-rev-199.pck",
+  "notes": "苍岚原APK176 rev199：真CC0长发遮住吓人的秃头、改善面部肤色，角色御剑外观试飞改用真正授权飞剑GLB、空中原生骨骼动画、风粒、脚下地面投影和离地高度/航速HUD，起落减速更平稳。增加全世界1/5/20/100倍时间加速，NPC施工、库存、饥饿、生态与昼夜一同推进；本地Qwen真实缺原生库如实提示。飞剑只是视觉测试，修为/法力仍锁定；需手机验收。",
+  "signature": "DkgeYN6b8CU8Figw0PchGPxqeNJVym+R9yKwrN6Qaw9o3GvFVSNZ33Amm6FxynKnY6B64XeUAED/0XrDsauJn1lMxu5KJLRhuuKvFn5zutIDYqQF6yZb/upkA7L/1EY2GwSZPDVyO/MTZAhC4BEVeFgxaV/Byzr83Lg+6pcFkHHgSBk4UQ9DXPAZLUxjgwRrEIQjBstlE9YHHeVDILeYSy/acEj12hd/lpPF9FSEuVhnOG6DmYKBeSweKELfdif3k2L3kheOF69XdJbAjB4MDKBqZndxAiqXsXTtrK+ThUjEao3ryk9tmguQf/tX/u3kUI2IaUSLb2dKem8flSJtS1iJhJuWY6u64REtKHy+gGUrKAdGSZjdelTb4yO39LNlKWUXraXeN/7EbJS3+bW6fMt0ZUNhmD/d+EQZSzmzzUcikNrzkIop31ldiwY6bnOhp2mwpWfB/6fxw6FtBKHJh6DwuZ94srYveVmh2klBfKAWOfwMLyYEjbCOBTucjHJ6"
 }
