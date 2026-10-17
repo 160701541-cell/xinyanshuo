@@ -122,7 +122,7 @@ func _run() -> void:
     _fail(27, "MISSING_VISIBLE_NPC_WORKER_JOB_LABELS")
     return
   var heights: Dictionary = first.get("worker_visual_heights_m",{})
-  for profession in ["woodcutter","quarryman","builder"]:
+  for profession in ["woodcutter","quarryman","steward"]:
     var actual_height: float = float(heights.get(profession,0.0))
     if actual_height < 1.5 or actual_height > 2.2:
       _fail(28, "NPC_NOT_SCALED_TO_VISIBLE_REAL_HEIGHT_" + profession + "_" + str(actual_height))
@@ -707,89 +707,83 @@ func _run() -> void:
   if _total_inventory(econ,"tree",0)!=INITIAL_WOOD or _total_inventory(econ,"stone",0)!=INITIAL_STONE:
     _fail(15,"NONZERO_WOOD_STONE_DEPOT_OR_INITIAL_ACCOUNTING_ERROR")
     return
-  var paid_wood := 0
-  var paid_stone := 0
-  var known_stage := 0
-  var paid_stage := false
-  var observed_real_foundation_digging: bool = false
-  var observed_live_tree_seed_rewards: bool = false
-  var saw_seed_in_depot: bool = false
-  var observed_planting: bool = false
-  var observed_builder_carried_real_materials := false
-  var observed_builder_depot_with_material_pickup := false
-  var returned_for_second_stage := false
+  # REV206: user removed all bespoke broken stage-house construction.
+  # Material conservation must hold WITHOUT paid material disappearance in
+  # unfinished scaffolds. Third NPC stewards existing complete houses.
+  var observed_live_tree_seed_rewards: bool=false
+  var saw_seed_in_depot: bool=false
+  var observed_planting: bool=false
   for tick in range(360):
-    room.call("_process", 1.0)
+    room.call("_process",1.0)
     if not bool(terrain.call("inventory_conserved")):
-      _fail(65,"EXCAVATION_CREATED_SOIL_OUT_OF_NOTHING_OR_LOST_MASS")
+      _fail(65,"REAL_EXCAVATION_CONSERVATION_BROKEN")
       return
-    if int(terrain.call("stats").get("excavation_units",0)) > 0:
-      observed_real_foundation_digging = true
-    var live_workers: Dictionary = room.get("workers")
-    var builder: Dictionary = live_workers.get("CL-NPC-0184-03", {})
-    if String(builder.get("phase","")) == "to_building_site":
-      var held: Dictionary = builder.get("carried_materials", {})
-      if held.is_empty() or not builder.has("cargo_visual"):
-        _fail(25, "BUILDER_ARRIVED_WITHOUT_PHYSICALLY_CARRIED_LICENSED_MATERIALS")
-        return
-      observed_builder_carried_real_materials = true
-      if (builder["node"] as Node3D).position.distance_to(Vector3(0,0,10)) < 1.5:
-        observed_builder_depot_with_material_pickup = true
-    if String(builder.get("phase","")) == "to_warehouse_for_materials" and int(room.get("_stage_index"))>=1:
-      returned_for_second_stage = true
-    var ecology = room.get("eco")
-    var seed_stock: int = int(econ.get("villages")["CL-REV186-HX-VILLAGE"]["stock"].get("tree_seed",0))
-    var seed_pending: int = 0
+    var ecology=room.get("eco")
+    var seed_stock: int=int(econ.get("villages")[
+      "CL-REV186-HX-VILLAGE"]["stock"].get("tree_seed",0))
+    var pending: int=0
     for count in ecology.awaiting_seed_delivery.values():
-      seed_pending += int(count)
-    if seed_stock+seed_pending+ecology.planted_count != ecology.minted_seed_events:
-      _fail(29,"TREE_SEED_MULTIPLICATION_LOSS_OR_UNPAID_PLANTING")
+      pending+=int(count)
+    if seed_stock+pending+ecology.planted_count != ecology.minted_seed_events:
+      _fail(29,"REV206_SEED_MINTING_VS_NATURAL_PLANTED_CONSERVATION")
       return
-    observed_live_tree_seed_rewards = observed_live_tree_seed_rewards or ecology.minted_seed_events > 0
-    observed_planting = observed_planting or ecology.planted_count > 0
-    saw_seed_in_depot = saw_seed_in_depot or seed_stock > 0
-    var stage: int = int(room.get("_stage_index"))
-    var stage_paid_now: bool = bool(room.get("_stage_paid"))
-    if stage < known_stage or stage > 4:
-      _fail(16, "CONSTRUCTION_STAGE_ROLLBACK_OR_OVERFLOW")
+    observed_live_tree_seed_rewards=observed_live_tree_seed_rewards or (
+      ecology.minted_seed_events>0)
+    observed_planting=observed_planting or ecology.planted_count>0
+    saw_seed_in_depot=saw_seed_in_depot or seed_stock>0
+    if _total_inventory(econ,"tree",0)!=INITIAL_WOOD:
+      _fail(17,"PREFAB_HOUSES_CANNOT_STEAL_RAW_WOOD_STOCK_"+str(tick))
       return
-    known_stage = stage
-    paid_wood = 0
-    paid_stone = 0
-    for i in range(stage):
-      paid_wood += int(PHASE_WOOD[i])
-      paid_stone += int(PHASE_STONE[i])
-    if stage_paid_now:
-      paid_wood += int(PHASE_WOOD[stage])
-      paid_stone += int(PHASE_STONE[stage])
-    if _total_inventory(econ,"tree",paid_wood)!=INITIAL_WOOD:
-      _fail(17, "PHYSICAL_WOOD_INFLATION_OR_LOSS_TICK_%d" % tick)
+    if _total_inventory(econ,"stone",0)!=INITIAL_STONE:
+      _fail(18,"PREFAB_HOUSES_CANNOT_STEAL_RAW_STONE_STOCK_"+str(tick))
       return
-    if _total_inventory(econ,"stone",paid_stone)!=INITIAL_STONE:
-      _fail(18, "PHYSICAL_STONE_INFLATION_OR_LOSS_TICK_%d" % tick)
+    if int(room.get("_stage_index"))!=0 or (
+        bool(room.get("_stage_paid"))):
+      _fail(324,"REV206_OLD_BROKEN_HUT_CONSTRUCTION_REACTIVATED")
       return
-    paid_stage = paid_stage or stage_paid_now
+  if (room.get("workers")["CL-NPC-0184-03"] as Dictionary).get(
+      "kind","")!="steward":
+    _fail(325,"REV206_STILL_SPAWNS_DYSFUNCTIONAL_BUILDING_WORKER")
+    return
   var report: Dictionary = room.call("stats")
-  if not observed_real_foundation_digging or not bool(terrain.call("foundation_ready")):
-    _fail(66,"NPC_MUST_EXCAVATE_LAYERED_3D_PIT_BEFORE_BUILDING_FOUNDATION")
+  if not bool(report.get("rev206_perpetual_house_construction_retired",false)) or (
+      int(report.get("rev206_cc0_completed_building_count",0))!=6):
+    _fail(326,"REV206_SIX_GENUINE_FINISHED_BUILDINGS_MUST_REPLACE_TINY_SHACKS")
     return
-  if int(report.get("foundation_excavation_npc_cuts",0)) < 6:
-    _fail(67,"REAL_NPC_NEVER_ACTUALLY_REMOVED_FOUNDATION_SOIL")
+  if int(report.get("rev206_native_wildlife_count",0))!=4 or (
+      int(report.get("rev206_native_animated_wildlife_count",0))!=4) or (
+      int(report.get("rev206_outfit_source_count",0))!=2):
+    _fail(327,"REV206_GENUINE_ANIMATED_ANIMALS_OR_LICENSED_OUTFITS_MISSING")
     return
+  for house_id in ["CL-HOME-V206-001","CL-HOME-V206-002",
+      "CL-HOME-V206-003","CL-HOME-V206-004",
+      "CL-INN-V206-001","CL-GAZEBO-V206-001"]:
+    var full_home: Node3D=room.get("finished_prefabs").get(house_id,null)
+    if full_home==null or not is_instance_valid(full_home) or not (
+        bool(full_home.get_meta("completed_prefab_not_npc_assembly",false))):
+      _fail(328,"REV206_MISSING_SOURCE_COMPLETE_ORIGINAL_CC0_HOUSE_"+house_id)
+      return
+    var bounds: Vector2=room.call("_visible_bounds",full_home)
+    if bounds.y-bounds.x<2.5 or bounds.y-bounds.x>10.0:
+      _fail(329,"REV206_FINISHED_VENDOR_HOUSE_FLOATS_OR_HAS_WRONG_METERS_"+str(bounds))
+      return
+  var resident_home: Node3D=room.get("finished_prefabs")["CL-HOME-V206-001"]
+  if not (resident_home.get_meta("assigned_resident_ids",[]) as Array).has(
+      "CL-NPC-0184-03"):
+    _fail(330,"REV206_COMPLETE_HOUSE_NEVER_ASSIGNED_TO_REAL_STEWARD")
+    return
+  if not bool(report.get("persistent_city_population_is_statistical_only",false)):
+    _fail(331,"REV206_CITY_80000_RESIDENTS_MUST_NOT_BE_80000_GODOT_NODES")
+    return
+  print("PASS_REV206_REAL_QUATERNIUS_CC0_COMPLETE_HOMES_WANDERING_ANIMATED_ANIMALS_AND_PERMANENTLY_RETIRED_BUILDER")
   if not (report.get("native_resolution_ui",false) and report.get("no_auto_quality_switch",false)):
     _fail(91,"UI_SCALED_WITH_3D_OR_AUTOMATIC_QUALITY_DOWNGRADE")
     return
   if int(report["harvests"]) < 4 or int(report["deliveries"]) < 4:
     _fail(19, "NPC_MUST_ACTUALLY_WALK_TO_RESOURCES_AND_DELIVER")
     return
-  if int(report["stage"]) < 2 or int(report["built_cc0_parts"]) < 6:
-    _fail(20, "REAL_MATERIAL_PAID_MULTI_STAGE_CONSTRUCTION_MUST_PROGRESS")
-    return
-  if not paid_stage:
-    _fail(21, "NO_EVIDENCE_OF_ACTUAL_STOCK_RESERVATION")
-    return
-  if not (observed_builder_carried_real_materials and observed_builder_depot_with_material_pickup and returned_for_second_stage):
-    _fail(26, "BUILDER_MUST_WALK_TO_WAREHOUSE_AND_TRANSPORT_STAGED_MATERIALS")
+  if int(report.get("built_cc0_parts",0))!=6:
+    _fail(20,"REV206_ONLY_COMPLETE_CC0_PREFABS_NOT_CUSTOM_SCAFFOLD_PARTS")
     return
   if not observed_live_tree_seed_rewards or not observed_planting:
     _fail(30,"TREE_MUST_ONLY_DROP_ONE_SEED_WHEN_FULLY_CUT_AND_REAL_SEED_MUST_GERMINATE")
@@ -1828,7 +1822,7 @@ func _run() -> void:
   print("PASS_APK176_REAL_3D_PREVIEW")
   print("OBSERVED_APK176_MAIN_INSTANCE_WITH_PORTAL_AND_IMAGES_PENDING_ENGINE_ERROR_AUDIT")
   print("PASS_APK176_ACTUAL_MAIN_INSTANTIATED_NO_ENGINE_ERRORS_WITH_REAL_HOUSE")
-  print("PASS_REV187_LICENSED_3D_NPC_RESOURCE_TRANSPORT_MATERIAL_CONSERVATION_STAGE_BUILD")
+  print("PASS_REV206_ORIGINAL_PLAYER_TREE_STONE_PHYSICAL_TRANSPORT_WITH_LICENSED_FINISHED_CC0_HOUSES_NO_BROKEN_CONSTRUCTION")
   print("PASS_REV187_PHONE_VISIBILITY_TREE_SEED_BEDROCK_EXCLUSION_AND_TECTONIC_MILLIONS_OF_YEARS")
   print("PASS_REV187_UNLIMITED_NATURAL_MULTIHUE_KENNEY_MESH_BATCH_SINGLE_WARM_SUN")
   print("REV187_ONEPLUS_1500_800_400_DRAW_REFERENCE_REAL_DEVICE_UNVERIFIED")
