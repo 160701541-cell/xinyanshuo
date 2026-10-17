@@ -1,3 +1,5 @@
+# rev203 original-APK176 signed production run 39030030956 SUCCESS;
+# independently prove live HTTPS RSA/SHA256/full bytes/HTTP206 after Pages deploy.
 name: Canglan APK176 rev203 - Real Site RSA PCK HTTP Proof
 on:
   push:
