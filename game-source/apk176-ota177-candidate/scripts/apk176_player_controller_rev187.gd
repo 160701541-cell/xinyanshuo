@@ -34,6 +34,10 @@ var _locked_target: Node3D
 var _locked_target_kind: String=""
 var _locked_target_id: String=""
 var _lock_on_count: int=0
+const KENNEY_UI_DIR: String="res://canglan_rev187/ui/kenney/"
+var _ui_sprite_cache: Dictionary={}
+var _kenney_ui_asset_count: int=0
+var _ui_compact_combat: bool=false
 var _yaw: float = 0.43
 var _pitch: float = 0.38
 var _distance: float = 9.5
@@ -395,6 +399,88 @@ func _rounded(color: Color, radius: int) -> StyleBoxFlat:
   s.corner_radius_bottom_right = radius
   return s
 
+func _kenney_png(sprite: String) -> Texture2D:
+  if _ui_sprite_cache.has(sprite):
+    return _ui_sprite_cache[sprite]
+  var path: String=KENNEY_UI_DIR+sprite
+  if not FileAccess.file_exists(path):
+    return null
+  var encoded: PackedByteArray=FileAccess.get_file_as_bytes(path)
+  var image:=Image.new()
+  if image.load_png_from_buffer(encoded)!=OK or image.is_empty():
+    return null
+  var tex: Texture2D=ImageTexture.create_from_image(image)
+  _ui_sprite_cache[sprite]=tex
+  _kenney_ui_asset_count+=1
+  return tex
+
+func _kenney_style(sprite: String,tint: Color=Color.WHITE) -> StyleBoxTexture:
+  var t: Texture2D=_kenney_png(sprite)
+  if t==null:
+    return null
+  var nine:=StyleBoxTexture.new()
+  nine.texture=t
+  nine.modulate_color=tint
+  var edge: float=clampf(minf(float(t.get_width()),float(t.get_height()))*0.28,2.0,9.0)
+  nine.set_texture_margin_all(edge)
+  nine.set_content_margin_all(5.0)
+  return nine
+
+func _attach_kenney_joystick(parent: Control, sprite: String,size: Vector2) -> bool:
+  var texture: Texture2D=_kenney_png(sprite)
+  if texture==null:
+    return false
+  var picture:=TextureRect.new()
+  picture.name="AuthenticKenneyMobileControlsCC0_"+sprite.get_basename()
+  picture.texture=texture
+  picture.size=size
+  picture.expand_mode=TextureRect.EXPAND_IGNORE_SIZE
+  picture.stretch_mode=TextureRect.STRETCH_SCALE
+  picture.modulate=Color(0.61,0.88,0.74,0.82)
+  picture.mouse_filter=Control.MOUSE_FILTER_IGNORE
+  parent.add_child(picture)
+  parent.move_child(picture,0)
+  return true
+
+func _install_kenney_ui_theme() -> void:
+  # Exact CC0 Kenney PNG files packed in the original APK176 signed OTA PCK,
+  # not an external web skin or a newly generated approximation.
+  var normal: StyleBoxTexture=_kenney_style("button_brown.png",Color(0.75,0.89,0.80,0.98))
+  var depressed: StyleBoxTexture=_kenney_style("button_brown_close.png",Color(0.81,0.88,0.71,0.94))
+  var inactive: StyleBoxTexture=_kenney_style("button_grey.png",Color(0.65,0.70,0.72,0.72))
+  var frame: StyleBoxTexture=_kenney_style("panel_border_brown_detail.png",Color(0.73,0.93,0.76,0.95))
+  var dark: StyleBoxTexture=_kenney_style("panel_brown_dark.png",Color(0.27,0.42,0.39,0.96))
+  if normal==null or depressed==null or inactive==null or frame==null or dark==null:
+    push_warning("REV205_CC0_KENNEY_UI_PACK_ASSETS_MISSING_OR_NOT_PACKED")
+    return
+  for candidate in hud.find_children("*","Button",true,false):
+    var button: Button=candidate as Button
+    button.add_theme_stylebox_override("normal",normal)
+    button.add_theme_stylebox_override("hover",frame)
+    button.add_theme_stylebox_override("pressed",depressed)
+    button.add_theme_stylebox_override("disabled",inactive)
+    button.add_theme_font_size_override("font_size",16)
+    button.add_theme_color_override("font_color",Color("#f2e5c9"))
+    button.add_theme_color_override("font_hover_color",Color("#fff3db"))
+  for candidate in hud.find_children("*","PanelContainer",true,false):
+    (candidate as PanelContainer).add_theme_stylebox_override("panel",dark)
+  if joystick_ring!=null:
+    joystick_ring.add_theme_stylebox_override("panel",_rounded(Color(0,0,0,0),74))
+    thumb_panel.add_theme_stylebox_override("panel",_rounded(Color(0,0,0,0),33))
+    _attach_kenney_joystick(joystick_ring,"joystick_circle_pad_a.png",Vector2(146,146))
+    _attach_kenney_joystick(thumb_panel,"joystick_circle_nub_a.png",Vector2(64,64))
+  for slot in [{"bar":_health_bar,"name":"progress_red.png"},
+      {"bar":_energy_bar,"name":"progress_green.png"},
+      {"bar":_mana_bar,"name":"progress_blue.png"},
+      {"bar":_target_health_bar,"name":"progress_red.png"},
+      {"bar":_target_mana_bar,"name":"progress_blue.png"}]:
+    var bar: ProgressBar=slot["bar"]
+    var fill: StyleBoxTexture=_kenney_style(slot["name"])
+    if bar!=null and fill!=null:
+      bar.add_theme_stylebox_override("fill",fill)
+      bar.add_theme_stylebox_override("background",_rounded(Color("#172727"),4))
+  hud.set_meta("kenney_ui_cc0_loaded",_kenney_ui_asset_count>=10)
+
 func _new_button(key: String, label: String, width: float, action: Callable) -> Button:
   var button := Button.new()
   button.name = key
@@ -491,6 +577,7 @@ func _create_hud() -> void:
   _create_living_clock_and_flight_hud()
   _create_cultivation_action_buttons()
   _layout_hud()
+  _install_kenney_ui_theme()
 
 
 # rev188 candidate: never fabricate HP, MP or skill state before combat exists.
@@ -2863,9 +2950,9 @@ func step(delta: float) -> void:
   if not bool(room.get("_follow_builder")):
     update_camera()
   if _hud_flash>0.0:
-    _hud_flash = maxf(0,_hud_flash-delta)
-    if _hud_flash<=0:
-      notice.text = "左摇杆移动 | 右侧看世界 | 双指缩放 | 互动/挖掘"
+    _hud_flash=maxf(0.0,_hud_flash-delta)
+    if _hud_flash<=0.0:
+      notice.text=""
   _refresh_game_hud()
   _layout_hud()
 
