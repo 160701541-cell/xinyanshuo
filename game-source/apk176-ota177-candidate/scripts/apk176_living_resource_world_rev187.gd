@@ -215,6 +215,9 @@ func _ready() -> void:
     asset_errors.append("REV207_WORLD_50000KM2_MORTAL_ECOLOGY_SAVE_LOAD_FAILED")
   else:
     _sync_mine_guardian_realms()
+    # Reconcile a world-census death that persisted before the separate
+    # actor-save write, avoiding phantom resurrection after Android crashes.
+    cultivation.call("reconcile_named_deaths_with_regions")
   _create_quality_hud()
   _hide_old_render_world()
   _hide_original_debug_labels()
