@@ -312,8 +312,7 @@ func _construct_far_land() -> void:
       for p in [Vector2(x0,z0),Vector2(x1,z0),Vector2(x1,z1),Vector2(x0,z1)]:
         var radius: float = p.length()
         var extra: float = clampf((radius-70.0)/220.0,0.0,1.0)
-        var rolling: float = (2.0*sin(p.x*0.029)*cos(p.y*0.021)
-          +1.6*sin(p.x*0.049+p.y*0.024)) * extra
+        var rolling: float = (2.0*sin(p.x*0.029)*cos(p.y*0.021) + 1.6*sin(p.x*0.049+p.y*0.024))*extra
         var mountain: float = pow(extra,2.4)*(12.0+8.0*sin(p.x*0.036)*cos(p.y*0.035))
         corners.append(Vector3(p.x,_base_at(p.x,p.y)-2.2*extra+rolling+mountain,p.y))
       _push_quad(outside,corners[0],corners[3],corners[2],corners[1])
