@@ -538,11 +538,11 @@ func _run() -> void:
     return
   var profiles: Array = [
     {"key":"极致画质","scale":1.0,"msaa":Viewport.MSAA_4X,"shadows":100.0,
-     "draw":1500,"triangles":1500000,"grass":4500,"grass_m":80.0,"fireflies":100,"clouds":9},
+     "draw":1500,"triangles":1500000,"grass":10800,"stream_grass":460,"grass_m":80.0,"fireflies":100,"clouds":9},
     {"key":"高档","scale":0.96,"msaa":Viewport.MSAA_2X,"shadows":60.0,
-     "draw":800,"triangles":600000,"grass":2400,"grass_m":40.0,"fireflies":60,"clouds":5},
+     "draw":800,"triangles":600000,"grass":7200,"stream_grass":330,"grass_m":40.0,"fireflies":60,"clouds":5},
     {"key":"普通","scale":0.80,"msaa":Viewport.MSAA_DISABLED,"shadows":30.0,
-     "draw":400,"triangles":300000,"grass":1100,"grass_m":20.0,"fireflies":20,"clouds":2}
+     "draw":400,"triangles":300000,"grass":3200,"stream_grass":155,"grass_m":20.0,"fireflies":20,"clouds":2}
   ]
   for expected in profiles:
     if not quality.call("apply",String(expected["key"]),true):
@@ -564,8 +564,19 @@ func _run() -> void:
     var flies: GPUParticles3D=world.get_node("NaturalWarmMobileFireflyParticlesTiered")
     var clouds: MultiMeshInstance3D=world.get_node("RealBlueSkySoftWhiteCumulusCards")
     if grass.multimesh.visible_instance_count!=int(expected["grass"]) or absf(grass.visibility_range_end-float(expected["grass_m"]))>0.1:
-      _fail(87,"GRASS_DENSITY_AND_DISTANCE_NEED_PER_TIER_SCALE")
+      _fail(87,"GRASS_DENSITY_AND_DISTANCE_NEED_PER_TIER_SCALE_"+String(expected["key"])+
+        "_actual_"+str(grass.multimesh.visible_instance_count))
       return
+    # The 2026-10-18 denser grass source now allocates 10,800/7,200/3,200
+    # nearby tufts plus 460/330/155 physical chunks per active profile.
+    # Test GPU-visible numbers, not a stale constant from rev187.
+    for meadow in (quality.get("streamed_meadows") as Dictionary).values():
+      var chunk_meadow: MultiMeshInstance3D=meadow
+      if not is_instance_valid(chunk_meadow) or (
+          chunk_meadow.multimesh.visible_instance_count!=int(expected["stream_grass"])):
+        _fail(353,"REV206_PHYSICAL_MEADOW_DRAW_DENSITY_DOES_NOT_SCALE_WITH_PROFILE_"+
+          String(expected["key"]))
+        return
     if flies.amount!=int(expected["fireflies"]) or clouds.multimesh.visible_instance_count!=int(expected["clouds"]):
       _fail(88,"PARTICLE_AND_CLOUD_COMPLEXITY_MUST_TIER_SCALE")
       return
