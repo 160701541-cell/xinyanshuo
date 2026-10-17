@@ -71,6 +71,23 @@ SPIRIT_MODELS = {
 }
 assert len(SPIRIT_MODELS)==7
 REQUIRED.update(SPIRIT_MODELS)
+# Original Chinese Han CC BY-SA 3.0 architectural source, no free western
+# Quaternius "complete" houses ever counted as livable. Same source SHA256.
+HAN_ROOT=BASE_DIR/"game-source/apk176-ota177-candidate/assets/cc-by-sa-han-rev206"
+HAN_PROOF=json.loads((HAN_ROOT/"verified_real_han_art.json").read_text())
+assert HAN_PROOF["license"]=="CC-BY-SA-3.0" and len(HAN_PROOF["models"])==9
+assert len([a for a in HAN_PROOF["models"] if a["category"]=="home"])==4
+HAN_MODELS={
+    "canglan_rev187/han_ccby_sa/"+m["name"]+".glb":
+        (BASE_DIR/m["path"],m["sha256"])
+    for m in HAN_PROOF["models"]
+}
+REQUIRED.update(HAN_MODELS)
+for evidence in ["ART_LICENSE_ATTRIBUTION.md","verified_real_han_art.json",
+                 "upstream_manifest.json"]:
+    REQUIRED.add("canglan_rev187/han_ccby_sa/"+evidence)
+REQUIRED.add("canglan_rev187/household_economy.gd")
+
 
 # Nine 512px source-verified original Quaternius CC0 albedo/normal/ORM maps:
 # a missing, corrupted or substituted white flat map is a HARD release fail.
@@ -170,6 +187,17 @@ def audit(path: Path) -> dict:
         assert hashlib.sha256(raw_texture).hexdigest()==sha256
         assert raw_texture==actual_source.read_bytes(), (
             "BLOCKED: PBR texture not from licensed artist "+rel)
+    assert json.loads(found["canglan_rev187/han_ccby_sa/verified_real_han_art.json"])==HAN_PROOF, (
+      "BLOCKED: Han CC-BY-SA actual source proof modified in PCK")
+    assert b"CC BY-SA 3.0" in found["canglan_rev187/han_ccby_sa/ART_LICENSE_ATTRIBUTION.md"], (
+      "BLOCKED: missing original WildfireGames CC BY-SA art credits in mobile OTA")
+    for han_path, (original, expected_sha) in HAN_MODELS.items():
+        mesh=found[han_path]
+        assert mesh[:4]==b"glTF" and len(mesh)>2000, (
+          "BLOCKED: original Chinese Han 3D model absent "+han_path)
+        assert hashlib.sha256(mesh).hexdigest()==expected_sha and (
+          mesh==original.read_bytes()), (
+          "BLOCKED: original Han GLB altered or unlicensed "+han_path)
     palette = found["canglan_rev187/Textures/colormap.png"]
     if palette[:8] != bytes.fromhex("89504e470d0a1a0a") or len(palette) < 128:
         raise ValueError("BLOCKED: official Kenney external palette is missing or corrupt")
