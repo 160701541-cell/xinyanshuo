@@ -881,8 +881,11 @@ func _run() -> void:
     return
   var drag_start: float=float(player.get("_pitch"))
   player.call("turn_view",Vector2(0,32))
-  if float(player.get("_pitch"))>=drag_start:
-    _fail(118,"ANDROID_RIGHT_SCREEN_DOWN_DRAG_WRONGLY_MOVES_VIEW_UP")
+  # Third-person orbital pitch increases when the camera rises OVER the
+  # avatar and points DOWN. The old check compared raw Euler pitch as if
+  # it were first-person lens pitch and incorrectly enforced inverted touch.
+  if float(player.get("_pitch"))<=drag_start:
+    _fail(118,"ANDROID_RIGHT_SCREEN_DOWN_DRAG_MUST_LOWER_REAL_WORLD_SIGHTLINE")
     return
   var before_yaw: float = float(player.get("_yaw"))
   var zone: Control = player.get("_look_zone")
