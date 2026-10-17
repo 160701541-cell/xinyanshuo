@@ -1360,6 +1360,116 @@ func _run() -> void:
     _fail(249,"REV199_STILL_HAS_GHOST_FLIGHT_EFFECTS_AFTER_ACTUAL_SOFT_LANDING")
     return
   print("PASS_REV199_REAL_WORLD_ACCELERATES_NPC_ECOLOGY_HOURS_DAY_NIGHT_AND_TRAINING_FLIGHT_WITH_VISIBLE_ALTITUDE_SPEED_AIR_TRAIL_AND_HONEST_OFFLINE_AI")
+  # rev201 independently verify TRUE seeded cultivation in original APK176
+  # Main, NOT mock class or a screenshot-only green UI.
+  var spir: RefCounted=room.get("cultivation")
+  if spir==null:
+    _fail(261,"REV201_CULTIVATION_AUTHORITY_NOT_MOUNTED_IN_ORIGINAL_GAME")
+    return
+  var world_report: Dictionary=spir.call("stats")
+  if int(world_report.get("world_seed",0))<=0 or not bool(
+      world_report.get("seed_is_persistent",false)) or int(
+      world_report.get("cultivator_count",0))!=12:
+    _fail(262,"REV201_REAL_GENERATED_SEED_AND_12_LICENSED_CULTIVATORS_ABSENT_"+str(world_report))
+    return
+  var spiritual_altar: Node3D=spir.get("altar")
+  if spiritual_altar==null or not String(spiritual_altar.get_meta(
+      "entity_id","")).begins_with("CL-ANCIENT-SPIRIT-ROOT") or not (
+      spiritual_altar.has_meta("provider")):
+    _fail(263,"REV201_DETECTION_ALTAR_NOT_AN_ACTUAL_LICENSED_STONE_WORLD_ENTITY")
+    return
+  var spirit_npcs: Dictionary=spir.get("npc_visuals")
+  var spirit_records: Dictionary=spir.get("npc_data")
+  if spirit_npcs.size()!=12 or spirit_records.size()!=12:
+    _fail(264,"REV201_VISIBLE_SPIRIT_NPCS_DO_NOT_HAVE_INDEPENDENT_IDENTITY_AND_TIME_STATE")
+    return
+  for spirit_id in spirit_npcs:
+    var spirit_avatar: Node3D=spirit_npcs[spirit_id]["actor"]
+    if spirit_avatar==null or spirit_avatar.find_children("*","MeshInstance3D",true,false).is_empty() or not spirit_avatar.has_meta("entity_id"):
+      _fail(265,"REV201_CULTIVATOR_IS_FAKE_STATIC_LABEL_NOT_ACTUAL_ANIMATED_GLB")
+      return
+  var unauthenticated: Dictionary=spir.call("public_player_status")
+  if unauthenticated.has("root_kind") or unauthenticated.has("root_weights"):
+    _fail(266,"REV201_HIDDEN_PLAYER_SPIRIT_ROOT_LEAKED_BEFORE_THE_DETECTION_ALTAR")
+    return
+  var real_first_result: Dictionary=player.call("_try_root_examination")
+  if bool(real_first_result.get("ok",false)):
+    _fail(267,"REV201_SPIRIT_ROOT_TEST_CAN_BE_TAKEN_ANYWHERE_NOT_AT_REAL_ALTAR")
+    return
+  var before_altar_pos: Vector3=actor.position
+  actor.position=Vector3(12.0,float(terrain.call("height_at",12,7))+
+    float(actor.get_meta("actor_ground_offset_y",0.0)),7.0)
+  var altar_btn: Button=game_hud.get_node_or_null(
+      "LiveActualSpiritRootAltarExamTouchAction")
+  var meditation_btn: Button=game_hud.get_node_or_null(
+      "LiveOriginalWorldMeditationRealHourTouchAction")
+  var realm_btn: Button=game_hud.get_node_or_null(
+      "LiveActualQiPaidBreakthroughTouchAction")
+  var seed_label: Label=game_hud.get_node_or_null(
+      "ActuallyPersistentSpiritualWorldGenerationSeedVisible")
+  if altar_btn==null or meditation_btn==null or realm_btn==null or seed_label==null:
+    _fail(268,"REV201_NO_REAL_ANDROID_ROOT_TEST_MEDITATION_BREAKTHROUGH_SEED_CONTROLS")
+    return
+  altar_btn.pressed.emit()
+  var tested: Dictionary=spir.call("public_player_status")
+  if not bool(tested.get("tested",false)) or not seed_label.text.contains(
+      str(world_report["world_seed"])):
+    _fail(269,"REV201_BUTTON_NOT_CONNECTED_TO_REAL_SEED_SPIRIT_ROOT_EXAM_AND_HUD")
+    return
+  var rolled: Dictionary=spir.call("_roll_player_roots")
+  if String(tested.get("root_kind",""))!=String(rolled.get("kind","")):
+    _fail(270,"REV201_PLAYER_ROOT_IS_REROLLED_UNDETERMINISTICALLY")
+    return
+  if String(tested.get("root_kind",""))=="无灵根":
+    if bool(spir.call("toggle_player_meditation").get("ok",true)):
+      _fail(271,"REV201_NO_ROOT_PLAYER_ILLEGALLY_GENERATED_SPIRIT_MANA")
+      return
+  else:
+    var practice_start: Dictionary=spir.call("toggle_player_meditation")
+    if not bool(practice_start.get("ok",false)):
+      _fail(272,"REV201_REAL_SPIRITROOT_PLAYER_CANNOT_PRACTICE_AT_ALL")
+      return
+    var npc_first_code: String="CL-XIUXIAN-001"
+    var old_npc_hours: int=int(spirit_records[npc_first_code]["life_hours"])
+    var before_qi: int=int(tested["qi"])
+    var before_sim_hour: int=int(econ.day-1)*24+int(econ.hour)
+    room.call("cycle_world_time_scale")
+    room.call("cycle_world_time_scale")
+    room.call("cycle_world_time_scale") # 100x WHOLE-world mode
+    for i in range(10):
+      room.call("_process",0.10)
+    var later: Dictionary=spir.call("public_player_status")
+    var sim_elapsed: int=int(econ.day-1)*24+int(econ.hour)-before_sim_hour
+    var npc_elapsed: int=int(spirit_records[npc_first_code]["life_hours"])-old_npc_hours
+    if sim_elapsed<6 or npc_elapsed!=sim_elapsed or int(later["qi"])<=before_qi+55:
+      _fail(273,"REV201_MEDITATION_AND_REAL_NPC_AGING_NOT_ADVANCING_TOGETHER_WITH_WHOLE_WORLD_TIME")
+      return
+    var qi_before_break: int=int(later["qi"])
+    var breakthrough: Dictionary=spir.call("player_breakthrough")
+    if not bool(breakthrough.get("ok",false)) or int(
+        spir.get("player_data")["layer"])!=1 or int(
+        spir.get("player_data")["qi"])>=qi_before_break:
+      _fail(274,"REV201_QI_NOT_SPENT_FOR_TRUE_FIRST_LEVEL_BREAKTHROUGH")
+      return
+    # Same world ID after reloading the serialized file: no more repeated
+    # "roll 3 times" exploit from reopening the game.
+    if not bool(spir.call("save_state")):
+      _fail(275,"REV201_WORLD_SEED_ROOT_PROGRESS_MISSING_SAVE")
+      return
+    var Cult: GDScript=spir.get_script() as GDScript
+    var clone: RefCounted=Cult.new()
+    clone.call("_load_or_initialize")
+    var loaded: Dictionary=clone.call("public_player_status")
+    if int(clone.get("world_seed"))!=int(spir.get("world_seed")) or int(
+        loaded.get("layer",0))!=1 or String(loaded.get("root_kind",""))!=String(
+        tested.get("root_kind","")):
+      _fail(276,"REV201_ROOT_AND_SPIRIT_LEVEL_REROLLED_OR_LOST_ON_REAL_SAVE_RELOAD")
+      return
+    room.call("cycle_world_time_scale") # reset to 1x
+  actor.position=before_altar_pos
+  player.call("update_camera")
+  player.call("_refresh_game_hud")
+  print("PASS_REV201_ACTUAL_LICENSED_ALTAR_HIDDEN_DETERMINISTIC_ROOT_12_AUTONOMOUS_CULTIVATORS_REAL_HOUR_MEDITATION_QI_AND_BREAKTHROUGH_SAVED")
   room.call("_focus_builder")
   if not bool(room.get("_follow_builder")) or float(room.get("_camera_distance")) > 14.0:
     _fail(42,"BUTTON_MUST_ACTUALLY_FOCUS_VISIBLE_NPC")
