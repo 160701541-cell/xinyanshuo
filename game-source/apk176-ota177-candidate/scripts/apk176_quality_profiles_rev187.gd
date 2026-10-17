@@ -8,15 +8,15 @@ const SETTINGS_PATH := "user://canglan_graphics_profiles_v1.cfg"
 const PROFILES := {
  "极致画质":{"scale":1.00,"msaa":Viewport.MSAA_4X,"shadow_m":100.0,
    "shadow_splits":2,"grass_distance":80.0,"grass_instances":4500,
-   "fireflies":100,"clouds":9,"fog_density":0.007,"name_distance":20.0,
+   "fireflies":100,"clouds":9,"fog_density":0.0020,"name_distance":20.0,
    "glow":true,"draw_reference":1500,"triangle_reference":1500000,"target_fps":90},
  "高档":{"scale":0.85,"msaa":Viewport.MSAA_2X,"shadow_m":60.0,
    "shadow_splits":1,"grass_distance":40.0,"grass_instances":2400,
-   "fireflies":60,"clouds":5,"fog_density":0.005,"name_distance":13.0,
+   "fireflies":60,"clouds":5,"fog_density":0.0018,"name_distance":13.0,
    "glow":true,"draw_reference":800,"triangle_reference":600000,"target_fps":60},
  "普通":{"scale":0.67,"msaa":Viewport.MSAA_DISABLED,"shadow_m":30.0,
    "shadow_splits":0,"grass_distance":20.0,"grass_instances":1100,
-   "fireflies":20,"clouds":2,"fog_density":0.003,"name_distance":8.0,
+   "fireflies":20,"clouds":2,"fog_density":0.00145,"name_distance":8.0,
    "glow":false,"draw_reference":400,"triangle_reference":300000,"target_fps":60}
 }
 var selected: String = "高档"
@@ -189,16 +189,16 @@ func _create_grass_and_flowers(room: Node) -> void:
   var rng:=RandomNumberGenerator.new()
   rng.seed=20261017
   grass=MultiMeshInstance3D.new()
-  grass.name="FineFiveLeafGrassTuftsTerrainConforming"
+  grass.name="LivingClusteredMeadowTuftsTerrainConforming"
   var grass_mm:=MultiMesh.new()
   grass_mm.transform_format=MultiMesh.TRANSFORM_3D
   grass_mm.use_colors=true
   grass_mm.mesh=_grass_mesh()
   grass_mm.instance_count=4500
   var greens: Array[Color]=[
-    Color("#4f8655"),Color("#6a9b58"),Color("#83aa63"),Color("#779950"),
-    Color("#9aaf65"),Color("#8da85a"),Color("#638e59"),Color("#b3b878"),
-    Color("#5b7f4d"),Color("#729c69"),Color("#a6b875"),Color("#708459")]
+    Color("#32643e"),Color("#41733d"),Color("#5b9147"),Color("#688d3a"),
+    Color("#829b49"),Color("#72944c"),Color("#3d7041"),Color("#a7a261"),
+    Color("#477a48"),Color("#5a8954"),Color("#899f55"),Color("#496b3f")]
   # Deterministic meadow ecology: patches of lush grass interspersed with
   # lighter trampled corridors, soil and rock. The high/normal 3D LODs
   # sample all patches, not only the first N positions in one corner.
@@ -370,10 +370,12 @@ func apply(profile_name: String,save: bool=true) -> bool:
   else:
     sun.directional_shadow_mode=DirectionalLight3D.SHADOW_ORTHOGONAL
   sun.shadow_enabled=true
-  sun.light_energy=1.08 if selected=="普通" else (1.15 if selected=="高档" else 1.25)
+  sun.light_energy=0.96 if selected=="普通" else (1.03 if selected=="高档" else 1.08)
   scene_environment.fog_enabled=true
-  scene_environment.fog_light_color=Color("#b8d9e8")
+  scene_environment.fog_light_color=Color("#8fb5c5")
   scene_environment.fog_density=float(p["fog_density"])
+  # Avoid bleached near-field: atmospheric perspective only in the distance.
+  scene_environment.ambient_light_energy=0.46
   # Modern Godot Mobile renderer does not guarantee Forward+ screen glow.
   # The actual emissive fireflies remain visible in all three tiers.
   scene_environment.glow_enabled=false
