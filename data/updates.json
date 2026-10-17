@@ -1,9 +1,9 @@
 {
   "schema": 1,
   "channel": "signed-releases",
-  "updated_at": "2026-10-17T18:25:59Z",
+  "updated_at": "2026-10-17T18:27:45Z",
   "source": "android-preview/latest.json; RSA original APK key + official HTTPS PCK",
-  "verification": "Signed RSA/SHA256 verified on official HTTPS complete PCK (rev205) + HTTP206 Range via GitHub Actions run 39051608266; phone hardware visual/FPS/heat acceptance pending.",
+  "verification": "Signed RSA/SHA256 original APK176 rev206 officially live on GitHub Pages and complete download / HTTP 206 Range verified in successful official Pages deployment run 39058075233 (2026-10-17T18:27:42Z). Actual Android phone touch/visual/FPS/heat QA pending.",
   "entries": [
     {
       "revision": 206,
@@ -14,11 +14,14 @@
       "status": "signed_release",
       "android_version_code": 1176,
       "protocol": "RSA-3072 PKCS1-v1_5 / SHA-256",
-      "remote_https_verified": false,
-      "remote_range_206_verified": false,
+      "remote_https_verified": true,
+      "remote_range_206_verified": true,
       "ci_run": 39057810555,
       "android_real_device_qa": "pending",
-      "engine_visual_proof": "art/actual-engine-capture/canglan-rev206-real-spirit-herbs-godot-linux.png"
+      "engine_visual_proof": "art/actual-engine-capture/canglan-rev206-real-spirit-herbs-godot-linux.png",
+      "remote_proof_run": 39058075233,
+      "http_range_status": 206,
+      "public_full_pck_sha256_verified": true
     },
     {
       "revision": 205,
