@@ -1,0 +1,153 @@
+{
+  "schema": 206,
+  "purpose": "ready-made copyrighted-safe CC0 assets intake; no in-house building repair",
+  "origin": "Quaternius",
+  "mirror": "Papyszoo/CC0-Public-Domain-Models",
+  "license": "CC0-1.0",
+  "license_source": "https://quaternius.com/",
+  "license_mirror": "https://github.com/Papyszoo/CC0-Public-Domain-Models",
+  "warning": "European medieval prefab models are provisional staging; Chinese architectural cohesion MUST pass art gate before public in-game deployment.",
+  "status": "upstream_source_validated_binary_not_downloaded_in_this_commit",
+  "models": [
+    {
+      "pack": "quaternius-medievalvillage",
+      "name": "house_1",
+      "blob_sha1": "07df5c7cc8d95c86d50ded2b2b66e249697ce4bc",
+      "bytes": 391668,
+      "role": "building",
+      "upstream_path": "packs/quaternius-medievalvillage/models/house_1/house_1.glb",
+      "destination": "game-source/apk176-ota177-candidate/assets/cc0-rev206/building/house_1.glb",
+      "status": "pending_intake"
+    },
+    {
+      "pack": "quaternius-medievalvillage",
+      "name": "house_2",
+      "blob_sha1": "66271abd5eaeb36ed502e3c3a29f78f3b426f7a6",
+      "bytes": 483476,
+      "role": "building",
+      "upstream_path": "packs/quaternius-medievalvillage/models/house_2/house_2.glb",
+      "destination": "game-source/apk176-ota177-candidate/assets/cc0-rev206/building/house_2.glb",
+      "status": "pending_intake"
+    },
+    {
+      "pack": "quaternius-medievalvillage",
+      "name": "house_3",
+      "blob_sha1": "ec0711774bcdee454bc86474fa6c99c470b48107",
+      "bytes": 253700,
+      "role": "building",
+      "upstream_path": "packs/quaternius-medievalvillage/models/house_3/house_3.glb",
+      "destination": "game-source/apk176-ota177-candidate/assets/cc0-rev206/building/house_3.glb",
+      "status": "pending_intake"
+    },
+    {
+      "pack": "quaternius-medievalvillage",
+      "name": "house_4",
+      "blob_sha1": "11008e845bfdf57ab85cac199bc5a645e26f4412",
+      "bytes": 203224,
+      "role": "building",
+      "upstream_path": "packs/quaternius-medievalvillage/models/house_4/house_4.glb",
+      "destination": "game-source/apk176-ota177-candidate/assets/cc0-rev206/building/house_4.glb",
+      "status": "pending_intake"
+    },
+    {
+      "pack": "quaternius-medievalvillage",
+      "name": "inn",
+      "blob_sha1": "70ee5d764f9ad0294ce1b8e1a22259d5fd3a9060",
+      "bytes": 466216,
+      "role": "building",
+      "upstream_path": "packs/quaternius-medievalvillage/models/inn/inn.glb",
+      "destination": "game-source/apk176-ota177-candidate/assets/cc0-rev206/building/inn.glb",
+      "status": "pending_intake"
+    },
+    {
+      "pack": "quaternius-medievalvillage",
+      "name": "gazebo",
+      "blob_sha1": "c0fb5ccb65cc7879710a6bb4dfa5b91a79dabefb",
+      "bytes": 46104,
+      "role": "building",
+      "upstream_path": "packs/quaternius-medievalvillage/models/gazebo/gazebo.glb",
+      "destination": "game-source/apk176-ota177-candidate/assets/cc0-rev206/building/gazebo.glb",
+      "status": "pending_intake"
+    },
+    {
+      "pack": "quaternius-rpg-characters",
+      "name": "monk",
+      "blob_sha1": "3fd3f64165e2523b6696800eca5702c73b1e3df0",
+      "bytes": 495684,
+      "role": "character_clothing_rig",
+      "upstream_path": "packs/quaternius-rpg-characters/models/monk/monk.glb",
+      "destination": "game-source/apk176-ota177-candidate/assets/cc0-rev206/character_clothing_rig/monk.glb",
+      "status": "pending_intake"
+    },
+    {
+      "pack": "quaternius-rpg-characters",
+      "name": "wizard",
+      "blob_sha1": "fa5ce1055613c6c69f389dd9cad00180a5ba59d0",
+      "bytes": 437316,
+      "role": "character_clothing_rig",
+      "upstream_path": "packs/quaternius-rpg-characters/models/wizard/wizard.glb",
+      "destination": "game-source/apk176-ota177-candidate/assets/cc0-rev206/character_clothing_rig/wizard.glb",
+      "status": "pending_intake"
+    },
+    {
+      "pack": "quaternius-ultimateanimatedanimals",
+      "name": "wolf",
+      "blob_sha1": "3789500493934e0a1e32107c130092f42b2eac86",
+      "bytes": 1953656,
+      "role": "animal",
+      "upstream_path": "packs/quaternius-ultimateanimatedanimals/models/wolf/wolf.glb",
+      "destination": "game-source/apk176-ota177-candidate/assets/cc0-rev206/animal/wolf.glb",
+      "status": "pending_intake"
+    },
+    {
+      "pack": "quaternius-ultimateanimatedanimals",
+      "name": "fox",
+      "blob_sha1": "7bccdc20e99708bd2e2bfa1c95d0d2f2388ac024",
+      "bytes": 1943552,
+      "role": "animal",
+      "upstream_path": "packs/quaternius-ultimateanimatedanimals/models/fox/fox.glb",
+      "destination": "game-source/apk176-ota177-candidate/assets/cc0-rev206/animal/fox.glb",
+      "status": "pending_intake"
+    },
+    {
+      "pack": "quaternius-ultimateanimatedanimals",
+      "name": "deer",
+      "blob_sha1": "76e31e566a6307529ed2a9213d30941c9e259f21",
+      "bytes": 2047304,
+      "role": "animal",
+      "upstream_path": "packs/quaternius-ultimateanimatedanimals/models/deer/deer.glb",
+      "destination": "game-source/apk176-ota177-candidate/assets/cc0-rev206/animal/deer.glb",
+      "status": "pending_intake"
+    },
+    {
+      "pack": "quaternius-ultimateanimatedanimals",
+      "name": "cow",
+      "blob_sha1": "8f44adf9d27a5618353952b19fa2d9d0f669c238",
+      "bytes": 1951992,
+      "role": "animal",
+      "upstream_path": "packs/quaternius-ultimateanimatedanimals/models/cow/cow.glb",
+      "destination": "game-source/apk176-ota177-candidate/assets/cc0-rev206/animal/cow.glb",
+      "status": "pending_intake"
+    },
+    {
+      "pack": "quaternius-ultimate-monsters",
+      "name": "dragon",
+      "blob_sha1": "49076fa7c558ceb8cfe5d9759954f8092d951148",
+      "bytes": 116564,
+      "role": "monster",
+      "upstream_path": "packs/quaternius-ultimate-monsters/models/dragon/dragon.glb",
+      "destination": "game-source/apk176-ota177-candidate/assets/cc0-rev206/monster/dragon.glb",
+      "status": "pending_intake"
+    },
+    {
+      "pack": "quaternius-ultimate-monsters",
+      "name": "goleling",
+      "blob_sha1": "5c86c45505603051c4b31e50e0c2cfaa6ed5bf2b",
+      "bytes": 95168,
+      "role": "monster",
+      "upstream_path": "packs/quaternius-ultimate-monsters/models/goleling/goleling.glb",
+      "destination": "game-source/apk176-ota177-candidate/assets/cc0-rev206/monster/goleling.glb",
+      "status": "pending_intake"
+    }
+  ]
+}
