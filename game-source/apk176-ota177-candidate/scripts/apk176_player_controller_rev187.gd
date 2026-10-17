@@ -88,6 +88,7 @@ var _pad_button_event_count: int = 0
 var _pad_last_move: Vector2 = Vector2.ZERO
 var _pad_last_look: Vector2 = Vector2.ZERO
 var _pad_status: String = "未连接"
+var _walk_probe: PhysicsShapeQueryParameters3D
 
 func initialize(active_room: Node) -> void:
   room = active_room
@@ -96,6 +97,12 @@ func initialize(active_room: Node) -> void:
   terrain = room.get("terrain_world")
   name = "PlayerActualTouchAndPerspectiveController"
   _spawn_player()
+  _walk_probe = PhysicsShapeQueryParameters3D.new()
+  var capsule := CapsuleShape3D.new()
+  capsule.radius = 0.29
+  capsule.height = 1.72
+  _walk_probe.shape = capsule
+  _walk_probe.collision_mask = 2
   _load_pad_options()
   _create_hud()
   if not Input.joy_connection_changed.is_connected(_on_pad_hotplug):
@@ -1185,7 +1192,9 @@ func step(delta: float) -> void:
     var nearby_height: float = float(terrain.call("height_at",candidate.x,candidate.z))
     var current_height: float = float(terrain.call("height_at",actor.position.x,actor.position.z))
     if bool(terrain.call("stream_contains_physical_chunk",candidate.x,candidate.z)) and not bool(terrain.call("is_water",candidate.x,candidate.z)):
-      if nearby_height-current_height <= 0.85:
+      _walk_probe.transform = Transform3D(Basis.IDENTITY, Vector3(candidate.x, nearby_height + 0.86, candidate.z))
+      var blocked: bool = not world.get_world_3d().direct_space_state.intersect_shape(_walk_probe, 1).is_empty()
+      if nearby_height-current_height <= 0.85 and not blocked:
         actor.position.x = candidate.x
         actor.position.z = candidate.z
         _movement_m += velocity*delta
