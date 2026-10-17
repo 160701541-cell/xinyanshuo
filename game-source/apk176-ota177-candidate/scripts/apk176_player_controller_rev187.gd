@@ -423,6 +423,50 @@ func gather_action() -> Dictionary:
     _gather_cd=1.0
   return result
 
+# REV195 combat-reference learning implemented ONLY for the actual mortal
+# movement already in game. No spiritual swords/phantom enemies are
+# fabricated. A successful stamina-paid 2m dash emits one-shot motion shards.
+func _spawn_real_dash_trail(start_point: Vector3,end_point: Vector3) -> void:
+  if world==null or room==null:
+    return
+  var quality: RefCounted=room.get("quality")
+  var tier: String="普通" if quality==null else String(quality.get("selected"))
+  var speed_pixels: int=22 if tier=="极致画质" else (14 if tier=="高档" else 7)
+  var burst:=GPUParticles3D.new()
+  burst.name="ActualMortalDashFootworkMotionShards"
+  burst.one_shot=true
+  burst.amount=speed_pixels
+  burst.lifetime=0.30
+  burst.explosiveness=1.0
+  burst.position=(start_point+end_point)*0.5+Vector3.UP*0.34
+  var physics:=ParticleProcessMaterial.new()
+  physics.emission_shape=ParticleProcessMaterial.EMISSION_SHAPE_BOX
+  physics.emission_box_extents=Vector3(0.75,0.14,0.75)
+  physics.gravity=Vector3(0.0,-0.4,0.0)
+  physics.initial_velocity_min=0.12
+  physics.initial_velocity_max=0.62
+  physics.damping_min=1.2
+  physics.damping_max=2.8
+  burst.process_material=physics
+  var tiny:=QuadMesh.new()
+  tiny.size=Vector2(0.14,0.048)
+  var mat:=StandardMaterial3D.new()
+  mat.transparency=BaseMaterial3D.TRANSPARENCY_ALPHA
+  mat.albedo_color=Color("#e1d9b3",0.83)
+  mat.shading_mode=BaseMaterial3D.SHADING_MODE_UNSHADED
+  mat.billboard_mode=BaseMaterial3D.BILLBOARD_ENABLED
+  mat.cull_mode=BaseMaterial3D.CULL_DISABLED
+  mat.emission_enabled=true
+  mat.emission=Color("#c4e5d9")
+  mat.emission_energy_multiplier=1.18 if tier!="普通" else 0.65
+  tiny.material=mat
+  burst.draw_pass_1=tiny
+  world.add_child(burst)
+  burst.emitting=true
+  get_tree().create_timer(0.65).timeout.connect(func():
+    if is_instance_valid(burst):
+      burst.queue_free())
+
 func dash_action() -> bool:
   if actor==null or _dash_cd>0.0 or camera_mode in ["god","fly"]:
     return false
@@ -445,9 +489,12 @@ func dash_action() -> bool:
   if not world.get_world_3d().direct_space_state.intersect_ray(ray).is_empty():
     say("前方有障碍，无法穿模")
     return false
+  var dash_start: Vector3=actor.position
   person["energy"]=int(person["energy"])-8
   actor.position=Vector3(target.x,surface_y+float(actor.get_meta("actor_ground_offset_y",0.0)),target.z)
   _movement_m+=2.0
+  # VFX only after the physical move succeeds and actual stamina was paid.
+  _spawn_real_dash_trail(dash_start,actor.position)
   _dash_cd=3.0
   terrain.call("stream_around",actor.position)
   _set_movement_animation(true)
