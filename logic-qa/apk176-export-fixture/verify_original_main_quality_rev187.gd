@@ -2161,11 +2161,11 @@ func _run() -> void:
     var mesh: Node3D=plants[id]["model"]
     var kind: String=String(plants[id]["kind"])
     var upgraded: bool=kind in ["herb_wood","herb_fire","herb_water"]
-    var origin: String=(
+    var herb_source_license: String=(
       "CC0-Innerscene-botanical" if upgraded else "Quaternius-CC0")
     if mesh==null or not is_instance_valid(mesh) or (
         mesh.find_children("*","MeshInstance3D",true,false).is_empty()) or (
-        String(mesh.get_meta("source_license",""))!=origin) or (
+        String(mesh.get_meta("source_license",""))!=herb_source_license) or (
         bool(mesh.get_meta("rev208_authored_independent_herb_stem",false))!=upgraded):
       _fail(347,"REV208_MEDICINE_ORE_NOT_REAL_DISTINCT_LICENSED_GLTF_"+String(id))
       return
