@@ -1,5 +1,14 @@
 # CAC 工序变更与开发日志
 
+## 2026-10-18 / CAC-REV207-LIVING-WORLD-P0 / 用户新的五万平方公里稀疏世界与妖兽繁衍（候选）
+- **本轮指令覆盖旧设定**：世界起始`50,000 km²`、`5,000位凡人`，不再把旧城8万人+统计居民当成实时世界人口，凡人灵根比例不是100%，无灵根者可炼体；宗门有剑修、符箓、御兽、炼丹、阵法等独立职业传承。完整机械设计见`docs/REV207_LIVING_WORLD_50000KM2_MECHANICS_20261018.md`。
+- 新源`game-source/apk176-ota177-candidate/scripts/apk176_living_regions_rev207.gd`：500个面积100km²统计生境/人口块，初始5000居民/125根性者/其余无根与体修人口，按月生育死亡、按年年龄变化、子代灵根概率、持续种子库与草药生境；五个宗门专业与招徒进度；四个真实矿脉附近的妖兽家族按世界时辰积蓄灵气、缓慢突破境界、食物约束繁育/老死并可因真实打斗扣减个体。只有近景四只已有授权GLB兽实体在渲染，其余为**统计人口/生物量，未冒充实体**。
+- 原Godot正式主场景脚本`apk176_living_resource_world_rev187.gd`已接入新世界引擎/旧时间加速，四个真的妖兽位置分别靠近真实四处灵石矿脉，法力、境界、碰撞/攻击持续保留；`apk176_cultivation_world_rev201.gd`将旧8万人城市账本冻结只读，不得再次与五千人相加。
+- `apk176_spirit_resources_rev206.gd`保留13处原节点及旧档守恒，新增自然30世界日后随机但可复现、避建筑和道路的本地灵草扩散，初始13处不破坏；植株可采量降为0仅代表暂时无成熟枝叶，活植物模型与种子库保留。种苗来源仅使用之前哈希固定的Quaternius授权原3D素材；`build_apk176_quality_rev187.gd`与`verify_apk176_rev187_3d_pck.py`已要求新引擎脚本打入原PCK。
+- 新QA `verify_rev207_living_regions.gd`覆盖24个月 5000开局/根性比例/生育死亡/体修门派/妖兽繁殖修炼/草木不灭/读档守恒，以及原Main四矿真实兽距校验；CI位于`.github/workflows/canglan-rev207-living-regions-qa-only.yml`。**本轮新候选尚未经过Godot Main绿色QA、正式签名或公网站证；绝不称作手机已更新。**
+- 本轮刻意不把50000平方公里“已有3D地形”当事实：已提交的广域模拟 ≠ 手机上的完整实体地形；还要实现旅途分块、独立职业交互、真实幼兽出场、完整宗门模型和Android实机QA。
+
+
 ## 2026-10-18 / CAC-3D-206-LIVE / 原APK176 rev206正式热更新已完成、官网公网上线
 - ✅ 真正发布成功：PR #12 合并正式 `main`：`25408b71a9aac51e9ea4aea8fe8e9567c800cba1`；Godot 4.4.1原APK176 Main严格验收与RSA发布流水线 `39057810555` **SUCCESS**，和旧APK176 `versionCode1176`兼容，未重复打APK，未篡改旧 rev205 不可变PCK。
 - ✅ 原签名清单 `android-preview/latest.json` 版本rev206；唯一正式新补丁 `android-preview/canglan-content-rev-206.pck`，实际大小 `35,782,624` 字节、SHA256 `d2b2fbd4a34b8dfeb90d20f1e302ff01803adf5b8c811aed78759d1b478ba022`，RSA-3072验签通过；合法来源Quaternius灵草/矿石物件与Kenney树林石矿GPU批次载入真主场景。
