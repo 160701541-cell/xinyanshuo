@@ -1,12 +1,12 @@
 {
   "schema": 1,
   "channel": "android-preview",
-  "revision": 199,
+  "revision": 200,
   "minimum_android_code": 1176,
   "maximum_android_code": 1176,
-  "sha256": "b7452c1ef8fcb821274f2f39281e722f7a48c1649ae54c88ffcf76c88ddc4612",
-  "size_bytes": 22010976,
-  "pack_url": "https://160701541-cell.github.io/xinyanshuo/android-preview/canglan-content-rev-199.pck",
-  "notes": "苍岚原APK176 rev199：真CC0长发遮住吓人的秃头、改善面部肤色，角色御剑外观试飞改用真正授权飞剑GLB、空中原生骨骼动画、风粒、脚下地面投影和离地高度/航速HUD，起落减速更平稳。增加全世界1/5/20/100倍时间加速，NPC施工、库存、饥饿、生态与昼夜一同推进；本地Qwen真实缺原生库如实提示。飞剑只是视觉测试，修为/法力仍锁定；需手机验收。",
-  "signature": "DkgeYN6b8CU8Figw0PchGPxqeNJVym+R9yKwrN6Qaw9o3GvFVSNZ33Amm6FxynKnY6B64XeUAED/0XrDsauJn1lMxu5KJLRhuuKvFn5zutIDYqQF6yZb/upkA7L/1EY2GwSZPDVyO/MTZAhC4BEVeFgxaV/Byzr83Lg+6pcFkHHgSBk4UQ9DXPAZLUxjgwRrEIQjBstlE9YHHeVDILeYSy/acEj12hd/lpPF9FSEuVhnOG6DmYKBeSweKELfdif3k2L3kheOF69XdJbAjB4MDKBqZndxAiqXsXTtrK+ThUjEao3ryk9tmguQf/tX/u3kUI2IaUSLb2dKem8flSJtS1iJhJuWY6u64REtKHy+gGUrKAdGSZjdelTb4yO39LNlKWUXraXeN/7EbJS3+bW6fMt0ZUNhmD/d+EQZSzmzzUcikNrzkIop31ldiwY6bnOhp2mwpWfB/6fxw6FtBKHJh6DwuZ94srYveVmh2klBfKAWOfwMLyYEjbCOBTucjHJ6"
+  "sha256": "57935c8122e4ff3e5d2a25e58fb2e94d61489065242d613575b312371d97d847",
+  "size_bytes": 22035040,
+  "pack_url": "https://160701541-cell.github.io/xinyanshuo/android-preview/canglan-content-rev-200.pck",
+  "notes": "苍岚原APK176 rev200：修复真人Godot截图发现的CC0长发缩到胸口而脸部秃头，校正世界头部坐标和45°、第三人称、空中飞剑截图；保留飞行风粒、高度速度HUD与全世界1/5/20/100倍时间。原APK本地AI仍缺Android推理库，修仙数据须后续正式审核；手机验收待完成。",
+  "signature": "LZjq9uky9N+fE+Q4r3kGny215UxVjPedZla+MJgwGdk9+hvg1jAILHd4KdWVRzFRMzkL3AFG6KcQ93CETsOHLiYdzWkIPJ+fLuRN4Xbw01MINjGToM4tt81dDB3FbqEMUg0V6mwvyBIBF+TbCT6k/Ejor57/dAjXtJiLwhCAZKZXFfOkuTInbbO6wbco4c17spbRRRNmR8W1gNVHyiDviRIsnqPIEH3+oYjpFVe7nrDqvNw30WVmqbctXWNE+15H8R/jsqHSivZFa4GgeFEDVdo47Mv/95zmD1VZrLSVU9FejGBVULjYdIU+2CDQt3ZY/sCjiJSZU9sglFrhG+kYBumsH6U3ildciquRnbdcC2KOLR0LCSMOcLVVC9AJbrRW0yTpUjVvo1ndNwHdbZFOmEyiNRo1Qz9kIjKv6U65K45DC9uhLnl78wVSMm8yHtHBkhrZe8Jq322Sjd1fjeNeSHlNXmxoO9GJN0JSC2iRiny1ljG2K2JZk+z1WHu+DQEM"
 }
