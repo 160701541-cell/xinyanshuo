@@ -1,12 +1,12 @@
 {
   "schema": 1,
   "channel": "android-preview",
-  "revision": 186,
+  "revision": 187,
   "minimum_android_code": 1176,
   "maximum_android_code": 1176,
-  "sha256": "16c636e2654efb8ead50cfe38e1ab27ac89f9c9cee72d4acb28f8cfb55f6a6ab",
-  "size_bytes": 21666016,
-  "pack_url": "https://160701541-cell.github.io/xinyanshuo/android-preview/canglan-content-rev-186.pck",
-  "notes": "苍岚原APK176：修复左侧树林也能点实体和独立GUI摇杆；三档手动画质：极致100%/4x 1500draw/150万面、高85%/2x默认800draw/60万面、普通67%/无MSAA 400draw/30万面，NPC骨骼/系统级ID、平滑泥土地层与可挖水岸。手机三档性能需真机数据。",
-  "signature": "a/fyDLYoLp/+pgk8IFZatAKvlj/Vpp6o/8YsGMDRSWuXl0At/A+Jt6O1jzumYyl5Uck1t2YGO90E0BV4iXQsgZo2DzOcpkfDVhJTVN/AGYOv0E2MZBLr9JXwCtqm9Dxs9GQ4GgH5tpafzNTVFuUgfN7BjkDnAnZJqqtmquJ0UhtromsyR5anrTeE0RHd2V9aQJ53TxlVkTgVQk87iTNT+b2jvuFfgAOJIa5AZBOE2ETWQlEREKb2vFMhuNxB6gv7dnY6SfiT7ll2aqKl5m7EqVn7NimfCDNtutc/R2jsI9RHXdPTLPCcPSHdCX8P7ciGMdD390a/8/80oIhs/RZqHS6kWl27f/BEZ+MBpFxEzYotGZY6WeNlYUHinacw+Hg6R4k3slfOWHn+ebzlyPONtPFGepJErdZ7+4KMHrx4fhMXUeU+Sb7cIDwC0d1jUDBap4IA0iKbEmR+P11ipdsQIkvhwf4beq392hLADkQuNTSiZim5NYKBfSSISX5BrZgY"
+  "sha256": "34558a8da86e99b684316e425e18c12dc0d8f4f766b96691f08e00b2de981d2a",
+  "size_bytes": 21688608,
+  "pack_url": "https://160701541-cell.github.io/xinyanshuo/android-preview/canglan-content-rev-187.pck",
+  "notes": "苍岚原APK176 rev187：取消五色限制，蓝色渐变天空与白云暖太阳淡蓝雾；真实远景地面、细草叶野花随开挖同步；镜头防穿模，右滑方向修正，上帝视角/自由飞行；帧率跟随屏幕最高120或手动30/60/90/120，可折叠单性能面板、建筑工标签；手机效果待实测。",
+  "signature": "eiSfVtKpQmPoBF5ann2evdtWXTb614Cf/K6Z5bv14J1ohOhEapqeT5XBJvroWbDOdSfOXi1drOyuE1v6cSwrMd2+DGkdMSnd7TFkGDZBFCafEGblM3nkfSlnyEwChwzHWaJABG6OKfMofSTvwsLKQiA4uneJvx8pIv+DSWgXP2ctyDZMhZjQbPbkbedP/bu0Mz7ham+f5peei4838AWKNkgTJdUArIuQgklaV3a6P4neDu/kq5b8JkhA9Ym364js8T9xcevVsKTN2HYCjx8iaWGr/z7IsIGvBUtgr6QRXyKSxK01+wan5Ha7PuwD+cNx1XukjumnKQsASEXM8An7SfLzGwoyPYYz5lpJgdEWgqHwdrjgIbxCZ29FWqhAQMaDjMnpYqMypVeCQeH8Hn1cHyNQ7unwdtLlSdsFHA8E/fz6MXiuK4cAYFIASVi9JO1IXsHeN1Gv9MuRjtAbEfHBXhtcciClcREynjDRJ2dlKnFmakz4gslSbqrZIH5NqJH7"
 }
