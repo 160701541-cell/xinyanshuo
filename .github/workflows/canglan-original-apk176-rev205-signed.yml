@@ -1,5 +1,5 @@
 # rev205 original APK176 code1176: MAIN-only signed. Full Godot QA, pinned RSA and official rev204 required.
-name: Canglan ORIGINAL APK176 rev205 - Mobile UI Lock Flight Inventory RSA Signed Update
+name: Canglan ORIGINAL APK176 rev205 - FINAL Real Open CC0 Village Rich PBR and Xianxia Signed OTA
 on:
   push:
     branches: [main]
@@ -161,12 +161,45 @@ jobs:
           cp game-source/apk176-ota177-candidate/scripts/apk176_kenney_visual_palette_rev187.gd qa-stage/ota177/canglan_rev187/visual_palette.gd
           cp game-source/apk176-ota177-candidate/scripts/apk176_kenney_multimesh_rev187.gd qa-stage/ota177/canglan_rev187/kenney_multimesh.gd
           cp game-source/apk176-ota177-candidate/scripts/apk176_strata_terrain_rev187.gd qa-stage/ota177/canglan_rev187/strata_terrain.gd
+          cp game-source/apk176-ota177-candidate/scripts/apk176_vivid_material_rev207.gd qa-stage/ota177/canglan_rev187/vivid_material.gd
+          mkdir -p qa-stage/ota177/canglan_rev187/materials_rev207
+          cp game-source/apk176-ota177-candidate/materials/rev207/*.png qa-stage/ota177/canglan_rev187/materials_rev207/
+          cp game-source/apk176-ota177-candidate/materials/rev207/manifest.json qa-stage/ota177/canglan_rev187/materials_rev207/
+          python3 - <<'PY'
+          import hashlib,json
+          from pathlib import Path
+          m=json.loads(Path('qa-stage/ota177/canglan_rev187/materials_rev207/manifest.json').read_text())
+          assert m['schema']==207 and m['count']==9 and m['size']==512
+          for item in m['maps']:
+            raw=(Path('qa-stage/ota177/canglan_rev187/materials_rev207')/item['file']).read_bytes()
+            assert hashlib.sha256(raw).hexdigest()==item['output_sha256']
+          print('PASS_REV207_REAL_QUATERNIUS_NINE_FINE_PBR_MAPS_SOURCE_SHA256_IN_ORIGINAL_APK_STAGE')
+          PY
           cp game-source/apk176-ota177-candidate/scripts/apk176_player_controller_rev187.gd qa-stage/ota177/canglan_rev187/player_controller.gd
           cp game-source/apk176-ota177-candidate/scripts/apk176_backpack_rev205.gd qa-stage/ota177/canglan_rev187/backpack.gd
           mkdir -p qa-stage/ota177/canglan_rev187/ui/lucide
           cp game-source/apk176-ota177-candidate/ui/lucide/*.svg qa-stage/ota177/canglan_rev187/ui/lucide/
           cp game-source/apk176-ota177-candidate/ui/lucide/LICENSE qa-stage/ota177/canglan_rev187/ui/lucide/LICENSE
           cp game-source/apk176-ota177-candidate/scripts/apk176_cultivation_world_rev201.gd qa-stage/ota177/canglan_rev187/cultivation_world.gd
+          cp game-source/apk176-ota177-candidate/scripts/apk176_root_taxonomy_rev206.gd qa-stage/ota177/canglan_rev187/root_taxonomy.gd
+          cp game-source/apk176-ota177-candidate/scripts/apk176_city_population_rev206.gd qa-stage/ota177/canglan_rev187/city_population.gd
+          # The import workflow already committed the EXACT original
+          # fourteen CC0 GLBs plus SHA256 source proof. Stage all of them
+          # instead of building blank procedural substitutes.
+          python3 - <<'PY'
+          import hashlib,json
+          from pathlib import Path
+          proof=json.loads(Path('game-source/apk176-ota177-candidate/assets/cc0-rev206/asset_intake_proof.json').read_text())
+          assert proof['asset_total']==14
+          for m in proof['models']:
+              source=Path(m['path'])
+              content=source.read_bytes()
+              assert hashlib.sha256(content).hexdigest()==m['sha256'] and content[:4]==b'glTF'
+              dest=Path('qa-stage/ota177/canglan_rev187/cc0_rev206')/m['role']/(m['name']+'.glb')
+              dest.parent.mkdir(parents=True,exist_ok=True)
+              dest.write_bytes(content)
+          print('PASS_REV206_VERIFIED_14_ORIGINAL_LICENSED_GLBS_STAGED_IN_ACTUAL_ANDROID_PCK',sum(int(m['bytes']) for m in proof['models']))
+          PY
           cp game-source/apk176-ota177-candidate/scripts/apk176_quality_profiles_rev187.gd qa-stage/ota177/canglan_rev187/quality_profiles.gd
           cp game-source/godot3d/assets/free_cc0/kenney/3d/nature/tree_oak.glb qa-stage/ota177/canglan_rev187/tree_oak.glb
           cp game-source/godot3d/assets/free_cc0/kenney/3d/castle/rocks-small.glb qa-stage/ota177/canglan_rev187/rocks_small.glb
@@ -208,7 +241,7 @@ jobs:
         run: |
           set -euo pipefail
           printf 'config_version=5\n' > qa-stage/ota177/project.godot
-          for script in strata_terrain quality_profiles player_controller backpack visual_palette kenney_multimesh ecology_growth; do
+          for script in strata_terrain vivid_material quality_profiles player_controller backpack cultivation_world root_taxonomy city_population visual_palette kenney_multimesh ecology_growth; do
             echo "GODOT_GDSCRIPT_COMPILE_CHECK $script"
             if ! timeout 35s /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless \
                 --path qa-stage/ota177 --check-only --script "res://canglan_rev187/$script.gd" \
@@ -222,7 +255,20 @@ jobs:
             fi
           done
           echo PASS_REV187_ALL_ACTUAL_GODOT_SCRIPTS_PARSE_COMPILATION
-      - name: QA actual APK176 Main runs animated workers, finite resources and material-paid staged 3D construction
+      - name: Real Godot engine deterministic 32 spiritual roots, 640 mortal identities and virtual city of 10k to 250k
+        shell: bash
+        run: |
+          set -euo pipefail
+          cp logic-qa/apk176-export-fixture/verify_rev206_roots_city.gd qa-stage/ota177/verify_rev206_roots_city.gd
+          timeout 110s /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless \
+            --path qa-stage/ota177 --script res://verify_rev206_roots_city.gd \
+            > qa-results/rev206-real-roots-city.log 2>&1 || {
+              tail -120 qa-results/rev206-real-roots-city.log; exit 1;
+            }
+          grep -Fq 'PASS_REV206_GODOT_PLAYER_AND_640_NAMED_NPCS_GUARANTEED_STABLE_ROOT_WITH_RECRUITABLE_NO_ROOT_EXCEPTION' qa-results/rev206-real-roots-city.log
+          grep -Fq 'PASS_REV206_GODOT_32_ROOT_ATTRIBUTES_MUTATIONS_QUALITY_FIRE_ICE_THUNDER_STATUS_AND_ELEMENTS_COUNTERS' qa-results/rev206-real-roots-city.log
+          grep -Fq 'PASS_REV206_GODOT_10000_80000_250000_CITY_MORTAL_POPULATION_LAZY_COUNTS_370_DAYS_NO_SCENE_BLOAT' qa-results/rev206-real-roots-city.log
+      - name: QA actual APK176 Main runs authentic source-prefab village, finite life, spells and phones
         env:
           CANGLAN_QA_PCK_PATH: ${{ github.workspace }}/qa-results/canglan-apk176-rev187-3d-UNSIGNED.pck
         shell: bash
@@ -231,7 +277,9 @@ jobs:
           timeout 120s /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless             --path logic-qa/apk176-export-fixture             --script res://verify_original_main_quality_rev187.gd             > qa-results/rev187-original-main-3d.log 2>&1 || {
               tail -100 qa-results/rev187-original-main-3d.log; exit 1;
             }
-          grep -Fq 'PASS_REV187_LICENSED_3D_NPC_RESOURCE_TRANSPORT_MATERIAL_CONSERVATION_STAGE_BUILD' qa-results/rev187-original-main-3d.log
+          grep -Fq 'PASS_REV206_ORIGINAL_PLAYER_TREE_STONE_PHYSICAL_TRANSPORT_WITH_LICENSED_FINISHED_CC0_HOUSES_NO_BROKEN_CONSTRUCTION' qa-results/rev187-original-main-3d.log
+          grep -Fq 'PASS_REV206_REAL_QUATERNIUS_CC0_COMPLETE_HOMES_WANDERING_ANIMATED_ANIMALS_AND_PERMANENTLY_RETIRED_BUILDER' qa-results/rev187-original-main-3d.log
+          grep -Fq 'PASS_REV207_MOBILE_UNBLEACHED_SATURATED_PBR_NORMAL_MAPS_WORLDSPACE_64PIX_PER_METRE' qa-results/rev187-original-main-3d.log
           grep -Fq 'PASS_REV188_REAL_HEALTH_STAMINA_GAME_HUD_BAG_MENU_AND_OPT_IN_DEV_TOOLS' qa-results/rev187-original-main-3d.log
           grep -Fq 'PASS_REV189_SYNTHETIC_GODOT_JOYPAD_BUTTON_MENU_LOOK_DEADZONE_HOTPLUG_AND_TOUCH_FALLBACK_NOT_ANDROID_HARDWARE' qa-results/rev187-original-main-3d.log
           grep -Fq 'PASS_REV191_NO_FLOATING_SLICE_LOD_OVERLAP_OR_22M_CLIFF_ACTUAL_MESH_TRIANGLES' qa-results/rev187-original-main-3d.log
@@ -305,6 +353,11 @@ jobs:
           grep -Fq 'PASS_REV204_REAL_GODOT_RENDERED_MANA_PAID_SPIRIT_BOLT_IN_FLIGHT' qa-results/rev187-real-worksite/render.log
           grep -Fq 'PASS_REV204_REAL_GODOT_MIDFLIGHT_AND_IMPACT_FINITE_MANA_REAL_HP_DAMAGE_FRAMES' qa-results/rev187-real-worksite/render.log
           grep -Fq 'PASS_REV205_GENUINE_GODOT_1280X720_LUCIDE_UI_TARGET_LOCK_AND_FINITE_BACKPACK_FRAMES' qa-results/rev187-real-worksite/render.log
+          grep -Fq 'PASS_REV207_ORIGINAL_APK176_GODOT_REAL_COLOR_512PBR_64TEXELS_IMAGES' qa-results/rev187-real-worksite/render.log
+          test -s qa-results/rev187-real-worksite/real_apk176_rev207_vivid_cc0_texture_forest_wide.png
+          test -s qa-results/rev187-real-worksite/real_apk176_rev207_dense_tiny_pixel_cc0_pbr_house_close.png
+          test -s qa-results/rev187-real-worksite/real_apk176_rev205_genuine_open_source_hud_target_lock.png
+          test -s qa-results/rev187-real-worksite/real_apk176_rev205_real_backpack_lucide_equipment.png
           test -s qa-results/rev187-real-worksite/real_apk176_rev205_genuine_open_source_hud_target_lock.png
           test -s qa-results/rev187-real-worksite/real_apk176_rev205_real_backpack_lucide_equipment.png
           test -s qa-results/rev187-real-worksite/real_apk176_rev204_qi_bolt_real_impact_damage.png
@@ -334,7 +387,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          python3 logic-qa/release-gate/sign_pck_release.py             --pack qa-results/canglan-apk176-rev187-3d-UNSIGNED.pck             --revision 205 --minimum-android-code 1176 --maximum-android-code 1176             --pack-url 'https://160701541-cell.github.io/xinyanshuo/android-preview/canglan-content-rev-205.pck'             --notes '苍岚原APK176 rev205：修复手机上下拖动视角，镜头可看天空和脚下并有上下反转设置；御剑降落中可取消并重新起飞；原实体索敌和真实修士境界生命法力；实际开源Lucide ISC UI图标、深青铜配色、默认折叠战斗快捷栏；持久24格来源背包、采集/挖掘/材料制作木剑石镐/装备入库；有限种子栽树并按生态世界时间生长、可点击修士交谈。保留rev204修仙法术与rev203飞行，宗门建筑群、灵兽、本地Qwen尚待完成。'             --unsigned-template             --output qa-results/rev205-unsigned.json
+          python3 logic-qa/release-gate/sign_pck_release.py             --pack qa-results/canglan-apk176-rev187-3d-UNSIGNED.pck             --revision 205 --minimum-android-code 1176 --maximum-android-code 1176             --pack-url 'https://160701541-cell.github.io/xinyanshuo/android-preview/canglan-content-rev-205.pck'             --notes '《苍岚》原APK176累计正式rev205：开源Quaternius原GLB完整房屋6处、四种带骨骼动画动物、角色服饰素材，取消旧破房反复施工；九张512像素合法CC0原始材质贴图含瓦片木纹墙壁/法线/粗糙度，真实64细像素/米可挖地形、更深绿森林、真蓝天与1.30饱和度；手机UI接入Lucide许可证矢量图标、快捷栏可折叠、反向视角修复、飞剑降落中再起飞、真实修士索敌；24格存档背包物品采集、制作、装备与仓库交付；玩家和正常NPC必有隐藏灵根、32类灵根属性和特效、役属劳工允许无灵根、每城1万—25万真人数据统计（默认本城8万人）；保留rev204法术和旧存档。修仙建筑内部/完整灵兽妖兽体系/本地AI尚未开发或完成手机验收。'             --unsigned-template             --output qa-results/rev205-unsigned.json
           python3 - <<'PY'
           import json,pathlib
           p=pathlib.Path('qa-results/rev205-unsigned.json')
@@ -387,7 +440,7 @@ jobs:
           python3 - <<'PY'
           import json
           current=json.load(open('android-preview/latest.json'))['revision']
-          assert current == 204,f'Original official next revision must be 203, got {current}'
+          assert current == 204,f'Original official next revision must be 204, got {current}'
           PY
           test ! -e android-preview/canglan-content-rev-205.pck
           cp qa-results/rev205-signed-stage/canglan-content-rev-205.pck android-preview/
@@ -401,7 +454,9 @@ jobs:
           source=Path('qa-results/rev187-real-worksite')
           for filename,output in [
               ('real_apk176_rev205_genuine_open_source_hud_target_lock.png','canglan-rev205-lucide-target-lock-godot-linux.png'),
-              ('real_apk176_rev205_real_backpack_lucide_equipment.png','canglan-rev205-real-backpack-godot-linux.png')]:
+              ('real_apk176_rev205_real_backpack_lucide_equipment.png','canglan-rev205-real-backpack-godot-linux.png'),
+              ('real_apk176_rev207_vivid_cc0_texture_forest_wide.png','canglan-rev205-vivid-cc0-textured-village-godot-linux.png'),
+              ('real_apk176_rev207_dense_tiny_pixel_cc0_pbr_house_close.png','canglan-rev205-dense-tiny-pixel-pbr-godot-linux.png')]:
               src=source/filename
               raw=src.read_bytes()
               assert raw[:8]==bytes.fromhex('89504e470d0a1a0a')
