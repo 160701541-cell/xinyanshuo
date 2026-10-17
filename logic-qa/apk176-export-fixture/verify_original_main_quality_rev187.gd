@@ -942,6 +942,42 @@ func _run() -> void:
         int(living.get("region_built_bp",-1))!=0):
       _fail(364,"REV207_UNPAID_HOUSE_CANNOT_CLEAR_WILDERNESS_AND_GRASS")
       return
+  # Native source-vendor 3D shrubs really cover walkable physical ground.
+  # Cost stays bounded on phones even when the authored GLB is detailed;
+  # every MultiMesh transform must avoid all actual reserved house plots.
+  var shrubs: Array[Node]=world.find_children(
+    "RealQuaterniusLicensedPBRUnderstoryBatched_*",
+    "MultiMeshInstance3D",true,false)
+  var shrub_count: int=int(report.get("rev207_real_cc0_shrub_understory",0))
+  if shrub_count<24 or shrub_count>980 or shrubs.is_empty() or (
+      shrubs.size()!=int(report.get("rev207_real_cc0_shrub_draw_nodes",-1))) or (
+      int(report.get("rev207_real_cc0_shrub_triangles",999999))>350000):
+    _fail(370,"REV207_VIVID_UNDERSTORY_NOT_REAL_LICENSED_BOUNDED_MULTIMESH_"+str({
+      "shrubs":shrub_count,"parts":shrubs.size(),"triangles":report.get(
+      "rev207_real_cc0_shrub_triangles",0)}))
+    return
+  for geometry in shrubs:
+    var shrub_batch: MultiMeshInstance3D=geometry as MultiMeshInstance3D
+    if shrub_batch.multimesh==null or shrub_batch.multimesh.mesh==null or (
+        shrub_batch.multimesh.instance_count!=shrub_count):
+      _fail(371,"REV207_CC0_SHRUB_SOURCE_OR_BATCH_TRANSFORMS_MISSING")
+      return
+    for instance_index in range(shrub_count):
+      var tx: Transform3D=shrub_batch.multimesh.get_instance_transform(instance_index)
+      if absf(tx.basis.determinant())<0.000001:
+        _fail(372,"REV207_SHRUB_NOT_RENDERABLE_REAL_3D_GEOMETRY")
+        return
+      if instance_index%17==0:
+        var at: Vector3=tx.origin
+        if not bool(room.get("quality").call("_natural_plantable",at.x,at.z)):
+          _fail(373,"REV207_REAL_CC0_SHRUB_ON_PATH_POND_OR_CUT_SOIL")
+          return
+        for blueprint in (room.get("housing_blueprints") as Dictionary).values():
+          var home: Vector3=blueprint["at"]
+          if Vector2(at.x-home.x,at.z-home.z).length()<7.1:
+            _fail(374,"REV207_REAL_SHRUB_IGNORES_FUTURE_BUILDING_FOOTPRINT")
+            return
+  print("PASS_REV207_TRUE_LICENSED_QUATERNIUS_SHRUB_UNDERSTORY_DENSE_NONBUILDING_GPU_BATCH_GEOMETRY")
   print("PASS_REV207_TRUE_MAIN_50000KM2_5000_ROOT_RATIO_BODY_CULTIVATION_5_SECTS_4_REAL_ORE_BEAST_GUARDS")
   if not bool(report.get("persistent_city_population_is_statistical_only",false)):
     _fail(331,"REV207_5000_MORTALS_MUST_BE_STATISTICAL_NOT_5000_GODOT_NODES")
