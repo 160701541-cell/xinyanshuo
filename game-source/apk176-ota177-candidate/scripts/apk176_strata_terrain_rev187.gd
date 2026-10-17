@@ -40,6 +40,11 @@ func _ready() -> void:
     mat.albedo_color = STONE_COLORS[kind]
     mat.roughness = 0.94
     mat.metallic = 0.0
+    # rev191 REAL MESA GPU SCREENSHOT caught the soil NOT RENDERING:
+    # the 92m inner field was pixel-identical to blue SKY with floating grass.
+    # Display both sides of the excavatable mesh; the underside is only
+    # geological exposure while physics remains the same triangle mesh.
+    mat.cull_mode = BaseMaterial3D.CULL_DISABLED
     world_materials[kind] = mat
   terrain = MeshInstance3D.new()
   terrain.name = "REAL_DEFORMABLE_TERRAIN_NOT_PLANE"
