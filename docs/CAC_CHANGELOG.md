@@ -992,3 +992,10 @@ Godot 4.4.1对从**原签名Android APK176**提取的实际`update_protocol.gdc`
 ### 实际QA失败和当前状态（严禁虚报）
 - `39000137447`最初缺生态脚本 -> commit `64231b1`；`39000211083` rev187 strata脚本解析错误 -> 增加每脚本真Godot check gate`f752158`；`39000300212`地形line315多行表达式 -> `ed7b619`；`39000362804`原CanvasLayer rev186名字误导致runtime查找失败 -> `6175f1a`；`39000451689`QA新材质名grass_deep fallback绿色 -> `1c0d051`；`39000619760`QA误把父子结点路径看成根节点 -> `5eba785`；`39000697812`真实全村资源核算失败因系统村庄ID误变CL-REV187 -> `8e1917c`恢复CL-REV186；`39000880166`严格原Main QA/旧房屋通过、Mesa实际截图两张成功，却被错误PNG字节检查拒绝，随后发现远景几何蓝空洞并改块/质量门禁；之后每轮仍须完整验证。失败全部是实际阻断发布，不把失败run包装成成功。
 - **rev187正式RSA/官网PCK/独立安装测试包：只有在后续完整CI成功并逐项检查证据后才能标PASS。** 现有公开正式渠道revision至少rev186；用户手机rev187极致/高档/普通实测FPS/Draw/三角面均**未验证**；用户要求实际手机截图才能进一步打绿。
+
+### 2026-10-17 / rev187 已发布后的CI回归与用户实测交接（不得重复覆盖签名PCK）
+- **已验证首次真实发布**：原APK176 rev187正式QA run `39001352826` success，运行日志有 `PASS_REV187_SIGNED_OTA_PUBLISHED_TO_PUBLIC_MAIN`；主分支 `android-preview/latest.json` 当前标记 revision=187，APK版本代码范围1176，PCK大小21688608字节、SHA256 `34558a8da86e99b684316e425e18c12dc0d8f4f766b96691f08e00b2de981d2a`。**仅代表发布记录和仓库清单，不能冒充手机加载成功或公网CDN字节已复核。**
+- **后续源码不等于已发布补丁**：rev187既有PCK在此前SHA `723c1899` 流程构建发布；之后的源代码修复 `759a3cf6` 等不应被同revision覆盖。run `39002357154` 因调色板重复键解析失败；commit `3d2a213` 删除 `grass_deep`/`grass_light` 重复键。该修复**不自动出现在用户已经发布的rev187 PCK中**。
+- **新的真实QA**：run `39002675786` 完成Godot源码解析、原APK176 Main、原房屋进出、Mesa Vulkan工地近/远两张1280×720截图；末段失败 `BLOCKED: QA candidate is not next-revision APK176 template`，因为rev187早已发布，防覆写安全门正确拒绝同revision再签名。
+- **CI修复**：commit `a30a7b2` 和 `67301ac` 在 rev187 全部Godot QA结束之后增加既有正式版本侦测；检测已经发布后仅保留QA报告，不再重复签名/推送同版本PCK。只有正式渠道仍是186时才可签发187。原有签名与线上文件保持不变。新版门禁的整轮Actions结果尚待实跑验证。
+- **下一轮发布必须采用新revision（原则上rev188）**；先QA、实机兼容性和签名验证，然后更新正式manifest，绝不覆盖用户正在测试的rev187文件。用户已开始手机实测，极致/高档/普通FPS、120Hz、天空/雾、草、远景边缘、镜头与NPC尚待真实截图反馈。
