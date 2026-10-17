@@ -1,7 +1,7 @@
 {
   "schema": 1,
   "channel": "signed-releases",
-  "updated_at": "2026-10-17T11:49:46Z",
+  "updated_at": "2026-10-17T11:51:56Z",
   "source": "android-preview/latest.json; RSA original APK key + official HTTPS PCK",
   "verification": "Godot signed manifest, Pages PCK SHA256 and real Android updater Range HTTP verified in GitHub Actions; user Android device visual/performance QA pending.",
   "entries": [
@@ -14,11 +14,12 @@
       "status": "signed_release",
       "android_version_code": 1176,
       "protocol": "RSA-3072 PKCS1-v1_5 / SHA-256",
-      "remote_https_verified": false,
-      "remote_range_206_verified": false,
+      "remote_https_verified": true,
+      "remote_range_206_verified": true,
       "ci_run": 39030030956,
       "android_real_device_qa": "pending",
-      "engine_visual_proof": "art/actual-engine-capture/canglan-rev203-soar-bank-godot-linux.png"
+      "engine_visual_proof": "art/actual-engine-capture/canglan-rev203-soar-bank-godot-linux.png",
+      "remote_proof_run": 39030295747
     },
     {
       "revision": 202,
