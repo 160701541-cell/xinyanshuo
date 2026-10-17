@@ -695,8 +695,8 @@ func _step_native_animals(delta: float) -> void:
       var delta_pos: Vector3=toward-actor.position
       delta_pos.y=0
       if delta_pos.length()>0.40:
-        var next: Vector3=actor.position+delta_pos.normalized()*
-          minf(speed*delta,delta_pos.length())
+        var next: Vector3=actor.position+delta_pos.normalized()*minf(
+          speed*delta,delta_pos.length())
         if bool(terrain_world.call(
             "stream_contains_physical_chunk",next.x,next.z)) and not (
             bool(terrain_world.call("is_water",next.x,next.z))):
