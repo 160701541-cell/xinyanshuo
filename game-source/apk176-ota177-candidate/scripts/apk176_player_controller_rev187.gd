@@ -1025,7 +1025,7 @@ func practice_action() -> Dictionary:
   _spar_opponent_tag.name="RealMortalSparOpponentRealmHealthManaAboveHead"
   _spar_opponent_tag.font_size=24
   _spar_opponent_tag.pixel_size=0.0042
-  _spar_opponent_tag.billboard_mode=BaseMaterial3D.BILLBOARD_ENABLED
+  _spar_opponent_tag.billboard=BaseMaterial3D.BILLBOARD_ENABLED
   _spar_opponent_tag.visibility_range_end=21.0
   world.add_child(_spar_opponent_tag)
   for kind in ["hp","mana"]:
