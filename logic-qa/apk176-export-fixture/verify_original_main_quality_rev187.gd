@@ -390,6 +390,36 @@ func _run() -> void:
   if quality==null or quality.get("selected")!="高档":
     _fail(79,"PHONE_MUST_DEFAULT_TO_HIGH_PROFILE_UNLESS_USER_SAVED_OVERRIDE")
     return
+  # rev194: remote physical terrain must not turn into bald, flat emptiness.
+  var initial_loaded: Dictionary=terrain.get("stream_chunks")
+  quality.call("sync_streamed_meadows")
+  var streamed: Dictionary=quality.get("streamed_meadows")
+  if initial_loaded.size()<12 or streamed.size()!=initial_loaded.size():
+    _fail(187,"REV194_STREAMED_CHUNKS_MISSING_GRASS_BATCHES_"+str(streamed.size()))
+    return
+  var visible_stream_tufts: int=0
+  for id in streamed:
+    var field: MultiMeshInstance3D=streamed[id]
+    if not is_instance_valid(field) or field.multimesh.instance_count!=320 or (
+        field.get_parent()!=initial_loaded[id]):
+      _fail(188,"REV194_STREAMED_GRASS_NOT_PARENTED_TO_PHYSICAL_CHUNK")
+      return
+    for i in range(field.multimesh.instance_count):
+      var t: Transform3D=field.multimesh.get_instance_transform(i)
+      if t.basis.determinant()>0.001:
+        visible_stream_tufts+=1
+  if visible_stream_tufts<600:
+    _fail(189,"REV194_EXTERIOR_STILL_BALD_OR_ALL_GRASS_ON_CUT_SOIL_"+str(visible_stream_tufts))
+    return
+  var env: Environment=room.get("scene_environment")
+  if env.fog_density>=0.003 or env.ambient_light_energy>=0.57:
+    _fail(190,"REV194_BLEACHED_MOBILE_FOG_AND_OVERLIT_AMBIENT_NOT_FIXED")
+    return
+  var soil: Color=terrain.call("ground_color_at",27.0,22.0)
+  if soil.g<=soil.r or soil.g-soil.r<0.05:
+    _fail(191,"REV194_FRONT_MEADOW_MUST_BE_LIVING_GREEN_NOT_CHALK_GREY")
+    return
+  print("PASS_REV194_PHYSICAL_STREAMED_MEADOWS_DEEP_GREENS_AND_NO_WASHOUT_FOG",visible_stream_tufts)
   var native_screen: Vector2i = quality.get("physical_screen")
   if viewport.size != Vector2i(roundi(float(native_screen.x)*0.85),roundi(float(native_screen.y)*0.85)):
     _fail(80,"ACTUAL_THREE_DIMENSIONAL_RESOLUTION_MUST_BE_EXACTLY_85_PERCENT_DEFAULT")
@@ -424,7 +454,7 @@ func _run() -> void:
     if int(resolved["draw_reference"])!=int(expected["draw"]) or int(resolved["triangle_reference"])!=int(expected["triangles"]):
       _fail(86,"OLD_200_DRAW_BUDGET_STILL_ACTIVE")
       return
-    var grass: MultiMeshInstance3D=world.get_node("FineFiveLeafGrassTuftsTerrainConforming")
+    var grass: MultiMeshInstance3D=world.get_node("LivingClusteredMeadowTuftsTerrainConforming")
     var flies: GPUParticles3D=world.get_node("NaturalWarmMobileFireflyParticlesTiered")
     var clouds: MultiMeshInstance3D=world.get_node("RealBlueSkySoftWhiteCumulusCards")
     if grass.multimesh.visible_instance_count!=int(expected["grass"]) or absf(grass.visibility_range_end-float(expected["grass_m"]))>0.1:
