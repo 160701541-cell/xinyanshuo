@@ -1094,7 +1094,7 @@ func _seed_resources() -> void:
   # Two natural-shaped GROVES, not an equidistant test grid. All trees are
   # kept outside the 7m center road and outside the construction exclusion.
   var groves := [Vector2(-22.0,-13.0),Vector2(-21.0,22.0)]
-  for index in range(12):
+  for index in range(52):
     var center: Vector2 = groves[int(index % groves.size())]
     var spread: float = rng.randf_range(1.5, 7.0)
     var angle: float = rng.randf_range(-PI, PI)
@@ -1103,7 +1103,7 @@ func _seed_resources() -> void:
     if z > 7.0 and z < 14.0:
       z += 7.0
     var entity_id := "CL-TREE-0184-%03d" % index
-    assert(sim.register_natural_node(entity_id, TOWN, "tree", 12))
+    assert(sim.register_natural_node(entity_id, TOWN, "tree", 5))
     assert(sim.register_resource_position(entity_id, Vector3(x,
       float(terrain_world.call("height_at",x,z)),z)))
     assert(eco.register_tree(entity_id))
@@ -1113,7 +1113,7 @@ func _seed_resources() -> void:
       natural_meshes[entity_id] = instance
   # Two mineral outcrops (right-hand side), all outside the main road.
   var quarry_groups := [Vector2(21.0,-15.0),Vector2(23.0,19.0)]
-  for index in range(9):
+  for index in range(20):
     var center: Vector2 = quarry_groups[int(index % quarry_groups.size())]
     var spread: float = rng.randf_range(1.0,6.5)
     var angle: float = rng.randf_range(-PI, PI)
@@ -1122,7 +1122,7 @@ func _seed_resources() -> void:
     if z > 7.0 and z < 14.0:
       z -= 8.0
     var entity_id := "CL-STONE-0184-%03d" % index
-    assert(sim.register_natural_node(entity_id, TOWN, "stone", 18))
+    assert(sim.register_natural_node(entity_id, TOWN, "stone", 10))
     assert(sim.register_resource_position(entity_id, Vector3(x,
       float(terrain_world.call("height_at",x,z)),z)))
     assert(eco.register_stone(entity_id))
