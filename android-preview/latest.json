@@ -1,12 +1,12 @@
 {
   "schema": 1,
   "channel": "android-preview",
-  "revision": 188,
+  "revision": 189,
   "minimum_android_code": 1176,
   "maximum_android_code": 1176,
-  "sha256": "c859fd32201db72fdffbb27d2fdbe7829eb7f773ce6b6bd68785913d66117c87",
-  "size_bytes": 21709184,
-  "pack_url": "https://160701541-cell.github.io/xinyanshuo/android-preview/canglan-content-rev-188.pck",
+  "sha256": "139da4fc2109cf0a32f0607331f28937a4e5037eb190440282390482b72c0250",
+  "size_bytes": 21720032,
+  "pack_url": "https://160701541-cell.github.io/xinyanshuo/android-preview/canglan-content-rev-189.pck",
   "notes": "苍岚原APK176 rev188：真机P0首轮改进：默认角色HUD含生命、真实体力、背包/修炼和设置，采集和疾步有真实体力与冷却，仓库实物食物恢复生命，研发按钮默认隐藏。地形建筑人物缺陷仍待修复，手机继续QA。",
-  "signature": "m2mGU+sskZnXe4p0vnQxqTIKfQFIj30L4ylo1NJWy9XshF+fDTQIHpSmkgO3yco5Y6xhUzkCBnax7cj3ktkYr6nJ0i1lH4JT9DC2yoYxhi9bB/YHXWW2FToGi0A8PVfsOidhmmyrWbrbaUEkQ6absALeXXyfhpaOe7c5W9vBhbjjBsYNz4acMPTyxgqgBkHXcdqou1qU+c4aHqOMbCic8t03beOeNftMTj3o89ITYtre9S3wfqmhJwtW47hsudxxjM4EbdMGRe6sZ8nILlgzzpEtKrkzYLkk5jxiGc1LCb2B8UvUSUjBLtzuax2o5Yfb30K0TLzh4BQFt48CZjCNLkPaqgKVRysyahzuKqFjVyv5QgsZSYxbMjgbrA4/VRzk6oHKlulsXTB/BcPo3Unfd1SUbAbi/DBZxAndJBrdLBjrfd9TzLQAnkMLZkeifqJoF37l+DEoNjvtBZq5ZL6Tjamf1vd95i3fnX0hIin3r39zsVxAtAEMJ9AEM8CzkmtT"
+  "signature": "ctwVFbUP+zJW8eaPbrbxR08fJ3KWMFIFWpnYzUAaninSWNkmivtMVLcU3IcNKvlFM/aE3S6wmY9sbPoSSM/2eHIinZz0ALAMU4mGhVpE5hSspVNWmDwUoFvFDEpXQn55G1r1XT11BjJiw1szWqXKKdN0/6hRdvwx+cgDbYWh5PTp2ged4IHpLmMl+WYDOcfFaC/+CtUut2WooiH4b3sxo32t4G0fqVvdNd4yH8n65JNZ3bQgPbfOTcpttC8wekjhMto6Afw45MIXdlJxBmpoL55R0iyONHVOsKwPgpDfs94KvK67ayDRkXAlqNPl3EgJgR3Y0WurYOhXhWu4VtbZusXE+4at3GLS04/Bv3lrYsB5+vv6t8tFPxDfbq386iSmOZqcjkRtwiaBukKKnljDPIMH6an6GciVymnvTjmoZ1+d/yWzDuy6RMtM57TcUVdJzuTtDl2mumXACdhZcSAA/z9iYFnSAIgOwbL4W7Es+Pf15fg4GrOHQfOi+ykWZgwp"
 }
