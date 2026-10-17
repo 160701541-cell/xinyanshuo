@@ -1,0 +1,39 @@
+name: Canglan rev199 - Inspect existing licensed humanoid hair and animation before use
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/canglan-rev199-humanoid-asset-probe.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  probe-public-cc0-source-not-a-release:
+    if: github.repository == '160701541-cell/xinyanshuo'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 4
+    steps:
+      - uses: actions/checkout@v4
+      - name: Inspect original FREE CC0 GLB JSON, no unlicensed asset use or model generation
+        run: |
+          python3 - <<'PY'
+          import pathlib,struct,json
+          for file in [
+            pathlib.Path('game-source/godot3d/assets/free_cc0/quaternius_humanoid/public/assets/character.glb'),
+            pathlib.Path('game-source/godot3d/assets/free_cc0/quaternius_knight/public/models/knight.glb')
+          ]:
+            b=file.read_bytes()
+            assert b[:4]==b'glTF',file
+            length,tag=struct.unpack_from('<I4s',b,12)
+            assert tag==b'JSON'
+            j=json.loads(b[20:20+length].decode('utf-8'))
+            print('P0_LICENSED_CHARACTER_SOURCE',file,'size',len(b))
+            print('GLB_NODES',[(x.get('name',''),x.get('mesh'),x.get('skin')) for x in j.get('nodes',[])][:140])
+            print('GLB_MESHES',[(x.get('name',''),len(x.get('primitives',[]))) for x in j.get('meshes',[])][:120])
+            print('GLB_ANIMATIONS',[(x.get('name',''),len(x.get('channels',[]))) for x in j.get('animations',[])][:100])
+            print('GLB_MATERIALS',[(x.get('name',''),x.get('alphaMode'),x.get('pbrMetallicRoughness',{}).get('baseColorFactor')) for x in j.get('materials',[])][:80])
+            print('GLB_IMAGE_COUNT',len(j.get('images',[])),'GLB_SKINS',len(j.get('skins',[])))
+            hair=[x.get('name','') for x in j.get('nodes',[])+j.get('meshes',[]) if any(t in x.get('name','').lower() for t in ['hair','braid','ponytail','head','hat'])]
+            print('GLB_ACTUAL_HAIR_OR_HEAD_NAMES',hair)
+          print('PASS_REV199_CC0_ASSET_PROBE_METADATA_NOT_RELEASE')
+          PY
