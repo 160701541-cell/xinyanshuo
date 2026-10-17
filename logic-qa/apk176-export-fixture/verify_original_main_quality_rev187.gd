@@ -242,6 +242,35 @@ func _run() -> void:
     _fail(414,"REV208_BOTANICAL_REAL_GODOT_ANDROID_TOO_MANY_DRAW_PARTS_"+
       str(rev208_real_hq_botanical_mesh_surfaces))
     return
+  var forest_pool: Node3D=room.get("forest_floor_pool")
+  if forest_pool==null or not is_instance_valid(forest_pool):
+    _fail(415,"REV208_REAL_VENDOR_FERN_GRASS_32M_HABITAT_BATCH_NOT_CREATED")
+    return
+  var forest_status: Dictionary=forest_pool.call("stats")
+  var floor_positions: Dictionary=forest_pool.get("position_by_id")
+  var live_ids: Array=floor_positions.keys()
+  if int(forest_status.get("actual_32m_cells",0))!=32 or (
+      int(forest_status.get("active_real_cc0_plants",0))<25) or (
+      int(forest_status.get("gpu_real_pbr_parts",0))<32) or (
+      int(forest_status.get("verified_live_gpu_slots",0))<25) or (
+      not bool(forest_status.get("all_visible_slots_contiguous",false))) or (
+      not bool(forest_status.get("never_free_inventory",false))) or (
+      not forest_status.get("errors",[]).is_empty()) or live_ids.is_empty():
+    _fail(415,"REV208_LIVE_AUTHOR_LICENSED_FERN_GRASS_NATIVE_GPU_POOL_BAD_"+
+      str(forest_status))
+    return
+  var original_pool_count: int=int(forest_status["active_real_cc0_plants"])
+  if not bool(forest_pool.call("verify_swap_remove",String(live_ids[0]))):
+    _fail(416,"REV208_REAL_GPU_FLOOR_SWAPPED_SLOT_NOT_RESTORED")
+    return
+  var after_swap: Dictionary=forest_pool.call("stats")
+  if int(after_swap.get("active_real_cc0_plants",-1))!=original_pool_count or (
+      not bool(after_swap.get("all_visible_slots_contiguous",false))):
+    _fail(417,"REV208_REAL_FERN_GRASS_GPU_SLOT_IDENTITY_CORRUPTION_ON_REMOVE_INSERT")
+    return
+  print("PASS_REV208_HQ021_REAL_VENDOR_CC0_32M_HABITAT_BATCH_GPU_TRANSFORMS_NO_IDENTITY_GHOSTS_SWAP_REMOVE "+
+    str({"active":original_pool_count,"slots":forest_status["verified_live_gpu_slots"],
+      "cells":forest_status["actual_32m_cells"],"parts":forest_status["gpu_real_pbr_parts"]}))
   print("PASS_REV208_ORIGINAL_MAIN_11_CC0_PBR_GODOT_DRAWABLE_STATIC_BOTANICAL_SURFACES_UNDER_150 "+
     str(rev208_real_hq_botanical_mesh_surfaces))
   print("PASS_REV208_ACTUAL_ORIGINAL_MAIN_REAL_PINE_CYPRESS_FERN_AND_FIVE_GREEN_PLANT_SOURCES_NO_FAKE_INVENTORY")
