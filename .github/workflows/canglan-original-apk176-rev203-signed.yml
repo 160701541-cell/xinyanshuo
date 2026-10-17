@@ -418,7 +418,7 @@ jobs:
               'android_real_device_qa':'pending',
               'engine_visual_proof':'art/actual-engine-capture/canglan-rev203-soar-bank-godot-linux.png'})
           feed['updated_at']=now
-          p.write_text(json.dumps(feed,ensure_ascii=False,indent=2)+'\\n',encoding='utf-8')
+          p.write_text(json.dumps(feed,ensure_ascii=False,indent=2)+'\n',encoding='utf-8')
           print('PASS_REV203_RELEASE_FEED_ATOMIC_WITH_SIGNED_PACK',before['sha256'])
           PY
           git config user.name 'canglan-original-apk176-ota-release'
