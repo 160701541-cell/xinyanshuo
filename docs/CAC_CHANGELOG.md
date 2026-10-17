@@ -1,5 +1,12 @@
 # CAC 工序变更与开发日志
 
+## 2026-10-18 / CAC-HQ-ART-ECOLOGY-REPORT-MANDATORY / 用户上传正式高精美术与生态替换执行报告，最高P0执行规范落库
+- **用户新最高要求已写入唯一公开仓库 main，绝非仅聊天记忆/临时口头承诺**：完整用户原报告 `docs/CANGLAN_HQ_ART_ECOLOGY_EXECUTION_REPORT_USER_20261018.md`；逐项ID/质量出口/完成与阻塞状态 `docs/CAC_REV208_HQ_EXECUTION_CHECKLIST_20261018.md`；`AGENTS.md`、`docs/DEVELOPMENT_EXECUTION_RULES.md` 已提升为最高优先级美术发布门禁；WorldX风格 `tools/asset_factory/CANGLAN_WORLDX_STYLE_LOCK_V2_HQ3D.md` 替代低饱和固定斜俯视v1，旧文件已显式标为历史文档。
+- **质量路线冻结**：不能再用Quaternius Knight做近景主角/核心修士；不得用Kenney矮小橡树批量缩放冒充成熟森林；不以`bush.glb`红白菌体冒充绿灌木；树干叶片/地面/衣料与真实灵草必须拥有不同PBR/真实尺度/独立轮廓；WorldXAI仅产经审查的高质量四视母版/贴图美术参考，需进一步成为真实可蒙皮高精GLB才算游戏资产。真实第一/第三自由镜头与古风发髻衣装是硬标准。
+- **固定阶段与P0**：`HQ-Art-Lock → HQ-Character → HQ-Ecology → Combat-Life → World-PBR → Mobile-Sustain → REV208-RC → REV208-SIGNED`；主角1、核心修士至少4、成熟乔木3+幼树2+灌木4+草蕨4、独立可辨灵草5–8、真实死亡和地区人口扣减、至少7张原版Godot真截图、Android手机30分钟FPS/热/触屏复验；证据缺一不可，来源许可证/SHA/PBR/LOD/碰撞逐资产验证。
+- **真实状态不夸大**：主分支正式RSA/PCK公网**rev207**（APK176 versionCode1176），rev208候选仍在 Draft PR #14，未合并/签名/发布。Godot 4.4.1 原APK176 Main最新技术QA `39065966234` **SUCCESS**，已验证修士剑击有限HP、反击、真死亡尸体/存档与着陆回归；但是高精国风角色、成熟密林、灵植/地面美术与死亡动画/人口账本仍 **P0 FAIL/PENDING**，30分钟 Android实机 `PENDING`。不得因为这个引擎QA绿灯就发布rev208。
+- **未完成与后续唯一优先工作**：先接通 WorldXAI v2高质量图片真实生成与风格锁，再接入一名真正高精主角（四视、表情、布料、绑定动作），再做成熟树/绿被/独立灵草及PBR地表。完整原始报告里的数值是目标预算，未经真机测量不能标实际性能数据。后续每次完成逐项更新报告ID、提交SHA、引擎截图/QA号、手机与正式OTA状态，工作日志不得滞后官网。
+
 ## 2026-10-18 / CAC-REV208-AUTHENTIC-MORTALITY-AND-ART-GATE / 真实死亡通过引擎QA，低模画风仍拒绝发布
 - 以用户 Android 实机截图 `1000067794.jpg` 对照两类真实 Godot 截图与 AI 生成概念图，确认低模西式人物和头发、树木矮小、灵药同背景、地形缺层次、薄弱受击均为**美术/玩法 P0 未达标**。概念图仅作二维目标，不是实机，更没有通过 WorldXAI 实际导出高精三维角色。
 - 实际代码：`cultivation_world` 用稳定修士ID实现体力/有效剑伤/HP/仇恨反击/死亡时间/死因/停止行动/倒地可见/死亡后碰撞失效/原子存档；`player_controller` 近距三米内对被锁定修士进行真实武器攻击且遵守空间射线遮挡，解决原先修士只能被锁定却绝对不可击杀。中立修士攻击后开始真实反击。御剑着陆在下方有真人/树/房时以实体碰撞检查尝试水平寻找邻近无阻落点，不穿墙假瞬移。
