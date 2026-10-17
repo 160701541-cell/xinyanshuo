@@ -1229,11 +1229,47 @@ func _run() -> void:
   if float(player.get("_soar_altitude"))>altitude_before+0.2:
     _fail(226,"REV199_ACTUAL_FLY_DOWN_TARGET_NOT_REACHED_SMOOTHLY")
     return
+  # Rev203 real hold input must keep climbing beyond a single 2.5m tap,
+  # and finger release must stop it. World ×100 cannot accelerate this axis.
+  if up_button.action_mode!=BaseButton.ACTION_MODE_BUTTON_PRESS or (
+      down_button.action_mode!=BaseButton.ACTION_MODE_BUTTON_PRESS):
+    _fail(282,"REV203_TOUCH_HOLD_BUTTON_REPEATS_ONLY_ON_RELEASE")
+    return
+  up_button.button_down.emit()
+  up_button.pressed.emit()
+  var tap_target: float=float(player.get("_soar_target_altitude"))
+  for i in range(6):
+    player.call("step",0.15)
+  if float(player.get("_soar_target_altitude"))<=tap_target+1.0:
+    _fail(283,"REV203_HOLD_ASCENT_DID_NOT_CONTINUOUSLY_CHANGE_REAL_HEIGHT_TARGET")
+    return
+  up_button.button_up.emit()
+  var released_target: float=float(player.get("_soar_target_altitude"))
+  player.call("step",0.25)
+  if absf(float(player.get("_soar_target_altitude"))-released_target)>0.005 or (
+      absf(float(player.get("_soar_hold_axis")))>0.005):
+    _fail(284,"REV203_RELEASED_THUMB_CONTINUES_TO_CLIMB_UNCONTROLLED")
+    return
+  # Return to the pre-existing three-metre flight test altitude so that
+  # old landing/collision assertions remain physically equivalent.
+  player.set("_soar_target_altitude",3.0)
+  player.call("step",1.10)
+  if float(player.get("_soar_altitude"))>3.10 or (
+      float(player.get("_soar_camera_extra"))<0.06):
+    _fail(285,"REV203_MISSING_TERRAIN_CONTEXT_PULLBACK_OR_SAFE_REDESCENT")
+    return
   var flyer_before: Vector3=actor.position
   player.set("_yaw",0.0)
+  actor.rotation.y=1.3 # Heading error creates a measurable true-body bank.
   player.set("_joystick",Vector2(0.0,-1.0))
   player.call("step",0.15)
   player.set("_joystick",Vector2.ZERO)
+  var blade: Node3D=world.get_node_or_null(
+      "ActualQuaterniusKnightCC0FlyingSwordUnderPlayerFeet")
+  if absf(actor.rotation.z)<0.003 or (
+      blade==null or absf(blade.rotation.z-actor.rotation.z)>0.005):
+    _fail(286,"REV203_LICENSED_PLAYER_AND_FLYING_SWORD_MUST_BANK_TOGETHER_IN_TURNS")
+    return
   if Vector2(actor.position.x-flyer_before.x,
       actor.position.z-flyer_before.z).length()<0.6 or (
       actor.position.y<float(terrain.call("height_at",actor.position.x,actor.position.z))+1.8):
@@ -1264,6 +1300,11 @@ func _run() -> void:
     _fail(281,"REV202_NORMAL_LANDING_BUTTON_FAILED_TO_RETURN_TO_GROUND")
     return
   print("PASS_REV202_TRUE_ORIGINAL_SOAR_TOUCH_ASCENT_SMOOTH_TAKEOFF_AND_MIDAIR_CAMERA_LANDING")
+  if absf(actor.rotation.z)>0.0005 or (
+      absf(float(player.get("_soar_bank_angle")))>0.0005):
+    _fail(287,"REV203_ACTUAL_PLAYER_REMAINS_BANKED_AFTER_LANDING")
+    return
+  print("PASS_REV203_ORIGINAL_AVATAR_SWORD_BANK_THUMB_HOLD_CAMERA_DEPTH_AND_LANDING")
   var stairs: StaticBody3D=world.get_node_or_null(
       "ConstructionOccluder_LicensedWorksiteVisibleStoneApproach")
   if stairs==null or stairs.collision_layer!=4 or stairs.get_node_or_null(
