@@ -31,6 +31,50 @@ def get_source(k,meta):
  if actual["triangles"]!=meta["triangles"]:
   raise ValueError("Source triangle baseline mismatch: "+k)
  return raw,actual
+def restore_original_gltf_vendor_pbr(original_glb,derived_glb,group_names):
+  """Trimesh releases may deduplicate one authoring material incorrectly.
+  Reattach EXACT four source material dictionaries (incl roughness and culling)
+  and set each merged primitive material to its named source index. No color
+  guessing or accepting texture/material loss to make CI green.
+  """
+  def doc_parts(b):
+    if b[:4]!=b"glTF": raise ValueError("not GLB")
+    header_len,chunk_type=struct.unpack_from("<I4s",b,12)
+    if chunk_type!=b"JSON":raise ValueError("not GLTF JSON chunk")
+    obj=json.loads(b[20:20+header_len].decode("utf8").rstrip(" \\x00"))
+    return obj,b[20+header_len:]
+  src,_=doc_parts(original_glb)
+  out,opaque_binary=doc_parts(derived_glb)
+  if src.get("images") or src.get("textures"):
+    raise ValueError("Source PBR has external textures: refusing material-only reconstruction")
+  originals=src["materials"]
+  by_name={m.get("name"):i for i,m in enumerate(originals)}
+  if len(originals)!=4 or len(by_name)!=4:
+    raise ValueError("Source PBR color factors/material IDs are not four unique names")
+  out["materials"]=originals
+  if len(out["meshes"])!=len(group_names):
+    raise ValueError("Merged source meshes not exactly named 4 GLB parts")
+  for mesh in out["meshes"]:
+    tag=mesh.get("name","")
+    if not tag.startswith("Original_CC0_PBR_Mat_"):
+      raise ValueError("Unexpected merged mesh order/name "+tag)
+    i=int(tag.rsplit("_",1)[-1])
+    if i<0 or i>=len(group_names):
+      raise ValueError("Invalid vendor surface index")
+    original_name=group_names[i][0]
+    if original_name not in by_name:
+      raise ValueError("Could not resolve original CC0 PBR material "+original_name)
+    for primitive in mesh["primitives"]:
+      primitive["material"]=by_name[original_name]
+  blob=json.dumps(out,separators=(",",":"),ensure_ascii=False).encode("utf8")
+  blob+=b" " * ((-len(blob))%4)
+  length=12+8+len(blob)+len(opaque_binary)
+  packed=struct.pack("<4sII",b"glTF",2,length)
+  packed+=struct.pack("<I4s",len(blob),b"JSON")+blob+opaque_binary
+  if len(packed)!=length:
+    raise ValueError("Rebuilt GLB header length does not match physical bytes")
+  return packed
+
 def collapse(raw):
  scene=trimesh.load(io.BytesIO(raw),file_type="glb",force="scene")
  groups={}
@@ -51,6 +95,7 @@ def collapse(raw):
   if len(geom.faces)<1000:raise ValueError("Unexpected empty PBR source part")
   merged.add_geometry(geom,geom_name="Original_CC0_PBR_Mat_%d"%index)
  raw2=merged.export(file_type="glb")
+ raw2=restore_original_gltf_vendor_pbr(raw,raw2,list(groups.keys()))
  before=parse_glb(raw)
  after=parse_glb(raw2)
  if after["triangles"]!=before["triangles"] or after["mesh_parts"]!=4 or after["materials"]!=4:
