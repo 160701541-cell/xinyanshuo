@@ -1,5 +1,11 @@
 # CAC 工序变更与开发日志
 
+## 2026-10-18 / CAC-P0-REAL-WORLDX-AND-REGION-HP-STRICT-QA / P0真实代码与素材尝试：引擎死亡人口守恒PASS，美术仍FAIL
+- **真实 Godot 4.4.1 原APK176 Main完整严格CI `39068081562` SUCCESS（候选分支 SHA `72a953ed30eead69a43b09bfed68d42199ea8053`）**，原Main验证日志直接包含 `PASS_REV208_REAL_LETHAL_CULTIVATOR_SWORD_COLLISION_DEATH_PERSISTENCE_AND_CORPSE` 和 `PASS_REV208_EXACTLY_ONCE_NAMED_NPC_CENSUS_POPULATION_DEBIT_SAVE_RELOAD_NO_REVIVAL`。玩家致死修士后，原5000人口分区账本恰好减少1名已存在成年人及相应灵根/炼体人数；重复击杀不重复扣减；双份存档断电中断可用死亡ID账本回读防复活；QA完成后恢复测试档。**尚缺死亡骨骼动画、真实随身物品掉落/阵营因果、手机验收，故 P0-HQ-031仍未全过**。
+- **WorldXAI/Kolors原生实际生成两次**（均由公开GitHub Actions Secret凭证在真正固定WorldX prompt-loader运行，而不是普通文生图冒名）：#001 run `39067928097` SUCCESS、1024×1024 PNG、SHA `e22e514fd69729ee173afdf4a126ba851ec83bcf4f078817ecdc9f613239160d`；#002 run `39068395613` SUCCESS、768×1024 PNG、SHA `f4867a71dee0463214742e721320bed563380100174e2d2153448c06b687022a`。严格像素尺寸/SHA/授权状态 `GENERATED_UNAPPROVED`、原提示词与GitHub artifacts均有证据；第二版采用画面上下边距与禁止近景负面词，提供方却仍画成胸腰以上、缺腿靴的**半身像**。二者都是高质量脸/发型/衣料的参考，却**不是合格主角全身母版**、不是四视图、没有GLB/蒙皮/PBR、存在服务商的“AI生成”标记，故人工审美**ART FAIL**，绝不可偷偷签rev208。第二次生成第一次运行 `39068312762` 因脚本转义语法错误在**免费单元测试阶段**停止，未消耗图像生成费用，已修复。
+- **阻塞/止损**：两次生成均未满足全身完整性，停止继续盲目调用Kolors消耗余额。下一工序优先用适合完整角色设计且支持参考图/竖长幅构图的模型或可授权高精真实3D人形来源；需提供方显式费用/条款核实和有效多视同一角色控制。WorldX概念图不得代替真实Godot主角；旧Kenney/Quaternius低模仅存远景LOD。**PR #14继续Draft，正式RSA公网rev207不变**，Android30分钟实机仍 PENDING。
+- **本轮代码证据**：`apk176_living_regions_rev207.gd` 新`named_deaths`交易和人口守恒，`apk176_cultivation_world_rev201.gd` 双账本伤亡/下次启动恢复，`apk176_living_resource_world_rev187.gd` 真原Main挂接，原Main QA新增真实死亡地区人口扣减验收；WorldX两次脚本/测试/QA workflow均在唯一公开仓库 `feat/rev208-green-kenney-saplings-vegetation`；正式rev208没有RSA包/官网上线，不得说“已更新手机”。
+
 ## 2026-10-18 / CAC-P0-HQ-WORLDX-REAL-CANDIDATE-001-REJECTED / 第一张真正WorldX主角母版只达近景发型脸部，不能充当全身4视素材
 - **真实WorldX跑通**：原代码 `tools/asset_factory/worldx_rev208_hq_character_v2.mjs` 在公开仓库 GitHub Actions run `39067928097` **SUCCESS**；下载真实 1024×1024 PNG `player_front_001.png` SHA256 `e22e514fd69729ee173afdf4a126ba851ec83bcf4f078817ecdc9f613239160d`；固定上游`YGYOOO/WorldX@edb4976d` prompt-loader，使用已配置的SiliconFlow Kolors图像API，最多一张，图/元数据/提示词保存于未批准Artifact `12114455139`。是真 WorldX 实际输出而非GPT自制图/引擎截图。
 - **人工视觉审查结果**：发髻、簪、青绿层叠古风服装和面部质感相较旧Knight明显好；**但人物只显示到胸腰，双腿/靴子/剑下段都缺失，不能作4视统一角色或可蒙皮素材；图片右下角有官方“AI生成”可见标注**。因此此素材严格`ART_REJECTED_FULL_BODY_CROP / NOT_GAME_READY`，不能宣称HQ-Character PASS或剪裁进PCK。第三方生成条款仍需核验。
