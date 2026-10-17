@@ -42,6 +42,18 @@ func _initialize() -> void:
 		quit(2)
 		return
 	var files: Dictionary = FILES.duplicate()
+	# Mandatory genuine Kenney CC0 interface sprites; without packing these
+	# ten PNGs the original APK176 phone would silently fall back to ugly QA UI.
+	for sprite in ["panel_brown_dark","panel_border_brown_detail",
+			"button_brown","button_brown_close","button_grey",
+			"progress_red","progress_green","progress_blue",
+			"joystick_circle_pad_a","joystick_circle_nub_a"]:
+		var rel: String = "canglan_rev187/ui/kenney/" + sprite + ".png"
+		if not FileAccess.file_exists(source_dir.path_join(rel)):
+			printerr("BLOCKED_REV205_REAL_KENNEY_CC0_UI_MISSING ",rel)
+			quit(21)
+			return
+		files["res://" + rel] = rel
 	for i in range(8):
 		for pattern in ["hd2d/worldx/nav_%03d.json", "hd2d/worldx/zones_%03d.json",
 				"hd2d/worldx/worldx_%03d.png"]:
