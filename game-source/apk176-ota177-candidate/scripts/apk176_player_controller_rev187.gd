@@ -1190,8 +1190,8 @@ func _layout_hud() -> void:
     (buttons[key] as Button).visible=dev
   (buttons["FlyUpButton"] as Button).position=Vector2(size.x-145,maxf(215,size.y-310))
   (buttons["FlyDownButton"] as Button).position=Vector2(size.x-145,maxf(275,size.y-250))
-  (buttons["FlyUpButton"] as Button).visible=camera_mode=="fly"
-  (buttons["FlyDownButton"] as Button).visible=camera_mode in ["fly","soar"]
+  (buttons["FlyUpButton"] as Button).visible=camera_mode in ["fly","soar"] and not _soar_landing
+  (buttons["FlyDownButton"] as Button).visible=camera_mode in ["fly","soar"] and not _soar_landing
   # Top-right first row remains original account/menu HUD; the second row
   # is permanently usable on touch devices even with dev UI turned OFF.
   var quick_keys: Array[String]=["Iso45Button","GodShortcutButton",
