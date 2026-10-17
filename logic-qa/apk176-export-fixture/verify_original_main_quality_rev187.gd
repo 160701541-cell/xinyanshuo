@@ -568,7 +568,7 @@ func _run() -> void:
       str(seam_samples)+"_"+str(edge_error))
     return
   print("PASS_REV191_NO_FLOATING_SLICE_LOD_OVERLAP_OR_22M_CLIFF_ACTUAL_MESH_TRIANGLES",seam_samples)
-  var grass_visual: MultiMeshInstance3D=world.get_node("FineFiveLeafGrassTuftsTerrainConforming")
+  var grass_visual: MultiMeshInstance3D=world.get_node("LivingClusteredMeadowTuftsTerrainConforming")
   var actual_grass: Mesh=grass_visual.multimesh.mesh
   if actual_grass.get_surface_count()<1:
     _fail(113,"NO_REAL_MULTIBLADE_GRASS_GEOMETRY")
