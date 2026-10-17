@@ -462,7 +462,10 @@ func _install_kenney_ui_theme() -> void:
     button.add_theme_stylebox_override("hover",frame)
     button.add_theme_stylebox_override("pressed",depressed)
     button.add_theme_stylebox_override("disabled",inactive)
-    button.add_theme_font_size_override("font_size",16)
+    var compact_top: bool=button.name in ["Iso45Button","GodShortcutButton",
+      "SoarAvatarButton","RealJumpButton","CameraLockButton",
+      "PhoneZoomInButton","PhoneZoomOutButton","TargetLockButton"]
+    button.add_theme_font_size_override("font_size",14 if compact_top else 16)
     button.add_theme_color_override("font_color",Color("#ffedc6"))
     button.add_theme_color_override("font_hover_color",Color("#fff7e8"))
     button.add_theme_color_override("font_pressed_color",Color("#ffffff"))
@@ -1884,6 +1887,7 @@ func _layout_hud() -> void:
   var quick_start: float=maxf(376.0,size.x-float(quick_keys.size())*quick_width-16.0)
   for i in range(quick_keys.size()):
     var quick: Button=buttons[quick_keys[i]]
+    quick.custom_minimum_size=Vector2(64.0,39.0)
     quick.position=Vector2(quick_start+float(i)*quick_width,83.0)
     quick.size=Vector2(64.0,39.0)
     quick.add_theme_font_size_override("font_size",14)
