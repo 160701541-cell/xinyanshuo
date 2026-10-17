@@ -1,0 +1,85 @@
+name: Canglan rev206 CC0 Source Asset Intake - NO OTA RELEASE
+on:
+  push:
+    branches:
+      - feat/rev206-licensed-assets-spirit-roots-city-population
+    paths:
+      - '.github/workflows/canglan-rev206-cc0-model-ingest.yml'
+      - 'game-source/apk176-ota177-candidate/assets/cc0-rev206/asset_manifest.json'
+      - 'tools/ingest_rev206_cc0_models.py'
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: canglan-rev206-cc0-intake
+  cancel-in-progress: false
+jobs:
+  import-only:
+    if: github.repository == '160701541-cell/xinyanshuo' && github.ref_name == 'feat/rev206-licensed-assets-spirit-roots-city-population'
+    runs-on: ubuntu-latest
+    timeout-minutes: 22
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+          fetch-depth: 1
+      - name: Download exact original ready-made Quaternius buildings, clothed rigs, animals and monsters
+        run: |
+          set -euo pipefail
+          python3 tools/ingest_rev206_cc0_models.py --max-total-mb 20
+          python3 - <<'PY'
+          from pathlib import Path
+          import json
+          p=Path("game-source/apk176-ota177-candidate/assets/cc0-rev206/asset_intake_proof.json")
+          x=json.loads(p.read_text())
+          assert x["asset_total"]==14 and x["total_bytes"]<=20*1024*1024
+          assert len([m for m in x["models"] if m["role"]=="building"])>=5
+          assert len([m for m in x["models"] if m["role"]=="animal"])>=4
+          assert len([m for m in x["models"] if m["role"]=="character_clothing_rig"])>=2
+          print("PASS_REV206_REAL_LICENSED_COMPLETE_MODELS_NOT_PROCEDURAL_MESH")
+          PY
+      - name: Native Godot 4.4.1 import validation for ORIGINAL real external GLB files
+        run: |
+          set -euo pipefail
+          curl -fL --retry 3 --connect-timeout 25 \
+            https://github.com/godotengine/godot/releases/download/4.4.1-stable/Godot_v4.4.1-stable_linux.x86_64.zip \
+            -o /tmp/godot-rev206.zip
+          unzip -q /tmp/godot-rev206.zip -d /tmp
+          chmod +x /tmp/Godot_v4.4.1-stable_linux.x86_64
+          mkdir -p qa-stage/rev206-cc0-art/genuine
+          printf 'config_version=5\n' > qa-stage/rev206-cc0-art/project.godot
+          find game-source/apk176-ota177-candidate/assets/cc0-rev206 \
+            -name '*.glb' -type f -exec cp '{}' qa-stage/rev206-cc0-art/genuine/ ';'
+          test "$(find qa-stage/rev206-cc0-art/genuine -name '*.glb' | wc -l)" -eq 14
+          timeout 200s /tmp/Godot_v4.4.1-stable_linux.x86_64 \
+            --headless --editor --path qa-stage/rev206-cc0-art --import \
+            > /tmp/godot-rev206-cc0-import.log 2>&1 || {
+              tail -160 /tmp/godot-rev206-cc0-import.log; exit 1;
+            }
+          if grep -E 'SCRIPT ERROR:|Parse Error:|ERROR:.*(Import|Importer|GLTF)' \
+            /tmp/godot-rev206-cc0-import.log; then
+            echo FAIL_REV206_GODOT_GLTF_IMPORT
+            exit 1
+          fi
+          echo PASS_REV206_ACTUAL_GODOT44_GLTFS_BUILDINGS_CLOTHED_PEOPLE_ANIMALS_IMPORTED
+      - name: Commit only source-verified FREE completed binary meshes; NEVER sign or publish a PCK
+        run: |
+          set -euo pipefail
+          git config user.name "canglan-qa-bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add game-source/apk176-ota177-candidate/assets/cc0-rev206
+          if git diff --cached --quiet; then
+            echo PASS_REV206_EXISTING_PINNED_MODELS_UP_TO_DATE
+          else
+            git commit -m "assets(rev206): checked CC0 prefabs rigs animated wildlife for native Godot [skip ci]"
+            git push origin HEAD:feat/rev206-licensed-assets-spirit-roots-city-population
+          fi
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: Canglan-REV206-CC0-INTAKE-QA
+          path: |
+            game-source/apk176-ota177-candidate/assets/cc0-rev206/asset_intake_proof.json
+            /tmp/godot-rev206-cc0-import.log
+          if-no-files-found: ignore
+          retention-days: 7

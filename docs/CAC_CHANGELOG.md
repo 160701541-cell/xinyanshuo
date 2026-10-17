@@ -1,5 +1,16 @@
 # CAC 工序变更与开发日志
 
+
+## 2026-10-18 / CAC-3D-207 / 原APK176开源整屋/野生动物/高色度PBR真实细密材质 + 可玩基础交互
+- 玩家反馈最高优先P0：**不要再生成新房或让NPC日复一日维修重复小破房；优先合法开源现成建筑、服饰、动物，材质必须有真实纹理和高饱和色彩，近景像素高密度不是满屏超大马赛克**。本轮原游戏代码优先处理这些可见缺陷；用户不需要自行重复推动。
+- 原版Godot 4.4.1原APK176主线增量：`game-source/apk176-ota177-candidate/scripts/apk176_living_resource_world_rev187.gd` 真正取消老破屋木料/石料施工循环、第三NPC改为管事，完整Quaternius CC0源房屋4座+客栈+亭子6件，狼/狐狸/鹿/牛四个源动画3D动物、角色服装源文件，入场实例而非模型概念图。整屋房屋预设居民归属，但**可进入室内和完整居住生态尚未完成**，不假报合格。
+- 资产链严格开源CC0来源：`game-source/apk176-ota177-candidate/assets/cc0-rev206/asset_intake_proof.json` 校验14份真实GLB源哈希；`materials/rev207/manifest.json` 校验九份原厂Quaternius白墙/屋瓦/木料BaseColor+Normal+Roughness/ORM 512×512图+SHA256。`tools/verify_apk176_rev187_3d_pck.py` 与真实PCK逐字节对照，避免纹理变单色、源文件丢失或许可被忽略。
+- 正式画质源改动：`apk176_vivid_material_rev207.gd` 真实GLB材质非破坏式UV/法线映射、地层真实world-space 64细texel/米纹理shader，保留多材料分层和碰撞；`apk176_quality_profiles_rev187.gd` 饱和度1.30、对比度1.095，暖日光+纯蓝天空，降低灰蓝雾浓度/爆白泛光，高档真实3D渲染96%屏幕、UI全原生分辨率。没有简单用低分辨率马赛克强制降质。
+- 游戏系统既有增量保留：rev205 Lucide ISC图标、折叠UI、锁定真实修士、镜头上下/御剑复飞、24格有限真物资背包和装备/采挖/种植；rev206 32属性根源、玩家及普通NPC必有隐藏灵根、例外役属劳工可能无根、灵根元素法术打击与战斗状态、1万—25万人城池真实数字统计（不实化10万渲染节点）；rev204原施法与记录不回滚。
+- **实际Godot engine QA已通过**：`https://github.com/160701541-cell/xinyanshuo/actions/runs/39048314417`，测试真实原APK176 PCK、头部脚本解析、保留历史验收、真实3D渲染双角度截图、实际屏幕色彩丰富度、开源完整建筑/材质法线贴图与动画/实体NPC；此前遇到资源泄露已修复，之后成功。真实Android触屏、手机GPU性能、发热与用户美术审核**仍未通过/尚未进行**。
+- 当前唯一正式对外签名下载版本仍为rev204。已准备累计rev205正式RSA签名工作流；**未经新PCK签名、官方HTTPS全量SHA256与HTTP Range206验收不能写已更新**。
+- 后续P1缺口照章保留：真实仙门建筑内部/炼丹药园生活生态、更多灵兽妖兽资源、NPC真正原生本地模型决策、装备服饰换装和纹理尺寸高级定制、野外树林丰富度与实机帧率。源可运行≠美术已获用户认可。
+
 ## 2026-10-16 / CAC-0001 / 政策基线升级
 - 用户明确要求：公开仓库唯一上传目标，允许开源；旧项目开发基线否决；工业化裁切流水线为最高优先级；新增工序必须更新文档与测试。
 - 已提交 `docs/CAC_PUBLIC_INDUSTRIAL_PIPELINE_V2.md`，并更新根 `README.md`、`tools/asset_factory/README.md`、`docs/CANGLAN_DEVELOPMENT_MANUFACTURING_STANDARD_V1.md` 的优先级入口。

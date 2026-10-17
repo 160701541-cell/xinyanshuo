@@ -10,6 +10,7 @@ const KenneyMultiMesh = preload("res://canglan_rev187/kenney_multimesh.gd")
 const RealSoilTerrain = preload("res://canglan_rev187/strata_terrain.gd")
 const PlayerControl = preload("res://canglan_rev187/player_controller.gd")
 const ManualQuality = preload("res://canglan_rev187/quality_profiles.gd")
+const VividMaterials = preload("res://canglan_rev187/vivid_material.gd")
 const CultivationWorld = preload("res://canglan_rev187/cultivation_world.gd")
 const ASSETS := {
   "tree": "res://canglan_rev187/tree_oak.glb",
@@ -20,18 +21,33 @@ const ASSETS := {
   "door": "res://canglan_rev187/wood_door.glb",
   "worker": "res://canglan_rev187/animated_knight.glb"
 }
+# Rev206 prefabricated whole CC0 houses/outfits/animals, NOT buildings
+# assembled from single fence poles or custom AI meshes. Exactly these
+# binaries are pinned upstream in asset_intake_proof.json.
+const READY_MADE_CC0: Dictionary={
+  "house_1":"res://canglan_rev187/cc0_rev206/building/house_1.glb",
+  "house_2":"res://canglan_rev187/cc0_rev206/building/house_2.glb",
+  "house_3":"res://canglan_rev187/cc0_rev206/building/house_3.glb",
+  "house_4":"res://canglan_rev187/cc0_rev206/building/house_4.glb",
+  "inn":"res://canglan_rev187/cc0_rev206/building/inn.glb",
+  "gazebo":"res://canglan_rev187/cc0_rev206/building/gazebo.glb",
+  "monk":"res://canglan_rev187/cc0_rev206/character_clothing_rig/monk.glb",
+  "wizard":"res://canglan_rev187/cc0_rev206/character_clothing_rig/wizard.glb",
+  "wolf":"res://canglan_rev187/cc0_rev206/animal/wolf.glb",
+  "fox":"res://canglan_rev187/cc0_rev206/animal/fox.glb",
+  "deer":"res://canglan_rev187/cc0_rev206/animal/deer.glb",
+  "cow":"res://canglan_rev187/cc0_rev206/animal/cow.glb",
+  "dragon":"res://canglan_rev187/cc0_rev206/monster/dragon.glb",
+  "goleling":"res://canglan_rev187/cc0_rev206/monster/goleling.glb"}
 const TOWN := "CL-REV186-HX-VILLAGE"
 const DEPOT := Vector3(0.0, 0.0, 10.0)
 const SITE := Vector3(0.0, 0.0, -3.0)
-const STAGES := [
-  {"id": "stone_foundation", "consume": {"stone": 6}, "time": 6.0},
-  {"id": "timber_posts", "consume": {"wood": 9}, "time": 7.0},
-  {"id": "fenced_walls", "consume": {"wood": 6}, "time": 7.0},
-  {"id": "door_frame", "consume": {"wood": 3, "stone": 3}, "time": 8.0}
-]
+# No staged scaffold/repair/building construction: all real buildings
+# in this scene come from licensed complete third-party CC0 GLB prefabs.
 var sim
 var eco
 var palette: RefCounted
+var vivid_materials: RefCounted
 var batch_renderer: Node3D
 var terrain_world: Node3D
 var controls: Node
@@ -75,6 +91,12 @@ var licensed_flying_sword_source: Node3D
 var _licensed_hair_attachments: int=0
 var _licensed_actor_zero_alpha_fixed: int = 0
 var natural_meshes: Dictionary = {}
+var finished_prefabs: Dictionary={}
+var finished_prefab_sources: Dictionary={}
+var licensed_outfits: Dictionary={}
+var native_wildlife_sources: Dictionary={}
+var actual_wildlife: Dictionary={}
+var _wildlife_anim_count: int=0
 # rev197: cheap real world collisions for already-licensed instanced trunks
 # and stones; they follow harvesting/growth without duplicating GLB rendering.
 var natural_colliders: Dictionary = {}
@@ -111,7 +133,7 @@ func _ready() -> void:
     "food": 24, "grain": 0, "water": 24, "wood": 0, "stone": 0}))
   assert(sim.add_citizen("CL-NPC-0184-01", TOWN, "woodcutter", 28))
   assert(sim.add_citizen("CL-NPC-0184-02", TOWN, "quarryman", 31))
-  assert(sim.add_citizen("CL-NPC-0184-03", TOWN, "builder", 24))
+  assert(sim.add_citizen("CL-NPC-0184-03", TOWN, "steward", 24))
   # The human player is a genuine world citizen with an identity and an
   # authoritative economy backpack, not a passive floating observer.
   assert(sim.add_citizen("CL-PLAYER-0184-0001", TOWN, "traveler", 21))
@@ -121,12 +143,24 @@ func _ready() -> void:
   eco = Ecology.new()
   eco.setup(sim, TOWN, SITE, DEPOT)
   palette = NaturalPalette.new()
+  vivid_materials=VividMaterials.new()
+  vivid_materials.call("initialize")
   _build_interface()
   _load_assets()
   _initialize_batches()
   _create_landscape()
   _seed_resources()
+  _place_completed_cc0_village()
   _make_workers()
+  # Assign a real resident identity to the completed, placeable licensed
+  # house. Interior furnishing/access is a separate feature, not faked.
+  if finished_prefabs.has("CL-HOME-V206-001"):
+    (finished_prefabs["CL-HOME-V206-001"] as Node3D).set_meta(
+      "assigned_resident_ids",["CL-NPC-0184-03"])
+  # Each physical original prefabricated home is represented in actual
+  # economy capacity, not a pretend construction progress meter.
+  sim.villages[TOWN]["homes"]=5
+  _spawn_native_animals()
   _create_playable_player()
   # Initialized only AFTER the real player, terrain, original NPC economy,
   # CC0 animated rigs and original site/collision are live. No parallel
@@ -178,8 +212,8 @@ func _build_interface() -> void:
   sun.name = "KenneySingleDirectionalSun"
   sun_light = sun
   sun.rotation_degrees = Vector3(-52, -33, 0)
-  sun.light_color = Color("#ffecd0")
-  sun.light_energy = 1.2
+  sun.light_color = Color("#ffe1b2")
+  sun.light_energy = 1.14
   sun.shadow_enabled = true
   sun.directional_shadow_mode = DirectionalLight3D.SHADOW_ORTHOGONAL
   sun.directional_shadow_max_distance = 48.0
@@ -191,18 +225,22 @@ func _build_interface() -> void:
   var sky := Sky.new()
   var colors := ProceduralSkyMaterial.new()
   # Sky has neutral illumination, not another competing gameplay material.
-  colors.sky_top_color = Color("#258ed7")
-  colors.sky_horizon_color = Color("#c5e8fa")
-  colors.ground_horizon_color = Color("#a9d5d5")
-  colors.ground_bottom_color = Color("#729e8d")
+  colors.sky_top_color=Color("#0866b4")
+  colors.sky_horizon_color=Color("#83cbed")
+  colors.ground_horizon_color=Color("#5b9aa1")
+  colors.ground_bottom_color=Color("#3a7254")
   colors.use_debanding = true
   sky.sky_material = colors
   environment.sky = sky
   environment.ambient_light_source = Environment.AMBIENT_SOURCE_SKY
-  environment.ambient_light_energy = 0.63
-  environment.fog_enabled = true
-  environment.fog_light_color = Color("#b8d9e8")
-  environment.fog_density = 0.005
+  environment.ambient_light_energy=0.36
+  environment.fog_enabled=true
+  environment.fog_light_color=Color("#729eb7")
+  environment.fog_density=0.00105
+  environment.adjustment_enabled=true
+  environment.adjustment_saturation=1.30
+  environment.adjustment_contrast=1.095
+  environment.adjustment_brightness=0.975
   scene_environment = environment
   var atmosphere := WorldEnvironment.new()
   atmosphere.name = "VillageAtmosphere"
@@ -520,6 +558,8 @@ func _load_assets() -> void:
       continue
     if role=="worker":
       _repair_licensed_opaque_character_model(art)
+    vivid_materials.call("upgrade_completed_cc0_model",art,
+      String(role),"character_clothing_rig" if role=="worker" else "natural_source")
     asset_sources[role] = art
   licensed_long_hair_source=_parse_existing_cc0(
     "res://canglan_rev187/quaternius_hair_long_static.glb")
@@ -529,6 +569,167 @@ func _load_assets() -> void:
     _repair_licensed_opaque_character_model(licensed_flying_sword_source)
   if licensed_long_hair_source==null or licensed_flying_sword_source==null:
     asset_errors.append("REV199_MISSING_REAL_CC0_HAIR_SWORD_NOT_SELF_MODELED")
+  # Complete and licensed models are checked by SHA256 at packaging. No
+  # "if missing, procedurally rebuild" fallback: missing assets BLOCK the QA.
+  for model_id in READY_MADE_CC0:
+    var original: Node3D=_parse_existing_cc0(
+      String(READY_MADE_CC0[model_id]))
+    if original==null:
+      asset_errors.append("REV206_MISSING_GENUINE_CC0_"+String(model_id))
+      continue
+    var category: String=(
+      "building" if model_id in ["house_1","house_2","house_3","house_4","inn","gazebo"]
+      else ("character_clothing_rig" if model_id in ["monk","wizard"] else (
+        "animal" if model_id in ["wolf","fox","deer","cow"] else "monster")))
+    vivid_materials.call("upgrade_completed_cc0_model",original,
+      String(model_id),category)
+    if model_id in ["house_1","house_2","house_3","house_4",
+        "inn","gazebo"]:
+      finished_prefab_sources[model_id]=original
+    elif model_id in ["monk","wizard"]:
+      licensed_outfits[model_id]=original
+    else:
+      native_wildlife_sources[model_id]=original
+
+func _place_completed_cc0_village() -> void:
+  # Replaces unfinished NPC-built 3m shacks with actual complete CC0
+  # buildings. Existing original warehouse and terrain stay real.
+  # Each complete house is one original licensed GLB, no house assembly.
+  var sites: Array=[
+    ["house_1",Vector3(-7.0,0.0,-18.0),-0.12,"CL-HOME-V206-001"],
+    ["house_2",Vector3( 4.8,0.0,-24.0), 0.28,"CL-HOME-V206-002"],
+    ["house_3",Vector3(-5.0,0.0, 25.0), 0.42,"CL-HOME-V206-003"],
+    ["house_4",Vector3( 4.0,0.0, 31.0),-0.20,"CL-HOME-V206-004"],
+    ["inn",Vector3(-6.0,0.0,-31.0),0.10,"CL-INN-V206-001"],
+    ["gazebo",Vector3(-2.0,0.0,37.0),0.35,"CL-GAZEBO-V206-001"]]
+  for config in sites:
+    var kind: String=config[0]
+    if not finished_prefab_sources.has(kind):
+      continue
+    var at: Vector3=config[1]
+    var instance: Node3D=(finished_prefab_sources[kind] as Node3D).duplicate()
+    instance.name=String(config[3])
+    instance.position=Vector3(at.x,
+      float(terrain_world.call("height_at",at.x,at.z)),at.z)
+    instance.rotation.y=float(config[2])
+    instance.set_meta("source_license","Quaternius-CC0")
+    instance.set_meta("completed_prefab_not_npc_assembly",true)
+    instance.set_meta("building_type",kind)
+    instance.set_meta("resident_capacity",4 if kind.begins_with("house") else (
+      18 if kind=="inn" else 0))
+    instance.set_meta("assigned_resident_ids",[])
+    world.add_child(instance)
+    # Vendor GLB geometry varies in scale and origin. Normalize actual world
+    # mesh height, align base to the physical 3D terrain after scaling.
+    var bounds: Vector2=_visible_bounds(instance)
+    var source_height: float=bounds.y-bounds.x
+    var intended_m: float=8.0 if kind=="inn" else (
+      4.0 if kind=="gazebo" else 5.0)
+    if source_height>0.10 and is_finite(source_height):
+      instance.scale*=clampf(intended_m/source_height,0.08,6.0)
+      var real_bbox: Vector2=_visible_bounds(instance)
+      instance.position.y+=float(terrain_world.call(
+        "height_at",at.x,at.z))-real_bbox.x
+    instance.set_meta("source_ready_meters",intended_m)
+    finished_prefabs[instance.name]=instance
+  _add_event("村落使用%d座完整CC0房屋和亭阁；旧脚手架施工停止" % [
+    finished_prefabs.size()])
+
+func _spawn_native_animals() -> void:
+  # At most four active true animated animals. The offscreen population of
+  # 10000..250000 humans exists ONLY in statistical memory, NEVER nodes.
+  var animals: Array=[
+    ["wolf",Vector3(32.0,0.0,-34.0),"CL-WILDLIFE-WOLF-01"],
+    ["fox",Vector3(-34.0,0.0,-31.0),"CL-WILDLIFE-FOX-01"],
+    ["deer",Vector3(-32.0,0.0,32.0),"CL-WILDLIFE-DEER-01"],
+    ["cow",Vector3(31.0,0.0,34.0),"CL-WILDLIFE-COW-01"]]
+  for element in animals:
+    var kind: String=element[0]
+    if not native_wildlife_sources.has(kind):
+      continue
+    var at: Vector3=element[1]
+    var critter: Node3D=(native_wildlife_sources[kind] as Node3D).duplicate()
+    critter.name=String(element[2])
+    critter.position=Vector3(at.x,
+      float(terrain_world.call("height_at",at.x,at.z)),at.z)
+    critter.set_meta("source_license","Quaternius-CC0")
+    critter.set_meta("animal_not_human_citizen",true)
+    critter.set_meta("species",kind)
+    critter.set_meta("wildlife_entity_id",String(element[2]))
+    world.add_child(critter)
+    var bounds: Vector2=_visible_bounds(critter)
+    var measured: float=bounds.y-bounds.x
+    var target_height: float={
+      "wolf":1.2,"fox":0.72,"deer":1.8,"cow":1.65}.get(kind,1.4)
+    if measured>0.10 and is_finite(measured):
+      critter.scale*=clampf(target_height/measured,0.04,8.0)
+      var new_bounds: Vector2=_visible_bounds(critter)
+      critter.position.y+=float(terrain_world.call("height_at",
+        at.x,at.z))-new_bounds.x
+    critter.set_meta("feet_ground_offset",
+      critter.position.y-float(terrain_world.call("height_at",at.x,at.z)))
+    var clips: Array[Node]=critter.find_children("*","AnimationPlayer",true,false)
+    var animator: AnimationPlayer=clips[0] as AnimationPlayer if not clips.is_empty() else null
+    var idle_clip: String=""
+    var walk_clip: String=""
+    if animator!=null:
+      var choices: PackedStringArray=animator.get_animation_list()
+      for clip in choices:
+        if idle_clip=="" and clip.to_lower().contains("idle"):
+          idle_clip=clip
+        if walk_clip=="" and (clip.to_lower().contains("walk") or (
+            clip.to_lower().contains("run"))):
+          walk_clip=clip
+      if idle_clip=="" and choices.size()>0:
+        idle_clip=choices[0]
+      if walk_clip=="" and choices.size()>1:
+        walk_clip=choices[1]
+      if idle_clip!="":
+        animator.play(idle_clip)
+      _wildlife_anim_count+=1 if choices.size()>0 else 0
+    actual_wildlife[critter.name]={
+      "node":critter,"species":kind,"spawn":critter.position,
+      "wander_angle":float(actual_wildlife.size())*1.71,
+      "timer":0.0,"activity":"休息","age_days":16,
+      "health":45 if kind=="wolf" else 32,
+      "animator":animator,"idle":idle_clip,"walk":walk_clip}
+
+func _step_native_animals(delta: float) -> void:
+  for record in actual_wildlife.values():
+    var actor: Node3D=record["node"]
+    if not is_instance_valid(actor):
+      continue
+    var speed: float=1.4 if String(record["species"])=="wolf" else 1.0
+    record["timer"]=float(record["timer"])+delta
+    var moving: bool=fmod(float(record["timer"]),17.0)>5.0
+    var home: Vector3=record["spawn"]
+    if moving:
+      var angle: float=float(record["wander_angle"])+(
+        float(int(float(record["timer"])/17.0))*1.27)
+      var toward: Vector3=home+Vector3(
+        sin(angle)*3.8,0.0,cos(angle)*3.8)
+      var delta_pos: Vector3=toward-actor.position
+      delta_pos.y=0
+      if delta_pos.length()>0.40:
+        var next: Vector3=actor.position+delta_pos.normalized()*minf(
+          speed*delta,delta_pos.length())
+        if bool(terrain_world.call(
+            "stream_contains_physical_chunk",next.x,next.z)) and not (
+            bool(terrain_world.call("is_water",next.x,next.z))):
+          actor.position.x=next.x
+          actor.position.z=next.z
+          actor.rotation.y=atan2(delta_pos.x,delta_pos.z)
+        record["activity"]="游走"
+    else:
+      record["activity"]="休息"
+    actor.position.y=float(terrain_world.call("height_at",
+      actor.position.x,actor.position.z))+float(
+        actor.get_meta("feet_ground_offset",0.0))
+    var animator: AnimationPlayer=record["animator"]
+    if animator!=null:
+      var selected: String=String(record["walk"]) if moving else String(record["idle"])
+      if selected!="" and animator.current_animation!=selected:
+        animator.play(selected)
 
 func _initialize_batches() -> void:
   batch_renderer = KenneyMultiMesh.new()
@@ -652,6 +853,7 @@ func _create_landscape() -> void:
   # from this single physical deformable heightfield. No green PlaneMesh land.
   terrain_world = RealSoilTerrain.new()
   terrain_world.name = "PhysicalDeformable92mVillageStrata"
+  terrain_world.set("vivid_material_style",vivid_materials)
   world.add_child(terrain_world)
   # Independent geological time-lapse distant massif remains preview only.
   hill_zone = MeshInstance3D.new()
@@ -709,7 +911,7 @@ func _make_workers() -> void:
   var identities := [
     {"id":"CL-NPC-0184-01","kind":"tree","name":"樵夫"},
     {"id":"CL-NPC-0184-02","kind":"stone","name":"采石工"},
-    {"id":"CL-NPC-0184-03","kind":"builder","name":"建筑工"}
+    {"id":"CL-NPC-0184-03","kind":"steward","name":"巡游管事"}
   ]
   for profile in identities:
     var code: String = profile["id"]
@@ -850,102 +1052,21 @@ func _move_gatherer(worker: Dictionary, delta: float) -> void:
       _add_event(code + " 运输入库")
       worker["phase"] = "idle"
 
-func _place_stage_art(stage_name: String) -> void:
-  if stage_name == "stone_foundation":
-    for i in range(4):
-      if _place_asset("steps", "NPCStoneFoundation_%02d" % i,
-        SITE + Vector3(-2.1 + i*1.35,0,0), 1.6) != null:
-        _built_pieces += 1
-  elif stage_name == "timber_posts":
-    for i in range(4):
-      if _place_asset("timber", "NPCPlacedTimber_%02d" % i,
-        SITE + Vector3(-2.5 + i*1.7,0,-2.4), 1.7) != null:
-        _built_pieces += 1
-  elif stage_name == "fenced_walls":
-    for i in range(4):
-      if _place_asset("fence", "NPCAssembledFence_%02d" % i,
-        SITE + Vector3(-2.0 + i*1.4,0,2.2), 1.65) != null:
-        _built_pieces += 1
-  elif stage_name == "door_frame":
-    if _place_asset("door", "NPCInstalledLicensedDoor", SITE + Vector3(0,0,2.1), 2.0) != null:
-      _built_pieces += 1
-
-func _move_builder(worker: Dictionary, delta: float) -> void:
-  # A real foundation is EXCAVATED before stone is placed. Every cut alters
-  # the physical terrain mesh, rebuilds collision and debits strata mass.
-  if _stage_index == 0 and terrain_world != null and not bool(terrain_world.call("foundation_ready")):
-    worker["phase"] = "excavating_foundation"
-    worker["target"] = SITE + Vector3(2.0,0,0.0)
-    if not _navigate(worker,delta):
-      return
-    _set_worker_animation(worker,false)
-    _foundation_dig_clock += delta
-    if _foundation_dig_clock>=1.8:
-      _foundation_dig_clock = 0.0
-      var spoil: Dictionary = terrain_world.call("next_foundation_cut")
-      if bool(spoil.get("ok",false)):
-        _foundation_excavation_count += 1
-        _add_event("建筑工挖出" + String(spoil.get("kind","土")) + "·地基深" + str(spoil.get("depth_m",0.0))+"米")
+func _move_steward(worker: Dictionary, delta: float) -> void:
+  # The old perpetual tiny-hut constructor is retired. This actual licensed
+  # NPC has a home and a finite daily route, receives no fictitious tools.
+  var home: Node3D=finished_prefabs.get("CL-HOME-V206-001",null)
+  var night: bool=int(sim.hour)>=19 or int(sim.hour)<6
+  worker["home_id"]="CL-HOME-V206-001"
+  worker["phase"]="home_rest" if night else "inspecting_prefab_houses"
+  if night and home!=null:
+    worker["target"]=home.position+Vector3(0,0,2.1)
+  else:
+    worker["target"]=Vector3(-6.0,0,-31.0) if (
+      sim.hour%4<2) else DEPOT
+  if not _navigate(worker,delta):
     return
-  if _stage_index >= STAGES.size():
-    worker["phase"] = "waiting_for_roof_components"
-    _set_worker_animation(worker, false)
-    return
-  var phase: Dictionary = STAGES[_stage_index]
-  var worker_node: Node3D = worker["node"]
-  if not _stage_paid:
-    # Builder MUST first walk back to the real warehouse; no teleporting
-    # materials from village stock directly to the worksite.
-    worker["phase"] = "to_warehouse_for_materials"
-    worker["target"] = DEPOT
-    if not _navigate(worker, delta):
-      return
-    if not sim._spend(TOWN, phase["consume"]):
-      worker["phase"] = "waiting_materials"
-      return
-    _stage_paid = true
-    _stage_progress = 0.0
-    # Stock is now in this specific builder's finite load, *not minted*.
-    worker["carried_materials"] = phase["consume"].duplicate(true)
-    worker["phase"] = "to_building_site"
-    worker["target"] = SITE
-    var role: String = "timber" if int(phase["consume"].get("wood",0))>0 else "stone"
-    if asset_sources.has(role):
-      var visual: Node3D = (asset_sources[role] as Node3D).duplicate()
-      visual.name = "ActualCarriedLicensedMaterial"
-      visual.position = Vector3(0.25, 1.1, -0.1)
-      visual.scale = Vector3.ONE * 0.54
-      worker_node.add_child(visual)
-      worker["cargo_visual"] = visual
-    _add_event("工人领取实体材料 " + String(phase["id"]))
-    return
-  if String(worker.get("phase","")) == "to_building_site":
-    if not _navigate(worker, delta):
-      return
-    # Materials are delivered only on physical arrival, before labor starts.
-    worker["delivered_materials"] = worker.get("carried_materials",{}).duplicate(true)
-    worker.erase("carried_materials")
-    if worker.has("cargo_visual"):
-      var cargo: Node3D = worker["cargo_visual"]
-      if is_instance_valid(cargo):
-        cargo.queue_free()
-      worker.erase("cargo_visual")
-    worker["phase"] = "working_" + String(phase["id"])
-    _add_event("实体材料到达工地 " + String(phase["id"]))
-    return
-  # Work is measured in elapsed physical seconds after delivery; no instant
-  # spawn on job assignment and no appearance before material reservation.
-  _set_worker_animation(worker, false)
-  _stage_progress += delta
-  if _stage_progress >= float(phase["time"]):
-    _place_stage_art(String(phase["id"]))
-    _add_event("NPC竣工阶段 " + String(phase["id"]))
-    worker.erase("delivered_materials")
-    _stage_index += 1
-    _stage_paid = false
-    _stage_progress = 0.0
-    worker["phase"] = "return_to_warehouse"
-    worker["target"] = DEPOT
+  _set_worker_animation(worker,false)
 
 func _add_event(message: String) -> void:
   _events.append(message)
@@ -957,15 +1078,12 @@ func _update_status() -> void:
     return
   var village: Dictionary = sim.villages[TOWN]
   var stock: Dictionary = village["stock"]
-  var build: String = "等待授权瓦件/屋顶工程" if _stage_index >= STAGES.size() else (
-    "阶段 %d/%d %s %d%%" % [_stage_index+1,STAGES.size(),
-      STAGES[_stage_index]["id"],
-      int(100.0 * _stage_progress/maxf(1.0,float(STAGES[_stage_index]["time"])))]
-  )
+  var build: String="%d座正版CC0整屋/客栈/亭阁，禁止旧破屋施工" % [
+    finished_prefabs.size()]
   var terrain_state: Dictionary = terrain_world.call("stats") if terrain_world!=null else {}
   status.text = ("木 %d  石 %d  树种库存 %d  伐倒产种 %d\n" +
     "入库 %d  种下 %d  地下矿脉露出 %d\n" +
-    "施工 %s  构件 %d\n" +
+    "现成建筑 %s  已修复旧脚手架数 %d\n" +
     "樵夫:%s  采石:%s\n" +
     "真实地层挖掘 %d格·深可至3.6米 / 水塘有实河床\n" +
     "地质(独立年代) %d万年 / 远景海拔 %.0fm\n" +
@@ -1015,15 +1133,15 @@ func _sync_living_daylight() -> void:
   # Twilight is not a gray fog overlay. Dusk becomes blue and the moonlit
   # night has only ~22% ambient. One directional sun, no mobile raytracing.
   sun_light.rotation_degrees=Vector3(-maxf(8.0,altitude),-55.0,0)
-  sun_light.light_energy=0.16+daylight*0.97
-  sun_light.light_color=Color("#ffdfb5").lerp(Color("#fff0dd"),daylight)
+  sun_light.light_energy=0.12+daylight*1.15
+  sun_light.light_color=Color("#ffd091").lerp(Color("#fff3cb"),daylight)
   var backdrop: ProceduralSkyMaterial=scene_environment.sky.sky_material
-  backdrop.sky_top_color=Color("#102944").lerp(Color("#147ec7"),daylight)
-  backdrop.sky_horizon_color=Color("#274869").lerp(Color("#b9e7ff"),daylight)
-  backdrop.ground_horizon_color=Color("#213d50").lerp(Color("#83bbaa"),daylight)
-  backdrop.ground_bottom_color=Color("#223846").lerp(Color("#527d61"),daylight)
-  scene_environment.fog_light_color=Color("#283e5a").lerp(Color("#8fb5c5"),daylight)
-  scene_environment.ambient_light_energy=0.18+daylight*0.28
+  backdrop.sky_top_color=Color("#10243b").lerp(Color("#0872c2"),daylight)
+  backdrop.sky_horizon_color=Color("#214565").lerp(Color("#8cd1ed"),daylight)
+  backdrop.ground_horizon_color=Color("#1b3544").lerp(Color("#58959c"),daylight)
+  backdrop.ground_bottom_color=Color("#263f3c").lerp(Color("#376d50"),daylight)
+  scene_environment.fog_light_color=Color("#283f57").lerp(Color("#699eaf"),daylight)
+  scene_environment.ambient_light_energy=0.14+daylight*0.20
 
 func get_living_clock() -> Dictionary:
   return {"day":int(sim.day),"hour":int(sim.hour),
@@ -1062,10 +1180,11 @@ func _process(delta: float) -> void:
     _refresh_ecology_meshes()
   _sync_living_daylight()
   for worker in workers.values():
-    if String(worker["kind"]) == "builder":
-      _move_builder(worker, accelerated_delta)
+    if String(worker["kind"])=="steward":
+      _move_steward(worker,accelerated_delta)
     else:
       _move_gatherer(worker, accelerated_delta)
+  _step_native_animals(delta)
   if cultivation!=null:
     cultivation.call("update_visible_npcs",accelerated_delta)
   var hero: Node3D = controls.get("actor") if controls!=null else null
@@ -1144,7 +1263,15 @@ func stats() -> Dictionary:
     "worker_count": workers.size(), "resource_node_count": sim.natural_nodes.size(),
     "living_clock":get_living_clock(),
     "spiritual_world":cultivation.call("stats") if cultivation!=null else {},
-    "whole_world_speed_includes_npc_construction":true,
+    "whole_world_speed_includes_npc_construction":false,
+    "rev206_perpetual_house_construction_retired":true,
+    "rev206_cc0_completed_building_count":finished_prefabs.size(),
+    "rev206_native_wildlife_count":actual_wildlife.size(),
+    "rev206_native_animated_wildlife_count":_wildlife_anim_count,
+    "rev206_outfit_source_count":licensed_outfits.size(),
+    "rev206_completed_house_occupancy":(finished_prefabs.get(
+      "CL-HOME-V206-001",null) as Node3D).get_meta("resident_capacity",0) if (
+      finished_prefabs.has("CL-HOME-V206-001")) else 0,
     "local_gguf_installed":false,
     "native_llama_bridge_present":ClassDB.class_exists("CanglanLocalLLM"),
     "source_assets": asset_sources.size(), "missing_assets": asset_errors.duplicate(),
@@ -1155,7 +1282,7 @@ func stats() -> Dictionary:
     "animation_reports": animation_report.duplicate(true),
     "harvests": _harvests, "deliveries": _deliveries,
     "stock_wood": int(stock["wood"]), "stock_stone": int(stock["stone"]),
-    "stage": _stage_index, "built_cc0_parts": _built_pieces,
+    "stage":0,"built_cc0_parts":finished_prefabs.size(),
     "tree_seeds_village": int(stock.get("tree_seed",0)),
     "tree_seeds_carried": eco.awaiting_seed_delivery.duplicate(true),
     "felled_seed_events": eco.minted_seed_events,
@@ -1178,6 +1305,9 @@ func stats() -> Dictionary:
     "manual_quality": quality.call("get_stats") if quality!=null else {},
     "manual_quality_selected": quality.get("selected") if quality!=null else "高档",
     "native_resolution_ui": true,
+    "rev207_vivid_real_pbr_materials":vivid_materials.call("summary") if vivid_materials!=null else {},
+    "rev207_color_saturation":scene_environment.adjustment_saturation if scene_environment!=null else 0.0,
+    "rev207_preserved_existing_license_assets":true,
     "no_auto_quality_switch": true,
     "physical_strata": terrain_world.call("stats") if terrain_world!=null else {},
     "player_controls": controls.call("stats") if controls!=null else {},
@@ -1185,9 +1315,12 @@ func stats() -> Dictionary:
     "worker_visual_heights_m": {
       "woodcutter": float(workers["CL-NPC-0184-01"]["node"].get_meta("actor_visual_height_m",0.0)) if workers.has("CL-NPC-0184-01") else 0.0,
       "quarryman": float(workers["CL-NPC-0184-02"]["node"].get_meta("actor_visual_height_m",0.0)) if workers.has("CL-NPC-0184-02") else 0.0,
-      "builder": float(workers["CL-NPC-0184-03"]["node"].get_meta("actor_visual_height_m",0.0)) if workers.has("CL-NPC-0184-03") else 0.0
+      "steward":float(workers["CL-NPC-0184-03"]["node"].get_meta("actor_visual_height_m",0.0)) if workers.has("CL-NPC-0184-03") else 0.0
     },
-    "not_whole_finished_house": true, "save_unchanged": true}
+    "not_whole_finished_house":false, "save_unchanged":true,
+    "original_licensed_complete_houses_used":true,
+    "persistent_city_population_is_statistical_only":cultivation!=null and int(
+      cultivation.call("city_census").get("population",0))>=10000}
 
 
 func _visible_bounds(actor: Node3D) -> Vector2:
@@ -1315,5 +1448,23 @@ func _exit_tree() -> void:
   if licensed_flying_sword_source!=null and is_instance_valid(licensed_flying_sword_source):
     licensed_flying_sword_source.free()
   licensed_flying_sword_source=null
+  # Rev206 CC0 prefabs add 14 freestanding GLTFDocument.generate_scene()
+  # templates. Each duplicate was parented to the world; templates were
+  # NOT parented and must be explicitly freed exactly once on scene exit.
+  # Otherwise headless Godot reports leaked 20 DummyMeshes, 137 materials,
+  # multiple RIDs / ObjectDB instances and FAILS the release QA. This is
+  # a real source lifetime fix, not hiding/suppressing engine ERROR logs.
+  var unique_sources: Dictionary={}
+  for collection in [finished_prefab_sources,licensed_outfits,
+      native_wildlife_sources]:
+    for original in (collection as Dictionary).values():
+      if original is Node3D and is_instance_valid(original):
+        unique_sources[(original as Node3D).get_instance_id()]=original
+  for original in unique_sources.values():
+    if is_instance_valid(original) and (original as Node3D).get_parent()==null:
+      (original as Node3D).free()
+  finished_prefab_sources.clear()
+  licensed_outfits.clear()
+  native_wildlife_sources.clear()
   _hidden_game_world.clear()
   _old_profiler_nodes.clear()

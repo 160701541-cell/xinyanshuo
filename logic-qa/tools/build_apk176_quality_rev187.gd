@@ -14,8 +14,12 @@ const FILES := {
 	"res://canglan_rev187/visual_palette.gd": "canglan_rev187/visual_palette.gd",
 	"res://canglan_rev187/kenney_multimesh.gd": "canglan_rev187/kenney_multimesh.gd",
 	"res://canglan_rev187/strata_terrain.gd": "canglan_rev187/strata_terrain.gd",
+	"res://canglan_rev187/vivid_material.gd": "canglan_rev187/vivid_material.gd",
 	"res://canglan_rev187/player_controller.gd": "canglan_rev187/player_controller.gd",
+	"res://canglan_rev187/backpack.gd": "canglan_rev187/backpack.gd",
 	"res://canglan_rev187/cultivation_world.gd": "canglan_rev187/cultivation_world.gd",
+	"res://canglan_rev187/root_taxonomy.gd": "canglan_rev187/root_taxonomy.gd",
+	"res://canglan_rev187/city_population.gd": "canglan_rev187/city_population.gd",
 	"res://canglan_rev187/quality_profiles.gd": "canglan_rev187/quality_profiles.gd",
 	"res://canglan_rev187/worldbox_life_sim.gd": "canglan_rev187/worldbox_life_sim.gd",
 	"res://canglan_rev187/tree_oak.glb": "canglan_rev187/tree_oak.glb",
@@ -42,6 +46,38 @@ func _initialize() -> void:
 		quit(2)
 		return
 	var files: Dictionary = FILES.duplicate()
+	# These are committed, genuine Lucide SVG source vectors (ISC/MIT).
+	# PCKPacker lists files explicitly: no asset may be skipped silently.
+	for icon in ["backpack","swords","crosshair","pickaxe","shield",
+			"book-open","house","compass","eye","move-3d","leaf","menu","zap"]:
+		var rel: String = "canglan_rev187/ui/lucide/" + icon + ".svg"
+		files["res://" + rel] = rel
+	files["res://canglan_rev187/ui/lucide/LICENSE"] = "canglan_rev187/ui/lucide/LICENSE"
+	# Source-hashed genuine CC0 PBR maps. Tiny native texel detail only;
+	# original Quaternius 3D mesh, UV, normal and source art unchanged.
+	for name in ["plaster_albedo","plaster_normal","plaster_orm",
+			"tile_albedo","tile_normal","tile_roughness",
+			"timber_albedo","timber_normal","timber_roughness"]:
+		var tex_path: String="canglan_rev187/materials_rev207/"+name+".png"
+		files["res://"+tex_path]=tex_path
+	files["res://canglan_rev187/materials_rev207/manifest.json"]=(
+		"canglan_rev187/materials_rev207/manifest.json")
+	# All native ready-made CC0 buildings, outfits and animated fauna. They
+	# are unmodified original vendor GLBs, pinned by source-file SHA256 in
+	# asset_intake_proof.json. Missing one MUST fail PCK construction.
+	for category in ["building","character_clothing_rig","animal","monster"]:
+		var known_names: Array=[]
+		if category=="building":
+			known_names=["house_1","house_2","house_3","house_4","inn","gazebo"]
+		elif category=="character_clothing_rig":
+			known_names=["monk","wizard"]
+		elif category=="animal":
+			known_names=["wolf","fox","deer","cow"]
+		else:
+			known_names=["dragon","goleling"]
+		for item in known_names:
+			var rel: String="canglan_rev187/cc0_rev206/"+category+"/"+item+".glb"
+			files["res://"+rel]=rel
 	for i in range(8):
 		for pattern in ["hd2d/worldx/nav_%03d.json", "hd2d/worldx/zones_%03d.json",
 				"hd2d/worldx/worldx_%03d.png"]:

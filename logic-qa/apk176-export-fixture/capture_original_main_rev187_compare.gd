@@ -364,6 +364,116 @@ func _capture() -> void:
   player.call("stop_practice")
   arts.set("player_data",saved)
   arts.call("save_state")
+  player.call("_set_mode","third")
+  var real_person: Node3D=arts.get("npc_visuals")["CL-XIUXIAN-001"]["actor"]
+  var source_hero_pos: Vector3=fighter.position
+  fighter.position=real_person.position+Vector3(2.7,0,0.8)
+  player.call("toggle_target_lock")
+  for i in range(8):
+    player.call("step",0.10)
+    await process_frame
+  if player.get("_locked_target")==null or not (
+      player.get("_locked_target_label") as Label).visible:
+    _fail("REV205_TARGET_LOCK_ICON_CAMERA_AND_REALM_NOT_REACHABLE_IN_REAL_RENDER")
+    return
+  await RenderingServer.frame_post_draw
+  if not _save("real_apk176_rev205_genuine_open_source_hud_target_lock.png"):
+    _fail("REV205_GENUINE_LUCIDE_TARGET_LOCK_ENGINE_FRAME_MISSING")
+    return
+  player.call("toggle_target_lock")
+  # Real physical forest harvest, not test-instantiated bag freebies.
+  var econ=room.get("sim")
+  var resource_id: String=""
+  for id in econ.natural_nodes:
+    if String(econ.natural_nodes[id].get("kind",""))=="tree" and int(
+        econ.natural_nodes[id].get("remaining",0))>=3:
+      resource_id=String(id)
+      break
+  if resource_id=="":
+    _fail("REV205_REAL_LICENSED_FOREST_RESOURCE_NOT_PRESENT_FOR_BAG_FRAME")
+    return
+  fighter.position=econ.resource_positions[resource_id]
+  player.set("_auto_resource_id",resource_id)
+  econ.citizens["CL-PLAYER-0184-0001"]["energy"]=100
+  var harvested: Dictionary=player.call("interact")
+  if not bool(harvested.get("ok",false)):
+    _fail("REV205_REAL_RESOURCE_NOT_RECEIVED_IN_PERSONAL_BAG_"+str(harvested))
+    return
+  player.call("_open_game_menu","inventory")
+  for i in range(3):
+    await process_frame
+  await RenderingServer.frame_post_draw
+  var actual_bag_list: ItemList=player.get("_inventory_list")
+  if actual_bag_list==null or not actual_bag_list.visible or actual_bag_list.item_count==0:
+    _fail("REV205_SOURCE_BASED_BACKPACK_GRID_NOT_VISIBLE_IN_REAL_GODOT_SCREENSHOT")
+    return
+  if not _save("real_apk176_rev205_real_backpack_lucide_equipment.png"):
+    _fail("REV205_REAL_INVENTORY_AND_EQUIPMENT_ENGINE_FRAME_MISSING")
+    return
+  player.call("_open_game_menu","inventory")
+  fighter.position=source_hero_pos
+  print("PASS_REV205_GENUINE_GODOT_1280X720_LUCIDE_UI_TARGET_LOCK_AND_FINITE_BACKPACK_FRAMES")
+  # REV207 ART - 100% real original APK176 / Godot4.4 scene frames.
+  # Render the vendor-prefabricated house with actual 512px PBR roof/wall/
+  # wood maps and the real physical shader-textured meadow from TWO distances.
+  # No generated composite / concept illustration / fake phone screenshot.
+  var painter: RefCounted=room.get("vivid_materials")
+  if painter==null or int(painter.call("summary").get("material_maps_loaded",0))!=9:
+    _fail("REV207_REAL_VENDOR_TEXTURES_WERE_NOT_BOUND_TO_RUNTIME_PBR")
+    return
+  var house: Node3D=room.get("finished_prefabs").get("CL-HOME-V206-001",null)
+  if house==null or not is_instance_valid(house):
+    _fail("REV207_COMPLETE_LICENSED_HOUSE_MISSING_FOR_VISIBLE_PBR_CLOSE_FRAME")
+    return
+  var real_ground: Node3D=room.get("terrain_world")
+  player.call("_set_mode","third")
+  var art_target: Vector3=house.position
+  var art_y: float=float(real_ground.call(
+    "height_at",art_target.x,art_target.z+9.0))
+  fighter.position=Vector3(art_target.x,art_y+
+    float(fighter.get_meta("actor_ground_offset_y",0.0)),art_target.z+9.0)
+  player.set("_yaw",0.0)
+  player.set("_pitch",0.44)
+  player.set("_distance",12.2)
+  player.call("update_camera")
+  for i in range(4):
+    await process_frame
+  await RenderingServer.frame_post_draw
+  if not _save("real_apk176_rev207_vivid_cc0_texture_forest_wide.png"):
+    _fail("REV207_REAL_GODOT_RICH_FOREST_CC0_MATERIAL_WIDE_FRAME_MISSING")
+    return
+  player.set("_distance",5.9)
+  fighter.position=Vector3(art_target.x,
+    float(real_ground.call("height_at",art_target.x,art_target.z+5.0))+
+    float(fighter.get_meta("actor_ground_offset_y",0.0)),
+    art_target.z+5.0)
+  player.call("update_camera")
+  for i in range(3):
+    await process_frame
+  await RenderingServer.frame_post_draw
+  if not _save("real_apk176_rev207_dense_tiny_pixel_cc0_pbr_house_close.png"):
+    _fail("REV207_REAL_CC0_WALL_ROOF_NORMAL_MICROTEXELS_MISSING_CLOSE_FRAME")
+    return
+  var frame: Image=get_root().get_texture().get_image()
+  var avg_saturation: float=0.0
+  var sample_count: int=0
+  var actual_colors: Dictionary={}
+  for y in range(370,630,12):
+    for x in range(240,1050,12):
+      var sample: Color=frame.get_pixel(x,y)
+      avg_saturation+=sample.s
+      actual_colors[sample.to_html(false)]=true
+      sample_count+=1
+  avg_saturation/=maxf(1.0,float(sample_count))
+  print("REV207_ACTUAL_GODOT_FOREGROUND_SATURATION=",avg_saturation,
+    " unique_12px_rgb_samples=",actual_colors.size(),
+    " material=",painter.call("summary"))
+  if avg_saturation<0.225 or actual_colors.size()<80:
+    _fail("REV207_TRUE_GODOT_FOREGROUND_STILL_GREY_LOW_SAT_OR_FLAT_TEXEL"+
+      " saturation="+str(avg_saturation)+
+      " samples="+str(actual_colors.size()))
+    return
+  print("PASS_REV207_ORIGINAL_APK176_GODOT_REAL_COLOR_512PBR_64TEXELS_IMAGES")
   print("PASS_REV197_ORIGINAL_GODOT_ENGINE_VISIBLE_ANIMATED_PLAYER_CLOSE_AND_45DEG_REAL_FRAMES")
   print("PASS_REV187_TWO_GENUINE_ENGINE_RENDERED_WORKSITE_FRAMES_NOT_PHONE_TESTS")
   base.queue_free()

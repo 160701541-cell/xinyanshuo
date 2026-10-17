@@ -27,7 +27,16 @@ var _vertical_input: float = 0.0
 var _god_distance: float = 32.0
 var _god_rotation: float = 0.0
 var _flight_m: float = 0.0
-var _view_pitch_reversed: bool = true
+var _view_pitch_reversed: bool = false
+var _touch_look_inverted: bool=false
+var _touch_setting: Button
+var _quickbar_folded: bool=true
+var _quickbar_toggle: Button
+var _locked_target: Node3D
+var _locked_target_id: String=""
+var _locked_target_label: Label
+var _target_lock_button: Button
+var _open_icon_cache: Dictionary={}
 var _yaw: float = 0.43
 var _pitch: float = 0.38
 var _distance: float = 9.5
@@ -105,6 +114,15 @@ var _target_status: Label
 var _target_health_bar: ProgressBar
 var _target_mana_bar: ProgressBar
 var _spirit_notice: Label
+var _backpack: RefCounted
+var _inventory_list: ItemList
+var _inventory_selected_kind: String=""
+var _inventory_deposit_button: Button
+var _inventory_craft_sword_button: Button
+var _inventory_craft_pick_button: Button
+var _inventory_equip_button: Button
+var _equipment_slot_buttons: Dictionary={}
+var _equipment_slot_row: HBoxContainer
 var _game_actions: Dictionary = {}
 var _dash_cd: float = 0.0
 var _gather_cd: float = 0.0
@@ -146,6 +164,10 @@ var _ward_cd: float=0.0
 var _ward_seconds: float=0.0
 var _ward_visual: MeshInstance3D
 var _spell_projectiles: Array[Dictionary]=[]
+var _enemy_elemental_status: String=""
+var _enemy_status_remaining: float=0.0
+var _enemy_status_tick: float=0.0
+var _enemy_status_color: Color=Color.WHITE
 var _combat_hit_count: int=0
 var _spirit_bolt_impact_count: int=0
 var _quality_sheet_button: Button
@@ -186,6 +208,12 @@ func initialize(active_room: Node) -> void:
   _camera_sphere=SphereShape3D.new()
   _camera_sphere.radius=0.24
   _load_pad_options()
+  var bag_script: GDScript=load(
+    "res://canglan_rev187/backpack.gd") as GDScript
+  if bag_script==null:
+    push_error("P0: actual persistent backpack script not in signed original APK PCK")
+  else:
+    _backpack=bag_script.new()
   _create_hud()
   if not Input.joy_connection_changed.is_connected(_on_pad_hotplug):
     Input.joy_connection_changed.connect(_on_pad_hotplug)
@@ -388,6 +416,46 @@ func _rounded(color: Color, radius: int) -> StyleBoxFlat:
   s.corner_radius_bottom_right = radius
   return s
 
+func _open_icon(name: String) -> Texture2D:
+  # Actual upstream Lucide open-source ISC SVGs are bundled in the signed
+  # Godot PCK, not fake hand-drawn copies or remote images loaded at runtime.
+  if _open_icon_cache.has(name):
+    return _open_icon_cache[name]
+  var location: String="res://canglan_rev187/ui/lucide/"+name+".svg"
+  if not FileAccess.file_exists(location):
+    return null
+  var svg: String=FileAccess.get_file_as_string(location)
+  svg=svg.replace("currentColor","#f1d9a2")
+  var image:=Image.new()
+  if image.load_svg_from_buffer(svg.to_utf8_buffer(),1.3)!=OK:
+    return null
+  var texture: Texture2D=ImageTexture.create_from_image(image)
+  _open_icon_cache[name]=texture
+  return texture
+
+func _apply_open_hud_style(button: Button, icon_key: String="") -> void:
+  button.add_theme_font_size_override("font_size",16)
+  button.add_theme_color_override("font_color",Color("#f1e7c9"))
+  button.add_theme_color_override("font_hover_color",Color("#fff5dd"))
+  button.add_theme_color_override("font_pressed_color",Color("#ffffff"))
+  var normal:=_rounded(Color("#142a32",0.94),11)
+  normal.border_color=Color("#b59e67",0.60)
+  normal.set_border_width_all(1)
+  normal.shadow_color=Color("#07161c",0.46)
+  normal.shadow_size=2
+  button.add_theme_stylebox_override("normal",normal)
+  var hover:=_rounded(Color("#245058",0.98),11)
+  hover.border_color=Color("#e3c38b")
+  hover.set_border_width_all(1)
+  button.add_theme_stylebox_override("hover",hover)
+  var pressed:=_rounded(Color("#32615b",0.98),11)
+  pressed.border_color=Color("#eac88a")
+  pressed.set_border_width_all(2)
+  button.add_theme_stylebox_override("pressed",pressed)
+  button.add_theme_stylebox_override("disabled",_rounded(Color("#1b2428",0.70),11))
+  if icon_key!="":
+    button.icon=_open_icon(icon_key)
+
 func _new_button(key: String, label: String, width: float, action: Callable) -> Button:
   var button := Button.new()
   button.name = key
@@ -395,7 +463,7 @@ func _new_button(key: String, label: String, width: float, action: Callable) -> 
   button.custom_minimum_size = Vector2(width,54)
   button.size = Vector2(width,54)
   button.mouse_filter = Control.MOUSE_FILTER_STOP
-  button.add_theme_font_size_override("font_size",21)
+  _apply_open_hud_style(button)
   button.pressed.connect(action)
   hud.add_child(button)
   buttons[key] = button
@@ -473,6 +541,24 @@ func _create_hud() -> void:
   _new_button("CameraLockButton","锁视角",103,Callable(self,"toggle_camera_lock"))
   _new_button("PhoneZoomInButton","放大＋",103,Callable(self,"zoom_in"))
   _new_button("PhoneZoomOutButton","缩小－",103,Callable(self,"zoom_out"))
+  (buttons["Iso45Button"] as Button).icon=_open_icon("compass")
+  (buttons["GodShortcutButton"] as Button).icon=_open_icon("eye")
+  (buttons["SoarAvatarButton"] as Button).icon=_open_icon("move-3d")
+  (buttons["PhoneZoomInButton"] as Button).icon=_open_icon("eye")
+  (buttons["DigButton"] as Button).icon=_open_icon("pickaxe")
+  _target_lock_button=_new_button("TargetLockButton","索敌",92,Callable(self,"toggle_target_lock"))
+  _target_lock_button.icon=_open_icon("crosshair")
+  _quickbar_toggle=_new_button("QuickBarFoldButton","展开",72,Callable(self,"toggle_quickbar"))
+  _quickbar_toggle.icon=_open_icon("menu")
+  _locked_target_label=Label.new()
+  _locked_target_label.name="ActualSelectedTargetNameHealthRealmPreview"
+  _locked_target_label.add_theme_font_size_override("font_size",17)
+  _locked_target_label.add_theme_color_override("font_color",Color("#fbe5b3"))
+  _locked_target_label.add_theme_color_override("font_outline_color",Color("#092630"))
+  _locked_target_label.add_theme_constant_override("outline_size",5)
+  _locked_target_label.mouse_filter=Control.MOUSE_FILTER_IGNORE
+  hud.add_child(_locked_target_label)
+  _locked_target_label.visible=false
   var caption := Label.new()
   caption.name = "InteractionResultLiveHUD"
   caption.add_theme_font_size_override("font_size",18)
@@ -661,12 +747,20 @@ func _build_game_hud() -> void:
   _game_menu_button("菜单",325,"settings")
   _game_sheet=PanelContainer.new()
   _game_sheet.name="Rev188CharacterInventoryCultivationMenu"
-  _game_sheet.position=Vector2(16,150)
-  _game_sheet.custom_minimum_size=Vector2(405,245)
+  # Inventory/settings use a proper centered modal; old panel at (16,150)
+  # overlapped real player vitals, world clock and other phone labels.
+  _game_sheet.position=Vector2(360,136)
+  _game_sheet.custom_minimum_size=Vector2(462,245)
   _game_sheet.visible=false
-  _game_sheet.add_theme_stylebox_override("panel",_rounded(Color(0.06,0.11,0.13,0.95),12))
+  var sheet_skin:=_rounded(Color(0.045,0.095,0.12,0.98),15)
+  sheet_skin.border_color=Color("#b29a69")
+  sheet_skin.set_border_width_all(2)
+  sheet_skin.shadow_color=Color("#071218",0.75)
+  sheet_skin.shadow_size=12
+  _game_sheet.add_theme_stylebox_override("panel",sheet_skin)
   hud.add_child(_game_sheet)
   var v:=VBoxContainer.new()
+  v.name="Rev205RealBackpackAndCharacterGameSheet"
   v.add_theme_constant_override("separation",9)
   _game_sheet.add_child(v)
   _game_sheet_title=Label.new()
@@ -675,6 +769,46 @@ func _build_game_hud() -> void:
   _game_sheet_body=Label.new()
   _game_sheet_body.add_theme_font_size_override("font_size",17)
   v.add_child(_game_sheet_body)
+  _inventory_list=ItemList.new()
+  _inventory_list.name="ActualSourcedBackpack24StackSelectableSlots"
+  _inventory_list.custom_minimum_size=Vector2(430,112)
+  _inventory_list.max_columns=4
+  _inventory_list.same_column_width=true
+  _inventory_list.select_mode=ItemList.SELECT_SINGLE
+  _inventory_list.item_selected.connect(_on_inventory_item_selected)
+  v.add_child(_inventory_list)
+  _equipment_slot_row=HBoxContainer.new()
+  _equipment_slot_row.name="LiveEquipmentSlotsWeaponToolArmorRing"
+  _equipment_slot_row.add_theme_constant_override("separation",5)
+  for slot in ["weapon","tool","armor","ring"]:
+    var equip_slot:=Button.new()
+    equip_slot.name="ActualEquipment_"+slot
+    equip_slot.custom_minimum_size=Vector2(100,44)
+    equip_slot.pressed.connect(Callable(self,"_unequip_backpack_slot").bind(slot))
+    _apply_open_hud_style(equip_slot,
+      {"weapon":"swords","tool":"pickaxe","armor":"shield","ring":"book-open"}[slot])
+    _equipment_slot_row.add_child(equip_slot)
+    _equipment_slot_buttons[slot]=equip_slot
+  v.add_child(_equipment_slot_row)
+  _inventory_craft_sword_button=Button.new()
+  _inventory_craft_sword_button.text="木剑：消耗3木"
+  _inventory_craft_sword_button.pressed.connect(func(): _craft_backpack("rough_wood_sword"))
+  v.add_child(_inventory_craft_sword_button)
+  _inventory_craft_pick_button=Button.new()
+  _inventory_craft_pick_button.text="石镐：消耗2木2石"
+  _inventory_craft_pick_button.pressed.connect(func(): _craft_backpack("stone_pick"))
+  v.add_child(_inventory_craft_pick_button)
+  _inventory_equip_button=Button.new()
+  _inventory_equip_button.text="装备选中的武器／工具"
+  _inventory_equip_button.pressed.connect(_equip_backpack_selection)
+  v.add_child(_inventory_equip_button)
+  _inventory_deposit_button=Button.new()
+  _inventory_deposit_button.text="在仓库交付背包原材料"
+  _inventory_deposit_button.pressed.connect(_deposit_backpack)
+  v.add_child(_inventory_deposit_button)
+  for b in [_inventory_craft_sword_button,_inventory_craft_pick_button,
+      _inventory_equip_button,_inventory_deposit_button]:
+    _apply_open_hud_style(b,"backpack")
   var close:=Button.new()
   close.text="关闭"
   close.pressed.connect(func(): _game_sheet.visible=false)
@@ -707,6 +841,7 @@ func _build_game_hud() -> void:
   _add_game_action("SwordAttack","剑击",Callable(self,"sword_attack"))
   _add_game_action("SpiritBolt","灵息弹",Callable(self,"cast_spirit_bolt"))
   _add_game_action("SpiritWard","护体灵障",Callable(self,"cast_spirit_ward"))
+  _add_game_action("PlantSapling","植树",Callable(self,"plant_real_sapling"))
   _create_opponent_target_hud()
   _pad_hint=Label.new()
   _pad_hint.name="AndroidGamepadHotplugAndMappings"
@@ -723,6 +858,12 @@ func _build_game_hud() -> void:
   _pad_setting_invert.name="PadRightStickInvertSetting"
   _pad_setting_invert.pressed.connect(_toggle_pad_invert)
   v.add_child(_pad_setting_invert)
+  _touch_setting=Button.new()
+  _touch_setting.name="AndroidVerticalCameraDirectionToggle"
+  _touch_setting.pressed.connect(_toggle_touch_invert)
+  v.add_child(_touch_setting)
+  _load_touch_options()
+  _refresh_touch_option_label()
   _pad_setting_deadzone=Button.new()
   _pad_setting_deadzone.name="PadStickDeadzoneSetting"
   _pad_setting_deadzone.pressed.connect(_cycle_pad_deadzone)
@@ -776,12 +917,87 @@ func _add_game_action(key: String, label: String, callback: Callable) -> void:
   button.name="MobileGameplay_"+key
   button.text=label
   button.size=Vector2(89,57)
-  button.add_theme_font_size_override("font_size",18)
-  button.add_theme_stylebox_override("normal",_rounded(Color(0.09,0.21,0.19,0.86),11))
-  button.add_theme_stylebox_override("disabled",_rounded(Color(0.14,0.17,0.18,0.70),11))
+  _apply_open_hud_style(button,{
+    "GatherAction":"leaf","DigAction":"pickaxe","InteractAction":"eye",
+    "SwordAttack":"swords","LockedArt":"swords","SpiritBolt":"zap",
+    "SpiritWard":"shield","ViewAction":"compass",
+    "PlantSapling":"leaf"}.get(key,""))
   button.pressed.connect(callback)
   hud.add_child(button)
   _game_actions[key]=button
+
+func _refresh_inventory_list() -> void:
+  if _inventory_list==null:
+    return
+  if _backpack!=null and _equipment_slot_buttons.size()==4:
+    var equipped: Dictionary=_backpack.call("snapshot")["equipment"]
+    for slot in _equipment_slot_buttons:
+      var item: String=String(equipped.get(slot,""))
+      var caption: String={
+        "weapon":"武器","tool":"工具","armor":"防具","ring":"饰品"}[slot]
+      var text_value: String=String(_backpack.call("display_name",item)) if item!="" else "空"
+      var button: Button=_equipment_slot_buttons[slot]
+      button.text=caption+"："+text_value
+      button.disabled=item==""
+  _inventory_list.clear()
+  if _backpack==null:
+    return
+  var bag: Dictionary=_backpack.call("snapshot")["items"]
+  var sorted: Array=bag.keys()
+  sorted.sort()
+  for kind in sorted:
+    var amount: int=int(bag[kind])
+    var index: int=_inventory_list.item_count
+    _inventory_list.add_item("%s ×%d" % [
+      String(_backpack.call("display_name",String(kind))),amount])
+    _inventory_list.set_item_metadata(index,String(kind))
+    _inventory_list.set_item_tooltip(index,String(kind)+"  ×"+str(amount))
+  if bag.is_empty():
+    _inventory_list.add_item("空背包 · 从真实资源处采集")
+
+func _on_inventory_item_selected(index: int) -> void:
+  if _backpack==null:
+    return
+  _inventory_selected_kind=String(_inventory_list.get_item_metadata(index))
+  _game_sheet_body.text="%s：%d件。可用于真实材料图纸；装备需先制作。" % [
+    _inventory_selected_kind,int(_backpack.call("amount",_inventory_selected_kind))]
+
+func _craft_backpack(kind: String) -> void:
+  if _backpack==null:
+    return
+  var response: Dictionary=_backpack.call("craft",kind)
+  say("成功制作："+kind if bool(response.get("ok",false)) else (
+    "制作失败："+String(response.get("reason","材料不足"))))
+  _refresh_game_hud()
+
+func _unequip_backpack_slot(slot: String) -> void:
+  if _backpack==null:
+    return
+  if bool(_backpack.call("unequip",slot)):
+    say("已卸下"+slot)
+    _refresh_game_hud()
+
+func _equip_backpack_selection() -> void:
+  if _backpack==null or _inventory_selected_kind=="":
+    say("请先在背包选中装备")
+    return
+  var result: Dictionary=_backpack.call("equip",_inventory_selected_kind)
+  say("成功装备："+_inventory_selected_kind if bool(result.get("ok",false)) else (
+    "无法装备："+String(result.get("reason",""))))
+  _refresh_game_hud()
+
+func _deposit_backpack() -> void:
+  if _backpack==null or actor==null:
+    return
+  var depot:=Vector3(0,0,10)
+  if Vector2(actor.position.x-depot.x,actor.position.z-depot.z).length()>3.8:
+    say("背包材料必须运到真实村庄仓库才能入库")
+    return
+  var result: Dictionary=_backpack.call(
+    "deposit_at_warehouse",room.get("sim"),PLAYER_ID)
+  say("已将背包材料交付真实仓库" if bool(result.get("ok",false)) else (
+    "交付失败："+String(result.get("reason",""))))
+  _refresh_game_hud()
 
 func _open_game_menu(mode: String) -> void:
   if _game_sheet_mode==mode and _game_sheet.visible:
@@ -792,6 +1008,108 @@ func _open_game_menu(mode: String) -> void:
   _refresh_game_hud()
   if _pad_device>=0:
     _pad_focus_menu(0)
+
+func _load_touch_options() -> void:
+  var cfg:=ConfigFile.new()
+  if cfg.load("user://canglan_touch_camera_v2.cfg")==OK:
+    _touch_look_inverted=bool(cfg.get_value("camera","invert_y",false))
+
+func _refresh_touch_option_label() -> void:
+  if _touch_setting!=null:
+    _touch_setting.text="触屏上下反转："+("已开启" if _touch_look_inverted else "关闭（上滑抬头）")
+
+func _toggle_touch_invert() -> void:
+  _touch_look_inverted=not _touch_look_inverted
+  var cfg:=ConfigFile.new()
+  cfg.set_value("camera","invert_y",_touch_look_inverted)
+  cfg.save("user://canglan_touch_camera_v2.cfg")
+  _refresh_touch_option_label()
+
+func toggle_target_lock() -> void:
+  # Only people that truly exist in the original animated 3D world are
+  # candidates. This camera lock never converts neutral cultivators to prey.
+  if _locked_target!=null and is_instance_valid(_locked_target):
+    _clear_target_lock()
+    say("已解除索敌视角")
+    return
+  if camera_mode in ["god","fly","iso"] or actor==null:
+    say("请使用第三视角或御剑视角锁定目标")
+    return
+  var candidate: Node3D=null
+  var candidate_id: String=""
+  var best: float=22.0
+  if _spar_partner!=null and is_instance_valid(_spar_partner) and _spar_stage!="inactive":
+    var d: float=actor.position.distance_to(_spar_partner.position)
+    if d<best:
+      candidate=_spar_partner
+      candidate_id="CL-TRAINING-DUEL"
+      best=d
+  var cult: RefCounted=room.get("cultivation")
+  if cult!=null:
+    var visible: Dictionary=cult.get("npc_visuals")
+    for id in visible:
+      var person: Node3D=visible[id].get("actor",null)
+      if person==null or not is_instance_valid(person):
+        continue
+      var range_m: float=actor.position.distance_to(person.position)
+      if range_m<best and range_m>1.3:
+        candidate=person
+        candidate_id=String(id)
+        best=range_m
+  if candidate==null:
+    say("附近没有能够锁定的实体人物")
+    return
+  _locked_target=candidate
+  _locked_target_id=candidate_id
+  _locked_target_label.visible=true
+  _target_lock_button.text="解锁"
+  _auto_walking=false
+  _follow_npc=false
+  say("目标已锁定；中立修士不能被随意攻击")
+
+func _clear_target_lock() -> void:
+  _locked_target=null
+  _locked_target_id=""
+  if _locked_target_label!=null:
+    _locked_target_label.visible=false
+  if _target_lock_button!=null:
+    _target_lock_button.text="索敌"
+
+func _step_target_lock(delta: float) -> void:
+  if _locked_target==null:
+    return
+  if not is_instance_valid(_locked_target) or camera_mode in ["first","god","fly","iso"] or (
+      _game_sheet!=null and _game_sheet.visible):
+    _clear_target_lock()
+    return
+  var displacement: Vector3=_locked_target.position-actor.position
+  displacement.y=0.0
+  if displacement.length()>28.0 or displacement.length()<0.3:
+    _clear_target_lock()
+    return
+  var desired_yaw: float=atan2(-displacement.x,-displacement.z)
+  _yaw=lerp_angle(_yaw,desired_yaw,clampf(delta*5.0,0.0,1.0))
+  if _locked_target_id=="CL-TRAINING-DUEL":
+    _locked_target_label.text="◎ 演武教习 · 凡人  血 %d/%d  法力 0" % [
+      _spar_enemy_health,_spar_enemy_health_max]
+  else:
+    var cult: RefCounted=room.get("cultivation")
+    if cult==null:
+      _clear_target_lock()
+      return
+    var data: Dictionary=cult.get("npc_data").get(_locked_target_id,{})
+    if data.is_empty():
+      _clear_target_lock()
+      return
+    _locked_target_label.text="◎ %s · %s%s  生命 %d  法力 %d  [中立]" % [
+      String(data.get("name","修士")),String(data.get("realm","凡人")),
+      " 第%d层" % int(data.get("layer",0)) if int(data.get("layer",0))>0 else "",
+      int(data.get("health",0)),int(data.get("mana",0))]
+
+func toggle_quickbar() -> void:
+  _quickbar_folded=not _quickbar_folded
+  _quickbar_toggle.text="展开" if _quickbar_folded else "收起"
+  _layout_hud()
 
 func _refresh_game_hud() -> void:
   if _game_status==null or room==null:
@@ -835,6 +1153,10 @@ func _refresh_game_hud() -> void:
     _ward_cd>0.0 or not ward_learned or mana_now<6 or _ward_seconds>0.0)
   (_game_actions["SpiritWard"] as Button).text=(
     "灵障 %d" % ceili(_ward_cd) if _ward_cd>0.0 else ("护体灵障" if ward_learned else "灵障·未学"))
+  var village: Dictionary=sim.get("villages").get(String(person.get("village_id","")),{})
+  var seed_stock: int=int(village.get("stock",{}).get("tree_seed",0))
+  (_game_actions["PlantSapling"] as Button).disabled=seed_stock<=0
+  (_game_actions["PlantSapling"] as Button).text="植树 ×%d" % seed_stock
   if _target_panel!=null:
     _target_panel.visible=_spar_stage!="inactive"
     if _spar_stage!="inactive":
@@ -868,7 +1190,7 @@ func _refresh_game_hud() -> void:
   (buttons["CameraLockButton"] as Button).text="解锁视角" if _camera_angle_locked else "锁视角"
   (buttons["Iso45Button"] as Button).text="第三人称" if camera_mode=="iso" else "俯视45°"
   (buttons["SoarAvatarButton"] as Button).text=(
-    "着陆中" if _soar_landing else ("降落" if camera_mode=="soar" else "飞行"))
+    "再起飞" if _soar_landing else ("降落" if camera_mode=="soar" else "飞行"))
   (buttons["GodShortcutButton"] as Button).text="退出上帝" if camera_mode=="god" else "上帝"
   if _living_clock_label!=null:
     var clock: Dictionary=room.call("get_living_clock")
@@ -890,12 +1212,21 @@ func _refresh_game_hud() -> void:
       _spar_stage,_spar_last_outcome,mana_now,player_level*12]
   elif spiritual==null:
     _spirit_notice.text="灵根：未检测（检测台尚未装载）"
+  var inventory_open: bool=_game_sheet!=null and _game_sheet.visible and _game_sheet_mode=="inventory"
+  if _inventory_list!=null:
+    _inventory_list.visible=inventory_open
+    _equipment_slot_row.visible=inventory_open
+    _inventory_craft_sword_button.visible=inventory_open
+    _inventory_craft_pick_button.visible=inventory_open
+    _inventory_equip_button.visible=inventory_open
+    _inventory_deposit_button.visible=inventory_open
   _quality_sheet_button.visible=_game_sheet!=null and _game_sheet.visible and _game_sheet_mode=="settings"
   _developer_sheet_button.visible=_quality_sheet_button.visible
   _rest_sheet_button.visible=_game_sheet.visible and _game_sheet_mode=="character"
   _pad_setting_speed.visible=_game_sheet.visible and _game_sheet_mode=="settings"
   _pad_setting_invert.visible=_pad_setting_speed.visible
   _pad_setting_deadzone.visible=_pad_setting_speed.visible
+  _touch_setting.visible=_pad_setting_speed.visible
   _pad_hint.visible=_pad_device>=0 and not _game_sheet.visible
   if _game_sheet==null or not _game_sheet.visible:
     return
@@ -903,13 +1234,12 @@ func _refresh_game_hud() -> void:
     _game_sheet_title.text="角色 · 当前状态"
     _game_sheet_body.text="生命："+str(_player_health)+"/100  体力："+str(energy)+"/100\n饥饿："+str(person.get("hunger",0))+"  年龄："+str(person.get("age",21))+"\n身份：凡人旅者  灵根尚未鉴定\n当前生命可受跌落伤害、消耗食物恢复"
   elif _game_sheet_mode=="inventory":
-    _game_sheet_title.text="背包 · 真实采集物资"
-    var carried: Dictionary=sim.get("carried_by_actor")
-    if carried.has(PLAYER_ID):
-      var item: Dictionary=carried[PLAYER_ID]
-      _game_sheet_body.text="携带："+String(item.get("kind","未知"))+" ×"+str(item.get("amount",0))+"\n回仓库点击「互动」交付"
+    _game_sheet_title.text="背包 · 真实物品与装备"
+    if _backpack==null:
+      _game_sheet_body.text="背包账本加载失败，已禁止制造假物品"
     else:
-      _game_sheet_body.text="随身背包空\n靠近树木、石块点击「互动」采集"
+      _game_sheet_body.text=String(_backpack.call("describe"))
+      _refresh_inventory_list()
   elif _game_sheet_mode=="cultivation":
     _game_sheet_title.text="修炼 · 灵根与境界"
     if spiritual==null:
@@ -932,6 +1262,32 @@ func _refresh_game_hud() -> void:
     _game_sheet_body.text="横屏触控：左侧走路，右侧旋转\n视角按键：切第一/第三视角\n画质帧率和研发工具在下方设置"
 
 # Real mortal actions, consuming the same finite-resource ledger as NPCs.
+func plant_real_sapling() -> Dictionary:
+  if actor==null or camera_mode in ["soar","fly","god"]:
+    return {"ok":false,"reason":"MUST_PLANT_ON_WALKABLE_GROUND"}
+  var eco: RefCounted=room.get("eco")
+  var sim: RefCounted=room.get("sim")
+  if eco==null or sim==null:
+    return {"ok":false,"reason":"NO_REAL_ECOLOGY"}
+  var point: Vector3=actor.position+_forward()*1.7
+  if not bool(terrain.call("stream_contains_physical_chunk",point.x,point.z)) or (
+      bool(terrain.call("is_water",point.x,point.z))):
+    say("树苗只能种在真实可走、非水域地块")
+    return {"ok":false,"reason":"NO_PHYSICAL_SOIL"}
+  var birth_id: String=String(eco.call(
+    "plant_one_seed",Vector3(point.x,0.0,point.z)))
+  if birth_id.is_empty():
+    say("缺种子或附近建筑/树木太密，无法栽种")
+    return {"ok":false,"reason":"NO_SEED_OR_TOO_CLOSE"}
+  var sapling: Node3D=room.call("_place_asset","tree",birth_id,
+    Vector3(point.x,0.0,point.z),0.10)
+  if sapling!=null:
+    room.get("natural_meshes")[birth_id]=sapling
+    sapling.set_meta("resource_id",birth_id)
+  say("真实消耗村庄种子×1，树苗将随世界时辰长成树")
+  _refresh_game_hud()
+  return {"ok":true,"id":birth_id,"actual_seed_spent":1}
+
 func gather_action() -> Dictionary:
   if _gather_cd>0.0:
     return {"ok":false,"reason":"COOLDOWN"}
@@ -1050,6 +1406,8 @@ func stop_practice() -> void:
   for node in [_spar_partner,_spar_collision,_spar_telegraph,_spar_opponent_tag]:
     if node!=null and is_instance_valid(node):
       node.queue_free()
+  if _locked_target_id=="CL-TRAINING-DUEL":
+    _clear_target_lock()
   _spar_partner=null
   _spar_collision=null
   _spar_telegraph=null
@@ -1063,6 +1421,9 @@ func stop_practice() -> void:
     if mesh!=null and is_instance_valid(mesh):
       mesh.queue_free()
   _spell_projectiles.clear()
+  _enemy_elemental_status=""
+  _enemy_status_remaining=0.0
+  _enemy_status_tick=0.0
   _spar_stage="inactive"
   _spar_timer=0
   _guard_time=0
@@ -1295,20 +1656,14 @@ func sword_attack() -> bool:
   _refresh_game_hud()
   return true
 
-func _art_tint() -> Color:
+func _root_effect() -> Dictionary:
   var spiritual: RefCounted=room.get("cultivation")
   if spiritual==null:
-    return Color("#88e8f1")
-  var kind: String=String(spiritual.call("public_player_status").get("root_kind",""))
-  if kind.begins_with("火"):
-    return Color("#ff945f")
-  if kind.begins_with("木"):
-    return Color("#a2e18a")
-  if kind.begins_with("金"):
-    return Color("#f4dfa0")
-  if kind.begins_with("土"):
-    return Color("#e0b57f")
-  return Color("#7dc9f0")
+    return {"color":"#88e8f1","effect":"none","debuff":"无"}
+  return spiritual.call("visual_root_signature")
+
+func _art_tint() -> Color:
+  return Color(String(_root_effect().get("color","#88e8f1")))
 
 func cast_spirit_bolt() -> Dictionary:
   if _spar_stage in ["inactive","victory"] or _bolt_cd>0.0 or (
@@ -1400,9 +1755,13 @@ func cast_spirit_bolt() -> Dictionary:
   trail.draw_pass_1=trail_quad
   projectile.add_child(trail)
   trail.emitting=true
+  var cast_effect: Dictionary=_root_effect()
   _spell_projectiles.append({
     "node":projectile,"distance_left":9.5,
-    "damage":14+int(spiritual.call("public_player_status").get("layer",1))*4})
+    "damage":14+int(spiritual.call("public_player_status").get("layer",1))*4,
+    "root_effect":String(cast_effect.get("effect","none")),
+    "root_debuff":String(cast_effect.get("debuff","无")),
+    "root_color":_art_tint()})
   say("灵息弹：法力真实消耗4，飞行命中后才扣对方生命")
   _refresh_game_hud()
   return {"ok":true,"spent":int(debit["spent"]),"projectile":projectile}
@@ -1432,7 +1791,8 @@ func _step_spell_projectiles(delta: float) -> void:
     missile.position=proposed
     if progress>=span.length()-0.20 or (
         not hit.is_empty() and hit.get("collider")==_spar_collision):
-      _spar_damage_opponent(int(shot["damage"]),true)
+      if _spar_damage_opponent(int(shot["damage"]),true):
+        _apply_elemental_impact(shot)
       missile.queue_free()
       continue
     if float(shot["distance_left"])<=0.0:
@@ -1479,6 +1839,45 @@ func cast_spirit_ward() -> Dictionary:
   _refresh_game_hud()
   return {"ok":true,"spent":int(debit["spent"]),"duration":_ward_seconds}
 
+func _apply_elemental_impact(shot: Dictionary) -> void:
+  # Each hit has already consumed real mana and passed physical 3D travel
+  # + wall raycast. No element is allowed to conjure extra items or HP.
+  var effect: String=String(shot.get("root_effect","none"))
+  var debuff: String=String(shot.get("root_debuff",""))
+  if effect=="none" or _spar_stage=="victory":
+    return
+  _enemy_elemental_status=effect
+  _enemy_status_remaining=3.0
+  _enemy_status_tick=0.0
+  _enemy_status_color=shot.get("root_color",Color("#96dfe3"))
+  if effect in ["freeze","shock","slow","entangle","gravity","yin"]:
+    # The old trainer state machine uses _spar_timer to schedule its next
+    # attack. This is a real target action penalty, not only a blue tag.
+    _spar_timer+=1.10 if effect in ["freeze","entangle"] else 0.65
+  if effect=="push" and _spar_partner!=null:
+    # No teleport through walls; collision-free single push should be added
+    # only with a full body-sweep in the complete combat system.
+    _spar_timer+=0.3
+  _sync_spar_meters()
+
+func _tick_elemental_impact(delta: float) -> void:
+  if _enemy_elemental_status=="" or _spar_stage in ["inactive","victory"]:
+    return
+  _enemy_status_remaining=maxf(0.0,_enemy_status_remaining-delta)
+  _enemy_status_tick+=delta
+  if _enemy_status_tick>=1.0:
+    _enemy_status_tick-=1.0
+    if _enemy_elemental_status in ["burn","poison","bleed","decay"]:
+      # At most 2 damage per elapsed real second for three seconds, and
+      # only against the consenting practice opponent. No free XP or loot.
+      _spar_damage_opponent(2,true)
+      if _spar_partner!=null and is_instance_valid(_spar_partner):
+        _spawn_real_combat_hit(_spar_partner.position+Vector3.UP*1.35,
+          _enemy_status_color,1)
+  if _enemy_status_remaining<=0.0:
+    _enemy_elemental_status=""
+    _sync_spar_meters()
+
 func _step_spiritual_combat(delta: float) -> void:
   _attack_anim_seconds=maxf(0.0,_attack_anim_seconds-delta)
   # Focus living duel actors without hijacking the user's normal zoom value.
@@ -1491,6 +1890,7 @@ func _step_spiritual_combat(delta: float) -> void:
   _bolt_cd=maxf(0.0,_bolt_cd-delta)
   _ward_cd=maxf(0.0,_ward_cd-delta)
   _ward_seconds=maxf(0.0,_ward_seconds-delta)
+  _tick_elemental_impact(delta)
   if _ward_visual!=null and is_instance_valid(_ward_visual):
     if _ward_seconds<=0.0:
       _ward_visual.queue_free()
@@ -1752,7 +2152,12 @@ func _layout_hud() -> void:
     var quick: Button=buttons[quick_keys[i]]
     quick.position=Vector2(quick_start+float(i)*108.0,81)
     quick.size=Vector2(103,45)
-    quick.visible=true
+    quick.visible=not _quickbar_folded or quick_keys[i] in [
+      "Iso45Button","SoarAvatarButton","RealJumpButton"]
+  _quickbar_toggle.position=Vector2(size.x-76.0,81.0)
+  _quickbar_toggle.size=Vector2(72,45)
+  _target_lock_button.position=Vector2(maxf(450.0,size.x-515.0),81.0)
+  _target_lock_button.size=Vector2(92,45)
   # Keep flight Up/Down separately accessible beneath the right-side strip.
   (buttons["FlyUpButton"] as Button).position=Vector2(size.x-145,152)
   (buttons["FlyDownButton"] as Button).position=Vector2(size.x-145,208)
@@ -1764,14 +2169,47 @@ func _layout_hud() -> void:
     var tab: Button=hud.get_node("GameMenu_"+menu_names[idx]) as Button
     tab.position=Vector2(menu_x+float(idx)*104.0,16)
     tab.size=Vector2(96,44)
-  var action_keys:=["GatherAction","DashAction","DigAction","InteractAction",
+  # Contextual skill dock: 7 world actions in normal play, 6 combat arts
+  # only while an authentic opponent exists. Never draw 12 keys over scenery.
+  var all_keys: Array[String]=["GatherAction","DashAction","DigAction","InteractAction",
     "ViewAction","LockedArt","GuardAction","EvadeAction",
-    "SwordAttack","SpiritBolt","SpiritWard"]
+    "SwordAttack","SpiritBolt","SpiritWard","PlantSapling"]
+  var combat_open: bool=_spar_stage!="inactive"
+  var action_keys: Array=(
+    ["GuardAction","EvadeAction","SwordAttack","SpiritBolt","SpiritWard","LockedArt"]
+    if combat_open else
+    ["GatherAction","DashAction","DigAction","InteractAction",
+    "ViewAction","LockedArt","PlantSapling"])
+  for key in all_keys:
+    (_game_actions[key] as Button).visible=action_keys.has(key)
   for idx in range(action_keys.size()):
     var col: int=idx%4
     var row: int=int(idx/4)
-    (_game_actions[action_keys[idx]] as Button).position=Vector2(
-      size.x-392.0+float(col)*94.0,size.y-207.0+float(row)*66.0)
+    var bar: Button=_game_actions[action_keys[idx]]
+    bar.position=Vector2(size.x-392.0+float(col)*94.0,
+      size.y-130.0+float(row)*62.0)
+    bar.size=Vector2(89,54)
+  if _locked_target_label!=null:
+    _locked_target_label.position=Vector2(maxf(365.0,size.x*0.5-160.0),188.0)
+  if _game_sheet!=null:
+    # Occupy a deliberate center-left modal area, below the tabs and away
+    # from top-left HP/SP, preserving a usable 720p landscape viewport.
+    _game_sheet.position=Vector2(clampf(size.x*0.35,260.0,
+      maxf(265.0,size.x-492.0)),136.0)
+    # Avoid tiny screenshot overlay for entire menu; keep world simulation
+    # alive, but prevent HUD text competing with the open sheet.
+    var modal_open: bool=_game_sheet.visible
+    for key in _game_actions:
+      (_game_actions[key] as Button).visible=not modal_open and (
+        ["GuardAction","EvadeAction","SwordAttack","SpiritBolt","SpiritWard","LockedArt"].has(key)
+        if _spar_stage!="inactive" else [
+        "GatherAction","DashAction","DigAction","InteractAction",
+        "ViewAction","LockedArt","PlantSapling"].has(key))
+    if _living_clock_label!=null:
+      _living_clock_label.visible=not modal_open
+      _living_speed_button.visible=not modal_open
+    if _flight_altitude_label!=null and modal_open:
+      _flight_altitude_label.visible=false
   if _target_panel!=null:
     # Keep target HUD BELOW the always-on first row of seven view toggles.
     # Previously it sat under those buttons and concealed its own MP bar.
@@ -1781,15 +2219,24 @@ func _layout_hud() -> void:
     _pad_hint.position=Vector2(16,139)
   if _root_exam_button!=null:
     var width: float=size.x
-    _root_exam_button.position=Vector2(width-392.0,size.y-271.0)
-    _meditate_button.position=Vector2(width-280.0,size.y-271.0)
-    _breakthrough_button.position=Vector2(width-168.0,size.y-271.0)
+    var altar_near: bool=room.get("cultivation")!=null and bool(
+      room.get("cultivation").call("at_altar"))
+    var in_cultivation: bool=_game_sheet!=null and _game_sheet.visible and (
+      _game_sheet_mode=="cultivation")
+    _root_exam_button.visible=altar_near or in_cultivation
+    _meditate_button.visible=in_cultivation
+    _breakthrough_button.visible=in_cultivation
+    _root_exam_button.position=Vector2(width-392.0,size.y-243.0)
+    _meditate_button.position=Vector2(width-280.0,size.y-243.0)
+    _breakthrough_button.position=Vector2(width-168.0,size.y-243.0)
   if _living_seed_label!=null:
+    _living_seed_label.visible=dev
     _living_seed_label.position=Vector2(19,263)
   if _living_clock_label!=null:
     _living_clock_label.position=Vector2(19,172)
     _living_speed_button.position=Vector2(19,209)
     _local_ai_status_label.position=Vector2(127,217)
+    _local_ai_status_label.visible=dev
     _flight_altitude_label.position=Vector2(
       clampf(size.x*0.45,480.0,size.x-445.0),145)
 
@@ -2185,6 +2632,22 @@ func tap_world(screen_position: Vector2) -> Dictionary:
       best_id = ""
       worker_id=String(id)
       best_pos=other.position
+  var cultivation_system: RefCounted=room.get("cultivation")
+  if cultivation_system!=null:
+    var visible: Dictionary=cultivation_system.get("npc_visuals")
+    for id in visible:
+      var other: Node3D=visible[id]["actor"]
+      if other==null or not is_instance_valid(other):
+        continue
+      if camera.is_position_behind(other.position+Vector3.UP*1.0):
+        continue
+      var pixel: Vector2=camera.unproject_position(other.position+Vector3.UP*1.0)
+      var gap: float=touch_pixel.distance_to(pixel)
+      if gap<nearest:
+        nearest=gap
+        best_id=""
+        worker_id=String(id)
+        best_pos=other.position
   if best_id.is_empty() and worker_id.is_empty():
     return {"ok":false,"reason":"NO_TARGET_UNDER_FINGER"}
   _touch_tap_count += 1
@@ -2267,14 +2730,17 @@ func turn_view(movement: Vector2) -> void:
   _yaw -= movement.x*0.0050
   # User phone feedback: drag DOWN must look DOWN, NEVER up.
   # Reverse rev186 vertical sense across first/third/god/fly.
+  var swipe_y: float=-movement.y if _touch_look_inverted else movement.y
+  # Orbit camera and view-through camera use opposite PITCH coordinate
+  # conventions. An upward finger motion must RAISE the sightline in both.
   if camera_mode=="first" or camera_mode=="fly":
-    _pitch=clampf(_pitch-movement.y*0.0029,-1.30,1.24)
+    _pitch=clampf(_pitch-swipe_y*0.0036,-1.42,1.42)
   elif camera_mode=="god":
-    _pitch=clampf(_pitch-movement.y*0.0029,0.65,1.52)
+    _pitch=clampf(_pitch+swipe_y*0.0036,0.20,1.52)
   elif camera_mode=="iso":
     _pitch=PI/4.0
   else:
-    _pitch=clampf(_pitch-movement.y*0.0029,0.08,1.20)
+    _pitch=clampf(_pitch+swipe_y*0.0036,-1.32,1.48)
   update_camera()
 
 func zoom_ratio(factor: float) -> void:
@@ -2453,6 +2919,12 @@ func toggle_camera_lock() -> void:
 func toggle_avatar_flight() -> void:
   if camera_mode=="soar":
     if _soar_landing:
+      # Landing may be interrupted to evade a blocking roof/NPC. The
+      # previous toggle returned immediately and stranded the player.
+      _soar_landing=false
+      _soar_target_altitude=maxf(3.0,_soar_altitude+2.0)
+      _layout_hud()
+      say("停止降落，重新御剑起飞")
       return
     _soar_landing=true
     _soar_target_altitude=0.0
@@ -2735,6 +3207,7 @@ func step(delta: float) -> void:
     apply_player_damage(roundi((previous_ground_y-new_ground_y-2.0)*10.0))
     _fall_damage_cd=0.8
   _sync_flight_world_cues(delta)
+  _step_target_lock(delta)
   if not bool(room.get("_follow_builder")):
     update_camera()
   if _hud_flash>0.0:
@@ -2862,8 +3335,11 @@ func interact() -> Dictionary:
   # The unique player/world/entity system IDs stay in the authoritative
   # simulation ledger. Do not display them as giant in-world labels.
   var depot := Vector3(0,0,10)
-  if point.distance_to(depot)<3.8:
+  if Vector2(point.x-depot.x,point.z-depot.z).length()<3.8:
     var delivered: bool = sim.deliver_carried(PLAYER_ID)
+    if not delivered and _backpack!=null:
+      var bag_out: Dictionary=_backpack.call("deposit_at_warehouse",sim,PLAYER_ID)
+      delivered=bool(bag_out.get("ok",false))
     if delivered:
       var seed_amount: int = eco.delivered_seed_from_actor(PLAYER_ID)
       say("木石真实入库！种子入库 " + str(seed_amount))
@@ -2893,8 +3369,13 @@ func interact() -> Dictionary:
     _auto_resource_id = ""
   if not best_id.is_empty():
     if sim.get("carried_by_actor").has(PLAYER_ID):
-      say("背包已装材料！回到仓库交付才能再采集")
+      say("暂存材料未入背包：请先交付仓库")
       return {"ok":false,"reason":"PLAYER_CARRYING"}
+    if _backpack!=null and not bool(_backpack.call("can_add",
+        {"tree":"wood","stone":"stone","clay":"clay"}.get(
+        String(nodes[best_id]["kind"]),String(nodes[best_id]["kind"])),3)):
+      say("背包已满或单堆达到上限")
+      return {"ok":false,"reason":"BACKPACK_FULL"}
     if not sim.gather_to_actor(PLAYER_ID,best_id):
       say("暂无体力或物资被占用")
       return {"ok":false,"reason":"HARVEST_GATE"}
@@ -2904,8 +3385,35 @@ func interact() -> Dictionary:
     if room.get("natural_meshes").has(best_id) and int(target["remaining"])<=0:
       (room.get("natural_meshes")[best_id] as Node3D).visible = false
     _interaction_count += 1
-    say("你采集了 " + best_id + "，材料在随身背包，必须送仓库")
+    if _backpack!=null:
+      var gathered: Dictionary=_backpack.call("absorb_carried",sim,PLAYER_ID)
+      if not bool(gathered.get("ok",false)):
+        say("材料暂存携带槽，背包写入失败；可去仓库交付")
+        return {"ok":true,"action":"gather_carried","entity_id":best_id}
+      say("采集到 %s ×%d，已进入真实背包" % [
+        String(gathered["kind"]),int(gathered["amount"])])
+    else:
+      say("采集材料已暂存携带槽，请去仓库交付")
     return {"ok":true,"action":"gather","entity_id":best_id}
+  var spiritual: RefCounted=room.get("cultivation")
+  if spiritual!=null:
+    var cultivators: Dictionary=spiritual.get("npc_visuals")
+    var records: Dictionary=spiritual.get("npc_data")
+    for spirit_id in cultivators:
+      if not _auto_npc_id.is_empty() and String(spirit_id)!=_auto_npc_id:
+        continue
+      var person: Node3D=cultivators[spirit_id]["actor"]
+      if person!=null and is_instance_valid(person) and (
+          person.position.distance_to(point)<3.3):
+        var detail: Dictionary=records.get(spirit_id,{})
+        _auto_npc_id=""
+        var speech: String="%s · %s%d层｜正在%s｜身份%s" % [
+          String(detail.get("name","修士")),String(detail.get("realm","凡人")),
+          int(detail.get("layer",0)),String(detail.get("schedule","休息")),
+          String(detail.get("sect","独行"))]
+        say("交谈："+speech+"（规则NPC；本地大模型尚未加载）")
+        return {"ok":true,"action":"cultivator_dialogue",
+          "entity_id":String(spirit_id),"identity":detail.duplicate(true)}
   for npc_id in room.get("workers"):
     if not _auto_npc_id.is_empty() and npc_id != _auto_npc_id:
       continue
@@ -2932,6 +3440,10 @@ func dig() -> Dictionary:
     say("此处不可挖：可能是道路、仓库、河水或已到坚硬基岩")
     return result
   _dig_count += 1
+  if _backpack!=null:
+    if not bool(_backpack.call("_add",String(result["kind"]),1)):
+      say("地层已挖但背包已满，开挖料留在地面需后续拾取")
+      return result
   # Excavated 2x2m cells yield a finite ledger entry from the exact
   # removed subsurface layer, not free raw resources from an interaction.
   say("挖出" + String(result["kind"]) + "×1 / 深" + str(result["depth_m"]) + "米；露出真实土层")
@@ -2991,7 +3503,9 @@ func stats() -> Dictionary:
     "position":actor.position if actor!=null else Vector3.ZERO,
     "current_foot_height":float(terrain.call("height_at",actor.position.x,actor.position.z)) if actor!=null else 0.0,
     "camera_mode":camera_mode,"god_view_available":true,"free_flight_available":true,
-    "vertical_drag_inverted_for_phone":_view_pitch_reversed,
+    "vertical_drag_inverted_for_phone":_touch_look_inverted,
+    "lock_on_real_actor":_locked_target!=null and is_instance_valid(_locked_target),
+    "ui_open_licensed_lucide":_open_icon("backpack")!=null,
     "camera_collision_avoidance_hits":_camera_collision_hits,
     "flight_distance":_flight_m,
     "gamepad_connected":_pad_device>=0,
