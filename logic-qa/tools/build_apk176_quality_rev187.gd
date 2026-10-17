@@ -13,6 +13,7 @@ const FILES := {
 	"res://canglan_rev187/ecology_growth.gd": "canglan_rev187/ecology_growth.gd",
 	"res://canglan_rev187/visual_palette.gd": "canglan_rev187/visual_palette.gd",
 	"res://canglan_rev187/kenney_multimesh.gd": "canglan_rev187/kenney_multimesh.gd",
+	"res://canglan_rev187/hq_forest_floor_pool_rev208.gd": "canglan_rev187/hq_forest_floor_pool_rev208.gd",
 	"res://canglan_rev187/strata_terrain.gd": "canglan_rev187/strata_terrain.gd",
 	"res://canglan_rev187/vivid_material.gd": "canglan_rev187/vivid_material.gd",
 	"res://canglan_rev187/player_controller.gd": "canglan_rev187/player_controller.gd",
