@@ -213,9 +213,12 @@
       if (!res.ok) throw new Error('Public CAC changelog unavailable');
       const markdown = await res.text();
       if (markdown.length > 200000) throw new Error('Unexpected public changelog size');
-      const regex = /^##\s+(\d{4}-\d{2}-\d{2})\s*\/\s*(CAC-(?:PROC|3D)-\d{3})\s*\/\s*(.+)$/gm;
-      const headers = Array.from(markdown.matchAll(regex)).slice(-24);
-      publicEntries = headers.reverse().map(m => {
+      // The source CAC log is newest-first. Do not reverse the oldest
+      // entries and hide current release/engineering work from players.
+      // IDs include CAC-REV206-... and CAC-3D-206-BATCH-P0, not only CAC-3D-207.
+      const regex = /^##\s+(\d{4}-\d{2}-\d{2})\s*\/\s*(CAC-[A-Z0-9-]+)\s*\/\s*(.+)$/gm;
+      const headers = Array.from(markdown.matchAll(regex)).slice(0, 24);
+      publicEntries = headers.map(m => {
         const after = m.index + m[0].length;
         const next = markdown.indexOf('\n## ', after);
         const details = markdown.slice(after, next < 0 ? undefined : next).trim();
