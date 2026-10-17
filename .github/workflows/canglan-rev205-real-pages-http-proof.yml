@@ -1,5 +1,5 @@
 # rev205 live signed APK176 original PCK public HTTPS pinned RSA/SHA256 full-download Range206.
-name: Canglan APK176 rev205 - Real Cultivation Combat HTTPS RSA Full PCK Proof
+name: Canglan APK176 rev205 - Live Signed CC0 PBR OTA HTTPS RSA SHA256 and HTTP206 Proof
 on:
   push:
     branches: [main]
@@ -7,7 +7,7 @@ on:
       - '.github/workflows/canglan-rev205-real-pages-http-proof.yml'
   workflow_run:
     workflows:
-      - Canglan ORIGINAL APK176 rev205 - Mobile UI Lock Flight Inventory RSA Signed Update
+      - Canglan ORIGINAL APK176 rev205 - FINAL Real Open CC0 Village Rich PBR and Xianxia Signed OTA
     types: [completed]
   workflow_dispatch:
 permissions:
