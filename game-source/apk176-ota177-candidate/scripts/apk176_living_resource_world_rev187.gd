@@ -66,6 +66,11 @@ var status: Label
 var animation_report: Dictionary = {}
 var asset_errors: Array[String] = []
 var asset_sources: Dictionary = {}
+# rev199 genuinely licensed CC0 hair and real sword are separate scene
+# sources; they MUST NOT inflate 7 original economy/batch material sources.
+var licensed_long_hair_source: Node3D
+var licensed_flying_sword_source: Node3D
+var _licensed_hair_attachments: int=0
 var _licensed_actor_zero_alpha_fixed: int = 0
 var natural_meshes: Dictionary = {}
 # rev197: cheap real world collisions for already-licensed instanced trunks
@@ -453,8 +458,47 @@ func _repair_licensed_opaque_character_model(source: Node3D) -> void:
           # Alpha-zero BLEND/SCISSOR hashes ALL pixels away. Solid armor,
           # skin and boots should not be culled by an accidental alpha.
           material.transparency=BaseMaterial3D.TRANSPARENCY_DISABLED
+          if original.resource_name.to_lower().contains("skin"):
+            # Undo the old yellow-metal face look without changing the
+            # original Quaternius anatomy or faking a 2D face overlay.
+            material.albedo_color=Color("#d9ae9e")
+            material.roughness=0.91
+            material.metallic=0.0
           part.set_surface_override_material(surface,material)
           _licensed_actor_zero_alpha_fixed+=1
+
+# Existing Quaternius Universal Base Characters Standard Long hairstyle:
+# the packed GLB preserves the author's original vertices/normals/UVs.
+# This is a static head attachment preview. A new full humanoid retarget
+# will be needed for truly swaying long hair; never claim this is it.
+func _attach_real_cc0_long_hair(actor: Node3D,variant: int=0) -> bool:
+  if licensed_long_hair_source==null:
+    return false
+  var mesh_parts: Array[Node]=licensed_long_hair_source.find_children(
+    "*","MeshInstance3D",true,false)
+  if mesh_parts.is_empty():
+    return false
+  var source: MeshInstance3D=mesh_parts[0] as MeshInstance3D
+  if source.mesh==null:
+    return false
+  var hair:=MeshInstance3D.new()
+  hair.name="ActualCC0QuaterniusHairLongNOTArtificialHelmet"
+  hair.mesh=source.mesh
+  var fabric:=StandardMaterial3D.new()
+  fabric.albedo_color=Color("#1c2833") if variant==0 else (
+    Color("#48352d") if variant==1 else Color("#343337"))
+  fabric.roughness=0.93
+  fabric.metallic=0.0
+  fabric.cull_mode=BaseMaterial3D.CULL_DISABLED
+  hair.material_override=fabric
+  hair.cast_shadow=GeometryInstance3D.SHADOW_CASTING_SETTING_ON
+  # Hair GLB shares Quaternius's ~1.75m anthropometric coordinate frame.
+  # Attach after actor height normalization; do not rescale the gameplay
+  # collision body, or snap to a position detached from the real player.
+  hair.position=Vector3(0.0,0.015,0.0)
+  actor.add_child(hair)
+  _licensed_hair_attachments+=1
+  return true
 
 func _load_assets() -> void:
   for role in ASSETS:
@@ -464,6 +508,14 @@ func _load_assets() -> void:
     if role=="worker":
       _repair_licensed_opaque_character_model(art)
     asset_sources[role] = art
+  licensed_long_hair_source=_parse_existing_cc0(
+    "res://canglan_rev187/quaternius_hair_long_static.glb")
+  licensed_flying_sword_source=_parse_existing_cc0(
+    "res://canglan_rev187/quaternius_knight_sword.glb")
+  if licensed_flying_sword_source!=null:
+    _repair_licensed_opaque_character_model(licensed_flying_sword_source)
+  if licensed_long_hair_source==null or licensed_flying_sword_source==null:
+    asset_errors.append("REV199_MISSING_REAL_CC0_HAIR_SWORD_NOT_SELF_MODELED")
 
 func _initialize_batches() -> void:
   batch_renderer = KenneyMultiMesh.new()
@@ -655,6 +707,7 @@ func _make_workers() -> void:
     # Import asset native scale varies radically across GLB vendors.
     # Measure the animated mesh itself and normalize actual real-world height.
     _normalize_worker_height(character)
+    _attach_real_cc0_long_hair(character,workers.size()%3)
     var label := Label3D.new()
     label.name = "ShortNPCProfessionNearPlayer_" + code
     # Unique IDs stay systemic data, NEVER giant wall text on top of NPCs.
@@ -1072,6 +1125,9 @@ func stats() -> Dictionary:
     "local_gguf_installed":false,
     "native_llama_bridge_present":ClassDB.class_exists("CanglanLocalLLM"),
     "source_assets": asset_sources.size(), "missing_assets": asset_errors.duplicate(),
+    "real_cc0_long_hair_attached_to_entities":_licensed_hair_attachments,
+    "real_cc0_sword_loaded":licensed_flying_sword_source!=null,
+    "real_cc0_hair_loaded":licensed_long_hair_source!=null,
     "licensed_animated_body_materials_fixed_from_alpha_zero":_licensed_actor_zero_alpha_fixed,
     "animation_reports": animation_report.duplicate(true),
     "harvests": _harvests, "deliveries": _deliveries,
