@@ -10,6 +10,7 @@ const KenneyMultiMesh = preload("res://canglan_rev187/kenney_multimesh.gd")
 const RealSoilTerrain = preload("res://canglan_rev187/strata_terrain.gd")
 const PlayerControl = preload("res://canglan_rev187/player_controller.gd")
 const ManualQuality = preload("res://canglan_rev187/quality_profiles.gd")
+const VividMaterials = preload("res://canglan_rev187/vivid_material.gd")
 const CultivationWorld = preload("res://canglan_rev187/cultivation_world.gd")
 const ASSETS := {
   "tree": "res://canglan_rev187/tree_oak.glb",
@@ -46,6 +47,7 @@ const SITE := Vector3(0.0, 0.0, -3.0)
 var sim
 var eco
 var palette: RefCounted
+var vivid_materials: RefCounted
 var batch_renderer: Node3D
 var terrain_world: Node3D
 var controls: Node
@@ -141,6 +143,8 @@ func _ready() -> void:
   eco = Ecology.new()
   eco.setup(sim, TOWN, SITE, DEPOT)
   palette = NaturalPalette.new()
+  vivid_materials=VividMaterials.new()
+  vivid_materials.call("initialize")
   _build_interface()
   _load_assets()
   _initialize_batches()
@@ -208,8 +212,8 @@ func _build_interface() -> void:
   sun.name = "KenneySingleDirectionalSun"
   sun_light = sun
   sun.rotation_degrees = Vector3(-52, -33, 0)
-  sun.light_color = Color("#ffecd0")
-  sun.light_energy = 1.2
+  sun.light_color = Color("#ffe1b2")
+  sun.light_energy = 1.14
   sun.shadow_enabled = true
   sun.directional_shadow_mode = DirectionalLight3D.SHADOW_ORTHOGONAL
   sun.directional_shadow_max_distance = 48.0
@@ -221,18 +225,22 @@ func _build_interface() -> void:
   var sky := Sky.new()
   var colors := ProceduralSkyMaterial.new()
   # Sky has neutral illumination, not another competing gameplay material.
-  colors.sky_top_color = Color("#258ed7")
-  colors.sky_horizon_color = Color("#c5e8fa")
-  colors.ground_horizon_color = Color("#a9d5d5")
-  colors.ground_bottom_color = Color("#729e8d")
+  colors.sky_top_color=Color("#0866b4")
+  colors.sky_horizon_color=Color("#83cbed")
+  colors.ground_horizon_color=Color("#5b9aa1")
+  colors.ground_bottom_color=Color("#3a7254")
   colors.use_debanding = true
   sky.sky_material = colors
   environment.sky = sky
   environment.ambient_light_source = Environment.AMBIENT_SOURCE_SKY
-  environment.ambient_light_energy = 0.63
-  environment.fog_enabled = true
-  environment.fog_light_color = Color("#b8d9e8")
-  environment.fog_density = 0.005
+  environment.ambient_light_energy=0.36
+  environment.fog_enabled=true
+  environment.fog_light_color=Color("#729eb7")
+  environment.fog_density=0.00105
+  environment.adjustment_enabled=true
+  environment.adjustment_saturation=1.30
+  environment.adjustment_contrast=1.095
+  environment.adjustment_brightness=0.975
   scene_environment = environment
   var atmosphere := WorldEnvironment.new()
   atmosphere.name = "VillageAtmosphere"
@@ -550,6 +558,8 @@ func _load_assets() -> void:
       continue
     if role=="worker":
       _repair_licensed_opaque_character_model(art)
+    vivid_materials.call("upgrade_completed_cc0_model",art,
+      String(role),"character_clothing_rig" if role=="worker" else "natural_source")
     asset_sources[role] = art
   licensed_long_hair_source=_parse_existing_cc0(
     "res://canglan_rev187/quaternius_hair_long_static.glb")
@@ -567,6 +577,12 @@ func _load_assets() -> void:
     if original==null:
       asset_errors.append("REV206_MISSING_GENUINE_CC0_"+String(model_id))
       continue
+    var category: String=(
+      "building" if model_id in ["house_1","house_2","house_3","house_4","inn","gazebo"]
+      else ("character_clothing_rig" if model_id in ["monk","wizard"] else (
+        "animal" if model_id in ["wolf","fox","deer","cow"] else "monster")))
+    vivid_materials.call("upgrade_completed_cc0_model",original,
+      String(model_id),category)
     if model_id in ["house_1","house_2","house_3","house_4",
         "inn","gazebo"]:
       finished_prefab_sources[model_id]=original
@@ -837,6 +853,7 @@ func _create_landscape() -> void:
   # from this single physical deformable heightfield. No green PlaneMesh land.
   terrain_world = RealSoilTerrain.new()
   terrain_world.name = "PhysicalDeformable92mVillageStrata"
+  terrain_world.set("vivid_material_style",vivid_materials)
   world.add_child(terrain_world)
   # Independent geological time-lapse distant massif remains preview only.
   hill_zone = MeshInstance3D.new()
@@ -1116,15 +1133,15 @@ func _sync_living_daylight() -> void:
   # Twilight is not a gray fog overlay. Dusk becomes blue and the moonlit
   # night has only ~22% ambient. One directional sun, no mobile raytracing.
   sun_light.rotation_degrees=Vector3(-maxf(8.0,altitude),-55.0,0)
-  sun_light.light_energy=0.16+daylight*0.97
-  sun_light.light_color=Color("#ffdfb5").lerp(Color("#fff0dd"),daylight)
+  sun_light.light_energy=0.12+daylight*1.15
+  sun_light.light_color=Color("#ffd091").lerp(Color("#fff3cb"),daylight)
   var backdrop: ProceduralSkyMaterial=scene_environment.sky.sky_material
-  backdrop.sky_top_color=Color("#102944").lerp(Color("#147ec7"),daylight)
-  backdrop.sky_horizon_color=Color("#274869").lerp(Color("#b9e7ff"),daylight)
-  backdrop.ground_horizon_color=Color("#213d50").lerp(Color("#83bbaa"),daylight)
-  backdrop.ground_bottom_color=Color("#223846").lerp(Color("#527d61"),daylight)
-  scene_environment.fog_light_color=Color("#283e5a").lerp(Color("#8fb5c5"),daylight)
-  scene_environment.ambient_light_energy=0.18+daylight*0.28
+  backdrop.sky_top_color=Color("#10243b").lerp(Color("#0872c2"),daylight)
+  backdrop.sky_horizon_color=Color("#214565").lerp(Color("#8cd1ed"),daylight)
+  backdrop.ground_horizon_color=Color("#1b3544").lerp(Color("#58959c"),daylight)
+  backdrop.ground_bottom_color=Color("#263f3c").lerp(Color("#376d50"),daylight)
+  scene_environment.fog_light_color=Color("#283f57").lerp(Color("#699eaf"),daylight)
+  scene_environment.ambient_light_energy=0.14+daylight*0.20
 
 func get_living_clock() -> Dictionary:
   return {"day":int(sim.day),"hour":int(sim.hour),
@@ -1288,6 +1305,9 @@ func stats() -> Dictionary:
     "manual_quality": quality.call("get_stats") if quality!=null else {},
     "manual_quality_selected": quality.get("selected") if quality!=null else "高档",
     "native_resolution_ui": true,
+    "rev207_vivid_real_pbr_materials":vivid_materials.call("summary") if vivid_materials!=null else {},
+    "rev207_color_saturation":scene_environment.adjustment_saturation if scene_environment!=null else 0.0,
+    "rev207_preserved_existing_license_assets":true,
     "no_auto_quality_switch": true,
     "physical_strata": terrain_world.call("stats") if terrain_world!=null else {},
     "player_controls": controls.call("stats") if controls!=null else {},
