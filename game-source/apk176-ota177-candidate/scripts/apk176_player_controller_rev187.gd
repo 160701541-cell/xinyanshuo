@@ -56,6 +56,16 @@ var _game_sheet: PanelContainer
 var _game_sheet_title: Label
 var _game_sheet_body: Label
 var _game_sheet_mode: String = ""
+var _player_health: int = 100
+var _health_bar: ProgressBar
+var _energy_bar: ProgressBar
+var _spirit_notice: Label
+var _game_actions: Dictionary = {}
+var _dash_cd: float = 0.0
+var _gather_cd: float = 0.0
+var _fall_damage_cd: float = 0.0
+var _quality_sheet_button: Button
+var _developer_sheet_button: Button
 
 func initialize(active_room: Node) -> void:
   room = active_room
