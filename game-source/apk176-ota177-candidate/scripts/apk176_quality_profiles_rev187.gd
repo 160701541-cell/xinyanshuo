@@ -341,25 +341,35 @@ func sync_streamed_meadows() -> void:
     return
   var loaded: Dictionary=terrain.get("stream_chunks")
   for key in streamed_meadows.keys():
-    var entry: MultiMeshInstance3D=streamed_meadows[key]
-    if not loaded.has(key) or not is_instance_valid(entry) or entry.is_queued_for_deletion() or entry.get_parent()!=loaded[key]:
-      # The streamer can evict and recreate the SAME chunk coordinates
-      # within one frame. An old queue_free() node is not the new terrain.
+    # A dictionary entry may now point to an ALREADY FREED chunk after
+    # accelerated time/streaming. Never assign that stale Object into a
+    # strongly typed Node variable before calling is_instance_valid().
+    var stale: bool=not is_instance_valid(streamed_meadows[key])
+    if not stale and loaded.has(key):
+      var valid_entry: MultiMeshInstance3D=streamed_meadows[key] as MultiMeshInstance3D
+      stale=valid_entry.is_queued_for_deletion() or valid_entry.get_parent()!=loaded[key]
+    if stale or not loaded.has(key):
       streamed_meadows.erase(key)
       streamed_meadow_points.erase(key)
       streamed_meadow_rotations.erase(key)
   for key in loaded:
-    if not streamed_meadows.has(key):
+    if not streamed_meadows.has(key) and is_instance_valid(loaded[key]):
       _create_stream_meadow(String(key),loaded[key])
   for key in streamed_meadows:
-    _configure_stream_meadow(streamed_meadows[key])
+    if is_instance_valid(streamed_meadows[key]):
+      _configure_stream_meadow(streamed_meadows[key])
 
 func _update_streamed_meadow_cut(position: Vector3,radius: float) -> void:
   var coord: Vector2i=terrain.call("_stream_coords",position.x,position.z)
   var key: String=terrain.call("_stream_chunk_key",coord)
   if not streamed_meadows.has(key):
     return
-  var batch: MultiMeshInstance3D=streamed_meadows[key]
+  if not is_instance_valid(streamed_meadows[key]):
+    streamed_meadows.erase(key)
+    streamed_meadow_points.erase(key)
+    streamed_meadow_rotations.erase(key)
+    return
+  var batch: MultiMeshInstance3D=streamed_meadows[key] as MultiMeshInstance3D
   var pts: Array=streamed_meadow_points[key]
   var orientations: Array=streamed_meadow_rotations[key]
   var origin: Vector3=batch.get_parent().position
