@@ -125,9 +125,9 @@ func _run() -> void:
   var used_slots: Dictionary=first.get("kenney_batch",{}).get("role_capacity_used",{})
   var available_slots: Dictionary=first.get("kenney_batch",{}).get("role_instance_capacity",{})
   var physical_nodes: Dictionary=room.get("natural_meshes")
-  if physical_batch==null or int(used_slots.get("tree",0))!=52 or (
+  if physical_batch==null or int(used_slots.get("tree",0))!=49 or (
       int(used_slots.get("stone",0))!=20) or (
-      int(available_slots.get("tree",0))<52) or (
+      int(available_slots.get("tree",0))<49) or (
       int(available_slots.get("stone",0))<20) or (
       physical_nodes.size()!=72):
     _fail(342,"REV206_NATURAL_NODE_COUNT_OR_MULTIMESH_CAPACITY_NOT_REAL_"+
@@ -135,7 +135,7 @@ func _run() -> void:
     return
   var real_group_parts: Dictionary=physical_batch.get("group_parts")
   for check in [
-      {"kind":"tree","id":"CL-TREE-0184-051","slot":51,"growth":70},
+      {"kind":"tree","id":"CL-TREE-0184-051","slot":48,"growth":70},
       {"kind":"stone","id":"CL-STONE-0184-019","slot":19,"growth":36}]:
     var kind: String=String(check["kind"])
     var entity_id: String=String(check["id"])
@@ -163,7 +163,36 @@ func _run() -> void:
         not gpu.get_instance_transform(expected_slot).is_equal_approx(previous_transform)):
       _fail(346,"REV206_GROWTH_ERASED_OLD_SOURCE_MESH_COLOR_OR_TRANSFORM_"+kind)
       return
-  print("PASS_REV206_ALL_52_TREES_20_STONES_REAL_DRAWABLE_BATCH_SLOTS_GROW_WITHOUT_LOSS")
+  var hq_visuals: Dictionary=room.get("hq_mature_tree_visuals")
+  var hq_sources: Dictionary=room.get("hq_mature_tree_sources")
+  if hq_visuals.size()!=3 or hq_sources.size()!=3 or (
+      int(first.get("rev208_hq_true_mature_tree_count",0))!=3):
+    _fail(401,"REV208_THREE_ACTUAL_HIGH_POLY_MATURE_TREES_NOT_LOADED_IN_ORIGINAL_MAIN")
+    return
+  for spec in [
+      {"index":0,"species":"oak"},{"index":1,"species":"maple"},
+      {"index":2,"species":"linden"}]:
+    var code: String="CL-TREE-0184-%03d" % int(spec["index"])
+    var species: String=String(spec["species"])
+    var actual: Node3D=hq_visuals.get(code,null)
+    if actual==null or actual!=physical_nodes.get(code,null) or (
+        not actual.is_inside_tree()) or not bool(
+        actual.get_meta("hq_rev208_mature_tree",false)) or (
+        String(actual.get_meta("hq_rev208_tree_kind",""))!=species):
+      _fail(402,"REV208_MATURE_TREE_STILL_KENNEY_LOW_POLY_OR_IS_GHOST_"+code)
+      return
+    var meshes: Array[Node]=actual.find_children(
+      "*","MeshInstance3D",true,false)
+    var bh: Vector2=room.call("_visible_bounds",actual)
+    if meshes.size()!=4 or bh.y-bh.x<7.0 or bh.y-bh.x>21.0:
+      _fail(403,"REV208_REAL_HQ_TREE_NOT_FOUR_VENDOR_PBR_PARTS_OR_WRONG_SCALE_"+code+
+        "_metres_"+str(bh)+"_meshes_"+str(meshes.size()))
+      return
+    if not room.get("natural_colliders").has(code):
+      _fail(404,"REV208_HQ_MATURE_TREE_HAS_NO_REAL_GAME_COLLIDER_"+code)
+      return
+  print("PASS_REV208_3_ACTUAL_8M_MATURE_VENDOR_PBR_TREES_REPLACE_THREE_NATURAL_IDS")
+  print("PASS_REV208_REMAINING_49_KENNEY_LOD_TREES_20_STONES_GPU_BUFFERS_RETAINED")
   if int(first.get("visible_actor_labels",0)) != 3:
     _fail(27, "MISSING_VISIBLE_NPC_WORKER_JOB_LABELS")
     return
