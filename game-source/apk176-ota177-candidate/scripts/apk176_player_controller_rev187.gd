@@ -161,6 +161,148 @@ func initialize(active_room: Node) -> void:
   update_camera()
   set_meta("original_apk176_interactive_player",true)
 
+# rev199: Visuals are inexpensive Godot particle/mesh effects, NOT a
+# hand-built character/weapon/structure. This is an honest mortal test-flight
+# "御风" preview until actual spirit root, relic ownership and sword GLB exist.
+func _create_flight_environment_vfx() -> void:
+  var jade:=StandardMaterial3D.new()
+  jade.shading_mode=BaseMaterial3D.SHADING_MODE_UNSHADED
+  jade.transparency=BaseMaterial3D.TRANSPARENCY_ALPHA
+  jade.albedo_color=Color("#73efdd",0.82)
+  jade.emission_enabled=true
+  jade.emission=Color("#67c8ed")
+  jade.emission_energy_multiplier=1.55
+  jade.cull_mode=BaseMaterial3D.CULL_DISABLED
+  _flight_rune=MeshInstance3D.new()
+  _flight_rune.name="ActualSoaringFootWindRuneNotFakeSword"
+  var foot_ring:=TorusMesh.new()
+  foot_ring.inner_radius=0.57
+  foot_ring.outer_radius=0.64
+  foot_ring.rings=24
+  foot_ring.ring_segments=8
+  foot_ring.material=jade
+  _flight_rune.mesh=foot_ring
+  _flight_rune.cast_shadow=GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+  _flight_rune.visible=false
+  world.add_child(_flight_rune)
+  _flight_shadow=MeshInstance3D.new()
+  _flight_shadow.name="ActualGroundShadowAltitudeReferenceFromPhysicalTerrain"
+  var ground_ring:=TorusMesh.new()
+  ground_ring.inner_radius=0.81
+  ground_ring.outer_radius=0.89
+  ground_ring.rings=32
+  ground_ring.ring_segments=8
+  var marker:=StandardMaterial3D.new()
+  marker.shading_mode=BaseMaterial3D.SHADING_MODE_UNSHADED
+  marker.transparency=BaseMaterial3D.TRANSPARENCY_ALPHA
+  marker.albedo_color=Color("#234654",0.67)
+  marker.cull_mode=BaseMaterial3D.CULL_DISABLED
+  ground_ring.material=marker
+  _flight_shadow.mesh=ground_ring
+  _flight_shadow.cast_shadow=GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+  _flight_shadow.visible=false
+  world.add_child(_flight_shadow)
+  _flight_altitude_beam=MeshInstance3D.new()
+  _flight_altitude_beam.name="ContinuousAirToGroundAltitudeReferenceLine"
+  var beam:=CylinderMesh.new()
+  beam.top_radius=0.025
+  beam.bottom_radius=0.025
+  beam.height=1.0
+  beam.radial_segments=6
+  var thin:=StandardMaterial3D.new()
+  thin.shading_mode=BaseMaterial3D.SHADING_MODE_UNSHADED
+  thin.transparency=BaseMaterial3D.TRANSPARENCY_ALPHA
+  thin.cull_mode=BaseMaterial3D.CULL_DISABLED
+  thin.albedo_color=Color("#a5eadd",0.28)
+  thin.emission_enabled=true
+  thin.emission=Color("#bcecf9")
+  thin.emission_energy_multiplier=0.7
+  beam.material=thin
+  _flight_altitude_beam.mesh=beam
+  _flight_altitude_beam.cast_shadow=GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+  _flight_altitude_beam.visible=false
+  world.add_child(_flight_altitude_beam)
+  _flight_wind_particles=GPUParticles3D.new()
+  _flight_wind_particles.name="ActuallyEmittingMobileWindTrailWhileAvatarSoars"
+  _flight_wind_particles.amount=32
+  _flight_wind_particles.lifetime=0.55
+  _flight_wind_particles.one_shot=false
+  _flight_wind_particles.local_coords=false
+  _flight_wind_particles.explosiveness=0.0
+  _flight_wind_particles.emitting=false
+  var motion:=ParticleProcessMaterial.new()
+  motion.emission_shape=ParticleProcessMaterial.EMISSION_SHAPE_BOX
+  motion.emission_box_extents=Vector3(0.38,0.07,0.25)
+  motion.direction=Vector3(0.0,-1.0,0.0)
+  motion.gravity=Vector3(0,-0.75,0)
+  motion.initial_velocity_min=0.6
+  motion.initial_velocity_max=1.7
+  motion.damping_min=0.3
+  motion.damping_max=1.6
+  _flight_wind_particles.process_material=motion
+  var shard:=QuadMesh.new()
+  shard.size=Vector2(0.105,0.024)
+  var shard_material:=StandardMaterial3D.new()
+  shard_material.shading_mode=BaseMaterial3D.SHADING_MODE_UNSHADED
+  shard_material.transparency=BaseMaterial3D.TRANSPARENCY_ALPHA
+  shard_material.billboard_mode=BaseMaterial3D.BILLBOARD_ENABLED
+  shard_material.cull_mode=BaseMaterial3D.CULL_DISABLED
+  shard_material.albedo_color=Color("#b8eaff",0.83)
+  shard_material.emission_enabled=true
+  shard_material.emission=Color("#90dadd")
+  shard_material.emission_energy_multiplier=1.15
+  shard.material=shard_material
+  _flight_wind_particles.draw_pass_1=shard
+  world.add_child(_flight_wind_particles)
+
+func _sync_flight_world_cues(delta: float) -> void:
+  var soaring: bool=camera_mode=="soar"
+  for node in [_flight_rune,_flight_shadow,_flight_altitude_beam]:
+    if node!=null:
+      node.visible=soaring
+  if _flight_wind_particles!=null:
+    _flight_wind_particles.emitting=soaring
+  if not soaring:
+    return
+  var ground_y: float=_ground_surface_y(actor.position.x,actor.position.z)
+  var foot_y: float=actor.position.y+0.13
+  _flight_rune.position=Vector3(actor.position.x,foot_y,actor.position.z)
+  _flight_rune.rotation.y+=delta*1.5
+  _flight_shadow.position=Vector3(actor.position.x,ground_y+0.095,actor.position.z)
+  var scale_shadow: float=clampf(0.95+_soar_altitude*0.092,0.95,5.0)
+  _flight_shadow.scale=Vector3(scale_shadow,1,scale_shadow)
+  _flight_altitude_beam.position=Vector3(actor.position.x,
+    ground_y+_soar_altitude*0.5+0.13,actor.position.z)
+  _flight_altitude_beam.scale.y=maxf(0.1,_soar_altitude)
+  _flight_wind_particles.position=Vector3(actor.position.x,
+    actor.position.y+0.18,actor.position.z)
+
+func _knight_clip(fragment: String) -> String:
+  if animator==null:
+    return ""
+  for clip in animator.get_animation_list():
+    if String(clip).to_lower().ends_with(fragment.to_lower()):
+      return String(clip)
+  return ""
+
+func _step_soar_altitude(delta: float) -> void:
+  if camera_mode!="soar":
+    return
+  var prev: float=_soar_altitude
+  var proposal: float=move_toward(prev,_soar_target_altitude,
+    minf(7.0,4.2+absf(_soar_target_altitude-prev)*0.18)*delta)
+  var new_y: float=_ground_surface_y(actor.position.x,actor.position.z)+proposal
+  if _can_actor_move_to(actor.position,new_y):
+    _soar_altitude=proposal
+  # A real landing descends physically and then switches to the walk
+  # state. No instantaneous 90m fall on pressing "降落".
+  if _soar_landing and _soar_altitude<=0.045:
+    _soar_altitude=0.0
+    _soar_target_altitude=0.0
+    _soar_landing=false
+    _set_mode("third")
+    say("御风试飞已平稳落地；飞剑仍需修仙功法与法器")
+
 func _spawn_player() -> void:
   var assets: Dictionary = room.get("asset_sources")
   if not assets.has("worker"):
