@@ -756,8 +756,8 @@ func _build_game_hud() -> void:
   _game_menu_button("菜单",325,"settings")
   _game_sheet=PanelContainer.new()
   _game_sheet.name="Rev188CharacterInventoryCultivationMenu"
-  _game_sheet.position=Vector2(16,150)
-  _game_sheet.custom_minimum_size=Vector2(405,245)
+  _game_sheet.position=Vector2(18,183)
+  _game_sheet.custom_minimum_size=Vector2(410,274)
   _game_sheet.visible=false
   _game_sheet.add_theme_stylebox_override("panel",_rounded(Color(0.06,0.11,0.13,0.95),12))
   hud.add_child(_game_sheet)
@@ -1867,14 +1867,21 @@ func _layout_hud() -> void:
   (buttons["FlyDownButton"] as Button).visible=camera_mode in ["fly","soar"] and not _soar_landing
   # Top-right first row remains original account/menu HUD; the second row
   # is permanently usable on touch devices even with dev UI turned OFF.
+  # One compact top row, including true lock-on, instead of seven giant
+  # QA buttons spread across the sky and the target info panel.
   var quick_keys: Array[String]=["Iso45Button","GodShortcutButton",
     "SoarAvatarButton","RealJumpButton","CameraLockButton",
-    "PhoneZoomInButton","PhoneZoomOutButton"]
-  var quick_start: float=maxf(454.0,size.x-float(quick_keys.size())*108.0-18.0)
+    "PhoneZoomInButton","PhoneZoomOutButton","TargetLockButton"]
+  var quick_labels: Array[String]=["俯视45°","地图","御剑",
+    "跳跃","视角锁","放大+","缩小−",
+    "解除锁定" if _locked_target!=null else "索敌"]
+  var quick_width: float=80.0
+  var quick_start: float=maxf(376.0,size.x-float(quick_keys.size())*quick_width-16.0)
   for i in range(quick_keys.size()):
     var quick: Button=buttons[quick_keys[i]]
-    quick.position=Vector2(quick_start+float(i)*108.0,81)
-    quick.size=Vector2(103,45)
+    quick.position=Vector2(quick_start+float(i)*quick_width,83.0)
+    quick.size=Vector2(76.0,43.0)
+    quick.text=quick_labels[i]
     quick.visible=true
   # Keep flight Up/Down separately accessible beneath the right-side strip.
   (buttons["FlyUpButton"] as Button).position=Vector2(size.x-145,152)
@@ -1887,14 +1894,23 @@ func _layout_hud() -> void:
     var tab: Button=hud.get_node("GameMenu_"+menu_names[idx]) as Button
     tab.position=Vector2(menu_x+float(idx)*104.0,16)
     tab.size=Vector2(96,44)
-  var action_keys:=["GatherAction","DashAction","DigAction","InteractAction",
-    "ViewAction","LockedArt","GuardAction","EvadeAction",
-    "SwordAttack","SpiritBolt","SpiritWard"]
+  # Exploration and battle are different actual game states: do not put
+  # all 11 controls on top of a 3D landscape all the time.
+  var battling: bool=_spar_stage!="inactive"
+  var action_keys: Array[String]=["LockedArt","GuardAction","EvadeAction",
+    "SwordAttack","SpiritBolt","SpiritWard","InteractAction"] if battling else [
+    "GatherAction","DashAction","DigAction","InteractAction","LockedArt"]
+  for id in _game_actions:
+    (_game_actions[id] as Button).visible=false
   for idx in range(action_keys.size()):
     var col: int=idx%4
     var row: int=int(idx/4)
-    (_game_actions[action_keys[idx]] as Button).position=Vector2(
-      size.x-392.0+float(col)*94.0,size.y-207.0+float(row)*66.0)
+    var active: Button=_game_actions[action_keys[idx]] as Button
+    active.visible=true
+    active.position=Vector2(size.x-394.0+float(col)*96.0,
+      size.y-145.0+float(row)*63.0)
+    active.size=Vector2(90,54)
+  _ui_compact_combat=battling
   if _target_panel!=null:
     # Keep target HUD BELOW the always-on first row of seven view toggles.
     # Previously it sat under those buttons and concealed its own MP bar.
@@ -1904,15 +1920,17 @@ func _layout_hud() -> void:
     _pad_hint.position=Vector2(16,139)
   if _root_exam_button!=null:
     var width: float=size.x
-    _root_exam_button.position=Vector2(width-392.0,size.y-271.0)
-    _meditate_button.position=Vector2(width-280.0,size.y-271.0)
-    _breakthrough_button.position=Vector2(width-168.0,size.y-271.0)
+    _root_exam_button.position=Vector2(width-392.0,size.y-218.0)
+    _meditate_button.position=Vector2(width-280.0,size.y-218.0)
+    _breakthrough_button.position=Vector2(width-168.0,size.y-218.0)
   if _living_seed_label!=null:
+    _living_seed_label.visible=dev
     _living_seed_label.position=Vector2(19,263)
   if _living_clock_label!=null:
     _living_clock_label.position=Vector2(19,172)
     _living_speed_button.position=Vector2(19,209)
     _local_ai_status_label.position=Vector2(127,217)
+    _local_ai_status_label.visible=dev
     _flight_altitude_label.position=Vector2(
       clampf(size.x*0.45,480.0,size.x-445.0),145)
 
@@ -3176,6 +3194,8 @@ func stats() -> Dictionary:
     "zoom_buttons":2,
     "pinch_events_real_input":_pinch_zoom_events,
     "visible_camera_shortcuts":8,
+    "kenney_cc0_ui_texture_count":_kenney_ui_asset_count,
+    "compact_combat_hotbar":_ui_compact_combat,
     "live_3d_target_lock_count":_lock_on_count,
     "target_lock_kind":_locked_target_kind,
     "target_lock_entity_id":_locked_target_id,
