@@ -375,8 +375,8 @@ jobs:
           git config user.name 'canglan-original-apk176-ota-release'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add android-preview/latest.json android-preview/canglan-content-rev-202.pck
-          git commit -m 'release(official): APK176 RSA signed REV202 spiritual root altar seeded 12 NPC Qi training [skip ci]'
-          # main may advance while QA runs; rebase ONLY if production is still rev199 or rev201.
+          git commit -m 'release(official): APK176 RSA signed REV202 flight UI and safe landing preserving cultivation [skip ci]'
+          # main may advance while QA runs; rebase ONLY if production is still rev201.
           for attempt in 1 2 3; do
             git fetch origin main
             python3 - <<'PY'
