@@ -135,6 +135,25 @@ func _capture() -> void:
   await RenderingServer.frame_post_draw
   var avatar: Node3D=player.get("actor")
   var head_point: Vector3=avatar.position+Vector3.UP*1.0
+  var actual_bounds: Vector2=room.call("_visible_bounds",avatar)
+  print("REV197_PLAYER_ACTUAL_CAMERA_RENDER_DIAG actor=",avatar.position,
+    " bounds=",actual_bounds," meshes=",avatar.find_children(
+    "*","MeshInstance3D",true,false).size()," camera=",camera.position,
+    " pixel_head=",camera.unproject_position(head_point),
+    " camera_cull=",camera.cull_mask)
+  for mesh_node in avatar.find_children("*","MeshInstance3D",true,false):
+    var mesh_part: MeshInstance3D=mesh_node as MeshInstance3D
+    var has_material: String=""
+    if mesh_part.mesh!=null and mesh_part.mesh.get_surface_count()>0:
+      var material: Material=mesh_part.get_active_material(0)
+      has_material=str(material)
+      if material is StandardMaterial3D:
+        var std: StandardMaterial3D=material
+        has_material+=" color="+str(std.albedo_color)+" transparency="+str(std.transparency)
+    print("REV197_PLAYER_MESH_DIAG name=",mesh_part.name,
+      " visible=",mesh_part.visible," visible_in_tree=",mesh_part.is_visible_in_tree(),
+      " local_aabb=",mesh_part.get_aabb()," glob_origin=",mesh_part.global_position,
+      " mat=",has_material)
   if not avatar.visible or camera.is_position_behind(head_point):
     _fail("REV197_THIRD_PERSON_AVATAR_ACTUALLY_INVISIBLE_IN_RENDERING_CAMERA")
     return
