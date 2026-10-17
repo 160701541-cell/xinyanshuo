@@ -22,6 +22,7 @@ REQUIRED = {
     "canglan_rev187/kenney_multimesh.gd",
     "canglan_rev187/strata_terrain.gd",
     "canglan_rev187/player_controller.gd",
+    "canglan_rev187/backpack.gd",
     "canglan_rev187/quality_profiles.gd",
     "canglan_rev187/Textures/colormap.png",
     "Textures/colormap.png",
@@ -37,6 +38,14 @@ EXPECTED_MODELS = {
     "canglan_rev187/animated_knight.glb": BASE_DIR / "game-source/godot3d/assets/free_cc0/quaternius_knight/public/models/knight.glb",
 }
 REQUIRED.update(EXPECTED_MODELS)
+# rev205 real open-source vectors must exactly match repository originals
+# and be bundled with complete ISC/MIT licensing (not remote CDN UI).
+UI_SOURCE = BASE_DIR / "game-source/apk176-ota177-candidate/ui/lucide"
+UI_ICONS = ("backpack","swords","crosshair","pickaxe","shield",
+            "book-open","house","compass","eye","move-3d","leaf","menu","zap")
+REQUIRED.update("canglan_rev187/ui/lucide/" + name + ".svg" for name in UI_ICONS)
+REQUIRED.add("canglan_rev187/ui/lucide/LICENSE")
+
 
 
 
@@ -89,6 +98,10 @@ def audit(path: Path) -> dict:
             raise ValueError("BLOCKED: corrupted GLB header " + model_path)
         if hashlib.sha256(value).hexdigest() != hashlib.sha256(source.read_bytes()).hexdigest():
             raise ValueError("BLOCKED: altered/non-licensed staged model " + model_path)
+    for filename in (*[name + ".svg" for name in UI_ICONS], "LICENSE"):
+        target = "canglan_rev187/ui/lucide/" + filename
+        assert found[target] == (UI_SOURCE / filename).read_bytes(), (
+            "BLOCKED: non-source or missing licensed UI vector " + filename)
     palette = found["canglan_rev187/Textures/colormap.png"]
     if palette[:8] != bytes.fromhex("89504e470d0a1a0a") or len(palette) < 128:
         raise ValueError("BLOCKED: official Kenney external palette is missing or corrupt")
