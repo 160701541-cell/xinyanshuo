@@ -32,8 +32,8 @@ def read_glb(path):
         offset+=8
         data=b[offset:offset+size]
         if len(data)!=size:raise ValueError("TRUNCATED_GLTF_CHUNK")
-        if tag==b"JSON":json_doc=json.loads(data.decode("utf-8").strip(" \\0"))
-        elif tag==b"BIN\\x00":binary=data
+        if tag==b"JSON":json_doc=json.loads(data.decode("utf-8").strip())
+        elif tag[:3]==b"BIN" and tag[3]==0:binary=data
         offset+=size
     if json_doc is None:raise ValueError("GLTF_HAS_NO_JSON")
     return json_doc,binary
