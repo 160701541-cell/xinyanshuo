@@ -12,6 +12,7 @@ const PlayerControl = preload("res://canglan_rev187/player_controller.gd")
 const ManualQuality = preload("res://canglan_rev187/quality_profiles.gd")
 const VividMaterials = preload("res://canglan_rev187/vivid_material.gd")
 const CultivationWorld = preload("res://canglan_rev187/cultivation_world.gd")
+const SpiritResources = preload("res://canglan_rev187/spirit_resources.gd")
 const ASSETS := {
   "tree": "res://canglan_rev187/tree_oak.glb",
   "stone": "res://canglan_rev187/rocks_small.glb",
@@ -96,6 +97,17 @@ var finished_prefab_sources: Dictionary={}
 var licensed_outfits: Dictionary={}
 var native_wildlife_sources: Dictionary={}
 var actual_wildlife: Dictionary={}
+var spirit_resources: RefCounted
+var spirit_resource_sources: Dictionary={}
+var spirit_resource_visuals: Dictionary={}
+const SPIRIT_CC0_SOURCES: Dictionary={
+  "flower":"res://canglan_rev187/cc0_spirit/herb/flower.glb",
+  "flower2":"res://canglan_rev187/cc0_spirit/herb/flower2.glb",
+  "flower3":"res://canglan_rev187/cc0_spirit/herb/flower3.glb",
+  "mushroom":"res://canglan_rev187/cc0_spirit/herb/mushroom.glb",
+  "bush":"res://canglan_rev187/cc0_spirit/herb/bush.glb",
+  "rock1":"res://canglan_rev187/cc0_spirit/ore/rock1.glb",
+  "rock2":"res://canglan_rev187/cc0_spirit/ore/rock2.glb"}
 var _wildlife_anim_count: int=0
 # rev197: cheap real world collisions for already-licensed instanced trunks
 # and stones; they follow harvesting/growth without duplicating GLB rendering.
@@ -147,9 +159,13 @@ func _ready() -> void:
   vivid_materials.call("initialize")
   _build_interface()
   _load_assets()
+  spirit_resources=SpiritResources.new()
+  if not bool(spirit_resources.call("initialize")):
+    asset_errors.append("REV206_SPIRIT_RESOURCES_SAVE_LOAD_FAILED")
   _initialize_batches()
   _create_landscape()
   _seed_resources()
+  _spawn_spirit_resource_nodes()
   _place_completed_cc0_village()
   _make_workers()
   # Assign a real resident identity to the completed, placeable licensed
@@ -571,6 +587,17 @@ func _load_assets() -> void:
     asset_errors.append("REV199_MISSING_REAL_CC0_HAIR_SWORD_NOT_SELF_MODELED")
   # Complete and licensed models are checked by SHA256 at packaging. No
   # "if missing, procedurally rebuild" fallback: missing assets BLOCK the QA.
+  # Source CC0 textured flowers, fungus, bushes and complete mineral rocks.
+  # Users should see real meshes and embedded vendor PBR/material textures.
+  for model_id in SPIRIT_CC0_SOURCES:
+    var source: Node3D=_parse_existing_cc0(
+      String(SPIRIT_CC0_SOURCES[model_id]))
+    if source==null:
+      asset_errors.append("REV206_SPIRIT_MESH_NOT_GENUINE_"+String(model_id))
+      continue
+    vivid_materials.call("upgrade_completed_cc0_model",source,
+      String(model_id),"natural_source")
+    spirit_resource_sources[model_id]=source
   for model_id in READY_MADE_CC0:
     var original: Node3D=_parse_existing_cc0(
       String(READY_MADE_CC0[model_id]))
@@ -634,6 +661,109 @@ func _place_completed_cc0_village() -> void:
     finished_prefabs[instance.name]=instance
   _add_event("村落使用%d座完整CC0房屋和亭阁；旧脚手架施工停止" % [
     finished_prefabs.size()])
+
+func _spawn_spirit_resource_nodes() -> void:
+  if spirit_resources==null or not bool(spirit_resources.get("_loaded")):
+    return
+  var records: Dictionary=spirit_resources.get("nodes")
+  var recipes: Dictionary=SpiritResources.RESOURCE_DEFS
+  for id in records:
+    var data: Dictionary=records[id]
+    var kind: String=String(data["kind"])
+    var prefab: String=String(recipes[kind]["prefab"])
+    if not spirit_resource_sources.has(prefab):
+      asset_errors.append("REV206_SPIRIT_RESOURCE_NO_CC0_"+prefab)
+      continue
+    var original: Node3D=spirit_resource_sources[prefab]
+    var model: Node3D=original.duplicate()
+    model.name=String(id)
+    var x: float=float(data["x"])
+    var z: float=float(data["z"])
+    model.position=Vector3(x,float(
+      terrain_world.call("height_at",x,z)),z)
+    model.set_meta("rev206_actual_world_ore_or_herb",kind)
+    model.set_meta("source_license","Quaternius-CC0")
+    model.set_meta("world_entity_id",String(id))
+    world.add_child(model)
+    var b: Vector2=_visible_bounds(model)
+    var current_height: float=b.y-b.x
+    var target_height: float=1.25 if kind=="spirit_stone" else (
+      0.72 if kind=="mushroom" else 0.85)
+    if current_height>0.05:
+      model.scale*=clampf(target_height/current_height,0.05,6.0)
+      b=_visible_bounds(model)
+      model.position.y+=float(
+        terrain_world.call("height_at",x,z))-b.x
+    # Vendor base-color texture/normal/roughness remains in effect. A
+    # carefully colored mineral luminescence makes ore distinguishable.
+    if kind=="spirit_stone":
+      for child in model.find_children("*","MeshInstance3D",true,false):
+        var mesh: MeshInstance3D=child as MeshInstance3D
+        if mesh.mesh==null:
+          continue
+        for surface in range(mesh.mesh.get_surface_count()):
+          var previous: Material=mesh.get_active_material(surface)
+          if previous is StandardMaterial3D:
+            var mat: StandardMaterial3D=(previous as StandardMaterial3D).duplicate(
+              true) as StandardMaterial3D
+            mat.albedo_color=mat.albedo_color.lerp(Color("#329f9a"),0.48)
+            mat.emission_enabled=true
+            mat.emission=Color("#3ad1bf")
+            mat.emission_energy_multiplier=0.72
+            mesh.set_surface_override_material(surface,mat)
+    var tag:=Label3D.new()
+    tag.name="ActualRespawningWildHerbOrSpiritOre"
+    tag.text=String(recipes[kind]["display"])
+    tag.font_size=38
+    tag.pixel_size=0.012
+    tag.billboard=BaseMaterial3D.BILLBOARD_ENABLED
+    tag.modulate=Color(String(recipes[kind]["color"]))
+    tag.outline_size=7
+    tag.no_depth_test=false
+    tag.position=Vector3(0,2.1,0)
+    tag.visible=false
+    model.add_child(tag)
+    model.visible=int(data["remaining"])>0
+    spirit_resource_visuals[id]={"model":model,"caption":tag,
+      "kind":kind,"display":String(recipes[kind]["display"])}
+  _add_event("已生成%d株实体野生灵药/矿脉；全部由实际CC0花草岩石绘制" % [
+    spirit_resource_visuals.size()])
+
+func _sync_spirit_resource_visuals(hero: Node3D=null) -> void:
+  if spirit_resources==null:
+    return
+  var ledger: Dictionary=spirit_resources.get("nodes")
+  for id in spirit_resource_visuals:
+    var visual: Dictionary=spirit_resource_visuals[id]
+    var entity: Node3D=visual["model"]
+    if not is_instance_valid(entity):
+      continue
+    var remaining: int=int(ledger[id]["remaining"])
+    entity.visible=remaining>0
+    var tag: Label3D=visual["caption"]
+    if entity.visible and hero!=null:
+      var distance: float=Vector2(
+        entity.position.x-hero.position.x,
+        entity.position.z-hero.position.z).length()
+      tag.visible=distance<7.0
+      if tag.visible:
+        tag.text=String(visual["display"])+" ×%d [采集]" % remaining
+    else:
+      tag.visible=false
+
+func harvest_real_spirit_resource(point: Vector3,
+    backpack: RefCounted) -> Dictionary:
+  if spirit_resources==null or not bool(spirit_resources.get("_loaded")):
+    return {"ok":false,"reason":"NO_REAL_RESOURCE_WORLD"}
+  var nearest: Dictionary=spirit_resources.call(
+    "get_nearest_resource",point,3.1)
+  if nearest.is_empty():
+    return {"ok":false,"reason":"NO_NEARBY_SPIRIT_RESOURCE"}
+  var response: Dictionary=spirit_resources.call(
+    "harvest",String(nearest["id"]),backpack)
+  if bool(response.get("ok",false)):
+    _sync_spirit_resource_visuals()
+  return response
 
 func _spawn_native_animals() -> void:
   # At most four active true animated animals. The offscreen population of
@@ -1174,6 +1304,8 @@ func _process(delta: float) -> void:
     eco.advance_ecology_hours(1)
     if cultivation!=null:
       cultivation.call("advance_world_hour")
+    if spirit_resources!=null:
+      spirit_resources.call("advance_world_hour")
     _total_accelerated_hours+=1
     advanced+=1
   if advanced>0:
@@ -1210,6 +1342,7 @@ func _process(delta: float) -> void:
     _sync_resource_collisions()
   if _clock >= 0.5:
     _clock=0.0
+    _sync_spirit_resource_visuals(hero)
     _update_status()
     _hide_original_debug_labels()
     if quality!=null:
@@ -1267,6 +1400,9 @@ func stats() -> Dictionary:
     "rev206_perpetual_house_construction_retired":true,
     "rev206_cc0_completed_building_count":finished_prefabs.size(),
     "rev206_native_wildlife_count":actual_wildlife.size(),
+    "rev206_real_spirit_herbs_ore":spirit_resources.call("stats") if spirit_resources!=null else {},
+    "rev206_world_spirit_resource_visuals":spirit_resource_visuals.size(),
+    "rev206_licensed_spirit_plant_rock_sources":spirit_resource_sources.size(),
     "rev206_native_animated_wildlife_count":_wildlife_anim_count,
     "rev206_outfit_source_count":licensed_outfits.size(),
     "rev206_completed_house_occupancy":(finished_prefabs.get(
@@ -1456,7 +1592,7 @@ func _exit_tree() -> void:
   # a real source lifetime fix, not hiding/suppressing engine ERROR logs.
   var unique_sources: Dictionary={}
   for collection in [finished_prefab_sources,licensed_outfits,
-      native_wildlife_sources]:
+      native_wildlife_sources,spirit_resource_sources]:
     for original in (collection as Dictionary).values():
       if original is Node3D and is_instance_valid(original):
         unique_sources[(original as Node3D).get_instance_id()]=original
@@ -1466,5 +1602,7 @@ func _exit_tree() -> void:
   finished_prefab_sources.clear()
   licensed_outfits.clear()
   native_wildlife_sources.clear()
+  spirit_resource_sources.clear()
+  spirit_resource_visuals.clear()
   _hidden_game_world.clear()
   _old_profiler_nodes.clear()
