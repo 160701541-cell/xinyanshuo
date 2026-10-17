@@ -1674,6 +1674,42 @@ func _run() -> void:
   if spirit_npcs.size()!=12 or spirit_records.size()!=12 or int(world_report.get("physical_cultivator_colliders",0))!=12:
     _fail(264,"REV201_NPCS_MISSING_INDEPENDENT_ENTITY_ID_HOURLY_AUTHORITY_OR_PHYSICAL_COLLIDERS")
     return
+  # rev207: existing 12 genuine 3D cultivators are named sect disciples or
+  # freely wandering practitioners, rather than 12 undifferentiated clones.
+  var live_world: RefCounted=room.get("world_society")
+  var actual_sects: Dictionary=live_world.get("sects")
+  var joined: int=0
+  var independent: int=0
+  var real_skills: Dictionary={}
+  for named_id in spirit_records:
+    var profile: Dictionary=spirit_records[named_id]
+    var sect_id: String=String(profile.get("rev207_sect_id",""))
+    var discipline: String=String(profile.get("rev207_discipline",""))
+    var actual_model: Node3D=spirit_npcs[named_id]["actor"]
+    if sect_id=="":
+      independent+=1
+    else:
+      if not actual_sects.has(sect_id):
+        _fail(366,"REV207_VISIBLE_SECT_MEMBER_NOT_REGISTERED_IN_ACTUAL_WORLD_"+sect_id)
+        return
+      joined+=1
+    if discipline=="" or String(actual_model.get_meta(
+        "rev207_discipline",""))!=discipline or (
+        String(actual_model.get_meta("rev207_sect_id",""))!=sect_id):
+      _fail(367,"REV207_ACTUAL_CC0_CULTIVATOR_SECT_AND_CRAFT_NOT_ATTACHED_"+named_id)
+      return
+    real_skills[discipline]=true
+  if joined<6 or independent<2 or real_skills.size()<8:
+    _fail(368,"REV207_12_VISIBLE_CULTIVATORS_NOT_DIVERSE_SECT_AND_CRAFT_SOCIAL_AGENTS")
+    return
+  var mortals: Dictionary=room.get("sim").get("citizens")
+  for manual_id in ["CL-NPC-0184-01","CL-NPC-0184-02","CL-NPC-0184-03"]:
+    var regular: Dictionary=mortals[manual_id]
+    if not bool(regular.get("body_training_allowed",false)) or (
+        not regular.has("root_profile")):
+      _fail(369,"REV207_ORDINARY_NPC_NOT_ELIGIBLE_FOR_SPIRITROOTLESS_BODY_TRAINING_"+manual_id)
+      return
+  print("PASS_REV207_ACTUAL_12_LICENSED_3D_CULTIVATORS_HAVE_NAMED_SECTS_14_DISCIPLINES_AND_ROOTLESS_WORKER_BODY_PATH")
   var spiritual_bars: Dictionary=spir.get("npc_vitals_bars")
   for spirit_id in spirit_npcs:
     var spirit_avatar: Node3D=spirit_npcs[spirit_id]["actor"]
