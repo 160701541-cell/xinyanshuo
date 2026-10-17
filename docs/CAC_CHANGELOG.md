@@ -1,5 +1,10 @@
 # CAC 工序变更与开发日志
 
+## 2026-10-18 / CAC-REV207-SHRUB-MULTIMESH-ZERO-BASIS / 原生GPU实例隐藏陷阱
+- 严格原APK176 Main QA `39062088006`/精确数值追踪 `39062242184` 仍为 **FAIL**，并已获得真实Godot失败数据：本应隐藏的0号灌木GPU实例竟回读为`Basis.IDENTITY, origin=(0,0,0)`，而原始授权GLB的正常植株应具有作者90°旋转和世界位置`(17.606,0.639,10.827)`。这会导致采挖地表后植物跑到世界原点，不是纹理丢失或普通GLB原型错误。
+- 源修复 `6558affe42d6c8edd91bc4098318738a38a5846d`：矿场被挖后不再给Godot4.4 MultiMesh传非可逆零缩放变换，而用合法可逆的0.0001倍细微尺寸网格放在地面下6米。修复需对比全部源mesh的变换、真实可种植土壤和挖掘后有根系消失的严格QA；未通过前不能合并或发rev207。
+
+
 ## 2026-10-18 / CAC-REV207-LIVE-EXCAVATED-SHRUBS / 草木不能长在被挖走的地上
 - 严格原APK176 Main QA `39061896938` 返回 **FAIL**：`REV207_REAL_CC0_SHRUB_ON_PATH_POND_OR_CUT_SOIL`。实际问题是用户挖矿/挖地后，授权Quaternius灌木的初始GPU实例仍保留，可能飘在已挖地表；不能靠删掉检测“通过”。
 - 修复`d4265b4557050b7ce71c0b526272e3ab01f85910`：每个原厂MeshInstance3D复制为MultiMesh批绘时保存真实土壤位置与原作者GLB本地坐标变换，监听原Godot真实地层`terrain_cell_changed`，在挖开的地块即时更新所有灌木子网格，取消已经不再适合生长的GPU实例；其余森林和房屋位置不能被改动。
