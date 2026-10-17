@@ -62,6 +62,30 @@ func _audit_visible_ground() -> bool:
     return false
   return true
 
+func _assert_rendered_character_pixels(label: String) -> bool:
+  # The original QA only inspected the scene tree and projected a headpoint.
+  # Those tests PASSED WHILE THE ACTUAL HERO WAS 100% TRANSPARENT.
+  # The photo below must contain dark-colored Knight armor in a true 3D
+  # framebuffer rectangle around the player; empty light soil is a failure.
+  var frame: Image=get_root().get_texture().get_image()
+  if frame==null or frame.is_empty() or frame.get_width()<900:
+    return false
+  var dark_samples: int=0
+  var palette: Dictionary={}
+  for yy in range(290,445,3):
+    for xx in range(578,704,3):
+      var sample: Color=frame.get_pixel(xx,yy)
+      if sample.get_luminance()<0.50:
+        dark_samples+=1
+      palette[sample.to_html(false)]=true
+  print("REV198_GENUINE_SCREEN_RENDERED_PLAYER_PIXEL_AUDIT ",label,
+    " opaque_dark_samples=",dark_samples," color_variety=",palette.size())
+  if dark_samples<34 or palette.size()<45:
+    printerr("FAIL_REV198_RENDERED_PLAYER_IS_STILL_INVISIBLE_NOT_MERE_SCENE_NODE ",label,
+      " dark=",dark_samples," distinct=",palette.size())
+    return false
+  return true
+
 func _capture() -> void:
   var out: String=OS.get_environment(OUT_ENV)
   var pack: String=OS.get_environment(PACK_ENV)
@@ -160,6 +184,9 @@ func _capture() -> void:
   if not _save("real_apk176_rev197_licensed_player_visible_close.png"):
     _fail("REV197_ACTUAL_THIRD_PERSON_FRAME_NOT_CAPTURED")
     return
+  if not _assert_rendered_character_pixels("third_close"):
+    _fail("REV198_TRUE_OPAQUE_CHARACTER_PIXELS_MISSING_FROM_THIRD_VIEW")
+    return
   player.call("toggle_iso45")
   player.call("update_camera")
   for i in range(8):
@@ -171,6 +198,10 @@ func _capture() -> void:
   if not _save("real_apk176_rev197_follow_player_45deg_view.png"):
     _fail("REV197_REAL_45DEG_FRAME_NOT_CAPTURED")
     return
+  if not _assert_rendered_character_pixels("follow_45deg"):
+    _fail("REV198_TRUE_OPAQUE_CHARACTER_PIXELS_MISSING_FROM_45DEG_VIEW")
+    return
+  print("PASS_REV198_ACTUAL_OPAQUE_AVATAR_PIXELS_RENDER_IN_REAL_3D_THIRD_PERSON_AND_45DEG")
   print("PASS_REV197_ORIGINAL_GODOT_ENGINE_VISIBLE_ANIMATED_PLAYER_CLOSE_AND_45DEG_REAL_FRAMES")
   print("PASS_REV187_TWO_GENUINE_ENGINE_RENDERED_WORKSITE_FRAMES_NOT_PHONE_TESTS")
   base.queue_free()
