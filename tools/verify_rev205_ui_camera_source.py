@@ -26,7 +26,7 @@ def validate() -> None:
         "AuthenticKenneyMobileControlsCC0_",
         "func toggle_target_lock() -> bool",
         "func _step_target_lock(delta: float) -> void:",
-        'var quick_keys: Array[String]=["Iso45Button"',
+        'var quick_keys: Array=["Iso45Button"',
         '"TargetLockButton"',
         'clampf(_pitch+speed_y,-1.31,1.52)',
         'clampf(_pitch-speed_y,-1.49,1.49)',
