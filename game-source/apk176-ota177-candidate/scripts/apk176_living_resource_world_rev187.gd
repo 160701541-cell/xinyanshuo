@@ -67,6 +67,9 @@ var animation_report: Dictionary = {}
 var asset_errors: Array[String] = []
 var asset_sources: Dictionary = {}
 var natural_meshes: Dictionary = {}
+# rev197: cheap real world collisions for already-licensed instanced trunks
+# and stones; they follow harvesting/growth without duplicating GLB rendering.
+var natural_colliders: Dictionary = {}
 var workers: Dictionary = {}
 var _hidden_game_world: Array[Node3D] = []
 var _clock: float = 0.0
@@ -461,18 +464,58 @@ func _place_asset(role: String, id: String, target: Vector3, scale_factor: float
       part.position.y = minf(foot,-0.68)
   part.set_meta("provider", "VERIFIED_EXISTING_CC0")
   part.set_meta("material_role", role)
-  if id.begins_with("NPCPlacedTimber_") or id.begins_with("NPCAssembledFence_") or id.begins_with("NPCInstalledLicensedDoor") or id.begins_with("NPCStoneFoundation_"):
+  if role in ["tree","stone"]:
+    _register_resource_collision(id,part,role)
+  if role=="steps" or id.begins_with("NPCPlacedTimber_") or id.begins_with("NPCAssembledFence_") or id.begins_with("NPCInstalledLicensedDoor"):
     _register_camera_occluder(id,part,role)
   return part
+
+func _register_resource_collision(id: String,proxy: Node3D,role: String) -> void:
+  var body:=StaticBody3D.new()
+  body.name="ActualPhysicalNaturalResource_"+id
+  body.collision_layer=2
+  body.collision_mask=0
+  var shape:=CollisionShape3D.new()
+  shape.name="TrunkOrRockSolidCollider"
+  if role=="tree":
+    var trunk:=CylinderShape3D.new()
+    trunk.radius=0.36
+    trunk.height=2.25
+    shape.shape=trunk
+    body.position=proxy.position+Vector3(0,1.125,0)
+  else:
+    var stone:=SphereShape3D.new()
+    stone.radius=0.70
+    shape.shape=stone
+    body.position=proxy.position+Vector3(0,0.42,0)
+  body.add_child(shape)
+  world.add_child(body)
+  body.set_meta("source_entity_id",id)
+  natural_colliders[id]=body
+
+func _sync_resource_collisions() -> void:
+  for id in natural_colliders:
+    var body: StaticBody3D=natural_colliders[id]
+    if not is_instance_valid(body) or not natural_meshes.has(id):
+      continue
+    var visual: Node3D=natural_meshes[id]
+    if not is_instance_valid(visual):
+      body.collision_layer=0
+      continue
+    body.collision_layer=2 if visual.visible else 0
+    var scale_amount: float=clampf(visual.scale.x,0.10,1.8)
+    body.scale=Vector3.ONE*scale_amount
 
 func _register_camera_occluder(entity_id: String, proxy: Node3D, role: String) -> void:
   # Actual licensed model draw remains batched; only a cheap physics proxy
   # is attached so the camera CANNOT clip through building walls/doors.
   var box:=StaticBody3D.new()
   box.name="ConstructionOccluder_"+entity_id
-  box.collision_layer=2
+  # Ordinary construction walls stop both camera and player. Staircases
+  # are WALKABLE ramps on bit 4, not impenetrable 1m-high cubic barriers.
+  box.collision_layer=4 if role=="steps" else 2
   box.collision_mask=0
-  box.position=proxy.position+Vector3(0,0.8,0)
+  box.position=proxy.position+(Vector3(0,0.48,0) if role=="steps" else Vector3(0,0.8,0))
   var shape:=CollisionShape3D.new()
   var form:=BoxShape3D.new()
   if role=="fence":
@@ -480,7 +523,8 @@ func _register_camera_occluder(entity_id: String, proxy: Node3D, role: String) -
   elif role=="door":
     form.size=Vector3(1.6,2.4,0.52)
   elif role=="steps":
-    form.size=Vector3(1.6,1.0,1.6)
+    form.size=Vector3(1.60,0.18,2.0)
+    shape.rotation_degrees.x=18.0
   else:
     form.size=Vector3(0.75,2.1,0.75)
   shape.shape=form
@@ -885,6 +929,7 @@ func _process(delta: float) -> void:
     # Dynamic finite-resource growth/depletion and staged construction remain
     # visible without 1 mesh per tree/rock or 1 draw call per object.
     batch_renderer.call("sync_all")
+    _sync_resource_collisions()
   if _clock >= 0.5:
     _clock=0.0
     _update_status()
@@ -957,6 +1002,8 @@ func stats() -> Dictionary:
     "old_fixed_five_swatch_rule_removed":true,
     "nonoverlap_collapsible_diagnostics":true,
     "kenney_batch": batch_renderer.call("stats"),
+    "real_resource_collision_count":natural_colliders.size(),
+    "walkable_stair_ramp":world.get_node_or_null("ConstructionOccluder_LicensedWorksiteVisibleStoneApproach")!=null,
     "base_3d_lights": world.find_children("*", "DirectionalLight3D", true, false).size(),
     "performance_draw_reference": int(quality.call("render_profile").get("draw_reference",800)) if quality!=null else 800,
     "performance_triangle_reference": int(quality.call("render_profile").get("triangle_reference",600000)) if quality!=null else 600000,
