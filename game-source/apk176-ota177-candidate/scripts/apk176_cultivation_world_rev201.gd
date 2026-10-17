@@ -52,10 +52,8 @@ func initialize(active_room: Node) -> void:
   root_catalog=RootTaxonomy.new()
   city_population=CityPopulation.new()
   city_population.call("initialize",root_catalog)
-  # A single large off-screen city uses COUNTS only. Never try to spawn
-  # 10000..250000 Android Node3D instances or fake a visible giant city.
-  city_population.call("create_city",
-    "CL-CITY-HEXI-0001",20261017,80000)
+  # A single large off-screen city uses COUNTS only, preserved inside the
+  # existing rev201 cultivation save after its seed has been restored.
   _load_or_initialize()
   _build_existing_stone_exam_altar()
   _generate_actual_visible_cultivators()
@@ -90,6 +88,14 @@ func _load_or_initialize() -> void:
     player_data=_default_player()
     npc_data={}
     total_hours=0
+  var census_stored: Dictionary=parsed.get("city_population",{}) if parsed is Dictionary else {}
+  if census_stored.has("CL-CITY-HEXI-0001") and int(
+      census_stored["CL-CITY-HEXI-0001"].get("population",0))>=10000 and int(
+      census_stored["CL-CITY-HEXI-0001"].get("population",0))<=250000:
+    city_population.set("cities",census_stored.duplicate(true))
+  else:
+    city_population.call("create_city","CL-CITY-HEXI-0001",
+      world_seed,80000)
   # Backward compatible: preserve a rev201 save and learn the arts from
   # already-reached milestones instead of resetting progress on hot update.
   if not player_data.has("known_arts"):
@@ -168,7 +174,27 @@ func _load_or_initialize() -> void:
     original["health"]=int(original["max_health"])
     original["max_mana"]=12+layer*9 if String(original["realm"])=="炼气" else 0
     original["mana"]=int(original["max_mana"])
+  _ensure_all_existing_world_citizens_have_roots()
   save_state()
+
+func _ensure_all_existing_world_citizens_have_roots() -> void:
+  # Three original live workers and the hero are actual named citizens,
+  # not "rootless because their public realm is mortal".
+  for person_id in sim.citizens:
+    var citizen: Dictionary=sim.citizens[person_id]
+    if person_id=="CL-PLAYER-0184-0001":
+      citizen["root_profile"]=player_data.get(
+        "latent_root_profile",{}).duplicate(true)
+    elif not citizen.has("root_profile"):
+      var profession: String=String(citizen.get("profession","citizen"))
+      var origin: String="bonded_labor" if profession in [
+        "bonded_labor","enslaved_labor","recruitable_servant"] else "citizen"
+      citizen["root_profile"]=root_catalog.call(
+        "generate",world_seed,String(person_id),origin)
+    citizen["has_root"]=bool(citizen["root_profile"].get("has_root",false))
+    if person_id=="CL-PLAYER-0184-0001" or not String(
+        citizen.get("profession","")).contains("bonded"):
+      assert(citizen["has_root"])
 
 func _entity_rng(code: String) -> RandomNumberGenerator:
   var state: int=world_seed
@@ -451,6 +477,10 @@ func player_breakthrough() -> Dictionary:
 
 func advance_world_hour() -> void:
   total_hours+=1
+  # True statistical city life uses the SAME hour ticker as all 12 live NPCs,
+  # but advances aggregate 80k population only once per simulated day.
+  if city_population!=null and total_hours%24==0:
+    city_population.call("advance_city_day","CL-CITY-HEXI-0001")
   # This is the same sim.tick() hour already advanced by the original world
   # clock. No second phantom clock can advance qi without economic time.
   if bool(player_data.get("meditating",false)) and (
@@ -630,7 +660,8 @@ func save_state() -> bool:
     return false
   var data: Dictionary={"schema":SCHEMA,"world_seed":world_seed,
     "player":player_data,"npcs":npc_data,
-    "whole_world_cultivation_hours":total_hours}
+    "whole_world_cultivation_hours":total_hours,
+    "city_population":city_population.get("cities").duplicate(true) if city_population!=null else {}}
   var json: String=JSON.stringify(data)
   var temp: String=SAVE_PATH+".tmp"
   var stream:=FileAccess.open(temp,FileAccess.WRITE)
