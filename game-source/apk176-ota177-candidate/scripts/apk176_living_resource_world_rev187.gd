@@ -517,6 +517,7 @@ func _register_camera_occluder(entity_id: String, proxy: Node3D, role: String) -
   box.collision_mask=0
   box.position=proxy.position+(Vector3(0,0.48,0) if role=="steps" else Vector3(0,0.8,0))
   var shape:=CollisionShape3D.new()
+  shape.name="TrueWalkableStairRampCollision" if role=="steps" else "TrueConstructedWallCollision"
   var form:=BoxShape3D.new()
   if role=="fence":
     form.size=Vector3(1.65,1.7,0.42)
