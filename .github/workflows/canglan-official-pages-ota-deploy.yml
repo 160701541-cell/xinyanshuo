@@ -6,6 +6,10 @@ on:
       - 'android-preview/latest.json'
       - 'android-preview/canglan-content-rev-*.pck'
       - 'tools/verify_original_current_ota_http.py'
+      - 'docs/CAC_CHANGELOG.md'
+      - 'data/updates.json'
+      - 'data/development.json'
+      - 'site.js'
       - '.github/workflows/canglan-official-pages-ota-deploy.yml'
   workflow_dispatch:
 permissions:
@@ -35,6 +39,13 @@ jobs:
           for dir in android-preview art data assets images media; do
             if [ -d "$dir" ]; then cp -a "$dir" /tmp/canglan-pages/; fi
           done
+          # Copy only the public, source-backed game development changelog,
+          # not private QA or secret-bearing docs. site.js needs this file
+          # to show the real most-recent commit instead of stale dev177.
+          mkdir -p /tmp/canglan-pages/docs
+          cp docs/CAC_CHANGELOG.md /tmp/canglan-pages/docs/CAC_CHANGELOG.md
+          test -s /tmp/canglan-pages/docs/CAC_CHANGELOG.md
+          grep -Fq 'CAC-3D-206-LIVE' /tmp/canglan-pages/docs/CAC_CHANGELOG.md
           test -s /tmp/canglan-pages/index.html
           test -s /tmp/canglan-pages/android-preview/latest.json
           python3 - <<'PY'
@@ -48,7 +59,13 @@ jobs:
           assert p.is_file(), 'Missing EXACT current OTA PCK in site'
           assert p.stat().st_size==m['size_bytes']
           assert hashlib.sha256(p.read_bytes()).hexdigest()==m['sha256']
+          assert (pathlib.Path('/tmp/canglan-pages/docs/CAC_CHANGELOG.md')).stat().st_size > 500
+          release=json.loads((pathlib.Path('/tmp/canglan-pages/data/updates.json')).read_text())
+          assert release['entries'][0]['revision']==rev
+          assert release['entries'][0]['sha256']==m['sha256']
+          assert release['entries'][0]['remote_https_verified'] is True
           print('PASS_PAGES_SITE_CONTAINS_SIGNED_ORIGINAL_OTA',rev,m['sha256'])
+          print('PASS_PAGES_REAL_LATEST_CAC_DEVELOPMENT_AND_RSA_VERIFIED_REVISION_VISIBLE',rev)
           PY
       - uses: actions/configure-pages@v5
       - name: Upload actual official website including current signed APK176 PCK as Pages artifact
