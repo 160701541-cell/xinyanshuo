@@ -1,5 +1,11 @@
 # CAC 工序变更与开发日志
 
+## 2026-10-18 / CAC-P0-HQ-WORLDX-REAL-CANDIDATE-001-REJECTED / 第一张真正WorldX主角母版只达近景发型脸部，不能充当全身4视素材
+- **真实WorldX跑通**：原代码 `tools/asset_factory/worldx_rev208_hq_character_v2.mjs` 在公开仓库 GitHub Actions run `39067928097` **SUCCESS**；下载真实 1024×1024 PNG `player_front_001.png` SHA256 `e22e514fd69729ee173afdf4a126ba851ec83bcf4f078817ecdc9f613239160d`；固定上游`YGYOOO/WorldX@edb4976d` prompt-loader，使用已配置的SiliconFlow Kolors图像API，最多一张，图/元数据/提示词保存于未批准Artifact `12114455139`。是真 WorldX 实际输出而非GPT自制图/引擎截图。
+- **人工视觉审查结果**：发髻、簪、青绿层叠古风服装和面部质感相较旧Knight明显好；**但人物只显示到胸腰，双腿/靴子/剑下段都缺失，不能作4视统一角色或可蒙皮素材；图片右下角有官方“AI生成”可见标注**。因此此素材严格`ART_REJECTED_FULL_BODY_CROP / NOT_GAME_READY`，不能宣称HQ-Character PASS或剪裁进PCK。第三方生成条款仍需核验。
+- **定向修正**：新增严格全身版 `worldx_rev208_hq_character_fullbody_v2.mjs`，PNG尺寸改为有API支持的**768×1024竖构图**，明确人物仅占画高65–72%、上下留白≥12%、靴子可见、正交全身A-pose，并将胸像/近景/截足列为提供方独立negative_prompt；仅准**第二次单张**带真实供应商追溯，并以新`player_full_body_002` ID避免覆盖首张和隐性付费重试。对应 QA workflow `canglan-rev208-hq-character-worldx-fullbody-qa.yml`；实际引擎高精角色和三视素材尚不存在，正式rev207不动。
+- **客观限制**：图像模型显式AI生成标识属供应商默认行为，禁止假装“没水印”；概念图可以保留来源标识供审核，正式材质下游需遵守供应商条款与相应标识义务，绝不能偷换为Godot游戏实机证据。
+
 ## 2026-10-18 / CAC-P0-HQ-ART-LOCK-AND-NAMED-MORTALITY-CENSUS / 直接执行用户最高P0：真WorldX尝试及修士死亡扣地区人口
 - **HQ-Art-Lock #001 真实接入**：新增 `tools/asset_factory/worldx_rev208_hq_character_v2.mjs` + `test_worldx_rev208_hq_character_v2.mjs` + `.github/workflows/canglan-rev208-hq-character-worldx-v2-qa.yml`，使用公开仓库先前验证过的**固定WorldX上游 prompt-loader** 与 SiliconFlow/Kolors API，固定单次最多生成**一张高精国风男性主角正面全身母版**，附提示词、原像素文件、SHA、运行号；密钥由 GitHub Actions Secret 提供，缺失 `BLOCKED_PROVIDER`，不得自动付费重试。图片记录状态必须是 `GENERATED_UNAPPROVED`，禁止说已接高精GLB或通过审美/手机；此轮执行结果需单独检查真实 CI。
 - **Combat-Life #031 地区人口连动真实源码增量**：`apk176_living_regions_rev207.gd` 增加首次死亡的唯一修士ID死亡账本 `named_deaths`，可根据被杀修士炼气或炼体身份从现有500区/5000人统计池中依法扣除一名成年人、根性/炼体存量、地区死亡数与总死亡数，带事务前后守恒核验和原子存盘；重复死因回调不会再次扣人口。`apk176_cultivation_world_rev201.gd` 在真正HP归零前调用世界死亡账本，记录身份、死亡世界时辰、死亡地区；下次初始化时即使被中断，也以持久地区死亡记录纠正人形状态防止复活。原Main `apk176_living_resource_world_rev187.gd` 主场景真正接入启动对账；原真实QA `verify_original_main_quality_rev187.gd` 加入地区账本精确 `-1`、重复杀害不可二次扣减、地区文件加载和测试恢复检查。
