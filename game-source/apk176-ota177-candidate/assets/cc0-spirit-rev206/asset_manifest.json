@@ -1,0 +1,80 @@
+{
+  "schema": 206,
+  "release_role": "source-audited distinct herb vegetation and spirit ore physical bodies",
+  "license": "CC0-1.0",
+  "origin": "Quaternius",
+  "mirror": "Papyszoo/CC0-Public-Domain-Models",
+  "upstream": "https://github.com/Papyszoo/CC0-Public-Domain-Models",
+  "models": [
+    {
+      "pack": "quaternius-texturedfantasynature",
+      "name": "flower",
+      "blob_sha1": "3d3b7abbe3db49b8d70534343a07186aba135fed",
+      "bytes": 143968,
+      "role": "herb",
+      "upstream_path": "packs/quaternius-texturedfantasynature/models/flower/flower.glb",
+      "destination": "game-source/apk176-ota177-candidate/assets/cc0-spirit-rev206/herb/flower.glb",
+      "status": "pending_source_retrieval_and_original_godot_import"
+    },
+    {
+      "pack": "quaternius-texturedfantasynature",
+      "name": "flower2",
+      "blob_sha1": "8e0f4b60c150e71f3c03a8134494225d15c9a67e",
+      "bytes": 148136,
+      "role": "herb",
+      "upstream_path": "packs/quaternius-texturedfantasynature/models/flower2/flower2.glb",
+      "destination": "game-source/apk176-ota177-candidate/assets/cc0-spirit-rev206/herb/flower2.glb",
+      "status": "pending_source_retrieval_and_original_godot_import"
+    },
+    {
+      "pack": "quaternius-texturedfantasynature",
+      "name": "flower3",
+      "blob_sha1": "ea0e6e509951f6cfa671e0c8d24c6e98ebf52087",
+      "bytes": 149992,
+      "role": "herb",
+      "upstream_path": "packs/quaternius-texturedfantasynature/models/flower3/flower3.glb",
+      "destination": "game-source/apk176-ota177-candidate/assets/cc0-spirit-rev206/herb/flower3.glb",
+      "status": "pending_source_retrieval_and_original_godot_import"
+    },
+    {
+      "pack": "quaternius-texturedfantasynature",
+      "name": "mushroom",
+      "blob_sha1": "557025b5f0a99bd420c0fbac5ab50dffc2821da4",
+      "bytes": 141788,
+      "role": "herb",
+      "upstream_path": "packs/quaternius-texturedfantasynature/models/mushroom/mushroom.glb",
+      "destination": "game-source/apk176-ota177-candidate/assets/cc0-spirit-rev206/herb/mushroom.glb",
+      "status": "pending_source_retrieval_and_original_godot_import"
+    },
+    {
+      "pack": "quaternius-texturedfantasynature",
+      "name": "bush",
+      "blob_sha1": "2f3cad58a2ecea96dc1b9f87f43ff8fa27de8c87",
+      "bytes": 162756,
+      "role": "herb",
+      "upstream_path": "packs/quaternius-texturedfantasynature/models/bush/bush.glb",
+      "destination": "game-source/apk176-ota177-candidate/assets/cc0-spirit-rev206/herb/bush.glb",
+      "status": "pending_source_retrieval_and_original_godot_import"
+    },
+    {
+      "pack": "quaternius-simplenature",
+      "name": "rock1",
+      "blob_sha1": "cc9f4cf2726f0ce3294e8a40e50c8ff5b761fd0e",
+      "bytes": 3720,
+      "role": "ore",
+      "upstream_path": "packs/quaternius-simplenature/models/rock1/rock1.glb",
+      "destination": "game-source/apk176-ota177-candidate/assets/cc0-spirit-rev206/ore/rock1.glb",
+      "status": "pending_source_retrieval_and_original_godot_import"
+    },
+    {
+      "pack": "quaternius-simplenature",
+      "name": "rock2",
+      "blob_sha1": "7136308356b7f49bb7e7650ee1a0cc500ac68a25",
+      "bytes": 3836,
+      "role": "ore",
+      "upstream_path": "packs/quaternius-simplenature/models/rock2/rock2.glb",
+      "destination": "game-source/apk176-ota177-candidate/assets/cc0-spirit-rev206/ore/rock2.glb",
+      "status": "pending_source_retrieval_and_original_godot_import"
+    }
+  ]
+}
