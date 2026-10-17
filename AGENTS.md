@@ -1,6 +1,19 @@
 # 《苍岚·人生世界》不可遗忘的研发与发布规则（最高优先级）
 > 用户已反复明确指定；这是工程不变量，不是临时建议。所有 AI 编程助手、工作流与人工研发开始任务前必须读此文件和 `docs/CAC_CHANGELOG.md`。
 
+## 2026-10-18 用户亲自上传执行报告：最高优先级 HQ3D 美术与生态替换（覆盖本文件中冲突旧条款）
+
+**首次阅读顺序**：`AGENTS.md` → `docs/DEVELOPMENT_EXECUTION_RULES.md` → [用户原始完整执行报告](docs/CANGLAN_HQ_ART_ECOLOGY_EXECUTION_REPORT_USER_20261018.md) → [rev208 按号执行清单](docs/CAC_REV208_HQ_EXECUTION_CHECKLIST_20261018.md) → `docs/CAC_CHANGELOG.md` → 原GitHub Actions最新真实QA。凡“继续”必须从未合格的P0继续，不能回到旧低模/WorldBox像素终局或仅交文档。
+
+**最新用户明确覆盖旧规则**：
+- **不再允许低模多边形作为游戏的最终近景美术风格**，尤其玩家、核心修士、森林主树、可采灵植、灵矿。此前“停止一切自研/AI生成模型、只准Kenney/Quaternius低模”的旧条文**仅对历史原型/临时远景LOD生效**，不得与新要求抵触。正式高精模型可由合法现成资产、高精修正和有可靠来源的3D生产流程落地，必须是真实可蒙皮GLB/PBR/LOD/碰撞，不能把WorldX 2D图当真模型。
+- **WorldXAI负责高质量国风目标图/人物四视设定/材质美术参考/风格检测**，按新版 `tools/asset_factory/CANGLAN_WORLDX_STYLE_LOCK_V2_HQ3D.md` 生产。没接通图像端只能报BLOCKED，不得假冒。原v1“低饱和、斜俯视固定、2D四合院整图”已被否决。第一/第三自由视角、古代束发簪冠、中国古风结构为硬约束。
+- **硬闸门**：一名高精主角和≥4种高精核心修士、≥3成熟高树+2幼树+4灌木+4地被、5–8种可辨识灵药、PBR分层地表、修士真实可杀且人口账本/死亡动画、正确碰撞与相机遮挡；≥7张原Main真实Godot截图，原APK176 Godot4.4.1全QA，真实Android30分钟视觉/性能验收。任一缺失：**rev208不得合并main/不得RSA签发和发布**。
+- **阶段顺序**：HQ-Art-Lock → HQ-Character → HQ-Ecology → Combat-Life → World-PBR → Mobile-Sustain → REV208-RC → REV208-SIGNED。素材入库先证来源许可、PBR/LOD、实际Godot预览；保留原实体ID、存档、50000km²/5000人统计生态和NPC自主建设，不做换皮空世界。
+- **版本必须实时核验**：正式RSA在线版本当前rev207、APK176 versionCode1176，rev208仅PR #14 Draft；原 Godot QA run 39065966234 成功不等于新视觉审美合格，也不等于Android真实手机实测。旧“rev206/rev177最新”的历史记录、用户报告中早期的rev208 CI失败状态不得覆盖新证据。
+- **发布的严格依赖次序**：先候选源+美术证据+原Main QA+Android30分钟实测，再合并/签名/网站部署/公网上SHA-RSA-HTTP Range 206，再回用户原游戏热更新。必要时可以准备设备候选包，但不得伪称正式手机已下载。
+
+
 ## P0：仓库边界——仅使用公开仓库（用户反复强调）
 - **唯一允许的开发、构建、签名检查及发布仓库：`160701541-cell/xinyanshuo`（公开 main）**。
 - **禁止读取、搜索、调用、修改、触发或依赖任何私有仓库**，包括历史遗留私有仓库；不得再把任何问题推给私有仓库的密钥或CI。
