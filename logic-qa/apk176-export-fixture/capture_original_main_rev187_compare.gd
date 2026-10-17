@@ -553,6 +553,55 @@ func _capture() -> void:
       _fail("REV206_ACTUAL_GODOT_REAL_PLANT_ORE_TEXTURE_FRAME_MISSING_"+id)
       return
   print("PASS_REV206_GODOT_REAL_3D_WILD_MEDICINAL_HERB_AND_LUMINOUS_ORE_VIEW")
+  # P0 041 evidence: show the actual licensed original Main cultivator
+  # fallen IN THE WORLD after real HP=0 and real 5000-census death debit.
+  # Screenshot will NEVER substitute a photo of a model or concept art.
+  var cult: RefCounted=room.get("cultivation")
+  var society: RefCounted=room.get("world_society")
+  var death_id: String="CL-XIUXIAN-002"
+  var victim: Node3D=cult.get("npc_visuals")[death_id]["actor"]
+  var body: StaticBody3D=cult.get("npc_colliders")[death_id]
+  var death_start_pop: int=int(society.call("population"))
+  var death_saved_npc: Dictionary=cult.get("npc_data")[death_id].duplicate(true)
+  var death_saved_regions: Dictionary=society.get("regions").duplicate(true)
+  var death_saved_journal: Dictionary=society.get("named_deaths").duplicate(true)
+  var death_old_total: int=int(society.get("died_total"))
+  var true_death: Dictionary=cult.call(
+    "apply_npc_damage",death_id,999,"QA_CAMERA_REAL_DEATH")
+  if not bool(true_death.get("ok",false)) or not bool(
+      true_death.get("dead",false)) or not bool(true_death.get("persisted",false)) or (
+      int(society.call("population"))!=death_start_pop-1) or (
+      body.collision_layer!=0) or (
+      not bool(victim.get_meta("actually_dead",false))):
+    _fail("REV208_DEATH_IMAGE_MUST_FOLLOW_ACTUAL_CULTIVATOR_HP_AND_POP_DEBIT")
+    return
+  player.call("_set_mode","third")
+  fighter.position=Vector3(victim.position.x,
+    float(real_ground.call("height_at",victim.position.x,victim.position.z+4.2))+
+    float(fighter.get_meta("actor_ground_offset_y",0.0)),victim.position.z+4.2)
+  player.set("_yaw",0.0)
+  player.set("_pitch",0.31)
+  player.set("_distance",7.4)
+  player.call("update_camera")
+  for death_frame in range(6):
+    await process_frame
+  await RenderingServer.frame_post_draw
+  if not _save("real_godot_rev208_npc_death_state.png"):
+    _fail("REV208_REQUIRED_REAL_GODOT_NPC_DEATH_SCREENSHOT_MISSING")
+    return
+  print("PASS_REV208_REAL_GODOT_CAMERA_CORPSE_FRAME_TRUE_MORTALITY_POPULATION_MINUS_ONE")
+  # Render QA never commits a test-only death into the actual world files.
+  cult.get("npc_data")[death_id]=death_saved_npc
+  victim.rotation.x=0.0
+  victim.set_meta("actually_dead",false)
+  body.collision_layer=2
+  society.set("regions",death_saved_regions)
+  society.set("named_deaths",death_saved_journal)
+  society.set("died_total",death_old_total)
+  if not bool(society.call("force_save")) or not bool(
+      cult.call("save_state")):
+    _fail("REV208_DEATH_SCREENSHOT_TEST_STATE_ROLLBACK_FAILED")
+    return
   print("PASS_REV207_ORIGINAL_APK176_GODOT_REAL_COLOR_512PBR_64TEXELS_IMAGES")
   print("PASS_REV197_ORIGINAL_GODOT_ENGINE_VISIBLE_ANIMATED_PLAYER_CLOSE_AND_45DEG_REAL_FRAMES")
   print("PASS_REV187_TWO_GENUINE_ENGINE_RENDERED_WORKSITE_FRAMES_NOT_PHONE_TESTS")
