@@ -1758,6 +1758,11 @@ func toggle_fly_view() -> void:
 func _set_mode(mode: String) -> void:
   if not ["first","third","god","fly","iso","soar"].has(mode):
     return
+  if camera_mode=="soar" and mode!="soar" and _soar_altitude>0.045:
+    _soar_landing=true
+    _soar_target_altitude=0.0
+    say("请先平稳降落，再切换视角")
+    return
   if camera_mode=="soar" and mode!="soar":
     _soar_altitude=0.0
     _soar_target_altitude=0.0
@@ -1788,7 +1793,7 @@ func _set_mode(mode: String) -> void:
     say("摄影机飞行：玩家留在世界原位，升高／降低自由看")
   elif mode=="soar":
     # Gradual takeoff instead of instant camera-height teleport.
-    _soar_altitude=0.90
+    _soar_altitude=0.0
     _soar_target_altitude=3.0
     _soar_landing=false
     _air_velocity=Vector3.ZERO
