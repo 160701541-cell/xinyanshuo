@@ -72,7 +72,7 @@ jobs:
             var species: Dictionary={
               "pine":Vector2(15.0,21.0),
               "cypress":Vector2(10.0,14.0),
-              "conifer":Vector2(7.5,9.0),
+              "conifer":Vector2(14.0,18.0),
               "fern":Vector2(0.10,1.5),
               "hydrangea":Vector2(0.6,1.7),
               "rose":Vector2(0.5,1.5),
