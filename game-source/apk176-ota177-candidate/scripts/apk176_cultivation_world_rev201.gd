@@ -610,7 +610,7 @@ func stats() -> Dictionary:
   return {"world_seed":world_seed,
     "seed_is_persistent":FileAccess.file_exists(SAVE_PATH),
     "all_normal_spirit_roots_guaranteed":true,
-    "root_catalog_element_count":root_catalog.get("ELEMENTS").size() if root_catalog!=null else 0,
+    "root_catalog_element_count":int(root_catalog.call("catalog_size")) if root_catalog!=null else 0,
     "city_population_record":city_census(),
     "cultivator_count":npc_visuals.size(),
     "cultivator_identity_count":npc_data.size(),
