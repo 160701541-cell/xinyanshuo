@@ -6,6 +6,7 @@ checks or Android device acceptance.
 """
 from __future__ import annotations
 import hashlib
+import json
 from pathlib import Path
 import struct
 import sys
@@ -47,6 +48,16 @@ UI_ICONS = ("backpack","swords","crosshair","pickaxe","shield",
             "book-open","house","compass","eye","move-3d","leaf","menu","zap")
 REQUIRED.update("canglan_rev187/ui/lucide/" + name + ".svg" for name in UI_ICONS)
 REQUIRED.add("canglan_rev187/ui/lucide/LICENSE")
+# Source-verified original GLBs from Quaternius CC0 (no procedural meshes)
+ASSET_ROOT = BASE_DIR / "game-source/apk176-ota177-candidate/assets/cc0-rev206"
+CC0_PROOF = json.loads((ASSET_ROOT / "asset_intake_proof.json").read_text())
+assert CC0_PROOF["asset_total"] == 14 and CC0_PROOF["committed_under_license"] == "CC0-1.0"
+CC0_MODELS = {}
+for item in CC0_PROOF["models"]:
+    key = "canglan_rev187/cc0_rev206/" + item["role"] + "/" + item["name"] + ".glb"
+    CC0_MODELS[key] = (BASE_DIR / item["path"], item["sha256"])
+REQUIRED.update(CC0_MODELS)
+
 
 
 
@@ -104,6 +115,14 @@ def audit(path: Path) -> dict:
         target = "canglan_rev187/ui/lucide/" + filename
         assert found[target] == (UI_SOURCE / filename).read_bytes(), (
             "BLOCKED: non-source or missing licensed UI vector " + filename)
+    for model_path, (source, expected_sha256) in CC0_MODELS.items():
+        packed = found[model_path]
+        assert packed[:4] == b"glTF"
+        assert len(packed) >= 20 and struct.unpack_from("<I", packed, 8)[0] == len(packed)
+        assert hashlib.sha256(packed).hexdigest() == expected_sha256, (
+            "BLOCKED: Altered original Quaternius CC0 model: " + model_path)
+        assert packed == source.read_bytes(), (
+            "BLOCKED: Original model packed with changed content: " + model_path)
     palette = found["canglan_rev187/Textures/colormap.png"]
     if palette[:8] != bytes.fromhex("89504e470d0a1a0a") or len(palette) < 128:
         raise ValueError("BLOCKED: official Kenney external palette is missing or corrupt")
