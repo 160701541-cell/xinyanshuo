@@ -1773,9 +1773,15 @@ func _run() -> void:
     return
   var item_grid: ItemList=game_hud.get_node_or_null(
       "Rev188CharacterInventoryCultivationMenu/VBoxContainer/ActualSourcedBackpack24StackSelectableSlots")
+  if player.get("_game_sheet").visible and String(
+      player.get("_game_sheet_mode"))=="inventory":
+    player.call("_open_game_menu","inventory")
   player.call("_open_game_menu","inventory")
   if item_grid==null or not item_grid.visible or item_grid.item_count<=0:
-    _fail(320,"REV205_PERSONAL_BACKPACK_NOT_ACTUALLY_SELECTABLE_GRID_ON_ANDROID")
+    _fail(320,"REV205_PERSONAL_BACKPACK_NOT_ACTUALLY_SELECTABLE_GRID_ON_ANDROID"+
+      " grid="+str(item_grid)+" mode="+str(player.get("_game_sheet_mode"))+
+      " visible="+str(player.get("_game_sheet").visible)+
+      " count="+str(item_grid.item_count if item_grid!=null else -1))
     return
   player.call("_open_game_menu","inventory")
   # Restore the QA-only ledger to avoid changing subsequent world assertions.
