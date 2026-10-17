@@ -26,6 +26,7 @@ REQUIRED = {
     "canglan_rev187/player_controller.gd",
     "canglan_rev187/backpack.gd",
     "canglan_rev187/spirit_resources.gd",
+    "canglan_rev187/paid_housing.gd",
     "canglan_rev187/root_taxonomy.gd",
     "canglan_rev187/city_population.gd",
     "canglan_rev187/quality_profiles.gd",
@@ -161,6 +162,8 @@ def audit(path: Path) -> dict:
             "BLOCKED: non-original CC0 herb ore prefab "+model_path)
     assert b"get_nearest_resource" in found["canglan_rev187/spirit_resources.gd"]
     assert b"conservation_ok" in found["canglan_rev187/spirit_resources.gd"]
+    assert b"HOUSE_WOOD: int=200" in found["canglan_rev187/paid_housing.gd"]
+    assert b"HOUSE_STONE: int=150" in found["canglan_rev187/paid_housing.gd"]
     assert json.loads(found["canglan_rev187/materials_rev207/manifest.json"]) == PBR_PROOF, (
         "BLOCKED: signed PCK PBR license/texture provenance mismatch")
     for rel, (actual_source, sha256) in REAL_PBR.items():
