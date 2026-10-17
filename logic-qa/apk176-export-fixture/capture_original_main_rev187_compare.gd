@@ -303,6 +303,18 @@ func _capture() -> void:
   if float(player.get("_combat_camera_pull"))>-1.5:
     _fail("REV204_REAL_DUEL_CAMERA_STILL_TOO_FAR_TO_SEE_ACTUAL_MAGIC")
     return
+  if String(player.get("_locked_target_kind"))!="spar" or int(
+      player.get("_kenney_ui_asset_count"))!=10 or not bool(
+      (player.get("hud") as Control).get_meta("kenney_ui_cc0_loaded",false)):
+    _fail("REV205_TRUE_TARGET_LOCK_AND_AUTHENTIC_KENNEY_UI_NOT_VISIBLE_IN_ORIGINAL_ENGINE")
+    return
+  for i in range(2):
+    await process_frame
+  await RenderingServer.frame_post_draw
+  if not _save("real_apk176_rev205_kenney_ui_enemy_lock_combat_hud.png"):
+    _fail("REV205_TRUE_CC0_SKIN_LOCKON_GODOT_SCREENSHOT_MISSING")
+    return
+  print("PASS_REV205_REAL_GODOT_KENNEY_CC0_SKIN_ENEMY_LOCKON_AND_MOBILE_HUD_SCREENSHOT")
   var before_hp: int=int(player.get("_spar_enemy_health"))
   if not bool(player.call("sword_attack")) or (
       int(player.get("_spar_enemy_health"))>=before_hp):

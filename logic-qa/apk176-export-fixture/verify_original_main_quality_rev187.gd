@@ -314,6 +314,19 @@ func _run() -> void:
     if game_hud.get_node_or_null(key)==null:
       _fail(142,"REV188_REQUIRED_PLAYER_HUD_CONTROL_MISSING_"+key)
       return
+  if int(player.get("_kenney_ui_asset_count"))!=10 or not bool(
+      game_hud.get_meta("kenney_ui_cc0_loaded",false)):
+    _fail(334,"REV205_PINNED_REAL_KENNEY_CC0_UI_ASSETS_NOT_REPAINTED_IN_ORIGINAL_MAIN")
+    return
+  var hp_panel: PanelContainer=game_hud.get_node_or_null("LiveGameVitalsRev188")
+  if hp_panel==null or not (hp_panel.get_theme_stylebox("panel") is StyleBoxTexture):
+    _fail(335,"REV205_WORLD_GUI_NOT_USING_ACTUAL_KENNEY_NINE_SLICE_SKIN")
+    return
+  var decorated: Array[Node]=game_hud.find_children(
+    "AuthenticKenneyMobileControlsCC0_*","TextureRect",true,false)
+  if decorated.size()!=2:
+    _fail(336,"REV205_ACTUAL_CC0_ANALOG_AND_NUB_TEXTURES_NOT_IN_REAL_TOUCH_JOYSTICK")
+    return
   if bool(room.get("developer_ui_visible")) or ui.get_node("ProductionInspector").visible:
     _fail(143,"REV188_DEBUG_QA_CONTROLS_SHOULD_BE_HIDDEN_IN_NORMAL_GAMEPLAY")
     return
@@ -879,11 +892,30 @@ func _run() -> void:
   if Vector2(actor.position.x-before_move.x,actor.position.z-before_move.z).length()<1.0:
     _fail(68,"LEFT_ANALOG_MOVE_DID_NOT_MOVE_ACTUAL_PLAYER_ENTITY")
     return
+  var previous_camera_mode: String=String(player.get("camera_mode"))
+  player.call("_set_mode","third")
   var drag_start: float=float(player.get("_pitch"))
   player.call("turn_view",Vector2(0,32))
-  if float(player.get("_pitch"))>=drag_start:
-    _fail(118,"ANDROID_RIGHT_SCREEN_DOWN_DRAG_WRONGLY_MOVES_VIEW_UP")
+  if float(player.get("_pitch"))<=drag_start:
+    _fail(118,"REV205_MOBILE_SWIPE_DOWN_MUST_LOOK_TOWARD_FEET_IN_ORBIT_CAMERA")
     return
+  player.call("turn_view",Vector2(0,-600))
+  if float(player.get("_pitch"))> -1.2:
+    _fail(331,"REV205_SWIPE_UP_IN_THIRD_PERSON_CANNOT_LOOK_UP_TO_SKY")
+    return
+  player.call("turn_view",Vector2(0,950))
+  if float(player.get("_pitch"))<1.47:
+    _fail(332,"REV205_THIRD_PERSON_CANNOT_LOOK_DOWN_AT_OWN_FEET")
+    return
+  # First-person uses a look-direction camera, NOT orbit-height camera, so
+  # drag sign must be the physically opposite sign to achieve same intention.
+  player.call("_set_mode","first")
+  player.set("_pitch",0.0)
+  player.call("turn_view",Vector2(0,-130))
+  if float(player.get("_pitch"))<=0.20:
+    _fail(333,"REV205_FIRST_PERSON_UP_SWIPE_MUST_RAISE_TRUE_LENS_TO_SKY")
+    return
+  player.call("_set_mode",previous_camera_mode)
   var before_yaw: float = float(player.get("_yaw"))
   var zone: Control = player.get("_look_zone")
   if zone==null or zone.mouse_filter!=Control.MOUSE_FILTER_STOP:
@@ -1074,6 +1106,23 @@ func _run() -> void:
         not (target_bars["hp_fill"] as MeshInstance3D).visible):
       _fail(291,"REV204_OPPONENT_BARS_ARE_TEXT_WITH_NO_3D_HEALTH_MESH")
       return
+  # Physical sparring auto-locks its real GLB target. Explicit mobile
+  # toggle must unlock and reacquire without camera ray pointing at a fake UI.
+  if String(player.get("_locked_target_kind"))!="spar" or (
+      player.get("_locked_target")!=trainer):
+    _fail(337,"REV205_DUEL_STARTED_WITHOUT_REAL_TARGET_LOCK_CAMERA")
+    return
+  if bool(player.call("toggle_target_lock")) or not bool(
+      player.call("toggle_target_lock")):
+    _fail(338,"REV205_TOUCH_TARGET_TOGGLE_DOES_NOT_UNLOCK_REACQUIRE_REAL_ENEMY")
+    return
+  var heading_before: float=float(player.get("_yaw"))
+  player.set("_yaw",heading_before+1.0)
+  player.call("_step_target_lock",0.3)
+  if absf(float(player.get("_yaw"))-(heading_before+1.0))<0.20:
+    _fail(339,"REV205_LOCKON_NEVER_ROTATES_REAL_CAMERA_TOWARD_OPPONENT")
+    return
+  player.set("_yaw",0.0)
   player.call("_spar_tick",0.82)
   if String(player.get("_spar_stage"))!="windup" or not cue.visible:
     _fail(202,"REV196_OPPONENT_HAS_NO_VISIBLE_ATTACK_TELEGRAPH_WINDOW")
@@ -1325,6 +1374,17 @@ func _run() -> void:
   player.call("toggle_avatar_flight")
   if not bool(player.get("_soar_landing")):
     _fail(280,"REV202_NORMAL_LANDING_BUTTON_MUST_ENTER_DESCENT")
+    return
+  # User's P0: cancel landing while still airborne must resume actual
+  # sword-flight even above a blocking roof; never trap the action forever.
+  player.call("toggle_avatar_flight")
+  if bool(player.get("_soar_landing")) or (
+      float(player.get("_soar_target_altitude"))<3.0):
+    _fail(340,"REV205_FLYING_SWORD_CANNOT_TAKEOFF_AGAIN_WHILE_LANDING")
+    return
+  player.call("toggle_avatar_flight")
+  if not bool(player.get("_soar_landing")):
+    _fail(341,"REV205_RESUMED_FLYING_SWORD_CANNOT_START_CONTROLLED_LANDING_AGAIN")
     return
   player.call("step",0.80)
   if String(player.get("camera_mode"))!="third" or float(player.get("_soar_altitude"))>0.045:
@@ -1657,6 +1717,8 @@ func _run() -> void:
   player.call("_refresh_game_hud")
   print("PASS_REV201_ACTUAL_LICENSED_ALTAR_HIDDEN_DETERMINISTIC_ROOT_12_AUTONOMOUS_CULTIVATORS_REAL_HOUR_MEDITATION_QI_AND_BREAKTHROUGH_SAVED")
   print("PASS_REV204_AUTHORITY_GATED_LEARNED_QI_BOLT_SPEND_REAL_MANA_TRAVEL_HIT_AND_LEVEL2_WARD")
+  print("PASS_REV205_REAL_CC0_MOBILE_SKIN_8_SHORTCUTS_TRUE_SKY_FEET_SWIPES_AND_DUEL_LOCKON")
+  print("PASS_REV205_TRUE_SOAR_CANCEL_LANDING_AND_RETAKEOFF")
   room.call("_focus_builder")
   if not bool(room.get("_follow_builder")) or float(room.get("_camera_distance")) > 14.0:
     _fail(42,"BUTTON_MUST_ACTUALLY_FOCUS_VISIBLE_NPC")

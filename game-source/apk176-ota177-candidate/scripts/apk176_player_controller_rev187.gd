@@ -27,7 +27,17 @@ var _vertical_input: float = 0.0
 var _god_distance: float = 32.0
 var _god_rotation: float = 0.0
 var _flight_m: float = 0.0
+# True = natural mobile drag: swipe UP aims UP in first and orbit cameras.
 var _view_pitch_reversed: bool = true
+var _touch_camera_setting_button: Button
+var _locked_target: Node3D
+var _locked_target_kind: String=""
+var _locked_target_id: String=""
+var _lock_on_count: int=0
+const KENNEY_UI_DIR: String="res://canglan_rev187/ui/kenney/"
+var _ui_sprite_cache: Dictionary={}
+var _kenney_ui_asset_count: int=0
+var _ui_compact_combat: bool=false
 var _yaw: float = 0.43
 var _pitch: float = 0.38
 var _distance: float = 9.5
@@ -186,6 +196,7 @@ func initialize(active_room: Node) -> void:
   _camera_sphere=SphereShape3D.new()
   _camera_sphere.radius=0.24
   _load_pad_options()
+  _load_touch_camera_options()
   _create_hud()
   if not Input.joy_connection_changed.is_connected(_on_pad_hotplug):
     Input.joy_connection_changed.connect(_on_pad_hotplug)
@@ -388,6 +399,96 @@ func _rounded(color: Color, radius: int) -> StyleBoxFlat:
   s.corner_radius_bottom_right = radius
   return s
 
+func _kenney_png(sprite: String) -> Texture2D:
+  if _ui_sprite_cache.has(sprite):
+    return _ui_sprite_cache[sprite]
+  var path: String=KENNEY_UI_DIR+sprite
+  if not FileAccess.file_exists(path):
+    return null
+  var encoded: PackedByteArray=FileAccess.get_file_as_bytes(path)
+  var image:=Image.new()
+  if image.load_png_from_buffer(encoded)!=OK or image.is_empty():
+    return null
+  var tex: Texture2D=ImageTexture.create_from_image(image)
+  _ui_sprite_cache[sprite]=tex
+  _kenney_ui_asset_count+=1
+  return tex
+
+func _kenney_style(sprite: String,tint: Color=Color.WHITE) -> StyleBoxTexture:
+  var t: Texture2D=_kenney_png(sprite)
+  if t==null:
+    return null
+  var nine:=StyleBoxTexture.new()
+  nine.texture=t
+  nine.modulate_color=tint
+  var edge: float=clampf(minf(float(t.get_width()),float(t.get_height()))*0.28,2.0,9.0)
+  nine.set_texture_margin_all(edge)
+  nine.set_content_margin_all(5.0)
+  return nine
+
+func _attach_kenney_joystick(parent: Control, sprite: String,size: Vector2) -> bool:
+  var texture: Texture2D=_kenney_png(sprite)
+  if texture==null:
+    return false
+  var picture:=TextureRect.new()
+  picture.name="AuthenticKenneyMobileControlsCC0_"+sprite.get_basename()
+  picture.texture=texture
+  picture.size=size
+  picture.expand_mode=TextureRect.EXPAND_IGNORE_SIZE
+  picture.stretch_mode=TextureRect.STRETCH_SCALE
+  picture.modulate=Color(0.61,0.88,0.74,0.82)
+  picture.mouse_filter=Control.MOUSE_FILTER_IGNORE
+  parent.add_child(picture)
+  parent.move_child(picture,0)
+  return true
+
+func _install_kenney_ui_theme() -> void:
+  # Exact CC0 Kenney PNG files packed in the original APK176 signed OTA PCK,
+  # not an external web skin or a newly generated approximation.
+  # Real engine screenshot review: original very pale beige Kenney buttons
+  # made light text almost illegible against the green land. Tint same
+  # immutable CC0 art with deep jade and warm-gold text for high contrast.
+  var normal: StyleBoxTexture=_kenney_style("button_brown.png",Color(0.30,0.47,0.40,0.98))
+  var depressed: StyleBoxTexture=_kenney_style("button_brown_close.png",Color(0.40,0.45,0.32,0.99))
+  var inactive: StyleBoxTexture=_kenney_style("button_grey.png",Color(0.28,0.32,0.32,0.76))
+  var frame: StyleBoxTexture=_kenney_style("panel_border_brown_detail.png",Color(0.43,0.67,0.55,0.98))
+  var dark: StyleBoxTexture=_kenney_style("panel_brown_dark.png",Color(0.21,0.34,0.31,0.96))
+  if normal==null or depressed==null or inactive==null or frame==null or dark==null:
+    push_warning("REV205_CC0_KENNEY_UI_PACK_ASSETS_MISSING_OR_NOT_PACKED")
+    return
+  for candidate in hud.find_children("*","Button",true,false):
+    var button: Button=candidate as Button
+    button.add_theme_stylebox_override("normal",normal)
+    button.add_theme_stylebox_override("hover",frame)
+    button.add_theme_stylebox_override("pressed",depressed)
+    button.add_theme_stylebox_override("disabled",inactive)
+    var compact_top: bool=button.name in ["Iso45Button","GodShortcutButton",
+      "SoarAvatarButton","RealJumpButton","CameraLockButton",
+      "PhoneZoomInButton","PhoneZoomOutButton","TargetLockButton"]
+    button.add_theme_font_size_override("font_size",14 if compact_top else 16)
+    button.add_theme_color_override("font_color",Color("#ffedc6"))
+    button.add_theme_color_override("font_hover_color",Color("#fff7e8"))
+    button.add_theme_color_override("font_pressed_color",Color("#ffffff"))
+    button.add_theme_color_override("font_disabled_color",Color("#b8c2b7"))
+  for candidate in hud.find_children("*","PanelContainer",true,false):
+    (candidate as PanelContainer).add_theme_stylebox_override("panel",dark)
+  if joystick_ring!=null:
+    joystick_ring.add_theme_stylebox_override("panel",_rounded(Color(0,0,0,0),74))
+    thumb_panel.add_theme_stylebox_override("panel",_rounded(Color(0,0,0,0),33))
+    _attach_kenney_joystick(joystick_ring,"joystick_circle_pad_a.png",Vector2(146,146))
+    _attach_kenney_joystick(thumb_panel,"joystick_circle_nub_a.png",Vector2(64,64))
+  for slot in [{"bar":_health_bar,"name":"progress_red.png"},
+      {"bar":_energy_bar,"name":"progress_green.png"},
+      {"bar":_mana_bar,"name":"progress_blue.png"},
+      {"bar":_target_health_bar,"name":"progress_red.png"},
+      {"bar":_target_mana_bar,"name":"progress_blue.png"}]:
+    var bar: ProgressBar=slot["bar"]
+    var fill: StyleBoxTexture=_kenney_style(slot["name"])
+    if bar!=null and fill!=null:
+      bar.add_theme_stylebox_override("fill",fill)
+      bar.add_theme_stylebox_override("background",_rounded(Color("#172727"),4))
+  hud.set_meta("kenney_ui_cc0_loaded",_kenney_ui_asset_count>=10)
+
 func _new_button(key: String, label: String, width: float, action: Callable) -> Button:
   var button := Button.new()
   button.name = key
@@ -473,6 +574,7 @@ func _create_hud() -> void:
   _new_button("CameraLockButton","锁视角",103,Callable(self,"toggle_camera_lock"))
   _new_button("PhoneZoomInButton","放大＋",103,Callable(self,"zoom_in"))
   _new_button("PhoneZoomOutButton","缩小－",103,Callable(self,"zoom_out"))
+  _new_button("TargetLockButton","锁定目标",103,Callable(self,"toggle_target_lock"))
   var caption := Label.new()
   caption.name = "InteractionResultLiveHUD"
   caption.add_theme_font_size_override("font_size",18)
@@ -483,6 +585,7 @@ func _create_hud() -> void:
   _create_living_clock_and_flight_hud()
   _create_cultivation_action_buttons()
   _layout_hud()
+  _install_kenney_ui_theme()
 
 
 # rev188 candidate: never fabricate HP, MP or skill state before combat exists.
@@ -661,8 +764,8 @@ func _build_game_hud() -> void:
   _game_menu_button("菜单",325,"settings")
   _game_sheet=PanelContainer.new()
   _game_sheet.name="Rev188CharacterInventoryCultivationMenu"
-  _game_sheet.position=Vector2(16,150)
-  _game_sheet.custom_minimum_size=Vector2(405,245)
+  _game_sheet.position=Vector2(18,183)
+  _game_sheet.custom_minimum_size=Vector2(410,274)
   _game_sheet.visible=false
   _game_sheet.add_theme_stylebox_override("panel",_rounded(Color(0.06,0.11,0.13,0.95),12))
   hud.add_child(_game_sheet)
@@ -723,6 +826,10 @@ func _build_game_hud() -> void:
   _pad_setting_invert.name="PadRightStickInvertSetting"
   _pad_setting_invert.pressed.connect(_toggle_pad_invert)
   v.add_child(_pad_setting_invert)
+  _touch_camera_setting_button=Button.new()
+  _touch_camera_setting_button.name="ActualPhoneVerticalDragInvertSetting"
+  _touch_camera_setting_button.pressed.connect(_toggle_touch_camera_direction)
+  v.add_child(_touch_camera_setting_button)
   _pad_setting_deadzone=Button.new()
   _pad_setting_deadzone.name="PadStickDeadzoneSetting"
   _pad_setting_deadzone.pressed.connect(_cycle_pad_deadzone)
@@ -836,8 +943,19 @@ func _refresh_game_hud() -> void:
   (_game_actions["SpiritWard"] as Button).text=(
     "灵障 %d" % ceili(_ward_cd) if _ward_cd>0.0 else ("护体灵障" if ward_learned else "灵障·未学"))
   if _target_panel!=null:
-    _target_panel.visible=_spar_stage!="inactive"
-    if _spar_stage!="inactive":
+    var locked_cultivator: bool=_locked_target_kind=="cultivator"
+    _target_panel.visible=_spar_stage!="inactive" or locked_cultivator
+    if locked_cultivator and spiritual!=null:
+      var npc_records: Dictionary=spiritual.get("npc_data")
+      if npc_records.has(_locked_target_id):
+        var npc: Dictionary=npc_records[_locked_target_id]
+        _target_status.text="%s · %s  第%d层" % [
+          String(npc.get("name","修士")),String(npc.get("realm","凡人")),int(npc.get("layer",0))]
+        _target_health_bar.max_value=maxi(1,int(npc.get("max_health",1)))
+        _target_health_bar.value=int(npc.get("health",0))
+        _target_mana_bar.max_value=maxi(1,int(npc.get("max_mana",1)))
+        _target_mana_bar.value=int(npc.get("mana",0))
+    elif _spar_stage!="inactive":
       _target_status.text="演武教习 · 凡人武者   %d/%d" % [
         _spar_enemy_health,_spar_enemy_health_max]
       _target_health_bar.max_value=_spar_enemy_health_max
@@ -865,11 +983,12 @@ func _refresh_game_hud() -> void:
     else:
       _spirit_notice.text="灵根：未检测 · 请寻找青色灵根检测台"
   (buttons["RealJumpButton"] as Button).disabled=_jump_height>0.0 or camera_mode in ["fly","god","soar"] or energy<4
-  (buttons["CameraLockButton"] as Button).text="解锁视角" if _camera_angle_locked else "锁视角"
-  (buttons["Iso45Button"] as Button).text="第三人称" if camera_mode=="iso" else "俯视45°"
+  (buttons["CameraLockButton"] as Button).text="解锁" if _camera_angle_locked else "锁视角"
+  (buttons["Iso45Button"] as Button).text="第三" if camera_mode=="iso" else "45°"
   (buttons["SoarAvatarButton"] as Button).text=(
     "着陆中" if _soar_landing else ("降落" if camera_mode=="soar" else "飞行"))
-  (buttons["GodShortcutButton"] as Button).text="退出上帝" if camera_mode=="god" else "上帝"
+  (buttons["GodShortcutButton"] as Button).text="退出" if camera_mode=="god" else "鸟瞰"
+  (buttons["TargetLockButton"] as Button).text="解锁" if _locked_target!=null else "索敌"
   if _living_clock_label!=null:
     var clock: Dictionary=room.call("get_living_clock")
     _living_clock_label.text="世界 第%d天 %02d:%02d · 全世界 ×%d" % [
@@ -896,6 +1015,10 @@ func _refresh_game_hud() -> void:
   _pad_setting_speed.visible=_game_sheet.visible and _game_sheet_mode=="settings"
   _pad_setting_invert.visible=_pad_setting_speed.visible
   _pad_setting_deadzone.visible=_pad_setting_speed.visible
+  if _touch_camera_setting_button!=null:
+    _touch_camera_setting_button.visible=_game_sheet.visible and _game_sheet_mode=="settings"
+    _touch_camera_setting_button.text="手机上下滑动："+(
+      "向上滑＝抬头" if _view_pitch_reversed else "已反向（点此恢复自然方向）")
   _pad_hint.visible=_pad_device>=0 and not _game_sheet.visible
   if _game_sheet==null or not _game_sheet.visible:
     return
@@ -1042,11 +1165,20 @@ func practice_action() -> Dictionary:
   _guard_time=0.0
   _dodge_time=0.0
   _spar_last_outcome="预备"
+  # Initiate real lock-on once the physical opponent exists, so the very
+  # first sword action starts from an actual tracking view.
+  _clear_target_lock()
+  _locked_target=_spar_partner
+  _locked_target_kind="spar"
+  _locked_target_id="CL-DUEL-TRAINER"
+  _lock_on_count+=1
   say("切磋开始：红圈蓄势时格挡或闪避；失误会扣真实生命")
   _refresh_game_hud()
   return {"ok":true,"active":true,"opponent":_spar_partner.name}
 
 func stop_practice() -> void:
+  if _locked_target_kind=="spar":
+    _clear_target_lock()
   for node in [_spar_partner,_spar_collision,_spar_telegraph,_spar_opponent_tag]:
     if node!=null and is_instance_valid(node):
       node.queue_free()
@@ -1744,14 +1876,23 @@ func _layout_hud() -> void:
   (buttons["FlyDownButton"] as Button).visible=camera_mode in ["fly","soar"] and not _soar_landing
   # Top-right first row remains original account/menu HUD; the second row
   # is permanently usable on touch devices even with dev UI turned OFF.
-  var quick_keys: Array[String]=["Iso45Button","GodShortcutButton",
+  # One compact top row, including true lock-on, instead of seven giant
+  # QA buttons spread across the sky and the target info panel.
+  var quick_keys: Array=["Iso45Button","GodShortcutButton",
     "SoarAvatarButton","RealJumpButton","CameraLockButton",
-    "PhoneZoomInButton","PhoneZoomOutButton"]
-  var quick_start: float=maxf(454.0,size.x-float(quick_keys.size())*108.0-18.0)
+    "PhoneZoomInButton","PhoneZoomOutButton","TargetLockButton"]
+  var quick_labels: Array=["45°","鸟瞰","御剑",
+    "跳跃","视角锁","放大+","缩小−",
+    "解锁" if _locked_target!=null else "索敌"]
+  var quick_width: float=68.0
+  var quick_start: float=maxf(376.0,size.x-float(quick_keys.size())*quick_width-16.0)
   for i in range(quick_keys.size()):
     var quick: Button=buttons[quick_keys[i]]
-    quick.position=Vector2(quick_start+float(i)*108.0,81)
-    quick.size=Vector2(103,45)
+    quick.custom_minimum_size=Vector2(64.0,39.0)
+    quick.position=Vector2(quick_start+float(i)*quick_width,83.0)
+    quick.size=Vector2(64.0,39.0)
+    quick.add_theme_font_size_override("font_size",14)
+    quick.text=quick_labels[i]
     quick.visible=true
   # Keep flight Up/Down separately accessible beneath the right-side strip.
   (buttons["FlyUpButton"] as Button).position=Vector2(size.x-145,152)
@@ -1764,14 +1905,23 @@ func _layout_hud() -> void:
     var tab: Button=hud.get_node("GameMenu_"+menu_names[idx]) as Button
     tab.position=Vector2(menu_x+float(idx)*104.0,16)
     tab.size=Vector2(96,44)
-  var action_keys:=["GatherAction","DashAction","DigAction","InteractAction",
-    "ViewAction","LockedArt","GuardAction","EvadeAction",
-    "SwordAttack","SpiritBolt","SpiritWard"]
+  # Exploration and battle are different actual game states: do not put
+  # all 11 controls on top of a 3D landscape all the time.
+  var battling: bool=_spar_stage!="inactive"
+  var action_keys: Array=["LockedArt","GuardAction","EvadeAction",
+    "SwordAttack","SpiritBolt","SpiritWard","InteractAction"] if battling else [
+    "GatherAction","DashAction","DigAction","InteractAction","LockedArt"]
+  for id in _game_actions:
+    (_game_actions[id] as Button).visible=false
   for idx in range(action_keys.size()):
     var col: int=idx%4
     var row: int=int(idx/4)
-    (_game_actions[action_keys[idx]] as Button).position=Vector2(
-      size.x-392.0+float(col)*94.0,size.y-207.0+float(row)*66.0)
+    var active: Button=_game_actions[action_keys[idx]] as Button
+    active.visible=true
+    active.position=Vector2(size.x-394.0+float(col)*96.0,
+      size.y-145.0+float(row)*63.0)
+    active.size=Vector2(90,54)
+  _ui_compact_combat=battling
   if _target_panel!=null:
     # Keep target HUD BELOW the always-on first row of seven view toggles.
     # Previously it sat under those buttons and concealed its own MP bar.
@@ -1781,15 +1931,17 @@ func _layout_hud() -> void:
     _pad_hint.position=Vector2(16,139)
   if _root_exam_button!=null:
     var width: float=size.x
-    _root_exam_button.position=Vector2(width-392.0,size.y-271.0)
-    _meditate_button.position=Vector2(width-280.0,size.y-271.0)
-    _breakthrough_button.position=Vector2(width-168.0,size.y-271.0)
+    _root_exam_button.position=Vector2(width-392.0,size.y-218.0)
+    _meditate_button.position=Vector2(width-280.0,size.y-218.0)
+    _breakthrough_button.position=Vector2(width-168.0,size.y-218.0)
   if _living_seed_label!=null:
+    _living_seed_label.visible=dev
     _living_seed_label.position=Vector2(19,263)
   if _living_clock_label!=null:
     _living_clock_label.position=Vector2(19,172)
     _living_speed_button.position=Vector2(19,209)
     _local_ai_status_label.position=Vector2(127,217)
+    _local_ai_status_label.visible=dev
     _flight_altitude_label.position=Vector2(
       clampf(size.x*0.45,480.0,size.x-445.0),145)
 
@@ -2259,22 +2411,36 @@ func handle_input(event: InputEvent) -> void:
     elif event.keycode == KEY_MINUS:
       zoom_out()
 
+func _load_touch_camera_options() -> void:
+  var file:=ConfigFile.new()
+  if file.load("user://canglan_mobile_camera_rev205.cfg")==OK:
+    _view_pitch_reversed=bool(file.get_value("camera","natural_vertical",true))
+
+func _toggle_touch_camera_direction() -> void:
+  _view_pitch_reversed=not _view_pitch_reversed
+  var file:=ConfigFile.new()
+  file.set_value("camera","natural_vertical",_view_pitch_reversed)
+  file.save("user://canglan_mobile_camera_rev205.cfg")
+  _refresh_game_hud()
+
 func turn_view(movement: Vector2) -> void:
   if _camera_angle_locked:
     return
-  _follow_npc = false
+  _follow_npc=false
   room.set("_follow_builder",false)
-  _yaw -= movement.x*0.0050
-  # User phone feedback: drag DOWN must look DOWN, NEVER up.
-  # Reverse rev186 vertical sense across first/third/god/fly.
-  if camera_mode=="first" or camera_mode=="fly":
-    _pitch=clampf(_pitch-movement.y*0.0029,-1.30,1.24)
+  _yaw-=movement.x*0.0050
+  # FIRST-PERSON lens aims into the air when looking up, but THIRD-PERSON
+  # camera orbital height must move DOWN to look at that same sky! The old
+  # shared sign sent swipe-up in 3P towards top-down, the opposite of intent.
+  var speed_y: float=movement.y*0.0034*(1.0 if _view_pitch_reversed else -1.0)
+  if camera_mode in ["first","fly"]:
+    _pitch=clampf(_pitch-speed_y,-1.49,1.49)
   elif camera_mode=="god":
-    _pitch=clampf(_pitch-movement.y*0.0029,0.65,1.52)
+    _pitch=clampf(_pitch+speed_y,0.08,1.53)
   elif camera_mode=="iso":
     _pitch=PI/4.0
   else:
-    _pitch=clampf(_pitch-movement.y*0.0029,0.08,1.20)
+    _pitch=clampf(_pitch+speed_y,-1.31,1.52)
   update_camera()
 
 func zoom_ratio(factor: float) -> void:
@@ -2309,6 +2475,71 @@ func toggle_god_view() -> void:
 func toggle_fly_view() -> void:
   # Diagnostic free-camera remains available from developer controls.
   _set_mode("third" if camera_mode=="fly" else "fly")
+
+func _clear_target_lock() -> void:
+  _locked_target=null
+  _locked_target_kind=""
+  _locked_target_id=""
+  if _target_panel!=null and _spar_stage=="inactive":
+    _target_panel.visible=false
+
+func toggle_target_lock() -> bool:
+  if _locked_target!=null and is_instance_valid(_locked_target):
+    _clear_target_lock()
+    say("索敌已解除，恢复自由视角")
+    return false
+  _clear_target_lock()
+  if actor==null or camera_mode in ["god","fly"]:
+    return false
+  # A real active training foe always outranks nonhostile citizens.
+  if _spar_stage!="inactive" and _spar_partner!=null and is_instance_valid(_spar_partner):
+    _locked_target=_spar_partner
+    _locked_target_kind="spar"
+    _locked_target_id="CL-DUEL-TRAINER"
+  else:
+    var spirit: RefCounted=room.get("cultivation")
+    if spirit==null:
+      say("附近没有可追踪实体")
+      return false
+    var npcs: Dictionary=spirit.get("npc_visuals")
+    var nearest: float=16.0
+    for id in npcs:
+      var other: Node3D=npcs[id].get("actor",null)
+      if other==null or not is_instance_valid(other):
+        continue
+      var dist: float=actor.position.distance_to(other.position)
+      var toward: Vector3=other.position-actor.position
+      toward.y=0.0
+      if dist<nearest and dist>0.8 and toward.normalized().dot(_forward())>0.05:
+        nearest=dist
+        _locked_target=other
+        _locked_target_kind="cultivator"
+        _locked_target_id=String(id)
+  if _locked_target==null:
+    say("前方16米内没有可锁定的目标")
+    return false
+  _lock_on_count+=1
+  say("锁定实体："+_locked_target_id+"（友善修士不可无故攻击）"
+      if _locked_target_kind=="cultivator" else "已锁定切磋对手，可面向目标施法")
+  _refresh_game_hud()
+  return true
+
+func _step_target_lock(delta: float) -> void:
+  if _locked_target==null:
+    return
+  if not is_instance_valid(_locked_target) or actor==null or (
+      actor.position.distance_to(_locked_target.position)>23.0):
+    _clear_target_lock()
+    return
+  if camera_mode in ["god","fly","iso"] or _camera_angle_locked:
+    return
+  # Truly rotate the player's camera to track the actual 3D enemy position,
+  # not a static portrait or a fake target marker anchored to screen center.
+  var vector: Vector3=_locked_target.position-actor.position
+  vector.y=0
+  if vector.length()>0.15:
+    var next_yaw: float=atan2(-vector.x,-vector.z)
+    _yaw=lerp_angle(_yaw,next_yaw,clampf(delta*5.5,0.0,1.0))
 
 func _set_mode(mode: String) -> void:
   if not ["first","third","god","fly","iso","soar"].has(mode):
@@ -2453,6 +2684,15 @@ func toggle_camera_lock() -> void:
 func toggle_avatar_flight() -> void:
   if camera_mode=="soar":
     if _soar_landing:
+      # Do not trap the player in a permanent 'landing' state when an
+      # occupied roof/steep surface blocks the last descent ray.
+      # Explicit second tap cancels landing and takes off again.
+      _soar_landing=false
+      _soar_target_altitude=clampf(maxf(3.0,_soar_altitude+1.5),3.0,90.0)
+      _soar_hold_axis=0.0
+      _soar_hold_seconds=0.0
+      _layout_hud()
+      say("已取消降落，飞剑重新起飞")
       return
     _soar_landing=true
     _soar_target_altitude=0.0
@@ -2616,6 +2856,7 @@ func step(delta: float) -> void:
   _fall_damage_cd=maxf(0.0,_fall_damage_cd-delta)
   _spar_tick(delta)
   _step_spiritual_combat(delta)
+  _step_target_lock(delta)
   terrain.call("stream_around",actor.position)
   _step_jump(delta)
   _step_soar_altitude(delta)
@@ -2738,9 +2979,9 @@ func step(delta: float) -> void:
   if not bool(room.get("_follow_builder")):
     update_camera()
   if _hud_flash>0.0:
-    _hud_flash = maxf(0,_hud_flash-delta)
-    if _hud_flash<=0:
-      notice.text = "左摇杆移动 | 右侧看世界 | 双指缩放 | 互动/挖掘"
+    _hud_flash=maxf(0.0,_hud_flash-delta)
+    if _hud_flash<=0.0:
+      notice.text=""
   _refresh_game_hud()
   _layout_hud()
 
@@ -2845,8 +3086,33 @@ func update_camera() -> void:
     if camera_mode=="iso":
       _pitch=PI/4.0
     desired.y=maxf(desired.y,_ground_surface_y(desired.x,desired.z)+0.7)
-    camera.position=_safe_camera_position(target,desired)
-    camera.look_at(target,Vector3.UP)
+    var resolved_camera: Vector3=_safe_camera_position(target,desired)
+    # P0 from *actual* rev205 Godot render: a close worksite wall squeezed
+    # the 5.2m third-person camera to 0.62m INSIDE the 1.8m knight model,
+    # filling the entire phone with an enormous body. Try reachable
+    # non-clipping shoulder angles before accepting such a broken view.
+    if camera_mode in ["third","soar"] and chase_distance>3.6 and (
+        resolved_camera.distance_to(target)<2.0):
+      var best_camera: Vector3=resolved_camera
+      var best_distance: float=resolved_camera.distance_to(target)
+      for angle in [-0.68,0.68,-1.24,1.24,-2.15,2.15,3.10]:
+        var rotated: Vector3=offset.rotated(Vector3.UP,float(angle))
+        var alternate: Vector3=target+rotated*chase_distance
+        alternate.y=maxf(alternate.y,_ground_surface_y(alternate.x,alternate.z)+0.7)
+        var safe_alternate: Vector3=_safe_camera_position(target,alternate)
+        var clearance: float=safe_alternate.distance_to(target)
+        if clearance>best_distance+0.12:
+          best_distance=clearance
+          best_camera=safe_alternate
+        if best_distance>chase_distance*0.90:
+          break
+      resolved_camera=best_camera
+    camera.position=resolved_camera
+    # An orbit below the feet is collision-clamped by terrain. Aim the lens
+    # towards the sky in that case instead of pinning it to the torso.
+    var sight_target: Vector3=target+Vector3.UP*(
+      clampf(-_pitch,0.0,1.31)*3.4 if camera_mode in ["third","soar"] else 0.0)
+    camera.look_at(sight_target,Vector3.UP)
 
 func say(message: String) -> void:
   if notice != null:
@@ -2959,7 +3225,12 @@ func stats() -> Dictionary:
     "pinch_zoom":true,
     "zoom_buttons":2,
     "pinch_events_real_input":_pinch_zoom_events,
-    "visible_camera_shortcuts":7,
+    "visible_camera_shortcuts":8,
+    "kenney_cc0_ui_texture_count":_kenney_ui_asset_count,
+    "compact_combat_hotbar":_ui_compact_combat,
+    "live_3d_target_lock_count":_lock_on_count,
+    "target_lock_kind":_locked_target_kind,
+    "target_lock_entity_id":_locked_target_id,
     "camera_angle_locked":_camera_angle_locked,
     "iso45_follow_camera":camera_mode=="iso" and absf(_pitch-PI/4.0)<0.001,
     "third_person_avatar_visible":actor!=null and actor.visible,

@@ -1,0 +1,91 @@
+{
+  "source_repository": "https://github.com/shorepine/kenney",
+  "source_commit": "3694c6879e487c108f55677be7dd2ca75b07cc3b",
+  "license": "CC0-1.0",
+  "upstream_pack_urls": [
+    "https://kenney.nl/assets/ui-pack-adventure",
+    "https://kenney.nl/assets/mobile-controls"
+  ],
+  "files": [
+    {
+      "file": "panel_brown_dark.png",
+      "original": "ui/UI Pack - Adventure/panel_brown_dark.png",
+      "upstream_git_blob_sha1": "6c240398b6a4379850b41215762d5d43399502d4",
+      "sha256": "929c6cb3c63554919672219febd78483f9ba58a11b0def6badb47f9cdc4e029e",
+      "bytes": 267,
+      "license": "CC0-1.0"
+    },
+    {
+      "file": "panel_border_brown_detail.png",
+      "original": "ui/UI Pack - Adventure/panel_border_brown_detail.png",
+      "upstream_git_blob_sha1": "e05b35156cb0df89520dd39c168576e460a0da35",
+      "sha256": "2088b4593b2e163d137b559aacfcbc6ab816eeb587d10d8ab6e3a62395913873",
+      "bytes": 399,
+      "license": "CC0-1.0"
+    },
+    {
+      "file": "button_brown.png",
+      "original": "ui/UI Pack - Adventure/button_brown.png",
+      "upstream_git_blob_sha1": "73c062e9213a5a10c506e93b71b272c8ea2aec4b",
+      "sha256": "ee6d0103b23c877d28296a3fb620b5cdb340dd2c798134a7ea6317d5467d5053",
+      "bytes": 302,
+      "license": "CC0-1.0"
+    },
+    {
+      "file": "button_brown_close.png",
+      "original": "ui/UI Pack - Adventure/button_brown_close.png",
+      "upstream_git_blob_sha1": "e8b83b5bf12a24d9872649723f2dca958d48c676",
+      "sha256": "c2ad7ed2e7d83237ffe16917617cc1bde15922a9cb0349d790815b538e694ab9",
+      "bytes": 394,
+      "license": "CC0-1.0"
+    },
+    {
+      "file": "button_grey.png",
+      "original": "ui/UI Pack - Adventure/button_grey.png",
+      "upstream_git_blob_sha1": "2f70b21c778567c8854f4f77826ba6dab12a1a92",
+      "sha256": "293b4d8d2b2beee2873f4db6013de80021932bbcb9ab4f4fe5089f0e97f1326e",
+      "bytes": 263,
+      "license": "CC0-1.0"
+    },
+    {
+      "file": "progress_red.png",
+      "original": "ui/UI Pack - Adventure/progress_red.png",
+      "upstream_git_blob_sha1": "570310fff678b3720e8fe4b23f570894d242a492",
+      "sha256": "87fbc89029e159c282327badad2700ef98971bd40700084f9386677798d003b6",
+      "bytes": 375,
+      "license": "CC0-1.0"
+    },
+    {
+      "file": "progress_blue.png",
+      "original": "ui/UI Pack - Adventure/progress_blue.png",
+      "upstream_git_blob_sha1": "db01e70fc3ee8fd20b22ac742bd73d45a2b80047",
+      "sha256": "6d7a4fb21a20f3157f6767514dac139fc8aab39346ab308db3e5511b906f82d6",
+      "bytes": 379,
+      "license": "CC0-1.0"
+    },
+    {
+      "file": "progress_green.png",
+      "original": "ui/UI Pack - Adventure/progress_green.png",
+      "upstream_git_blob_sha1": "9d7c584007202d94ddcd4a9fc415ad8ca768e17f",
+      "sha256": "b2cfb6eb5189188eca2e6545a4ee1e87c091f4b36a3d696efdfb20eda6406f46",
+      "bytes": 375,
+      "license": "CC0-1.0"
+    },
+    {
+      "file": "joystick_circle_pad_a.png",
+      "original": "ui/Mobile Controls/Sprites/Style A/joystick_circle_pad_a.png",
+      "upstream_git_blob_sha1": "74e2c93ca80d1a4b6a83d5ab2f0d6ae8e5929695",
+      "sha256": "f23becb77ac1f56b6c07699c44bc7059506bf1bd3ed823f36403f5c4e836ec85",
+      "bytes": 3022,
+      "license": "CC0-1.0"
+    },
+    {
+      "file": "joystick_circle_nub_a.png",
+      "original": "ui/Mobile Controls/Sprites/Style A/joystick_circle_nub_a.png",
+      "upstream_git_blob_sha1": "e2cfc1b87492515a3d58ce909f15943a08d6667e",
+      "sha256": "1adbced9ada093325a86f1fd432c082c2ce3af59d057828fa2e1e8c1314e67d0",
+      "bytes": 1776,
+      "license": "CC0-1.0"
+    }
+  ]
+}

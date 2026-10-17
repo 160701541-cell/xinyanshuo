@@ -1,0 +1,36 @@
+name: Canglan rev205 Kenney CC0 sprite import (isolated branch only)
+on:
+  push:
+    branches: [feat/rev205-mobile-ui-flight-camera]
+    paths:
+      - 'tools/vendor_kenney_ui_rev205.py'
+      - '.github/workflows/canglan-rev205-vendor-kenney-ui.yml'
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  verify-import-cc0-sprites:
+    if: github.repository == '160701541-cell/xinyanshuo' && github.ref == 'refs/heads/feat/rev205-mobile-ui-flight-camera'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 6
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - name: Download exact audited Kenney CC0 UI pixels with pinned blob SHA
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 tools/vendor_kenney_ui_rev205.py
+          test "$(find game-source/apk176-ota177-candidate/ui/kenney/ -type f -name '*.png' | wc -l)" = 10
+      - name: Commit verified binary sprites into this source branch (no release)
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'canglan-cc0-vendor-bot'
+          git config user.email 'canglan-cc0-vendor-bot@users.noreply.github.com'
+          git add game-source/apk176-ota177-candidate/ui/kenney/
+          if ! git diff --cached --quiet; then
+            git commit -m 'assets(rev205): 10 exact-pinned CC0 Kenney RPG mobile UI PNGs [skip ci]'
+            git push origin HEAD:refs/heads/feat/rev205-mobile-ui-flight-camera
+          fi
