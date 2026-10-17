@@ -35,6 +35,7 @@ var npc_visuals: Dictionary={}
 var npc_labels: Dictionary={}
 var npc_vitals_bars: Dictionary={}
 var npc_colliders: Dictionary={}
+var npc_retaliation_cooldowns: Dictionary={}
 var root_catalog: RefCounted
 var city_population: RefCounted
 var altar: Node3D
@@ -379,6 +380,7 @@ func _generate_actual_visible_cultivators() -> void:
       meter[meter_type+"_fill"]=fill
     npc_vitals_bars[code]=meter
     _sync_npc_status_bar(code)
+    _sync_npc_mortality_visual(code)
 
 func _new_npc_meter(tag: String,tint: Color) -> MeshInstance3D:
   var bar:=MeshInstance3D.new()
@@ -416,7 +418,8 @@ func _sync_npc_status_bar(id: String) -> void:
     background.position=entity.position+Vector3(0,y,0.01)
     foreground.position=entity.position+Vector3(-0.41*(1.0-ratio),y,0.025)
     foreground.scale.x=maxf(0.001,ratio)
-    foreground.visible=ratio>0.001 and maximum>0
+    foreground.visible=ratio>0.001 and maximum>0 and int(state.get("health",0))>0
+    background.visible=int(state.get("health",0))>0
 
 func at_altar(max_distance: float=3.4) -> bool:
   if altar==null or room.get("controls")==null:
@@ -548,6 +551,8 @@ func advance_world_hour() -> void:
     player_data["stress"]=maxi(0,int(player_data.get("stress",0))-5)
   for id in npc_data:
     var npc: Dictionary=npc_data[id]
+    if int(npc.get("health",0))<=0:
+      continue # Dead characters cannot age, cultivate, work or resurrect on clock ticks.
     npc["life_hours"]=int(npc["life_hours"])+1
     if int(npc["life_hours"])%8760==0:
       npc["age"]=int(npc["age"])+1
@@ -580,6 +585,9 @@ func update_visible_npcs(delta: float) -> void:
       continue
     var index: int=int(v["index"])
     var state: Dictionary=npc_data[id]
+    if int(state.get("health",0))<=0:
+      _sync_npc_mortality_visual(id)
+      continue
     var is_walking: bool=String(state["schedule"]) in ["采药探路","巡山"]
     var anchor: Vector3=v["anchor"]
     if is_walking:
@@ -617,6 +625,80 @@ func update_visible_npcs(delta: float) -> void:
         int(state.get("health",0)),int(state.get("max_health",0)),
         int(state.get("mana",0)),int(state.get("max_mana",0))]
     _sync_npc_status_bar(id)
+    # A live cultivator remembers an actual assault and defends themselves
+    # with a true range/cooldown and HP debit. Neutral citizens never attack.
+    if int(state.get("hostility",0))>=100 and room.get("controls")!=null:
+      var hero: Node3D=room.get("controls").get("actor")
+      if hero!=null and Vector2(hero.position.x-node.position.x,
+          hero.position.z-node.position.z).length()<=2.8:
+        var remaining: float=maxf(0.0,float(
+          npc_retaliation_cooldowns.get(id,0.0))-delta)
+        if remaining<=0.0:
+          room.get("controls").call("apply_player_damage",
+            5+int(state.get("layer",0))*2)
+          remaining=2.6
+        npc_retaliation_cooldowns[id]=remaining
+      else:
+        npc_retaliation_cooldowns[id]=maxf(0.0,float(
+          npc_retaliation_cooldowns.get(id,0.0))-delta)
+
+func _sync_npc_mortality_visual(id: String) -> void:
+  if not npc_visuals.has(id) or not npc_data.has(id):
+    return
+  var state: Dictionary=npc_data[id]
+  if int(state.get("health",0))>0:
+    return
+  var living: Dictionary=npc_visuals[id]
+  var body: Node3D=living["actor"]
+  if is_instance_valid(body):
+    var ap: AnimationPlayer=living["animation"]
+    if ap!=null and ap.is_playing():
+      ap.stop()
+    # Persist a readable prone fallen body at the genuine position.
+    body.rotation.x=-1.35
+    body.set_meta("actually_dead",true)
+    body.set_meta("death_by",String(state.get("death_by","unknown")))
+  if npc_colliders.has(id):
+    var collider: StaticBody3D=npc_colliders[id]
+    if is_instance_valid(collider):
+      collider.collision_layer=0 # A corpse cannot invisibly block walking.
+  if npc_labels.has(id):
+    var label: Label3D=npc_labels[id]
+    if is_instance_valid(label):
+      label.text="%s · 已陨落（不再复活）" % String(state.get("name","无名修士"))
+      label.modulate=Color("#c4abb5")
+  if npc_vitals_bars.has(id):
+    for key in npc_vitals_bars[id]:
+      var meter: MeshInstance3D=npc_vitals_bars[id][key]
+      if is_instance_valid(meter):
+        meter.visible=false
+
+func apply_npc_damage(id: String, incoming: int, damage_source: String="player_sword") -> Dictionary:
+  # Authoritative persistent death, not a fake animation-only knockdown.
+  if not npc_data.has(id) or incoming<=0:
+    return {"ok":false,"reason":"INVALID_ALIVE_ENTITY_OR_DAMAGE"}
+  var state: Dictionary=npc_data[id]
+  if int(state.get("health",0))<=0:
+    return {"ok":false,"reason":"ALREADY_DEAD"}
+  var resistance: int=int(state.get("layer",0))/2
+  var damage: int=mini(int(state["health"]),maxi(1,incoming-resistance))
+  state["health"]=int(state["health"])-damage
+  state["hostility"]=100
+  state["last_attack_source"]=damage_source
+  if int(state["health"])<=0:
+    state["health"]=0
+    state["mana"]=0
+    state["energy"]=0
+    state["schedule"]="陨落"
+    state["death_by"]=damage_source
+    state["death_world_hour"]=total_hours
+    _sync_npc_mortality_visual(id)
+  else:
+    _sync_npc_status_bar(id)
+  var saved: bool=save_state()
+  return {"ok":true,"id":id,"damage":damage,
+    "health":int(state["health"]),"dead":int(state["health"])==0,
+    "persisted":saved,"death_hour":int(state.get("death_world_hour",-1))}
 
 func available_player_arts() -> Array[Dictionary]:
   var known: Array=player_data.get("known_arts",[])
@@ -711,6 +793,7 @@ func stats() -> Dictionary:
     "root_catalog_element_count":int(root_catalog.call("catalog_size")) if root_catalog!=null else 0,
     "city_population_record":city_census(),
     "cultivator_count":npc_visuals.size(),
+    "dead_cultivators":npc_data.values().filter(func(n): return int(n.get("health",0))<=0).size(),
     "cultivator_identity_count":npc_data.size(),
     "physical_cultivator_colliders":npc_colliders.size(),
     "altar_is_real_licensed_stone":altar!=null,
