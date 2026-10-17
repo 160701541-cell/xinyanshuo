@@ -899,7 +899,7 @@ func _run() -> void:
   if float(player.get("_pitch"))<=drag_start:
     _fail(118,"REV205_MOBILE_SWIPE_DOWN_MUST_LOOK_TOWARD_FEET_IN_ORBIT_CAMERA")
     return
-  player.call("turn_view",Vector2(0,-480))
+  player.call("turn_view",Vector2(0,-600))
   if float(player.get("_pitch"))> -1.2:
     _fail(331,"REV205_SWIPE_UP_IN_THIRD_PERSON_CANNOT_LOOK_UP_TO_SKY")
     return
