@@ -10,6 +10,9 @@ extends RefCounted
 const SAVE_PATH: String="user://canglan_original_cultivation_seed_v1.json"
 const SCHEMA: int=1
 const NPC_COUNT: int=12
+# These are actual learned arts, not dummy buttons that give mortals free mana.
+const ART_SPIRIT_BOLT: String="CL-ART-SPIRIT-BOLT-V1"
+const ART_SPIRIT_WARD: String="CL-ART-SPIRIT-WARD-V1"
 const ELEMENTS: Array[String]=["金","木","水","火","土"]
 const CULT_NAMES: Array[String]=[
   "陆青篁","宁照月","许寒渡","裴长川","秦映竹","叶孤棠",
@@ -27,6 +30,7 @@ var player_data: Dictionary={}
 var npc_data: Dictionary={}
 var npc_visuals: Dictionary={}
 var npc_labels: Dictionary={}
+var npc_vitals_bars: Dictionary={}
 var npc_colliders: Dictionary={}
 var altar: Node3D
 var altar_marker: MeshInstance3D
@@ -48,7 +52,7 @@ func initialize(active_room: Node) -> void:
 func _default_player() -> Dictionary:
   return {"tested":false,"root_kind":"","root_weights":[],
     "realm":"凡人","layer":0,"qi":0,"mana":0,
-    "stress":0,"method":"","meditating":false,
+    "stress":0,"method":"","known_arts":[],"meditating":false,
     "practice_hours":0,"breakthrough_count":0}
 
 func _load_or_initialize() -> void:
@@ -74,9 +78,34 @@ func _load_or_initialize() -> void:
     player_data=_default_player()
     npc_data={}
     total_hours=0
+  # Backward compatible: preserve a rev201 save and learn the arts from
+  # already-reached milestones instead of resetting progress on hot update.
+  if not player_data.has("known_arts"):
+    player_data["known_arts"]=[]
+  var known: Array=player_data["known_arts"]
+  if int(player_data.get("layer",0))>=1 and not String(
+      player_data.get("method","")).is_empty() and not known.has(ART_SPIRIT_BOLT):
+    known.append(ART_SPIRIT_BOLT)
+  if int(player_data.get("layer",0))>=2 and not String(
+      player_data.get("method","")).is_empty() and not known.has(ART_SPIRIT_WARD):
+    known.append(ART_SPIRIT_WARD)
   for i in range(NPC_COUNT):
     var id: String="CL-XIUXIAN-%03d" % (i+1)
     if npc_data.has(id):
+      # Existing citizens retain their real age, root, Qi and schedule.
+      # Their newly added vitals are initialized only once per saved identity.
+      var old: Dictionary=npc_data[id]
+      var layer: int=int(old.get("layer",0))
+      var hpmax: int=110+layer*12
+      var mpmax: int=12+layer*9 if String(old.get("realm",""))=="炼气" else 0
+      if not old.has("max_health"):
+        old["max_health"]=hpmax
+      if not old.has("health"):
+        old["health"]=int(old["max_health"])
+      if not old.has("max_mana"):
+        old["max_mana"]=mpmax
+      if not old.has("mana"):
+        old["mana"]=int(old["max_mana"])
       continue
     var rng:=_entity_rng(id)
     npc_data[id]={
@@ -88,6 +117,12 @@ func _load_or_initialize() -> void:
       "energy":rng.randi_range(45,90),"qi":rng.randi_range(0,60),
       "schedule":"歇息","life_hours":0,
       "hostility":0,"sect":"行云散修会" if i%3==0 else "独行"}
+    var original: Dictionary=npc_data[id]
+    var layer: int=int(original["layer"])
+    original["max_health"]=110+layer*12
+    original["health"]=int(original["max_health"])
+    original["max_mana"]=12+layer*9 if String(original["realm"])=="炼气" else 0
+    original["mana"]=int(original["max_mana"])
   save_state()
 
 func _entity_rng(code: String) -> RandomNumberGenerator:
@@ -227,6 +262,55 @@ func _generate_actual_visible_cultivators() -> void:
     label.position=character.position+Vector3.UP*2.1
     world.add_child(label)
     npc_labels[code]=label
+    # Billboard meters are WORLD-SPACE UI over real existing GLB bodies.
+    # These are the authoritative persisted HP/MP values, not random art.
+    var meter: Dictionary={}
+    for meter_type in ["hp","mana"]:
+      var tint: Color=Color("#d3695c") if meter_type=="hp" else Color("#55b5cd")
+      var backdrop: MeshInstance3D=_new_npc_meter(code+"_"+meter_type+"_back",Color("#101923"))
+      var fill: MeshInstance3D=_new_npc_meter(code+"_"+meter_type+"_fill",tint)
+      meter[meter_type+"_back"]=backdrop
+      meter[meter_type+"_fill"]=fill
+    npc_vitals_bars[code]=meter
+    _sync_npc_status_bar(code)
+
+func _new_npc_meter(tag: String,tint: Color) -> MeshInstance3D:
+  var bar:=MeshInstance3D.new()
+  bar.name="ActualCultivatorVitals_"+tag
+  var mesh:=QuadMesh.new()
+  mesh.size=Vector2(0.82,0.075)
+  var paint:=StandardMaterial3D.new()
+  paint.shading_mode=BaseMaterial3D.SHADING_MODE_UNSHADED
+  paint.transparency=BaseMaterial3D.TRANSPARENCY_DISABLED
+  paint.billboard_mode=BaseMaterial3D.BILLBOARD_ENABLED
+  paint.cull_mode=BaseMaterial3D.CULL_DISABLED
+  paint.albedo_color=tint
+  mesh.material=paint
+  bar.mesh=mesh
+  bar.cast_shadow=GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+  bar.visibility_range_end=19.0
+  world.add_child(bar)
+  return bar
+
+func _sync_npc_status_bar(id: String) -> void:
+  if not npc_vitals_bars.has(id) or not npc_visuals.has(id):
+    return
+  var state: Dictionary=npc_data[id]
+  var entity: Node3D=npc_visuals[id]["actor"]
+  var bars: Dictionary=npc_vitals_bars[id]
+  for kind in ["hp","mana"]:
+    var current: int=int(state.get("health",0)) if kind=="hp" else int(
+      state.get("mana",0))
+    var maximum: int=maxi(0,int(state.get("max_health",0))) if kind=="hp" else maxi(
+      0,int(state.get("max_mana",0)))
+    var ratio: float=clampf(float(current)/float(maxi(1,maximum)),0.0,1.0)
+    var y: float=1.91 if kind=="hp" else 1.80
+    var background: MeshInstance3D=bars[kind+"_back"]
+    var foreground: MeshInstance3D=bars[kind+"_fill"]
+    background.position=entity.position+Vector3(0,y,0.01)
+    foreground.position=entity.position+Vector3(-0.41*(1.0-ratio),y,0.025)
+    foreground.scale.x=maxf(0.001,ratio)
+    foreground.visible=ratio>0.001 and maximum>0
 
 func at_altar(max_distance: float=3.4) -> bool:
   if altar==null or room.get("controls")==null:
@@ -303,6 +387,12 @@ func player_breakthrough() -> Dictionary:
   player_data["layer"]=current+1
   player_data["realm"]="炼气"
   player_data["mana"]=int(player_data.get("mana",0))+12
+  var known_arts: Array=player_data.get("known_arts",[])
+  if current+1==1 and not known_arts.has(ART_SPIRIT_BOLT):
+    known_arts.append(ART_SPIRIT_BOLT)
+  if current+1==2 and not known_arts.has(ART_SPIRIT_WARD):
+    known_arts.append(ART_SPIRIT_WARD)
+  player_data["known_arts"]=known_arts
   player_data["stress"]=int(player_data.get("stress",0))+14
   player_data["breakthrough_count"]=int(player_data["breakthrough_count"])+1
   save_state()
@@ -332,6 +422,10 @@ func advance_world_hour() -> void:
       var proximity: int=7 if at_altar(11.0) else 0
       var gain: int=10+int(float(resonance)/18.0)+vein/4+proximity
       player_data["qi"]=mini(2000,int(player_data["qi"])+gain)
+      # Spiritual mana is NOT free on button press. It recovers only during
+      # an actual world-hour meditation that consumed finite human energy.
+      var max_mana: int=int(player_data.get("layer",0))*12
+      player_data["mana"]=mini(max_mana,int(player_data.get("mana",0))+3)
       player_data["stress"]=mini(100,int(player_data["stress"])+6)
       player_data["practice_hours"]=int(player_data["practice_hours"])+1
       if int(player_data["stress"])>=93:
@@ -352,6 +446,7 @@ func advance_world_hour() -> void:
     if schedule=="练气" and npc["realm"]=="炼气":
       npc["qi"]=mini(500,int(npc["qi"])+2)
       npc["energy"]=maxi(0,int(npc["energy"])-3)
+      npc["mana"]=mini(int(npc.get("max_mana",0)),int(npc.get("mana",0))+2)
     elif schedule=="打坐休息":
       npc["energy"]=mini(100,int(npc["energy"])+7)
     npc["hunger"]=mini(100,int(npc["hunger"])+2)
@@ -401,10 +496,46 @@ func update_visible_npcs(delta: float) -> void:
         ap.play(chosen)
     var label: Label3D=npc_labels[id]
     if is_instance_valid(label):
-      label.position=node.position+Vector3.UP*2.08
-      label.text="%s · %s · %s" % [state["name"],
-        "炼气%d层" % int(state["layer"]) if state["realm"]=="炼气" else "凡人",
-        state["schedule"]]
+      label.position=node.position+Vector3.UP*2.23
+      label.text="%s · %s\n生命 %d/%d  法力 %d/%d" % [
+        String(state["name"]),
+        "炼气%d层" % int(state["layer"]) if state["realm"]=="炼气" else "凡人武者",
+        int(state.get("health",0)),int(state.get("max_health",0)),
+        int(state.get("mana",0)),int(state.get("max_mana",0))]
+    _sync_npc_status_bar(id)
+
+func available_player_arts() -> Array[Dictionary]:
+  var known: Array=player_data.get("known_arts",[])
+  var result: Array[Dictionary]=[]
+  for id in [ART_SPIRIT_BOLT,ART_SPIRIT_WARD]:
+    result.append({
+      "id":id,"name":"灵息弹" if id==ART_SPIRIT_BOLT else "护体灵障",
+      "unlock_layer":1 if id==ART_SPIRIT_BOLT else 2,
+      "mana_cost":4 if id==ART_SPIRIT_BOLT else 6,
+      "learned":known.has(id)})
+  return result
+
+func spend_player_mana_for_art(art: String) -> Dictionary:
+  # Authority validates learned power, true spirit root and the persistent
+  # mana ledger. The controller checks target, LOS and cooldown BEFORE this.
+  var valid: bool=art in [ART_SPIRIT_BOLT,ART_SPIRIT_WARD]
+  if not valid:
+    return {"ok":false,"reason":"UNKNOWN_ART"}
+  if not bool(player_data.get("tested",false)) or String(
+      player_data.get("root_kind",""))=="无灵根":
+    return {"ok":false,"reason":"NO_SPIRIT_ROOT"}
+  var required_layer: int=1 if art==ART_SPIRIT_BOLT else 2
+  if int(player_data.get("layer",0))<required_layer or not (
+      player_data.get("known_arts",[]) as Array).has(art):
+    return {"ok":false,"reason":"ART_NOT_LEARNED"}
+  var cost: int=4 if art==ART_SPIRIT_BOLT else 6
+  if int(player_data.get("mana",0))<cost:
+    return {"ok":false,"reason":"MANA_INSUFFICIENT","cost":cost}
+  player_data["mana"]=int(player_data["mana"])-cost
+  if not save_state():
+    player_data["mana"]=int(player_data["mana"])+cost
+    return {"ok":false,"reason":"SAVE_FAILED_REVERTED"}
+  return {"ok":true,"spent":cost,"mana":int(player_data["mana"]),"art":art}
 
 func public_player_status() -> Dictionary:
   var safe: Dictionary=player_data.duplicate(true)
