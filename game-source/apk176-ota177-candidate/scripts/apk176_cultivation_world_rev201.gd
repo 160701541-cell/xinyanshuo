@@ -673,6 +673,35 @@ func _sync_npc_mortality_visual(id: String) -> void:
       if is_instance_valid(meter):
         meter.visible=false
 
+func reconcile_named_deaths_with_regions() -> int:
+  # Recover interrupted writes where the world population journal reached
+  # disk first, but a crash occurred before the NPC-vitals save finished.
+  if room==null or room.get("world_society")==null:
+    return 0
+  var recorded: Dictionary=room.get("world_society").get("named_deaths")
+  var repaired: int=0
+  for id in recorded:
+    if not npc_data.has(id):
+      continue
+    var npc: Dictionary=npc_data[id]
+    if int(npc.get("health",0))<=0:
+      _sync_npc_mortality_visual(id)
+      continue
+    var cause: Dictionary=recorded[id]
+    npc["health"]=0
+    npc["mana"]=0
+    npc["energy"]=0
+    npc["schedule"]="陨落"
+    npc["death_by"]=String(cause.get("cause","persistent_region_death"))
+    npc["death_world_hour"]=int(cause.get("at_hour",total_hours))
+    npc["death_region_id"]=String(cause.get("region_id",""))
+    npc["hostility"]=0
+    _sync_npc_mortality_visual(id)
+    repaired+=1
+  if repaired>0:
+    save_state()
+  return repaired
+
 func apply_npc_damage(id: String, incoming: int, damage_source: String="player_sword") -> Dictionary:
   # Authoritative persistent death, not a fake animation-only knockdown.
   if not npc_data.has(id) or incoming<=0:
@@ -682,6 +711,17 @@ func apply_npc_damage(id: String, incoming: int, damage_source: String="player_s
     return {"ok":false,"reason":"ALREADY_DEAD"}
   var resistance: int=int(state.get("layer",0))/2
   var damage: int=mini(int(state["health"]),maxi(1,incoming-resistance))
+  var fatal: bool=int(state["health"])<=damage
+  var census: Dictionary={}
+  if fatal:
+    var ledger: RefCounted=room.get("world_society") if room!=null else null
+    if ledger==null:
+      return {"ok":false,"reason":"NO_REAL_CENSUS_FOR_VISIBLE_CITIZEN_DEATH"}
+    var rooted: bool=String(state.get("realm",""))=="炼气"
+    census=ledger.call("record_named_cultivator_death",id,rooted,
+      not rooted,damage_source)
+    if not bool(census.get("ok",false)):
+      return {"ok":false,"reason":"CENSUS_DEATH_DEBIT_REFUSED_"+String(census.get("reason",""))}
   state["health"]=int(state["health"])-damage
   state["hostility"]=100
   state["last_attack_source"]=damage_source
@@ -692,13 +732,17 @@ func apply_npc_damage(id: String, incoming: int, damage_source: String="player_s
     state["schedule"]="陨落"
     state["death_by"]=damage_source
     state["death_world_hour"]=total_hours
+    state["death_region_id"]=String(census.get("region_id",""))
+    state["hostility"]=0
     _sync_npc_mortality_visual(id)
   else:
     _sync_npc_status_bar(id)
   var saved: bool=save_state()
   return {"ok":true,"id":id,"damage":damage,
     "health":int(state["health"]),"dead":int(state["health"])==0,
-    "persisted":saved,"death_hour":int(state.get("death_world_hour",-1))}
+    "persisted":saved and (not fatal or bool(census.get("ok",false))),
+    "death_region_id":String(state.get("death_region_id","")),
+    "death_hour":int(state.get("death_world_hour",-1))}
 
 func available_player_arts() -> Array[Dictionary]:
   var known: Array=player_data.get("known_arts",[])
