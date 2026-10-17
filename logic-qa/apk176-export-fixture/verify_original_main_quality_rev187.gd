@@ -1298,7 +1298,7 @@ func _run() -> void:
     _fail(242,"REV199_WORLD_SPEED_BUTTON_NOT_APPLIED_TO_REAL_SIM_TIME")
     return
   for i in range(12):
-    room.call("_process",0.12)
+    room.call("_process",0.10)
   var clock_after: Dictionary=room.call("get_living_clock")
   var advanced_after: int=int(clock_after["whole_world_hours_processed"])
   var sim_end_hour: int=int(econ.day-1)*24+int(econ.hour)
