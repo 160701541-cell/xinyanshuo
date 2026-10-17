@@ -492,10 +492,16 @@ func _attach_real_cc0_long_hair(actor: Node3D,variant: int=0) -> bool:
   fabric.cull_mode=BaseMaterial3D.CULL_DISABLED
   hair.material_override=fabric
   hair.cast_shadow=GeometryInstance3D.SHADOW_CASTING_SETTING_ON
-  # Hair GLB shares Quaternius's ~1.75m anthropometric coordinate frame.
-  # Attach after actor height normalization; do not rescale the gameplay
-  # collision body, or snap to a position detached from the real player.
-  hair.position=Vector3(0.0,0.015,0.0)
+  # rev200 first real Godot screenshot audit: normalized Knight skeleton
+  # source height 5.60m to avatar 1.8m (actor root scale ~=0.322), while
+  # Universal hair GLB IS ALREADY modeled at 1.5..1.78 human-meter height.
+  # The old hair lived at y0.48..0.57, INSIDE THE TORSO, so the HEAD
+  # appeared bald although scene-tree QA falsely claimed it had hair!
+  # Correct relative transform using root scale; preserve vendor mesh and
+  # player collider, position dark hair on actual head, not under the ribs.
+  var root_scale: float=maxf(0.001,absf(actor.scale.y))
+  hair.scale=Vector3.ONE*(1.22/root_scale)
+  hair.position=Vector3(0.0,-0.15/root_scale,0.0)
   actor.add_child(hair)
   _licensed_hair_attachments+=1
   return true
