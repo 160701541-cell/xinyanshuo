@@ -2124,6 +2124,11 @@ func _run() -> void:
   # training NPC remains nonlethal: this test targets an independent living
   # cultivator with canonical persisted ID, real collision and true sword LOS.
   var killed_id: String="CL-XIUXIAN-001"
+  var named_region_world: RefCounted=room.get("world_society")
+  var region_saved_rows: Dictionary=named_region_world.get("regions").duplicate(true)
+  var region_saved_named: Dictionary=named_region_world.get("named_deaths").duplicate(true)
+  var region_before_pop: int=int(named_region_world.call("population"))
+  var region_before_deaths: int=int(named_region_world.get("died_total"))
   var cult_state: Dictionary=spir.get("npc_data")[killed_id]
   var saved_cult_state: Dictionary=cult_state.duplicate(true)
   var cult_actor: Node3D=spir.get("npc_visuals")[killed_id]["actor"]
@@ -2158,6 +2163,26 @@ func _run() -> void:
       cult_actor.get_meta("actually_dead",false)!=true):
     _fail(381,"REV208_REAL_NPC_DEATH_NOT_PERSISTED_PRONE_WITH_COLLISION_DISABLED_"+str(mortality))
     return
+  if int(named_region_world.call("population"))!=region_before_pop-1 or (
+      int(named_region_world.get("died_total"))!=region_before_deaths+1) or (
+      not named_region_world.get("named_deaths").has(killed_id)) or (
+      not bool(named_region_world.call("conservation_ok"))):
+    _fail(384,"REV208_VISIBLE_NPC_FATAL_DEATH_MUST_DEBIT_ONE_REAL_5000_PERSON_REGION_CENSUS")
+    return
+  var repeat_census: Dictionary=named_region_world.call(
+    "record_named_cultivator_death",killed_id,true,false,"fake_second_kill")
+  if not bool(repeat_census.get("already_recorded",false)) or (
+      int(named_region_world.call("population"))!=region_before_pop-1):
+    _fail(385,"REV208_REPEAT_DEATH_MUST_NOT_DOUBLE_DEBIT_POPULATION")
+    return
+  var LivingScript: GDScript=named_region_world.get_script() as GDScript
+  var restored_region: RefCounted=LivingScript.new()
+  if not bool(restored_region.call("initialize",
+      int(named_region_world.get("seed")))) or int(
+      restored_region.call("population"))!=region_before_pop-1 or (
+      not restored_region.get("named_deaths").has(killed_id)):
+    _fail(386,"REV208_REAL_REGION_DEATH_LEDGER_NOT_RELOADABLE")
+    return
   var postmortem: Dictionary=spir.call(
     "apply_npc_damage",killed_id,100,"repeat_after_death")
   if bool(postmortem.get("ok",true)):
@@ -2174,6 +2199,12 @@ func _run() -> void:
   # QA is isolated: do not permanently kill a test citizen or overwrite a
   # local playtest save. No test-only enemy is inserted into the real world.
   spir.get("npc_data")[killed_id]=saved_cult_state
+  named_region_world.set("regions",region_saved_rows)
+  named_region_world.set("named_deaths",region_saved_named)
+  named_region_world.set("died_total",region_before_deaths)
+  if not bool(named_region_world.call("force_save")):
+    _fail(387,"REV208_ISOLATED_QA_MUST_ROLLBACK_NAMED_MORTALITY_WORLD_FILE")
+    return
   cult_actor.rotation.x=0.0
   cult_actor.set_meta("actually_dead",false)
   cult_collider.collision_layer=2
@@ -2186,6 +2217,7 @@ func _run() -> void:
   player.set("_yaw",hero_saved_yaw)
   econ.citizens["CL-PLAYER-0184-0001"]["energy"]=hero_saved_stamina
   print("PASS_REV208_REAL_LETHAL_CULTIVATOR_SWORD_COLLISION_DEATH_PERSISTENCE_AND_CORPSE")
+  print("PASS_REV208_EXACTLY_ONCE_NAMED_NPC_CENSUS_POPULATION_DEBIT_SAVE_RELOAD_NO_REVIVAL")
   room.call("_focus_builder")
   if not bool(room.get("_follow_builder")) or float(room.get("_camera_distance")) > 14.0:
     _fail(42,"BUTTON_MUST_ACTUALLY_FOCUS_VISIBLE_NPC")
