@@ -839,6 +839,13 @@ func _spawn_licensed_living_understory() -> void:
     attempts+=1
     var x: float=rng.randf_range(-42.0,42.0)
     var z: float=rng.randf_range(-42.0,42.0)
+    # QA 39064557498 real Vulkan image proved young oak leaf canopies
+    # occluded the existing third-person player face/head at default start,
+    # although every model/source was otherwise valid. Keep a playable
+    # arrival clearing and the spirit-root altar visible/approachable.
+    if Vector2(x-1.5,z-7.0).length()<8.0 or (
+        Vector2(x-12.0,z-7.0).length()<5.0):
+      continue
     if not bool(quality.call("_natural_plantable",x,z)):
       continue
     var excluded: bool=false
