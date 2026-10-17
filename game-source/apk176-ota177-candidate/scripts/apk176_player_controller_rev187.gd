@@ -1190,8 +1190,8 @@ func _layout_hud() -> void:
     (buttons[key] as Button).visible=dev
   (buttons["FlyUpButton"] as Button).position=Vector2(size.x-145,maxf(215,size.y-310))
   (buttons["FlyDownButton"] as Button).position=Vector2(size.x-145,maxf(275,size.y-250))
-  (buttons["FlyUpButton"] as Button).visible=camera_mode=="fly"
-  (buttons["FlyDownButton"] as Button).visible=camera_mode in ["fly","soar"]
+  (buttons["FlyUpButton"] as Button).visible=camera_mode in ["fly","soar"] and not _soar_landing
+  (buttons["FlyDownButton"] as Button).visible=camera_mode in ["fly","soar"] and not _soar_landing
   # Top-right first row remains original account/menu HUD; the second row
   # is permanently usable on touch devices even with dev UI turned OFF.
   var quick_keys: Array[String]=["Iso45Button","GodShortcutButton",
@@ -1758,6 +1758,12 @@ func toggle_fly_view() -> void:
 func _set_mode(mode: String) -> void:
   if not ["first","third","god","fly","iso","soar"].has(mode):
     return
+  if camera_mode=="soar" and mode!="soar" and _soar_altitude>0.045:
+    _soar_landing=true
+    _soar_target_altitude=0.0
+    say("请先平稳降落，再切换视角")
+    _layout_hud() # Hide both lift controls immediately, not on the next physics frame.
+    return
   if camera_mode=="soar" and mode!="soar":
     _soar_altitude=0.0
     _soar_target_altitude=0.0
@@ -1788,7 +1794,7 @@ func _set_mode(mode: String) -> void:
     say("摄影机飞行：玩家留在世界原位，升高／降低自由看")
   elif mode=="soar":
     # Gradual takeoff instead of instant camera-height teleport.
-    _soar_altitude=0.90
+    _soar_altitude=0.0
     _soar_target_altitude=3.0
     _soar_landing=false
     _air_velocity=Vector3.ZERO
@@ -1852,9 +1858,13 @@ func toggle_camera_lock() -> void:
 
 func toggle_avatar_flight() -> void:
   if camera_mode=="soar":
+    if _soar_landing:
+      return
     _soar_landing=true
     _soar_target_altitude=0.0
-    _air_velocity=Vector3.ZERO
+    # Keep current air velocity; step() eases horizontal motion to rest.
+    # Clearing this vector here causes a sudden midair braking jolt.
+    _layout_hud()
     say("正在平稳降落，观察脚下的地面投影")
   else:
     _set_mode("soar")

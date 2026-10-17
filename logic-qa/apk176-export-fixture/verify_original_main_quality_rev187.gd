@@ -1202,11 +1202,16 @@ func _run() -> void:
     return
   player.call("toggle_avatar_flight")
   if String(player.get("camera_mode"))!="soar" or not actor.visible or float(
-      player.get("_soar_altitude"))<0.85:
-    _fail(224,"REV199_TRUE_AVATAR_FLIGHT_MUST_TAKE_OFF_SMOOTHLY_AND_BE_VISIBLE")
+      player.get("_soar_altitude"))>0.05:
+    _fail(224,"REV202_AVATAR_TAKEOFF_MUST_BEGIN_ON_GROUND_WITHOUT_INSTANT_TELEPORT")
+    return
+  var up_button: Button=game_hud.get_node("FlyUpButton") as Button
+  var down_button: Button=game_hud.get_node("FlyDownButton") as Button
+  if not up_button.visible or not down_button.visible:
+    _fail(277,"REV202_REAL_SOAR_ASCEND_AND_DESCEND_MUST_BOTH_BE_TOUCH_VISIBLE")
     return
   var altitude_start: float=float(player.get("_soar_altitude"))
-  player.call("step",0.60)
+  player.call("step",0.85)
   if float(player.get("_soar_altitude"))<2.85:
     _fail(225,"REV199_MUST_ACTUALLY_RISE_TO_INITIAL_THREE_METER_TARGET")
     return
@@ -1234,14 +1239,31 @@ func _run() -> void:
       actor.position.y<float(terrain.call("height_at",actor.position.x,actor.position.z))+1.8):
     _fail(227,"REV197_AVATAR_FLY_JOYSTICK_ONLY_MOVED_A_HIDDEN_CAMERA")
     return
-  player.call("toggle_avatar_flight")
-  if player.get("camera_mode")!="soar" or not bool(player.get("_soar_landing")):
-    _fail(228,"REV199_TOGGLE_LANDING_INSTANT_TELEPORT_NOT_ALLOWED")
+  var midair_height: float=float(player.get("_soar_altitude"))
+  player.call("_set_mode","third") # Camera switch cannot delete actual height.
+  if String(player.get("camera_mode"))!="soar" or not bool(player.get("_soar_landing")) or (
+      absf(float(player.get("_soar_altitude"))-midair_height)>0.005):
+    _fail(278,"REV202_MIDAIR_PERSPECTIVE_SWITCH_INSTANTLY_DROPPED_AVATAR")
+    return
+  if up_button.visible or down_button.visible:
+    _fail(279,"REV202_VERTICAL_TOUCH_CONTROLS_STILL_ACTIVE_WHILE_LANDING")
     return
   player.call("step",0.80)
   if player.get("camera_mode")!="third" or float(player.get("_soar_altitude"))!=0.0:
     _fail(228,"REV199_FLYING_AVATAR_CANNOT_SOFT_LAND_AND_WALK")
     return
+  # Normal landing button remains functional after perspective-switch landing.
+  player.call("toggle_avatar_flight")
+  player.call("step",0.85)
+  player.call("toggle_avatar_flight")
+  if not bool(player.get("_soar_landing")):
+    _fail(280,"REV202_NORMAL_LANDING_BUTTON_MUST_ENTER_DESCENT")
+    return
+  player.call("step",0.80)
+  if String(player.get("camera_mode"))!="third" or float(player.get("_soar_altitude"))>0.045:
+    _fail(281,"REV202_NORMAL_LANDING_BUTTON_FAILED_TO_RETURN_TO_GROUND")
+    return
+  print("PASS_REV202_TRUE_ORIGINAL_SOAR_TOUCH_ASCENT_SMOOTH_TAKEOFF_AND_MIDAIR_CAMERA_LANDING")
   var stairs: StaticBody3D=world.get_node_or_null(
       "ConstructionOccluder_LicensedWorksiteVisibleStoneApproach")
   if stairs==null or stairs.collision_layer!=4 or stairs.get_node_or_null(
