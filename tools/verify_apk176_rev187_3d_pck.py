@@ -22,6 +22,7 @@ REQUIRED = {
     "canglan_rev187/visual_palette.gd",
     "canglan_rev187/kenney_multimesh.gd",
     "canglan_rev187/strata_terrain.gd",
+    "canglan_rev187/vivid_material.gd",
     "canglan_rev187/player_controller.gd",
     "canglan_rev187/backpack.gd",
     "canglan_rev187/root_taxonomy.gd",
@@ -57,6 +58,19 @@ for item in CC0_PROOF["models"]:
     key = "canglan_rev187/cc0_rev206/" + item["role"] + "/" + item["name"] + ".glb"
     CC0_MODELS[key] = (BASE_DIR / item["path"], item["sha256"])
 REQUIRED.update(CC0_MODELS)
+# Nine 512px source-verified original Quaternius CC0 albedo/normal/ORM maps:
+# a missing, corrupted or substituted white flat map is a HARD release fail.
+PBR_ROOT = BASE_DIR / "game-source/apk176-ota177-candidate/materials/rev207"
+PBR_PROOF = json.loads((PBR_ROOT / "manifest.json").read_text())
+assert PBR_PROOF["schema"] == 207 and PBR_PROOF["count"] == 9
+assert PBR_PROOF["size"] == 512 and PBR_PROOF["license"] == "CC0-1.0"
+REAL_PBR = {
+    "canglan_rev187/materials_rev207/" + item["file"]: (PBR_ROOT / item["file"], item["output_sha256"])
+    for item in PBR_PROOF["maps"]
+}
+assert len(REAL_PBR) == 9
+REQUIRED.update(REAL_PBR)
+REQUIRED.add("canglan_rev187/materials_rev207/manifest.json")
 
 
 
@@ -123,6 +137,15 @@ def audit(path: Path) -> dict:
             "BLOCKED: Altered original Quaternius CC0 model: " + model_path)
         assert packed == source.read_bytes(), (
             "BLOCKED: Original model packed with changed content: " + model_path)
+    assert json.loads(found["canglan_rev187/materials_rev207/manifest.json"]) == PBR_PROOF, (
+        "BLOCKED: signed PCK PBR license/texture provenance mismatch")
+    for rel, (actual_source, sha256) in REAL_PBR.items():
+        raw_texture = found[rel]
+        assert raw_texture.startswith(b"\\x89PNG\\r\\n\\x1a\\n".decode("unicode_escape").encode("latin1")), (
+            "BLOCKED: not real source-derived PNG "+rel)
+        assert hashlib.sha256(raw_texture).hexdigest()==sha256
+        assert raw_texture==actual_source.read_bytes(), (
+            "BLOCKED: PBR texture not from licensed artist "+rel)
     palette = found["canglan_rev187/Textures/colormap.png"]
     if palette[:8] != bytes.fromhex("89504e470d0a1a0a") or len(palette) < 128:
         raise ValueError("BLOCKED: official Kenney external palette is missing or corrupt")
