@@ -1984,7 +1984,7 @@ func step(delta: float) -> void:
       _air_display_speed=0.0
     if fly_vector.length()>0.01:
       var wanted_yaw: float=atan2(fly_vector.x,fly_vector.z)
-      actor.rotation.y=lerp_angle(actor.rotation.y,wanted_y,clampf(delta*6,0,1))
+      actor.rotation.y=lerp_angle(actor.rotation.y,wanted_yaw,clampf(delta*6,0,1))
     _set_movement_animation(_air_display_speed>0.35)
   elif input_axis.length()>0.08:
     _follow_npc=false
