@@ -327,7 +327,7 @@ func _run() -> void:
   if decorated.size()!=2:
     _fail(336,"REV205_ACTUAL_CC0_ANALOG_AND_NUB_TEXTURES_NOT_IN_REAL_TOUCH_JOYSTICK")
     return
-    if bool(room.get("developer_ui_visible")) or ui.get_node("ProductionInspector").visible:
+  if bool(room.get("developer_ui_visible")) or ui.get_node("ProductionInspector").visible:
     _fail(143,"REV188_DEBUG_QA_CONTROLS_SHOULD_BE_HIDDEN_IN_NORMAL_GAMEPLAY")
     return
   var found_hp: Array[Node]=game_hud.find_children("RealHealthFromFallDamageAndFood","ProgressBar",true,false)
