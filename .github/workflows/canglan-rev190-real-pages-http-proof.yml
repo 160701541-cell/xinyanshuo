@@ -1,0 +1,53 @@
+name: Canglan APK176 rev190 - Real Site RSA PCK HTTP Proof
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/canglan-rev190-real-pages-http-proof.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  prove-real-rev190-apk176-site:
+    if: github.repository == '160701541-cell/xinyanshuo' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify real public Pages latest.json against original APK176 RSA and complete rev190 PCK
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(python3 -c "import json;print(json.load(open('android-preview/latest.json'))['revision'])")" = 190
+          # Pages CDN can lag behind the freshly signed GitHub commit.
+          # Never claim the phone can fetch rev190 until public HTTPS, signature
+          # verification, full SHA256 and HTTP Range all genuinely pass.
+          for attempt in 1 2 3 4 5 6 7 8; do
+            if python3 tools/verify_original_current_ota_http.py; then
+              break
+            fi
+            if [ "$attempt" -eq 8 ]; then
+              echo 'BLOCKED: public Pages/CDN remains stale or cryptographic proof failed'
+              exit 1
+            fi
+            sleep 15
+          done
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          state=json.loads(Path('qa-results/original-current-public-ota-http.json').read_text())
+          assert state['live_revision']==190, 'CDN is still a different revision'
+          assert state['installed_apk_version_code']==1176
+          assert state['pck_bytes']>21000000
+          assert state['status']=='PASS_CURRENT_ORIGINAL_APK176_PUBLIC_HTTPS_RSA_SHA256_AND_RANGE'
+          print('PASS_APK176_REAL_REV190_PUBLIC_PAGES_RSA_SHA256_HTTP_RANGE_PHONE_DOWNLOAD_READY')
+          print('Actual finger controls, first-person framing, full resolution, ground digging and FPS are NOT accepted until user real Android screenshots')
+          PY
+      - name: Save HTTPS proof result without any keys
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: Canglan-rev190-real-Pages-HTTP-download-proof
+          path: qa-results/original-current-public-ota-http.json
+          if-no-files-found: warn
+          retention-days: 14
