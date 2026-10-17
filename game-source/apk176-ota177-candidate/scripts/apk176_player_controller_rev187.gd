@@ -1267,7 +1267,8 @@ func toggle_target_lock() -> void:
     var visible: Dictionary=cult.get("npc_visuals")
     for id in visible:
       var person: Node3D=visible[id].get("actor",null)
-      if person==null or not is_instance_valid(person):
+      if person==null or not is_instance_valid(person) or int(
+          cult.get("npc_data").get(id,{}).get("health",0))<=0:
         continue
       var range_m: float=actor.position.distance_to(person.position)
       if range_m<best and range_m>1.3:
@@ -1300,7 +1301,7 @@ func toggle_target_lock() -> void:
   _follow_npc=false
   say("已锁定妖兽，招式可真实消耗体力法力战斗" if (
     room.get("actual_wildlife").has(candidate_id)) else (
-    "目标已锁定；中立修士不能被随意攻击"))
+    "已锁定真实修士；攻击可能致死并引起反击"))
 
 func _clear_target_lock() -> void:
   _locked_target=null
@@ -1341,10 +1342,14 @@ func _step_target_lock(delta: float) -> void:
     if data.is_empty():
       _clear_target_lock()
       return
-    _locked_target_label.text="◎ %s · %s%s  生命 %d  法力 %d  [中立]" % [
+    if int(data.get("health",0))<=0:
+      _clear_target_lock()
+      return
+    _locked_target_label.text="⚔ %s · %s%s  生命 %d  法力 %d  [%s]" % [
       String(data.get("name","修士")),String(data.get("realm","凡人")),
       " 第%d层" % int(data.get("layer",0)) if int(data.get("layer",0))>0 else "",
-      int(data.get("health",0)),int(data.get("mana",0))]
+      int(data.get("health",0)),int(data.get("mana",0)),
+      "敌对" if int(data.get("hostility",0))>=100 else "中立"]
 
 func toggle_quickbar() -> void:
   _quickbar_folded=not _quickbar_folded
@@ -1868,6 +1873,9 @@ func _spar_damage_opponent(amount: int,spell_hit: bool=false) -> bool:
 func sword_attack() -> bool:
   if room.get("actual_wildlife").has(_locked_target_id):
     return _sword_attack_yao_beast()
+  var cultivation: RefCounted=room.get("cultivation")
+  if cultivation!=null and cultivation.get("npc_data").has(_locked_target_id):
+    return _sword_attack_cultivator()
   if _spar_stage in ["inactive","victory"] or _sword_cd>0.0 or (
       _spar_partner==null or not is_instance_valid(_spar_partner)):
     return false
@@ -1921,6 +1929,53 @@ func sword_attack() -> bool:
   slash.look_at(camera.position,Vector3.UP)
   get_tree().create_timer(0.24).timeout.connect(slash.queue_free)
   _spar_damage_opponent(10)
+  _refresh_game_hud()
+  return true
+
+func _sword_attack_cultivator() -> bool:
+  var cult: RefCounted=room.get("cultivation")
+  var id: String=_locked_target_id
+  if cult==null or not cult.get("npc_data").has(id) or _sword_cd>0.0:
+    return false
+  var person: Dictionary=cult.get("npc_data")[id]
+  if int(person.get("health",0))<=0:
+    _clear_target_lock()
+    return false
+  var ledger: Dictionary=room.get("sim").citizens.get(PLAYER_ID,{})
+  if int(ledger.get("energy",0))<6:
+    say("真实剑击需要6点体力")
+    return false
+  var body: Node3D=cult.get("npc_visuals").get(id,{}).get("actor",null)
+  var collider: StaticBody3D=cult.get("npc_colliders").get(id,null)
+  if body==null or collider==null or not is_instance_valid(body):
+    return false
+  var diff: Vector3=body.position-actor.position
+  diff.y=0.0
+  if diff.length()>3.05 or diff.length()<0.55 or (
+      diff.normalized().dot(_forward())<0.10):
+    say("请面向三米内的目标才能真正伤害修士")
+    return false
+  var query:=PhysicsRayQueryParameters3D.create(
+    actor.position+Vector3.UP*1.03,body.position+Vector3.UP*1.03,2)
+  var obstruction: Dictionary=world.get_world_3d().direct_space_state.intersect_ray(query)
+  if not obstruction.is_empty() and obstruction.get("collider")!=collider:
+    say("院墙或其他物体挡住剑击")
+    return false
+  ledger["energy"]=int(ledger["energy"])-6
+  _sword_cd=0.85
+  _attack_anim_seconds=0.54
+  var event: Dictionary=cult.call("apply_npc_damage",id,12,"CL-PLAYER-0184-0001:sword")
+  if not bool(event.get("ok",false)):
+    return false
+  _spawn_real_combat_hit(body.position+Vector3.UP*1.05,Color("#dfb6ab"),3)
+  _show_actual_damage_number(body.position,int(event["damage"]),Color("#f7c3b2"))
+  if bool(event.get("dead",false)):
+    say("%s 已陨落。其身份、死亡时间、攻击者已写入世界存档" %
+      String(person.get("name","修士")))
+    _clear_target_lock()
+  else:
+    say("攻击%s：真实生命 -%d（剩余%d），目标进入敌对反击" % [
+      String(person.get("name","修士")),int(event["damage"]),int(event["health"])])
   _refresh_game_hud()
   return true
 
