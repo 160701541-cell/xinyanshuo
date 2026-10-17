@@ -15,6 +15,7 @@ const FILES := {
 	"res://canglan_rev187/kenney_multimesh.gd": "canglan_rev187/kenney_multimesh.gd",
 	"res://canglan_rev187/strata_terrain.gd": "canglan_rev187/strata_terrain.gd",
 	"res://canglan_rev187/player_controller.gd": "canglan_rev187/player_controller.gd",
+	"res://canglan_rev187/backpack.gd": "canglan_rev187/backpack.gd",
 	"res://canglan_rev187/cultivation_world.gd": "canglan_rev187/cultivation_world.gd",
 	"res://canglan_rev187/quality_profiles.gd": "canglan_rev187/quality_profiles.gd",
 	"res://canglan_rev187/worldbox_life_sim.gd": "canglan_rev187/worldbox_life_sim.gd",
@@ -42,6 +43,13 @@ func _initialize() -> void:
 		quit(2)
 		return
 	var files: Dictionary = FILES.duplicate()
+	# These are committed, genuine Lucide SVG source vectors (ISC/MIT).
+	# PCKPacker lists files explicitly: no asset may be skipped silently.
+	for icon in ["backpack","swords","crosshair","pickaxe","shield",
+			"book-open","house","compass","eye","move-3d","leaf","menu","zap"]:
+		var rel: String = "canglan_rev187/ui/lucide/" + icon + ".svg"
+		files["res://" + rel] = rel
+	files["res://canglan_rev187/ui/lucide/LICENSE"] = "canglan_rev187/ui/lucide/LICENSE"
 	for i in range(8):
 		for pattern in ["hd2d/worldx/nav_%03d.json", "hd2d/worldx/zones_%03d.json",
 				"hd2d/worldx/worldx_%03d.png"]:
