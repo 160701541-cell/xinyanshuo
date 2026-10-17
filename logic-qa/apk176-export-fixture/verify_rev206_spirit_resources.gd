@@ -103,6 +103,31 @@ func _run() -> void:
       int(final.get("renewed_units",0))<=0):
     _fail("EXTENDED_WORLD_REGENERATION_AND_FINITE_STONE_MASS_NOT_CONSERVED")
     return
+  # rev207: native flowers spread outside roads and houses after 720
+  # genuine world hours, keeping rev206 13-node saves and finite mass.
+  for hour in range(612):
+    ledger.call("advance_world_hour")
+  var living_nodes: Dictionary=ledger.get("nodes")
+  var spreading_id: String="CL-WILD-LINGCAO-R207-0001"
+  if int(living_nodes.size())<14 or not living_nodes.has(spreading_id) or (
+      int(living_nodes[spreading_id]["remaining"])!=1) or (
+      not bool(ledger.call("conservation_ok"))):
+    _fail("REV207_NO_REAL_720H_NATURAL_CC0_SPIRIT_HERB_SPREAD_"+str(ledger.call("stats")))
+    return
+  var born: Dictionary=living_nodes[spreading_id]
+  var world_x: float=float(born["x"])
+  var world_z: float=float(born["z"])
+  if absf(world_x)<9.0 or absf(world_x)>44.0 or (
+      absf(world_z)>44.0):
+    _fail("REV207_SEEDLING_SPAWNED_ON_RESERVED_BUILDING_OR_ROAD")
+    return
+  var natural_after_boot: RefCounted=res_script.new()
+  if not bool(natural_after_boot.call("initialize")) or (
+      not natural_after_boot.get("nodes").has(spreading_id)) or (
+      not bool(natural_after_boot.call("conservation_ok"))):
+    _fail("REV207_DISPERSED_SEEDLING_NOT_SAVED_IN_ORIGINAL_INVENTORY")
+    return
+  print("PASS_REV207_REAL_WIND_DISPERSAL_720H_CC0_MEDICINAL_PLANTS_SAVE_NO_BARE_SEEDBANK_WITHOUT_INVENTORY_DUPLICATION")
   print("PASS_REV206_REAL_WORLD_13_HERB_ORE_SOURCE_CC0_NODES_PERSISTED_CONSERVATION_AND_18_TO_96H_REGROWTH")
   print("PASS_REV206_REAL_GODOT_BACKPACK_PILL_CRAFT_SPENDS_HARVESTED_HERBS_SPIRIT_STONES_SAVES_AND_CONSUMES")
   quit(0)
