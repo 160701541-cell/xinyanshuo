@@ -1,10 +1,25 @@
 {
   "schema": 1,
   "channel": "signed-releases",
-  "updated_at": "2026-10-17T11:25:49Z",
+  "updated_at": "2026-10-17T11:49:46Z",
   "source": "android-preview/latest.json; RSA original APK key + official HTTPS PCK",
   "verification": "Godot signed manifest, Pages PCK SHA256 and real Android updater Range HTTP verified in GitHub Actions; user Android device visual/performance QA pending.",
   "entries": [
+    {
+      "revision": 203,
+      "first_seen_utc": "2026-10-17T11:49:46Z",
+      "notes": "苍岚原APK176 rev203：御剑长按连续升降、转弯时真实角色与飞剑同步倾斜、镜头随高度柔和拉远；保留rev202安全降落与rev201灵根修炼及12名修士。本地Qwen仍需APK原生组件升级。",
+      "sha256": "07b9e52426f1eb7e22e4c49bba35bd9f6d589660a08d861f564c15717512b295",
+      "size_bytes": 22040608,
+      "status": "signed_release",
+      "android_version_code": 1176,
+      "protocol": "RSA-3072 PKCS1-v1_5 / SHA-256",
+      "remote_https_verified": false,
+      "remote_range_206_verified": false,
+      "ci_run": 39030030956,
+      "android_real_device_qa": "pending",
+      "engine_visual_proof": "art/actual-engine-capture/canglan-rev203-soar-bank-godot-linux.png"
+    },
     {
       "revision": 202,
       "first_seen_utc": "2026-10-17T11:23:13Z",

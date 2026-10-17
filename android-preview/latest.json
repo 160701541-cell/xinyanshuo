@@ -1,12 +1,12 @@
 {
   "schema": 1,
   "channel": "android-preview",
-  "revision": 202,
+  "revision": 203,
   "minimum_android_code": 1176,
   "maximum_android_code": 1176,
-  "sha256": "4a9376cf922c0e213481e78cec170b4995f24c5e84b4ff0184e28df0ec5d94de",
-  "size_bytes": 22037600,
-  "pack_url": "https://160701541-cell.github.io/xinyanshuo/android-preview/canglan-content-rev-202.pck",
-  "notes": "苍岚原APK176 rev202：修复御风飞行升高按钮不可见、起飞高度瞬变和空中切换视角瞬间坠落，降落时禁用升降操作；完整保留rev201灵根、修炼、12名修士及原有存档。本地AI仍需原生APK升级。",
-  "signature": "jsB1CxlSbTi7v8RRhNHVDgQ1lkRSK1LiGSkFZLCmT8AU5IQ2jRhCPhRs3dyUkRSlOMKNPVokDFYPz60GT9TTKNAq/lE2cMNw4BPDVuKjUSXQRuu3cAoHCzZQ/W/Itd9TF2LtpikjNZcO1FthCdiLblRbT6aVNd3NF9q+tKQvdY7DkK3vZpKIAF5+SUz4iXzMSZ5yQjXbDwR1mJn38/dkqQwfpbqerx62kyxxnaHTb2Pd3X3CHNo+JxdedAxvttWHjfKwgYTQduNSXZ8GvfVS/qTKggmLCZSmxXHBi6Y16/ERdoM1wisPVQQ0FBHRU42lKRAvzBcvp1te5vMFRFePxgFw7+4K7IxPjXfWDtAupSqMQF89FO7q4TgQVtv+FEijjnlzszPfg8pKrqwafmxCLCx9PCeA7mcLdyBAzcn7WbPHfTjqQyvWGohjk0BoQvK1Vxpt56NXGBdfT0ZauIU0cXgQYGZe+pBclBIkFdao+Z0asgVig6yC9Mvl80F7ub8L"
+  "sha256": "07b9e52426f1eb7e22e4c49bba35bd9f6d589660a08d861f564c15717512b295",
+  "size_bytes": 22040608,
+  "pack_url": "https://160701541-cell.github.io/xinyanshuo/android-preview/canglan-content-rev-203.pck",
+  "notes": "苍岚原APK176 rev203：御剑长按连续升降、转弯时真实角色与飞剑同步倾斜、镜头随高度柔和拉远；保留rev202安全降落与rev201灵根修炼及12名修士。本地Qwen仍需APK原生组件升级。",
+  "signature": "JNNs+uDta+CAWkrI5EPXzy4vLmY/K45GhKAA9HVs2HHz0G6FOn7NPyHjOeoGysvnQczUOQkVco/w01dZs4/BBAjPdPnrqz+Z6mB7UTkfMh1sg7Lc3MLDG8R5gxFm0B6Ghhmiz3N3rcT1Q31JWYVkoTeY6W2ZxvDsdhH458AjRkv334iwP89SG4SNsLngZMsf8v4d2w8xLCgqYf9MZKoYJwXfQKxwIKlnAGG8SBQE8CAcQjmb4+zKZxkovyKOqJixh2tm2i7BIO6w9dYB7MWW8twLimXKu6LOBa8N98yfiT8IVCQsq6LdeuNx8levJwykgyncOg057HmwOmKPbP8wQMzyp1GPTGLToIHvExivXEFU/4FbHbAWZpgWJyO3xSERun3zxc4+zN091YCbk4aR+VlBXY1rHKd286ADurfgz9u27fQspI3eDGXNXge7nMy0HxuRVnOgNxt00ALnAhVA2CjbRBMVOoE5/l7NoaCOlAP1xtxa7v9UVnx/Xz6FhkCc"
 }
