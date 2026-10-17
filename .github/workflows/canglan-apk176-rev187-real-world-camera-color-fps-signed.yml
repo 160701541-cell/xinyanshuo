@@ -315,12 +315,12 @@ jobs:
               assert not pathlib.Path('android-preview/canglan-content-rev-187.pck').exists(), 'rev187 file exists without manifest'
               print('PASS_REV187_NOT_YET_RELEASED_SIGNING_ALLOWED')
               with open(__import__('os').environ['GITHUB_ENV'],'a',encoding='utf-8') as f:
-                  f.write('REV187_ALREADY_PUBLISHED=false\\n')
+                  f.write('REV187_ALREADY_PUBLISHED=false\n')
           elif current >= 187:
               assert pathlib.Path('android-preview/canglan-content-rev-187.pck').is_file(), 'rev187 manifest but PCK missing'
               print('PASS_REV187_ALREADY_PUBLISHED_QA_ONLY_NEVER_REPLACE_SIGNED_RELEASE',current)
               with open(__import__('os').environ['GITHUB_ENV'],'a',encoding='utf-8') as f:
-                  f.write('REV187_ALREADY_PUBLISHED=true\\n')
+                  f.write('REV187_ALREADY_PUBLISHED=true\n')
           else:
               sys.exit('BLOCKED: unexpected OTA version; never publish out of order')
           PY
