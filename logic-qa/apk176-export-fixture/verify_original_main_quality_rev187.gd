@@ -65,6 +65,21 @@ func _run() -> void:
   if int(first.get("source_assets",0)) != 7:
     _fail(44, "MUST_LOAD_ALL_SEVEN_REAL_LICENSED_SOURCE_MODELS_GOT_" + str(first.get("source_assets",0)))
     return
+  # rev198: existence of a MeshInstance and 1.8m AABB were NOT enough.
+  # Real Godot screenshots proved a solid Knight armor material Alpha 0.0
+  # rendered ZERO character pixels even though node.visible=true.
+  if int(first.get("licensed_animated_body_materials_fixed_from_alpha_zero",0))<1:
+    _fail(232,"REV198_ANIMATED_CHARACTER_STILL_TRANSPARENT_IMPORTED_KNIGHT_MATERIAL")
+    return
+  var character_source: Node3D=room.get("asset_sources")["worker"]
+  for solid_mesh in character_source.find_children("*","MeshInstance3D",true,false):
+    var part: MeshInstance3D=solid_mesh as MeshInstance3D
+    for surface in range(part.mesh.get_surface_count()):
+      var material: Material=part.get_active_material(surface)
+      if material is StandardMaterial3D and (material as StandardMaterial3D).albedo_color.a<0.5:
+        _fail(233,"REV198_SOLID_LICENSED_KNIGHT_STILL_HAS_ZERO_ALPHA_SURFACE_"+str(surface))
+        return
+  print("PASS_REV198_REAL_LICENSED_KNIGHT_ARMOR_SKIN_OPACITY_REPAIRED")
   if not (first.get("missing_assets", []) as Array).is_empty():
     _fail(10, "SOME_LICENSED_GLB_OR_TEXTURES_MISSING")
     return
