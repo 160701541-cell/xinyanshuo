@@ -1,5 +1,9 @@
 name: Canglan APK176 rev202 - Real Site RSA PCK HTTP Proof
 on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/canglan-rev202-real-pages-http-proof.yml'
   workflow_run:
     workflows:
       - Canglan ORIGINAL APK176 rev202 - Guarded Avatar Flight QA + RSA Signed Update
