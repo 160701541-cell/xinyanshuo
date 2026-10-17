@@ -2087,7 +2087,7 @@ func _layout_hud() -> void:
     "ViewAction","LockedArt","GuardAction","EvadeAction",
     "SwordAttack","SpiritBolt","SpiritWard","PlantSapling"]
   var combat_open: bool=_spar_stage!="inactive"
-  var action_keys: Array[String]=(
+  var action_keys: Array=(
     ["GuardAction","EvadeAction","SwordAttack","SpiritBolt","SpiritWard","LockedArt"]
     if combat_open else
     ["GatherAction","DashAction","DigAction","InteractAction",
