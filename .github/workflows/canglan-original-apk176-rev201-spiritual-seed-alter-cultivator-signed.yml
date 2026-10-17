@@ -341,7 +341,7 @@ jobs:
           p=pathlib.Path('android-preview/latest.json')
           d=json.loads(p.read_text(encoding='utf-8'))
           current=int(d['revision'])
-          if current in (199,200):
+          if current == 200:
               assert not pathlib.Path('android-preview/canglan-content-rev-201.pck').exists(), 'rev201 file exists without manifest'
               print('PASS_REV201_NOT_YET_RELEASED_SIGNING_ALLOWED')
               with open(__import__('os').environ['GITHUB_ENV'],'a',encoding='utf-8') as f:
@@ -376,7 +376,7 @@ jobs:
           python3 - <<'PY'
           import json
           current=json.load(open('android-preview/latest.json'))['revision']
-          assert current in (199,200),f'Official original currently {current}, not 199/200'
+          assert current == 200,f'Original official next revision must be 200, got {current}'
           PY
           test ! -e android-preview/canglan-content-rev-201.pck
           cp qa-results/rev201-signed-stage/canglan-content-rev-201.pck android-preview/
@@ -392,13 +392,13 @@ jobs:
           import json,subprocess,sys
           current=json.loads(subprocess.check_output(
               ['git','show','origin/main:android-preview/latest.json'],text=True))
-          if current.get('revision') not in (199,200):
+          if current.get('revision') != 200:
               sys.exit('BLOCKED: remote OTA revision changed; never overwrite newer release')
           prior=subprocess.run(['git','cat-file','-e','origin/main:android-preview/canglan-content-rev-201.pck'],
                                stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
           if prior.returncode == 0:
               sys.exit('BLOCKED: rev201 already published; do not overwrite signed rev201 candidate')
-          print('PASS_REMOTE_PRODUCTION_REV199_OR_200_STILL_CURRENT')
+          print('PASS_REMOTE_PRODUCTION_REV200_STILL_CURRENT')
           PY
             git rebase origin/main || {
               echo 'BLOCKED: cannot safely rebase signed release'; exit 1;
