@@ -18,6 +18,7 @@ on:
       - 'logic-qa/tools/build_apk176_quality_rev187.gd'
       - 'game-source/apk176-ota177-candidate/assets/hq-rev208/vegetation/trees/**'
       - 'game-source/apk176-ota177-candidate/assets/hq-rev208/vegetation/botanical/**'
+      - 'game-source/apk176-ota177-candidate/assets/hq-rev208/vegetation/botanical-optimized/**'
       - 'tools/verify_apk176_rev187_3d_pck.py'
       - 'game-source/apk176-ota177-candidate/scripts/apk176_cultivation_world_rev201.gd'
       - 'game-source/apk176-ota177-candidate/scripts/apk176_root_taxonomy_rev206.gd'
@@ -273,11 +274,16 @@ jobs:
           from pathlib import Path
           import json,hashlib,struct
           root=Path('game-source/apk176-ota177-candidate/assets/hq-rev208/vegetation/botanical')
+          optimized=Path('game-source/apk176-ota177-candidate/assets/hq-rev208/vegetation/botanical-optimized')
           dest=Path('qa-stage/ota177/canglan_rev187/hq_rev208')
           manifest=json.loads((root/'manifest.json').read_text(encoding='utf-8'))
+          rendered=json.loads((optimized/'manifest.json').read_text(encoding='utf-8'))
           assert manifest['release_policy']=='QUARANTINED_NO_SIGNING_NO_OTA'
           assert manifest['art_approval']=='PENDING_REAL_GODOT_AND_USER'
-          assert set(manifest['items'])=={'pine','cypress','conifer','fern','hydrangea','rose','lavender','grass','medicinal_wood','medicinal_fire','medicinal_water'}
+          assert rendered['release_policy']=='QA_ONLY_NOT_SIGNED_NOT_SHIPPED'
+          assert rendered['art_approval']=='PENDING_SOURCE_LOD_MOBILE_VISUAL'
+          expected={'pine','cypress','conifer','fern','hydrangea','rose','lavender','grass','medicinal_wood','medicinal_fire','medicinal_water'}
+          assert set(manifest['items'])==set(rendered['items'])==expected
           dest.mkdir(parents=True,exist_ok=True)
           for kind,entry in manifest['items'].items():
             data=(root/entry['file']).read_bytes()
@@ -286,11 +292,27 @@ jobs:
             assert entry['game_asset_approved'] is False
             assert entry['license'].startswith('CC0')
             assert entry['triangle_lod0']>=100
+            mob=rendered['items'][kind]
+            assert mob['vendor_original_sha256']==entry['original_sha256']
+            assert mob['license']==entry['license']
+            assert mob['vendor_source_page']==entry['source_page']
+            assert mob['triangle_lod0']==entry['triangle_lod0']
+            assert mob['vendor_PBR_material_signatures_preserved']
+            assert mob['original_embedded_PBR_images_sha_preserved']
+            assert not mob['game_asset_approved']
+            assert mob['merged_draw_surfaces']<=mob['source_draw_surfaces']
+            merged=(optimized/mob['file']).read_bytes()
+            assert merged[:4]==b'glTF' and struct.unpack_from('<I',merged,8)[0]==len(merged)
+            assert hashlib.sha256(merged).hexdigest()==mob['sha256']
             if kind=='conifer':
               assert entry['source_name']=='mature-norway-spruce-tree-48c2566f'
               assert 10000<entry['triangle_lod0']<80000
               assert entry['meshes']<120, 'old 1551 mesh 248k conifer prohibited in mobile candidate'
-            (dest/entry['file']).write_bytes(data)
+            (dest/mob['file']).write_bytes(merged)
+          old_parts=sum(x['source_draw_surfaces'] for x in rendered['items'].values())
+          optimized_parts=sum(x['merged_draw_surfaces'] for x in rendered['items'].values())
+          assert old_parts==769 and optimized_parts==33,(old_parts,optimized_parts)
+          print('PASS_REV208_11_REAL_CC0_PBR_SHA_IMAGES_MATERIALS_SAME_SOURCE_MESH_JOIN_769_TO_33_STAGED_ORIGINAL_APK176_MAIN_NOT_APPROVED')
           print('PASS_REV208_REAL_INDIVIDUALLY_LICENSED_ELEVEN_BOTANICAL_MEDICINAL_GLBS_STAGED_IN_ORIGINAL_APK176_MAIN_UNAPPROVED')
           PY
           cp game-source/godot3d/assets/free_cc0/kenney/3d/castle/rocks-small.glb qa-stage/ota177/canglan_rev187/rocks_small.glb
