@@ -297,7 +297,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          python3 logic-qa/release-gate/sign_pck_release.py             --pack qa-results/canglan-apk176-rev187-3d-UNSIGNED.pck             --revision 190 --minimum-android-code 1176 --maximum-android-code 1176             --pack-url 'https://160701541-cell.github.io/xinyanshuo/android-preview/canglan-content-rev-190.pck'             --notes '苍岚原APK176 rev188：真机P0首轮改进：默认角色HUD含生命、真实体力、背包/修炼和设置，采集和疾步有真实体力与冷却，仓库实物食物恢复生命，研发按钮默认隐藏。地形建筑人物缺陷仍待修复，手机继续QA。'             --unsigned-template             --output qa-results/rev190-unsigned.json
+          python3 logic-qa/release-gate/sign_pck_release.py             --pack qa-results/canglan-apk176-rev187-3d-UNSIGNED.pck             --revision 190 --minimum-android-code 1176 --maximum-android-code 1176             --pack-url 'https://160701541-cell.github.io/xinyanshuo/android-preview/canglan-content-rev-190.pck'             --notes '苍岚原APK176 rev190：安卓蓝牙/USB游戏手柄支持（左摇杆移动、右摇杆视角、A互动X采集Y挖掘B疾步、LB视角RB背包、LT/RT快捷操作、Start/Select菜单），DPad+A/B能完整操作画质/帧率弹窗；热插拔、摇杆死区/灵敏度/反向持久化，触屏保留。真实手机手柄尚待验收。'             --unsigned-template             --output qa-results/rev190-unsigned.json
           python3 - <<'PY'
           import json,pathlib
           p=pathlib.Path('qa-results/rev190-unsigned.json')
