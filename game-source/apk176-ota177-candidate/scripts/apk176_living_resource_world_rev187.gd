@@ -51,18 +51,18 @@ const HQ_MATURE_TREES: Dictionary={
 # Additional source-authored actual 3D botanical forms, never WorldX 2D cutouts.
 # Intake manifest and GLB SHA verified by the QA-only staging pipeline.
 const HQ_REV208_MEDICINAL: Dictionary={
-  "herb_wood":"res://canglan_rev187/hq_rev208/hq_medicinal_wood_cc0_lod0.glb",
-  "herb_fire":"res://canglan_rev187/hq_rev208/hq_medicinal_fire_cc0_lod0.glb",
-  "herb_water":"res://canglan_rev187/hq_rev208/hq_medicinal_water_cc0_lod0.glb"}
+  "herb_wood":"res://canglan_rev187/hq_rev208/hq_medicinal_wood_cc0_drawmerged.glb",
+  "herb_fire":"res://canglan_rev187/hq_rev208/hq_medicinal_fire_cc0_drawmerged.glb",
+  "herb_water":"res://canglan_rev187/hq_rev208/hq_medicinal_water_cc0_drawmerged.glb"}
 const HQ_REV208_BOTANICAL: Dictionary={
-  "pine":"res://canglan_rev187/hq_rev208/hq_pine_cc0_lod0.glb",
-  "cypress":"res://canglan_rev187/hq_rev208/hq_cypress_cc0_lod0.glb",
-  "conifer":"res://canglan_rev187/hq_rev208/hq_conifer_cc0_lod0.glb",
-  "fern":"res://canglan_rev187/hq_rev208/hq_fern_cc0_lod0.glb",
-  "hydrangea":"res://canglan_rev187/hq_rev208/hq_hydrangea_cc0_lod0.glb",
-  "rose":"res://canglan_rev187/hq_rev208/hq_rose_cc0_lod0.glb",
-  "lavender":"res://canglan_rev187/hq_rev208/hq_lavender_cc0_lod0.glb",
-  "grass":"res://canglan_rev187/hq_rev208/hq_grass_cc0_lod0.glb"}
+  "pine":"res://canglan_rev187/hq_rev208/hq_pine_cc0_drawmerged.glb",
+  "cypress":"res://canglan_rev187/hq_rev208/hq_cypress_cc0_drawmerged.glb",
+  "conifer":"res://canglan_rev187/hq_rev208/hq_conifer_cc0_drawmerged.glb",
+  "fern":"res://canglan_rev187/hq_rev208/hq_fern_cc0_drawmerged.glb",
+  "hydrangea":"res://canglan_rev187/hq_rev208/hq_hydrangea_cc0_drawmerged.glb",
+  "rose":"res://canglan_rev187/hq_rev208/hq_rose_cc0_drawmerged.glb",
+  "lavender":"res://canglan_rev187/hq_rev208/hq_lavender_cc0_drawmerged.glb",
+  "grass":"res://canglan_rev187/hq_rev208/hq_grass_cc0_drawmerged.glb"}
 const TOWN := "CL-REV186-HX-VILLAGE"
 const DEPOT := Vector3(0.0, 0.0, 10.0)
 const SITE := Vector3(0.0, 0.0, -3.0)
