@@ -27,7 +27,13 @@ var _vertical_input: float = 0.0
 var _god_distance: float = 32.0
 var _god_rotation: float = 0.0
 var _flight_m: float = 0.0
+# True = natural mobile drag: swipe UP aims UP in first and orbit cameras.
 var _view_pitch_reversed: bool = true
+var _touch_camera_setting_button: Button
+var _locked_target: Node3D
+var _locked_target_kind: String=""
+var _locked_target_id: String=""
+var _lock_on_count: int=0
 var _yaw: float = 0.43
 var _pitch: float = 0.38
 var _distance: float = 9.5
@@ -186,6 +192,7 @@ func initialize(active_room: Node) -> void:
   _camera_sphere=SphereShape3D.new()
   _camera_sphere.radius=0.24
   _load_pad_options()
+  _load_touch_camera_options()
   _create_hud()
   if not Input.joy_connection_changed.is_connected(_on_pad_hotplug):
     Input.joy_connection_changed.connect(_on_pad_hotplug)
@@ -473,6 +480,7 @@ func _create_hud() -> void:
   _new_button("CameraLockButton","锁视角",103,Callable(self,"toggle_camera_lock"))
   _new_button("PhoneZoomInButton","放大＋",103,Callable(self,"zoom_in"))
   _new_button("PhoneZoomOutButton","缩小－",103,Callable(self,"zoom_out"))
+  _new_button("TargetLockButton","锁定目标",103,Callable(self,"toggle_target_lock"))
   var caption := Label.new()
   caption.name = "InteractionResultLiveHUD"
   caption.add_theme_font_size_override("font_size",18)
@@ -723,6 +731,10 @@ func _build_game_hud() -> void:
   _pad_setting_invert.name="PadRightStickInvertSetting"
   _pad_setting_invert.pressed.connect(_toggle_pad_invert)
   v.add_child(_pad_setting_invert)
+  _touch_camera_setting_button=Button.new()
+  _touch_camera_setting_button.name="ActualPhoneVerticalDragInvertSetting"
+  _touch_camera_setting_button.pressed.connect(_toggle_touch_camera_direction)
+  v.add_child(_touch_camera_setting_button)
   _pad_setting_deadzone=Button.new()
   _pad_setting_deadzone.name="PadStickDeadzoneSetting"
   _pad_setting_deadzone.pressed.connect(_cycle_pad_deadzone)
@@ -896,6 +908,10 @@ func _refresh_game_hud() -> void:
   _pad_setting_speed.visible=_game_sheet.visible and _game_sheet_mode=="settings"
   _pad_setting_invert.visible=_pad_setting_speed.visible
   _pad_setting_deadzone.visible=_pad_setting_speed.visible
+  if _touch_camera_setting_button!=null:
+    _touch_camera_setting_button.visible=_game_sheet.visible and _game_sheet_mode=="settings"
+    _touch_camera_setting_button.text="手机上下滑动："+(
+      "向上滑＝抬头" if _view_pitch_reversed else "已反向（点此恢复自然方向）")
   _pad_hint.visible=_pad_device>=0 and not _game_sheet.visible
   if _game_sheet==null or not _game_sheet.visible:
     return
@@ -2259,22 +2275,36 @@ func handle_input(event: InputEvent) -> void:
     elif event.keycode == KEY_MINUS:
       zoom_out()
 
+func _load_touch_camera_options() -> void:
+  var file:=ConfigFile.new()
+  if file.load("user://canglan_mobile_camera_rev205.cfg")==OK:
+    _view_pitch_reversed=bool(file.get_value("camera","natural_vertical",true))
+
+func _toggle_touch_camera_direction() -> void:
+  _view_pitch_reversed=not _view_pitch_reversed
+  var file:=ConfigFile.new()
+  file.set_value("camera","natural_vertical",_view_pitch_reversed)
+  file.save("user://canglan_mobile_camera_rev205.cfg")
+  _refresh_game_hud()
+
 func turn_view(movement: Vector2) -> void:
   if _camera_angle_locked:
     return
-  _follow_npc = false
+  _follow_npc=false
   room.set("_follow_builder",false)
-  _yaw -= movement.x*0.0050
-  # User phone feedback: drag DOWN must look DOWN, NEVER up.
-  # Reverse rev186 vertical sense across first/third/god/fly.
-  if camera_mode=="first" or camera_mode=="fly":
-    _pitch=clampf(_pitch-movement.y*0.0029,-1.30,1.24)
+  _yaw-=movement.x*0.0050
+  # FIRST-PERSON lens aims into the air when looking up, but THIRD-PERSON
+  # camera orbital height must move DOWN to look at that same sky! The old
+  # shared sign sent swipe-up in 3P towards top-down, the opposite of intent.
+  var speed_y: float=movement.y*0.0034*(1.0 if _view_pitch_reversed else -1.0)
+  if camera_mode in ["first","fly"]:
+    _pitch=clampf(_pitch-speed_y,-1.49,1.49)
   elif camera_mode=="god":
-    _pitch=clampf(_pitch-movement.y*0.0029,0.65,1.52)
+    _pitch=clampf(_pitch+speed_y,0.08,1.53)
   elif camera_mode=="iso":
     _pitch=PI/4.0
   else:
-    _pitch=clampf(_pitch-movement.y*0.0029,0.08,1.20)
+    _pitch=clampf(_pitch+speed_y,-1.31,1.52)
   update_camera()
 
 func zoom_ratio(factor: float) -> void:
@@ -2453,6 +2483,15 @@ func toggle_camera_lock() -> void:
 func toggle_avatar_flight() -> void:
   if camera_mode=="soar":
     if _soar_landing:
+      # Do not trap the player in a permanent 'landing' state when an
+      # occupied roof/steep surface blocks the last descent ray.
+      # Explicit second tap cancels landing and takes off again.
+      _soar_landing=false
+      _soar_target_altitude=clampf(maxf(3.0,_soar_altitude+1.5),3.0,90.0)
+      _soar_hold_axis=0.0
+      _soar_hold_seconds=0.0
+      _layout_hud()
+      say("已取消降落，飞剑重新起飞")
       return
     _soar_landing=true
     _soar_target_altitude=0.0
@@ -2846,7 +2885,11 @@ func update_camera() -> void:
       _pitch=PI/4.0
     desired.y=maxf(desired.y,_ground_surface_y(desired.x,desired.z)+0.7)
     camera.position=_safe_camera_position(target,desired)
-    camera.look_at(target,Vector3.UP)
+    # An orbit below the feet is collision-clamped by terrain. Aim the lens
+    # towards the sky in that case instead of pinning it to the torso.
+    var sight_target: Vector3=target+Vector3.UP*(
+      clampf(-_pitch,0.0,1.31)*3.4 if camera_mode in ["third","soar"] else 0.0)
+    camera.look_at(sight_target,Vector3.UP)
 
 func say(message: String) -> void:
   if notice != null:
