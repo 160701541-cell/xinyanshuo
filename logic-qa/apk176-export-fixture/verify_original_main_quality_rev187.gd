@@ -984,6 +984,81 @@ func _run() -> void:
   player.set("_dash_cd",0.0)
   player.call("update_camera")
   print("PASS_REV195_REAL_MORTAL_DASH_MOBILE_VFX_REQUIRES_SUCCESS_AND_STAMINA_DEBIT")
+  # REV196: real licensed animated sparring player/NPC and finite stamina,
+  # at least one timed perfect guard, one normal block, one true dodge,
+  # and an actual HP-damaging unguarded strike. No fake skill animation.
+  var spar_original_pos: Vector3=actor.position
+  var spar_original_yaw: float=float(player.get("_yaw"))
+  var mortal: Dictionary=econ.citizens["CL-PLAYER-0184-0001"]
+  var mortal_energy: int=int(mortal.get("energy",0))
+  actor.position=Vector3(29.0,float(terrain.call("height_at",29,29))+
+    float(actor.get_meta("actor_ground_offset_y",0.0)),29.0)
+  player.set("_yaw",0.0)
+  mortal["energy"]=100
+  player.set("_player_health",100)
+  var started: Dictionary=player.call("practice_action")
+  if not bool(started.get("ok",false)) or not bool(started.get("active",false)):
+    _fail(200,"REV196_VOLUNTARY_REAL_SPARRING_CANNOT_SPAWN_LICENSED_OPPONENT_"+str(started))
+    return
+  var trainer: Node3D=player.get("_spar_partner")
+  var physical: StaticBody3D=player.get("_spar_collision")
+  var cue: MeshInstance3D=player.get("_spar_telegraph")
+  if trainer==null or physical==null or cue==null or physical.get_node_or_null(
+      "RealMortalOpponentCapsule")==null or not physical.collision_layer==2:
+    _fail(201,"REV196_PRACTICE_OPPONENT_MUST_BE_REAL_ANIMATED_GLB_WITH_PHYSICAL_BODY_AND_VISIBLE_WARNING")
+    return
+  player.call("_spar_tick",0.82)
+  if String(player.get("_spar_stage"))!="windup" or not cue.visible:
+    _fail(202,"REV196_OPPONENT_HAS_NO_VISIBLE_ATTACK_TELEGRAPH_WINDOW")
+    return
+  player.call("_spar_tick",0.59)
+  var guard_energy_start: int=int(mortal["energy"])
+  if not bool(player.call("guard_action")) or int(mortal["energy"])!=guard_energy_start-5:
+    _fail(203,"REV196_GUARD_MUST_USE_AUTHORITATIVE_REAL_PLAYER_STAMINA")
+    return
+  player.call("_spar_tick",0.09)
+  if int(player.get("_spar_perfect_guards"))!=1 or int(player.get("_player_health"))!=100 or cue.visible:
+    _fail(204,"REV196_TRUE_PERFECT_GUARD_SHOULD_BLOCK_HIT_AND_HIDE_ATTACK_WARNING")
+    return
+  player.call("_spar_tick",1.25)
+  player.call("_spar_tick",0.35)
+  if not bool(player.call("guard_action")):
+    _fail(205,"REV196_NORMAL_GUARD_UNEXPECTEDLY_BLOCKED")
+    return
+  player.call("_spar_tick",0.33)
+  if int(player.get("_spar_normal_guards"))!=1 or int(player.get("_player_health"))!=97:
+    _fail(206,"REV196_NORMAL_GUARD_SHOULD_CAUSE_SMALL_REAL_DAMAGE_NOT_FAKE_INVULNERABILITY")
+    return
+  player.call("_spar_tick",1.40)
+  player.call("_spar_tick",0.59)
+  var origin: Vector3=actor.position
+  if not bool(player.call("evade_action")):
+    _fail(207,"REV196_EVADE_MUST_PHYSICALLY_MOVE_ON_REAL_COLLIDABLE_GROUND")
+    return
+  if actor.position.distance_to(origin)<1.50:
+    _fail(208,"REV196_EVADE_VISUAL_BUT_PLAYER_POSITION_UNCHANGED")
+    return
+  player.call("_spar_tick",0.09)
+  if int(player.get("_spar_perfect_dodges"))!=1 or int(player.get("_player_health"))!=97:
+    _fail(209,"REV196_PERFECT_DODGE_DID_NOT_RECOGNIZE_TRUE_ATTACK_HIT_TIME")
+    return
+  player.call("_spar_tick",1.40)
+  actor.position=origin
+  player.call("_spar_tick",0.68)
+  if int(player.get("_spar_hits"))!=1 or int(player.get("_player_health"))!=85:
+    _fail(210,"REV196_UNDEFENDED_ENEMY_MELEE_MUST_HIT_REAL_PLAYER_HP")
+    return
+  player.call("stop_practice")
+  if String(player.get("_spar_stage"))!="inactive":
+    _fail(211,"REV196_CANNOT_LEAVE_VOLUNTARY_PRACTICE_AND_RETURN_TO_NORMAL_WORLD")
+    return
+  mortal["energy"]=mortal_energy
+  actor.position=spar_original_pos
+  player.set("_yaw",spar_original_yaw)
+  player.set("_player_health",100)
+  player.call("_refresh_game_hud")
+  player.call("update_camera")
+  print("PASS_REV196_REAL_OPPONENT_TELEGRAPH_PERFECT_GUARD_NORMAL_GUARD_TRUE_EVADE_DAMAGE_STAMINA_WITHOUT_SPIRIT_MAGIC")
   room.call("_focus_builder")
   if not bool(room.get("_follow_builder")) or float(room.get("_camera_distance")) > 14.0:
     _fail(42,"BUTTON_MUST_ACTUALLY_FOCUS_VISIBLE_NPC")
