@@ -906,8 +906,9 @@ func _refresh_inventory_list() -> void:
   sorted.sort()
   for kind in sorted:
     var amount: int=int(bag[kind])
-    var index: int=_inventory_list.add_item("%s ×%d" % [
-      String(_backpack.get("NAMES").get(kind,kind)),amount])
+    var index: int=_inventory_list.item_count
+    _inventory_list.add_item("%s ×%d" % [
+      String(_backpack.call("display_name",String(kind))),amount])
     _inventory_list.set_item_metadata(index,String(kind))
     _inventory_list.set_item_tooltip(index,String(kind)+"  ×"+str(amount))
   if bag.is_empty():
