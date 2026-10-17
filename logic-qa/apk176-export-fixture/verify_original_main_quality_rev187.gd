@@ -235,6 +235,23 @@ func _run() -> void:
   if int(player.get("_pad_menu_index"))==0:
     _fail(156,"PAD_DPAD_CANNOT_NAVIGATE_MENU")
     return
+  var quality_index: int=-1
+  for i in range(menu_buttons.size()):
+    if (menu_buttons[i] as Button).name=="QualitySettingsFromGameMenu":
+      quality_index=i
+      break
+  if quality_index<0:
+    _fail(164,"PAD_CANNOT_FOCUS_GRAPHICS_MENU")
+    return
+  player.call("_pad_focus_menu",quality_index)
+  player.call("_pad_press_button",JOY_BUTTON_A)
+  if not bool(room.get("quality_menu_visible")) or (player.get("_pad_menu_options") as Array).size()<5:
+    _fail(165,"PAD_A_CANNOT_OPEN_OR_FOCUS_NATIVE_QUALITY_FPS_SETTINGS")
+    return
+  player.call("_pad_press_button",JOY_BUTTON_B)
+  if bool(room.get("quality_menu_visible")) or not pad_menu.visible:
+    _fail(166,"PAD_B_MUST_CLOSE_QUALITY_POPUP_BUT_KEEP_GAME_MENU")
+    return
   player.call("_pad_press_button",JOY_BUTTON_B)
   if pad_menu.visible:
     _fail(157,"PAD_B_CANNOT_CLOSE_MENU")
