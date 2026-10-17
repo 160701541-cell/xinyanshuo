@@ -780,7 +780,7 @@ func _run() -> void:
     return
   var grass_quality: RefCounted=room.get("quality")
   var meadow_points: Array=grass_quality.get("grass_points") if grass_quality!=null else []
-  if meadow_points.size()!=4500:
+  if meadow_points.size()!=10800:
     _fail(171,"REV191_NATIVE_GRASS_BATCH_MUST_STILL_COVER_LOCAL_MEADOW")
     return
   var max_grass_height: float=0
@@ -917,8 +917,12 @@ func _run() -> void:
   if int(report["harvests"]) < 4 or int(report["deliveries"]) < 4:
     _fail(19, "NPC_MUST_ACTUALLY_WALK_TO_RESOURCES_AND_DELIVER")
     return
-  if int(report.get("built_cc0_parts",0))!=6:
-    _fail(20,"REV206_ONLY_COMPLETE_CC0_PREFABS_NOT_CUSTOM_SCAFFOLD_PARTS")
+  # rev208: six real vendor source houses are loaded as assets, but
+  # none may be rendered or counted as a finished shelter before the
+  # original economy has paid its finite wood/stone bill and NPC hours.
+  if int(report.get("built_cc0_parts",-1))!=0 or (
+      (room.get("finished_prefabs") as Dictionary).size()!=0):
+    _fail(20,"REV208_UNPAID_HOUSE_CANNOT_CLAIM_SIX_FINISHED_CC0_BUILDS")
     return
   if not observed_live_tree_seed_rewards or not observed_planting:
     _fail(30,"TREE_MUST_ONLY_DROP_ONE_SEED_WHEN_FULLY_CUT_AND_REAL_SEED_MUST_GERMINATE")
