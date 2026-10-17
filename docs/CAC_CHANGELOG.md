@@ -1,5 +1,12 @@
 # CAC 工序变更与开发日志
 
+## 2026-10-18 / CAC-REV207-SIGNED-PUBLIC-VERIFIED / 五万平方公里五千人世界真实原版发布
+- **正式版本已发布 rev207**：原APK176 `versionCode1176` 兼容的RSA签名 `android-preview/canglan-content-rev-207.pck`，字节数`35,815,712`，SHA256 `db64972a0615abbe0600919220398d11853b83cbd4c57121b125f12b10262812`。正式CI `39064174356`通过真实Godot4.4.1原Main、24世界月生态账本、全量QA、真实Vulkan截图、签名和提交。
+- **官网真实验证**：首次Pages部署在`39064423476`因“尚未上线时却要求新版本的远程HTTPS已经验证”的循环前置条件失败；`914c9b3d29d24e533a267d66a29c7f9554d5f20e`修复为先部署已签名真实PCK，再独立HTTP核查且不伪造验证状态。官网Pages正式部署`39064522807`为**SUCCESS**；正式线上独立复验`39064640688`为**SUCCESS**：完整公网上传文件35,815,712字节、RSA/SHA256、HTTP Range 206全通过。`data/updates.json`已写入真实验证状态，手机安卓实机仍明确**PENDING**。
+- **实际新玩法**：启动时统计世界50,000 km²/500区块/5,000凡人，开局灵根比例2.5%=125位，其余允许炼体，生死/血脉随机继承、五类宗门及14门修行专长基础、矿脉妖兽族群修炼繁殖与真实四只开源GLB护矿妖兽、灵植种子库与30世界天野外扩散、真实屋舍禁种/挖土移除绿植、真实背包收支继承rev206。
+- **美术未达标，不能误报**：本轮实际Godot原Vulkan `real_apk176_rev207_vivid_cc0_texture_forest_wide.png` 显示夜间依旧有较大纯色草地；所谓Quaternius `bush.glb` 灌木实际是大量红白菌类外观，绿化不协调。真实Mesh/许可证/预算QA成功不等于用户最终视觉验收成功。已经在分支 `feat/rev208-green-kenney-saplings-vegetation` 中实际改为合法Kenney青绿橡树幼苗并准备独立原Main QA；**rev208尚未发布、不得说已经更新到手机**。
+
+
 ## 2026-10-18 / CAC-REV207-REAL-UNDERGROWTH-GODOT / 修复授权灌木GPU原点幻影，换为真正可渲染GLB
 - **严格引擎错误复现**：新灌木批绘在Godot4.4.1原Main的真实引擎测试中，`MultiMesh.set_instance_transform`和整块`set_buffer`立即回读仍是`Transform3D.IDENTITY`，因此灌木会堆在世界(0,0,0)，不是可见的生态；提交`909da55d…`/`7e80dfdd…`的原引擎日志已经记录真实失败值。本轮没有通过删掉真实mesh验证混过。
 - **完成技术回退但保留实体目标**：`111d191b36d5e3266ce7d6eae58bced8f25a1d15`改为与已成功渲染的rev206真灵药相同的`Quaternius/CC0`原GLB子场景复用。模型自带原始UV/法线/PBR/局部旋转；在真实道路/水体/预定六座住房及灵药采摘区之外依地形海拔撒布，按源真实三角预算最多210处灌木，与既有10,800束地表草混用。抽取真实`terrain_cell_changed`事件，在玩家挖地时将被挖地块的真灌木实体隐藏而非生成0矩阵原点幽灵。
