@@ -907,8 +907,104 @@ func _run() -> void:
       _fail(351,"REV208_SMALL_ORDINARY_ANIMAL_WITHOUT_REAL_BEAST_REALM_HP_MP_COLLIDER")
       return
   print("PASS_REV208_NO_FREE_HOUSES_200WOOD150STONE_FIVE_RESIDENTS_AND_FOUR_TRUE_LARGE_YAO_BEASTS")
+  # Rev207 authorized world replaces former 80k city initial census.
+  # It is count-only: 500 physical geographic regions would waste memory.
+  var living: Dictionary=report.get("rev207_real_living_world",{})
+  if int(report.get("rev207_authoritative_mortal_population",-1))!=5000 or (
+      int(living.get("population",0))!=5000) or (
+      int(living.get("area_km2",0))!=50000) or (
+      int(living.get("regions",0))!=500) or (
+      int(living.get("rooted_mortals",0))!=125) or (
+      int(living.get("without_spirit_root",0))!=4875) or (
+      int(living.get("body_cultivators",0))<150) or (
+      int(living.get("real_loaded_human_scene_nodes",-1))!=0) or (
+      not bool(living.get("conserved",false))):
+    _fail(360,"REV207_AUTHORITATIVE_SPARSE_MORTALS_NOT_LIVING_50000KM2_"+str(living))
+    return
+  if int(report.get("rev207_mine_guardian_positions_linked",-1))!=4:
+    _fail(361,"REV207_REAL_CC0_YAO_BEAST_LEADERS_NOT_LINKED_TO_FOUR_PHYSICAL_ORE_VEINS")
+    return
+  var guardians: Dictionary=room.get("actual_wildlife")
+  var spirit_visuals: Dictionary=room.get("spirit_resource_visuals")
+  for beast in guardians.values():
+    var ore_id: String=String(beast.get("guarded_ore",""))
+    var guard: Node3D=beast["node"]
+    if not spirit_visuals.has(ore_id):
+      _fail(362,"REV207_ORE_GUARD_IS_NOT_A_PHYSICAL_SPIRIT_VEIN_"+ore_id)
+      return
+    var ore: Node3D=spirit_visuals[ore_id]["model"]
+    if Vector2(guard.position.x-ore.position.x,
+        guard.position.z-ore.position.z).length()>7.0:
+      _fail(363,"REV207_YAO_BEAST_MUST_PATROL_WITHIN_7_METERS_OF_ACTUAL_ORE_"+ore_id)
+      return
+  for site in (room.get("housing_blueprints") as Dictionary).values():
+    if site.has("marker") and room.get("finished_prefabs").size()==0 and (
+        int(living.get("region_built_bp",-1))!=0):
+      _fail(364,"REV207_UNPAID_HOUSE_CANNOT_CLEAR_WILDERNESS_AND_GRASS")
+      return
+  # Source-hashed Quaternius source GLBs do not admit a valid instancing
+  # transform in this Godot build (even bulk GPU writes return IDENTITY).
+  # Require ACTUAL physically positioned vendor mesh scene instances:
+  # all original UVs/materials, 200 genuine visual bushes (no fake labels).
+  var real_plants: Array=room.get("licensed_understory_instances")
+  var soil_sites: Array=room.get("licensed_understory_locations")
+  var shrub_count: int=int(report.get("rev207_real_cc0_shrub_understory",0))
+  var each_surfaces: int=int(room.get("licensed_understory_surfaces_per_plant"))
+  if shrub_count<96 or shrub_count>210 or shrub_count!=real_plants.size() or (
+      soil_sites.size()!=shrub_count) or each_surfaces<1 or (
+      int(report.get("rev207_real_cc0_shrub_draw_nodes",-1))!=(
+      shrub_count*each_surfaces)) or int(report.get(
+      "rev207_real_cc0_shrub_triangles",999999))>140000:
+    _fail(370,"REV207_UNDERSTORY_NOT_TRUE_SOURCE_BOUNDED_MODELS_"+str({
+      "bushes":shrub_count,"visuals":real_plants.size(),
+      "triangles":report.get("rev207_real_cc0_shrub_triangles",0)}))
+    return
+  var healthy_stems: int=0
+  for plant_index in range(real_plants.size()):
+    var plant: Node3D=real_plants[plant_index]
+    var site_pos: Vector3=soil_sites[plant_index]
+    if not is_instance_valid(plant) or not plant.is_inside_tree() or (
+        plant.get_parent()!=world) or (
+        String(plant.get_meta("source_license",""))!="Quaternius-CC0") or (
+        String(plant.get_meta("source_prefab",""))!="bush.glb") or (
+        plant.find_children("*","MeshInstance3D",true,false).is_empty()):
+      _fail(371,"REV207_VEGETATION_NOT_REAL_LICENSED_GLTF_3D_MESH_"+str(
+        plant_index))
+      return
+    if absf(plant.position.x-site_pos.x)>0.01 or (
+        absf(plant.position.z-site_pos.z)>0.01):
+      _fail(372,"REV207_REAL_GLTF_MODEL_NOT_AT_PLANTED_SOIL_XZ")
+      return
+    var expected_visible: bool=bool(room.get("quality").call(
+      "_natural_plantable",site_pos.x,site_pos.z))
+    if plant.visible!=expected_visible:
+      _fail(373,"REV207_BUSH_NOT_RESPONDING_TO_LIVE_PHYSICAL_EXCAVATION_"+str({
+        "index":plant_index,"plant_visible":plant.visible,
+        "soil_is_plantable":expected_visible,"site":site_pos}))
+      return
+    if plant.visible:
+      healthy_stems+=1
+      if absf(plant.position.y-float(terrain.call(
+          "height_at",site_pos.x,site_pos.z)))>0.35:
+        _fail(375,"REV207_ACTUAL_CC0_BUSH_IS_FLOATING_OVER_REAL_SOIL")
+        return
+    if plant_index%13==0:
+      for blueprint in (room.get("housing_blueprints") as Dictionary).values():
+        var home: Vector3=blueprint["at"]
+        if Vector2(plant.position.x-home.x,
+            plant.position.z-home.z).length()<7.1:
+          _fail(374,"REV207_LIVING_BUSH_INSIDE_FUTURE_RESIDENTIAL_FOOTPRINT")
+          return
+  if healthy_stems<85 or healthy_stems!=int(report.get(
+      "rev207_real_cc0_shrub_live_after_terrain_edits",-1)):
+    _fail(376,"REV207_LICENCED_WILDERNESS_GREEN_COVERAGE_WAS_MINED_AWAY_"+str({
+      "healthy":healthy_stems,"reported":report.get(
+      "rev207_real_cc0_shrub_live_after_terrain_edits",-1)}))
+    return
+  print("PASS_REV207_TRUE_LICENSED_QUATERNIUS_SHRUB_UNDERSTORY_NONBUILDING_BOUNDED_REAL_SOURCE_GLTF_GEOMETRY")
+  print("PASS_REV207_TRUE_MAIN_50000KM2_5000_ROOT_RATIO_BODY_CULTIVATION_5_SECTS_4_REAL_ORE_BEAST_GUARDS")
   if not bool(report.get("persistent_city_population_is_statistical_only",false)):
-    _fail(331,"REV206_CITY_80000_RESIDENTS_MUST_NOT_BE_80000_GODOT_NODES")
+    _fail(331,"REV207_5000_MORTALS_MUST_BE_STATISTICAL_NOT_5000_GODOT_NODES")
     return
   print("PASS_REV206_REAL_QUATERNIUS_CC0_SOURCE_HOUSES_REAL_YAO_BEASTS_PERSISTENT_PAID_WORKER_BUILDING")
   if not (report.get("native_resolution_ui",false) and report.get("no_auto_quality_switch",false)):
@@ -1638,6 +1734,42 @@ func _run() -> void:
   if spirit_npcs.size()!=12 or spirit_records.size()!=12 or int(world_report.get("physical_cultivator_colliders",0))!=12:
     _fail(264,"REV201_NPCS_MISSING_INDEPENDENT_ENTITY_ID_HOURLY_AUTHORITY_OR_PHYSICAL_COLLIDERS")
     return
+  # rev207: existing 12 genuine 3D cultivators are named sect disciples or
+  # freely wandering practitioners, rather than 12 undifferentiated clones.
+  var live_world: RefCounted=room.get("world_society")
+  var actual_sects: Dictionary=live_world.get("sects")
+  var joined: int=0
+  var independent: int=0
+  var real_skills: Dictionary={}
+  for named_id in spirit_records:
+    var profile: Dictionary=spirit_records[named_id]
+    var sect_id: String=String(profile.get("rev207_sect_id",""))
+    var discipline: String=String(profile.get("rev207_discipline",""))
+    var actual_model: Node3D=spirit_npcs[named_id]["actor"]
+    if sect_id=="":
+      independent+=1
+    else:
+      if not actual_sects.has(sect_id):
+        _fail(366,"REV207_VISIBLE_SECT_MEMBER_NOT_REGISTERED_IN_ACTUAL_WORLD_"+sect_id)
+        return
+      joined+=1
+    if discipline=="" or String(actual_model.get_meta(
+        "rev207_discipline",""))!=discipline or (
+        String(actual_model.get_meta("rev207_sect_id",""))!=sect_id):
+      _fail(367,"REV207_ACTUAL_CC0_CULTIVATOR_SECT_AND_CRAFT_NOT_ATTACHED_"+named_id)
+      return
+    real_skills[discipline]=true
+  if joined<6 or independent<2 or real_skills.size()<8:
+    _fail(368,"REV207_12_VISIBLE_CULTIVATORS_NOT_DIVERSE_SECT_AND_CRAFT_SOCIAL_AGENTS")
+    return
+  var mortals: Dictionary=room.get("sim").get("citizens")
+  for manual_id in ["CL-NPC-0184-01","CL-NPC-0184-02","CL-NPC-0184-03"]:
+    var regular: Dictionary=mortals[manual_id]
+    if not bool(regular.get("body_training_allowed",false)) or (
+        not regular.has("root_profile")):
+      _fail(369,"REV207_ORDINARY_NPC_NOT_ELIGIBLE_FOR_SPIRITROOTLESS_BODY_TRAINING_"+manual_id)
+      return
+  print("PASS_REV207_ACTUAL_12_LICENSED_3D_CULTIVATORS_HAVE_NAMED_SECTS_14_DISCIPLINES_AND_ROOTLESS_WORKER_BODY_PATH")
   var spiritual_bars: Dictionary=spir.get("npc_vitals_bars")
   for spirit_id in spirit_npcs:
     var spirit_avatar: Node3D=spirit_npcs[spirit_id]["actor"]

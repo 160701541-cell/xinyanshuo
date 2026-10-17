@@ -26,6 +26,7 @@ REQUIRED = {
     "canglan_rev187/player_controller.gd",
     "canglan_rev187/backpack.gd",
     "canglan_rev187/spirit_resources.gd",
+    "canglan_rev187/living_regions.gd",
     "canglan_rev187/paid_housing.gd",
     "canglan_rev187/root_taxonomy.gd",
     "canglan_rev187/city_population.gd",

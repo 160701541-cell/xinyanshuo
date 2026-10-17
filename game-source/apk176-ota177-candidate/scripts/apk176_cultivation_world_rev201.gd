@@ -12,6 +12,7 @@ const SCHEMA: int=1
 const NPC_COUNT: int=12
 const RootTaxonomy = preload("res://canglan_rev187/root_taxonomy.gd")
 const CityPopulation = preload("res://canglan_rev187/city_population.gd")
+const LivingRegions = preload("res://canglan_rev187/living_regions.gd")
 # These are actual learned arts, not dummy buttons that give mortals free mana.
 const ART_SPIRIT_BOLT: String="CL-ART-SPIRIT-BOLT-V1"
 const ART_SPIRIT_WARD: String="CL-ART-SPIRIT-WARD-V1"
@@ -154,6 +155,16 @@ func _load_or_initialize() -> void:
       var layer: int=int(old.get("layer",0))
       var hpmax: int=110+layer*12
       var mpmax: int=12+layer*9 if String(old.get("realm",""))=="炼气" else 0
+      # Previous cultivation saves keep their Qi/ages/learned powers.
+      # Sect membership is assigned ONCE only if rev207 did not yet exist.
+      if not old.has("rev207_sect_id"):
+        old["rev207_sect_id"]="" if i%4==0 else String(
+          LivingRegions.SECTS[i%LivingRegions.SECTS.size()]["id"])
+        old["sect"]="独行散修" if String(old["rev207_sect_id"])=="" else String(
+          LivingRegions.SECTS[i%LivingRegions.SECTS.size()]["name"])
+      if not old.has("rev207_discipline"):
+        old["rev207_discipline"]=String(
+          LivingRegions.DISCIPLINES[i%LivingRegions.DISCIPLINES.size()])
       if not old.has("max_health"):
         old["max_health"]=hpmax
       if not old.has("health"):
@@ -175,7 +186,13 @@ func _load_or_initialize() -> void:
       "age":rng.randi_range(18,70),"hunger":rng.randi_range(8,36),
       "energy":rng.randi_range(45,90),"qi":rng.randi_range(0,60),
       "schedule":"歇息","life_hours":0,
-      "hostility":0,"sect":"行云散修会" if i%3==0 else "独行"}
+      "hostility":0,
+      "sect":"独行散修" if i%4==0 else String(
+        LivingRegions.SECTS[i%LivingRegions.SECTS.size()]["name"]),
+      "rev207_sect_id":"" if i%4==0 else String(
+        LivingRegions.SECTS[i%LivingRegions.SECTS.size()]["id"]),
+      "rev207_discipline":String(
+        LivingRegions.DISCIPLINES[i%LivingRegions.DISCIPLINES.size()])}
     var original: Dictionary=npc_data[id]
     var layer: int=int(original["layer"])
     original["max_health"]=110+layer*12
@@ -187,23 +204,30 @@ func _load_or_initialize() -> void:
   save_state()
 
 func _ensure_all_existing_world_citizens_have_roots() -> void:
-  # Three original live workers and the hero are actual named citizens,
-  # not "rootless because their public realm is mortal".
+  # rev207 override: player root guaranteed, but sparse mortal populace
+  # has ~2.5% spiritual aptitude. Others may study true body cultivation.
+  # Do not reroll IDs every hour/boot or invent a full 80k rooted city.
   for person_id in sim.citizens:
     var citizen: Dictionary=sim.citizens[person_id]
     if person_id=="CL-PLAYER-0184-0001":
       citizen["root_profile"]=player_data.get(
         "latent_root_profile",{}).duplicate(true)
-    elif not citizen.has("root_profile"):
-      var profession: String=String(citizen.get("profession","citizen"))
-      var origin: String="bonded_labor" if profession in [
-        "bonded_labor","enslaved_labor","recruitable_servant"] else "citizen"
+      citizen["has_root"]=true
+      citizen["body_training_allowed"]=true
+      continue
+    if not citizen.has("root_profile"):
+      var stable_roll: int=posmod(int(world_seed%100003)+(
+        String(person_id).hash()*17),10000)
+      var aptitude: bool=stable_roll<LivingRegions.ROOT_BASIS_POINTS
       citizen["root_profile"]=root_catalog.call(
-        "generate",world_seed,String(person_id),origin)
+        "generate",world_seed,String(person_id),"citizen") if aptitude else {
+          "kind":"无灵根","roots":[],"grade":"凡品",
+          "has_root":false,"constitution":"凡体",
+          "origin":"normal_mortal_statistical_rev207"}
     citizen["has_root"]=bool(citizen["root_profile"].get("has_root",false))
-    if person_id=="CL-PLAYER-0184-0001" or not String(
-        citizen.get("profession","")).contains("bonded"):
-      assert(citizen["has_root"])
+    citizen["body_training_allowed"]=true
+    citizen["mortal_body_refinement_path"]=(
+      "锻皮→炼筋→淬骨→换血→通脉→先天→宗师")
 
 func _entity_rng(code: String) -> RandomNumberGenerator:
   var state: int=world_seed
@@ -293,6 +317,8 @@ func _generate_actual_visible_cultivators() -> void:
     character.set_meta("entity_id",code)
     character.set_meta("npc_cultivator",true)
     character.set_meta("npc_name",String(npc_data[code]["name"]))
+    character.set_meta("rev207_sect_id",String(npc_data[code].get("rev207_sect_id","")))
+    character.set_meta("rev207_discipline",String(npc_data[code].get("rev207_discipline","")))
     character.position.y=float(terrain.call("height_at",x,z))+float(
       character.get_meta("actor_ground_offset_y",0.0))
     var anim: AnimationPlayer=null
@@ -486,10 +512,10 @@ func player_breakthrough() -> Dictionary:
 
 func advance_world_hour() -> void:
   total_hours+=1
-  # True statistical city life uses the SAME hour ticker as all 12 live NPCs,
-  # but advances aggregate 80k population only once per simulated day.
-  if city_population!=null and total_hours%24==0:
-    city_population.call("advance_city_day","CL-CITY-HEXI-0001")
+  # Rev207 overrides the old 80k demo city with 5k humans distributed
+  # over 50,000 km². The old city ledger remains read-only in old save
+  # files for backward compatibility, but must NEVER advance or contribute
+  # ghost births alongside the authoritative regional world simulation.
   # This is the same sim.tick() hour already advanced by the original world
   # clock. No second phantom clock can advance qi without economic time.
   if bool(player_data.get("meditating",false)) and (
@@ -658,6 +684,21 @@ func visual_root_signature() -> Dictionary:
     player_data.get("root_profile",{}))
 
 func city_census() -> Dictionary:
+  if room!=null:
+    var living: RefCounted=room.get("world_society")
+    if living!=null and bool(living.get("_loaded")):
+      var actual: Dictionary=living.call("stats")
+      return {"population":int(actual["population"]),
+        "mortal_population":int(actual["population"]),
+        "area_km2":int(actual["area_km2"]),
+        "regions":int(actual["regions"]),
+        "rooted_mortals":int(actual["rooted_mortals"]),
+        "body_cultivators":int(actual["body_cultivators"]),
+        "residents_simulated_only":int(actual["population"]),
+        "live_physical_scene_nodes":0,
+        "legacy_city_80k_not_active":true}
+  # Detached legacy QA and saves can still inspect their old city shape;
+  # actual game never uses it for today's authoritative 5k world census.
   if city_population==null:
     return {}
   return city_population.call("describe_city","CL-CITY-HEXI-0001")
@@ -665,7 +706,8 @@ func city_census() -> Dictionary:
 func stats() -> Dictionary:
   return {"world_seed":world_seed,
     "seed_is_persistent":FileAccess.file_exists(SAVE_PATH),
-    "all_normal_spirit_roots_guaranteed":true,
+    "all_normal_spirit_roots_guaranteed":false,
+    "rev207_player_root_guaranteed_other_mortals_statistical":true,
     "root_catalog_element_count":int(root_catalog.call("catalog_size")) if root_catalog!=null else 0,
     "city_population_record":city_census(),
     "cultivator_count":npc_visuals.size(),

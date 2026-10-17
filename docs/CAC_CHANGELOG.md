@@ -1,5 +1,50 @@
 # CAC 工序变更与开发日志
 
+## 2026-10-18 / CAC-REV207-REAL-UNDERGROWTH-GODOT / 修复授权灌木GPU原点幻影，换为真正可渲染GLB
+- **严格引擎错误复现**：新灌木批绘在Godot4.4.1原Main的真实引擎测试中，`MultiMesh.set_instance_transform`和整块`set_buffer`立即回读仍是`Transform3D.IDENTITY`，因此灌木会堆在世界(0,0,0)，不是可见的生态；提交`909da55d…`/`7e80dfdd…`的原引擎日志已经记录真实失败值。本轮没有通过删掉真实mesh验证混过。
+- **完成技术回退但保留实体目标**：`111d191b36d5e3266ce7d6eae58bced8f25a1d15`改为与已成功渲染的rev206真灵药相同的`Quaternius/CC0`原GLB子场景复用。模型自带原始UV/法线/PBR/局部旋转；在真实道路/水体/预定六座住房及灵药采摘区之外依地形海拔撒布，按源真实三角预算最多210处灌木，与既有10,800束地表草混用。抽取真实`terrain_cell_changed`事件，在玩家挖地时将被挖地块的真灌木实体隐藏而非生成0矩阵原点幽灵。
+- 对应严格原Main QA `059217460fd6a36cfa3797b0066733c48ffb8218`：每个授权3D原模型的节点、源许可、实际MeshInstance3D、世界XZ坐标、地形高度、植被可见性、未来房屋预留地、预算、挖矿后的不再悬空全部真实逐项核验。由`5a1d92bb4115c82e964576a3ba6e7613f3056a82`触发的原APK176 CI 已经过了原Main和住宅回归测试，仍等待完整截图/流程结论；这还不等于安卓性能和客户端实机通过。
+- **性能取舍**：出于可靠性选择最多210个真GLB绘制节点，而非证明不了正确变换的MultiMesh批次；未来需在实机GPU监测结果下采用可信的GLB网格合批或真正LOD，维持视觉密度而不让发热/掉帧恶化。
+
+
+## 2026-10-18 / CAC-REV207-SHRUB-VISIBLE-COUNT / 以GPU真正可见槽位消除矿坑幽灵灌木
+- 原Main严格QA `39062413780` 与 `39062565580` 均 **FAIL**：通过实际Godot回读证明使用0缩放/0.0001缩放表示“隐藏”的MultiMesh实例在源网格与引擎渲染器某些场合返回单位变换于世界原点，导致原厂灌木错误显示。
+- 正式技术修复候选 `1c37e9150eda352c08229ce73ef32b3758c8f959`：不再依赖神秘零缩放，原始植株的真实土壤ID与渲染GPU slot严格分离；矿工挖地后仅保留可种植地的紧凑实例映射，填充前N个真实源GLB变换，设置Godot原生`MultiMesh.visible_instance_count=N`显式裁去其余位置，根本消除原点“大灌木”的风险；六栋房屋蓝图仍受植物禁入硬约束。
+- 严格QA `10a39632bf662eeb7c906e9262e3db56a1b70ded`逐一比对原厂GLB旋转与每个当前可见GPU实例的土壤实体映射、挖掘后生长环境、建筑间距、实例守恒和全部MeshPart同步，不取消严格审查。仍等分支原APK176真引擎总验收结果，正式签名仅能在green QA之后。
+
+
+## 2026-10-18 / CAC-REV207-SHRUB-MULTIMESH-ZERO-BASIS / 原生GPU实例隐藏陷阱
+- 严格原APK176 Main QA `39062088006`/精确数值追踪 `39062242184` 仍为 **FAIL**，并已获得真实Godot失败数据：本应隐藏的0号灌木GPU实例竟回读为`Basis.IDENTITY, origin=(0,0,0)`，而原始授权GLB的正常植株应具有作者90°旋转和世界位置`(17.606,0.639,10.827)`。这会导致采挖地表后植物跑到世界原点，不是纹理丢失或普通GLB原型错误。
+- 源修复 `6558affe42d6c8edd91bc4098318738a38a5846d`：矿场被挖后不再给Godot4.4 MultiMesh传非可逆零缩放变换，而用合法可逆的0.0001倍细微尺寸网格放在地面下6米。修复需对比全部源mesh的变换、真实可种植土壤和挖掘后有根系消失的严格QA；未通过前不能合并或发rev207。
+
+
+## 2026-10-18 / CAC-REV207-LIVE-EXCAVATED-SHRUBS / 草木不能长在被挖走的地上
+- 严格原APK176 Main QA `39061896938` 返回 **FAIL**：`REV207_REAL_CC0_SHRUB_ON_PATH_POND_OR_CUT_SOIL`。实际问题是用户挖矿/挖地后，授权Quaternius灌木的初始GPU实例仍保留，可能飘在已挖地表；不能靠删掉检测“通过”。
+- 修复`d4265b4557050b7ce71c0b526272e3ab01f85910`：每个原厂MeshInstance3D复制为MultiMesh批绘时保存真实土壤位置与原作者GLB本地坐标变换，监听原Godot真实地层`terrain_cell_changed`，在挖开的地块即时更新所有灌木子网格，取消已经不再适合生长的GPU实例；其余森林和房屋位置不能被改动。
+- QA `c890b12c40afe06486dc5329c02ba0b0da3f3180`：按植株**土壤逻辑坐标**而不是原始艺术mesh偏移作为建筑/道路/挖掘判断，测试三维网格的真实world-transform与作者相对偏移是否完整保留，活株GPU实例是否随开挖退出、剩余树木在场、所有子mesh一致。最新提交仍须原Godot QA复测；截至记录时没有发布rev207。
+
+
+## 2026-10-18 / CAC-REV207-SHRUB-INIT-ORDER / 检查出首帧生态渲染依赖顺序并真实修复
+- GitHub Actions `39061700710` 原APK176 Godot 4.4.1全场景QA **FAIL**：`REV207_UNDERSTORY_CC0_BUSH_NOT_IMPORTED`，已确认真实开源 bush.glb 已被加载，不是缺许可或资源路径；根因是新增灌木渲染调用早于`quality = ManualQuality.new()`初始化，而合法可种区域判定需要quality实例。
+- 真正修改原`_ready()`顺序（提交`4794a0800bc1b084862480e17964c64b71c2e833`）：在原树木、石矿、角色、原Main、质量/流式草地均初始化后，再创建真实授权灌木MultiMesh，保留全部源模型/PBR和QA门禁，不删检测、不放宽真实GLB要求。
+- 严格QA后续执行`39061896938`（提交时仍未出结论）。原已发布签名 rev206 仍不变；只有最新rev207 Godot Main、Godot引擎截图、RSA签发和公网站验签全绿才可合并发布。
+
+
+## 2026-10-18 / CAC-REV207-REAL-CC0-UNDERSTORY / 真GLB授权灌木填植被空白（需新Godot截图复测）
+- 对照实际rev207候选Godot 1280×720截图：原近景草丛虽有10800 MultiMesh，但局部仍有明显单一裸绿地。用户最新要求“除建筑用地外不能空白”，不能只写500区块生态数据；须让原真3D场景有实物群落。
+- 真正修改`scripts/apk176_living_resource_world_rev187.gd`：使用已授权且哈希固定的Quaternius `cc0_spirit/herb/bush.glb`，复用原GLB Mesh/UV/PBR及作者局部变换，按源mesh面数估算GPU三角预算(≤35万)，逐MeshPart的MultiMesh场景批绘和可缩放植株，采样真实可种土壤，明确排除路/水/已挖土壤/六处住宅地基，保证不是建筑内乱长草。
+- 原Main QA新增植株数量、真实网格实例变换、源模型批绘、预算上限和建筑地基硬禁种；引擎截图与实机视觉效果尚需核查。此功能是**可见灌木地被**不是免费的成熟药草，真正可采药物仍从有限灵药账本扣除。
+
+
+## 2026-10-18 / CAC-REV207-LIVING-WORLD-P0 / 用户新的五万平方公里稀疏世界与妖兽繁衍（候选）
+- **本轮指令覆盖旧设定**：世界起始`50,000 km²`、`5,000位凡人`，不再把旧城8万人+统计居民当成实时世界人口，凡人灵根比例不是100%，无灵根者可炼体；宗门有剑修、符箓、御兽、炼丹、阵法等独立职业传承。完整机械设计见`docs/REV207_LIVING_WORLD_50000KM2_MECHANICS_20261018.md`。
+- 新源`game-source/apk176-ota177-candidate/scripts/apk176_living_regions_rev207.gd`：500个面积100km²统计生境/人口块，初始5000居民/125根性者/其余无根与体修人口，按月生育死亡、按年年龄变化、子代灵根概率、持续种子库与草药生境；五个宗门专业与招徒进度；四个真实矿脉附近的妖兽家族按世界时辰积蓄灵气、缓慢突破境界、食物约束繁育/老死并可因真实打斗扣减个体。只有近景四只已有授权GLB兽实体在渲染，其余为**统计人口/生物量，未冒充实体**。
+- 原Godot正式主场景脚本`apk176_living_resource_world_rev187.gd`已接入新世界引擎/旧时间加速，四个真的妖兽位置分别靠近真实四处灵石矿脉，法力、境界、碰撞/攻击持续保留；`apk176_cultivation_world_rev201.gd`将旧8万人城市账本冻结只读，不得再次与五千人相加。
+- `apk176_spirit_resources_rev206.gd`保留13处原节点及旧档守恒，新增自然30世界日后随机但可复现、避建筑和道路的本地灵草扩散，初始13处不破坏；植株可采量降为0仅代表暂时无成熟枝叶，活植物模型与种子库保留。种苗来源仅使用之前哈希固定的Quaternius授权原3D素材；`build_apk176_quality_rev187.gd`与`verify_apk176_rev187_3d_pck.py`已要求新引擎脚本打入原PCK。
+- 新QA `verify_rev207_living_regions.gd`覆盖24个月 5000开局/根性比例/生育死亡/体修门派/妖兽繁殖修炼/草木不灭/读档守恒，以及原Main四矿真实兽距校验；CI位于`.github/workflows/canglan-rev207-living-regions-qa-only.yml`。**本轮新候选尚未经过Godot Main绿色QA、正式签名或公网站证；绝不称作手机已更新。**
+- 本轮刻意不把50000平方公里“已有3D地形”当事实：已提交的广域模拟 ≠ 手机上的完整实体地形；还要实现旅途分块、独立职业交互、真实幼兽出场、完整宗门模型和Android实机QA。
+
+
 ## 2026-10-18 / CAC-3D-206-LIVE / 原APK176 rev206正式热更新已完成、官网公网上线
 - ✅ 真正发布成功：PR #12 合并正式 `main`：`25408b71a9aac51e9ea4aea8fe8e9567c800cba1`；Godot 4.4.1原APK176 Main严格验收与RSA发布流水线 `39057810555` **SUCCESS**，和旧APK176 `versionCode1176`兼容，未重复打APK，未篡改旧 rev205 不可变PCK。
 - ✅ 原签名清单 `android-preview/latest.json` 版本rev206；唯一正式新补丁 `android-preview/canglan-content-rev-206.pck`，实际大小 `35,782,624` 字节、SHA256 `d2b2fbd4a34b8dfeb90d20f1e302ff01803adf5b8c811aed78759d1b478ba022`，RSA-3072验签通过；合法来源Quaternius灵草/矿石物件与Kenney树林石矿GPU批次载入真主场景。

@@ -14,6 +14,7 @@ const VividMaterials = preload("res://canglan_rev187/vivid_material.gd")
 const CultivationWorld = preload("res://canglan_rev187/cultivation_world.gd")
 const SpiritResources = preload("res://canglan_rev187/spirit_resources.gd")
 const PaidHousing = preload("res://canglan_rev187/paid_housing.gd")
+const LivingRegions = preload("res://canglan_rev187/living_regions.gd")
 const ASSETS := {
   "tree": "res://canglan_rev187/tree_oak.glb",
   "stone": "res://canglan_rev187/rocks_small.glb",
@@ -102,8 +103,20 @@ var housing: RefCounted
 var housing_blueprints: Dictionary={}
 var house_entry_colliders: Dictionary={}
 var spirit_resources: RefCounted
+# Authoritative offscreen world: 50,000 km² / initially 5,000 humans.
+# Old 80,000-person city remains a backward-compatibility save snapshot only.
+var world_society: RefCounted
 var spirit_resource_sources: Dictionary={}
 var spirit_resource_visuals: Dictionary={}
+# True original Quaternius GLB plants, cloned (meshes, UV, real source
+# materials). A bounded 210-source-node CPU fallback is safer than silently
+# rendering identity matrix MultiMesh ghosts on the actual Godot 4.4.1 GPU.
+var licensed_understory_count: int=0
+var licensed_understory_draw_parts: int=0
+var licensed_understory_triangle_budget: int=0
+var licensed_understory_locations: Array[Vector3]=[]
+var licensed_understory_instances: Array[Node3D]=[]
+var licensed_understory_surfaces_per_plant: int=0
 const SPIRIT_CC0_SOURCES: Dictionary={
   "flower":"res://canglan_rev187/cc0_spirit/herb/flower.glb",
   "flower2":"res://canglan_rev187/cc0_spirit/herb/flower2.glb",
@@ -197,11 +210,22 @@ func _ready() -> void:
   # world or invented resource/financial ledger is created.
   cultivation=CultivationWorld.new()
   cultivation.call("initialize",self)
+  world_society=LivingRegions.new()
+  if not bool(world_society.call("initialize",int(cultivation.get("world_seed")))):
+    asset_errors.append("REV207_WORLD_50000KM2_MORTAL_ECOLOGY_SAVE_LOAD_FAILED")
+  else:
+    _sync_mine_guardian_realms()
   _create_quality_hud()
   _hide_old_render_world()
   _hide_original_debug_labels()
   quality = ManualQuality.new()
   quality.call("initialize",self)
+  # Its real terrain _natural_plantable() mask becomes available ONLY once
+  # the physical quality/vegetation controller is initialized. The earlier
+  # call ran before quality existed and rejected all genuine bush sources.
+  _spawn_licensed_living_understory()
+  terrain_world.connect("terrain_cell_changed",
+    Callable(self,"_on_understory_terrain_changed"))
   _set_dev_ui_visible(false)
   _update_camera()
   _sync_living_daylight()
@@ -766,12 +790,119 @@ func quote_and_fund_near_house(point: Vector3) -> Dictionary:
       int(result["spent_wood"]),int(result["spent_stone"]),best_id])
   return result
 
+# Each small shrub is genuine licensed Quaternius bush GLB geometry,
+# UV and PBR (not a fake homemade building/flat billboard), drawn as a
+# per-part MultiMesh to avoid one expensive draw node per plant.  The
+# engine's plantability mask excludes ponds, rock, paths and excavation.
+# This is decorative living understorey, NOT free harvestable inventory:
+# collectible medicine remains the strictly conserved spirit_resource ledger.
+# Licensed 3D undergrowth MUST be real GPU-renderable models, not an
+# arbitrary scene graph or plant data. Verified Godot 4.4.1 Main QA found
+# imported-GLB MultiMesh instance_set_transform, and even bulk set_buffer,
+# roundtripping as IDENTITY at (0,0,0). The source-authorized GLB source
+# scene duplication used successfully by medicinal herbs avoids phantom
+# bushes and retains exact textured UV/normal maps. We cap the mobile draw
+# budget rather than claiming one batch when no legitimate batch exists.
+func _spawn_licensed_living_understory() -> void:
+  if not spirit_resource_sources.has("bush") or quality==null:
+    asset_errors.append("REV207_UNDERSTORY_CC0_BUSH_NOT_IMPORTED")
+    return
+  var original: Node3D=spirit_resource_sources["bush"]
+  var part_nodes: Array[Node]=original.find_children("*","MeshInstance3D",true,false)
+  var source_triangles: int=0
+  var surface_count: int=0
+  for node in part_nodes:
+    var source: MeshInstance3D=node as MeshInstance3D
+    if source==null or source.mesh==null:
+      continue
+    for index in range(source.mesh.get_surface_count()):
+      var arrays: Array=source.mesh.surface_get_arrays(index)
+      var faces: PackedInt32Array=arrays[Mesh.ARRAY_INDEX]
+      var points: PackedVector3Array=arrays[Mesh.ARRAY_VERTEX]
+      source_triangles+=int(faces.size()/3) if not faces.is_empty() else (
+        int(points.size()/3))
+      surface_count+=1
+  if source_triangles<=0 or surface_count<=0:
+    asset_errors.append("REV207_NO_REAL_LICENSED_SOURCE_BUSH_MESH_AND_TEXTURE")
+    return
+  # CPU-drawcall ceiling: one genuine authored GLB node per shrub. Existing
+  # 10,800 grass MultiMeshes still cover ground underneath the shrubs.
+  var target: int=clampi(116000/maxi(1,source_triangles),96,210)
+  var rng:=RandomNumberGenerator.new()
+  rng.seed=20261018
+  var attempts: int=0
+  while licensed_understory_count<target and attempts<target*14:
+    attempts+=1
+    var x: float=rng.randf_range(-42.0,42.0)
+    var z: float=rng.randf_range(-42.0,42.0)
+    if not bool(quality.call("_natural_plantable",x,z)):
+      continue
+    var excluded: bool=false
+    for site in housing_blueprints.values():
+      var home: Vector3=site["at"]
+      if Vector2(x-home.x,z-home.z).length()<7.2:
+        excluded=true
+        break
+    if excluded:
+      continue
+    for herb in spirit_resource_visuals.values():
+      var h: Node3D=herb["model"]
+      if Vector2(x-h.position.x,z-h.position.z).length()<1.6:
+        excluded=true
+        break
+    if excluded:
+      continue
+    var model: Node3D=original.duplicate()
+    model.name="RealQuaterniusLicensedUnderstory_%03d" % licensed_understory_count
+    var y: float=float(terrain_world.call("height_at",x,z))
+    model.position=Vector3(x,y,z)
+    model.rotation.y=rng.randf_range(-PI,PI)
+    model.scale=Vector3.ONE*rng.randf_range(0.38,0.72)
+    model.set_meta("source_license","Quaternius-CC0")
+    model.set_meta("never_free_inventory",true)
+    model.set_meta("source_prefab","bush.glb")
+    world.add_child(model)
+    licensed_understory_locations.append(Vector3(x,y,z))
+    licensed_understory_instances.append(model)
+    licensed_understory_count+=1
+  licensed_understory_surfaces_per_plant=surface_count
+  licensed_understory_draw_parts=licensed_understory_count*surface_count
+  licensed_understory_triangle_budget=licensed_understory_count*source_triangles
+  if licensed_understory_count<96 or licensed_understory_triangle_budget>140000:
+    asset_errors.append("REV207_LIVE_LICENSED_UNDERGROWTH_MOBILE_BUDGET_OR_DENSITY")
+
+# An excavation kills only the bushes on the affected real surface cells.
+# Their source-authored GLB meshes remain in the memory pool for later
+# biological recovery; no origin-identity GPU clones or free inventories.
+func _on_understory_terrain_changed(at: Vector3,radius: float) -> void:
+  if quality==null:
+    return
+  for index in range(licensed_understory_instances.size()):
+    var pos: Vector3=licensed_understory_locations[index]
+    if Vector2(pos.x-at.x,pos.z-at.z).length()>radius+1.5:
+      continue
+    var stem: Node3D=licensed_understory_instances[index]
+    if is_instance_valid(stem):
+      stem.visible=bool(quality.call("_natural_plantable",pos.x,pos.z))
+      if stem.visible:
+        stem.position.y=float(terrain_world.call(
+          "height_at",pos.x,pos.z))
+
+func _living_shrub_count() -> int:
+  var visible: int=0
+  for living in licensed_understory_instances:
+    if is_instance_valid(living) and living.visible:
+      visible+=1
+  return visible
+
 func _spawn_spirit_resource_nodes() -> void:
   if spirit_resources==null or not bool(spirit_resources.get("_loaded")):
     return
   var records: Dictionary=spirit_resources.get("nodes")
   var recipes: Dictionary=SpiritResources.RESOURCE_DEFS
   for id in records:
+    if spirit_resource_visuals.has(id):
+      continue
     var data: Dictionary=records[id]
     var kind: String=String(data["kind"])
     var prefab: String=String(recipes[kind]["prefab"])
@@ -827,7 +958,9 @@ func _spawn_spirit_resource_nodes() -> void:
     tag.position=Vector3(0,2.1,0)
     tag.visible=false
     model.add_child(tag)
-    model.visible=int(data["remaining"])>0
+    # The living stem/seed bank remains even after harvestable buds reach
+    # zero. Picking herbs never makes a species disappear from the land.
+    model.visible=int(data["remaining"])>0 or kind!="spirit_stone"
     spirit_resource_visuals[id]={"model":model,"caption":tag,
       "kind":kind,"display":String(recipes[kind]["display"])}
   _add_event("已生成%d株实体野生灵药/矿脉；全部由实际CC0花草岩石绘制" % [
@@ -843,7 +976,7 @@ func _sync_spirit_resource_visuals(hero: Node3D=null) -> void:
     if not is_instance_valid(entity):
       continue
     var remaining: int=int(ledger[id]["remaining"])
-    entity.visible=remaining>0
+    entity.visible=remaining>0 or String(visual["kind"])!="spirit_stone"
     var tag: Label3D=visual["caption"]
     if entity.visible and hero!=null:
       var distance: float=Vector2(
@@ -870,13 +1003,14 @@ func harvest_real_spirit_resource(point: Vector3,
   return response
 
 func _spawn_native_animals() -> void:
-  # At most four active true animated animals. The offscreen population of
-  # 10000..250000 humans exists ONLY in statistical memory, NEVER nodes.
+  # Four physical CC0 spiritual beast leaders truly GUARD four physical
+  # ore veins, a few metres away from each node. Their invisible wild packs
+  # breed and cultivate in a bounded regional ledger, never 5000 3D nodes.
   var animals: Array=[
-    ["wolf",Vector3(32.0,0.0,-34.0),"CL-WILDLIFE-WOLF-01"],
-    ["fox",Vector3(-34.0,0.0,-31.0),"CL-WILDLIFE-FOX-01"],
-    ["deer",Vector3(-32.0,0.0,32.0),"CL-WILDLIFE-DEER-01"],
-    ["cow",Vector3(31.0,0.0,34.0),"CL-WILDLIFE-COW-01"]]
+    ["wolf",Vector3(25.2,0.0,-31.0),"CL-WILDLIFE-WOLF-01"],
+    ["fox",Vector3(26.4,0.0,30.3),"CL-WILDLIFE-FOX-01"],
+    ["deer",Vector3(18.2,0.0,37.1),"CL-WILDLIFE-DEER-01"],
+    ["cow",Vector3(33.2,0.0,3.8),"CL-WILDLIFE-COW-01"]]
   for element in animals:
     var kind: String=element[0]
     if not native_wildlife_sources.has(kind):
@@ -890,6 +1024,11 @@ func _spawn_native_animals() -> void:
     critter.set_meta("animal_not_human_citizen",true)
     critter.set_meta("species",kind)
     critter.set_meta("wildlife_entity_id",String(element[2]))
+    critter.set_meta("ore_guardian_territory",true)
+    # Match the exact living ore position in the original physical scene.
+    var guard_index: int=animals.find(element)
+    critter.set_meta("guarded_spirit_ore",String(
+      LivingRegions.MINE_GUARDS[guard_index]["ore"]))
     world.add_child(critter)
     var bounds: Vector2=_visible_bounds(critter)
     var measured: float=bounds.y-bounds.x
@@ -958,8 +1097,40 @@ func _spawn_native_animals() -> void:
       "aggressive":bool(plan["hostile"]),"damage":int(plan["damage"]),
       "attack_cooldown":1.2,"attack_windup":0.0,
       "loot_available":false,"state":"patrol",
+      "guarded_ore":String(critter.get_meta("guarded_spirit_ore")),
       "collider":solid,"head_label":label,
       "animator":animator,"idle":idle_clip,"walk":walk_clip}
+
+# Same world-time ticker as NPC cultivation, seasonal vegetation and
+# mine guardians. The available physical CC0 leader meshes are updated with
+# actual realm, HP/MP ceiling and combat damage after slow breakthroughs.
+func _sync_mine_guardian_realms() -> void:
+  if world_society==null or not bool(world_society.get("_loaded")):
+    return
+  var packs: Dictionary=world_society.get("beast_packs")
+  for id in actual_wildlife:
+    if not packs.has(id):
+      continue
+    var pack: Dictionary=packs[id]
+    var beast: Dictionary=actual_wildlife[id]
+    if int(beast["health"])<=0:
+      continue
+    var layer: int=int(pack["layer"])
+    var role: String=String(beast["species"])
+    var base: Dictionary=YAO_BEAST_SPEC[role]
+    var new_health: int=int(base["max_health"])+maxi(0,layer-1)*16
+    var new_mana: int=int(base["max_mana"])+maxi(0,layer-1)*10
+    var health_increase: int=new_health-int(beast["max_health"])
+    var mana_increase: int=new_mana-int(beast["max_mana"])
+    beast["max_health"]=new_health
+    beast["health"]=mini(new_health,maxi(1,int(beast["health"])+maxi(0,health_increase)))
+    beast["max_mana"]=new_mana
+    beast["mana"]=mini(new_mana,maxi(0,int(beast["mana"])+maxi(0,mana_increase)))
+    beast["damage"]=int(base["damage"])+maxi(0,layer-1)*2
+    beast["realm"]=String(pack["realm"])
+    beast["age_days"]=int(pack["age_months"])*30
+    (beast["node"] as Node3D).set_meta("beast_realm",String(beast["realm"]))
+    _sync_beast_vitals(beast)
 
 func apply_yao_beast_damage(id: String,damage: int,
     element: String="sword") -> Dictionary:
@@ -982,6 +1153,8 @@ func apply_yao_beast_damage(id: String,damage: int,
     beast["loot_available"]=true
     beast["aggressive"]=false
     _beast_deaths+=1
+    if world_society!=null and bool(world_society.get("_loaded")):
+      world_society.call("record_guardian_death",id)
     var solid: StaticBody3D=beast["collider"]
     if is_instance_valid(solid):
       solid.collision_layer=0
@@ -1554,7 +1727,15 @@ func _process(delta: float) -> void:
     if cultivation!=null:
       cultivation.call("advance_world_hour")
     if spirit_resources!=null:
+      var herb_count_before: int=int(spirit_resources.get("nodes").size())
       spirit_resources.call("advance_world_hour")
+      if int(spirit_resources.get("nodes").size())>herb_count_before:
+        _spawn_spirit_resource_nodes()
+    if world_society!=null and bool(world_society.get("_loaded")):
+      var month_before: int=int(world_society.get("months"))
+      world_society.call("advance_world_hour")
+      if int(world_society.get("months"))!=month_before:
+        _sync_mine_guardian_realms()
     _total_accelerated_hours+=1
     advanced+=1
   if advanced>0:
@@ -1658,6 +1839,16 @@ func stats() -> Dictionary:
     "rev208_true_yao_beast_real_hit_events":_beast_hit_events,
     "rev208_yao_beast_deaths":_beast_deaths,
     "rev206_real_spirit_herbs_ore":spirit_resources.call("stats") if spirit_resources!=null else {},
+    "rev207_real_living_world":world_society.call("stats") if world_society!=null else {},
+    "rev207_authoritative_mortal_population":int(world_society.call(
+      "population")) if world_society!=null and bool(
+      world_society.get("_loaded")) else 0,
+    "rev207_mine_guardian_positions_linked":actual_wildlife.values().filter(
+      func(v): return String(v.get("guarded_ore",""))!="").size(),
+    "rev207_real_cc0_shrub_understory":licensed_understory_count,
+    "rev207_real_cc0_shrub_draw_nodes":licensed_understory_draw_parts,
+    "rev207_real_cc0_shrub_triangles":licensed_understory_triangle_budget,
+    "rev207_real_cc0_shrub_live_after_terrain_edits":_living_shrub_count(),
     "rev206_world_spirit_resource_visuals":spirit_resource_visuals.size(),
     "rev206_licensed_spirit_plant_rock_sources":spirit_resource_sources.size(),
     "rev206_native_animated_wildlife_count":_wildlife_anim_count,
@@ -1712,8 +1903,9 @@ func stats() -> Dictionary:
     },
     "not_whole_finished_house":false, "save_unchanged":true,
     "original_licensed_complete_houses_used":true,
-    "persistent_city_population_is_statistical_only":cultivation!=null and int(
-      cultivation.call("city_census").get("population",0))>=10000}
+    "persistent_city_population_is_statistical_only":world_society!=null and (
+      int(world_society.call("stats").get("area_km2",0))==50000) and (
+      int(world_society.call("stats").get("real_loaded_human_scene_nodes",-1))==0)}
 
 
 func _visible_bounds(actor: Node3D) -> Vector2:
