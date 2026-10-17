@@ -200,6 +200,75 @@ func _run() -> void:
     return
   room.call("_set_dev_ui_visible",false)
   print("PASS_REV188_REAL_HEALTH_STAMINA_GAME_HUD_BAG_MENU_AND_OPT_IN_DEV_TOOLS")
+  # rev189 gamepad QA injects normalized JoyButton events; CI has NO real
+  # paired Android HID hardware. Do not call this a physical pad acceptance.
+  if not (player.call("_pad_axis_deadzone",Vector2(0.05,-0.06)) as Vector2).is_zero_approx():
+    _fail(151,"PAD_ANALOG_DEADZONE_DRIFTS_AT_REST")
+    return
+  var filtered: Vector2=player.call("_pad_axis_deadzone",Vector2(0.95,0.95))
+  if filtered.length()>1.001 or filtered.length()<0.95:
+    _fail(152,"PAD_DIAGONAL_INPUT_MUST_BE_RADIAL_AND_CLAMPED")
+    return
+  var pad_menu: Node=game_hud.get_node("Rev188CharacterInventoryCultivationMenu")
+  var yaw_before: float=float(player.get("_yaw"))
+  player.call("_pad_apply_look",Vector2(0.7,0.37),0.20)
+  if absf(float(player.get("_yaw"))-yaw_before)<0.04:
+    _fail(153,"PAD_RIGHT_STICK_DOES_NOT_MOVE_REAL_CAMERA")
+    return
+  player.set("_yaw",yaw_before)
+  player.call("update_camera")
+  var physical_button_event:=InputEventJoypadButton.new()
+  physical_button_event.device=42 # synthetic QA ID, NOT a paired device
+  physical_button_event.button_index=JOY_BUTTON_START
+  physical_button_event.pressed=true
+  player.set("_pad_device",42)
+  player.call("handle_input",physical_button_event)
+  if not pad_menu.visible or String(player.get("_game_sheet_mode"))!="settings":
+    _fail(154,"PAD_START_CANNOT_OPEN_GAME_SETTINGS")
+    return
+  player.call("_pad_focus_menu",0)
+  var menu_buttons: Array=player.get("_pad_menu_options")
+  if menu_buttons.size()<3:
+    _fail(155,"PAD_MENU_HAS_NO_SELECTABLE_SETTINGS")
+    return
+  player.call("_pad_press_button",JOY_BUTTON_DPAD_DOWN)
+  if int(player.get("_pad_menu_index"))==0:
+    _fail(156,"PAD_DPAD_CANNOT_NAVIGATE_MENU")
+    return
+  player.call("_pad_press_button",JOY_BUTTON_B)
+  if pad_menu.visible:
+    _fail(157,"PAD_B_CANNOT_CLOSE_MENU")
+    return
+  player.call("_pad_press_button",JOY_BUTTON_RIGHT_SHOULDER)
+  if not pad_menu.visible or String(player.get("_game_sheet_mode"))!="inventory":
+    _fail(158,"PAD_RB_CANNOT_OPEN_REAL_INVENTORY")
+    return
+  player.call("_pad_press_button",JOY_BUTTON_B)
+  player.call("_pad_press_button",JOY_BUTTON_LEFT_SHOULDER)
+  if not bool(player.get("is_first_person")):
+    _fail(159,"PAD_LB_CANNOT_TOGGLE_FIRST_PERSON")
+    return
+  player.call("_pad_press_button",JOY_BUTTON_LEFT_SHOULDER)
+  if bool(player.get("is_first_person")):
+    _fail(160,"PAD_LB_CANNOT_RESTORE_THIRD_PERSON")
+    return
+  player.call("_pad_press_button",JOY_BUTTON_BACK)
+  if not pad_menu.visible or String(player.get("_game_sheet_mode"))!="character":
+    _fail(161,"PAD_SELECT_CANNOT_OPEN_CHARACTER")
+    return
+  player.call("_pad_press_button",JOY_BUTTON_B)
+  var speed_before: float=float(player.get("_pad_sensitivity"))
+  player.call("_cycle_pad_sensitivity")
+  if is_equal_approx(float(player.get("_pad_sensitivity")),speed_before):
+    _fail(162,"PAD_LOOK_SENSITIVITY_CANNOT_CHANGE")
+    return
+  player.set("_pad_sensitivity",speed_before)
+  player.call("_save_pad_options")
+  player.set("_pad_device",-1)
+  if int(player.get("_pad_button_event_count"))<7 or not player.call("stats").get("gamepad_hotplug_support",false):
+    _fail(163,"PAD_GAMEPLAY_DISPATCH_AND_HOTPLUG_STATUS_MISSING")
+    return
+  print("PASS_REV189_SYNTHETIC_GODOT_JOYPAD_BUTTON_MENU_LOOK_DEADZONE_HOTPLUG_AND_TOUCH_FALLBACK_NOT_ANDROID_HARDWARE")
   var render_frame: TextureRect = ui.get_node("RealWorldViewportContainer")
   if render_frame==null or render_frame.texture==null or render_frame.stretch_mode!=TextureRect.STRETCH_SCALE:
     _fail(64,"NATIVE_RESOLUTION_UI_NEEDS_3D_ONLY_RESIZABLE_SUBVIEWPORT_TEXTURE")
