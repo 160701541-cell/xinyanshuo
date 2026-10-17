@@ -3573,6 +3573,24 @@ func interact() -> Dictionary:
   var eco = room.get("eco")
   # The unique player/world/entity system IDs stay in the authoritative
   # simulation ledger. Do not display them as giant in-world labels.
+  # Finite warehouse-paid Chinese residential construction.
+  # The artist-provided complete source GLB is displayed ONLY after
+  # 200 wood + 150 stone were debited and an NPC finished its work time.
+  var build: Dictionary=room.call("quote_and_fund_near_house",point)
+  if String(build.get("reason",""))!="NO_HOUSE_BLUEPRINT_NEARBY" and (
+      String(build.get("reason",""))!="HOUSE_LEDGER_NOT_AVAILABLE"):
+    if bool(build.get("ok",false)) and build.has("spent_wood"):
+      say("住宅施工入队：真实扣木%d、石%d；工期%d世界时辰，完工住5人" % [
+        int(build["spent_wood"]),int(build["spent_stone"]),
+        int(build["hours_until_house"])])
+    elif String(build.get("reason",""))=="MISSING_ACTUAL_WOOD_OR_STONE":
+      say("建造缺材料：现有木%d/%d、石%d/%d；先采集并运到仓库" % [
+        int(build.get("stock_wood",0)),int(build.get("need_wood",200)),
+        int(build.get("stock_stone",0)),int(build.get("need_stone",150))])
+    else:
+      say("院落：施工必须消耗原料并等待NPC完工（%s）" % [
+        String(build.get("reason","已入队"))])
+    return build
   var depot := Vector3(0,0,10)
   if Vector2(point.x-depot.x,point.z-depot.z).length()<3.8:
     var delivered: bool = sim.deliver_carried(PLAYER_ID)
