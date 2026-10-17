@@ -7,6 +7,7 @@ import hashlib
 import io
 import json
 import sys
+import struct
 from pathlib import Path
 from urllib.request import Request,urlopen
 import numpy as np
