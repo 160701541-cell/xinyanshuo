@@ -496,9 +496,19 @@ func _run() -> void:
   var visible_stream_tufts: int=0
   for id in streamed:
     var field: MultiMeshInstance3D=streamed[id]
-    if not is_instance_valid(field) or field.multimesh.instance_count!=320 or (
-        field.get_parent()!=initial_loaded[id]):
-      _fail(188,"REV194_STREAMED_GRASS_NOT_PARENTED_TO_PHYSICAL_CHUNK")
+    if not is_instance_valid(field) or field.get_parent()!=initial_loaded[id]:
+      _fail(188,"REV194_STREAMED_GRASS_NOT_PARENTED_TO_PHYSICAL_CHUNK_"+str(id))
+      return
+    # rev206 source raised physical tuft density 320 -> 460 per chunk.
+    # The former test rejected FULLY PARENTED real grass as a fake missing
+    # node; require real mesh capacity AND the high-tier drawn-instance count.
+    if field.multimesh==null or field.multimesh.mesh==null or (
+        field.multimesh.instance_count!=460) or (
+        field.multimesh.visible_instance_count!=330):
+      _fail(352,"REV206_DENSE_STREAMED_GRASS_REAL_CHUNK_GPU_INSTANCE_MISMATCH_"+str({
+        "chunk":id,
+        "allocated":field.multimesh.instance_count if field.multimesh!=null else -1,
+        "drawn":field.multimesh.visible_instance_count if field.multimesh!=null else -1}))
       return
     for i in range(field.multimesh.instance_count):
       var t: Transform3D=field.multimesh.get_instance_transform(i)
