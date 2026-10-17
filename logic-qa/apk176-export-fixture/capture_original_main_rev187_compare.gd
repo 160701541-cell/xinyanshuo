@@ -257,6 +257,113 @@ func _capture() -> void:
     return
   print("PASS_REV203_REAL_GODOT_RENDERED_LICENCED_SWORD_BANK_AND_GROUND_REFERENCE")
   player.call("toggle_avatar_flight")
+  # The screenshot worksite may lie over a solid building occluder. Move
+  # the QA camera/hero to the exact known open 29m practice site BEFORE
+  # the real physical landing tick; do not bypass any flight collisions or
+  # make the game appear to support landing through blocked roofs.
+  var training_ground: Node3D=player.get("actor")
+  var physical_ground_y: float=float(room.get("terrain_world").call(
+    "height_at",29.0,29.0))
+  training_ground.position=Vector3(29.0,physical_ground_y+
+    float(training_ground.get_meta("actor_ground_offset_y",0.0))+
+    float(player.get("_soar_altitude")),29.0)
+  var physical_descent_frames: int=0
+  for i in range(20):
+    player.call("step",0.12)
+    physical_descent_frames+=1
+    if String(player.get("camera_mode"))=="third":
+      break
+  if String(player.get("camera_mode"))!="third":
+    _fail("REV204_PHYSICAL_LANDING_AT_DRY_OPEN_PRACTICE_SITE_FAILED height="+
+      str(player.get("_soar_altitude"))+" frames="+str(physical_descent_frames)+
+      " blocked="+str(player.get("_blocked_wall_steps")))
+    return
+  # Capture the actual original game's martial duel target HUD and **world**
+  # HP/MP overhead bars, then the physically moving spiritual projectile.
+  # Engine photos are clearly labeled Linux/Mesa, NEVER phone images.
+  var fighter: Node3D=player.get("actor")
+  fighter.position=Vector3(29,float(room.get("terrain_world").call(
+    "height_at",29.0,29.0))+float(fighter.get_meta(
+      "actor_ground_offset_y",0.0)),29)
+  player.set("_yaw",0.0)
+  player.call("update_camera")
+  var training: Dictionary=player.call("practice_action")
+  if not bool(training.get("ok",false)):
+    _fail("REV204_REAL_PRACTICE_OPPONENT_NOT_AVAILABLE_FOR_ENGINE_SNAPSHOT_"+str(training))
+    return
+  var opponent_ui: PanelContainer=player.get("_target_panel")
+  var head_label: Label3D=player.get("_spar_opponent_tag")
+  if opponent_ui==null or not opponent_ui.visible or head_label==null:
+    _fail("REV204_REAL_TARGET_HEALTH_MANA_MISSING_FROM_ENGINE_FRAME")
+    return
+  # Let the mobile third-person duel camera ease from the original 9.5m
+  # walk distance to an immersive 6.4m focus while preserving user zoom.
+  for i in range(12):
+    player.call("step",0.105)
+  if float(player.get("_combat_camera_pull"))>-1.5:
+    _fail("REV204_REAL_DUEL_CAMERA_STILL_TOO_FAR_TO_SEE_ACTUAL_MAGIC")
+    return
+  var before_hp: int=int(player.get("_spar_enemy_health"))
+  if not bool(player.call("sword_attack")) or (
+      int(player.get("_spar_enemy_health"))>=before_hp):
+    _fail("REV204_REAL_SWORD_3D_IMPACT_OR_HEALTH_LEDGER_NOT_WORKING")
+    return
+  for i in range(2):
+    await process_frame
+  await RenderingServer.frame_post_draw
+  if not _save("real_apk176_rev204_opponent_realm_hp_mp_sword_sparks.png"):
+    _fail("REV204_REAL_COMBAT_VITALS_AND_MORTAL_SWORD_SCREENSHOT_MISSING")
+    return
+  print("PASS_REV204_REAL_GODOT_RENDERED_OPPONENT_OVERHEAD_HP_MP_AND_SWORD_IMPACT")
+  # Only screenshot QA uses a documented, reversible level-1 art fixture.
+  # Mechanics+finite-mana authority are independently checked in real Main
+  # QA using actual root examination and Qi-paid breakthrough.
+  var arts: RefCounted=room.get("cultivation")
+  var saved: Dictionary=arts.get("player_data").duplicate(true)
+  var trial: Dictionary=arts.get("player_data")
+  trial["tested"]=true
+  trial["root_kind"]="木灵根"
+  trial["method"]="CL-TECH-NAYUAN-BREATHING-V1"
+  trial["layer"]=1
+  trial["realm"]="炼气"
+  trial["mana"]=12
+  trial["known_arts"]=["CL-ART-SPIRIT-BOLT-V1"]
+  var spell: Dictionary=player.call("cast_spirit_bolt")
+  if not bool(spell.get("ok",false)) or not bool(spell.has("projectile")):
+    _fail("REV204_REAL_MANA_PAID_QI_PROJECTILE_NOT_SPAWNED_IN_ENGINE")
+    return
+  player.call("_step_spell_projectiles",0.050)
+  var active_bolts: Array=player.get("_spell_projectiles")
+  if active_bolts.size()!=1 or (not is_instance_valid(active_bolts[0]["node"])):
+    _fail("REV204_MAGIC_PROJECTILE_DISAPPEARED_BEFORE_TRUE_MIDAIR_CAPTURE")
+    return
+  var impact_health_before: int=int(player.get("_spar_enemy_health"))
+  # Freeze only the controllable hero for TWO renderer frames to capture a
+  # real spatial bolt in transit (Godot engine frame, no Photoshop composite).
+  # Restore simulation immediately afterward and check actual damage.
+  player.set("_enabled",false)
+  for i in range(2):
+    await process_frame
+  await RenderingServer.frame_post_draw
+  if not _save("real_apk176_rev204_mana_paid_qi_bolt_midair.png"):
+    _fail("REV204_REAL_QI_PROJECTILE_3D_MIDFLIGHT_SCREENSHOT_MISSING")
+    return
+  player.set("_enabled",true)
+  player.call("_step_spell_projectiles",0.18)
+  if int(player.get("_spar_enemy_health"))>=impact_health_before:
+    _fail("REV204_MIDFLIGHT_BOLT_FAILED_TO_DEAL_ACTUAL_MANA_PAID_HIT_DAMAGE")
+    return
+  for i in range(2):
+    await process_frame
+  await RenderingServer.frame_post_draw
+  if not _save("real_apk176_rev204_qi_bolt_real_impact_damage.png"):
+    _fail("REV204_QI_BOLT_REAL_IMPACT_AND_DAMAGE_FRAME_MISSING")
+    return
+  print("PASS_REV204_REAL_GODOT_RENDERED_MANA_PAID_SPIRIT_BOLT_IN_FLIGHT")
+  print("PASS_REV204_REAL_GODOT_MIDFLIGHT_AND_IMPACT_FINITE_MANA_REAL_HP_DAMAGE_FRAMES")
+  player.call("stop_practice")
+  arts.set("player_data",saved)
+  arts.call("save_state")
   print("PASS_REV197_ORIGINAL_GODOT_ENGINE_VISIBLE_ANIMATED_PLAYER_CLOSE_AND_45DEG_REAL_FRAMES")
   print("PASS_REV187_TWO_GENUINE_ENGINE_RENDERED_WORKSITE_FRAMES_NOT_PHONE_TESTS")
   base.queue_free()

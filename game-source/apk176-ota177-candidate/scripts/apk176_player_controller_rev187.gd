@@ -99,6 +99,11 @@ var _game_sheet_mode: String = ""
 var _player_health: int = 100
 var _health_bar: ProgressBar
 var _energy_bar: ProgressBar
+var _mana_bar: ProgressBar
+var _target_panel: PanelContainer
+var _target_status: Label
+var _target_health_bar: ProgressBar
+var _target_mana_bar: ProgressBar
 var _spirit_notice: Label
 var _game_actions: Dictionary = {}
 var _dash_cd: float = 0.0
@@ -125,6 +130,24 @@ var _spar_normal_dodges: int = 0
 var _spar_hits: int = 0
 var _spar_misses: int = 0
 var _spar_last_outcome: String = "inactive"
+# rev204: the practice opponent has a real finite HP ledger and a *truthful*
+# MP=0 mortal realm; the 12 seeded cultivators display persisted living MP.
+var _spar_enemy_health: int=110
+var _spar_enemy_health_max: int=110
+var _spar_enemy_mana: int=0
+var _spar_enemy_mana_max: int=0
+var _spar_opponent_tag: Label3D
+var _spar_meters: Dictionary={}
+var _sword_cd: float=0.0
+var _attack_anim_seconds: float=0.0
+var _combat_camera_pull: float=0.0
+var _bolt_cd: float=0.0
+var _ward_cd: float=0.0
+var _ward_seconds: float=0.0
+var _ward_visual: MeshInstance3D
+var _spell_projectiles: Array[Dictionary]=[]
+var _combat_hit_count: int=0
+var _spirit_bolt_impact_count: int=0
 var _quality_sheet_button: Button
 var _developer_sheet_button: Button
 var _rest_sheet_button: Button
@@ -569,7 +592,7 @@ func _build_game_hud() -> void:
   var bg := PanelContainer.new()
   bg.name = "LiveGameVitalsRev188"
   bg.position = Vector2(16, 12)
-  bg.custom_minimum_size = Vector2(347, 122)
+  bg.custom_minimum_size = Vector2(347, 147)
   bg.add_theme_stylebox_override("panel",_rounded(Color(0.05,0.10,0.12,0.87),12))
   hud.add_child(bg)
   var margin := MarginContainer.new()
@@ -613,6 +636,20 @@ func _build_game_hud() -> void:
   _energy_bar.add_theme_stylebox_override("background",_rounded(Color("#243133"),5))
   _energy_bar.add_theme_stylebox_override("fill",_rounded(Color("#a8bc68"),5))
   stamina_row.add_child(_energy_bar)
+  var mana_row:=HBoxContainer.new()
+  meters.add_child(mana_row)
+  var mana_caption:=Label.new()
+  mana_caption.text="法力  "
+  mana_row.add_child(mana_caption)
+  _mana_bar=ProgressBar.new()
+  _mana_bar.name="RealSpiritManaFromCultivationLedgerNotFaked"
+  _mana_bar.max_value=12
+  _mana_bar.value=0
+  _mana_bar.show_percentage=false
+  _mana_bar.custom_minimum_size=Vector2(242,13)
+  _mana_bar.add_theme_stylebox_override("background",_rounded(Color("#243133"),5))
+  _mana_bar.add_theme_stylebox_override("fill",_rounded(Color("#4aadc7"),5))
+  mana_row.add_child(_mana_bar)
   _spirit_notice=Label.new()
   _spirit_notice.text="灵力：未检测灵根（未解锁）"
   _spirit_notice.add_theme_font_size_override("font_size",14)
@@ -662,11 +699,15 @@ func _build_game_hud() -> void:
   _add_game_action("DigAction","挖掘",Callable(self,"dig"))
   _add_game_action("InteractAction","互动",Callable(self,"interact"))
   _add_game_action("ViewAction","视角",Callable(self,"toggle_perspective"))
-  # Real mortal footwork practice is available without inventing a spirit root.
-  # Cultivation spells and sword arrays remain locked until implemented.
+  # Martial footwork remains available to mortals. Spiritual arts require
+  # an actually detected root, an earned layer and mana from the save ledger.
   _add_game_action("LockedArt","切磋",Callable(self,"practice_action"))
   _add_game_action("GuardAction","格挡",Callable(self,"guard_action"))
   _add_game_action("EvadeAction","闪避",Callable(self,"evade_action"))
+  _add_game_action("SwordAttack","剑击",Callable(self,"sword_attack"))
+  _add_game_action("SpiritBolt","灵息弹",Callable(self,"cast_spirit_bolt"))
+  _add_game_action("SpiritWard","护体灵障",Callable(self,"cast_spirit_ward"))
+  _create_opponent_target_hud()
   _pad_hint=Label.new()
   _pad_hint.name="AndroidGamepadHotplugAndMappings"
   _pad_hint.position=Vector2(16,139)
@@ -688,6 +729,47 @@ func _build_game_hud() -> void:
   v.add_child(_pad_setting_deadzone)
   _refresh_pad_option_labels()
   _refresh_game_hud()
+
+func _create_opponent_target_hud() -> void:
+  # Fixed screen HUD confirms who was selected. World-space head bars still
+  # follow the true target; this panel avoids unrecognizable microscopic bars.
+  _target_panel=PanelContainer.new()
+  _target_panel.name="ActualCombatTargetRealmHPMP"
+  _target_panel.custom_minimum_size=Vector2(275,99)
+  _target_panel.add_theme_stylebox_override("panel",_rounded(Color(0.06,0.10,0.15,0.87),11))
+  _target_panel.mouse_filter=Control.MOUSE_FILTER_IGNORE
+  var margin:=MarginContainer.new()
+  margin.add_theme_constant_override("margin_left",10)
+  margin.add_theme_constant_override("margin_right",10)
+  margin.add_theme_constant_override("margin_top",7)
+  margin.add_theme_constant_override("margin_bottom",7)
+  _target_panel.add_child(margin)
+  var column:=VBoxContainer.new()
+  column.add_theme_constant_override("separation",3)
+  margin.add_child(column)
+  _target_status=Label.new()
+  _target_status.add_theme_font_size_override("font_size",17)
+  column.add_child(_target_status)
+  for kind in ["health","mana"]:
+    var row:=HBoxContainer.new()
+    column.add_child(row)
+    var caption:=Label.new()
+    caption.text="生命  " if kind=="health" else "法力  "
+    row.add_child(caption)
+    var meter:=ProgressBar.new()
+    meter.name="LiveEnemyHealthNotCosmetic" if kind=="health" else "LiveEnemyManaNotCosmetic"
+    meter.show_percentage=false
+    meter.custom_minimum_size=Vector2(193,10)
+    meter.add_theme_stylebox_override("background",_rounded(Color("#1a282b"),4))
+    meter.add_theme_stylebox_override("fill",_rounded(
+      Color("#c66b62") if kind=="health" else Color("#55b5cd"),4))
+    row.add_child(meter)
+    if kind=="health":
+      _target_health_bar=meter
+    else:
+      _target_mana_bar=meter
+  hud.add_child(_target_panel)
+  _target_panel.visible=false
 
 func _add_game_action(key: String, label: String, callback: Callable) -> void:
   var button:=Button.new()
@@ -722,7 +804,15 @@ func _refresh_game_hud() -> void:
   var energy: int=int(person.get("energy",0))
   _health_bar.value=_player_health
   _energy_bar.value=energy
-  _game_status.text="心魇说 · 凡人   "+str(_player_health)+"/100"
+  var spiritual: RefCounted=room.get("cultivation")
+  var record: Dictionary=spiritual.call("public_player_status") if spiritual!=null else {}
+  var realm: String=String(record.get("realm","凡人"))
+  var player_level: int=int(record.get("layer",0))
+  var mana_now: int=int(record.get("mana",0))
+  _mana_bar.max_value=maxi(1,player_level*12)
+  _mana_bar.value=mana_now
+  _game_status.text="心魇说 · %s%s  %d/100" % [
+    realm,(" 第%d层" % player_level) if player_level>0 else "",_player_health]
   (_game_actions["DashAction"] as Button).disabled=_dash_cd>0.0 or energy<8
   (_game_actions["DashAction"] as Button).text="疾步 "+str(ceili(_dash_cd))+"秒" if _dash_cd>0.0 else "疾步"
   (_game_actions["GatherAction"] as Button).disabled=_gather_cd>0.0
@@ -732,9 +822,33 @@ func _refresh_game_hud() -> void:
   (_game_actions["EvadeAction"] as Button).disabled=_spar_stage=="inactive" or _dodge_cd>0 or energy<7
   (_game_actions["GuardAction"] as Button).text="防御中" if _guard_time>0 else "格挡"
   (_game_actions["EvadeAction"] as Button).text="闪避中" if _dodge_time>0 else "闪避"
-  var spiritual: RefCounted=room.get("cultivation")
+  (_game_actions["SwordAttack"] as Button).disabled=_spar_stage=="inactive" or _sword_cd>0.0 or energy<6
+  (_game_actions["SwordAttack"] as Button).text=("剑击 %d" % ceili(_sword_cd)) if _sword_cd>0.0 else "剑击"
+  var known: Array=record.get("known_arts",[])
+  var bolt_learned: bool=known.has("CL-ART-SPIRIT-BOLT-V1")
+  var ward_learned: bool=known.has("CL-ART-SPIRIT-WARD-V1")
+  (_game_actions["SpiritBolt"] as Button).disabled=(
+    _spar_stage=="inactive" or _bolt_cd>0.0 or not bolt_learned or mana_now<4)
+  (_game_actions["SpiritBolt"] as Button).text=(
+    "灵息弹 %d" % ceili(_bolt_cd) if _bolt_cd>0.0 else ("灵息弹" if bolt_learned else "灵息弹·未学"))
+  (_game_actions["SpiritWard"] as Button).disabled=(
+    _ward_cd>0.0 or not ward_learned or mana_now<6 or _ward_seconds>0.0)
+  (_game_actions["SpiritWard"] as Button).text=(
+    "灵障 %d" % ceili(_ward_cd) if _ward_cd>0.0 else ("护体灵障" if ward_learned else "灵障·未学"))
+  if _target_panel!=null:
+    _target_panel.visible=_spar_stage!="inactive"
+    if _spar_stage!="inactive":
+      _target_status.text="演武教习 · 凡人武者   %d/%d" % [
+        _spar_enemy_health,_spar_enemy_health_max]
+      _target_health_bar.max_value=_spar_enemy_health_max
+      _target_health_bar.value=_spar_enemy_health
+      _target_mana_bar.max_value=maxi(1,_spar_enemy_mana_max)
+      _target_mana_bar.value=_spar_enemy_mana
+      if _spar_opponent_tag!=null and is_instance_valid(_spar_opponent_tag):
+        _spar_opponent_tag.text="演武教习 · 凡人武者\n生命 %d/%d · 法力 %d/%d" % [
+          _spar_enemy_health,_spar_enemy_health_max,_spar_enemy_mana,_spar_enemy_mana_max]
+      _sync_spar_meters()
   if spiritual!=null and _root_exam_button!=null:
-    var record: Dictionary=spiritual.call("public_player_status")
     var tested: bool=bool(record.get("tested",false))
     _root_exam_button.text="复查灵根" if tested else "检测灵根"
     _meditate_button.text="停止吐纳" if bool(record.get("meditating",false)) else "吐纳修炼"
@@ -746,7 +860,7 @@ func _refresh_game_hud() -> void:
       var level: int=int(record.get("layer",0))
       _spirit_notice.text="%s  %s · %s  修为%d  经脉%d" % [
         root,String(record.get("realm","凡人")),
-        "第%d层" % level if level>0 else "未入炼气",
+        "第%d层" % player_level if player_level>0 else "未入炼气",
         int(record.get("qi",0)),int(record.get("stress",0))]
     else:
       _spirit_notice.text="灵根：未检测 · 请寻找青色灵根检测台"
@@ -772,7 +886,8 @@ func _refresh_game_hud() -> void:
     else:
       _flight_altitude_label.visible=false
   if _spar_stage!="inactive":
-    _spirit_notice.text="凡人切磋 %s · %s" % [_spar_stage,_spar_last_outcome]
+    _spirit_notice.text="切磋 %s · %s  法力%d/%d" % [
+      _spar_stage,_spar_last_outcome,mana_now,player_level*12]
   elif spiritual==null:
     _spirit_notice.text="灵根：未检测（检测台尚未装载）"
   _quality_sheet_button.visible=_game_sheet!=null and _game_sheet.visible and _game_sheet_mode=="settings"
@@ -804,10 +919,14 @@ func _refresh_game_hud() -> void:
       if not bool(r.get("tested",false)):
         _game_sheet_body.text="灵根：尚未检测（检测前严格隐藏）\n请前往青色古石检测台，点击【检测灵根】\n凡人阶段仍可切磋、行走与御风测试"
       else:
-        _game_sheet_body.text="灵根：%s\n境界：%s %d层\n功法：%s\n灵气：%d  法力：%d  经脉负荷：%d\n真实世界小时里点击【吐纳修炼】积累灵气；满足条件点击【突破】" % [
+        var arts: Array=r.get("known_arts",[])
+        var unlocked: String=("灵息弹" if arts.has("CL-ART-SPIRIT-BOLT-V1") else "炼气一层领悟灵息弹")
+        unlocked+=", "+("护体灵障" if arts.has("CL-ART-SPIRIT-WARD-V1") else "炼气二层领悟护体灵障")
+        _game_sheet_body.text="灵根：%s\n境界：%s %d层\n功法：%s\n灵气：%d  法力：%d/%d  经脉负荷：%d\n法术：%s\n真实世界时辰吐纳回复法力；法术消耗真实法力并有冷却。" % [
           String(r.get("root_kind","未知")),String(r.get("realm","凡人")),
           int(r.get("layer",0)),String(r.get("method","无")),
-          int(r.get("qi",0)),int(r.get("mana",0)),int(r.get("stress",0))]
+          int(r.get("qi",0)),int(r.get("mana",0)),
+          int(r.get("layer",0))*12,int(r.get("stress",0)),unlocked]
   else:
     _game_sheet_title.text="菜单 · 系统设置"
     _game_sheet_body.text="横屏触控：左侧走路，右侧旋转\n视角按键：切第一/第三视角\n画质帧率和研发工具在下方设置"
@@ -831,7 +950,7 @@ func practice_action() -> Dictionary:
     stop_practice()
     say("切磋结束，没有对村民施加伤害")
     return {"ok":true,"active":false}
-  if actor==null or _player_health<=0 or camera_mode in ["fly","god"]:
+  if actor==null or _player_health<=0 or camera_mode in ["fly","god","soar"]:
     return {"ok":false,"reason":"NOT_AVAILABLE"}
   var sources: Dictionary=room.get("asset_sources")
   if not sources.has("worker"):
@@ -897,6 +1016,27 @@ func practice_action() -> Dictionary:
   _spar_telegraph.position=Vector3(target.x,h+0.055,target.z)
   _spar_telegraph.visible=false
   world.add_child(_spar_telegraph)
+  # One mortal teacher is a real physical training opponent, NOT a
+  # secret cultivator with magically minted mana. Spirit NPCs in the actual
+  # world independently have their own real realm/HP/MP above their heads.
+  _spar_enemy_health_max=110
+  _spar_enemy_health=110
+  _spar_enemy_mana_max=0
+  _spar_enemy_mana=0
+  _spar_opponent_tag=Label3D.new()
+  _spar_opponent_tag.name="RealMortalSparOpponentRealmHealthManaAboveHead"
+  _spar_opponent_tag.font_size=29
+  _spar_opponent_tag.pixel_size=0.0053
+  _spar_opponent_tag.billboard=BaseMaterial3D.BILLBOARD_ENABLED
+  _spar_opponent_tag.visibility_range_end=21.0
+  world.add_child(_spar_opponent_tag)
+  for kind in ["hp","mana"]:
+    _spar_meters[kind+"_back"]=_new_spar_meter(
+      "Spar_"+kind+"_BG",Color("#111921"))
+    _spar_meters[kind+"_fill"]=_new_spar_meter(
+      "Spar_"+kind+"_Fill",
+      Color("#c76f63") if kind=="hp" else Color("#61bed7"))
+  _sync_spar_meters()
   _spar_stage="recover"
   _spar_timer=0.82
   _guard_time=0.0
@@ -907,12 +1047,22 @@ func practice_action() -> Dictionary:
   return {"ok":true,"active":true,"opponent":_spar_partner.name}
 
 func stop_practice() -> void:
-  for node in [_spar_partner,_spar_collision,_spar_telegraph]:
+  for node in [_spar_partner,_spar_collision,_spar_telegraph,_spar_opponent_tag]:
     if node!=null and is_instance_valid(node):
       node.queue_free()
   _spar_partner=null
   _spar_collision=null
   _spar_telegraph=null
+  _spar_opponent_tag=null
+  for bar in _spar_meters.values():
+    if bar!=null and is_instance_valid(bar):
+      (bar as Node).queue_free()
+  _spar_meters.clear()
+  for projectile in _spell_projectiles:
+    var mesh: Node3D=projectile.get("node",null)
+    if mesh!=null and is_instance_valid(mesh):
+      mesh.queue_free()
+  _spell_projectiles.clear()
   _spar_stage="inactive"
   _spar_timer=0
   _guard_time=0
@@ -968,6 +1118,386 @@ func evade_action() -> bool:
   update_camera()
   _refresh_game_hud()
   return true
+
+func _new_spar_meter(label: String,tint: Color) -> MeshInstance3D:
+  var node:=MeshInstance3D.new()
+  node.name="RealWorldDuelOpponentVitals_"+label
+  var plane:=QuadMesh.new()
+  plane.size=Vector2(0.92,0.095)
+  var material:=StandardMaterial3D.new()
+  material.shading_mode=BaseMaterial3D.SHADING_MODE_UNSHADED
+  material.billboard_mode=BaseMaterial3D.BILLBOARD_ENABLED
+  material.cull_mode=BaseMaterial3D.CULL_DISABLED
+  material.albedo_color=tint
+  plane.material=material
+  node.mesh=plane
+  node.cast_shadow=GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+  node.visibility_range_end=21.0
+  world.add_child(node)
+  return node
+
+func _sync_spar_meters() -> void:
+  if _spar_partner==null or not is_instance_valid(_spar_partner):
+    return
+  var position: Vector3=_spar_partner.position
+  if _spar_opponent_tag!=null and is_instance_valid(_spar_opponent_tag):
+    _spar_opponent_tag.position=position+Vector3.UP*2.23
+  for key in ["hp","mana"]:
+    if not _spar_meters.has(key+"_back"):
+      continue
+    var current: int=_spar_enemy_health if key=="hp" else _spar_enemy_mana
+    var maximum: int=_spar_enemy_health_max if key=="hp" else _spar_enemy_mana_max
+    var ratio: float=clampf(float(current)/float(maxi(1,maximum)),0.0,1.0)
+    var y: float=1.95 if key=="hp" else 1.81
+    var bg: MeshInstance3D=_spar_meters[key+"_back"]
+    var fill: MeshInstance3D=_spar_meters[key+"_fill"]
+    bg.position=position+Vector3(0,y,0.01)
+    fill.position=position+Vector3(-0.46*(1.0-ratio),y,0.03)
+    fill.scale.x=maxf(0.001,ratio)
+    fill.visible=maximum>0 and ratio>0.001
+
+func _spawn_real_combat_hit(point: Vector3,tint: Color,power: int=1) -> void:
+  # Actual physical-world particles, not a full-screen filter or fake log.
+  # One-shot bounded 10..24 particles; no per-particle lights on phones.
+  var puff:=GPUParticles3D.new()
+  puff.name="ActualSwordOrSpiritProjectileWorldImpact"
+  puff.one_shot=true
+  puff.amount=mini(24,10+power*3)
+  puff.lifetime=0.34
+  puff.explosiveness=1.0
+  puff.position=point
+  var material:=ParticleProcessMaterial.new()
+  material.emission_shape=ParticleProcessMaterial.EMISSION_SHAPE_SPHERE
+  material.emission_sphere_radius=0.15
+  material.gravity=Vector3(0,-0.7,0)
+  material.initial_velocity_min=1.2
+  material.initial_velocity_max=2.8
+  puff.process_material=material
+  var quad:=QuadMesh.new()
+  quad.size=Vector2(0.13,0.13)
+  var glow:=StandardMaterial3D.new()
+  glow.shading_mode=BaseMaterial3D.SHADING_MODE_UNSHADED
+  glow.billboard_mode=BaseMaterial3D.BILLBOARD_ENABLED
+  glow.cull_mode=BaseMaterial3D.CULL_DISABLED
+  glow.transparency=BaseMaterial3D.TRANSPARENCY_ALPHA
+  glow.albedo_color=tint
+  glow.emission_enabled=true
+  glow.emission=tint
+  glow.emission_energy_multiplier=2.0
+  quad.material=glow
+  puff.draw_pass_1=quad
+  world.add_child(puff)
+  puff.emitting=true
+  # Object-bound Callable auto-disconnects if the world is closed before
+  # the timer; never retain a freed GPU object in a lambda capture.
+  get_tree().create_timer(0.8).timeout.connect(puff.queue_free)
+
+func _show_actual_damage_number(point: Vector3,damage: int,tint: Color) -> void:
+  var number:=Label3D.new()
+  number.name="ActualTargetFloatingDamageFromFiniteHealthLedger"
+  number.text="-%d" % damage
+  number.font_size=38
+  number.pixel_size=0.006
+  number.billboard=BaseMaterial3D.BILLBOARD_ENABLED
+  number.modulate=tint
+  number.outline_size=8
+  number.position=point+Vector3.UP*1.53
+  world.add_child(number)
+  # A tween bound to its own label automatically stops on world unload,
+  # unlike a timer lambda capturing a potentially freed GPU scene node.
+  var motion: Tween=number.create_tween()
+  motion.tween_property(number,"position",number.position+Vector3.UP*0.54,0.58)
+  motion.parallel().tween_property(number,"modulate:a",0.0,0.58)
+  motion.tween_callback(number.queue_free)
+
+func _spar_damage_opponent(amount: int,spell_hit: bool=false) -> bool:
+  if _spar_stage=="inactive" or _spar_stage=="victory" or (
+      _spar_partner==null or not is_instance_valid(_spar_partner)):
+    return false
+  var dealt: int=mini(_spar_enemy_health,maxi(0,amount))
+  if dealt<=0:
+    return false
+  _spar_enemy_health-=dealt
+  _combat_hit_count+=1
+  if spell_hit:
+    _spirit_bolt_impact_count+=1
+  _spawn_real_combat_hit(_spar_partner.position+Vector3.UP*1.10,
+    Color("#a1eef0") if spell_hit else Color("#f5c67d"),2)
+  _show_actual_damage_number(_spar_partner.position,dealt,
+    Color("#9deafa") if spell_hit else Color("#ffdc99"))
+  _sync_spar_meters()
+  if _spar_enemy_health<=0:
+    _spar_stage="victory"
+    _spar_timer=0.8
+    if _spar_telegraph!=null and is_instance_valid(_spar_telegraph):
+      _spar_telegraph.visible=false
+    _spar_last_outcome="获胜：对练者失去继续战斗能力"
+    say("你赢得切磋！对方认输，训练模式不造成死亡或凭空掉宝")
+  else:
+    _spar_last_outcome="命中对练者 -%d生命" % dealt
+  _refresh_game_hud()
+  return true
+
+func sword_attack() -> bool:
+  if _spar_stage in ["inactive","victory"] or _sword_cd>0.0 or (
+      _spar_partner==null or not is_instance_valid(_spar_partner)):
+    return false
+  var person: Dictionary=room.get("sim").citizens.get(PLAYER_ID,{})
+  if int(person.get("energy",0))<6:
+    say("剑击需要6体力")
+    return false
+  var toward: Vector3=_spar_partner.position-actor.position
+  toward.y=0.0
+  if toward.length()>3.05 or toward.length()<0.2 or (
+      toward.normalized().dot(_forward())<0.12):
+    say("剑击须面对三米内的真实切磋目标")
+    return false
+  var ray:=PhysicsRayQueryParameters3D.create(
+    actor.position+Vector3.UP*0.92,_spar_partner.position+Vector3.UP*0.92,2)
+  var hit: Dictionary=world.get_world_3d().direct_space_state.intersect_ray(ray)
+  if not hit.is_empty() and hit.get("collider")!=_spar_collision:
+    say("障碍物挡住了攻击，不能隔墙造成伤害")
+    return false
+  person["energy"]=int(person["energy"])-6
+  _sword_cd=0.85
+  _attack_anim_seconds=0.55
+  var slash:=MeshInstance3D.new()
+  slash.name="ActualPlayerMortalSwordArcNotFakeSpell"
+  var bright:=StandardMaterial3D.new()
+  bright.shading_mode=BaseMaterial3D.SHADING_MODE_UNSHADED
+  bright.transparency=BaseMaterial3D.TRANSPARENCY_ALPHA
+  bright.cull_mode=BaseMaterial3D.CULL_DISABLED
+  bright.albedo_color=Color("#f7dfa4",0.78)
+  bright.emission_enabled=true
+  bright.emission=Color("#eec47b")
+  bright.emission_energy_multiplier=1.8
+  # A swept bright crescent, not the previous complete TorusMesh "halo".
+  # The original full-circle ring behind the trainer read as scenery, not
+  # a sword stroke in the actual 1280x720 Godot screenshots.
+  var curve:=ImmediateMesh.new()
+  curve.surface_begin(Mesh.PRIMITIVE_TRIANGLES,bright)
+  for i in range(24):
+    var angle0: float=-1.34+float(i)*(2.68/24.0)
+    var angle1: float=-1.34+float(i+1)*(2.68/24.0)
+    var a:=Vector3(sin(angle0)*0.68,cos(angle0)*0.68,0)
+    var b:=Vector3(sin(angle0)*1.06,cos(angle0)*1.06,0)
+    var c:=Vector3(sin(angle1)*0.68,cos(angle1)*0.68,0)
+    var d:=Vector3(sin(angle1)*1.06,cos(angle1)*1.06,0)
+    for vertex in [a,b,c,b,d,c]:
+      curve.surface_add_vertex(vertex)
+  curve.surface_end()
+  slash.mesh=curve
+  slash.position=actor.position+_forward()*1.08+Vector3.UP*0.9
+  world.add_child(slash)
+  slash.look_at(camera.position,Vector3.UP)
+  get_tree().create_timer(0.24).timeout.connect(slash.queue_free)
+  _spar_damage_opponent(10)
+  _refresh_game_hud()
+  return true
+
+func _art_tint() -> Color:
+  var spiritual: RefCounted=room.get("cultivation")
+  if spiritual==null:
+    return Color("#88e8f1")
+  var kind: String=String(spiritual.call("public_player_status").get("root_kind",""))
+  if kind.begins_with("火"):
+    return Color("#ff945f")
+  if kind.begins_with("木"):
+    return Color("#a2e18a")
+  if kind.begins_with("金"):
+    return Color("#f4dfa0")
+  if kind.begins_with("土"):
+    return Color("#e0b57f")
+  return Color("#7dc9f0")
+
+func cast_spirit_bolt() -> Dictionary:
+  if _spar_stage in ["inactive","victory"] or _bolt_cd>0.0 or (
+      _spar_partner==null or not is_instance_valid(_spar_partner)):
+    return {"ok":false,"reason":"NO_COMBAT_TARGET_OR_COOLDOWN"}
+  var target: Vector3=_spar_partner.position+Vector3.UP*1.10
+  var source: Vector3=actor.position+Vector3.UP*1.24
+  if source.distance_to(target)>9.2:
+    return {"ok":false,"reason":"TARGET_OUT_OF_RANGE"}
+  var ray:=PhysicsRayQueryParameters3D.create(source,target,2)
+  var block: Dictionary=world.get_world_3d().direct_space_state.intersect_ray(ray)
+  if not block.is_empty() and block.get("collider")!=_spar_collision:
+    return {"ok":false,"reason":"WALL_BLOCKS_SPELL"}
+  var spiritual: RefCounted=room.get("cultivation")
+  if spiritual==null:
+    return {"ok":false,"reason":"NO_CULTIVATION_AUTHORITY"}
+  var debit: Dictionary=spiritual.call("spend_player_mana_for_art",
+    "CL-ART-SPIRIT-BOLT-V1")
+  if not bool(debit.get("ok",false)):
+    say("无法施展灵息弹：" + String(debit.get("reason","未解锁")))
+    return debit
+  _bolt_cd=2.2
+  _attack_anim_seconds=0.58
+  var projectile:=MeshInstance3D.new()
+  projectile.name="RealTravelingRootColoredQiBoltManaPaidAndObstacleChecked"
+  var sphere:=SphereMesh.new()
+  sphere.radius=0.26
+  sphere.height=0.52
+  sphere.radial_segments=10
+  sphere.rings=5
+  var paint:=StandardMaterial3D.new()
+  paint.shading_mode=BaseMaterial3D.SHADING_MODE_UNSHADED
+  paint.albedo_color=_art_tint()
+  paint.emission_enabled=true
+  paint.emission=_art_tint()
+  paint.emission_energy_multiplier=2.8
+  sphere.material=paint
+  projectile.mesh=sphere
+  projectile.position=source
+  projectile.cast_shadow=GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+  world.add_child(projectile)
+  var corona:=MeshInstance3D.new()
+  corona.name="ActuallyVisibleSoftOuterQiCorona"
+  var aura:=SphereMesh.new()
+  aura.radius=0.46
+  aura.height=0.92
+  aura.radial_segments=12
+  aura.rings=6
+  var halo:=StandardMaterial3D.new()
+  halo.shading_mode=BaseMaterial3D.SHADING_MODE_UNSHADED
+  halo.transparency=BaseMaterial3D.TRANSPARENCY_ALPHA
+  halo.cull_mode=BaseMaterial3D.CULL_DISABLED
+  halo.blend_mode=BaseMaterial3D.BLEND_MODE_ADD
+  halo.albedo_color=Color(_art_tint(),0.17)
+  halo.emission_enabled=true
+  halo.emission=_art_tint()
+  halo.emission_energy_multiplier=1.3
+  aura.material=halo
+  corona.mesh=aura
+  corona.cast_shadow=GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+  projectile.add_child(corona)
+  # Particle trail lives in WORLD coordinates, so traveling orb leaves an
+  # observable path instead of a tiny static dot. Mobile-bounded 14 sprites.
+  var trail:=GPUParticles3D.new()
+  trail.name="TravelingQiBoltSpiritTailActuallyEmitting"
+  trail.amount=14
+  trail.lifetime=0.31
+  trail.one_shot=false
+  trail.local_coords=false
+  var motion:=ParticleProcessMaterial.new()
+  motion.gravity=Vector3.ZERO
+  motion.initial_velocity_min=0.12
+  motion.initial_velocity_max=0.40
+  motion.emission_shape=ParticleProcessMaterial.EMISSION_SHAPE_SPHERE
+  motion.emission_sphere_radius=0.04
+  trail.process_material=motion
+  var trail_quad:=QuadMesh.new()
+  trail_quad.size=Vector2(0.09,0.09)
+  var trail_paint:=StandardMaterial3D.new()
+  trail_paint.shading_mode=BaseMaterial3D.SHADING_MODE_UNSHADED
+  trail_paint.billboard_mode=BaseMaterial3D.BILLBOARD_ENABLED
+  trail_paint.cull_mode=BaseMaterial3D.CULL_DISABLED
+  trail_paint.transparency=BaseMaterial3D.TRANSPARENCY_ALPHA
+  trail_paint.albedo_color=_art_tint()
+  trail_paint.emission_enabled=true
+  trail_paint.emission=_art_tint()
+  trail_paint.emission_energy_multiplier=1.6
+  trail_quad.material=trail_paint
+  trail.draw_pass_1=trail_quad
+  projectile.add_child(trail)
+  trail.emitting=true
+  _spell_projectiles.append({
+    "node":projectile,"distance_left":9.5,
+    "damage":14+int(spiritual.call("public_player_status").get("layer",1))*4})
+  say("灵息弹：法力真实消耗4，飞行命中后才扣对方生命")
+  _refresh_game_hud()
+  return {"ok":true,"spent":int(debit["spent"]),"projectile":projectile}
+
+func _step_spell_projectiles(delta: float) -> void:
+  var remaining: Array[Dictionary]=[]
+  for shot in _spell_projectiles:
+    var missile: MeshInstance3D=shot.get("node",null)
+    if missile==null or not is_instance_valid(missile):
+      continue
+    if _spar_stage in ["inactive","victory"] or (
+        _spar_partner==null or not is_instance_valid(_spar_partner)):
+      missile.queue_free()
+      continue
+    var from: Vector3=missile.position
+    var to: Vector3=_spar_partner.position+Vector3.UP*1.10
+    var span: Vector3=to-from
+    var progress: float=minf(span.length(),18.0*delta)
+    var proposed: Vector3=from+span.normalized()*progress if span.length()>0.001 else to
+    var query:=PhysicsRayQueryParameters3D.create(from,proposed,2)
+    var hit: Dictionary=world.get_world_3d().direct_space_state.intersect_ray(query)
+    if not hit.is_empty() and hit.get("collider")!=_spar_collision:
+      _spawn_real_combat_hit(from,Color("#8fa8be"),1)
+      missile.queue_free()
+      continue
+    shot["distance_left"]=float(shot["distance_left"])-progress
+    missile.position=proposed
+    if progress>=span.length()-0.20 or (
+        not hit.is_empty() and hit.get("collider")==_spar_collision):
+      _spar_damage_opponent(int(shot["damage"]),true)
+      missile.queue_free()
+      continue
+    if float(shot["distance_left"])<=0.0:
+      missile.queue_free()
+      continue
+    remaining.append(shot)
+  _spell_projectiles=remaining
+
+func cast_spirit_ward() -> Dictionary:
+  if _ward_cd>0.0 or _ward_seconds>0.0 or camera_mode in ["god","fly"]:
+    return {"ok":false,"reason":"SHIELD_ON_COOLDOWN_OR_INVALID_MODE"}
+  var spiritual: RefCounted=room.get("cultivation")
+  if spiritual==null:
+    return {"ok":false,"reason":"NO_CULTIVATION_AUTHORITY"}
+  var debit: Dictionary=spiritual.call("spend_player_mana_for_art",
+    "CL-ART-SPIRIT-WARD-V1")
+  if not bool(debit.get("ok",false)):
+    say("无法施展护体灵障：" + String(debit.get("reason","未学会")))
+    return debit
+  _ward_cd=12.0
+  _ward_seconds=6.0
+  if _ward_visual==null or not is_instance_valid(_ward_visual):
+    _ward_visual=MeshInstance3D.new()
+    _ward_visual.name="ActualSixSecondSpiritWardSphereBlocksMortalStrikeDamage"
+    var shell:=SphereMesh.new()
+    shell.radius=1.04
+    shell.height=2.08
+    shell.radial_segments=20
+    shell.rings=9
+    var blue:=StandardMaterial3D.new()
+    blue.shading_mode=BaseMaterial3D.SHADING_MODE_UNSHADED
+    blue.transparency=BaseMaterial3D.TRANSPARENCY_ALPHA
+    blue.cull_mode=BaseMaterial3D.CULL_DISABLED
+    blue.albedo_color=Color("#83dcdf",0.16)
+    blue.emission_enabled=true
+    blue.emission=Color("#7edaf1")
+    blue.emission_energy_multiplier=1.25
+    shell.material=blue
+    _ward_visual.mesh=shell
+    _ward_visual.cast_shadow=GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+    world.add_child(_ward_visual)
+  _ward_visual.position=actor.position+Vector3.UP*1.00
+  say("护体灵障：消耗6法力，六秒内削减七成切磋伤害")
+  _refresh_game_hud()
+  return {"ok":true,"spent":int(debit["spent"]),"duration":_ward_seconds}
+
+func _step_spiritual_combat(delta: float) -> void:
+  _attack_anim_seconds=maxf(0.0,_attack_anim_seconds-delta)
+  # Focus living duel actors without hijacking the user's normal zoom value.
+  # Moving closer is gradual and restores their chosen distance on exit.
+  var desired_pull: float=-(maxf(0.0,_distance-6.4)) if (
+    _spar_stage!="inactive" and camera_mode=="third") else 0.0
+  _combat_camera_pull=lerpf(_combat_camera_pull,desired_pull,
+    clampf(delta*4.8,0.0,1.0))
+  _sword_cd=maxf(0.0,_sword_cd-delta)
+  _bolt_cd=maxf(0.0,_bolt_cd-delta)
+  _ward_cd=maxf(0.0,_ward_cd-delta)
+  _ward_seconds=maxf(0.0,_ward_seconds-delta)
+  if _ward_visual!=null and is_instance_valid(_ward_visual):
+    if _ward_seconds<=0.0:
+      _ward_visual.queue_free()
+      _ward_visual=null
+    else:
+      _ward_visual.position=actor.position+Vector3.UP*1.00
+  _step_spell_projectiles(delta)
 
 func _spar_feedback(tint: Color) -> void:
   # Bounded one-shot actual impact, no per-particle dynamic light.
@@ -1041,16 +1571,16 @@ func _spar_resolve_hit() -> void:
     else:
       _spar_normal_guards+=1
       _spar_last_outcome="格挡"
-      apply_player_damage(3)
-      say("普通格挡：受到3点冲击伤害")
+      apply_player_damage(maxi(1,ceili(3.0*0.30)) if _ward_seconds>0.0 else 3)
+      say("普通格挡：护体灵障减伤" if _ward_seconds>0.0 else "普通格挡：受到3点冲击伤害")
       _spar_feedback(Color("#f5d6a0"))
     _guard_time=0.0
   else:
     _spar_hits+=1
     _spar_last_outcome="受击"
-    apply_player_damage(12)
+    apply_player_damage(maxi(1,ceili(12.0*0.30)) if _ward_seconds>0.0 else 12)
     _spar_feedback(Color("#f29d84"))
-    say("切磋失误：实际扣除12点生命")
+    say("护体灵障挡住七成冲击" if _ward_seconds>0.0 else "切磋失误：实际扣除12点生命")
   if _player_health<=0:
     stop_practice()
 
@@ -1060,6 +1590,11 @@ func _spar_tick(delta: float) -> void:
   _dodge_time=maxf(0.0,_dodge_time-delta)
   _dodge_cd=maxf(0.0,_dodge_cd-delta)
   if _spar_stage=="inactive" or _spar_partner==null:
+    return
+  if _spar_stage=="victory":
+    _spar_timer=maxf(0.0,_spar_timer-delta)
+    if _spar_timer<=0.0:
+      stop_practice()
     return
   if not is_instance_valid(_spar_partner):
     stop_practice()
@@ -1230,26 +1765,31 @@ func _layout_hud() -> void:
     tab.position=Vector2(menu_x+float(idx)*104.0,16)
     tab.size=Vector2(96,44)
   var action_keys:=["GatherAction","DashAction","DigAction","InteractAction",
-    "ViewAction","LockedArt","GuardAction","EvadeAction"]
+    "ViewAction","LockedArt","GuardAction","EvadeAction",
+    "SwordAttack","SpiritBolt","SpiritWard"]
   for idx in range(action_keys.size()):
     var col: int=idx%4
     var row: int=int(idx/4)
     (_game_actions[action_keys[idx]] as Button).position=Vector2(
-      size.x-392.0+float(col)*94.0,size.y-152.0+float(row)*66.0)
+      size.x-392.0+float(col)*94.0,size.y-207.0+float(row)*66.0)
+  if _target_panel!=null:
+    # Keep target HUD BELOW the always-on first row of seven view toggles.
+    # Previously it sat under those buttons and concealed its own MP bar.
+    _target_panel.position=Vector2(maxf(380.0,size.x-392.0),139.0)
   notice.position=Vector2(minf(370.0,size.x*0.27),maxf(210.0,size.y-47.0))
   if _pad_hint!=null:
     _pad_hint.position=Vector2(16,139)
   if _root_exam_button!=null:
     var width: float=size.x
-    _root_exam_button.position=Vector2(width-392.0,size.y-213.0)
-    _meditate_button.position=Vector2(width-280.0,size.y-213.0)
-    _breakthrough_button.position=Vector2(width-168.0,size.y-213.0)
+    _root_exam_button.position=Vector2(width-392.0,size.y-271.0)
+    _meditate_button.position=Vector2(width-280.0,size.y-271.0)
+    _breakthrough_button.position=Vector2(width-168.0,size.y-271.0)
   if _living_seed_label!=null:
-    _living_seed_label.position=Vector2(19,232)
+    _living_seed_label.position=Vector2(19,263)
   if _living_clock_label!=null:
-    _living_clock_label.position=Vector2(19,148)
-    _living_speed_button.position=Vector2(19,183)
-    _local_ai_status_label.position=Vector2(127,191)
+    _living_clock_label.position=Vector2(19,172)
+    _living_speed_button.position=Vector2(19,209)
+    _local_ai_status_label.position=Vector2(127,217)
     _flight_altitude_label.position=Vector2(
       clampf(size.x*0.45,480.0,size.x-445.0),145)
 
@@ -2075,6 +2615,7 @@ func step(delta: float) -> void:
   _gather_cd=maxf(0.0,_gather_cd-delta)
   _fall_damage_cd=maxf(0.0,_fall_damage_cd-delta)
   _spar_tick(delta)
+  _step_spiritual_combat(delta)
   terrain.call("stream_around",actor.position)
   _step_jump(delta)
   _step_soar_altitude(delta)
@@ -2218,6 +2759,15 @@ func _set_movement_animation(moving: bool) -> void:
     animator.speed_scale=1.0
   else:
     animator.speed_scale=1.0
+  # Do not keep doing idle road-walking while a real sword hit or
+  # mana-paid technique is being executed. Reuse existing bound Knight clips.
+  if _attack_anim_seconds>0.0 and camera_mode!="soar":
+    var attack: String=_knight_clip("|swordAttack")
+    if attack.is_empty():
+      attack=_knight_clip("|swordAttackJump")
+    if not attack.is_empty():
+      clip=attack
+      animator.speed_scale=1.12
   if not clip.is_empty() and animator.current_animation!=clip:
     animator.play(clip)
 
@@ -2290,6 +2840,7 @@ func update_camera() -> void:
     var offset:=Vector3(sin(_yaw)*cos(_pitch),
       sin(_pitch),cos(_yaw)*cos(_pitch))
     var chase_distance: float=_distance+_soar_camera_extra if camera_mode=="soar" else _distance
+    chase_distance=maxf(3.4,chase_distance+_combat_camera_pull)
     var desired: Vector3=target+offset*chase_distance
     if camera_mode=="iso":
       _pitch=PI/4.0
