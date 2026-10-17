@@ -16,6 +16,7 @@ on:
       - 'game-source/apk176-ota177-candidate/scripts/apk176_backpack_rev205.gd'
       - 'game-source/apk176-ota177-candidate/ui/lucide/**'
       - 'logic-qa/tools/build_apk176_quality_rev187.gd'
+      - 'game-source/apk176-ota177-candidate/assets/hq-rev208/vegetation/trees/**'
       - 'tools/verify_apk176_rev187_3d_pck.py'
       - 'game-source/apk176-ota177-candidate/scripts/apk176_cultivation_world_rev201.gd'
       - 'game-source/apk176-ota177-candidate/scripts/apk176_root_taxonomy_rev206.gd'
@@ -244,6 +245,26 @@ jobs:
           PY
           cp game-source/apk176-ota177-candidate/scripts/apk176_quality_profiles_rev187.gd qa-stage/ota177/canglan_rev187/quality_profiles.gd
           cp game-source/godot3d/assets/free_cc0/kenney/3d/nature/tree_oak.glb qa-stage/ota177/canglan_rev187/tree_oak.glb
+          # Three WHOLE genuine vendor CC0 high-detail adult trees after verified
+          # 625-source-node -> 4 ORIGINAL PBR-surface mesh conversion. Don't
+          # publish if one is missing, unlicensed, bad geometry or SHA mismatch.
+          mkdir -p qa-stage/ota177/canglan_rev187/hq_rev208
+          cp game-source/apk176-ota177-candidate/assets/hq-rev208/vegetation/trees/mature_*_hq_lod0.glb \\
+            qa-stage/ota177/canglan_rev187/hq_rev208/
+          python3 - <<'PY'
+          from pathlib import Path
+          import json,hashlib
+          root=Path('game-source/apk176-ota177-candidate/assets/hq-rev208/vegetation/trees')
+          m=json.loads((root/'manifest.json').read_text(encoding='utf-8'))
+          assert m['art_approval']=='PENDING_REAL_GODOT_AND_USER'
+          assert set(m['items'])=={'oak','maple','linden'}
+          for kind,entry in m['items'].items():
+            data=(root/entry['file']).read_bytes()
+            staged=(Path('qa-stage/ota177/canglan_rev187/hq_rev208')/entry['file']).read_bytes()
+            assert data==staged and hashlib.sha256(data).hexdigest()==entry['converted_sha256']
+            assert 7.5<float(entry['source_height_m'])<12.0 and entry['render_meshes']==4
+          print('PASS_REV208_THREE_TRUE_GENUINE_PBR_TALL_TREES_SHA_PINNED_FOR_ORIGINAL_APK176_MAIN')
+          PY
           cp game-source/godot3d/assets/free_cc0/kenney/3d/castle/rocks-small.glb qa-stage/ota177/canglan_rev187/rocks_small.glb
           cp game-source/godot3d/assets/free_cc0/kenney/3d/castle/tree-log.glb qa-stage/ota177/canglan_rev187/tree_log.glb
           cp game-source/godot3d/assets/free_cc0/kenney/3d/castle/wall-narrow-wood-fence.glb qa-stage/ota177/canglan_rev187/wood_fence.glb
