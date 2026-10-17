@@ -8,6 +8,7 @@ on:
   workflow_dispatch:
 permissions:
   contents: write
+  actions: read
 concurrency:
   group: canglan-original-game-ota-rev206
   cancel-in-progress: false
@@ -19,7 +20,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          persist-credentials: false
+          persist-credentials: true
       - name: Source invariants for rev204 authentic combat without claiming gameplay QA
         shell: bash
         run: |
