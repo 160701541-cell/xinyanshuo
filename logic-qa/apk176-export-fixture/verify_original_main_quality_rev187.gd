@@ -2152,13 +2152,30 @@ func _run() -> void:
       wild.call("stats").get("live_spirit_stone_units",0))!=12:
     _fail(346,"REV206_REAL_PHYSICAL_MEDICINAL_RESOURCE_NODES_NOT_CONSERVED")
     return
+  var independent_herb_sources: Dictionary=room.get("hq_medicinal_source_templates")
+  if independent_herb_sources.size()!=3:
+    _fail(412,"REV208_THREE_GENUINE_INDEPENDENT_AUTHORED_HERB_GLTF_SOURCES_MISSING")
+    return
+  var medicinal_kinds: Dictionary={}
   for id in plants:
     var mesh: Node3D=plants[id]["model"]
+    var kind: String=String(plants[id]["kind"])
+    var upgraded: bool=kind in ["herb_wood","herb_fire","herb_water"]
+    var origin: String=(
+      "CC0-Innerscene-botanical" if upgraded else "Quaternius-CC0")
     if mesh==null or not is_instance_valid(mesh) or (
         mesh.find_children("*","MeshInstance3D",true,false).is_empty()) or (
-        mesh.get_meta("source_license","")!="Quaternius-CC0"):
-      _fail(347,"REV206_MEDICINE_ORE_MISSING_REAL_QUATERNIUS_MESH_AND_LICENSE")
+        String(mesh.get_meta("source_license",""))!=origin) or (
+        bool(mesh.get_meta("rev208_authored_independent_herb_stem",false))!=upgraded):
+      _fail(347,"REV208_MEDICINE_ORE_NOT_REAL_DISTINCT_LICENSED_GLTF_"+String(id))
       return
+    if upgraded:
+      medicinal_kinds[kind]=int(medicinal_kinds.get(kind,0))+1
+  if medicinal_kinds.size()!=3 or (
+      int(report.get("rev208_hq_independent_spirit_herb_source_count",-1))!=3):
+    _fail(413,"REV208_WOOD_FIRE_WATER_NOT_THREE_REAL_DISTINCT_STEMS")
+    return
+  print("PASS_REV208_REAL_INDEPENDENT_MEDICINAL_HERB_STEMS_CC0_PERSISTED_IDS")
   actor.position=Vector3(-11.4,float(terrain.call(
     "height_at",-11.4,-12.2)),-12.2)
   econ.citizens["CL-PLAYER-0184-0001"]["energy"]=100
