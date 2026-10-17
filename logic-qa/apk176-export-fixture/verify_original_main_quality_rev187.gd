@@ -907,8 +907,44 @@ func _run() -> void:
       _fail(351,"REV208_SMALL_ORDINARY_ANIMAL_WITHOUT_REAL_BEAST_REALM_HP_MP_COLLIDER")
       return
   print("PASS_REV208_NO_FREE_HOUSES_200WOOD150STONE_FIVE_RESIDENTS_AND_FOUR_TRUE_LARGE_YAO_BEASTS")
+  # Rev207 authorized world replaces former 80k city initial census.
+  # It is count-only: 500 physical geographic regions would waste memory.
+  var living: Dictionary=report.get("rev207_real_living_world",{})
+  if int(report.get("rev207_authoritative_mortal_population",-1))!=5000 or (
+      int(living.get("population",0))!=5000) or (
+      int(living.get("area_km2",0))!=50000) or (
+      int(living.get("regions",0))!=500) or (
+      int(living.get("rooted_mortals",0))!=125) or (
+      int(living.get("without_spirit_root",0))!=4875) or (
+      int(living.get("body_cultivators",0))<150) or (
+      int(living.get("real_loaded_human_scene_nodes",-1))!=0) or (
+      not bool(living.get("conserved",false))):
+    _fail(360,"REV207_AUTHORITATIVE_SPARSE_MORTALS_NOT_LIVING_50000KM2_"+str(living))
+    return
+  if int(report.get("rev207_mine_guardian_positions_linked",-1))!=4:
+    _fail(361,"REV207_REAL_CC0_YAO_BEAST_LEADERS_NOT_LINKED_TO_FOUR_PHYSICAL_ORE_VEINS")
+    return
+  var guardians: Dictionary=room.get("actual_wildlife")
+  var spirit_visuals: Dictionary=room.get("spirit_resource_visuals")
+  for beast in guardians.values():
+    var ore_id: String=String(beast.get("guarded_ore",""))
+    var guard: Node3D=beast["node"]
+    if not spirit_visuals.has(ore_id):
+      _fail(362,"REV207_ORE_GUARD_IS_NOT_A_PHYSICAL_SPIRIT_VEIN_"+ore_id)
+      return
+    var ore: Node3D=spirit_visuals[ore_id]["model"]
+    if Vector2(guard.position.x-ore.position.x,
+        guard.position.z-ore.position.z).length()>7.0:
+      _fail(363,"REV207_YAO_BEAST_MUST_PATROL_WITHIN_7_METERS_OF_ACTUAL_ORE_"+ore_id)
+      return
+  for site in (room.get("housing_blueprints") as Dictionary).values():
+    if site.has("marker") and room.get("finished_prefabs").size()==0 and (
+        int(living.get("region_built_bp",-1))!=0):
+      _fail(364,"REV207_UNPAID_HOUSE_CANNOT_CLEAR_WILDERNESS_AND_GRASS")
+      return
+  print("PASS_REV207_TRUE_MAIN_50000KM2_5000_ROOT_RATIO_BODY_CULTIVATION_5_SECTS_4_REAL_ORE_BEAST_GUARDS")
   if not bool(report.get("persistent_city_population_is_statistical_only",false)):
-    _fail(331,"REV206_CITY_80000_RESIDENTS_MUST_NOT_BE_80000_GODOT_NODES")
+    _fail(331,"REV207_5000_MORTALS_MUST_BE_STATISTICAL_NOT_5000_GODOT_NODES")
     return
   print("PASS_REV206_REAL_QUATERNIUS_CC0_SOURCE_HOUSES_REAL_YAO_BEASTS_PERSISTENT_PAID_WORKER_BUILDING")
   if not (report.get("native_resolution_ui",false) and report.get("no_auto_quality_switch",false)):
