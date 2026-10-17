@@ -235,6 +235,27 @@ func _capture() -> void:
     _fail("REV200_GODOT_SKY_TRAVEL_RENDERED_FRAME_FAILURE")
     return
   print("PASS_REV200_ORIGINAL_REAL_GODOT_AIRBORNE_SWORD_WIND_HAIR_HEIGHT_UI_FRAME")
+  # Rev203 actual rendered turning frame: licensed blade follows the player's
+  # physical airborne bank; no still image or faked image-space rotation.
+  var banking_avatar: Node3D=player.get("actor")
+  banking_avatar.rotation.y=1.25
+  player.set("_yaw",0.25)
+  player.set("_joystick",Vector2(0.0,-1.0))
+  player.call("step",0.16)
+  player.set("_joystick",Vector2.ZERO)
+  var licensed_blade: Node3D=room.get("world").get_node_or_null(
+    "ActualQuaterniusKnightCC0FlyingSwordUnderPlayerFeet")
+  if absf(banking_avatar.rotation.z)<0.003 or licensed_blade==null or (
+      absf(licensed_blade.rotation.z-banking_avatar.rotation.z)>0.005):
+    _fail("REV203_REAL_PLAYER_AND_LICENSED_SWORD_NOT_BANKING_IN_GODOT")
+    return
+  for i in range(6):
+    await process_frame
+  await RenderingServer.frame_post_draw
+  if not _save("real_apk176_rev203_actual_bank_sword_ground_reference.png"):
+    _fail("REV203_REAL_TURNING_SWORD_GAME_FRAME_NOT_VISIBLE")
+    return
+  print("PASS_REV203_REAL_GODOT_RENDERED_LICENCED_SWORD_BANK_AND_GROUND_REFERENCE")
   player.call("toggle_avatar_flight")
   print("PASS_REV197_ORIGINAL_GODOT_ENGINE_VISIBLE_ANIMATED_PLAYER_CLOSE_AND_45DEG_REAL_FRAMES")
   print("PASS_REV187_TWO_GENUINE_ENGINE_RENDERED_WORKSITE_FRAMES_NOT_PHONE_TESTS")

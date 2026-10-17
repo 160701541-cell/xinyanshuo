@@ -51,6 +51,11 @@ var _soar_target_altitude: float=0.0
 var _soar_landing: bool=false
 var _air_velocity: Vector3=Vector3.ZERO
 var _air_display_speed: float=0.0
+# rev203: real player turn bank and camera depth, not camera roll or fake motion.
+var _soar_bank_angle: float=0.0
+var _soar_camera_extra: float=0.0
+var _soar_hold_axis: float=0.0
+var _soar_hold_seconds: float=0.0
 var _fly_last_anim: String=""
 var _flight_sword: Node3D
 var _flight_rune: MeshInstance3D
@@ -281,7 +286,8 @@ func _sync_flight_world_cues(delta: float) -> void:
   if _flight_sword!=null:
     # Authentic sword originally points along local +Y. Rest it flat with
     # the tip projecting in front of the REAL feet, not glued to camera.
-    _flight_sword.rotation=Vector3(PI/2.0,actor.rotation.y,0.0)
+    # Bank blade and body together; it is the actual licensed blade GLB.
+    _flight_sword.rotation=Vector3(PI/2.0,actor.rotation.y,_soar_bank_angle)
     var blade_dir: Vector3=Vector3(sin(actor.rotation.y),0,cos(actor.rotation.y))
     _flight_sword.position=Vector3(actor.position.x,foot_y-0.20,
       actor.position.z)-blade_dir*0.96
@@ -419,8 +425,17 @@ func _create_hud() -> void:
   _new_button("PerspectiveButton","第一视角",146,Callable(self,"toggle_perspective"))
   _new_button("GodViewButton","上帝视角",146,Callable(self,"toggle_god_view"))
   _new_button("FlyViewButton","自由飞行",146,Callable(self,"toggle_fly_view"))
-  _new_button("FlyUpButton","升高 ↑",116,Callable(self,"fly_up"))
-  _new_button("FlyDownButton","降低 ↓",116,Callable(self,"fly_down"))
+  var lift_button: Button=_new_button("FlyUpButton","升高 ↑",116,Callable(self,"fly_up"))
+  var lower_button: Button=_new_button("FlyDownButton","降低 ↓",116,Callable(self,"fly_down"))
+  # Press grants one precise 2.5m step; holding >0.25s then climbs/descends
+  # continuously. Button-up never repeats pressed in ACTION_MODE_BUTTON_PRESS.
+  # Gamepad DPAD retains the same explicit 2.5m step callbacks.
+  for lift in [lift_button,lower_button]:
+    lift.action_mode=BaseButton.ACTION_MODE_BUTTON_PRESS
+  lift_button.button_down.connect(Callable(self,"_begin_soar_hold").bind(1.0))
+  lift_button.button_up.connect(Callable(self,"_end_soar_hold").bind(1.0))
+  lower_button.button_down.connect(Callable(self,"_begin_soar_hold").bind(-1.0))
+  lower_button.button_up.connect(Callable(self,"_end_soar_hold").bind(-1.0))
   _new_button("ResetViewButton","重置镜头",146,Callable(self,"reset_camera"))
   _new_button("ZoomInButton","视野 ＋",128,Callable(self,"zoom_in"))
   _new_button("ZoomOutButton","视野 －",128,Callable(self,"zoom_out"))
@@ -1760,11 +1775,19 @@ func _set_mode(mode: String) -> void:
     return
   if camera_mode=="soar" and mode!="soar" and _soar_altitude>0.045:
     _soar_landing=true
+    _soar_hold_axis=0.0
+    _soar_hold_seconds=0.0
     _soar_target_altitude=0.0
     say("请先平稳降落，再切换视角")
     _layout_hud() # Hide both lift controls immediately, not on the next physics frame.
     return
   if camera_mode=="soar" and mode!="soar":
+    _soar_hold_axis=0.0
+    _soar_hold_seconds=0.0
+    _soar_camera_extra=0.0
+    _soar_bank_angle=0.0
+    if actor!=null:
+      actor.rotation.z=0.0
     _soar_altitude=0.0
     _soar_target_altitude=0.0
     _soar_landing=false
@@ -1797,6 +1820,10 @@ func _set_mode(mode: String) -> void:
     _soar_altitude=0.0
     _soar_target_altitude=3.0
     _soar_landing=false
+    _soar_hold_axis=0.0
+    _soar_hold_seconds=0.0
+    _soar_camera_extra=0.0
+    _soar_bank_angle=0.0
     _air_velocity=Vector3.ZERO
     _pitch=0.70
     _distance=11.0
@@ -1818,6 +1845,33 @@ func _set_mode(mode: String) -> void:
   (buttons["FlyViewButton"] as Button).text="退出摄影机飞行" if mode=="fly" else "自由摄影机"
   update_camera()
   _layout_hud()
+
+func _begin_soar_hold(axis: float) -> void:
+  if camera_mode=="soar" and not _soar_landing and (
+      _game_sheet==null or not _game_sheet.visible):
+    _soar_hold_axis=clampf(axis,-1.0,1.0)
+    _soar_hold_seconds=0.0
+
+func _end_soar_hold(axis: float) -> void:
+  if is_equal_approx(_soar_hold_axis,axis):
+    _soar_hold_axis=0.0
+    _soar_hold_seconds=0.0
+
+func _step_soar_hold(delta: float) -> void:
+  if camera_mode!="soar" or _soar_landing or (
+      _game_sheet!=null and _game_sheet.visible):
+    _soar_hold_axis=0.0
+    _soar_hold_seconds=0.0
+    return
+  if absf(_soar_hold_axis)<0.1:
+    return
+  _soar_hold_seconds+=delta
+  if _soar_hold_seconds<=0.25:
+    return
+  # A thumb can stay on the button without 20 repeated taps.
+  # Input motion uses real seconds even when the simulated WORLD clock runs 100x.
+  _soar_target_altitude=clampf(
+    _soar_target_altitude+_soar_hold_axis*6.0*delta,0.85,90.0)
 
 func fly_up() -> void:
   if camera_mode=="fly":
@@ -1862,6 +1916,8 @@ func toggle_avatar_flight() -> void:
       return
     _soar_landing=true
     _soar_target_altitude=0.0
+    _soar_hold_axis=0.0
+    _soar_hold_seconds=0.0
     # Keep current air velocity; step() eases horizontal motion to rest.
     # Clearing this vector here causes a sudden midair braking jolt.
     _layout_hud()
@@ -2022,6 +2078,12 @@ func step(delta: float) -> void:
   terrain.call("stream_around",actor.position)
   _step_jump(delta)
   _step_soar_altitude(delta)
+  _step_soar_hold(delta)
+  # A little more terrain in frame at altitude gives real spatial context;
+  # the eased offset adds to, never replaces, player-controlled pinch zoom.
+  _soar_camera_extra=lerpf(_soar_camera_extra,
+    clampf(_soar_altitude*0.10,0.0,6.5) if camera_mode=="soar" else 0.0,
+    clampf(delta*2.6,0.0,1.0))
   var previous_ground_y: float=_ground_surface_y(actor.position.x,actor.position.z)
   var input_axis: Vector2 = _joystick
   # Touch joystick wins while a finger is actually manipulating it.
@@ -2088,9 +2150,15 @@ func step(delta: float) -> void:
     else:
       _air_velocity=Vector3.ZERO
       _air_display_speed=0.0
+    var bank_target: float=0.0
     if fly_vector.length()>0.01:
       var wanted_yaw: float=atan2(fly_vector.x,fly_vector.z)
+      var yaw_error: float=wrapf(wanted_yaw-actor.rotation.y,-PI,PI)
+      bank_target=clampf(-yaw_error*0.28,-0.16,0.16)*clampf(
+        _air_display_speed/8.0,0.0,1.0)
       actor.rotation.y=lerp_angle(actor.rotation.y,wanted_yaw,clampf(delta*6,0,1))
+    _soar_bank_angle=lerpf(_soar_bank_angle,bank_target,clampf(delta*4.0,0,1))
+    actor.rotation.z=_soar_bank_angle
     _set_movement_animation(_air_display_speed>0.35)
   elif input_axis.length()>0.08:
     _follow_npc=false
@@ -2221,7 +2289,8 @@ func update_camera() -> void:
     var target: Vector3=actor.position+Vector3.UP*1.19
     var offset:=Vector3(sin(_yaw)*cos(_pitch),
       sin(_pitch),cos(_yaw)*cos(_pitch))
-    var desired: Vector3=target+offset*_distance
+    var chase_distance: float=_distance+_soar_camera_extra if camera_mode=="soar" else _distance
+    var desired: Vector3=target+offset*chase_distance
     if camera_mode=="iso":
       _pitch=PI/4.0
     desired.y=maxf(desired.y,_ground_surface_y(desired.x,desired.z)+0.7)
