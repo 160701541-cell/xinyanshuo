@@ -429,7 +429,9 @@ func _create_fireflies(room: Node) -> void:
   mat.billboard_mode=BaseMaterial3D.BILLBOARD_ENABLED
   mat.emission_enabled=true
   mat.emission=Color("#f4d882")
-  mat.emission_energy_multiplier=0.95
+  # Visible bright core for Mobile glow threshold; single MultiMesh/particle
+  # emitter so the new light feedback does NOT imply per-particle OmniLights.
+  mat.emission_energy_multiplier=1.50
   quad.material=mat
   particles.draw_pass_1=quad
   room.get("world").add_child(particles)
@@ -500,9 +502,19 @@ func apply(profile_name: String,save: bool=true) -> bool:
   scene_environment.fog_density=float(p["fog_density"])
   # Avoid bleached near-field: atmospheric perspective only in the distance.
   scene_environment.ambient_light_energy=0.46
-  # Modern Godot Mobile renderer does not guarantee Forward+ screen glow.
-  # The actual emissive fireflies remain visible in all three tiers.
-  scene_environment.glow_enabled=false
+  # REV195: God's own 4.4 docs confirm Mobile DOES support Glow.
+  # The previous code always turned it OFF even when both premium
+  # quality profiles explicitly declared "glow":true. Use a restrained
+  # native Mobile threshold (HDR range tops at 2.0), not desktop values.
+  scene_environment.glow_enabled=bool(p["glow"])
+  scene_environment.glow_hdr_threshold=0.90
+  scene_environment.glow_intensity=1.45 if selected=="极致画质" else 1.25
+  scene_environment.glow_bloom=0.040 if selected=="极致画质" else 0.018
+  scene_environment.glow_strength=0.90
+  # Sun-tinted scattering in ordinary distance fog; NOT Forward+-only
+  # volumetric fog, and never used to bleach the close foreground.
+  scene_environment.fog_sun_scatter=0.16 if selected=="极致画质" else (
+    0.10 if selected=="高档" else 0.025)
   grass.visibility_range_end=float(p["grass_distance"])
   grass.multimesh.visible_instance_count=int(p["grass_instances"])
   flowers.multimesh.visible_instance_count=int(roundi(float(p["grass_instances"])/4500.0*270.0))
@@ -542,7 +554,12 @@ func update_diagnostics() -> Dictionary:
     "reference_max_triangles":int(p["triangle_reference"]),
     "grass_leaf_blades_per_tuft":5,"grass_height_m_min":0.31,
     "grass_height_m_max":0.586,"total_flower_instances":flowers.multimesh.instance_count,
-    "auto_quality_changes":false,"unrestricted_natural_palette":true
+    "auto_quality_changes":false,"unrestricted_natural_palette":true,
+    "real_mobile_glow_enabled":scene_environment.glow_enabled,
+    "mobile_glow_hdr_threshold":scene_environment.glow_hdr_threshold,
+    "mobile_glow_intensity":scene_environment.glow_intensity,
+    "sun_fog_scatter_not_volumetric":scene_environment.fog_sun_scatter,
+    "real_mobile_volumetric_fog":false
   }
   if diagnostic_text!=null:
     var observed_hz: String="系统接口 %.0fHz(仅参考)" % actual_refresh if actual_refresh>0 else "系统刷新接口未报告"
