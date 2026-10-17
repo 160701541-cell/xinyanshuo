@@ -1,0 +1,158 @@
+name: Canglan rev208 eleven CC0 full PBR botanical meshes optimized for Android QA only
+on:
+  push:
+    branches: [feat/rev208-green-kenney-saplings-vegetation]
+    paths:
+      - '.github/workflows/canglan-rev208-hq-cc0-botanical-merged-draw-qa-only.yml'
+      - 'tools/asset_factory/rev208_join_cc0_botanical_meshes.py'
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: canglan-rev208-hq-botanical-merged-draw
+  cancel-in-progress: false
+jobs:
+  preserve-author-pbr-geometry-and-merge-actual-meshes:
+    if: github.repository == '160701541-cell/xinyanshuo'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 18
+    env:
+      SRC: game-source/apk176-ota177-candidate/assets/hq-rev208/vegetation/botanical
+      DEST: game-source/apk176-ota177-candidate/assets/hq-rev208/vegetation/botanical-optimized
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - name: Install pinned open source glTF-Transform static mesh joiner
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m py_compile tools/asset_factory/rev208_join_cc0_botanical_meshes.py
+          npm install -g @gltf-transform/cli@4.5.0
+          gltf-transform --version
+      - name: Merge EXACT ORIGINAL vendor GLB mesh surfaces WITHOUT texture material triangle loss
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 tools/asset_factory/rev208_join_cc0_botanical_meshes.py "$SRC" "$DEST"
+          python3 - <<'PY'
+          import json,os,hashlib
+          from pathlib import Path
+          d=Path(os.environ['DEST']);m=json.loads((d/'manifest.json').read_text())
+          assert m['release_policy']=='QA_ONLY_NOT_SIGNED_NOT_SHIPPED'
+          assert len(m['items'])==11
+          src_parts=sum(a['source_draw_surfaces'] for a in m['items'].values())
+          out_parts=sum(a['merged_draw_surfaces'] for a in m['items'].values())
+          assert out_parts<=src_parts//2, f'Android draw call reduction is inadequate: {src_parts} -> {out_parts}'
+          for k,item in m['items'].items():
+            assert hashlib.sha256((d/item['file']).read_bytes()).hexdigest()==item['sha256']
+            assert item['vendor_PBR_material_signatures_preserved']
+            assert item['original_embedded_PBR_images_sha_preserved']
+            assert item['game_asset_approved'] is False
+            assert item['original_triangles']==item['triangle_lod0']
+          print('PASS_REV208_HQ_CC0_AUTHORED_11_TRUE_GLBS_MESH_PRIMITIVES_LOSSLESS_REDUCED',src_parts,out_parts)
+          PY
+      - name: Download exact original Android Godot 4.4.1
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl -fL --retry 2 --connect-timeout 20 \
+            https://github.com/godotengine/godot/releases/download/4.4.1-stable/Godot_v4.4.1-stable_linux.x86_64.zip \
+            -o /tmp/godot-rev208-meshjoin.zip
+          unzip -q /tmp/godot-rev208-meshjoin.zip -d /tmp
+          chmod +x /tmp/Godot_v4.4.1-stable_linux.x86_64
+      - name: Original Godot 4.4.1 independent import and exact AABB full 3D meter bounds retention
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat > "$DEST/project.godot" <<'EOP'
+          config_version=5
+          [application]
+          config/name="Canglan rev208 11 real CC0 geometry visual fidelity CHECK ONLY"
+          EOP
+          cat > "$DEST/verify_merged_source_godot441.gd" <<'EOG'
+          extends SceneTree
+          func _initialize() -> void:
+            call_deferred("_run")
+          func _stats(file: String) -> Dictionary:
+            var bytes: PackedByteArray=FileAccess.get_file_as_bytes(file)
+            var doc:=GLTFDocument.new()
+            var state:=GLTFState.new()
+            if bytes.size()<100 or doc.append_from_buffer(bytes,"res://",state)!=OK:
+              return {"error":"INVALID_REAL_GODOT_GLTF_FILE_"+file}
+            var node: Node3D=doc.generate_scene(state)
+            if node==null:
+              return {"error":"GODOT_GLTF_NO_MESH_"+file}
+            get_root().add_child(node)
+            var meshes: Array[Node]=node.find_children("*","MeshInstance3D",true,false)
+            if node is MeshInstance3D:
+              meshes.append(node)
+            var lo:=Vector3(INF,INF,INF)
+            var hi:=Vector3(-INF,-INF,-INF)
+            var real_mesh_count: int=0
+            var surface_parts: int=0
+            for child in meshes:
+              var mesh: MeshInstance3D=child as MeshInstance3D
+              if mesh.mesh==null:
+                continue
+              real_mesh_count+=1
+              surface_parts+=mesh.mesh.get_surface_count()
+              var box: AABB=mesh.get_aabb()
+              for i in range(8):
+                var point: Vector3=mesh.to_global(box.get_endpoint(i))
+                lo=lo.min(point)
+                hi=hi.max(point)
+            node.free()
+            return {"low":lo,"high":hi,"size":hi-lo,
+              "mesh_count":real_mesh_count,"surface_parts":surface_parts}
+          func _run() -> void:
+            for key in ["pine","cypress","conifer","fern","hydrangea",
+                "rose","lavender","grass","medicinal_wood","medicinal_fire","medicinal_water"]:
+              var old: Dictionary=_stats("res://../botanical/hq_"+key+"_cc0_lod0.glb")
+              var joined: Dictionary=_stats("res://hq_"+key+"_cc0_drawmerged.glb")
+              if old.has("error") or joined.has("error"):
+                printerr("FAIL_REV208_GODOT441_SOURCE_JOIN_IMPORT_"+key+str(old)+str(joined))
+                quit(51)
+                return
+              var old_size: Vector3=old["size"]
+              var merged_size: Vector3=joined["size"]
+              var err: float=(old_size-merged_size).abs().length()
+              if err>0.08 or joined["surface_parts"]>old["surface_parts"] or (
+                  joined["mesh_count"]>old["mesh_count"]):
+                printerr("FAIL_REV208_GODOT441_RENDER_PBR_MERGE_METER_OR_DRAW_PARTS_"+key+
+                  " source="+str(old)+" merged="+str(joined)+" error="+str(err))
+                quit(52)
+                return
+              print("PASS_REV208_REAL_GODOT441_CC0_3D_METER_AND_SURFACES_RETAINED_"+
+                key+" parts="+str(old["surface_parts"])+"->"+str(joined["surface_parts"]))
+            print("PASS_REV208_REAL_GODOT441_11_LICENSED_REAL_3D_PBR_SOURCE_VISUALS_GEOMETRY_METER_SAFE_AFTER_JOIN_UNAPPROVED")
+            quit(0)
+          EOG
+          timeout 160s /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless \
+            --path "$DEST" --script res://verify_merged_source_godot441.gd \
+            | tee "$DEST/godot_source_merged_evidence.log"
+          grep -Fq PASS_REV208_REAL_GODOT441_11_LICENSED_REAL_3D_PBR_SOURCE_VISUALS_GEOMETRY_METER_SAFE_AFTER_JOIN_UNAPPROVED "$DEST/godot_source_merged_evidence.log"
+          rm -f "$DEST/project.godot" "$DEST/verify_merged_source_godot441.gd" "$DEST/godot_source_merged_evidence.log"
+      - name: Preserve unmodified vendor GLB, commit ONLY separately quarantined mobile draw joined candidates
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name canglan-rev208-gltf-static-pbr-geometry-qa
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add "$DEST"
+          if git diff --cached --quiet;then
+            echo "No change to independently measured CC0 merge candidate"
+            exit 0
+          fi
+          git commit -m "perf(rev208 Draft): verified source-PBR-preserving 11 CC0 GLB meshes aggregated for Android candidates ONLY"
+          git pull --rebase origin feat/rev208-green-kenney-saplings-vegetation
+          git push origin HEAD:feat/rev208-green-kenney-saplings-vegetation
+          echo PASS_REV208_REAL_SOURCE_AUTHORED_GODOT441_SHA_QUARANTINED_JOIN_NO_OTA
+      - name: Keep actual Godot import evidence as temporary artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: Canglan-REV208-REAL-CC0-PBR-GLTF-11-ANDROID-MESH-JOIN-QA-${{ github.run_id }}
+          path: ${{ env.DEST }}/
+          retention-days: 7
+          if-no-files-found: warn
