@@ -328,8 +328,7 @@ func _construct_far_land() -> void:
               Vector2(x1,z1),Vector2(x0,z1)]:
             var radius: float=v.length()
             var extra: float=clampf((radius-70.0)/220.0,0.0,1.0)
-            var hills: float=(2.0*sin(v.x*0.029)*cos(v.y*0.021)
-              +1.6*sin(v.x*0.049+v.y*0.024))*extra
+            var hills: float=(2.0*sin(v.x*0.029)*cos(v.y*0.021)+1.6*sin(v.x*0.049+v.y*0.024))*extra
             var mountains: float=pow(extra,2.4)*(12.0+8.0*sin(v.x*0.036)*cos(v.y*0.035))
             corners.append(Vector3(v.x,_base_at(v.x,v.y)-2.2*extra+hills+mountains,v.y))
           _push_quad(terrain_chunk,corners[0],corners[3],corners[2],corners[1])
