@@ -1657,6 +1657,132 @@ func _run() -> void:
   player.call("_refresh_game_hud")
   print("PASS_REV201_ACTUAL_LICENSED_ALTAR_HIDDEN_DETERMINISTIC_ROOT_12_AUTONOMOUS_CULTIVATORS_REAL_HOUR_MEDITATION_QI_AND_BREAKTHROUGH_SAVED")
   print("PASS_REV204_AUTHORITY_GATED_LEARNED_QI_BOLT_SPEND_REAL_MANA_TRAVEL_HIT_AND_LEVEL2_WARD")
+  # rev205: run the exact original touch/controller in the real Main, not a
+  # mocked camera or an icon screenshot. Third-person orbit and first-person
+  # lens have opposite trigonometric pitch signs. They must share a single
+  # mobile gesture convention: UP finger raises the view in BOTH.
+  player.call("_set_mode","third")
+  player.set("_touch_look_inverted",false)
+  player.set("_camera_angle_locked",false)
+  var orbit_start: float=float(player.get("_pitch"))
+  player.call("turn_view",Vector2(0,-85))
+  if float(player.get("_pitch"))>=orbit_start:
+    _fail(305,"REV205_UP_FINGER_MUST_RAISE_REAL_THIRD_PERSON_ORBIT_VIEW")
+    return
+  for i in range(7):
+    player.call("turn_view",Vector2(0,-200))
+  if float(player.get("_pitch"))>-0.88:
+    _fail(306,"REV205_CAMERA_STILL_CANNOT_LOOK_UP_AT_TRUE_SKY")
+    return
+  for i in range(9):
+    player.call("turn_view",Vector2(0,210))
+  if float(player.get("_pitch"))<1.13:
+    _fail(307,"REV205_CAMERA_STILL_CANNOT_LOOK_DOWN_AT_FEET")
+    return
+  player.call("_set_mode","first")
+  player.call("turn_view",Vector2(0,-100))
+  if float(player.get("_pitch"))<=0.18:
+    _fail(308,"REV205_FIRST_PERSON_UPWARD_SWIPE_NOT_LOOKING_UP")
+    return
+  player.call("_set_mode","third")
+  player.call("_toggle_touch_invert")
+  var reverse_origin: float=float(player.get("_pitch"))
+  player.call("turn_view",Vector2(0,-60))
+  if float(player.get("_pitch"))<=reverse_origin:
+    _fail(309,"REV205_INVERT_Y_SETTING_DID_NOT_ACTUALLY_REVERSE_REAL_CAMERA")
+    return
+  player.call("_toggle_touch_invert")
+  var icon: Texture2D=player.call("_open_icon","backpack")
+  var target_icon: Texture2D=player.call("_open_icon","crosshair")
+  if icon==null or target_icon==null or (game_hud.get_node_or_null(
+      "QuickBarFoldButton")==null):
+    _fail(310,"REV205_GENUINE_LICENSED_OPEN_SOURCE_UI_NOT_IN_REAL_APK_GAME")
+    return
+  player.call("toggle_quickbar")
+  if (game_hud.get_node("PhoneZoomInButton") as Button).visible or not (
+      game_hud.get_node("SoarAvatarButton") as Button).visible:
+    _fail(311,"REV205_FOLDABLE_NATIVE_HUD_BLOCKS_KEY_FLIGHT_BUTTON")
+    return
+  player.call("toggle_quickbar")
+  if not (game_hud.get_node("PhoneZoomInButton") as Button).visible:
+    _fail(312,"REV205_EXPAND_HUD_DOES_NOT_RESTORE_ZOOM")
+    return
+  var target_first: Dictionary=spir.get("npc_visuals")
+  var n: Node3D=target_first["CL-XIUXIAN-001"]["actor"]
+  var restored_loc: Vector3=actor.position
+  actor.position=n.position+Vector3(2.3,0,0)
+  player.call("toggle_target_lock")
+  player.call("step",0.17)
+  if player.get("_locked_target")==null or not (
+      game_hud.get_node("ActualSelectedTargetNameHealthRealmPreview") as Label).visible or (
+      not (game_hud.get_node("ActualSelectedTargetNameHealthRealmPreview") as Label).text.contains("生命")):
+    _fail(313,"REV205_LOCK_ON_DOES_NOT_TRACK_ACTUAL_CULTIVATOR_REALM_HP_MANA")
+    return
+  player.call("toggle_target_lock")
+  if player.get("_locked_target")!=null:
+    _fail(314,"REV205_TARGET_LOCK_CANNOT_RELEASE_VIEW")
+    return
+  actor.position=restored_loc
+  player.call("_set_mode","soar")
+  player.call("step",0.30)
+  player.call("toggle_avatar_flight")
+  if not bool(player.get("_soar_landing")):
+    _fail(315,"REV205_DESCENT_NEVER_STARTED")
+    return
+  player.call("toggle_avatar_flight")
+  if bool(player.get("_soar_landing")) or float(
+      player.get("_soar_target_altitude"))<3.0:
+    _fail(316,"REV205_CAN_NOT_RETAKE_OFF_DURING_BROKEN_DESCENT")
+    return
+  # Existing physical descent QA already covers the real landing and ground
+  # collision; test-only fixture resets to avoid moving into nearby altar.
+  player.set("_soar_altitude",0.0)
+  player.call("_set_mode","third")
+  var backpack: RefCounted=player.get("_backpack")
+  var contents_before: Dictionary=backpack.call("snapshot")["items"].duplicate(true)
+  var gear_before: Dictionary=backpack.call("snapshot")["equipment"].duplicate(true)
+  var saved_energy: int=int(econ.citizens["CL-PLAYER-0184-0001"]["energy"])
+  econ.citizens["CL-PLAYER-0184-0001"]["energy"]=100
+  var tree_code: String=""
+  for id in econ.natural_nodes:
+    var natural: Dictionary=econ.natural_nodes[id]
+    if String(natural["kind"])=="tree" and int(natural["remaining"])>=3:
+      tree_code=String(id)
+      break
+  if tree_code.is_empty():
+    _fail(317,"REV205_NO_EXISTING_AUTHENTIC_TREE_AVAILABLE_FOR_BAG_TEST")
+    return
+  var old_wood: int=int(backpack.call("amount","wood"))
+  var old_tree_count: int=int(econ.natural_nodes[tree_code]["remaining"])
+  actor.position=econ.resource_positions[tree_code]
+  player.set("_auto_resource_id",tree_code)
+  var tapped: Dictionary=player.call("interact")
+  if not bool(tapped.get("ok",false)) or String(tapped.get("action",""))!="gather" or (
+      int(backpack.call("amount","wood"))!=old_wood+3) or (
+      int(econ.natural_nodes[tree_code]["remaining"])!=old_tree_count-3) or (
+      econ.carried_by_actor.has("CL-PLAYER-0184-0001")):
+    _fail(318,"REV205_TAPPED_PHYSICAL_TREE_DID_NOT_ENTER_REAL_PERSISTENT_STACK_"+str(tapped))
+    return
+  if not (backpack.call("craft","rough_wood_sword") as Dictionary).get(
+      "ok",false) or not (backpack.call("equip","rough_wood_sword") as Dictionary).get(
+      "ok",false):
+    _fail(319,"REV205_REAL_WOOD_PAID_CRAFT_AND_EQUIPMENT_SLOT_NOT_FUNCTIONAL")
+    return
+  var item_grid: ItemList=game_hud.get_node_or_null(
+      "Rev188CharacterInventoryCultivationMenu/VBoxContainer/ActualSourcedBackpack24StackSelectableSlots")
+  player.call("_open_game_menu","inventory")
+  if item_grid==null or not item_grid.visible or item_grid.item_count<=0:
+    _fail(320,"REV205_PERSONAL_BACKPACK_NOT_ACTUALLY_SELECTABLE_GRID_ON_ANDROID")
+    return
+  player.call("_open_game_menu","inventory")
+  # Restore the QA-only ledger to avoid changing subsequent world assertions.
+  backpack.set("items",contents_before)
+  backpack.set("equipment",gear_before)
+  backpack.call("_save")
+  econ.citizens["CL-PLAYER-0184-0001"]["energy"]=saved_energy
+  actor.position=restored_loc
+  player.call("update_camera")
+  print("PASS_REV205_TRUE_ORIGINAL_TOUCH_CAMERA_FLIGHT_RESTART_LOCK_ON_BAG_AND_ICONS")
   room.call("_focus_builder")
   if not bool(room.get("_follow_builder")) or float(room.get("_camera_distance")) > 14.0:
     _fail(42,"BUTTON_MUST_ACTUALLY_FOCUS_VISIBLE_NPC")
