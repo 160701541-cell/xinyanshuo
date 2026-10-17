@@ -1,7 +1,7 @@
 name: Canglan rev203 ORIGINAL APK176 QA ONLY - Never Sign or Publish
 on:
   push:
-    branches: [fix/rev203-flight-hold-bank-camera]
+    branches: [fix/rev203-flight-hold-bank-camera, fix/rev203-landing-qa-reliability]
     paths:
       - '.github/workflows/canglan-rev203-qa-only.yml'
       - 'game-source/apk176-ota177-candidate/scripts/apk176_player_controller_rev187.gd'

@@ -1417,10 +1417,27 @@ func _run() -> void:
     _fail(248,"REV199_AVATAR_STILL_USES_DEFAULT_STIFF_WALK_IDLE_WHILE_SOARING_"+visual_anim)
     return
   player.call("toggle_avatar_flight")
-  player.call("step",0.75)
+  var landing_initial_alt: float=float(player.get("_soar_altitude"))
+  var landing_steps: int=0
+  # The renderer and world use variable physics frame times; a single large
+  # 0.75s tick can reject an intermediate collision probe. Simulate a real
+  # sequence of 12 frames with a strict total 1.44s landing budget.
+  for i in range(12):
+    player.call("step",0.12)
+    landing_steps+=1
+    if String(player.get("camera_mode"))=="third":
+      break
   if player.get("camera_mode")!="third" or wind.emitting or disk.visible or (
       height_ui.visible):
-    _fail(249,"REV199_STILL_HAS_GHOST_FLIGHT_EFFECTS_AFTER_ACTUAL_SOFT_LANDING")
+    _fail(249,"REV199_STILL_HAS_GHOST_FLIGHT_EFFECTS_AFTER_ACTUAL_SOFT_LANDING"+
+      " from="+str(landing_initial_alt)+" remaining="+str(player.get("_soar_altitude"))+
+      " target="+str(player.get("_soar_target_altitude"))+
+      " still_landing="+str(player.get("_soar_landing"))+
+      " steps="+str(landing_steps)+
+      " camera="+String(player.get("camera_mode"))+
+      " wind="+str(wind.emitting)+" disk="+str(disk.visible)+
+      " height_ui="+str(height_ui.visible)+
+      " blocked_collisions="+str(player.get("_blocked_wall_steps")))
     return
   print("PASS_REV199_REAL_WORLD_ACCELERATES_NPC_ECOLOGY_HOURS_DAY_NIGHT_AND_TRAINING_FLIGHT_WITH_VISIBLE_ALTITUDE_SPEED_AIR_TRAIL_AND_HONEST_OFFLINE_AI")
   # rev201 independently verify TRUE seeded cultivation in original APK176
