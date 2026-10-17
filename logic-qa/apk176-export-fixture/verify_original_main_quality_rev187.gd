@@ -118,6 +118,52 @@ func _run() -> void:
   if not (first.get("missing_assets", []) as Array).is_empty():
     _fail(10, "SOME_LICENSED_GLB_OR_TEXTURES_MISSING_"+str(first.get("missing_assets",[])))
     return
+  # rev206 capacity regression: source assets are present, but a 40-tree /
+  # 12-stone MultiMesh silently omitted IDs 040..051 / 012..019 in a real
+  # Godot scene. Prove EVERY registered living resource has a GPU slot.
+  var physical_batch: Node3D=room.get("batch_renderer")
+  var used_slots: Dictionary=first.get("kenney_batch",{}).get("role_capacity_used",{})
+  var available_slots: Dictionary=first.get("kenney_batch",{}).get("role_instance_capacity",{})
+  var physical_nodes: Dictionary=room.get("natural_meshes")
+  if physical_batch==null or int(used_slots.get("tree",0))!=52 or (
+      int(used_slots.get("stone",0))!=20) or (
+      int(available_slots.get("tree",0))<52) or (
+      int(available_slots.get("stone",0))<20) or (
+      physical_nodes.size()!=72):
+    _fail(342,"REV206_NATURAL_NODE_COUNT_OR_MULTIMESH_CAPACITY_NOT_REAL_"+
+      str({"used":used_slots,"capacity":available_slots,"visuals":physical_nodes.size()}))
+    return
+  var real_group_parts: Dictionary=physical_batch.get("group_parts")
+  for check in [
+      {"kind":"tree","id":"CL-TREE-0184-051","slot":51,"growth":70},
+      {"kind":"stone","id":"CL-STONE-0184-019","slot":19,"growth":36}]:
+    var kind: String=String(check["kind"])
+    var entity_id: String=String(check["id"])
+    var expected_slot: int=int(check["slot"])
+    var proxy: Node3D=physical_nodes.get(entity_id,null)
+    var meshes: Array=real_group_parts.get(kind,[])
+    if proxy==null or not is_instance_valid(proxy) or meshes.is_empty() or (
+        int(proxy.get_meta("kenney_batch_slot",-1))!=expected_slot):
+      _fail(343,"REV206_LAST_RESOURCE_ID_IS_MISSING_A_REAL_KENNEY_GPU_SLOT_"+entity_id)
+      return
+    var gpu: MultiMesh=meshes[0]["multi"]
+    if gpu.mesh==null or gpu.instance_count<=expected_slot or (
+        absf(gpu.get_instance_transform(expected_slot).basis.determinant())<0.00001):
+      _fail(344,"REV206_LAST_NATURAL_ID_EXISTS_AS_DATA_BUT_IS_NOT_DRAWABLE_"+entity_id)
+      return
+    var previous_color: Color=gpu.get_instance_color(expected_slot)
+    var previous_transform: Transform3D=gpu.get_instance_transform(expected_slot)
+    # Simulate late regeneration: expanding the real licensed GLB buffer
+    # must restore EVERY existing tree/stone position and per-ID tint.
+    if not bool(physical_batch.call("_grow_capacity",kind,int(check["growth"]))):
+      _fail(345,"REV206_NATURAL_MULTIMESH_FAILED_SAFE_REAL_BUFFER_GROWTH_"+kind)
+      return
+    if gpu.instance_count<int(check["growth"]) or (
+        not gpu.get_instance_color(expected_slot).is_equal_approx(previous_color)) or (
+        not gpu.get_instance_transform(expected_slot).is_equal_approx(previous_transform)):
+      _fail(346,"REV206_GROWTH_ERASED_OLD_SOURCE_MESH_COLOR_OR_TRANSFORM_"+kind)
+      return
+  print("PASS_REV206_ALL_52_TREES_20_STONES_REAL_DRAWABLE_BATCH_SLOTS_GROW_WITHOUT_LOSS")
   if int(first.get("visible_actor_labels",0)) != 3:
     _fail(27, "MISSING_VISIBLE_NPC_WORKER_JOB_LABELS")
     return
