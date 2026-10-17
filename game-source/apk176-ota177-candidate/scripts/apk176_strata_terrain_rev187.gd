@@ -295,37 +295,56 @@ func _construct_far_land() -> void:
   rim.mesh = border.commit()
   rim.material_override = world_materials["soil_dark"]
   add_child(rim)
-  var outside := SurfaceTool.new()
-  outside.begin(Mesh.PRIMITIVE_TRIANGLES)
-  # Coarse 6m background LOD grid, with a central 92m clearing reserved
-  # for the live deformable Earth. Geometry wraps all camera directions.
-  var step: float = 6.0
-  for iz in range(-53,53):
-    for ix in range(-53,53):
-      var x0: float = float(ix)*step
-      var x1: float = x0+step
-      var z0: float = float(iz)*step
-      var z1: float = z0+step
-      if x0 > -HALF and x1 < HALF and z0 > -HALF and z1 < HALF:
+  # Split the far field into bounded 18x18 tile meshes. The former single
+  # 106x106 SurfaceTool produced >67k unindexed vertices; on Mobile Vulkan
+  # it appeared as a pale sky hole and horizontal slivers in REAL captured
+  # APK176 screenshots. A few separate terrain meshes render reliably and
+  # their AABBs may now be culled per terrain chunk.
+  var far_parent:=Node3D.new()
+  far_parent.name="FarGroundAndMountainFoothills_AllCameraDirections_600m"
+  add_child(far_parent)
+  var far_material:=StandardMaterial3D.new()
+  far_material.albedo_color=Color("#719c79")
+  far_material.roughness=1.0
+  far_material.cull_mode=BaseMaterial3D.CULL_DISABLED
+  var far_size: int=106
+  var tile_step: int=18
+  var tile_index: int=0
+  for ztile in range(0,far_size,tile_step):
+    for xtile in range(0,far_size,tile_step):
+      var terrain_chunk:=SurfaceTool.new()
+      terrain_chunk.begin(Mesh.PRIMITIVE_TRIANGLES)
+      var added: int=0
+      for nz in range(ztile,mini(far_size,ztile+tile_step)):
+        for nx in range(xtile,mini(far_size,xtile+tile_step)):
+          var x0: float=float(nx-53)*6.0
+          var x1: float=x0+6.0
+          var z0: float=float(nz-53)*6.0
+          var z1: float=z0+6.0
+          if x0 > -HALF and x1 < HALF and z0 > -HALF and z1 < HALF:
+            continue
+          var corners: Array[Vector3]=[]
+          for v in [Vector2(x0,z0),Vector2(x1,z0),
+              Vector2(x1,z1),Vector2(x0,z1)]:
+            var radius: float=v.length()
+            var extra: float=clampf((radius-70.0)/220.0,0.0,1.0)
+            var hills: float=(2.0*sin(v.x*0.029)*cos(v.y*0.021)
+              +1.6*sin(v.x*0.049+v.y*0.024))*extra
+            var mountains: float=pow(extra,2.4)*(12.0+8.0*sin(v.x*0.036)*cos(v.y*0.035))
+            corners.append(Vector3(v.x,_base_at(v.x,v.y)-2.2*extra+hills+mountains,v.y))
+          _push_quad(terrain_chunk,corners[0],corners[3],corners[2],corners[1])
+          added+=1
+      if added<=0:
         continue
-      var corners: Array[Vector3] = []
-      for p in [Vector2(x0,z0),Vector2(x1,z0),Vector2(x1,z1),Vector2(x0,z1)]:
-        var radius: float = p.length()
-        var extra: float = clampf((radius-70.0)/220.0,0.0,1.0)
-        var rolling: float = (2.0*sin(p.x*0.029)*cos(p.y*0.021) + 1.6*sin(p.x*0.049+p.y*0.024))*extra
-        var mountain: float = pow(extra,2.4)*(12.0+8.0*sin(p.x*0.036)*cos(p.y*0.035))
-        corners.append(Vector3(p.x,_base_at(p.x,p.y)-2.2*extra+rolling+mountain,p.y))
-      _push_quad(outside,corners[0],corners[3],corners[2],corners[1])
-  outside.generate_normals()
-  var distant := MeshInstance3D.new()
-  distant.name = "FarGroundAndMountainFoothills_AllCameraDirections_600m"
-  distant.mesh = outside.commit()
-  var mat := StandardMaterial3D.new()
-  mat.albedo_color = Color("#7da88f")
-  mat.roughness = 1.0
-  distant.material_override = mat
-  distant.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-  add_child(distant)
+      terrain_chunk.generate_normals()
+      var part:=MeshInstance3D.new()
+      part.name="ActualFarGroundChunk_%02d" % tile_index
+      tile_index+=1
+      part.mesh=terrain_chunk.commit()
+      part.material_override=far_material
+      part.cast_shadow=GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+      far_parent.add_child(part)
+  far_parent.set_meta("far_mesh_chunk_count",tile_index)
 
 func can_dig(position: Vector3) -> bool:
   var idx: Vector2i = _indices(position.x,position.z)
