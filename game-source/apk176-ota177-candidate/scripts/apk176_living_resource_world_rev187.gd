@@ -66,6 +66,7 @@ var status: Label
 var animation_report: Dictionary = {}
 var asset_errors: Array[String] = []
 var asset_sources: Dictionary = {}
+var _licensed_actor_zero_alpha_fixed: int = 0
 var natural_meshes: Dictionary = {}
 # rev197: cheap real world collisions for already-licensed instanced trunks
 # and stones; they follow harvesting/growth without duplicating GLB rendering.
@@ -421,11 +422,39 @@ func _parse_existing_cc0(path: String) -> Node3D:
     asset_errors.append("GLB_SCENE_FAILED:" + path)
   return instance
 
+# REV198 P0 real renderer bug caught by actual pixel QA, NOT inferred:
+# The current CC0 Quaternius Knight GLB has an imported Armor material with
+# albedo Alpha 0.0 and alpha-scissor transparency. MeshNode.visible=true and
+# Godot has draw calls, but the PLAYER AND NPCs were visually invisible.
+# Fix each deliberately solid body surface once at the legally licensed
+# source scene, preserving all existing GLB geometry and animation/skins.
+func _repair_licensed_opaque_character_model(source: Node3D) -> void:
+  for visual in source.find_children("*","MeshInstance3D",true,false):
+    var part: MeshInstance3D=visual as MeshInstance3D
+    if part.mesh==null:
+      continue
+    for surface in range(part.mesh.get_surface_count()):
+      var old: Material=part.get_active_material(surface)
+      if old is StandardMaterial3D:
+        var original: StandardMaterial3D=old as StandardMaterial3D
+        if original.albedo_color.a<=0.01:
+          var material: StandardMaterial3D=original.duplicate(true) as StandardMaterial3D
+          var original_tint: Color=material.albedo_color
+          original_tint.a=1.0
+          material.albedo_color=original_tint
+          # Alpha-zero BLEND/SCISSOR hashes ALL pixels away. Solid armor,
+          # skin and boots should not be culled by an accidental alpha.
+          material.transparency=BaseMaterial3D.TRANSPARENCY_DISABLED
+          part.set_surface_override_material(surface,material)
+          _licensed_actor_zero_alpha_fixed+=1
+
 func _load_assets() -> void:
   for role in ASSETS:
     var art := _parse_existing_cc0(String(ASSETS[role]))
     if art == null:
       continue
+    if role=="worker":
+      _repair_licensed_opaque_character_model(art)
     asset_sources[role] = art
 
 func _initialize_batches() -> void:
@@ -985,6 +1014,7 @@ func stats() -> Dictionary:
   return {"revision": 187, "world_seed": 20261017,
     "worker_count": workers.size(), "resource_node_count": sim.natural_nodes.size(),
     "source_assets": asset_sources.size(), "missing_assets": asset_errors.duplicate(),
+    "licensed_animated_body_materials_fixed_from_alpha_zero":_licensed_actor_zero_alpha_fixed,
     "animation_reports": animation_report.duplicate(true),
     "harvests": _harvests, "deliveries": _deliveries,
     "stock_wood": int(stock["wood"]), "stock_stone": int(stock["stone"]),
