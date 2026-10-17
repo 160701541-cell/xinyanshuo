@@ -1762,6 +1762,7 @@ func _set_mode(mode: String) -> void:
     _soar_landing=true
     _soar_target_altitude=0.0
     say("请先平稳降落，再切换视角")
+    _layout_hud() # Hide both lift controls immediately, not on the next physics frame.
     return
   if camera_mode=="soar" and mode!="soar":
     _soar_altitude=0.0
