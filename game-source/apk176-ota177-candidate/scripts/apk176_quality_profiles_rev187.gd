@@ -41,6 +41,15 @@ var flower_points: Array[Vector3] = []
 var grass_rotations: Array[Transform3D] = []
 var flower_rotations: Array[Transform3D] = []
 var grass_cells: Dictionary = {}
+# REV194: physical exterior chunks receive the SAME licensed/procedural
+# grass tuft mesh, without spawning individual draw-call-heavy grass nodes.
+var streamed_meadows: Dictionary = {}
+var streamed_meadow_points: Dictionary = {}
+var streamed_meadow_rotations: Dictionary = {}
+const STREAMED_GRASS_INSTANCES: int = 320
+const STREAMED_GRASS_COLORS: Array[Color] = [
+  Color("#35673d"),Color("#497945"),Color("#5c8c48"),Color("#70934c"),
+  Color("#8e9f5d"),Color("#3b6c42"),Color("#649653"),Color("#a09f64")]
 var _hidden_transform: Transform3D = Transform3D(Basis.IDENTITY.scaled(Vector3.ZERO),Vector3.ZERO)
 
 func initialize(room: Node) -> void:
@@ -67,6 +76,7 @@ func initialize(room: Node) -> void:
   _create_grass_and_flowers(room)
   _create_fireflies(room)
   _create_clouds(room)
+  sync_streamed_meadows()
   terrain.connect("terrain_cell_changed",Callable(self,"_on_terrain_changed"))
   apply(selected,false)
   set_fps_mode(fps_mode,false)
@@ -256,7 +266,118 @@ func _create_grass_and_flowers(room: Node) -> void:
   flowers.cast_shadow=GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
   room.get("world").add_child(flowers)
 
+func _stream_meadow_plantable(x: float,z: float) -> bool:
+  var coord: Vector2i=terrain.call("_stream_coords",x,z)
+  if bool(terrain.call("_stream_is_core",coord)):
+    return false
+  if bool(terrain.call("is_water",x,z)):
+    return false
+  var local: Vector2i=terrain.call("_stream_local_cell",coord,x,z)
+  if int(terrain.call("_stream_cut_count",coord,local.x,local.y))>0:
+    return false
+  var h: float=float(terrain.call("height_at",x,z))
+  if absf(float(terrain.call("height_at",x+0.35,z))-h)>0.26:
+    return false
+  if absf(float(terrain.call("height_at",x,z+0.35))-h)>0.26:
+    return false
+  return true
+
+func _configure_stream_meadow(batch: MultiMeshInstance3D) -> void:
+  if not is_instance_valid(batch):
+    return
+  batch.visibility_range_end=float(PROFILES[selected]["grass_distance"])
+  var limit: int=STREAMED_GRASS_INSTANCES if selected=="极致画质" else (
+    210 if selected=="高档" else 100)
+  batch.multimesh.visible_instance_count=limit
+
+func _create_stream_meadow(id: String, chunk: Node3D) -> void:
+  var parts: PackedStringArray=id.split(":")
+  if parts.size()!=2 or grass==null:
+    return
+  var cx: int=int(parts[0])
+  var cz: int=int(parts[1])
+  var rng:=RandomNumberGenerator.new()
+  # Same chunk, same grass and locations after stream unload/reload.
+  rng.seed=int(20261017+abs(cx*73856093+cz*19349663+cx*cz*83492791))
+  var mm:=MultiMesh.new()
+  mm.transform_format=MultiMesh.TRANSFORM_3D
+  mm.use_colors=true
+  mm.mesh=grass.multimesh.mesh
+  mm.instance_count=STREAMED_GRASS_INSTANCES
+  var foliage:=MultiMeshInstance3D.new()
+  foliage.name="StreamedNativeMeadowMultimesh"
+  foliage.multimesh=mm
+  foliage.cast_shadow=GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+  var points: Array[Vector3]=[]
+  var rotations: Array[Transform3D]=[]
+  var centers: Array[Vector2]=[]
+  var start: Vector2=Vector2(chunk.position.x,chunk.position.z)
+  for patch in range(11):
+    centers.append(start+Vector2(rng.randf_range(2.0,44.0),rng.randf_range(2.0,44.0)))
+  for i in range(mm.instance_count):
+    var center: Vector2=centers[i%centers.size()]
+    var xx: float=clampf(center.x+rng.randfn(0.0,3.0),start.x+0.6,start.x+45.4)
+    var zz: float=clampf(center.y+rng.randfn(0.0,3.0),start.y+0.6,start.y+45.4)
+    var pos:=Vector3(xx,0,zz)
+    points.append(pos)
+    var rot:=Basis(Vector3.UP,rng.randf_range(0.0,TAU))
+    var size: float=rng.randf_range(0.7,1.2)
+    var basis: Transform3D=Transform3D(rot.scaled(Vector3(size,size,size)),Vector3.ZERO)
+    rotations.append(basis)
+    mm.set_instance_color(i,STREAMED_GRASS_COLORS[rng.randi_range(0,STREAMED_GRASS_COLORS.size()-1)])
+    if _stream_meadow_plantable(xx,zz):
+      mm.set_instance_transform(i,Transform3D(basis.basis,Vector3(
+        xx-start.x,float(terrain.call("height_at",xx,zz)),zz-start.y)))
+    else:
+      mm.set_instance_transform(i,_hidden_transform)
+  chunk.add_child(foliage)
+  streamed_meadows[id]=foliage
+  streamed_meadow_points[id]=points
+  streamed_meadow_rotations[id]=rotations
+  _configure_stream_meadow(foliage)
+
+func sync_streamed_meadows() -> void:
+  if terrain==null or grass==null:
+    return
+  var loaded: Dictionary=terrain.get("stream_chunks")
+  for key in streamed_meadows.keys():
+    if not loaded.has(key) or not is_instance_valid(streamed_meadows[key]):
+      streamed_meadows.erase(key)
+      streamed_meadow_points.erase(key)
+      streamed_meadow_rotations.erase(key)
+  for key in loaded:
+    if not streamed_meadows.has(key):
+      _create_stream_meadow(String(key),loaded[key])
+  for key in streamed_meadows:
+    _configure_stream_meadow(streamed_meadows[key])
+
+func _update_streamed_meadow_cut(position: Vector3,radius: float) -> void:
+  var coord: Vector2i=terrain.call("_stream_coords",position.x,position.z)
+  var key: String=terrain.call("_stream_chunk_key",coord)
+  if not streamed_meadows.has(key):
+    return
+  var batch: MultiMeshInstance3D=streamed_meadows[key]
+  var pts: Array=streamed_meadow_points[key]
+  var orientations: Array=streamed_meadow_rotations[key]
+  var origin: Vector3=batch.get_parent().position
+  for i in range(pts.size()):
+    var pos: Vector3=pts[i]
+    if Vector2(pos.x-position.x,pos.z-position.z).length()>radius+1.9:
+      continue
+    if not _stream_meadow_plantable(pos.x,pos.z):
+      batch.multimesh.set_instance_transform(i,_hidden_transform)
+    else:
+      var transform: Transform3D=orientations[i]
+      batch.multimesh.set_instance_transform(i,Transform3D(transform.basis,
+        Vector3(pos.x-origin.x,float(terrain.call("height_at",pos.x,pos.z)),pos.z-origin.z)))
+
 func _on_terrain_changed(position: Vector3,radius: float) -> void:
+  # Chunk edit removes the correct physical vegetation without looping
+  # over 4500 legacy centre tufts and touching out-of-bounds old cells.
+  var idx: Vector2i=terrain.call("_indices",position.x,position.z)
+  if not bool(terrain.call("_in_bounds",idx.x,idx.y)):
+    _update_streamed_meadow_cut(position,radius)
+    return
   # A real excavation can never leave old 3D grass hovering above its soil.
   # Re-evaluate every tuft ONCE PER DIG, not once per render frame.
   for i in range(grass_points.size()):
@@ -385,6 +506,8 @@ func apply(profile_name: String,save: bool=true) -> bool:
   particles.amount=int(p["fireflies"])
   particles.restart()
   clouds.multimesh.visible_instance_count=int(p["clouds"])
+  # Native grass profile also applies to actual cross-border chunks.
+  sync_streamed_meadows()
   for tag in labels.values():
     (tag as Label3D).visibility_range_end=float(p["name_distance"])
   profile_applied=true
