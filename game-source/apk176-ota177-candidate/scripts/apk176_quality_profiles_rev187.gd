@@ -116,29 +116,28 @@ func set_fps_mode(mode: String, save: bool=true) -> bool:
   return true
 
 func _grass_mesh() -> ArrayMesh:
-  # REV191 real meadow tuft, NOT rev187's five thin 0.03m "beard stubble"
-  # spikes. Eleven arching tapered blades with outward volume and a broad
-  # grass base make one batched asset readable at mobile camera distances.
+  # Rev206 real tuft upgrade: nine irregular arching leaves, each with
+  # a separate broad blade surface. 81 real vertices / 27 triangles per
+  # clump, not rev187's tiny 5-spike stub. Individual meadow clumps render
+  # via MultiMesh with authentic per-instance greens and visible density.
   var st:=SurfaceTool.new()
   st.begin(Mesh.PRIMITIVE_TRIANGLES)
-  # Three small overlapping stem groups per clump, not one giant
-  # eleven-pointed plastic shrub. Dense and short grass reads as turf on
-  # a high-density mobile screen, not waist-height standing cacti.
-  for leaf in range(6):
-    var angle: float=TAU*float(leaf)/6.0+0.17*float(leaf%3)
+  for leaf in range(9):
+    # Offset the two spiral whorls so nine leaves do not form a star/grid.
+    var angle: float=TAU*float(leaf)/9.0+0.16*float((leaf*3)%5)
     var dx: float=cos(angle)
     var dz: float=sin(angle)
     var side:=Vector3(-dz,0.0,dx)
     var outward:=Vector3(dx,0.0,dz)
-    var height: float=0.12+0.027*float((leaf*7)%6)
-    var width: float=0.013+0.006*float(leaf%3)
-    var origin:=outward*(0.006+0.012*float(leaf%2))
-    var mid:=origin+outward*(0.04+0.014*float(leaf%3))+Vector3.UP*height*0.62
-    var tip:=origin+outward*(0.10+0.015*float(leaf%4))+Vector3.UP*height
+    var height: float=0.32+0.021*float((leaf*5)%7)
+    var width: float=0.025+0.007*float(leaf%3)
+    var origin:=outward*(0.018+0.024*float(leaf%2))
+    var mid:=origin+outward*(0.095+0.018*float(leaf%4))+Vector3.UP*height*0.58
+    var tip:=origin+outward*(0.255+0.018*float(leaf%3))+Vector3.UP*height
     var lb:=origin-side*width
     var rb:=origin+side*width
-    var lm:=mid-side*(width*0.50)
-    var rm:=mid+side*(width*0.50)
+    var lm:=mid-side*(width*0.62)
+    var rm:=mid+side*(width*0.62)
     st.add_vertex(lb)
     st.add_vertex(rb)
     st.add_vertex(lm)
