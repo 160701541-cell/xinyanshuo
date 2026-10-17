@@ -27,6 +27,7 @@ var player_data: Dictionary={}
 var npc_data: Dictionary={}
 var npc_visuals: Dictionary={}
 var npc_labels: Dictionary={}
+var npc_colliders: Dictionary={}
 var altar: Node3D
 var altar_marker: MeshInstance3D
 var altar_caption: Label3D
@@ -156,6 +157,24 @@ func _generate_actual_visible_cultivators() -> void:
     room.call("_normalize_worker_height",character)
     if room.get("licensed_long_hair_source")!=null:
       room.call("_attach_real_cc0_long_hair",character,i%3)
+    # Visual individuality on the SAME approved GLB's existing armor
+    # materials. Never regenerate a humanoid or accidentally tint its face.
+    var cloth_palette: Array[Color]=[
+      Color("#254d43"),Color("#31566b"),Color("#513e67"),Color("#654536"),
+      Color("#36455e"),Color("#527042"),Color("#5d4864"),Color("#304f58")]
+    for mesh_node in character.find_children("*","MeshInstance3D",true,false):
+      var mesh_visual: MeshInstance3D=mesh_node as MeshInstance3D
+      if mesh_visual.mesh==null or mesh_visual.name.contains("Hair"):
+        continue
+      for surf in range(mesh_visual.mesh.get_surface_count()):
+        var oldmat: Material=mesh_visual.get_active_material(surf)
+        if oldmat is StandardMaterial3D and (
+            String(oldmat.resource_name).to_lower().contains("armor") or surf==0):
+          var armor: StandardMaterial3D=(oldmat as StandardMaterial3D).duplicate(true)
+          armor.albedo_color=cloth_palette[i%cloth_palette.size()]
+          armor.albedo_color.a=1.0
+          armor.transparency=BaseMaterial3D.TRANSPARENCY_DISABLED
+          mesh_visual.set_surface_override_material(surf,armor)
     character.set_meta("entity_id",code)
     character.set_meta("npc_cultivator",true)
     character.set_meta("npc_name",String(npc_data[code]["name"]))
@@ -180,6 +199,23 @@ func _generate_actual_visible_cultivators() -> void:
       "actor":character,"anchor":Vector3(x,0,z),
       "animation":anim,"idle":idle_clip,"walk":walk_clip,
       "wander_angle":a,"index":i}
+    # Cultivators are physical people. Merely showing a mesh without
+    # capsule collision led to previous phone reports of walk-through NPC.
+    var body:=StaticBody3D.new()
+    body.name="PhysicalCultivatorCitizenCollider_"+code
+    body.collision_layer=2
+    body.collision_mask=0
+    var capsule:=CollisionShape3D.new()
+    capsule.name="ActuallySolidHumanCitizensBody"
+    var source:=CapsuleShape3D.new()
+    source.radius=0.30
+    source.height=1.65
+    capsule.shape=source
+    body.add_child(capsule)
+    body.position=character.position+Vector3.UP*0.84
+    body.set_meta("npc_entity_id",code)
+    world.add_child(body)
+    npc_colliders[code]=body
     var label:=Label3D.new()
     label.name="ActualCultivatorIdentity_"+code
     label.text="%s · %s" % [npc_data[code]["name"],
@@ -354,6 +390,10 @@ func update_visible_npcs(delta: float) -> void:
           node.rotation.y=atan2(direction.x,direction.z)
     node.position.y=float(terrain.call("height_at",node.position.x,node.position.z))+float(
       node.get_meta("actor_ground_offset_y",0))
+    if npc_colliders.has(id):
+      var solid: StaticBody3D=npc_colliders[id]
+      if is_instance_valid(solid):
+        solid.position=node.position+Vector3.UP*0.84
     var ap: AnimationPlayer=v["animation"]
     if ap!=null:
       var chosen: String=String(v["walk"]) if is_walking else String(v["idle"])
@@ -378,6 +418,7 @@ func stats() -> Dictionary:
     "seed_is_persistent":FileAccess.file_exists(SAVE_PATH),
     "cultivator_count":npc_visuals.size(),
     "cultivator_identity_count":npc_data.size(),
+    "physical_cultivator_colliders":npc_colliders.size(),
     "altar_is_real_licensed_stone":altar!=null,
     "root_tested":bool(player_data.get("tested",false)),
     "root_hidden_before_exam":not bool(player_data.get("tested",false)),
