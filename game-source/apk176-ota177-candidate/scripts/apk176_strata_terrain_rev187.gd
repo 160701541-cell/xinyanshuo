@@ -300,7 +300,7 @@ func _load_stream_deltas() -> void:
     stream_last_save_error="STREAM_SAVE_TOO_LARGE"
     return
   for key in saved:
-    var entry: Array=String(key).split(":")
+    var entry: PackedStringArray=String(key).split(":")
     if entry.size()!=4:
       continue
     var coord:=Vector2i(int(entry[0]),int(entry[1]))
@@ -401,7 +401,7 @@ func height_at(x: float,z: float) -> float:
   # renders. Not center-of-cell terracing (the rev184 screenshot defect).
   var idx: Vector2i = _indices(x,z)
   if not _in_bounds(idx.x,idx.y):
-    return _base_at(x,z)
+    return _streamed_height_at(x,z)
   var p: Vector2 = _coord(idx.x,idx.y)
   var left: float = p.x-CELL*0.5
   var north: float = p.y-CELL*0.5
@@ -690,7 +690,11 @@ func _construct_far_land() -> void:
 func can_dig(position: Vector3) -> bool:
   var idx: Vector2i = _indices(position.x,position.z)
   if not _in_bounds(idx.x,idx.y):
-    return false
+    var c: Vector2i=_stream_coords(position.x,position.z)
+    if not stream_chunks.has(_stream_chunk_key(c)):
+      return false # never modify an unloaded chunk
+    var local: Vector2i=_stream_local_cell(c,position.x,position.z)
+    return _stream_cut_count(c,local.x,local.y)<MAX_CUTS
   if is_water(position.x,position.z):
     return false
   # Protect the central transit route and warehouse, while the foundation
@@ -705,6 +709,35 @@ func excavate_at(position: Vector3, actor_id: String = "CL-PLAYER-0184") -> Dict
   if not can_dig(position):
     return {"ok":false,"reason":"NO_DIG_PERMISSION_OR_BEDROCK"}
   var idx: Vector2i = _indices(position.x,position.z)
+  if not _in_bounds(idx.x,idx.y):
+    var c: Vector2i=_stream_coords(position.x,position.z)
+    var local: Vector2i=_stream_local_cell(c,position.x,position.z)
+    var key: String=_stream_cell_key(c,local.x,local.y)
+    var current: int=_stream_cut_count(c,local.x,local.y)
+    var kind: String=SOIL_KEYS[current]
+    stream_cut_cells[key]=current+1
+    if not _save_stream_deltas():
+      if current==0:
+        stream_cut_cells.erase(key)
+      else:
+        stream_cut_cells[key]=current
+      return {"ok":false,"reason":"PERSISTENT_STREAM_SAVE_FAILED"}
+    spoil_bag[kind]=int(spoil_bag[kind])+1
+    dug_units+=1
+    _rebuild_stream_chunk(c)
+    # Refresh the adjacent chunk's geological cut wall if an edge was dug.
+    if local.x==0:
+      _rebuild_stream_chunk(c+Vector2i(-1,0))
+    elif local.x==STREAM_CELLS-1:
+      _rebuild_stream_chunk(c+Vector2i(1,0))
+    if local.y==0:
+      _rebuild_stream_chunk(c+Vector2i(0,-1))
+    elif local.y==STREAM_CELLS-1:
+      _rebuild_stream_chunk(c+Vector2i(0,1))
+    terrain_cell_changed.emit(Vector3(position.x,height_at(position.x,position.z),position.z),CELL)
+    return {"ok":true,"cell":key,"depth_m":float(current+1)*CUT_HEIGHT,
+      "kind":kind,"quantity":1,"actor":actor_id,"persistent":true,
+      "chunk_coords":c,"base_mass_unmined":MAX_CUTS-current-1}
   var entry: Dictionary = _load_cell(idx.x,idx.y)
   var current: int = int(entry["cuts"])
   var kind: String = SOIL_KEYS[current]
@@ -755,6 +788,19 @@ func stats() -> Dictionary:
     "far_seam_stitched":true,"far_cliff_skirt_removed":true,
     "continuous_vertex_biome":true,"checkerboard_cell_materials_removed":true,
     "infinite_streaming_complete":false,
+    "deterministic_streamed_physical_chunks":true,
+    "streaming_complete_globally":false,
+    "stream_chunk_m":STREAM_CHUNK_M,
+    "stream_chunk_cell_m":STREAM_CELL,
+    "stream_center":stream_center,
+    "stream_active_chunks":stream_chunks.size(),
+    "stream_chunks_created":stream_created,
+    "stream_chunks_unloaded":stream_unloaded,
+    "stream_delta_cells":stream_cut_cells.size(),
+    "stream_deltas_atomic_saved":stream_saved_updates,
+    "stream_save_ok":stream_save_ok,
+    "stream_last_save_error":stream_last_save_error,
+    "stream_save_schema":STREAM_SAVE_SCHEMA,
     "recolors_unlimited":true,
     "natural_terrace_walls":false,"layer_count":5,"real_water_basin":water!=null,
     "size_m":int(GRID*CELL),"cell_count":GRID*GRID,
