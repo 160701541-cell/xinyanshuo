@@ -1000,17 +1000,22 @@ func _seed_resources() -> void:
   rng.seed = 1802026
   # Two natural-shaped GROVES, not an equidistant test grid. All trees are
   # kept outside the 7m center road and outside the construction exclusion.
-  var groves := [Vector2(-22.0,-13.0),Vector2(-21.0,22.0)]
-  for index in range(12):
+  var groves := [Vector2(-29.0,-29.0),Vector2(-30.0,-13.0),
+    Vector2(-30.0,4.0),Vector2(-27.0,29.0),
+    Vector2(26.0,-30.0),Vector2(32.0,-12.0),
+    Vector2(28.0,7.0),Vector2(30.0,28.0)]
+  for index in range(72):
     var center: Vector2 = groves[int(index % groves.size())]
-    var spread: float = rng.randf_range(1.5, 7.0)
+    var spread: float = rng.randf_range(1.8, 6.1)
     var angle: float = rng.randf_range(-PI, PI)
-    var x: float = minf(-11.0,center.x+cos(angle)*spread)
+    var x: float = clampf(center.x+cos(angle)*spread,-40.0,40.0)
+    if absf(x)<11.0:
+      x=11.0 if center.x>=0 else -11.0
     var z: float = center.y+sin(angle)*spread
     if z > 7.0 and z < 14.0:
       z += 7.0
     var entity_id := "CL-TREE-0184-%03d" % index
-    assert(sim.register_natural_node(entity_id, TOWN, "tree", 12))
+    assert(sim.register_natural_node(entity_id, TOWN, "tree", 5))
     assert(sim.register_resource_position(entity_id, Vector3(x,
       float(terrain_world.call("height_at",x,z)),z)))
     assert(eco.register_tree(entity_id))
@@ -1019,17 +1024,18 @@ func _seed_resources() -> void:
       instance.set_meta("resource_id", entity_id)
       natural_meshes[entity_id] = instance
   # Two mineral outcrops (right-hand side), all outside the main road.
-  var quarry_groups := [Vector2(21.0,-15.0),Vector2(23.0,19.0)]
-  for index in range(9):
+  var quarry_groups := [Vector2(18.0,-32.0),Vector2(32.0,-18.0),
+    Vector2(23.0,16.0),Vector2(33.0,29.0)]
+  for index in range(24):
     var center: Vector2 = quarry_groups[int(index % quarry_groups.size())]
-    var spread: float = rng.randf_range(1.0,6.5)
+    var spread: float = rng.randf_range(1.0,4.8)
     var angle: float = rng.randf_range(-PI, PI)
     var x: float = maxf(12.0,center.x+cos(angle)*spread)
     var z: float = center.y+sin(angle)*spread
     if z > 7.0 and z < 14.0:
       z -= 8.0
     var entity_id := "CL-STONE-0184-%03d" % index
-    assert(sim.register_natural_node(entity_id, TOWN, "stone", 18))
+    assert(sim.register_natural_node(entity_id, TOWN, "stone", 10))
     assert(sim.register_resource_position(entity_id, Vector3(x,
       float(terrain_world.call("height_at",x,z)),z)))
     assert(eco.register_stone(entity_id))
