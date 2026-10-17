@@ -948,7 +948,7 @@ func practice_action() -> Dictionary:
     stop_practice()
     say("切磋结束，没有对村民施加伤害")
     return {"ok":true,"active":false}
-  if actor==null or _player_health<=0 or camera_mode in ["fly","god"]:
+  if actor==null or _player_health<=0 or camera_mode in ["fly","god","soar"]:
     return {"ok":false,"reason":"NOT_AVAILABLE"}
   var sources: Dictionary=room.get("asset_sources")
   if not sources.has("worker"):
@@ -1023,8 +1023,8 @@ func practice_action() -> Dictionary:
   _spar_enemy_mana=0
   _spar_opponent_tag=Label3D.new()
   _spar_opponent_tag.name="RealMortalSparOpponentRealmHealthManaAboveHead"
-  _spar_opponent_tag.font_size=24
-  _spar_opponent_tag.pixel_size=0.0042
+  _spar_opponent_tag.font_size=29
+  _spar_opponent_tag.pixel_size=0.0053
   _spar_opponent_tag.billboard=BaseMaterial3D.BILLBOARD_ENABLED
   _spar_opponent_tag.visibility_range_end=21.0
   world.add_child(_spar_opponent_tag)
@@ -1240,11 +1240,6 @@ func sword_attack() -> bool:
   _sword_cd=0.85
   var slash:=MeshInstance3D.new()
   slash.name="ActualPlayerMortalSwordArcNotFakeSpell"
-  var arc:=TorusMesh.new()
-  arc.inner_radius=0.88
-  arc.outer_radius=1.02
-  arc.rings=24
-  arc.ring_segments=8
   var bright:=StandardMaterial3D.new()
   bright.shading_mode=BaseMaterial3D.SHADING_MODE_UNSHADED
   bright.transparency=BaseMaterial3D.TRANSPARENCY_ALPHA
@@ -1253,12 +1248,26 @@ func sword_attack() -> bool:
   bright.emission_enabled=true
   bright.emission=Color("#eec47b")
   bright.emission_energy_multiplier=1.8
-  arc.material=bright
-  slash.mesh=arc
-  slash.position=actor.position+_forward()*1.15+Vector3.UP*1.05
-  slash.rotation=Vector3(PI*0.55,actor.rotation.y,0)
+  # A swept bright crescent, not the previous complete TorusMesh "halo".
+  # The original full-circle ring behind the trainer read as scenery, not
+  # a sword stroke in the actual 1280x720 Godot screenshots.
+  var curve:=ImmediateMesh.new()
+  curve.surface_begin(Mesh.PRIMITIVE_TRIANGLES,bright)
+  for i in range(24):
+    var angle0: float=-1.34+float(i)*(2.68/24.0)
+    var angle1: float=-1.34+float(i+1)*(2.68/24.0)
+    var a:=Vector3(sin(angle0)*0.68,cos(angle0)*0.68,0)
+    var b:=Vector3(sin(angle0)*1.06,cos(angle0)*1.06,0)
+    var c:=Vector3(sin(angle1)*0.68,cos(angle1)*0.68,0)
+    var d:=Vector3(sin(angle1)*1.06,cos(angle1)*1.06,0)
+    for vertex in [a,b,c,b,d,c]:
+      curve.surface_add_vertex(vertex)
+  curve.surface_end()
+  slash.mesh=curve
+  slash.position=actor.position+_forward()*1.08+Vector3.UP*0.9
   world.add_child(slash)
-  get_tree().create_timer(0.28).timeout.connect(slash.queue_free)
+  slash.look_at(camera.position,Vector3.UP)
+  get_tree().create_timer(0.24).timeout.connect(slash.queue_free)
   _spar_damage_opponent(10)
   _refresh_game_hud()
   return true
@@ -1302,8 +1311,8 @@ func cast_spirit_bolt() -> Dictionary:
   var projectile:=MeshInstance3D.new()
   projectile.name="RealTravelingRootColoredQiBoltManaPaidAndObstacleChecked"
   var sphere:=SphereMesh.new()
-  sphere.radius=0.18
-  sphere.height=0.36
+  sphere.radius=0.26
+  sphere.height=0.52
   sphere.radial_segments=10
   sphere.rings=5
   var paint:=StandardMaterial3D.new()
@@ -1317,6 +1326,26 @@ func cast_spirit_bolt() -> Dictionary:
   projectile.position=source
   projectile.cast_shadow=GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
   world.add_child(projectile)
+  var corona:=MeshInstance3D.new()
+  corona.name="ActuallyVisibleSoftOuterQiCorona"
+  var aura:=SphereMesh.new()
+  aura.radius=0.46
+  aura.height=0.92
+  aura.radial_segments=12
+  aura.rings=6
+  var halo:=StandardMaterial3D.new()
+  halo.shading_mode=BaseMaterial3D.SHADING_MODE_UNSHADED
+  halo.transparency=BaseMaterial3D.TRANSPARENCY_ALPHA
+  halo.cull_mode=BaseMaterial3D.CULL_DISABLED
+  halo.blend_mode=BaseMaterial3D.BLEND_MODE_ADD
+  halo.albedo_color=Color(_art_tint(),0.17)
+  halo.emission_enabled=true
+  halo.emission=_art_tint()
+  halo.emission_energy_multiplier=1.3
+  aura.material=halo
+  corona.mesh=aura
+  corona.cast_shadow=GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+  projectile.add_child(corona)
   # Particle trail lives in WORLD coordinates, so traveling orb leaves an
   # observable path instead of a tiny static dot. Mobile-bounded 14 sprites.
   var trail:=GPUParticles3D.new()
@@ -1713,7 +1742,9 @@ func _layout_hud() -> void:
     (_game_actions[action_keys[idx]] as Button).position=Vector2(
       size.x-392.0+float(col)*94.0,size.y-207.0+float(row)*66.0)
   if _target_panel!=null:
-    _target_panel.position=Vector2(maxf(370.0,size.x*0.5-137.0),15.0)
+    # Keep target HUD BELOW the always-on first row of seven view toggles.
+    # Previously it sat under those buttons and concealed its own MP bar.
+    _target_panel.position=Vector2(maxf(370.0,size.x*0.5-137.0),139.0)
   notice.position=Vector2(minf(370.0,size.x*0.27),maxf(210.0,size.y-47.0))
   if _pad_hint!=null:
     _pad_hint.position=Vector2(16,139)
