@@ -463,6 +463,26 @@ func _run() -> void:
     if flies.amount!=int(expected["fireflies"]) or clouds.multimesh.visible_instance_count!=int(expected["clouds"]):
       _fail(88,"PARTICLE_AND_CLOUD_COMPLEXITY_MUST_TIER_SCALE")
       return
+    # rev195: source previously declared high/ultra "glow":true but always
+    # forced Environment.glow_enabled=false. Godot 4.4 MOBILE supports glow.
+    # Confirm actual Environment (not just a config flag) is tier-controlled.
+    var mobile_env: Environment=room.get("scene_environment")
+    var should_glow: bool=String(expected["key"])!="普通"
+    if mobile_env.glow_enabled!=should_glow:
+      _fail(192,"REV195_GODOT_MOBILE_GLOW_IGNORES_MANUAL_GRAPHICS_TIER_"+String(expected["key"]))
+      return
+    if should_glow and (absf(mobile_env.glow_hdr_threshold-0.90)>0.001 or
+        mobile_env.glow_intensity<1.2 or mobile_env.glow_bloom<=0.0):
+      _fail(193,"REV195_MOBILE_HDR_GLOW_IS_CONFIGURED_BUT_STILL_INVISIBLE")
+      return
+    if not should_glow and mobile_env.fog_sun_scatter>=0.05:
+      _fail(194,"REV195_LOW_PROFILE_WASTES_FOG_SUN_SCATTER")
+      return
+    var actual_glow: Dictionary=quality.call("update_diagnostics")
+    if bool(actual_glow.get("real_mobile_glow_enabled",not should_glow))!=should_glow:
+      _fail(195,"REV195_PERFORMANCE_TELEMETRY_MUST_REPORT_ACTUAL_GLOW_STATE")
+      return
+  print("PASS_REV195_REAL_GODOT_MOBILE_GLOW_HDR_THRESHOLD_AND_THREE_USER_GRAPHICS_TIERS")
   var caps: Array = ["30","60","90","120","跟随刷新率"]
   for mode in caps:
     if not quality.call("set_fps_mode",mode,true):
