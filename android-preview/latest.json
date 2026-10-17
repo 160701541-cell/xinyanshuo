@@ -1,12 +1,12 @@
 {
   "schema": 1,
   "channel": "android-preview",
-  "revision": 196,
+  "revision": 197,
   "minimum_android_code": 1176,
   "maximum_android_code": 1176,
-  "sha256": "fe78c20064cb8432789cb181a8afed9703f0e50920670d57b49ad0dda17c2429",
-  "size_bytes": 21762656,
-  "pack_url": "https://160701541-cell.github.io/xinyanshuo/android-preview/canglan-content-rev-196.pck",
-  "notes": "苍岚原APK176 rev196：正式原游戏里增加玩家主动切磋功能，复用原有许可带骨骼NPC角色作为练手对手，不改村民职业库存；切磋时有真实可见红色攻击预警/实体对手碰撞、攻击倒计时和未防御真实扣血。玩家可消耗真实体力进行格挡和向后地形碰撞闪避，完美时机按输入时差判定，产生不同真实视觉反馈；点击可停止、离远自动停止，原采集挖土交互、手柄与灵根锁继续保留。以上为凡人武学训练，不是已做完修仙飞剑/完整版格斗系统；手机操作画面仍待实机验收。",
-  "signature": "OqMgncedDZTO0AIfSVHtUI1S7Ip2t6Wh8MlRXpxLshJ/8kbX4Kr+qYe5N0QqKpAtakSKZz73cHHli1+V9NDsyUEINu0+mY50qWFFJ4+nfgaIM0iKdirLGLWPbOzG4eCWW8ln7NX8LXYmNSJhZO6cDQfeXjnNc1lVBGoIKzSrs5eKvDuyxqBLP9SgRyXoVdDbFnxiXilWSv0DmtOtm+0/DYT873mpk+BLlJI+Sr9nMNTWxnVNIz8mIgjiZLBIu4BSUa2j8UVq6wYw7EGVjtRrCiIFrwVXmfLcOf3B5BmmD/IgReRevVvDq6LQThRGRlTDYm173caDOoP0UU6BoYfkUeS9yQeNUHYAgLm3ehcalFCVKjvykNms3o/szmDbnRDBOxvareLYdmHnfGpuaBlsiYHDYjxXGc6oAqv3cLo960ej2RYhq8kPgX8WfP2tZiA+P6UfkM4NRhIWbSmcfh9YEb4U3XJXFckwAYDEZQyTJDBkStJ+YvZpMwnKTKuU5Tar"
+  "sha256": "77345709523b15c2caaa73bb0cec208d0d88e7055e0aa537b17ba82ad0777aa3",
+  "size_bytes": 21777408,
+  "pack_url": "https://160701541-cell.github.io/xinyanshuo/android-preview/canglan-content-rev-197.pck",
+  "notes": "苍岚原APK176 rev197：修复P0手机操控：在正常游戏HUD永久显示俯视45°、上帝视角、真实角色飞行、跳跃、锁定视角、放大缩小；支持跨触摸区域双指缩放，第一人称独立FOV缩放；真实角色跳跃消耗体力、受重力落地，角色飞行能左右移动与升降并显示人物；第三人称和45度相机跟随实际带骨骼角色；运动使用完整人形胶囊物理扫掠，阻止穿过建筑和树石；摄影机球体避障，真实楼梯坡道可登，原NPC资源守恒及存档保留。原APK签名OTA自动加载，具体手机输入与性能仍待实机验收。",
+  "signature": "mPOVsnQ4ioY1eEJbC0ZRqJ/DJ7NqNEOGmwuhjS20PnhEx6Fv5KcqggD1Aq6/kx8Jtd10x8SVOWeT2mxXmQRCEiML8deni0X0YDMOV4IBN1xOzL5i8Jeb41YRF4F9iBg3r7FpgPgKGEB2pF1XYvzZAUgaJAJPbURnncEWSkIcVMhplT1sZ/cB6atnIaCq+TgDRY+CtXNH3mRKHTk/Ch+WWk4kMdyoH01cWYTK4tx7ZoI6Fu8DizSgf8paub0pJOwIBmx2nGM7G2a5mmNYHUqr2POW2ofL/8ALg7rCAqsXyGXrSAxvUgQPBiSLwK1zK8yLMVOfaWyJtNCBvBM41ilIBXz3Lvp13YXWQaW+qKo2r4KEiWSPrSgnFsiYPIEhTQhtgaUBL/rFi8Myd/4oAu4wFoKNScHEea4TLMZyv3gP3jtsPjOgCjiMe4avZZdzweQ2UpbHVnz6epRQvATZ/7tmTfWjW7e7wdHKiHvtJWocgi8YoMSinl9FNKLeOO8XH0Va"
 }
