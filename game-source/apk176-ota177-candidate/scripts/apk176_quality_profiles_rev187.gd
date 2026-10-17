@@ -106,31 +106,38 @@ func set_fps_mode(mode: String, save: bool=true) -> bool:
   return true
 
 func _grass_mesh() -> ArrayMesh:
-  # Geometry of ONE actual grass tuft: 4 pairs of narrow pointed leaves,
-  # each 0.30--0.60m tall after fixed leaf lengths. No flat rectangle.
+  # REV191 real meadow tuft, NOT rev187's five thin 0.03m "beard stubble"
+  # spikes. Eleven arching tapered blades with outward volume and a broad
+  # grass base make one batched asset readable at mobile camera distances.
   var st:=SurfaceTool.new()
   st.begin(Mesh.PRIMITIVE_TRIANGLES)
-  for leaf in range(5):
-    var angle: float = TAU*float(leaf)/5.0
-    var dx: float = cos(angle)
-    var dz: float = sin(angle)
-    var height: float = 0.31+float(leaf%4)*0.092
-    var width: float = 0.033+0.006*float(leaf%2)
-    var tip := Vector3(dx*0.09,height,dz*0.09)
-    var a := Vector3(dx*-width,0.0,dz*-width)
-    var b := Vector3(dx*width,0.0,dz*width)
-    st.add_vertex(a)
+  for leaf in range(11):
+    var angle: float=TAU*float(leaf)/11.0+0.13*float(leaf%3)
+    var dx: float=cos(angle)
+    var dz: float=sin(angle)
+    var side:=Vector3(-dz,0.0,dx)
+    var outward:=Vector3(dx,0.0,dz)
+    var height: float=0.25+0.028*float((leaf*7)%12)
+    var width: float=0.052+0.009*float(leaf%4)
+    var origin:=outward*(0.018+0.025*float(leaf%3))
+    var mid:=origin+outward*(0.12+0.025*float(leaf%2))+Vector3.UP*height*0.62
+    var tip:=origin+outward*(0.27+0.035*float(leaf%4))+Vector3.UP*height
+    var lb:=origin-side*width
+    var rb:=origin+side*width
+    var lm:=mid-side*(width*0.50)
+    var rm:=mid+side*(width*0.50)
+    st.add_vertex(lb)
+    st.add_vertex(rb)
+    st.add_vertex(lm)
+    st.add_vertex(rb)
+    st.add_vertex(rm)
+    st.add_vertex(lm)
+    st.add_vertex(lm)
+    st.add_vertex(rm)
     st.add_vertex(tip)
-    st.add_vertex(b)
-    # Alternate base width and tip direction: actual thin low-poly blades.
-    var a2:=Vector3(-dz*width,0,-dx*width)
-    var b2:=Vector3(dz*width,0,dx*width)
-    st.add_vertex(a2)
-    st.add_vertex(tip)
-    st.add_vertex(b2)
   st.generate_normals()
-  var mesh: ArrayMesh = st.commit()
-  var mat := StandardMaterial3D.new()
+  var mesh: ArrayMesh=st.commit()
+  var mat:=StandardMaterial3D.new()
   mat.albedo_color=Color.WHITE
   mat.vertex_color_use_as_albedo=true
   mat.cull_mode=BaseMaterial3D.CULL_DISABLED
@@ -158,12 +165,24 @@ func _flower_mesh() -> ArrayMesh:
   return mesh
 
 func _natural_plantable(x: float,z: float) -> bool:
-  if bool(terrain.call("_is_road",x,z)):
+  # A tiny square with a visible material seam was made worse by five-leaf
+  # grass growing across the road, cut face and pond. Sample *real* terrain.
+  if absf(x)>42.5 or absf(z)>42.5:
     return false
-  if Vector2(x,z+3).length()<8.0 or Vector2(x,z-10).length()<5.0:
+  if bool(terrain.call("_is_road",x,z)) or bool(terrain.call("is_water",x,z)):
     return false
-  if Vector2(x,z).distance_to(Vector2(-9,-28))<9.0:
+  if Vector2(x,z+3).length()<8.5 or Vector2(x,z-10).length()<5.7:
     return false
+  if Vector2(x,z).distance_to(Vector2(-9,-28))<9.3:
+    return false
+  var idx: Vector2i=terrain.call("_indices",x,z)
+  if int(terrain.call("_load_cell",idx.x,idx.y)["cuts"])>0:
+    return false
+  var y: float=float(terrain.call("height_at",x,z))
+  var dy_x: float=absf(float(terrain.call("height_at",x+0.40,z))-y)
+  var dy_z: float=absf(float(terrain.call("height_at",x,z+0.40))-y)
+  if maxf(dy_x,dy_z)>0.34:
+    return false # steep exposed soil or rock is not a meadow
   return true
 
 func _create_grass_and_flowers(room: Node) -> void:
@@ -177,19 +196,34 @@ func _create_grass_and_flowers(room: Node) -> void:
   grass_mm.mesh=_grass_mesh()
   grass_mm.instance_count=4500
   var greens: Array[Color]=[
-    Color("#57964f"),Color("#76ad52"),Color("#89b95b"),Color("#4b8050"),
-    Color("#aac46d"),Color("#92ad48"),Color("#619b5d"),Color("#8ea758")]
+    Color("#4f8655"),Color("#6a9b58"),Color("#83aa63"),Color("#779950"),
+    Color("#9aaf65"),Color("#8da85a"),Color("#638e59"),Color("#b3b878"),
+    Color("#5b7f4d"),Color("#729c69"),Color("#a6b875"),Color("#708459")]
+  # Deterministic meadow ecology: patches of lush grass interspersed with
+  # lighter trampled corridors, soil and rock. The high/normal 3D LODs
+  # sample all patches, not only the first N positions in one corner.
+  var meadow_centers: Array[Vector2]=[]
+  for patch in range(88):
+    meadow_centers.append(Vector2(rng.randf_range(-39.0,39.0),
+      rng.randf_range(-39.0,39.0)))
   for i in range(grass_mm.instance_count):
-    var x: float = rng.randf_range(-42.5,42.5)
-    var z: float = rng.randf_range(-42.5,42.5)
+    var center: Vector2=meadow_centers[i%meadow_centers.size()]
+    var x: float
+    var z: float
+    if rng.randf()<0.87:
+      x=clampf(center.x+rng.randfn(0.0,2.45),-42.4,42.4)
+      z=clampf(center.y+rng.randfn(0.0,2.45),-42.4,42.4)
+    else:
+      x=rng.randf_range(-42.4,42.4)
+      z=rng.randf_range(-42.4,42.4)
     var pos:=Vector3(x,0,z)
     grass_points.append(pos)
     var rotation:=Basis(Vector3.UP,rng.randf_range(-PI,PI))
-    var scale:=rng.randf_range(0.9,1.13)
+    var scale:=rng.randf_range(0.83,1.30)
     grass_rotations.append(Transform3D(rotation.scaled(Vector3.ONE*scale),Vector3.ZERO))
     grass_mm.set_instance_color(i,greens[rng.randi_range(0,greens.size()-1)])
     if _natural_plantable(x,z):
-      var y: float = float(terrain.call("height_at",x,z))
+      var y: float=float(terrain.call("height_at",x,z))
       grass_mm.set_instance_transform(i,Transform3D(grass_rotations[i].basis,Vector3(x,y,z)))
     else:
       grass_mm.set_instance_transform(i,_hidden_transform)
@@ -206,8 +240,9 @@ func _create_grass_and_flowers(room: Node) -> void:
   var flower_shades: Array[Color]=[
     Color("#f4f0e3"),Color("#e8cd55"),Color("#e997b8"),Color("#baa2de")]
   for i in range(flower_mm.instance_count):
-    var x: float=rng.randf_range(-40,40)
-    var z: float=rng.randf_range(-40,40)
+    var flower_patch: Vector2=meadow_centers[(i*7)%meadow_centers.size()]
+    var x: float=clampf(flower_patch.x+rng.randfn(0.0,1.85),-42.4,42.4)
+    var z: float=clampf(flower_patch.y+rng.randfn(0.0,1.85),-42.4,42.4)
     var flower_pos:=Vector3(x,0,z)
     flower_points.append(flower_pos)
     flower_rotations.append(Transform3D.IDENTITY)
