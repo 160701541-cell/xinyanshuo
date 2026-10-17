@@ -1031,3 +1031,19 @@ Godot 4.4.1对从**原签名Android APK176**提取的实际`update_protocol.gdc`
 - 正式清单 `android-preview/latest.json` revision **188**，compatible versionCode **1176**，新PCK **21,709,184字节**，SHA256 `c859fd32201db72fdffbb27d2fdbe7829eb7f773ce6b6bd68785913d66117c87`；URL `https://160701541-cell.github.io/xinyanshuo/android-preview/canglan-content-rev-188.pck`。
 - **真正公网HTTPS端到端验签**：新增`.github/workflows/canglan-rev188-real-pages-http-proof.yml` commit`d86c826`；run`39004702372`、job`117314670643`、artifact`12090870736` **completed/success**。实测Pages返回revision188、完整21,709,184字节PCK的SHA256精确匹配、APK176固定RSA公钥验签、HTTP Range**206**，日志 `PASS_APK176_REAL_REV188_PUBLIC_PAGES_RSA_SHA256_HTTP_RANGE_PHONE_DOWNLOAD_READY`；缓存头`max-age=600`，旧版可能需要缓存刷新。
 - **验收边界**：这是签名发布/公网字节与真实Godot的PASS，**绝非一加Ace5 Pro真机画面/操作验收**。rev187已知建筑差、地形穿模、NPC不显形、草地秃、资源消耗和技能战斗未完成，仍列为P0；rev188只先交付基础角色HUD、真实体力背包、轻量生存动作和默认隐藏调试面板，真正法力与招式不虚构。下一次需手机确认rev188是否在原APK176内成功检测加载以及UI布局与触摸。
+
+
+## 2026-10-17 / REV189–REV190 安卓原游戏手柄适配与正式OTA（Godot QA和真实公网验证均完成，手机实体手柄尚未验收）
+
+### 实际源代码与功能
+- `game-source/apk176-ota177-candidate/scripts/apk176_player_controller_rev187.gd`（历史文件名保留以兼容原版PCK资源路径），commits `f693502`、`6239abe`、`05bd176`、`e3ff78c`：使用**Godot4.4原生手柄输入**而不是键鼠按钮模拟。Android标准蓝牙/USB OTG控制器热插拔 `Input.joy_connection_changed`，按下事件`InputEventJoypadButton`，左摇杆移动/自由飞行平移、右摇杆时间步长独立旋转镜头、双摇杆径向死区；左右扳机实际采集/互动并使用阈值锁存，避免一按多次；A互动、X采集、Y挖地层、B疾步、LB第一/第三视角、RB真实背包、Start菜单、Back角色、Dpad缩放/菜单导航/飞行升降、L3疾步、R3重置镜头。手指正操作虚拟摇杆时优先保留触控，不抢输入；原有键盘/鼠标/触屏保留。仅处理实际已接入的已选手柄ID，摇杆松开死区防漂移，拔出后回退触屏操作。
+- 游戏「菜单」保存手柄右摇杆灵敏度（0.7/1.0/1.3/1.6）、上下反转、摇杆死区（0.12/0.19/0.27/0.35），存于独立`user://canglan_controller_v1.cfg`，不改世界存档和NPC ID。显示接入手柄的设备名/映射提示，标准化SDL位置不保证所有非标准国产手柄都免配置。
+- rev190 `e3ff78c`补齐**真正的画质/帧率原生弹窗**手柄焦点导航：Dpad上下选项、A调用相应Godot Button真实信号、B先退弹窗再退游戏主菜单、Start可关闭；不是“只允许触屏点画质”。
+- 真实映射、安装/验收步骤文档`docs/ANDROID_GAMEPAD_REV189.md`（commit`33d013f`）。不虚构尚未实现的御剑/灵力技能、震动与通用手柄重映射。
+
+### 真实引擎QA与发布证据
+- `logic-qa/apk176-export-fixture/verify_original_main_quality_rev187.gd`提交`327fbeb`、`a6663e3`：向真实原APK176导出Main+候选PCK **注入Godot `InputEventJoypadButton`合成按钮事件**，检验A进入原生画质/帧率弹窗、B逐层返回、Dpad菜单焦点、Start设置、RB背包、LB第一/第三人称、BACK角色、实际右摇杆旋转、双摇杆径向死区，同时全套原NPC/场景/房屋兼容继续Godot 4.4.1测试，打印`PASS_REV189_SYNTHETIC_GODOT_JOYPAD_BUTTON_MENU_LOOK_DEADZONE_HOTPLUG_AND_TOUCH_FALLBACK_NOT_ANDROID_HARDWARE`。**此QA没连接真实Android手柄，不能宣称具体型号手机已验收。**
+- rev189 首批正式PCK从早期源快照`88c4374`构建，原版RSA签名实际发布commit`9527822`，主分支manifest先升到189。run`39005501757`虽最后被新推送中止为`cancelled`，该作业**发布步骤实为success且日志含`PASS_REV189_SIGNED_OTA_PUBLISHED_TO_PUBLIC_MAIN`**。后续run`39005615484`全Godot QA完成但末段因189已经发布的安全门正常拒绝再次同版本覆盖；rev189本身公共网页加密验签run`39005702740` **success**，21,720,032字节，SHA256 `139da4fc2109cf0a32f0607331f28937a4e5037eb190440282390482b72c0250`，HTTP Range 206。rev189 manifest release notes误复制rev188表述，在**后继rev190**修正，没有覆盖rev189既有签名PCK。
+- **最终rev190**完整补齐画质/帧率界面手柄导航，工作流`.github/workflows/canglan-original-apk176-rev190-gamepad-quality-menu-signed.yml`（commit`7627ce0`，正确manifest notes修复`3dffb63`）；Godot 4.4.1实际原APK176完整Main QA、旧房兼容、真实软件Vulkan截图、原固定RSA签名与升版本发布 run`39005843698` **completed/success**，日志`PASS_REV190_SIGNED_OTA_PUBLISHED_TO_PUBLIC_MAIN`。原版APK176不变（versionCode1176），rev190签名PCK大小 **21,720,928字节**，SHA256 **`6fe2c6c126e3ac37a19b788695bcccba2e605e460882519cbff37b27e99c25e6`**，官方manifest已升 **190**；rev188/189已发布PCK不覆写。
+- **最终真实公网CDN验收**：`.github/workflows/canglan-rev190-real-pages-http-proof.yml` commit`72c8490`，run`39006060904`、job`117318677399` **completed/success**。Pages真实HTTPS返回revision190；原安装APK176固定RSA公钥验签/完整21720928字节SHA256/HTTP Range 206，日志`PASS_APK176_REAL_REV190_PUBLIC_PAGES_RSA_SHA256_HTTP_RANGE_PHONE_DOWNLOAD_READY`；缓存`max-age=600`。此结果仅证明手机可以正常获取验签补丁**不能冒充实体游戏手柄操作已验证**。
+- **QA待验收**：需要用户在一加Ace5 Pro手机中原APK176检测并加载rev190，连接实际蓝牙或USB手柄，测试左右摇杆同时操作、A/X/Y/B、RB背包、Start设置-Dpad-A/B选择画质与关闭、拔出自动恢复触屏。廉价或模式不标准手柄按具体型号/GUID修复，不添加未经证明的通用映射。原rev187真机地形穿模、房屋不可住、NPC不可见等P0继续红灯，此轮不假称相关修复。
