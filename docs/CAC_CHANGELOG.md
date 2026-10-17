@@ -1,5 +1,11 @@
 # CAC 工序变更与开发日志
 
+## 2026-10-18 / CAC-REV208-GREEN-FOREST-ART-QUALITY / 真实Godot截图暴露红白菌体误当绿植（候选）
+- rev207在Godot4.4.1原手机游戏Main场景实渲截图 `real_apk176_rev207_vivid_cc0_texture_forest_wide.png` 中，新增201株源`Quaternius CC0 herb/bush.glb`实际外观为大量**巨型红白蘑菇样物体**，不是用户要求的森林绿叶灌木；局部土地仍疏。即使场景3D解析和材质哈希技术QA通过，**该美术效果仍不达用户验收标准**。不把引擎通过等同视觉满意。
+- rev208真正候选源码 `apk176_living_resource_world_rev187.gd` 改为复用先前已合法引入的`Kenney CC0 tree_oak.glb`原始树冠/叶色与UV/PBR，在0.26–0.47原比例生成密集灌木/幼树，不再把红白菌体错当翠绿植物，保留随机散布、≤210真源3D节点、≤14万真实三角预算、真实土壤/道路/建筑地基禁种、挖地后消隐。旧Quaternius红白菌/灵药模型不被篡改或删除，仍可作为独立稀有药材而非普通森林绿被。
+- QA新增对真的Kenney源`tree_oak.glb`与授权/地形/物理渲染的原Main逐体检查。分支专用`.github/workflows/canglan-rev208-green-saplings-qa-only.yml` 对照真实Godot Vulkan截图，只有该分支真实绿色、性能可接受才考虑独立rev208正式签名热更新。**当前还没有rev208正式PCK。**
+
+
 ## 2026-10-18 / CAC-REV207-REAL-UNDERGROWTH-GODOT / 修复授权灌木GPU原点幻影，换为真正可渲染GLB
 - **严格引擎错误复现**：新灌木批绘在Godot4.4.1原Main的真实引擎测试中，`MultiMesh.set_instance_transform`和整块`set_buffer`立即回读仍是`Transform3D.IDENTITY`，因此灌木会堆在世界(0,0,0)，不是可见的生态；提交`909da55d…`/`7e80dfdd…`的原引擎日志已经记录真实失败值。本轮没有通过删掉真实mesh验证混过。
 - **完成技术回退但保留实体目标**：`111d191b36d5e3266ce7d6eae58bced8f25a1d15`改为与已成功渲染的rev206真灵药相同的`Quaternius/CC0`原GLB子场景复用。模型自带原始UV/法线/PBR/局部旋转；在真实道路/水体/预定六座住房及灵药采摘区之外依地形海拔撒布，按源真实三角预算最多210处灌木，与既有10,800束地表草混用。抽取真实`terrain_cell_changed`事件，在玩家挖地时将被挖地块的真灌木实体隐藏而非生成0矩阵原点幽灵。
