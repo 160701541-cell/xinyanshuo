@@ -71,9 +71,17 @@ def used_material_signatures(doc,images):
             source=ext.get("KHR_texture_basisu",{}).get("source",None)
         if source is None or source not in images:
             raise ValueError("UNSUPPORTED_NON_SHA_PINNED_PBR_TEXTURE")
-        return {"image_sha":images[source],
-                "sampler":doc.get("samplers",[])[tex["sampler"]]
-                  if "sampler" in tex else None}
+        # glTF 2.0 samplers omitted wrapS/wrapT are SPEC DEFINED
+        # REPEAT(10497). glTF-Transform explicitly writes these defaults
+        # without changing the actual pixel sampling behavior. Compare
+        # normalized effective render semantics, not JSON formatting.
+        sampler=dict(doc.get("samplers",[])[tex["sampler"]]) if (
+            "sampler" in tex) else {}
+        sampler.setdefault("magFilter",9729)
+        sampler.setdefault("minFilter",9987)
+        sampler.setdefault("wrapS",10497)
+        sampler.setdefault("wrapT",10497)
+        return {"image_sha":images[source],"sampler":sampler}
     def canon(obj):
         if isinstance(obj,dict):
             result={}
