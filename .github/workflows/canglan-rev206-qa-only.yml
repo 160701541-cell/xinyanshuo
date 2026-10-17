@@ -18,6 +18,12 @@ on:
       - 'game-source/apk176-ota177-candidate/assets/cc0-rev206/asset_intake_proof.json'
       - 'game-source/apk176-ota177-candidate/assets/cc0-rev206/**/*.glb'
       - 'game-source/apk176-ota177-candidate/scripts/apk176_living_resource_world_rev187.gd'
+      - 'game-source/apk176-ota177-candidate/scripts/apk176_vivid_material_rev207.gd'
+      - 'game-source/apk176-ota177-candidate/scripts/apk176_kenney_visual_palette_rev187.gd'
+      - 'game-source/apk176-ota177-candidate/scripts/apk176_quality_profiles_rev187.gd'
+      - 'game-source/apk176-ota177-candidate/scripts/apk176_strata_terrain_rev187.gd'
+      - 'game-source/apk176-ota177-candidate/materials/rev207/**'
+      - 'tools/prepare_rev207_cc0_pbr_textures.py'
       - 'logic-qa/apk176-export-fixture/capture_original_main_rev187_compare.gd'
       - 'logic-qa/apk176-export-fixture/capture_original_main_rev187_compare.gd'
   workflow_dispatch:
@@ -175,6 +181,20 @@ jobs:
           cp game-source/apk176-ota177-candidate/scripts/apk176_kenney_visual_palette_rev187.gd qa-stage/ota177/canglan_rev187/visual_palette.gd
           cp game-source/apk176-ota177-candidate/scripts/apk176_kenney_multimesh_rev187.gd qa-stage/ota177/canglan_rev187/kenney_multimesh.gd
           cp game-source/apk176-ota177-candidate/scripts/apk176_strata_terrain_rev187.gd qa-stage/ota177/canglan_rev187/strata_terrain.gd
+          cp game-source/apk176-ota177-candidate/scripts/apk176_vivid_material_rev207.gd qa-stage/ota177/canglan_rev187/vivid_material.gd
+          mkdir -p qa-stage/ota177/canglan_rev187/materials_rev207
+          cp game-source/apk176-ota177-candidate/materials/rev207/*.png qa-stage/ota177/canglan_rev187/materials_rev207/
+          cp game-source/apk176-ota177-candidate/materials/rev207/manifest.json qa-stage/ota177/canglan_rev187/materials_rev207/
+          python3 - <<'PY'
+          import hashlib,json
+          from pathlib import Path
+          m=json.loads(Path('qa-stage/ota177/canglan_rev187/materials_rev207/manifest.json').read_text())
+          assert m['schema']==207 and m['count']==9 and m['size']==512
+          for item in m['maps']:
+            raw=(Path('qa-stage/ota177/canglan_rev187/materials_rev207')/item['file']).read_bytes()
+            assert hashlib.sha256(raw).hexdigest()==item['output_sha256']
+          print('PASS_REV207_REAL_QUATERNIUS_NINE_FINE_PBR_MAPS_SOURCE_SHA256_IN_ORIGINAL_APK_STAGE')
+          PY
           cp game-source/apk176-ota177-candidate/scripts/apk176_player_controller_rev187.gd qa-stage/ota177/canglan_rev187/player_controller.gd
           cp game-source/apk176-ota177-candidate/scripts/apk176_backpack_rev205.gd qa-stage/ota177/canglan_rev187/backpack.gd
           mkdir -p qa-stage/ota177/canglan_rev187/ui/lucide
@@ -241,7 +261,7 @@ jobs:
         run: |
           set -euo pipefail
           printf 'config_version=5\n' > qa-stage/ota177/project.godot
-          for script in strata_terrain quality_profiles player_controller backpack cultivation_world root_taxonomy city_population visual_palette kenney_multimesh ecology_growth; do
+          for script in strata_terrain vivid_material quality_profiles player_controller backpack cultivation_world root_taxonomy city_population visual_palette kenney_multimesh ecology_growth; do
             echo "GODOT_GDSCRIPT_COMPILE_CHECK $script"
             if ! timeout 35s /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless \
                 --path qa-stage/ota177 --check-only --script "res://canglan_rev187/$script.gd" \
@@ -279,6 +299,7 @@ jobs:
             }
           grep -Fq 'PASS_REV206_ORIGINAL_PLAYER_TREE_STONE_PHYSICAL_TRANSPORT_WITH_LICENSED_FINISHED_CC0_HOUSES_NO_BROKEN_CONSTRUCTION' qa-results/rev187-original-main-3d.log
           grep -Fq 'PASS_REV206_REAL_QUATERNIUS_CC0_COMPLETE_HOMES_WANDERING_ANIMATED_ANIMALS_AND_PERMANENTLY_RETIRED_BUILDER' qa-results/rev187-original-main-3d.log
+          grep -Fq 'PASS_REV207_MOBILE_UNBLEACHED_SATURATED_PBR_NORMAL_MAPS_WORLDSPACE_64PIX_PER_METRE' qa-results/rev187-original-main-3d.log
           grep -Fq 'PASS_REV188_REAL_HEALTH_STAMINA_GAME_HUD_BAG_MENU_AND_OPT_IN_DEV_TOOLS' qa-results/rev187-original-main-3d.log
           grep -Fq 'PASS_REV189_SYNTHETIC_GODOT_JOYPAD_BUTTON_MENU_LOOK_DEADZONE_HOTPLUG_AND_TOUCH_FALLBACK_NOT_ANDROID_HARDWARE' qa-results/rev187-original-main-3d.log
           grep -Fq 'PASS_REV191_NO_FLOATING_SLICE_LOD_OVERLAP_OR_22M_CLIFF_ACTUAL_MESH_TRIANGLES' qa-results/rev187-original-main-3d.log
