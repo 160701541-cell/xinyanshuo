@@ -1,3 +1,5 @@
+# rev202 source QA: run 39028126321 SUCCESS; production target original APK176 code1176.
+# PCK signing guarded by real Main engine tests, current revision=201 and pinned RSA key.
 name: Canglan ORIGINAL APK176 rev202 - Guarded Avatar Flight QA + RSA Signed Update
 on:
   push:
