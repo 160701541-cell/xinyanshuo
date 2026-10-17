@@ -1,12 +1,12 @@
 {
   "schema": 1,
   "channel": "android-preview",
-  "revision": 192,
+  "revision": 193,
   "minimum_android_code": 1176,
   "maximum_android_code": 1176,
-  "sha256": "395222d4c2264441d41040027caae01e397204244b6b18a354929d260d72035a",
-  "size_bytes": 21725632,
-  "pack_url": "https://160701541-cell.github.io/xinyanshuo/android-preview/canglan-content-rev-192.pck",
-  "notes": "苍岚原APK176 rev192：真实Godot截图发现中央92m地形完全没有渲染，旧截图83%地表像素和天空完全同色。已修掉土层表面的背面剔除错误，确保真实材质和碰撞地表显示；再将2m土/草随机棋盘格改成连续世界坐标的草土沙岸/道路颜色混合。保留rev191远景接缝裁分、11片自然簇草和禁生区。自动QA检查真正渲染像素不再是天空蓝色地块。真实无限区块、建筑室内与高品质修仙素材仍待后续，手机未验收。",
-  "signature": "dhenpynTINlfvma1XPpiI+gysXCD6jAnb8GpEJ2ZNQd7zrhquKX9jmer9TvHdbvQLhyH4I8UdAkdL5fNRON+aDifnVVj1OPUPv3OBwOs4EJrZVQnQjRJ4KrHUqlj94S+x5OIMUU+3k0mFgR0QA4VNES4w6X9gWNpaI+ptJvHQiEZ/uVKBC9R/IppIUbtrCek7Lg4HbuS9PE/Jc/dNML37D/OmfBIEpzMuAjtGZjQMM/39UkhhfRRDmAh5A2upyzy53huN1isOS/SZCnwv0QzSMWXwkzjCA6ejizFjdrcpK193jsbs7915F5yEnCfxVOjKgxYjsSt66xVmnhkYVaNBPiZcLzXdKhtU+dFDRN1YPvDCmm6Aj2CMU/5WFcYolv49MNfMdBmz9RpBlkOE7ssnJ1/xlh962T7sTAWUJf9Nh5JqUg8/lnsTqqVKTTmZ4TgoDjP3ixfx1LxMO4uUHPo3V0KtaFSP1WQeZi2ZyEIaoeDDOe3Y702O0NNzPtq2znl"
+  "sha256": "34e5032e405504cb6aa9ca32d4d2d3ef68663495d26ed62b6766634eeb6a13dc",
+  "size_bytes": 21741056,
+  "pack_url": "https://160701541-cell.github.io/xinyanshuo/android-preview/canglan-content-rev-193.pck",
+  "notes": "苍岚原APK176 rev193：新增92米村庄外46米区块可行走地形和同步真实静态物理碰撞，打破原42米移动边界；玩家左右摇杆、手柄和疾步可以沿连续地面越过原村庄边界。按世界坐标确定性生成附近区块，远离时卸载近场实体，区块内挖地1层=0.45米并先写入user://原子存档再给真实材料，返回原处保留挖痕，地形与碰撞同源。仍不等于完成无限NPC生态/可居住院落/完整修仙美术，手机实机待验收。",
+  "signature": "R7QPSNK2VRSikJ1uyjOtsLVPj+9IWfZlui4u0C7Sa0evOSy4X4y2t03Bxn2jrieOklGGZx20i0nY5q9sd96ONwEFbu0A1OeM0KHM6c0qnJQBqyboVovsXPeiEZyh0dgB0ojO4PKb+Mk5d5eEHm2+zyWXKljiWdAP91vTuRrkixpeeAqiITo/KG+Tf5T+Bx8uoHoUIPSIGS8fDL6GQWXdG9kg9qPEyITsvGwFpHPQrwwB/iOwpx1YfXsGR77UihdJAmLH7OoCraDvHupje0lXs/bI3cmn8/I/39t4WE2pFzq/oGZPdJdydeoAraO2xyRGcBP8NMWFxtjwGMExrkY411OyM+9M6GzX9igkkAlaDELBqzJHGZtVxpPRpr7ftv1RiM6FKFRyY6TkR/LQe2loi6lsPZjhRS+vW3csQ1L9JCbtRjWM6z3OUqK+3bPGRw+FctoB547fViJfSledPZjLviP5TtyTG+fD8EO1SxOVQ0cPJQfjNyFkCZVmvSgWe/NA"
 }
