@@ -21,6 +21,7 @@ var source_faces_per_instance: Dictionary={}
 var rejected_sites: int=0
 var initialized: bool=false
 var _missing_source: Array[String]=[]
+var protected_world_sites: Array[Dictionary]=[]
 
 func _local_from_source(original: Node3D,child: Node3D) -> Transform3D:
   var result:=Transform3D.IDENTITY
@@ -60,12 +61,23 @@ func _low_y(source_parts: Array[Dictionary]) -> float:
   return bottom
 
 func initialize(original_world: Node3D,terrain: Node3D,
-    quality: RefCounted,vendor_sources: Dictionary) -> bool:
+    quality: RefCounted,vendor_sources: Dictionary,
+    blueprint_sites: Dictionary,spirit_visuals: Dictionary) -> bool:
   if initialized or original_world==null or terrain==null or quality==null:
     return false
   _world=original_world
   _terrain=terrain
   _quality=quality
+  for house in blueprint_sites.values():
+    var house_pos: Vector3=house["at"]
+    protected_world_sites.append({"center":Vector2(house_pos.x,house_pos.z),
+      "radius":7.2})
+  for wild in spirit_visuals.values():
+    var herb_actor: Node3D=wild["model"]
+    if is_instance_valid(herb_actor):
+      protected_world_sites.append({
+        "center":Vector2(herb_actor.position.x,herb_actor.position.z),
+        "radius":1.7})
   name="REV208PhysicalCC0FernGrass32mLivingHabitatCells"
   set_meta("source_license",LICENSE)
   set_meta("never_free_inventory",true)
@@ -129,10 +141,12 @@ func _create_cell(cx: int,cz: int,kind: String,definition: Dictionary) -> void:
     var accepted: bool=false
     while attempt<28:
       attempt+=1
-      var x: float=clampf((float(cx)+rand.randf_range(0.04,0.96))*
-        CELL_METRES,-42.25,42.25)
-      var z: float=clampf((float(cz)+rand.randf_range(0.04,0.96))*
-        CELL_METRES,-42.25,42.25)
+      # Never clamp off-world candidates onto an 84m hard boundary:
+      # that previously created a wall of identical overlapping plants.
+      var x: float=(float(cx)+rand.randf_range(0.04,0.96))*CELL_METRES
+      var z: float=(float(cz)+rand.randf_range(0.04,0.96))*CELL_METRES
+      if absf(x)>42.25 or absf(z)>42.25:
+        continue
       # Real overlapping river/houses, not an artificially flat carpet.
       if x>5.0 and rand.randf()<0.92:
         continue
@@ -141,9 +155,12 @@ func _create_cell(cx: int,cz: int,kind: String,definition: Dictionary) -> void:
       if Vector2(x-1.5,z-7.0).length()<9.0 or (
           Vector2(x-12.0,z-7.0).length()<6.0):
         continue
-      if Vector2(x+7.0,z+18.0).length()<7.0 or (
-          Vector2(x-4.8,z+24.0).length()<7.0) or (
-          Vector2(x+5.0,z-25.0).length()<7.0):
+      var protected: bool=false
+      for site in protected_world_sites:
+        if Vector2(x,z).distance_to(site["center"])<float(site["radius"]):
+          protected=true
+          break
+      if protected:
         continue
       accepted=true
       var index_id: String="CL-REV208-FLOOR-%s-%d-%d-%02d" % [
@@ -275,6 +292,7 @@ func stats() -> Dictionary:
     "gpu_real_pbr_parts":drawing,"source_mesh_surface_parts":real_surfaces,
     "verified_live_gpu_slots":checked,"rejected_sites":rejected_sites,
     "never_free_inventory":true,"source_license":LICENSE,
+    "protected_site_count":protected_world_sites.size(),
     "errors":error,"species":SOURCE_SPECIES.duplicate(),
     "uses_swap_remove":true,"all_visible_slots_contiguous":error.is_empty()}
 
