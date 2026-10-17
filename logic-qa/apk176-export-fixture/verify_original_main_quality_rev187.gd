@@ -471,8 +471,8 @@ func _run() -> void:
     return
   print("PASS_REV194_PHYSICAL_STREAMED_MEADOWS_DEEP_GREENS_AND_NO_WASHOUT_FOG",visible_stream_tufts)
   var native_screen: Vector2i = quality.get("physical_screen")
-  if viewport.size != Vector2i(roundi(float(native_screen.x)*0.85),roundi(float(native_screen.y)*0.85)):
-    _fail(80,"ACTUAL_THREE_DIMENSIONAL_RESOLUTION_MUST_BE_EXACTLY_85_PERCENT_DEFAULT")
+  if viewport.size != Vector2i(roundi(float(native_screen.x)*0.96),roundi(float(native_screen.y)*0.96)):
+    _fail(80,"REV207_HIGH_QUALITY_MUST_BE_SHARP_96_PERCENT_OR_ABOVE_NOT_BLURRY_85")
     return
   if viewport.msaa_3d!=Viewport.MSAA_2X:
     _fail(81,"HIGH_QUALITY_MUST_HAVE_REAL_2X_MSAA")
@@ -483,9 +483,9 @@ func _run() -> void:
   var profiles: Array = [
     {"key":"极致画质","scale":1.0,"msaa":Viewport.MSAA_4X,"shadows":100.0,
      "draw":1500,"triangles":1500000,"grass":4500,"grass_m":80.0,"fireflies":100,"clouds":9},
-    {"key":"高档","scale":0.85,"msaa":Viewport.MSAA_2X,"shadows":60.0,
+    {"key":"高档","scale":0.96,"msaa":Viewport.MSAA_2X,"shadows":60.0,
      "draw":800,"triangles":600000,"grass":2400,"grass_m":40.0,"fireflies":60,"clouds":5},
-    {"key":"普通","scale":0.67,"msaa":Viewport.MSAA_DISABLED,"shadows":30.0,
+    {"key":"普通","scale":0.80,"msaa":Viewport.MSAA_DISABLED,"shadows":30.0,
      "draw":400,"triangles":300000,"grass":1100,"grass_m":20.0,"fireflies":20,"clouds":2}
   ]
   for expected in profiles:
@@ -521,9 +521,14 @@ func _run() -> void:
     if mobile_env.glow_enabled!=should_glow:
       _fail(192,"REV195_GODOT_MOBILE_GLOW_IGNORES_MANUAL_GRAPHICS_TIER_"+String(expected["key"]))
       return
-    if should_glow and (absf(mobile_env.glow_hdr_threshold-0.90)>0.001 or
-        mobile_env.glow_intensity<1.2 or mobile_env.glow_bloom<=0.0):
-      _fail(193,"REV195_MOBILE_HDR_GLOW_IS_CONFIGURED_BUT_STILL_INVISIBLE")
+    if should_glow and (absf(mobile_env.glow_hdr_threshold-1.13)>0.001 or
+        mobile_env.glow_intensity>0.98 or mobile_env.glow_intensity<0.55 or (
+        mobile_env.glow_bloom<=0.0)):
+      _fail(193,"REV207_MOBILE_GLOW_MUST_BE_VISIBLE_WITHOUT_BLEACHING_ALL_COLOURS")
+      return
+    if not mobile_env.adjustment_enabled or mobile_env.adjustment_saturation<1.25 or (
+        mobile_env.adjustment_contrast<1.07 or mobile_env.fog_density>=0.00120):
+      _fail(332,"REV207_ACTUAL_GODOT_MOBILE_SATURATION_CONTRAST_AND_FOG_NOT_APPLIED")
       return
     if not should_glow and mobile_env.fog_sun_scatter>=0.05:
       _fail(194,"REV195_LOW_PROFILE_WASTES_FOG_SUN_SCATTER")
@@ -532,6 +537,48 @@ func _run() -> void:
     if bool(actual_glow.get("real_mobile_glow_enabled",not should_glow))!=should_glow:
       _fail(195,"REV195_PERFORMANCE_TELEMETRY_MUST_REPORT_ACTUAL_GLOW_STATE")
       return
+  # Material QA uses the actual Godot/GLTF materials inside the original
+  # running world. Material count alone does NOT prove textures are bound.
+  var vivid: RefCounted=room.get("vivid_materials")
+  if vivid==null:
+    _fail(333,"REV207_NEW_COLOR_PIPELINE_NOT_IN_REAL_ORIGINAL_APK_MAIN")
+    return
+  var evidence: Dictionary=vivid.call("summary")
+  if int(evidence.get("material_maps_loaded",0))!=9 or not (
+      (evidence.get("source_png_errors",[]) as Array).is_empty()) or (
+      int(evidence.get("micro_texels_per_metre",0))!=64):
+    _fail(334,"REV207_GENUINE_512PX_QUATERNIUS_PBR_OR_WORLD_TINY_PIXEL_MATERIAL_MISSING_"+str(evidence))
+    return
+  var a_real_roof: Node3D=room.get("finished_prefabs").get("CL-HOME-V206-001",null)
+  if a_real_roof==null:
+    _fail(335,"REV207_ART_MUST_USE_REAL_QUATERNIUS_SOURCE_HOUSE_GLTF")
+    return
+  var source_materials: int=0
+  var normal_mapped: int=0
+  var texture_sampling: int=0
+  for mesh_part in a_real_roof.find_children("*","MeshInstance3D",true,false):
+    var body: MeshInstance3D=mesh_part as MeshInstance3D
+    if body.mesh==null:
+      continue
+    for surface in range(body.mesh.get_surface_count()):
+      var mm: Material=body.get_active_material(surface)
+      if mm is StandardMaterial3D:
+        var m: StandardMaterial3D=mm as StandardMaterial3D
+        if m.albedo_texture!=null:
+          source_materials+=1
+        if m.normal_texture!=null:
+          normal_mapped+=1
+        if m.texture_filter==BaseMaterial3D.TEXTURE_FILTER_NEAREST_WITH_MIPMAPS_ANISOTROPIC:
+          texture_sampling+=1
+  if source_materials<=0 or normal_mapped<=0 or texture_sampling<=0:
+    _fail(336,"REV207_QUATERNIUS_HOUSE_IS_STILL_FLAT_COLOR_NO_PBR_NORMAL_"+str({
+      "albedo":source_materials,"normals":normal_mapped,"small_pixel_sampling":texture_sampling}))
+    return
+  var live_mat: Material=(terrain.get("world_materials") as Dictionary).get("natural_ground",null)
+  if not (live_mat is ShaderMaterial) or (terrain.get("collision") as CollisionShape3D).shape==null:
+    _fail(337,"REV207_MICRO_TEXELS_MUST_STAY_ON_PHYSICAL_DIGGABLE_TERRAIN_WITH_COLLISION")
+    return
+  print("PASS_REV207_MOBILE_UNBLEACHED_SATURATED_PBR_NORMAL_MAPS_WORLDSPACE_64PIX_PER_METRE")
   print("PASS_REV195_REAL_GODOT_MOBILE_GLOW_HDR_THRESHOLD_AND_THREE_USER_GRAPHICS_TIERS")
   var caps: Array = ["30","60","90","120","跟随刷新率"]
   for mode in caps:
