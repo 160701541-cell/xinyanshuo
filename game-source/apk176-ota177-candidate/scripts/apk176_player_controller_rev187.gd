@@ -66,6 +66,7 @@ var _gather_cd: float = 0.0
 var _fall_damage_cd: float = 0.0
 var _quality_sheet_button: Button
 var _developer_sheet_button: Button
+var _rest_sheet_button: Button
 
 func initialize(active_room: Node) -> void:
   room = active_room
@@ -289,11 +290,11 @@ func _build_game_hud() -> void:
   _developer_sheet_button.text="开发工具（默认关闭）"
   _developer_sheet_button.pressed.connect(func(): room.call("_set_dev_ui_visible",not bool(room.get("developer_ui_visible"))))
   v.add_child(_developer_sheet_button)
-  var eat_button:=Button.new()
-  eat_button.name="EatRealWarehouseFoodToRest"
-  eat_button.text="在仓库消耗食物休整"
-  eat_button.pressed.connect(Callable(self,"rest_and_eat"))
-  v.add_child(eat_button)
+  _rest_sheet_button=Button.new()
+  _rest_sheet_button.name="EatRealWarehouseFoodToRest"
+  _rest_sheet_button.text="在仓库消耗食物休整"
+  _rest_sheet_button.pressed.connect(Callable(self,"rest_and_eat"))
+  v.add_child(_rest_sheet_button)
   _add_game_action("GatherAction","采集",Callable(self,"gather_action"))
   _add_game_action("DashAction","疾步",Callable(self,"dash_action"))
   _add_game_action("DigAction","挖掘",Callable(self,"dig"))
@@ -341,8 +342,7 @@ func _refresh_game_hud() -> void:
   (_game_actions["GatherAction"] as Button).text="采集 "+str(ceili(_gather_cd))+"秒" if _gather_cd>0.0 else "采集"
   _quality_sheet_button.visible=_game_sheet!=null and _game_sheet.visible and _game_sheet_mode=="settings"
   _developer_sheet_button.visible=_quality_sheet_button.visible
-  var eat_button: Button=_game_sheet.get_node("VBoxContainer/EatRealWarehouseFoodToRest")
-  eat_button.visible=_game_sheet.visible and _game_sheet_mode=="character"
+  _rest_sheet_button.visible=_game_sheet.visible and _game_sheet_mode=="character"
   if _game_sheet==null or not _game_sheet.visible:
     return
   if _game_sheet_mode=="character":
