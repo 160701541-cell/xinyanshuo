@@ -1274,8 +1274,23 @@ func toggle_target_lock() -> void:
         candidate=person
         candidate_id=String(id)
         best=range_m
+  # Real monsters have their own faction, realm, HP and mana; neutral
+  # cultivators remain protected unless actively attacking the player.
+  var beasts: Dictionary=room.get("actual_wildlife")
+  for beast_id in beasts:
+    var info: Dictionary=beasts[beast_id]
+    if int(info.get("health",0))<=0:
+      continue
+    var body: Node3D=info["node"]
+    if not is_instance_valid(body):
+      continue
+    var delta_m: float=actor.position.distance_to(body.position)
+    if delta_m>1.2 and delta_m<best:
+      candidate=body
+      candidate_id=String(beast_id)
+      best=delta_m
   if candidate==null:
-    say("附近没有能够锁定的实体人物")
+    say("附近没有能够锁定的实体人物或妖兽")
     return
   _locked_target=candidate
   _locked_target_id=candidate_id
@@ -1283,7 +1298,9 @@ func toggle_target_lock() -> void:
   _target_lock_button.text="解锁"
   _auto_walking=false
   _follow_npc=false
-  say("目标已锁定；中立修士不能被随意攻击")
+  say("已锁定妖兽，招式可真实消耗体力法力战斗" if (
+    room.get("actual_wildlife").has(candidate_id)) else (
+    "目标已锁定；中立修士不能被随意攻击"))
 
 func _clear_target_lock() -> void:
   _locked_target=null
@@ -1307,7 +1324,12 @@ func _step_target_lock(delta: float) -> void:
     return
   var desired_yaw: float=atan2(-displacement.x,-displacement.z)
   _yaw=lerp_angle(_yaw,desired_yaw,clampf(delta*5.0,0.0,1.0))
-  if _locked_target_id=="CL-TRAINING-DUEL":
+  if room.get("actual_wildlife").has(_locked_target_id):
+    var b: Dictionary=room.get("actual_wildlife")[_locked_target_id]
+    _locked_target_label.text="⚔ %s · %s\n生命 %d/%d  法力 %d/%d" % [
+      String(b["name"]),String(b["realm"]),int(b["health"]),
+      int(b["max_health"]),int(b["mana"]),int(b["max_mana"])]
+  elif _locked_target_id=="CL-TRAINING-DUEL":
     _locked_target_label.text="◎ 演武教习 · 凡人  血 %d/%d  法力 0" % [
       _spar_enemy_health,_spar_enemy_health_max]
   else:
@@ -1361,13 +1383,18 @@ func _refresh_game_hud() -> void:
   (_game_actions["EvadeAction"] as Button).disabled=_spar_stage=="inactive" or _dodge_cd>0 or energy<7
   (_game_actions["GuardAction"] as Button).text="防御中" if _guard_time>0 else "格挡"
   (_game_actions["EvadeAction"] as Button).text="闪避中" if _dodge_time>0 else "闪避"
-  (_game_actions["SwordAttack"] as Button).disabled=_spar_stage=="inactive" or _sword_cd>0.0 or energy<6
+  var beast_combat: bool=room.get("actual_wildlife").has(
+    _locked_target_id) and int(room.get("actual_wildlife")[
+    _locked_target_id].get("health",0))>0
+  (_game_actions["SwordAttack"] as Button).disabled=(
+    (_spar_stage=="inactive" and not beast_combat) or _sword_cd>0.0 or energy<6)
   (_game_actions["SwordAttack"] as Button).text=("剑击 %d" % ceili(_sword_cd)) if _sword_cd>0.0 else "剑击"
   var known: Array=record.get("known_arts",[])
   var bolt_learned: bool=known.has("CL-ART-SPIRIT-BOLT-V1")
   var ward_learned: bool=known.has("CL-ART-SPIRIT-WARD-V1")
   (_game_actions["SpiritBolt"] as Button).disabled=(
-    _spar_stage=="inactive" or _bolt_cd>0.0 or not bolt_learned or mana_now<4)
+    (_spar_stage=="inactive" and not beast_combat) or (
+    _bolt_cd>0.0 or not bolt_learned or mana_now<4))
   (_game_actions["SpiritBolt"] as Button).text=(
     "灵息弹 %d" % ceili(_bolt_cd) if _bolt_cd>0.0 else ("灵息弹" if bolt_learned else "灵息弹·未学"))
   (_game_actions["SpiritWard"] as Button).disabled=(
@@ -1381,8 +1408,20 @@ func _refresh_game_hud() -> void:
   (_game_actions["WorldMeditation"] as Button).text=(
     "结束盘坐" if bool(record.get("meditating",false)) else "盘坐修炼")
   if _target_panel!=null:
-    _target_panel.visible=_spar_stage!="inactive"
-    if _spar_stage!="inactive":
+    _target_panel.visible=_spar_stage!="inactive" or beast_combat
+    if beast_combat:
+      var beast: Dictionary=room.get("actual_wildlife")[_locked_target_id]
+      _target_status.text="%s · %s · %s" % [
+        String(beast["name"]),String(beast["realm"]),String(beast["root"])]
+      _target_health_bar.max_value=int(beast["max_health"])
+      _target_health_bar.value=int(beast["health"])
+      _target_mana_bar.max_value=maxi(1,int(beast["max_mana"]))
+      _target_mana_bar.value=int(beast["mana"])
+      _enemy_hp_number.text="%d / %d" % [
+        int(beast["health"]),int(beast["max_health"])]
+      _enemy_mana_number.text="%d / %d" % [
+        int(beast["mana"]),int(beast["max_mana"])]
+    elif _spar_stage!="inactive":
       _target_status.text="演武教习 · 凡人武者   %d/%d" % [
         _spar_enemy_health,_spar_enemy_health_max]
       _target_health_bar.max_value=_spar_enemy_health_max
@@ -1827,6 +1866,8 @@ func _spar_damage_opponent(amount: int,spell_hit: bool=false) -> bool:
   return true
 
 func sword_attack() -> bool:
+  if room.get("actual_wildlife").has(_locked_target_id):
+    return _sword_attack_yao_beast()
   if _spar_stage in ["inactive","victory"] or _sword_cd>0.0 or (
       _spar_partner==null or not is_instance_valid(_spar_partner)):
     return false
@@ -1882,6 +1923,49 @@ func sword_attack() -> bool:
   _spar_damage_opponent(10)
   _refresh_game_hud()
   return true
+
+func _sword_attack_yao_beast() -> bool:
+  var beasts: Dictionary=room.get("actual_wildlife")
+  if not beasts.has(_locked_target_id) or _sword_cd>0.0:
+    return false
+  var info: Dictionary=beasts[_locked_target_id]
+  if int(info.get("health",0))<=0:
+    return false
+  var hero: Dictionary=room.get("sim").citizens.get(PLAYER_ID,{})
+  if int(hero.get("energy",0))<6:
+    say("真实剑击需要6体力")
+    return false
+  var body: Node3D=info["node"]
+  var delta_xz:=Vector2(body.position.x-actor.position.x,
+    body.position.z-actor.position.z)
+  if delta_xz.length()>3.4 or delta_xz.length()<0.6:
+    say("妖兽不在近战范围，或距离过近无法挥剑")
+    return false
+  var hit_ray:=PhysicsRayQueryParameters3D.create(
+    actor.position+Vector3.UP*1.0,
+    body.position+Vector3.UP*float(info["body_height"])*0.47,2)
+  var encountered: Dictionary=world.get_world_3d().direct_space_state.intersect_ray(
+    hit_ray)
+  if not encountered.is_empty() and encountered.get(
+      "collider")!=info["collider"]:
+    say("山石或院墙遮挡攻击，不能隔墙穿模伤害妖兽")
+    return false
+  hero["energy"]=int(hero["energy"])-6
+  _sword_cd=0.85
+  _attack_anim_seconds=0.57
+  var hit: Dictionary=room.call(
+    "apply_yao_beast_damage",_locked_target_id,12,"sword")
+  if bool(hit.get("ok",false)):
+    _spawn_real_combat_hit(body.position+Vector3.UP*1.2,
+      Color("#f8cb75"),3)
+    _show_actual_damage_number(body.position,
+      int(hit["actual_damage"]),Color("#f9ca78"))
+    say("真剑击命中%s：-%d生命（余%d/%d）" % [
+      String(info["name"]),int(hit["actual_damage"]),
+      int(hit["remaining_hp"]),int(hit["max_hp"])])
+    _refresh_game_hud()
+    return true
+  return false
 
 func _root_effect() -> Dictionary:
   var spiritual: RefCounted=room.get("cultivation")
@@ -3591,6 +3675,12 @@ func interact() -> Dictionary:
       say("院落：施工必须消耗原料并等待NPC完工（%s）" % [
         String(build.get("reason","已入队"))])
     return build
+  var beast_loot: Dictionary=room.call(
+    "loot_defeated_yao_beast",point,_backpack)
+  if bool(beast_loot.get("ok",false)):
+    say("实际击败妖兽后拾取妖丹原胚 ×1")
+    _refresh_game_hud()
+    return beast_loot
   var depot := Vector3(0,0,10)
   if Vector2(point.x-depot.x,point.z-depot.z).length()<3.8:
     var delivered: bool = sim.deliver_carried(PLAYER_ID)
