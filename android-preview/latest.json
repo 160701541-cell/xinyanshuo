@@ -1,12 +1,12 @@
 {
   "schema": 1,
   "channel": "android-preview",
-  "revision": 189,
+  "revision": 190,
   "minimum_android_code": 1176,
   "maximum_android_code": 1176,
-  "sha256": "139da4fc2109cf0a32f0607331f28937a4e5037eb190440282390482b72c0250",
-  "size_bytes": 21720032,
-  "pack_url": "https://160701541-cell.github.io/xinyanshuo/android-preview/canglan-content-rev-189.pck",
-  "notes": "苍岚原APK176 rev188：真机P0首轮改进：默认角色HUD含生命、真实体力、背包/修炼和设置，采集和疾步有真实体力与冷却，仓库实物食物恢复生命，研发按钮默认隐藏。地形建筑人物缺陷仍待修复，手机继续QA。",
-  "signature": "ctwVFbUP+zJW8eaPbrbxR08fJ3KWMFIFWpnYzUAaninSWNkmivtMVLcU3IcNKvlFM/aE3S6wmY9sbPoSSM/2eHIinZz0ALAMU4mGhVpE5hSspVNWmDwUoFvFDEpXQn55G1r1XT11BjJiw1szWqXKKdN0/6hRdvwx+cgDbYWh5PTp2ged4IHpLmMl+WYDOcfFaC/+CtUut2WooiH4b3sxo32t4G0fqVvdNd4yH8n65JNZ3bQgPbfOTcpttC8wekjhMto6Afw45MIXdlJxBmpoL55R0iyONHVOsKwPgpDfs94KvK67ayDRkXAlqNPl3EgJgR3Y0WurYOhXhWu4VtbZusXE+4at3GLS04/Bv3lrYsB5+vv6t8tFPxDfbq386iSmOZqcjkRtwiaBukKKnljDPIMH6an6GciVymnvTjmoZ1+d/yWzDuy6RMtM57TcUVdJzuTtDl2mumXACdhZcSAA/z9iYFnSAIgOwbL4W7Es+Pf15fg4GrOHQfOi+ykWZgwp"
+  "sha256": "6fe2c6c126e3ac37a19b788695bcccba2e605e460882519cbff37b27e99c25e6",
+  "size_bytes": 21720928,
+  "pack_url": "https://160701541-cell.github.io/xinyanshuo/android-preview/canglan-content-rev-190.pck",
+  "notes": "苍岚原APK176 rev190：安卓蓝牙/USB游戏手柄支持（左摇杆移动、右摇杆视角、A互动X采集Y挖掘B疾步、LB视角RB背包、LT/RT快捷操作、Start/Select菜单），DPad+A/B能完整操作画质/帧率弹窗；热插拔、摇杆死区/灵敏度/反向持久化，触屏保留。真实手机手柄尚待验收。",
+  "signature": "dUEIl++DGnruBgKHhC5sM8q5JO7AbmRZ1nLS9DGY4hesIdBURBpL9RDRaWMclQgPe0LeQbnDcikL/F7BKE23QCxJSojPNdv5EgNKHkKnWmuvpIF9LQ+3t4jeWY/vpOgzy5IRT0gL+8hgwldJMcYdMX7BvLMQ6APHr2NYY2ch0d3LhG/n2OuE2DO4fw4lJGBfi/WLUMOkW77uXgy21oMx0uj84MKpLPNiMHdMWH+GSy0NMcipiei8keH9WGedIG5ZJqeiTNZWw6EyTvPR70xo6jxZ/DbOcVWqWCMWeBkOxk3tFAk8xICmXQNZk3KIBawS7Uy3gNgkiQmpFtvQNFB8d8jpOZ7lzec5SoewfadnsYtDg4BbQYRtBQpB8dac5uwis8oEZNyqatFWWUXipmAiTVNPf3IAMgiPBI21db6o51OAIvmO94evkx36LW6JNKqJz0HnKgpz8EzxuGRao/ygcUHuyMsilSpAVS4VM3M6JdgZUrbT5uAUsqX5KGec11FY"
 }
