@@ -183,7 +183,7 @@ func _run() -> void:
     _fail(177,"REV193_CHUNK_COLLISION_IS_NOT_GENERATED_FROM_TERRAIN_TRIMESH")
     return
   var external_height_before: float=float(terrain.call("height_at",exterior.x,exterior.z))
-  var resources_before: int=int((terrain.get("spoil_bag") as Dictionary).get("topsoil",0))
+  var resources_before: int=int((terrain.get("stream_spoil_bag") as Dictionary).get("topsoil",0))
   var original_save_path: String=String(terrain.get("stream_save_path"))
   terrain.set("stream_save_path","user://rev193_qa_ephemeral_deltas.json")
   (terrain.get("stream_cut_cells") as Dictionary).clear()
@@ -195,7 +195,7 @@ func _run() -> void:
       (external_height_before-0.45))>0.002:
     _fail(179,"REV193_EXTERIOR_MESH_AND_HEIGHTFIELD_DISAGREE_AFTER_DIG")
     return
-  if int((terrain.get("spoil_bag") as Dictionary).get("topsoil",0))!=resources_before+1:
+  if int((terrain.get("stream_spoil_bag") as Dictionary).get("topsoil",0))!=resources_before+1:
     _fail(180,"REV193_EXTERIOR_MINING_DOES_NOT_PRODUCE_CONSERVED_SOIL")
     return
   terrain.call("stream_around",Vector3(460,0,460),true)
@@ -208,6 +208,10 @@ func _run() -> void:
     String(excavation.get("cell","")),0))
   if loaded_cut!=1:
     _fail(182,"REV193_MINED_CHUNK_DELTA_DOES_NOT_SURVIVE_FILE_RELOAD")
+    return
+  if not terrain.call("inventory_conserved") or int(
+      (terrain.get("stream_spoil_bag") as Dictionary).get("topsoil",0))!=resources_before+1:
+    _fail(186,"REV193_RELOADING_CHUNK_DUPLICATED_OR_LOST_REAL_SOIL_MASS")
     return
   terrain.call("stream_around",exterior,true)
   if absf(float(terrain.call("height_at",exterior.x,exterior.z))-
