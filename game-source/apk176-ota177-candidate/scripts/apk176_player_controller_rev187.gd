@@ -205,7 +205,7 @@ func _build_game_hud() -> void:
   var bg := PanelContainer.new()
   bg.name = "LiveGameVitalsRev188"
   bg.position = Vector2(16, 12)
-  bg.custom_minimum_size = Vector2(330, 78)
+  bg.custom_minimum_size = Vector2(347, 122)
   bg.add_theme_stylebox_override("panel",_rounded(Color(0.05,0.10,0.12,0.87),12))
   hud.add_child(bg)
   var margin := MarginContainer.new()
@@ -214,17 +214,54 @@ func _build_game_hud() -> void:
   margin.add_theme_constant_override("margin_top",8)
   margin.add_theme_constant_override("margin_bottom",8)
   bg.add_child(margin)
+  var meters := VBoxContainer.new()
+  meters.add_theme_constant_override("separation",4)
+  margin.add_child(meters)
   _game_status=Label.new()
   _game_status.add_theme_font_size_override("font_size",17)
-  _game_status.text="心魇说 · 凡人\n体力载入中 · 生命/灵力未实现"
-  margin.add_child(_game_status)
+  _game_status.text="心魇说 · 凡人"
+  meters.add_child(_game_status)
+  var hp_row:=HBoxContainer.new()
+  meters.add_child(hp_row)
+  var hp_caption:=Label.new()
+  hp_caption.text="生命  "
+  hp_row.add_child(hp_caption)
+  _health_bar=ProgressBar.new()
+  _health_bar.name="RealHealthFromFallDamageAndFood"
+  _health_bar.max_value=100
+  _health_bar.value=100
+  _health_bar.show_percentage=false
+  _health_bar.custom_minimum_size=Vector2(242,13)
+  _health_bar.add_theme_stylebox_override("background",_rounded(Color("#243133"),5))
+  _health_bar.add_theme_stylebox_override("fill",_rounded(Color("#b95f59"),5))
+  hp_row.add_child(_health_bar)
+  var stamina_row:=HBoxContainer.new()
+  meters.add_child(stamina_row)
+  var energy_caption:=Label.new()
+  energy_caption.text="体力  "
+  stamina_row.add_child(energy_caption)
+  _energy_bar=ProgressBar.new()
+  _energy_bar.name="ActualWorldCitizenEnergy"
+  _energy_bar.max_value=100
+  _energy_bar.value=100
+  _energy_bar.show_percentage=false
+  _energy_bar.custom_minimum_size=Vector2(242,13)
+  _energy_bar.add_theme_stylebox_override("background",_rounded(Color("#243133"),5))
+  _energy_bar.add_theme_stylebox_override("fill",_rounded(Color("#a8bc68"),5))
+  stamina_row.add_child(_energy_bar)
+  _spirit_notice=Label.new()
+  _spirit_notice.text="灵力：未检测灵根（未解锁）"
+  _spirit_notice.add_theme_font_size_override("font_size",14)
+  _spirit_notice.add_theme_color_override("font_color",Color("#aec5d1"))
+  meters.add_child(_spirit_notice)
   _game_menu_button("角色",16,"character")
   _game_menu_button("背包",119,"inventory")
   _game_menu_button("修炼",222,"cultivation")
+  _game_menu_button("菜单",325,"settings")
   _game_sheet=PanelContainer.new()
   _game_sheet.name="Rev188CharacterInventoryCultivationMenu"
   _game_sheet.position=Vector2(16,150)
-  _game_sheet.custom_minimum_size=Vector2(355,220)
+  _game_sheet.custom_minimum_size=Vector2(405,245)
   _game_sheet.visible=false
   _game_sheet.add_theme_stylebox_override("panel",_rounded(Color(0.06,0.11,0.13,0.95),12))
   hud.add_child(_game_sheet)
@@ -241,7 +278,36 @@ func _build_game_hud() -> void:
   close.text="关闭"
   close.pressed.connect(func(): _game_sheet.visible=false)
   v.add_child(close)
+  _quality_sheet_button=Button.new()
+  _quality_sheet_button.name="QualitySettingsFromGameMenu"
+  _quality_sheet_button.text="画质 / 帧率"
+  _quality_sheet_button.pressed.connect(func(): room.call("_toggle_quality_settings"))
+  v.add_child(_quality_sheet_button)
+  _developer_sheet_button=Button.new()
+  _developer_sheet_button.name="OptionalDeveloperTools"
+  _developer_sheet_button.text="开发工具（默认关闭）"
+  _developer_sheet_button.pressed.connect(func(): room.call("_set_dev_ui_visible",not bool(room.get("developer_ui_visible"))))
+  v.add_child(_developer_sheet_button)
+  _add_game_action("GatherAction","采集",Callable(self,"gather_action"))
+  _add_game_action("DashAction","疾步",Callable(self,"dash_action"))
+  _add_game_action("DigAction","挖掘",Callable(self,"dig"))
+  _add_game_action("InteractAction","互动",Callable(self,"interact"))
+  _add_game_action("ViewAction","视角",Callable(self,"toggle_perspective"))
+  _add_game_action("LockedArt","招式锁定",func(): _open_game_menu("cultivation"))
+  (_game_actions["LockedArt"] as Button).disabled=true
   _refresh_game_hud()
+
+func _add_game_action(key: String, label: String, callback: Callable) -> void:
+  var button:=Button.new()
+  button.name="MobileGameplay_"+key
+  button.text=label
+  button.size=Vector2(89,57)
+  button.add_theme_font_size_override("font_size",18)
+  button.add_theme_stylebox_override("normal",_rounded(Color(0.09,0.21,0.19,0.86),11))
+  button.add_theme_stylebox_override("disabled",_rounded(Color(0.14,0.17,0.18,0.70),11))
+  button.pressed.connect(callback)
+  hud.add_child(button)
+  _game_actions[key]=button
 
 func _open_game_menu(mode: String) -> void:
   if _game_sheet_mode==mode and _game_sheet.visible:
