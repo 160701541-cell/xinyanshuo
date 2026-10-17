@@ -296,6 +296,13 @@ func _capture() -> void:
   if opponent_ui==null or not opponent_ui.visible or head_label==null:
     _fail("REV204_REAL_TARGET_HEALTH_MANA_MISSING_FROM_ENGINE_FRAME")
     return
+  # Let the mobile third-person duel camera ease from the original 9.5m
+  # walk distance to an immersive 6.4m focus while preserving user zoom.
+  for i in range(12):
+    player.call("step",0.105)
+  if float(player.get("_combat_camera_pull"))>-1.5:
+    _fail("REV204_REAL_DUEL_CAMERA_STILL_TOO_FAR_TO_SEE_ACTUAL_MAGIC")
+    return
   var before_hp: int=int(player.get("_spar_enemy_health"))
   if not bool(player.call("sword_attack")) or (
       int(player.get("_spar_enemy_health"))>=before_hp):
@@ -325,14 +332,35 @@ func _capture() -> void:
   if not bool(spell.get("ok",false)) or not bool(spell.has("projectile")):
     _fail("REV204_REAL_MANA_PAID_QI_PROJECTILE_NOT_SPAWNED_IN_ENGINE")
     return
-  player.call("_step_spell_projectiles",0.055)
+  player.call("_step_spell_projectiles",0.050)
+  var flying: Array=player.get("_spell_projectiles")
+  if flying.size()!=1 or (not is_instance_valid(flying[0]["node"])):
+    _fail("REV204_MAGIC_PROJECTILE_DISAPPEARED_BEFORE_TRUE_MIDAIR_CAPTURE")
+    return
+  var impact_health_before: int=int(player.get("_spar_enemy_health"))
+  # Freeze only the controllable hero for TWO renderer frames to capture a
+  # real spatial bolt in transit (Godot engine frame, no Photoshop composite).
+  # Restore simulation immediately afterward and check actual damage.
+  player.set("_enabled",false)
   for i in range(2):
     await process_frame
   await RenderingServer.frame_post_draw
   if not _save("real_apk176_rev204_mana_paid_qi_bolt_midair.png"):
     _fail("REV204_REAL_QI_PROJECTILE_3D_MIDFLIGHT_SCREENSHOT_MISSING")
     return
+  player.set("_enabled",true)
+  player.call("_step_spell_projectiles",0.18)
+  if int(player.get("_spar_enemy_health"))>=impact_health_before:
+    _fail("REV204_MIDFLIGHT_BOLT_FAILED_TO_DEAL_ACTUAL_MANA_PAID_HIT_DAMAGE")
+    return
+  for i in range(2):
+    await process_frame
+  await RenderingServer.frame_post_draw
+  if not _save("real_apk176_rev204_qi_bolt_real_impact_damage.png"):
+    _fail("REV204_QI_BOLT_REAL_IMPACT_AND_DAMAGE_FRAME_MISSING")
+    return
   print("PASS_REV204_REAL_GODOT_RENDERED_MANA_PAID_SPIRIT_BOLT_IN_FLIGHT")
+  print("PASS_REV204_REAL_GODOT_MIDFLIGHT_AND_IMPACT_FINITE_MANA_REAL_HP_DAMAGE_FRAMES")
   player.call("stop_practice")
   arts.set("player_data",saved)
   arts.call("save_state")
