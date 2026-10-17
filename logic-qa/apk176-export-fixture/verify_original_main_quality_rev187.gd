@@ -1772,7 +1772,7 @@ func _run() -> void:
     _fail(319,"REV205_REAL_WOOD_PAID_CRAFT_AND_EQUIPMENT_SLOT_NOT_FUNCTIONAL")
     return
   var item_grid: ItemList=game_hud.get_node_or_null(
-      "Rev188CharacterInventoryCultivationMenu/VBoxContainer/ActualSourcedBackpack24StackSelectableSlots")
+      "Rev188CharacterInventoryCultivationMenu/Rev205RealBackpackAndCharacterGameSheet/ActualSourcedBackpack24StackSelectableSlots")
   if player.get("_game_sheet").visible and String(
       player.get("_game_sheet_mode"))=="inventory":
     player.call("_open_game_menu","inventory")
