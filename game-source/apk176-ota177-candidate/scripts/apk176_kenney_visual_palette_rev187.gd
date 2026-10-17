@@ -5,6 +5,7 @@ extends RefCounted
 ## AND per individual world entity using MultiMesh instance colour.
 const SWATCHES := {
  "grass": Color("#7caf67"), "grass_dark": Color("#4f8950"),
+ "grass_deep": Color("#356d3c"), "grass_light": Color("#bfd581"),
  "grass_sun": Color("#acc977"), "grass_yellow": Color("#b9be69"),
  "grass_shadow": Color("#3b7350"),
  "leaf": Color("#499452"), "leaf_spring": Color("#9abf52"),
