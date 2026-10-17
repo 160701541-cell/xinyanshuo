@@ -122,6 +122,37 @@ func _capture() -> void:
   if not _save("real_apk176_rev187_worksite_same_position_close.png"):
     _fail("CLOSE_FRAME_RENDER_FAIL")
     return
+  # REV197: actual original APK176 license-backed CHARACTER is in the
+  # camera frame in third person and follows a fixed 45-degree iso orbit.
+  # Screenshots are Mesa/Linux Godot frames, NEVER user Adreno phone photos.
+  player.call("_set_mode","third")
+  player.set("_yaw",0.65)
+  player.set("_pitch",0.41)
+  player.set("_distance",5.2)
+  player.call("update_camera")
+  for i in range(7):
+    await process_frame
+  await RenderingServer.frame_post_draw
+  var avatar: Node3D=player.get("actor")
+  var head_point: Vector3=avatar.position+Vector3.UP*1.0
+  if not avatar.visible or camera.is_position_behind(head_point):
+    _fail("REV197_THIRD_PERSON_AVATAR_ACTUALLY_INVISIBLE_IN_RENDERING_CAMERA")
+    return
+  if not _save("real_apk176_rev197_licensed_player_visible_close.png"):
+    _fail("REV197_ACTUAL_THIRD_PERSON_FRAME_NOT_CAPTURED")
+    return
+  player.call("toggle_iso45")
+  player.call("update_camera")
+  for i in range(8):
+    await process_frame
+  await RenderingServer.frame_post_draw
+  if player.get("camera_mode")!="iso" or absf(float(player.get("_pitch"))-PI/4.0)>0.002:
+    _fail("REV197_ACTUAL_45DEG_FOLLOW_CAMERA_NOT_45DEG")
+    return
+  if not _save("real_apk176_rev197_follow_player_45deg_view.png"):
+    _fail("REV197_REAL_45DEG_FRAME_NOT_CAPTURED")
+    return
+  print("PASS_REV197_ORIGINAL_GODOT_ENGINE_VISIBLE_ANIMATED_PLAYER_CLOSE_AND_45DEG_REAL_FRAMES")
   print("PASS_REV187_TWO_GENUINE_ENGINE_RENDERED_WORKSITE_FRAMES_NOT_PHONE_TESTS")
   base.queue_free()
   await process_frame
