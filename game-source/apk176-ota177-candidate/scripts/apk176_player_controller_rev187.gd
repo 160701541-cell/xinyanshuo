@@ -30,10 +30,24 @@ var _flight_m: float = 0.0
 var _view_pitch_reversed: bool = true
 var _yaw: float = 0.43
 var _pitch: float = 0.38
-var _distance: float = 12.0
+var _distance: float = 9.5
 var _joystick := Vector2.ZERO
 var _joystick_touch: int = -1
 var _look_touch: int = -1
+# P0 rev197: actual camera/player locomotion and viewport touch ownership.
+var _camera_angle_locked: bool = false
+var _touches_global: Dictionary = {}
+var _pinch_zoom_events: int = 0
+var _first_fov: float = 57.0
+var _jump_height: float = 0.0
+var _jump_velocity: float = 0.0
+var _jump_count: int = 0
+var _landing_count: int = 0
+var _soar_altitude: float = 0.0
+var _soar_distance_m: float = 0.0
+var _blocked_wall_steps: int = 0
+var _collision_probe: CapsuleShape3D
+var _camera_sphere: SphereShape3D
 var _right_touches: Dictionary = {}
 var _last_pinch: float = -1.0
 var _follow_npc: bool = false
@@ -117,6 +131,11 @@ func initialize(active_room: Node) -> void:
   terrain = room.get("terrain_world")
   name = "PlayerActualTouchAndPerspectiveController"
   _spawn_player()
+  _collision_probe=CapsuleShape3D.new()
+  _collision_probe.radius=0.28
+  _collision_probe.height=1.58
+  _camera_sphere=SphereShape3D.new()
+  _camera_sphere.radius=0.24
   _load_pad_options()
   _create_hud()
   if not Input.joy_connection_changed.is_connected(_on_pad_hotplug):
@@ -228,10 +247,19 @@ func _create_hud() -> void:
   _new_button("ZoomOutButton","视野 －",128,Callable(self,"zoom_out"))
   _new_button("InteractButton","互动",132,Callable(self,"interact"))
   _new_button("DigButton","挖地层",132,Callable(self,"dig"))
+  # These are actual ALWAYS-VISIBLE phone controls, never hidden under
+  # the previous development-panel toggle.
+  _new_button("Iso45Button","俯视45°",103,Callable(self,"toggle_iso45"))
+  _new_button("GodShortcutButton","上帝",103,Callable(self,"toggle_god_view"))
+  _new_button("SoarAvatarButton","飞行",103,Callable(self,"toggle_avatar_flight"))
+  _new_button("RealJumpButton","跳跃",103,Callable(self,"jump_action"))
+  _new_button("CameraLockButton","锁视角",103,Callable(self,"toggle_camera_lock"))
+  _new_button("PhoneZoomInButton","放大＋",103,Callable(self,"zoom_in"))
+  _new_button("PhoneZoomOutButton","缩小－",103,Callable(self,"zoom_out"))
   var caption := Label.new()
   caption.name = "InteractionResultLiveHUD"
   caption.add_theme_font_size_override("font_size",18)
-  caption.text = "左摇杆走路 · 右边滑动看世界 · 双指缩放 · 可切第一视角"
+  caption.text = "左侧移动｜右侧旋转｜双指缩放｜俯视45°｜跳跃／飞行"
   hud.add_child(caption)
   notice = caption
   _build_game_hud()
@@ -416,6 +444,11 @@ func _refresh_game_hud() -> void:
   (_game_actions["EvadeAction"] as Button).disabled=_spar_stage=="inactive" or _dodge_cd>0 or energy<7
   (_game_actions["GuardAction"] as Button).text="防御中" if _guard_time>0 else "格挡"
   (_game_actions["EvadeAction"] as Button).text="闪避中" if _dodge_time>0 else "闪避"
+  (buttons["RealJumpButton"] as Button).disabled=_jump_height>0.0 or camera_mode in ["fly","god","soar"] or energy<4
+  (buttons["CameraLockButton"] as Button).text="解锁视角" if _camera_angle_locked else "锁视角"
+  (buttons["Iso45Button"] as Button).text="第三人称" if camera_mode=="iso" else "俯视45°"
+  (buttons["SoarAvatarButton"] as Button).text="降落" if camera_mode=="soar" else "飞行"
+  (buttons["GodShortcutButton"] as Button).text="退出上帝" if camera_mode=="god" else "上帝"
   if _spirit_notice!=null:
     _spirit_notice.text="灵力：未检测灵根 | 切磋 %s · %s" % [
       _spar_stage,_spar_last_outcome] if _spar_stage!="inactive" else "灵力：未检测灵根（未解锁）"
@@ -840,7 +873,22 @@ func _layout_hud() -> void:
   (buttons["FlyUpButton"] as Button).position=Vector2(size.x-145,maxf(215,size.y-310))
   (buttons["FlyDownButton"] as Button).position=Vector2(size.x-145,maxf(275,size.y-250))
   (buttons["FlyUpButton"] as Button).visible=camera_mode=="fly"
-  (buttons["FlyDownButton"] as Button).visible=camera_mode=="fly"
+  (buttons["FlyDownButton"] as Button).visible=camera_mode in ["fly","soar"]
+  # Top-right first row remains original account/menu HUD; the second row
+  # is permanently usable on touch devices even with dev UI turned OFF.
+  var quick_keys: Array[String]=["Iso45Button","GodShortcutButton",
+    "SoarAvatarButton","RealJumpButton","CameraLockButton",
+    "PhoneZoomInButton","PhoneZoomOutButton"]
+  var quick_start: float=maxf(454.0,size.x-float(quick_keys.size())*108.0-18.0)
+  for i in range(quick_keys.size()):
+    var quick: Button=buttons[quick_keys[i]]
+    quick.position=Vector2(quick_start+float(i)*108.0,81)
+    quick.size=Vector2(103,45)
+    quick.visible=true
+  # Keep flight Up/Down separately accessible beneath the right-side strip.
+  (buttons["FlyUpButton"] as Button).position=Vector2(size.x-145,152)
+  (buttons["FlyDownButton"] as Button).position=Vector2(size.x-145,208)
+  # Original always-on game HUD is not a developer-only QA control.
   # Five compact top-right tabs, not ten QA buttons scattered over scenery.
   var menu_names:=["角色","背包","修炼","菜单"]
   var menu_x: float=maxf(365.0,size.x-4.0*104.0-22.0)
@@ -1186,14 +1234,10 @@ func _on_right_world_gui(event: InputEvent) -> void:
     _look_zone.accept_event()
   elif event is InputEventScreenDrag and _right_touches.has(event.index):
     _gui_input_events += 1
-    _right_touches[event.index] = event.position
-    if _right_touches.size() >= 2:
-      var positions: Array = _right_touches.values()
-      var pinch_distance: float = (positions[0] as Vector2).distance_to(positions[1] as Vector2)
-      if _last_pinch>1.0:
-        zoom_ratio(pinch_distance/_last_pinch)
-      _last_pinch = pinch_distance
-    elif event.index == _look_touch:
+    _right_touches[event.index]=event.position
+    # Global _input handles the pinch BEFORE native GUI hit-testing. A
+    # gesture can now straddle left and right screen zones; never double zoom.
+    if _touches_global.size()<2 and event.index==_look_touch:
       turn_view(event.relative)
     _look_zone.accept_event()
   elif event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT:
@@ -1681,6 +1725,8 @@ func set_enabled(value: bool) -> void:
     _auto_walking = false
     _release_stick()
     _right_touches.clear()
+    _touches_global.clear()
+    _last_pinch=-1.0
     _look_touch = -1
 
 func stats() -> Dictionary:
