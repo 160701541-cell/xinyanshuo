@@ -8,7 +8,7 @@ on:
   workflow_dispatch:
 permissions:
   contents: write
-  actions: read
+  actions: write
 concurrency:
   group: canglan-original-game-ota-rev206
   cancel-in-progress: false
@@ -553,6 +553,19 @@ jobs:
             fi
             sleep 3
           done
+      # A signed [skip ci] commit authored by GITHUB_TOKEN does not fire
+      # another push-triggered workflow. Dispatch the existing official
+      # Pages deployment explicitly, otherwise the user cannot fetch rev206.
+      - name: Deploy official signed rev206 PCK to GitHub Pages after atomic main push
+        if: env.REV206_ALREADY_PUBLISHED == 'false'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(python3 -c "import json;print(json.load(open('android-preview/latest.json'))['revision'])")" = 206
+          gh workflow run canglan-official-pages-ota-deploy.yml --ref main
+          echo 'PASS_REV206_OFFICIAL_PAGES_DEPLOY_WORKFLOW_DISPATCHED_NOT_YET_HTTP_VERIFIED'
       - name: Preserve genuine rev206 Godot QA without signing secrets
         if: always()
         uses: actions/upload-artifact@v4
