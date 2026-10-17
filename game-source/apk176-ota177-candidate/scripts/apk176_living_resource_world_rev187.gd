@@ -118,6 +118,8 @@ var licensed_understory_triangle_budget: int=0
 var licensed_understory_locations: Array[Transform3D]=[]
 var licensed_understory_draws: Array[MultiMeshInstance3D]=[]
 var licensed_understory_source_offsets: Array[Transform3D]=[]
+var licensed_understory_render_indices: Array[int]=[]
+var licensed_understory_unplantable: Dictionary={}
 const SPIRIT_CC0_SOURCES: Dictionary={
   "flower":"res://canglan_rev187/cc0_spirit/herb/flower.glb",
   "flower2":"res://canglan_rev187/cc0_spirit/herb/flower2.glb",
@@ -880,53 +882,60 @@ func _spawn_licensed_living_understory() -> void:
     draw.cast_shadow=GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
     draw.visibility_range_end=73.0
     world.add_child(draw)
-    # Assign the real per-entity transforms AFTER the MultiMesh draw node is
-    # attached to RenderingServer. Some Godot4 mobile backend allocations
-    # zero/init their instance buffers on first render registration, so
-    # writing them while freestanding can leave IDENTITY at world (0,0,0).
-    for i in range(locations.size()):
-      draw.multimesh.set_instance_transform(i,locations[i]*offset)
+    # Subscene is alive; the centralized compact renderer will initialize
+    # all only-visible slots after every vendor part is registered.
     licensed_understory_draws.append(draw)
     licensed_understory_source_offsets.append(offset)
     licensed_understory_draw_parts+=1
   licensed_understory_count=locations.size()
   licensed_understory_triangle_budget=locations.size()*source_triangles
+  _rebuild_visible_shrub_gpu_slots()
   if licensed_understory_count<24:
     asset_errors.append("REV207_UNDERSTORY_ALL_LICENSED_BUSHES_MISSING")
 
-# A live excavation destroys only the currently affected living
-# understorey instance; never leave floating plants on mined/compacted soil.
-# The original licensed GLB part survives and the instance GPU slot is
-# hidden until ecological replanting yields a new viable location. No loot.
+# MultiMesh may round-trip any hidden zero/small-scale instance as an
+# IDENTITY matrix at world origin. Instead of making fake invisible objects,
+# COMPACT the live natural shrub slots and set visible_instance_count. This
+# is the genuine GPU culling contract and preserves authored GLB transforms.
+func _rebuild_visible_shrub_gpu_slots() -> void:
+  if licensed_understory_draws.is_empty():
+    return
+  licensed_understory_render_indices.clear()
+  for original_id in range(licensed_understory_locations.size()):
+    if not licensed_understory_unplantable.has(original_id):
+      licensed_understory_render_indices.append(original_id)
+  for draw_idx in range(licensed_understory_draws.size()):
+    var mm: MultiMesh=licensed_understory_draws[draw_idx].multimesh
+    var source: Transform3D=licensed_understory_source_offsets[draw_idx]
+    for active_slot in range(licensed_understory_render_indices.size()):
+      var natural_id: int=licensed_understory_render_indices[active_slot]
+      mm.set_instance_transform(active_slot,
+        licensed_understory_locations[natural_id]*source)
+    # Slots beyond visible count are physically culled, not tiny meshes
+    # at (0,0,0). Keep full capacity for later physical regrowth.
+    mm.visible_instance_count=licensed_understory_render_indices.size()
+
 func _on_understory_terrain_changed(at: Vector3,radius: float) -> void:
   if quality==null or licensed_understory_draws.is_empty():
     return
+  var changed: bool=false
   for idx in range(licensed_understory_locations.size()):
-    var original: Transform3D=licensed_understory_locations[idx]
-    var pos: Vector3=original.origin
+    var pos: Vector3=licensed_understory_locations[idx].origin
     if Vector2(pos.x-at.x,pos.z-at.z).length()>radius+1.5:
       continue
-    var valid: bool=bool(quality.call("_natural_plantable",pos.x,pos.z))
-    for draw_idx in range(licensed_understory_draws.size()):
-      var batch: MultiMesh=licensed_understory_draws[draw_idx].multimesh
-      # Source transform stored independently per immutable vendor mesh part.
-      # An exactly-singular zero Basis can roundtrip as IDENTITY in the
-      # Godot4.4 MultiMesh buffer, rendering a full bush at world origin.
-      # Use a tiny but invertible source-agnostic 0.1-mm mesh below grade.
-      var hidden: Transform3D=Transform3D(Basis.IDENTITY.scaled(
-        Vector3.ONE*0.0001),Vector3(0.0,-6.0,0.0))
-      batch.set_instance_transform(idx,original*licensed_understory_source_offsets[
-        draw_idx] if valid else hidden)
+    var exists: bool=licensed_understory_unplantable.has(idx)
+    var viable: bool=bool(quality.call("_natural_plantable",pos.x,pos.z))
+    if not viable and not exists:
+      licensed_understory_unplantable[idx]=true
+      changed=true
+    elif viable and exists:
+      licensed_understory_unplantable.erase(idx)
+      changed=true
+  if changed:
+    _rebuild_visible_shrub_gpu_slots()
 
 func _living_shrub_count() -> int:
-  if licensed_understory_draws.is_empty():
-    return 0
-  var mm: MultiMesh=licensed_understory_draws[0].multimesh
-  var count: int=0
-  for index in range(mm.instance_count):
-    if absf(mm.get_instance_transform(index).basis.determinant())>0.0000001:
-      count+=1
-  return count
+  return licensed_understory_render_indices.size()
 
 func _spawn_spirit_resource_nodes() -> void:
   if spirit_resources==null or not bool(spirit_resources.get("_loaded")):
