@@ -1380,8 +1380,8 @@ func _run() -> void:
     return
   var spirit_npcs: Dictionary=spir.get("npc_visuals")
   var spirit_records: Dictionary=spir.get("npc_data")
-  if spirit_npcs.size()!=12 or spirit_records.size()!=12:
-    _fail(264,"REV201_VISIBLE_SPIRIT_NPCS_DO_NOT_HAVE_INDEPENDENT_IDENTITY_AND_TIME_STATE")
+  if spirit_npcs.size()!=12 or spirit_records.size()!=12 or int(world_report.get("physical_cultivator_colliders",0))!=12:
+    _fail(264,"REV201_NPCS_MISSING_INDEPENDENT_ENTITY_ID_HOURLY_AUTHORITY_OR_PHYSICAL_COLLIDERS")
     return
   for spirit_id in spirit_npcs:
     var spirit_avatar: Node3D=spirit_npcs[spirit_id]["actor"]
