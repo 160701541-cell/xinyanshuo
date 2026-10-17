@@ -942,7 +942,7 @@ func _run() -> void:
         int(living.get("region_built_bp",-1))!=0):
       _fail(364,"REV207_UNPAID_HOUSE_CANNOT_CLEAR_WILDERNESS_AND_GRASS")
       return
-  # Source-hashed Quaternius source GLBs do not admit a valid instancing
+  # Source-hashed Quaternius red-fungal source GLBs do not admit a valid instancing
   # transform in this Godot build (even bulk GPU writes return IDENTITY).
   # Require ACTUAL physically positioned vendor mesh scene instances:
   # all original UVs/materials, 200 genuine visual bushes (no fake labels).
@@ -965,8 +965,8 @@ func _run() -> void:
     var site_pos: Vector3=soil_sites[plant_index]
     if not is_instance_valid(plant) or not plant.is_inside_tree() or (
         plant.get_parent()!=world) or (
-        String(plant.get_meta("source_license",""))!="Quaternius-CC0") or (
-        String(plant.get_meta("source_prefab",""))!="bush.glb") or (
+        String(plant.get_meta("source_license",""))!="Kenney-CC0") or (
+        String(plant.get_meta("source_prefab",""))!="tree_oak.glb") or (
         plant.find_children("*","MeshInstance3D",true,false).is_empty()):
       _fail(371,"REV207_VEGETATION_NOT_REAL_LICENSED_GLTF_3D_MESH_"+str(
         plant_index))
@@ -1001,7 +1001,7 @@ func _run() -> void:
       "healthy":healthy_stems,"reported":report.get(
       "rev207_real_cc0_shrub_live_after_terrain_edits",-1)}))
     return
-  print("PASS_REV207_TRUE_LICENSED_QUATERNIUS_SHRUB_UNDERSTORY_NONBUILDING_BOUNDED_REAL_SOURCE_GLTF_GEOMETRY")
+  print("PASS_REV208_TRUE_LICENSED_KENNEY_GREEN_SAPLING_NONBUILDING_BOUNDED_REAL_SOURCE_GLTF_GEOMETRY")
   print("PASS_REV207_TRUE_MAIN_50000KM2_5000_ROOT_RATIO_BODY_CULTIVATION_5_SECTS_4_REAL_ORE_BEAST_GUARDS")
   if not bool(report.get("persistent_city_population_is_statistical_only",false)):
     _fail(331,"REV207_5000_MORTALS_MUST_BE_STATISTICAL_NOT_5000_GODOT_NODES")
