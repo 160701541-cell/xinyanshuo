@@ -1,12 +1,12 @@
 {
   "schema": 1,
   "channel": "android-preview",
-  "revision": 190,
+  "revision": 191,
   "minimum_android_code": 1176,
   "maximum_android_code": 1176,
-  "sha256": "6fe2c6c126e3ac37a19b788695bcccba2e605e460882519cbff37b27e99c25e6",
-  "size_bytes": 21720928,
-  "pack_url": "https://160701541-cell.github.io/xinyanshuo/android-preview/canglan-content-rev-190.pck",
-  "notes": "苍岚原APK176 rev190：安卓蓝牙/USB游戏手柄支持（左摇杆移动、右摇杆视角、A互动X采集Y挖掘B疾步、LB视角RB背包、LT/RT快捷操作、Start/Select菜单），DPad+A/B能完整操作画质/帧率弹窗；热插拔、摇杆死区/灵敏度/反向持久化，触屏保留。真实手机手柄尚待验收。",
-  "signature": "dUEIl++DGnruBgKHhC5sM8q5JO7AbmRZ1nLS9DGY4hesIdBURBpL9RDRaWMclQgPe0LeQbnDcikL/F7BKE23QCxJSojPNdv5EgNKHkKnWmuvpIF9LQ+3t4jeWY/vpOgzy5IRT0gL+8hgwldJMcYdMX7BvLMQ6APHr2NYY2ch0d3LhG/n2OuE2DO4fw4lJGBfi/WLUMOkW77uXgy21oMx0uj84MKpLPNiMHdMWH+GSy0NMcipiei8keH9WGedIG5ZJqeiTNZWw6EyTvPR70xo6jxZ/DbOcVWqWCMWeBkOxk3tFAk8xICmXQNZk3KIBawS7Uy3gNgkiQmpFtvQNFB8d8jpOZ7lzec5SoewfadnsYtDg4BbQYRtBQpB8dac5uwis8oEZNyqatFWWUXipmAiTVNPf3IAMgiPBI21db6o51OAIvmO94evkx36LW6JNKqJz0HnKgpz8EzxuGRao/ygcUHuyMsilSpAVS4VM3M6JdgZUrbT5uAUsqX5KGec11FY"
+  "sha256": "0eac268f7269ad36ea4d7d4169a6fbeb46076a0a9fdb6f8219596f90cc88496e",
+  "size_bytes": 21723104,
+  "pack_url": "https://160701541-cell.github.io/xinyanshuo/android-preview/canglan-content-rev-191.pck",
+  "notes": "苍岚原APK176 rev191：第一阶段修复手机截图方形地面断崖，移除22米竖直假地壳；远景山地LOD在x/z±46m精准裁分共享高度并避免与可挖地面叠面；草地从五片胡茬升级到11片宽弯叶聚簇草甸，排除水/道路/施工地/陡坡。当前仅修可视接缝与近处植物，真实无限区块与可住人的修仙房屋仍未完成，等待手机真机验收。",
+  "signature": "mDsbeq9+VlaS4Mco+dJW37Olt6Bitb+YcUciY+2nVcCq46oBkOjL2RE6Q/z6ZUzI8U2tDSJ8d664ZIr5r5N88hMNYlx8hJLpGEMWV5fgx4xfqCDFZGizRERxeXw7gs4rW3IcrEgezEm0B+foOSTGpEhbood3ARwd7CyhzXu/HEG0jrnkGjEq7nYkJzHpsmkVE2MY5i0yh33vBkhhMsGmyW7zrVk4p3BD7zmHqNeGbWAxTJI0wxxP7hyiJA22y120RlUQ23JrpA44ceeRbQrl9VFdRNrmW5aKbHqNX/Y3H64ZYaV3Rm5z2op6hY7j/idvOnSKwSDSeV6SDko5rf4qLcq1JyFRnGXcTiEgROsLsNC8w/PdWYZz7iL9sdbbyYp407PjWrjajJ6s8Mvc0SwjmKO+yBNEHYawenKxj6NZIA4fQTXz/Mh/8X/ApPHb14pBre33IaSLPasZzRZheueSPaZ+icsUM7jaU/a9PPNgk+tuM5MkLQ2WKoj/0Bd/q7II"
 }
