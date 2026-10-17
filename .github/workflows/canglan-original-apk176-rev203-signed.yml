@@ -1,3 +1,5 @@
+# rev203 reactivation after bounded original-Main landing regression QA run 39029837728 SUCCESS.
+# First signed build #39029641825 failed old single-tick rev199 landing QA, before signing.
 # rev203 deployment activation: full original-APK176 Godot QA-only run 39029314179 SUCCESS;
 # official update manifest must be rev202 before immutable RSA rev203 signing.
 # rev203 source QA: run 39028126321 SUCCESS; production target original APK176 code1176.
