@@ -445,11 +445,14 @@ func _attach_kenney_joystick(parent: Control, sprite: String,size: Vector2) -> b
 func _install_kenney_ui_theme() -> void:
   # Exact CC0 Kenney PNG files packed in the original APK176 signed OTA PCK,
   # not an external web skin or a newly generated approximation.
-  var normal: StyleBoxTexture=_kenney_style("button_brown.png",Color(0.75,0.89,0.80,0.98))
-  var depressed: StyleBoxTexture=_kenney_style("button_brown_close.png",Color(0.81,0.88,0.71,0.94))
-  var inactive: StyleBoxTexture=_kenney_style("button_grey.png",Color(0.65,0.70,0.72,0.72))
-  var frame: StyleBoxTexture=_kenney_style("panel_border_brown_detail.png",Color(0.73,0.93,0.76,0.95))
-  var dark: StyleBoxTexture=_kenney_style("panel_brown_dark.png",Color(0.27,0.42,0.39,0.96))
+  # Real engine screenshot review: original very pale beige Kenney buttons
+  # made light text almost illegible against the green land. Tint same
+  # immutable CC0 art with deep jade and warm-gold text for high contrast.
+  var normal: StyleBoxTexture=_kenney_style("button_brown.png",Color(0.30,0.47,0.40,0.98))
+  var depressed: StyleBoxTexture=_kenney_style("button_brown_close.png",Color(0.40,0.45,0.32,0.99))
+  var inactive: StyleBoxTexture=_kenney_style("button_grey.png",Color(0.28,0.32,0.32,0.76))
+  var frame: StyleBoxTexture=_kenney_style("panel_border_brown_detail.png",Color(0.43,0.67,0.55,0.98))
+  var dark: StyleBoxTexture=_kenney_style("panel_brown_dark.png",Color(0.21,0.34,0.31,0.96))
   if normal==null or depressed==null or inactive==null or frame==null or dark==null:
     push_warning("REV205_CC0_KENNEY_UI_PACK_ASSETS_MISSING_OR_NOT_PACKED")
     return
@@ -460,8 +463,10 @@ func _install_kenney_ui_theme() -> void:
     button.add_theme_stylebox_override("pressed",depressed)
     button.add_theme_stylebox_override("disabled",inactive)
     button.add_theme_font_size_override("font_size",16)
-    button.add_theme_color_override("font_color",Color("#f2e5c9"))
-    button.add_theme_color_override("font_hover_color",Color("#fff3db"))
+    button.add_theme_color_override("font_color",Color("#ffedc6"))
+    button.add_theme_color_override("font_hover_color",Color("#fff7e8"))
+    button.add_theme_color_override("font_pressed_color",Color("#ffffff"))
+    button.add_theme_color_override("font_disabled_color",Color("#b8c2b7"))
   for candidate in hud.find_children("*","PanelContainer",true,false):
     (candidate as PanelContainer).add_theme_stylebox_override("panel",dark)
   if joystick_ring!=null:
@@ -1875,12 +1880,13 @@ func _layout_hud() -> void:
   var quick_labels: Array=["俯视45°","地图","御剑",
     "跳跃","视角锁","放大+","缩小−",
     "解除锁定" if _locked_target!=null else "索敌"]
-  var quick_width: float=80.0
+  var quick_width: float=68.0
   var quick_start: float=maxf(376.0,size.x-float(quick_keys.size())*quick_width-16.0)
   for i in range(quick_keys.size()):
     var quick: Button=buttons[quick_keys[i]]
     quick.position=Vector2(quick_start+float(i)*quick_width,83.0)
-    quick.size=Vector2(76.0,43.0)
+    quick.size=Vector2(64.0,39.0)
+    quick.add_theme_font_size_override("font_size",14)
     quick.text=quick_labels[i]
     quick.visible=true
   # Keep flight Up/Down separately accessible beneath the right-side strip.
