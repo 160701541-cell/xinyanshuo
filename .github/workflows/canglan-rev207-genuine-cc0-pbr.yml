@@ -1,0 +1,61 @@
+name: Canglan REV207 Genuine Quaternius CC0 PBR 512px Material Pack - NO OTA
+on:
+  push:
+    branches: [feat/rev206-licensed-assets-spirit-roots-city-population]
+    paths:
+      - '.github/workflows/canglan-rev207-genuine-cc0-pbr.yml'
+      - 'tools/prepare_rev207_cc0_pbr_textures.py'
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: canglan-rev207-cc0-pbr-only
+  cancel-in-progress: false
+jobs:
+  prepare-and-audit-originals:
+    if: github.repository == '160701541-cell/xinyanshuo' && github.ref_name == 'feat/rev206-licensed-assets-spirit-roots-city-population'
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - name: Build actual Quaternius PBR material detail textures - never generate architectural mesh
+        run: |
+          set -euo pipefail
+          python3 -m pip install --quiet pillow==11.3.0
+          python3 tools/prepare_rev207_cc0_pbr_textures.py
+          python3 - <<'PY'
+          import hashlib,json
+          from pathlib import Path
+          d=Path("game-source/apk176-ota177-candidate/materials/rev207")
+          manifest=json.loads((d/"manifest.json").read_text())
+          assert manifest["schema"]==207 and manifest["count"]==9
+          assert manifest["bytes"] < 9*1024*1024
+          assert {x["role"] for x in manifest["maps"]}=={"albedo","normal","roughness","orm"}
+          for x in manifest["maps"]:
+              raw=(d/x["file"]).read_bytes()
+              assert raw.startswith(b"\x89PNG\r\n\x1a\n")
+              assert hashlib.sha256(raw).hexdigest()==x["output_sha256"]
+              assert x["width"]==512 and x["height"]==512
+          print("PASS_REV207_9_COLORFUL_AUTHENTIC_QUATERNIUS_PBR_TEXTURES_ALBEDO_NORMAL_ROUGHNESS_SOURCE_PINNED")
+          PY
+      - name: Commit ONLY checked high-density PBR maps and manifest to isolation branch
+        run: |
+          set -euo pipefail
+          git config user.name "canglan-qa-bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add game-source/apk176-ota177-candidate/materials/rev207
+          if git diff --cached --quiet; then
+            echo PASS_REV207_EXISTING_MATERIAL_PACK_UNCHANGED
+          else
+            git commit -m "assets(rev207): real licensed Quaternius plaster tile timber PBR 512px micro-detail textures [skip ci]"
+            git push origin HEAD:feat/rev206-licensed-assets-spirit-roots-city-population
+          fi
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: Canglan-REV207-REAL-QUATERNIUS-PBR-PROOF
+          path: game-source/apk176-ota177-candidate/materials/rev207/manifest.json
+          if-no-files-found: warn
+          retention-days: 7
