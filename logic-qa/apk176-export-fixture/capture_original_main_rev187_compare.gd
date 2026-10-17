@@ -130,6 +130,14 @@ func _capture() -> void:
   var opening_terrain: Node3D=room.get("terrain_world")
   var opening_actor_pos: Vector3=opening_actor.position
   var opening_distance: float=float(player.get("_distance"))
+  # Only for comparable P0 art frames: select an ACTUAL supported in-engine
+  # noon daylight state, then restore the initial 06:04 world-clock hour.
+  # Never post-process or relight the PNG / claim this is sunrise footage.
+  var qa_old_hour: int=int(room.get("sim").hour)
+  room.get("sim").hour=12
+  room.call("_sync_living_daylight")
+  room.call("_hide_original_debug_labels")
+  print("REV208_TRUE_GODOT_COMPARISON_CAMERA_TIME_OVERRIDE_12H_RESTORE_",qa_old_hour)
   # P0 HQ-ECOLOGY: exactly three CC0 originally authored mature trees
   # are photographed INSIDE THE ORIGINAL APK176 Main at human scale,
   # not via a fake Blender model viewer or WorldX concept image.
@@ -164,11 +172,14 @@ func _capture() -> void:
     for hq_render_frame in range(5):
       await process_frame
     await RenderingServer.frame_post_draw
+    room.call("_hide_original_debug_labels")
     if not _save(String(species_frame["file"])):
       _fail("REV208_MAIN_GENUINE_PBR_MATURE_TREE_IMAGE_MISSING_"+tree_id)
       return
   print("PASS_REV208_THREE_TRUE_8_9M_PBR_TREE_GODOT441_ORIGINAL_MAIN_RENDERED_SCREENSHOTS")
   opening_actor.position=opening_actor_pos
+  room.get("sim").hour=qa_old_hour
+  room.call("_sync_living_daylight")
   player.call("_set_mode","fly")
   player.set("_flight_position",Vector3(16,9,22))
   player.set("_yaw",0.55)
