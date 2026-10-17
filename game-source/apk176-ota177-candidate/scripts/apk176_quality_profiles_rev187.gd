@@ -7,15 +7,15 @@ const FPS_MODES := ["跟随刷新率","30","60","90","120"]
 const SETTINGS_PATH := "user://canglan_graphics_profiles_v1.cfg"
 const PROFILES := {
  "极致画质":{"scale":1.00,"msaa":Viewport.MSAA_4X,"shadow_m":100.0,
-   "shadow_splits":2,"grass_distance":80.0,"grass_instances":4500,
+   "shadow_splits":2,"grass_distance":80.0,"grass_instances":10800,
    "fireflies":100,"clouds":9,"fog_density":0.00105,"name_distance":20.0,
    "glow":true,"draw_reference":1500,"triangle_reference":1500000,"target_fps":90},
  "高档":{"scale":0.96,"msaa":Viewport.MSAA_2X,"shadow_m":60.0,
-   "shadow_splits":1,"grass_distance":40.0,"grass_instances":2400,
+   "shadow_splits":1,"grass_distance":40.0,"grass_instances":7200,
    "fireflies":60,"clouds":5,"fog_density":0.00092,"name_distance":13.0,
    "glow":true,"draw_reference":800,"triangle_reference":600000,"target_fps":60},
  "普通":{"scale":0.80,"msaa":Viewport.MSAA_DISABLED,"shadow_m":30.0,
-   "shadow_splits":0,"grass_distance":20.0,"grass_instances":1100,
+   "shadow_splits":0,"grass_distance":20.0,"grass_instances":3200,
    "fireflies":20,"clouds":2,"fog_density":0.00085,"name_distance":8.0,
    "glow":false,"draw_reference":400,"triangle_reference":300000,"target_fps":60}
 }
@@ -46,7 +46,7 @@ var grass_cells: Dictionary = {}
 var streamed_meadows: Dictionary = {}
 var streamed_meadow_points: Dictionary = {}
 var streamed_meadow_rotations: Dictionary = {}
-const STREAMED_GRASS_INSTANCES: int = 320
+const STREAMED_GRASS_INSTANCES: int = 460
 const STREAMED_GRASS_COLORS: Array[Color] = [
   Color("#175d35"),Color("#267c41"),Color("#3b893d"),Color("#4f9739"),
   Color("#6a9334"),Color("#266f4b"),Color("#548839"),Color("#717a2d")]
@@ -121,17 +121,20 @@ func _grass_mesh() -> ArrayMesh:
   # grass base make one batched asset readable at mobile camera distances.
   var st:=SurfaceTool.new()
   st.begin(Mesh.PRIMITIVE_TRIANGLES)
-  for leaf in range(11):
-    var angle: float=TAU*float(leaf)/11.0+0.13*float(leaf%3)
+  # Three small overlapping stem groups per clump, not one giant
+  # eleven-pointed plastic shrub. Dense and short grass reads as turf on
+  # a high-density mobile screen, not waist-height standing cacti.
+  for leaf in range(6):
+    var angle: float=TAU*float(leaf)/6.0+0.17*float(leaf%3)
     var dx: float=cos(angle)
     var dz: float=sin(angle)
     var side:=Vector3(-dz,0.0,dx)
     var outward:=Vector3(dx,0.0,dz)
-    var height: float=0.25+0.028*float((leaf*7)%12)
-    var width: float=0.052+0.009*float(leaf%4)
-    var origin:=outward*(0.018+0.025*float(leaf%3))
-    var mid:=origin+outward*(0.12+0.025*float(leaf%2))+Vector3.UP*height*0.62
-    var tip:=origin+outward*(0.27+0.035*float(leaf%4))+Vector3.UP*height
+    var height: float=0.12+0.027*float((leaf*7)%6)
+    var width: float=0.013+0.006*float(leaf%3)
+    var origin:=outward*(0.006+0.012*float(leaf%2))
+    var mid:=origin+outward*(0.04+0.014*float(leaf%3))+Vector3.UP*height*0.62
+    var tip:=origin+outward*(0.10+0.015*float(leaf%4))+Vector3.UP*height
     var lb:=origin-side*width
     var rb:=origin+side*width
     var lm:=mid-side*(width*0.50)
@@ -204,7 +207,7 @@ func _create_grass_and_flowers(room: Node) -> void:
   grass_mm.transform_format=MultiMesh.TRANSFORM_3D
   grass_mm.use_colors=true
   grass_mm.mesh=_grass_mesh()
-  grass_mm.instance_count=4500
+  grass_mm.instance_count=10800
   var greens: Array[Color]=[
     Color("#185d35"),Color("#277142"),Color("#3f8b3b"),Color("#5c962e"),
     Color("#6c9836"),Color("#527d3d"),Color("#287947"),Color("#858730"),
@@ -213,14 +216,14 @@ func _create_grass_and_flowers(room: Node) -> void:
   # lighter trampled corridors, soil and rock. The high/normal 3D LODs
   # sample all patches, not only the first N positions in one corner.
   var meadow_centers: Array[Vector2]=[]
-  for patch in range(88):
+  for patch in range(125):
     meadow_centers.append(Vector2(rng.randf_range(-39.0,39.0),
       rng.randf_range(-39.0,39.0)))
   for i in range(grass_mm.instance_count):
     var center: Vector2=meadow_centers[i%meadow_centers.size()]
     var x: float
     var z: float
-    if rng.randf()<0.87:
+    if rng.randf()<0.68:
       x=clampf(center.x+rng.randfn(0.0,2.45),-42.4,42.4)
       z=clampf(center.y+rng.randfn(0.0,2.45),-42.4,42.4)
     else:
@@ -229,7 +232,7 @@ func _create_grass_and_flowers(room: Node) -> void:
     var pos:=Vector3(x,0,z)
     grass_points.append(pos)
     var rotation:=Basis(Vector3.UP,rng.randf_range(-PI,PI))
-    var scale:=rng.randf_range(0.83,1.30)
+    var scale:=rng.randf_range(0.69,1.08)
     grass_rotations.append(Transform3D(rotation.scaled(Vector3.ONE*scale),Vector3.ZERO))
     grass_mm.set_instance_color(i,greens[rng.randi_range(0,greens.size()-1)])
     if _natural_plantable(x,z):
@@ -287,7 +290,7 @@ func _configure_stream_meadow(batch: MultiMeshInstance3D) -> void:
     return
   batch.visibility_range_end=float(PROFILES[selected]["grass_distance"])
   var limit: int=STREAMED_GRASS_INSTANCES if selected=="极致画质" else (
-    210 if selected=="高档" else 100)
+    330 if selected=="高档" else 155)
   batch.multimesh.visible_instance_count=limit
 
 func _create_stream_meadow(id: String, chunk: Node3D) -> void:
@@ -321,7 +324,7 @@ func _create_stream_meadow(id: String, chunk: Node3D) -> void:
     var pos:=Vector3(xx,0,zz)
     points.append(pos)
     var rot:=Basis(Vector3.UP,rng.randf_range(0.0,TAU))
-    var size: float=rng.randf_range(0.7,1.2)
+    var size: float=rng.randf_range(0.65,1.05)
     var basis: Transform3D=Transform3D(rot.scaled(Vector3(size,size,size)),Vector3.ZERO)
     rotations.append(basis)
     mm.set_instance_color(i,STREAMED_GRASS_COLORS[rng.randi_range(0,STREAMED_GRASS_COLORS.size()-1)])
@@ -533,7 +536,7 @@ func apply(profile_name: String,save: bool=true) -> bool:
     0.025 if selected=="高档" else 0.008)
   grass.visibility_range_end=float(p["grass_distance"])
   grass.multimesh.visible_instance_count=int(p["grass_instances"])
-  flowers.multimesh.visible_instance_count=int(roundi(float(p["grass_instances"])/4500.0*270.0))
+  flowers.multimesh.visible_instance_count=int(roundi(float(p["grass_instances"])/10800.0*270.0))
   particles.amount=int(p["fireflies"])
   particles.restart()
   clouds.multimesh.visible_instance_count=int(p["clouds"])
