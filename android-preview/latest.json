@@ -1,12 +1,12 @@
 {
   "schema": 1,
   "channel": "android-preview",
-  "revision": 194,
+  "revision": 195,
   "minimum_android_code": 1176,
   "maximum_android_code": 1176,
-  "sha256": "cfe4633dc0bb3f3e556effe11adf59a4f5943b13b190e6a03e957ffac7698caa",
-  "size_bytes": 21747136,
-  "pack_url": "https://160701541-cell.github.io/xinyanshuo/android-preview/canglan-content-rev-194.pck",
-  "notes": "苍岚原APK176 rev194：修复灰白泛光世界，减轻雾、恢复深浅自然绿与暖土色，减少过曝；主村仍保持真实可挖材质/草甸，扩展物理区块改为可持续加载/卸载的聚簇草地MultiMesh，按三档画质裁剪、挖地立即移除对应植被，维持触屏/手柄和持久化挖掘。仍未制作完成真实中式院落与修仙法术，手机实机待验收。",
-  "signature": "fB95ZmKDUFZgV+sO0erQgvbcQGaapFSRtgjKsuATj5qPt0OTAzP1yzvhoE6KRhZw84fg/L4vL8hKO/gtBMjCFBxVle/uSDt48doQrH1zCPa5hKFdu29Vk9OZ/1aeewbpp6FAwi1pUdBZYdp9mEWgST1v5TUAgRU0+k/dMJpWchfmjQ+vu4dEEWpU1HcCGfiCpAtcEV0yGk/L7Db1cFZBJoODX3eRYzTxq0Q75jBY+iDgGkQTPUwZJUuXzoAHMt+5g8yflHWXIxHgQIippi2pmMpVNDvAPh7SiZ0Chg1KcakU/benO/oMN9DExQApRDGXj26SGDLIGE2znmPVKmJ+7uRRwPEPIbLdTMla5WFh9cz3BfxkDwz3jLaywZ8L/8goIKD6IQP5fDBIdl7a5PBKzxCCdEKSyeGwS2+vsjnNue9012COIh17wgtJH1DxtUf1rqUOUmSHOOcSPwHEnZgevIvKfLDuJcV6Hq0hZDGK4osUqi9u3UG7cw0cqKNM7AL1"
+  "sha256": "f8631ad0107a94c954712af3e2ebcd3cfb6d3e7ff688472586964c29f165f378",
+  "size_bytes": 21750240,
+  "pack_url": "https://160701541-cell.github.io/xinyanshuo/android-preview/canglan-content-rev-195.pck",
+  "notes": "苍岚原APK176 rev195：根据用户提供的像素风御剑/格挡与闪避参考先改真正有用的渲染路径：Godot Mobile原生Glow曾被硬编码关闭，现按三档高/极致启用、正确设置移动HDR门限和受太阳影响的远雾散射；现有凡人疾步成功扣除真实体力并移动2m时才触发短时0.3秒的移动碎光，失败和冷却不产生假特效。真正的格挡、飞剑、精细面孔与院落尚未完成，不能把参考视频当原创素材，手机视觉效果待验收。",
+  "signature": "UpHSL6Z041iRdq99KhDMOPFte+wkbi+wH8+LSerZuGMmPTs9jeYqm/wnueOtr3W7MW8ZHBPPKa9sGsLy/5ILEqoOozI23iZCYAsz3ddQpUFPSazgoOah+vmzPsw2ofHRXXYLdfOPiD57pwSLLHpK8pQnjqzRXxdQCAw48x7gj2XSwYEDLdiNIaJuBGzs4bg7Clr5O0Tg7vEkPBNJxDd5XsLQG3R4Z42HN/3WsCwEC87XPBE6U3GZlWQoPDXWn/LiipIvg4CHTyi1puVJ77JY7eJ5lJdCoTtK65x3QAdXvflj8Fyax6pCR0l3n/bcpi7GZcTbsk8gsXcyNMEyl3vzr0vdzyP/8VnY1qkzS3oqm8leFS1ECCZgfnIObE4xFH24OOLEYx+ixa0urJKdQ3H6FPlZNHH0YEAXwt1i3VhyINR5qmrlYLE1O915Q5SpvNkq+QjwZvKOhBGQX+l3CORKjTJzWLAag4C87RnOWzqhdlPGaezZGdFczPTa0zGT1Rlp"
 }
