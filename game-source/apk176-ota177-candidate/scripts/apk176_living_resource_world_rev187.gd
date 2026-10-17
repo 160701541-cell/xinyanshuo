@@ -907,13 +907,16 @@ func _rebuild_visible_shrub_gpu_slots() -> void:
   for draw_idx in range(licensed_understory_draws.size()):
     var mm: MultiMesh=licensed_understory_draws[draw_idx].multimesh
     var source: Transform3D=licensed_understory_source_offsets[draw_idx]
+    # Configure exact visible slot count FIRST: in GPU/RenderingServer it
+    # may reallocate instance visibility data and reset transform payloads.
+    # Then write every live GLB authored transform AFTER the visibility map.
+    mm.visible_instance_count=licensed_understory_render_indices.size()
     for active_slot in range(licensed_understory_render_indices.size()):
       var natural_id: int=licensed_understory_render_indices[active_slot]
       mm.set_instance_transform(active_slot,
         licensed_understory_locations[natural_id]*source)
-    # Slots beyond visible count are physically culled, not tiny meshes
-    # at (0,0,0). Keep full capacity for later physical regrowth.
-    mm.visible_instance_count=licensed_understory_render_indices.size()
+    # Slots beyond visible count are fully culled by Godot and cannot
+    # erroneously materialize a monster-size shrub at world origin.
 
 func _on_understory_terrain_changed(at: Vector3,radius: float) -> void:
   if quality==null or licensed_understory_draws.is_empty():
