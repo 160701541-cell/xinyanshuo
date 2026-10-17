@@ -57,6 +57,8 @@ func initialize(room: Node) -> void:
     if device_pixels.x >= 800 and device_pixels.y >= 450:
       physical_screen = device_pixels
   actual_refresh = DisplayServer.screen_get_refresh_rate()
+  if not is_finite(actual_refresh) or actual_refresh < 20.0 or actual_refresh > 240.0:
+    actual_refresh = 0.0
   # Android often tells Godot 30/60 while the OS settings show 120Hz.
   # Never trust a low stale query as a reason to CAP THE GAME AT 30 FPS.
   # VSYNC controls real presentation and Engine.max_fps=120 is only a
@@ -380,10 +382,11 @@ func update_diagnostics() -> Dictionary:
     "auto_quality_changes":false,"unrestricted_natural_palette":true
   }
   if diagnostic_text!=null:
+    var observed_hz: String="系统接口 %.0fHz(仅参考)" % actual_refresh if actual_refresh>0 else "系统刷新接口未报告"
     diagnostic_text.text=("%s | FPS %d | Draw %d/%d | 三角面 %d/%d\n" +
-      "3D %d×%d (%d%%) | 帧率: %s | 系统接口刷新率 %.0fHz") % [
+      "3D %d×%d (%d%%) | 帧率: %s | %s") % [
         selected,fps,draws,int(p["draw_reference"]),triangles,int(p["triangle_reference"]),
-        size.x,size.y,int(float(p["scale"])*100.0),cap_label,actual_refresh]
+        size.x,size.y,int(float(p["scale"])*100.0),cap_label,observed_hz]
   if low_fps_text!=null:
     low_fps_text.visible=fps>0 and fps<45
     if low_fps_text.visible:
