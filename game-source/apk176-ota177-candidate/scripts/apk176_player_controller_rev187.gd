@@ -109,6 +109,10 @@ var _player_health: int = 100
 var _health_bar: ProgressBar
 var _energy_bar: ProgressBar
 var _mana_bar: ProgressBar
+var _health_value: Label
+var _stamina_value: Label
+var _mana_value: Label
+var _numeric_target_vitals: Label
 var _target_panel: PanelContainer
 var _target_status: Label
 var _target_health_bar: ProgressBar
@@ -707,10 +711,17 @@ func _build_game_hud() -> void:
   _health_bar.max_value=100
   _health_bar.value=100
   _health_bar.show_percentage=false
-  _health_bar.custom_minimum_size=Vector2(242,13)
+  _health_bar.custom_minimum_size=Vector2(176,16)
   _health_bar.add_theme_stylebox_override("background",_rounded(Color("#243133"),5))
   _health_bar.add_theme_stylebox_override("fill",_rounded(Color("#b95f59"),5))
   hp_row.add_child(_health_bar)
+  _health_value=Label.new()
+  _health_value.name="ActualHealthCurrentSlashMaximumNumber"
+  _health_value.custom_minimum_size=Vector2(87,24)
+  _health_value.horizontal_alignment=HORIZONTAL_ALIGNMENT_RIGHT
+  _health_value.add_theme_font_size_override("font_size",15)
+  _health_value.text="100 / 100"
+  hp_row.add_child(_health_value)
   var stamina_row:=HBoxContainer.new()
   meters.add_child(stamina_row)
   var energy_caption:=Label.new()
@@ -721,10 +732,17 @@ func _build_game_hud() -> void:
   _energy_bar.max_value=100
   _energy_bar.value=100
   _energy_bar.show_percentage=false
-  _energy_bar.custom_minimum_size=Vector2(242,13)
+  _energy_bar.custom_minimum_size=Vector2(176,16)
   _energy_bar.add_theme_stylebox_override("background",_rounded(Color("#243133"),5))
   _energy_bar.add_theme_stylebox_override("fill",_rounded(Color("#a8bc68"),5))
   stamina_row.add_child(_energy_bar)
+  _stamina_value=Label.new()
+  _stamina_value.name="ActualStaminaCurrentSlashMaximumNumber"
+  _stamina_value.custom_minimum_size=Vector2(87,24)
+  _stamina_value.horizontal_alignment=HORIZONTAL_ALIGNMENT_RIGHT
+  _stamina_value.add_theme_font_size_override("font_size",15)
+  _stamina_value.text="100 / 100"
+  stamina_row.add_child(_stamina_value)
   var mana_row:=HBoxContainer.new()
   meters.add_child(mana_row)
   var mana_caption:=Label.new()
@@ -735,10 +753,17 @@ func _build_game_hud() -> void:
   _mana_bar.max_value=12
   _mana_bar.value=0
   _mana_bar.show_percentage=false
-  _mana_bar.custom_minimum_size=Vector2(242,13)
+  _mana_bar.custom_minimum_size=Vector2(176,16)
   _mana_bar.add_theme_stylebox_override("background",_rounded(Color("#243133"),5))
   _mana_bar.add_theme_stylebox_override("fill",_rounded(Color("#4aadc7"),5))
   mana_row.add_child(_mana_bar)
+  _mana_value=Label.new()
+  _mana_value.name="ActualManaCurrentSlashMaximumNumber"
+  _mana_value.custom_minimum_size=Vector2(87,24)
+  _mana_value.horizontal_alignment=HORIZONTAL_ALIGNMENT_RIGHT
+  _mana_value.add_theme_font_size_override("font_size",15)
+  _mana_value.text="0 / 0"
+  mana_row.add_child(_mana_value)
   _spirit_notice=Label.new()
   _spirit_notice.text="灵力：未检测灵根（未解锁）"
   _spirit_notice.add_theme_font_size_override("font_size",14)
@@ -1196,6 +1221,10 @@ func _refresh_game_hud() -> void:
   var energy: int=int(person.get("energy",0))
   _health_bar.value=_player_health
   _energy_bar.value=energy
+  if _health_value!=null:
+    _health_value.text="%d / %d" % [_player_health,int(_health_bar.max_value)]
+  if _stamina_value!=null:
+    _stamina_value.text="%d / %d" % [energy,int(_energy_bar.max_value)]
   var spiritual: RefCounted=room.get("cultivation")
   var record: Dictionary=spiritual.call("public_player_status") if spiritual!=null else {}
   var realm: String=String(record.get("realm","凡人"))
@@ -1203,6 +1232,9 @@ func _refresh_game_hud() -> void:
   var mana_now: int=int(record.get("mana",0))
   _mana_bar.max_value=maxi(1,player_level*12)
   _mana_bar.value=mana_now
+  if _mana_value!=null:
+    _mana_value.text="%d / %d" % [mana_now,
+      player_level*12]
   _game_status.text="心魇说 · %s%s  %d/100" % [
     realm,(" 第%d层" % player_level) if player_level>0 else "",_player_health]
   (_game_actions["DashAction"] as Button).disabled=_dash_cd>0.0 or energy<8
@@ -1234,8 +1266,9 @@ func _refresh_game_hud() -> void:
   if _target_panel!=null:
     _target_panel.visible=_spar_stage!="inactive"
     if _spar_stage!="inactive":
-      _target_status.text="演武教习 · 凡人武者   %d/%d" % [
-        _spar_enemy_health,_spar_enemy_health_max]
+      _target_status.text="演武教习 · 凡人武者  生命 %d/%d  法力 %d/%d" % [
+        _spar_enemy_health,_spar_enemy_health_max,
+        _spar_enemy_mana,_spar_enemy_mana_max]
       _target_health_bar.max_value=_spar_enemy_health_max
       _target_health_bar.value=_spar_enemy_health
       _target_mana_bar.max_value=maxi(1,_spar_enemy_mana_max)
