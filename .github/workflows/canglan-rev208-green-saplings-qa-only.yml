@@ -17,6 +17,7 @@ on:
       - 'game-source/apk176-ota177-candidate/ui/lucide/**'
       - 'logic-qa/tools/build_apk176_quality_rev187.gd'
       - 'game-source/apk176-ota177-candidate/assets/hq-rev208/vegetation/trees/**'
+      - 'game-source/apk176-ota177-candidate/assets/hq-rev208/vegetation/botanical/**'
       - 'tools/verify_apk176_rev187_3d_pck.py'
       - 'game-source/apk176-ota177-candidate/scripts/apk176_cultivation_world_rev201.gd'
       - 'game-source/apk176-ota177-candidate/scripts/apk176_root_taxonomy_rev206.gd'
@@ -264,6 +265,29 @@ jobs:
             assert data==staged and hashlib.sha256(data).hexdigest()==entry['converted_sha256']
             assert 7.5<float(entry['source_height_m'])<12.0 and entry['render_meshes']==4
           print('PASS_REV208_THREE_TRUE_GENUINE_PBR_TALL_TREES_SHA_PINNED_FOR_ORIGINAL_APK176_MAIN')
+          PY
+          # All eight new files are original 3D CC0 vendor GLBs, separately
+          # SHA-pinned. They are NOT generated concept images or approved art.
+          BOTANICAL=game-source/apk176-ota177-candidate/assets/hq-rev208/vegetation/botanical
+          python3 - <<'PY'
+          from pathlib import Path
+          import json,hashlib,struct
+          root=Path('game-source/apk176-ota177-candidate/assets/hq-rev208/vegetation/botanical')
+          dest=Path('qa-stage/ota177/canglan_rev187/hq_rev208')
+          manifest=json.loads((root/'manifest.json').read_text(encoding='utf-8'))
+          assert manifest['release_policy']=='QUARANTINED_NO_SIGNING_NO_OTA'
+          assert manifest['art_approval']=='PENDING_REAL_GODOT_AND_USER'
+          assert set(manifest['items'])=={'pine','cypress','conifer','fern','hydrangea','rose','lavender','grass'}
+          dest.mkdir(parents=True,exist_ok=True)
+          for kind,entry in manifest['items'].items():
+            data=(root/entry['file']).read_bytes()
+            assert data[:4]==b'glTF' and struct.unpack_from('<I',data,8)[0]==len(data)
+            assert hashlib.sha256(data).hexdigest()==entry['original_sha256']
+            assert entry['game_asset_approved'] is False
+            assert entry['license'].startswith('CC0')
+            assert entry['triangle_lod0']>=100
+            (dest/entry['file']).write_bytes(data)
+          print('PASS_REV208_REAL_INDIVIDUALLY_LICENSED_EIGHT_BOTANICAL_GLBS_STAGED_IN_ORIGINAL_APK176_MAIN_UNAPPROVED')
           PY
           cp game-source/godot3d/assets/free_cc0/kenney/3d/castle/rocks-small.glb qa-stage/ota177/canglan_rev187/rocks_small.glb
           cp game-source/godot3d/assets/free_cc0/kenney/3d/castle/tree-log.glb qa-stage/ota177/canglan_rev187/tree_log.glb
