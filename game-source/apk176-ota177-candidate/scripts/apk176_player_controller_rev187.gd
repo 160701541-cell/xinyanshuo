@@ -64,6 +64,27 @@ var _game_actions: Dictionary = {}
 var _dash_cd: float = 0.0
 var _gather_cd: float = 0.0
 var _fall_damage_cd: float = 0.0
+# rev196: VOLUNTARY mortal sparring using the existing licensed animated
+# knight. A real timed attack damages player HP unless guard/dodge succeeds.
+# No spiritual powers, scripted rewards, resource minting or civilian injury.
+var _spar_partner: Node3D
+var _spar_collision: StaticBody3D
+var _spar_telegraph: MeshInstance3D
+var _spar_stage: String = "inactive" # inactive / windup / recover
+var _spar_timer: float = 0.0
+var _guard_time: float = 0.0
+var _guard_cd: float = 0.0
+var _dodge_time: float = 0.0
+var _dodge_cd: float = 0.0
+var _dodge_origin: Vector3 = Vector3.ZERO
+var _spar_attacks: int = 0
+var _spar_perfect_guards: int = 0
+var _spar_normal_guards: int = 0
+var _spar_perfect_dodges: int = 0
+var _spar_normal_dodges: int = 0
+var _spar_hits: int = 0
+var _spar_misses: int = 0
+var _spar_last_outcome: String = "inactive"
 var _quality_sheet_button: Button
 var _developer_sheet_button: Button
 var _rest_sheet_button: Button
@@ -325,8 +346,11 @@ func _build_game_hud() -> void:
   _add_game_action("DigAction","挖掘",Callable(self,"dig"))
   _add_game_action("InteractAction","互动",Callable(self,"interact"))
   _add_game_action("ViewAction","视角",Callable(self,"toggle_perspective"))
-  _add_game_action("LockedArt","招式锁定",func(): _open_game_menu("cultivation"))
-  (_game_actions["LockedArt"] as Button).disabled=true
+  # Real mortal footwork practice is available without inventing a spirit root.
+  # Cultivation spells and sword arrays remain locked until implemented.
+  _add_game_action("LockedArt","切磋",Callable(self,"practice_action"))
+  _add_game_action("GuardAction","格挡",Callable(self,"guard_action"))
+  _add_game_action("EvadeAction","闪避",Callable(self,"evade_action"))
   _pad_hint=Label.new()
   _pad_hint.name="AndroidGamepadHotplugAndMappings"
   _pad_hint.position=Vector2(16,139)
@@ -387,6 +411,14 @@ func _refresh_game_hud() -> void:
   (_game_actions["DashAction"] as Button).text="疾步 "+str(ceili(_dash_cd))+"秒" if _dash_cd>0.0 else "疾步"
   (_game_actions["GatherAction"] as Button).disabled=_gather_cd>0.0
   (_game_actions["GatherAction"] as Button).text="采集 "+str(ceili(_gather_cd))+"秒" if _gather_cd>0.0 else "采集"
+  (_game_actions["LockedArt"] as Button).text="结束切磋" if _spar_stage!="inactive" else "切磋"
+  (_game_actions["GuardAction"] as Button).disabled=_spar_stage=="inactive" or _guard_cd>0 or energy<5
+  (_game_actions["EvadeAction"] as Button).disabled=_spar_stage=="inactive" or _dodge_cd>0 or energy<7
+  (_game_actions["GuardAction"] as Button).text="防御中" if _guard_time>0 else "格挡"
+  (_game_actions["EvadeAction"] as Button).text="闪避中" if _dodge_time>0 else "闪避"
+  if _spirit_notice!=null:
+    _spirit_notice.text="灵力：未检测灵根 | 切磋 %s · %s" % [
+      _spar_stage,_spar_last_outcome] if _spar_stage!="inactive" else "灵力：未检测灵根（未解锁）"
   _quality_sheet_button.visible=_game_sheet!=null and _game_sheet.visible and _game_sheet_mode=="settings"
   _developer_sheet_button.visible=_quality_sheet_button.visible
   _rest_sheet_button.visible=_game_sheet.visible and _game_sheet_mode=="character"
@@ -409,7 +441,7 @@ func _refresh_game_hud() -> void:
       _game_sheet_body.text="随身背包空\n靠近树木、石块点击「互动」采集"
   elif _game_sheet_mode=="cultivation":
     _game_sheet_title.text="修炼 · 凡人"
-    _game_sheet_body.text="灵根检测：尚未开放\n境界：凡人  法力：未解锁\n采集/疾步属于凡人生存动作，不冒充修仙法术"
+    _game_sheet_body.text="灵根检测：尚未开放\n境界：凡人  法力：未解锁\n凡人武学：可进行有危险的切磋、格挡和闪避训练\n御剑与法术尚未解锁"
   else:
     _game_sheet_title.text="菜单 · 系统设置"
     _game_sheet_body.text="横屏触控：左侧走路，右侧旋转\n视角按键：切第一/第三视角\n画质帧率和研发工具在下方设置"
@@ -426,6 +458,268 @@ func gather_action() -> Dictionary:
 # REV195 combat-reference learning implemented ONLY for the actual mortal
 # movement already in game. No spiritual swords/phantom enemies are
 # fabricated. A successful stamina-paid 2m dash emits one-shot motion shards.
+# The sparring partner is a duplicate of the original licensed animated
+# worker asset, NOT a handcrafted/unlicensed opponent model.
+func practice_action() -> Dictionary:
+  if _spar_stage!="inactive":
+    stop_practice()
+    say("切磋结束，没有对村民施加伤害")
+    return {"ok":true,"active":false}
+  if actor==null or _player_health<=0 or camera_mode in ["fly","god"]:
+    return {"ok":false,"reason":"NOT_AVAILABLE"}
+  var sources: Dictionary=room.get("asset_sources")
+  if not sources.has("worker"):
+    return {"ok":false,"reason":"MISSING_LICENSED_ANIMATED_OPPONENT"}
+  var target: Vector3=actor.position+_forward()*2.45
+  if not bool(terrain.call("stream_contains_physical_chunk",target.x,target.z)) or bool(terrain.call("is_water",target.x,target.z)):
+    say("请到平坦干燥的空地切磋")
+    return {"ok":false,"reason":"NO_DRY_WALKABLE_PRACTICE_SITE"}
+  var h: float=float(terrain.call("height_at",target.x,target.z))
+  var old_h: float=float(terrain.call("height_at",actor.position.x,actor.position.z))
+  if absf(h-old_h)>0.4:
+    return {"ok":false,"reason":"SPARRING_SLOPE_TOO_STEEP"}
+  # Reject real building/obstacle ray intersection on camera blockers layer.
+  var q:=PhysicsRayQueryParameters3D.create(
+    actor.position+Vector3.UP*0.85,target+Vector3.UP*0.85)
+  q.collision_mask=2
+  if not world.get_world_3d().direct_space_state.intersect_ray(q).is_empty():
+    return {"ok":false,"reason":"SPARRING_SPACE_OCCUPIED"}
+  _spar_partner=(sources["worker"] as Node3D).duplicate()
+  _spar_partner.name="VoluntaryMortalPracticePartnerLicensedAnimatedKnight"
+  _spar_partner.position=Vector3(target.x,0.0,target.z)
+  world.add_child(_spar_partner)
+  room.call("_normalize_worker_height",_spar_partner)
+  # normalize_worker_height reads physical soil; its foot marker stays valid.
+  _spar_partner.position.y=h+float(_spar_partner.get_meta("actor_ground_offset_y",0))
+  _spar_partner.rotation.y=atan2(
+    actor.position.x-target.x,actor.position.z-target.z)
+  var animations: Array[Node]=_spar_partner.find_children("*","AnimationPlayer",true,false)
+  for node in animations:
+    var ap: AnimationPlayer=node as AnimationPlayer
+    for anim in ap.get_animation_list():
+      if String(anim).to_lower().contains("idle"):
+        ap.play(String(anim))
+        break
+  _spar_collision=StaticBody3D.new()
+  _spar_collision.name="MortalPracticeOpponentTangibleCollisionNoLoot"
+  _spar_collision.collision_layer=2
+  _spar_collision.collision_mask=0
+  _spar_collision.position=Vector3(target.x,h+0.82,target.z)
+  var shape:=CollisionShape3D.new()
+  shape.name="RealMortalOpponentCapsule"
+  var capsule:=CapsuleShape3D.new()
+  capsule.radius=0.35
+  capsule.height=1.64
+  shape.shape=capsule
+  _spar_collision.add_child(shape)
+  world.add_child(_spar_collision)
+  _spar_telegraph=MeshInstance3D.new()
+  _spar_telegraph.name="MortalSwordPracticeAttackWarningNOTActualSpiritualSkill"
+  var disc:=CylinderMesh.new()
+  disc.top_radius=1.12
+  disc.bottom_radius=1.12
+  disc.height=0.028
+  var light:=StandardMaterial3D.new()
+  light.transparency=BaseMaterial3D.TRANSPARENCY_ALPHA
+  light.shading_mode=BaseMaterial3D.SHADING_MODE_UNSHADED
+  light.albedo_color=Color("#ec7151",0.27)
+  light.emission_enabled=true
+  light.emission=Color("#ed794e")
+  light.emission_energy_multiplier=1.0
+  disc.material=light
+  _spar_telegraph.mesh=disc
+  _spar_telegraph.position=Vector3(target.x,h+0.055,target.z)
+  _spar_telegraph.visible=false
+  world.add_child(_spar_telegraph)
+  _spar_stage="recover"
+  _spar_timer=0.82
+  _guard_time=0.0
+  _dodge_time=0.0
+  _spar_last_outcome="预备"
+  say("切磋开始：红圈蓄势时格挡或闪避；失误会扣真实生命")
+  _refresh_game_hud()
+  return {"ok":true,"active":true,"opponent":_spar_partner.name}
+
+func stop_practice() -> void:
+  for node in [_spar_partner,_spar_collision,_spar_telegraph]:
+    if node!=null and is_instance_valid(node):
+      node.queue_free()
+  _spar_partner=null
+  _spar_collision=null
+  _spar_telegraph=null
+  _spar_stage="inactive"
+  _spar_timer=0
+  _guard_time=0
+  _dodge_time=0
+  _spar_last_outcome="inactive"
+  _refresh_game_hud()
+
+func guard_action() -> bool:
+  if _spar_stage=="inactive" or _guard_cd>0.0 or _player_health<=0:
+    return false
+  var sim=room.get("sim")
+  var person: Dictionary=sim.citizens.get(PLAYER_ID,{})
+  if int(person.get("energy",0))<5:
+    say("格挡需要5点体力")
+    return false
+  person["energy"]=int(person["energy"])-5
+  _guard_time=0.56
+  _guard_cd=0.90
+  _dodge_time=0.0
+  _refresh_game_hud()
+  return true
+
+func evade_action() -> bool:
+  if _spar_stage=="inactive" or _dodge_cd>0 or _player_health<=0:
+    return false
+  var sim=room.get("sim")
+  var person: Dictionary=sim.citizens.get(PLAYER_ID,{})
+  if int(person.get("energy",0))<7:
+    say("闪避需要7点体力")
+    return false
+  var target: Vector3=actor.position-_forward()*1.65
+  if not bool(terrain.call("stream_contains_physical_chunk",target.x,target.z)) or bool(terrain.call("is_water",target.x,target.z)):
+    return false
+  var surface: float=float(terrain.call("height_at",target.x,target.z))
+  var original: float=float(terrain.call("height_at",actor.position.x,actor.position.z))
+  if absf(surface-original)>0.65:
+    return false
+  var ray:=PhysicsRayQueryParameters3D.create(
+    actor.position+Vector3.UP*0.8,target+Vector3.UP*0.8)
+  ray.collision_mask=2
+  if not world.get_world_3d().direct_space_state.intersect_ray(ray).is_empty():
+    return false
+  _dodge_origin=actor.position
+  person["energy"]=int(person["energy"])-7
+  actor.position=Vector3(target.x,surface+float(
+    actor.get_meta("actor_ground_offset_y",0.0)),target.z)
+  _movement_m+=1.65
+  _guard_time=0.0
+  _dodge_time=0.31
+  _dodge_cd=1.10
+  _spawn_real_dash_trail(_dodge_origin,actor.position)
+  terrain.call("stream_around",actor.position)
+  update_camera()
+  _refresh_game_hud()
+  return true
+
+func _spar_feedback(tint: Color) -> void:
+  # Bounded one-shot actual impact, no per-particle dynamic light.
+  if _spar_partner==null or not is_instance_valid(_spar_partner):
+    return
+  var puff:=GPUParticles3D.new()
+  puff.name="ActualTimedGuardDodgeImpactFeedback"
+  puff.one_shot=true
+  puff.amount=12
+  puff.lifetime=0.24
+  puff.explosiveness=1.0
+  puff.position=actor.position+Vector3.UP*1.05
+  var proc:=ParticleProcessMaterial.new()
+  proc.emission_shape=ParticleProcessMaterial.EMISSION_SHAPE_SPHERE
+  proc.emission_sphere_radius=0.18
+  proc.gravity=Vector3.ZERO
+  proc.initial_velocity_min=0.55
+  proc.initial_velocity_max=1.3
+  puff.process_material=proc
+  var slice:=QuadMesh.new()
+  slice.size=Vector2(0.10,0.06)
+  var material:=StandardMaterial3D.new()
+  material.shading_mode=BaseMaterial3D.SHADING_MODE_UNSHADED
+  material.transparency=BaseMaterial3D.TRANSPARENCY_ALPHA
+  material.billboard_mode=BaseMaterial3D.BILLBOARD_ENABLED
+  material.albedo_color=tint
+  material.emission_enabled=true
+  material.emission=tint
+  material.emission_energy_multiplier=1.3
+  slice.material=material
+  puff.draw_pass_1=slice
+  world.add_child(puff)
+  puff.emitting=true
+  get_tree().create_timer(0.55).timeout.connect(func():
+    if is_instance_valid(puff):
+      puff.queue_free())
+
+func _spar_resolve_hit() -> void:
+  if _spar_partner==null or not is_instance_valid(_spar_partner):
+    return
+  _spar_attacks+=1
+  var enemy: Vector3=_spar_partner.position
+  var player_d: float=Vector2(actor.position.x-enemy.x,
+    actor.position.z-enemy.z).length()
+  var former_d: float=Vector2(_dodge_origin.x-enemy.x,
+    _dodge_origin.z-enemy.z).length()
+  var facing: Vector3=(_spar_partner.position-actor.position)
+  facing.y=0.0
+  var front: bool=facing.length()>0.001 and _forward().dot(
+    facing.normalized())>0.10
+  if _dodge_time>0.0 and former_d<=3.10:
+    if _dodge_time>=0.18:
+      _spar_perfect_dodges+=1
+      _spar_last_outcome="完美闪避"
+      say("完美闪避！抓住攻击瞬间，完全避伤")
+      _spar_feedback(Color("#9ce7ff"))
+    else:
+      _spar_normal_dodges+=1
+      _spar_last_outcome="闪避成功"
+      say("闪避成功，真实移动躲开这一击")
+  elif player_d>3.10:
+    _spar_misses+=1
+    _spar_last_outcome="攻击落空"
+  elif _guard_time>0.0 and front:
+    if _guard_time>=0.43:
+      _spar_perfect_guards+=1
+      _spar_last_outcome="完美格挡"
+      _spar_timer=1.25 # stagger after true perfect-timing block
+      say("完美格挡！没有受到伤害，打断对方节奏")
+      _spar_feedback(Color("#d9f5e5"))
+    else:
+      _spar_normal_guards+=1
+      _spar_last_outcome="格挡"
+      apply_player_damage(3)
+      say("普通格挡：受到3点冲击伤害")
+      _spar_feedback(Color("#f5d6a0"))
+    _guard_time=0.0
+  else:
+    _spar_hits+=1
+    _spar_last_outcome="受击"
+    apply_player_damage(12)
+    _spar_feedback(Color("#f29d84"))
+    say("切磋失误：实际扣除12点生命")
+  if _player_health<=0:
+    stop_practice()
+
+func _spar_tick(delta: float) -> void:
+  _guard_time=maxf(0.0,_guard_time-delta)
+  _guard_cd=maxf(0.0,_guard_cd-delta)
+  _dodge_time=maxf(0.0,_dodge_time-delta)
+  _dodge_cd=maxf(0.0,_dodge_cd-delta)
+  if _spar_stage=="inactive" or _spar_partner==null:
+    return
+  if not is_instance_valid(_spar_partner):
+    stop_practice()
+    return
+  var d: float=Vector2(actor.position.x-_spar_partner.position.x,
+    actor.position.z-_spar_partner.position.z).length()
+  if d>6.5:
+    stop_practice()
+    say("离开训练范围，切磋自动结束")
+    return
+  _spar_timer=maxf(0.0,_spar_timer-delta)
+  if _spar_timer>0:
+    return
+  if _spar_stage=="recover":
+    _spar_stage="windup"
+    _spar_timer=0.68
+    if is_instance_valid(_spar_telegraph):
+      _spar_telegraph.visible=true
+    _spar_last_outcome="敌人蓄势"
+  else:
+    if is_instance_valid(_spar_telegraph):
+      _spar_telegraph.visible=false
+    _spar_stage="recover"
+    _spar_timer=1.40
+    _spar_resolve_hit()
+
 func _spawn_real_dash_trail(start_point: Vector3,end_point: Vector3) -> void:
   if world==null or room==null:
     return
@@ -554,12 +848,13 @@ func _layout_hud() -> void:
     var tab: Button=hud.get_node("GameMenu_"+menu_names[idx]) as Button
     tab.position=Vector2(menu_x+float(idx)*104.0,16)
     tab.size=Vector2(96,44)
-  var action_keys:=["GatherAction","DashAction","DigAction","InteractAction","ViewAction","LockedArt"]
+  var action_keys:=["GatherAction","DashAction","DigAction","InteractAction",
+    "ViewAction","LockedArt","GuardAction","EvadeAction"]
   for idx in range(action_keys.size()):
-    var col: int=idx%3
-    var row: int=int(idx/3)
+    var col: int=idx%4
+    var row: int=int(idx/4)
     (_game_actions[action_keys[idx]] as Button).position=Vector2(
-      size.x-295.0+float(col)*94.0,size.y-152.0+float(row)*66.0)
+      size.x-392.0+float(col)*94.0,size.y-152.0+float(row)*66.0)
   notice.position=Vector2(minf(370.0,size.x*0.27),maxf(210.0,size.y-47.0))
   if _pad_hint!=null:
     _pad_hint.position=Vector2(16,139)
@@ -763,11 +1058,17 @@ func _pad_press_button(button: int) -> void:
     JOY_BUTTON_Y:
       dig()
     JOY_BUTTON_B:
-      dash_action()
+      if _spar_stage!="inactive":
+        evade_action()
+      else:
+        dash_action()
     JOY_BUTTON_LEFT_SHOULDER:
       toggle_perspective()
     JOY_BUTTON_RIGHT_SHOULDER:
-      _open_game_menu("inventory")
+      if _spar_stage!="inactive":
+        guard_action()
+      else:
+        _open_game_menu("inventory")
     JOY_BUTTON_LEFT_STICK:
       dash_action()
     JOY_BUTTON_RIGHT_STICK:
@@ -1008,6 +1309,12 @@ func handle_input(event: InputEvent) -> void:
       interact()
     elif event.keycode == KEY_F:
       dig()
+    elif event.keycode == KEY_R:
+      guard_action()
+    elif event.keycode == KEY_SPACE:
+      evade_action()
+    elif event.keycode == KEY_T:
+      practice_action()
     elif event.keycode == KEY_EQUAL:
       zoom_in()
     elif event.keycode == KEY_MINUS:
@@ -1131,6 +1438,7 @@ func step(delta: float) -> void:
   _dash_cd=maxf(0.0,_dash_cd-delta)
   _gather_cd=maxf(0.0,_gather_cd-delta)
   _fall_damage_cd=maxf(0.0,_fall_damage_cd-delta)
+  _spar_tick(delta)
   terrain.call("stream_around",actor.position)
   var previous_ground_y: float=float(terrain.call("height_at",actor.position.x,actor.position.z))
   var input_axis: Vector2 = _joystick
@@ -1410,4 +1718,12 @@ func stats() -> Dictionary:
     "gamepad_look_filtered":_pad_last_look,
     "gamepad_touch_fallback":true,
     "gamepad_hotplug_support":true,
-    "gamepad_menu_navigation":true}
+    "gamepad_menu_navigation":true,
+    "real_mortal_sparring":_spar_stage!="inactive",
+    "practice_stage":_spar_stage,"practice_attack_count":_spar_attacks,
+    "perfect_guards":_spar_perfect_guards,
+    "normal_guards":_spar_normal_guards,
+    "perfect_dodges":_spar_perfect_dodges,
+    "normal_dodges":_spar_normal_dodges,
+    "sparring_real_hits":_spar_hits,"sparring_misses":_spar_misses,
+    "practice_last_outcome":_spar_last_outcome}
