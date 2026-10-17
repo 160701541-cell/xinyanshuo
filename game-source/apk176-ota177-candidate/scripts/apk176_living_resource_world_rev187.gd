@@ -1027,7 +1027,10 @@ func _process(delta: float) -> void:
   if controls != null:
     controls.call("step",delta)
   _clock += delta
-  var accelerated_delta: float=clampf(delta,0.0,0.10)*float(world_time_scale)
+  # Keep the original Godot 0.7s/step NPC/economy deterministic QA and
+  # background catch-up behavior. New 100x multiplier must NOT silently
+  # slow the original 1x simulation by clamping every frame to 0.10s.
+  var accelerated_delta: float=clampf(delta,0.0,0.75)*float(world_time_scale)
   # Loop EACH skipped hour through the SAME sim, ecology and inventory
   # state transitions. Do not jump a visual clock past unpaid production.
   _economy_clock+=accelerated_delta
