@@ -1,10 +1,25 @@
 {
   "schema": 1,
   "channel": "signed-releases",
-  "updated_at": "2026-10-17T11:51:56Z",
+  "updated_at": "2026-10-17T13:16:20Z",
   "source": "android-preview/latest.json; RSA original APK key + official HTTPS PCK",
   "verification": "Godot signed manifest, Pages PCK SHA256 and real Android updater Range HTTP verified in GitHub Actions; user Android device visual/performance QA pending.",
   "entries": [
+    {
+      "revision": 204,
+      "first_seen_utc": "2026-10-17T13:16:20Z",
+      "notes": "苍岚原APK176 rev204：12名修士头顶显示真实境界、生命与法力血蓝条；凡人对练目标显示生命110和法力0，新增消耗体力的剑击、炼气一层学会的灵息弹（真实法力、飞行命中与光效）、炼气二层护体灵障（真实减伤）；世界时辰修炼补充法力。保留rev203御剑操作及rev201修炼存档。真人NPC智能反击与本地Qwen尚未完成。",
+      "sha256": "893b6f9add7810b3af94c2d37ab5986c8ef706900b6c05e0a1b7df6fd7eba865",
+      "size_bytes": 22071168,
+      "status": "signed_release",
+      "android_version_code": 1176,
+      "protocol": "RSA-3072 PKCS1-v1_5 / SHA-256",
+      "remote_https_verified": false,
+      "remote_range_206_verified": false,
+      "ci_run": 39035716336,
+      "android_real_device_qa": "pending",
+      "engine_visual_proof": "art/actual-engine-capture/canglan-rev204-spirit-bolt-godot-linux.png"
+    },
     {
       "revision": 203,
       "first_seen_utc": "2026-10-17T11:49:46Z",
