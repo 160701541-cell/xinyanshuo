@@ -1145,6 +1145,14 @@ func _run() -> void:
   print("PASS_REV204_REAL_MORTAL_OPPONENT_REALM_HP_MP_HUD_WORLD_METERS_AND_STAMINA_PAID_SWORD_HIT")
   # rev197 P0 phone usability regression: test real UI nodes AND the
   # actual physical movement/camera state, not only declared feature flags.
+  # Legacy rev197 verifies expanded controls. rev205 starts COMPACT to
+  # preserve the world view and lets the player expand all older actions.
+  if bool(player.get("_quickbar_folded")):
+    if not (game_hud.get_node("SoarAvatarButton") as Button).visible or (
+        game_hud.get_node("PhoneZoomInButton") as Button).visible:
+      _fail(321,"REV205_DEFAULT_HUD_NOT_COMPACT_OR_HIDES_CRITICAL_FLIGHT")
+      return
+    player.call("toggle_quickbar")
   var v197: Array[String]=["Iso45Button","GodShortcutButton",
     "SoarAvatarButton","RealJumpButton","CameraLockButton",
     "PhoneZoomInButton","PhoneZoomOutButton"]
