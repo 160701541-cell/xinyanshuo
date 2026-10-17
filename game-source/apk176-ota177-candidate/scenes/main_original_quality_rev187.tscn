@@ -1,0 +1,16 @@
+[gd_scene load_steps=4 format=3]
+
+; Real APK176 compiled packed main is unchanged; rev187 adds a reversible,
+; finite-resource animated 3D production slice. Legacy HD2D remains intact
+; but hidden behind the new, touch-accessible live simulation room.
+[ext_resource type="PackedScene" path="res://.godot/exported/133200997/export-3ad5c15c4f3250da0cc7c1af1770d85f-main.scn" id="1"]
+[ext_resource type="Script" path="res://scripts/hd2d_original_overlay_ota177.gd" id="2"]
+[ext_resource type="Script" path="res://scripts/apk176_living_resource_world_rev187.gd" id="3"]
+
+[node name="Main" instance=ExtResource("1")]
+
+[node name="HD2DArtAcceptance" type="CanvasLayer" parent="."]
+script = ExtResource("2")
+
+[node name="CanglanAutonomousEcologyWorldRev187" type="CanvasLayer" parent="."]
+script = ExtResource("3")
