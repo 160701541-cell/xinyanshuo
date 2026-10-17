@@ -2,8 +2,8 @@ extends SceneTree
 ## Actual exported APK176 compiled MAIN with rev187 real resource economy.
 ## No fake "pass" without 7 real GLBs, original base scene, three animated
 ## character skeletons, conservation and actual physical stage construction.
-const INITIAL_WOOD: int = 12 * 12
-const INITIAL_STONE: int = 9 * 18
+const INITIAL_WOOD: int = 52 * 5
+const INITIAL_STONE: int = 20 * 10
 const PHASE_WOOD := [0, 9, 6, 3]
 const PHASE_STONE := [6, 0, 0, 3]
 
@@ -116,7 +116,7 @@ func _run() -> void:
     return
   print("PASS_REV199_IMMUTABLE_AUTHENTIC_CC0_LONG_HAIR_PLAYER_AND_NPC_PLUS_REAL_MULTIMATERIAL_FLYING_SWORD")
   if not (first.get("missing_assets", []) as Array).is_empty():
-    _fail(10, "SOME_LICENSED_GLB_OR_TEXTURES_MISSING")
+    _fail(10, "SOME_LICENSED_GLB_OR_TEXTURES_MISSING_"+str(first.get("missing_assets",[])))
     return
   if int(first.get("visible_actor_labels",0)) != 3:
     _fail(27, "MISSING_VISIBLE_NPC_WORKER_JOB_LABELS")
@@ -127,7 +127,7 @@ func _run() -> void:
     if actual_height < 1.5 or actual_height > 2.2:
       _fail(28, "NPC_NOT_SCALED_TO_VISIBLE_REAL_HEIGHT_" + profession + "_" + str(actual_height))
       return
-  if int(first.get("worker_count",0)) != 3 or int(first.get("resource_node_count",0)) != 21:
+  if int(first.get("worker_count",0)) != 3 or int(first.get("resource_node_count",0)) != 72:
     _fail(11, "NPC_AND_FINITE_RESOURCE_IDENTITIES_MISSING")
     return
   # The entire point of this version is that static Kenney GLBs must NO
@@ -549,7 +549,9 @@ func _run() -> void:
       int(evidence.get("micro_texels_per_metre",0))!=64):
     _fail(334,"REV207_GENUINE_512PX_QUATERNIUS_PBR_OR_WORLD_TINY_PIXEL_MATERIAL_MISSING_"+str(evidence))
     return
-  var a_real_roof: Node3D=room.get("finished_prefabs").get("CL-HOME-V206-001",null)
+  # Material QA tests the source GLB; it is ILLEGAL to display one
+  # unpaid 200wood/150stone residence for camera or QA convenience.
+  var a_real_roof: Node3D=room.get("finished_prefab_sources").get("house_1",null)
   if a_real_roof==null:
     _fail(335,"REV207_ART_MUST_USE_REAL_QUATERNIUS_SOURCE_HOUSE_GLTF")
     return
@@ -802,36 +804,46 @@ func _run() -> void:
     _fail(325,"REV206_STILL_SPAWNS_DYSFUNCTIONAL_BUILDING_WORKER")
     return
   var report: Dictionary = room.call("stats")
-  if not bool(report.get("rev206_perpetual_house_construction_retired",false)) or (
-      int(report.get("rev206_cc0_completed_building_count",0))!=6):
-    _fail(326,"REV206_SIX_GENUINE_FINISHED_BUILDINGS_MUST_REPLACE_TINY_SHACKS")
+  var actual_house: RefCounted=room.get("housing")
+  var paid: Dictionary=actual_house.call("stats")
+  if int(report.get("rev206_cc0_completed_building_count",-1))!=0 or (
+      int(paid.get("unpaid_blueprints",-1))!=6) or (
+      int(paid.get("standard_house_wood",0))!=200) or (
+      int(paid.get("standard_house_stone",0))!=150) or (
+      int(paid.get("standard_house_capacity",0))!=5):
+    _fail(326,"REV208_P0_NO_FREE_HOMES_200WOOD150STONE_FIVE_BEDS_NOT_ENFORCED_"+str(paid))
     return
   if int(report.get("rev206_native_wildlife_count",0))!=4 or (
       int(report.get("rev206_native_animated_wildlife_count",0))!=4) or (
       int(report.get("rev206_outfit_source_count",0))!=2):
-    _fail(327,"REV206_GENUINE_ANIMATED_ANIMALS_OR_LICENSED_OUTFITS_MISSING")
+    _fail(327,"REV208_TRUE_LICENSED_GLBS_NOT_IMPORTED")
+    return
+  if room.get("finished_prefab_sources").size()!=6:
+    _fail(328,"REV208_MISSING_REAL_SIX_COMPLETE_SOURCE_BUILDINGS_IN_LIBRARY")
     return
   for house_id in ["CL-HOME-V206-001","CL-HOME-V206-002",
       "CL-HOME-V206-003","CL-HOME-V206-004",
       "CL-INN-V206-001","CL-GAZEBO-V206-001"]:
-    var full_home: Node3D=room.get("finished_prefabs").get(house_id,null)
-    if full_home==null or not is_instance_valid(full_home) or not (
-        bool(full_home.get_meta("completed_prefab_not_npc_assembly",false))):
-      _fail(328,"REV206_MISSING_SOURCE_COMPLETE_ORIGINAL_CC0_HOUSE_"+house_id)
+    if room.get("finished_prefabs").has(house_id):
+      _fail(329,"REV208_WHOLE_LICENSED_SOURCE_PREFAB_CANNOT_APPEAR_BEFORE_PAID_WOOD_STONE_"+house_id)
       return
-    var bounds: Vector2=room.call("_visible_bounds",full_home)
-    if bounds.y-bounds.x<2.5 or bounds.y-bounds.x>10.0:
-      _fail(329,"REV206_FINISHED_VENDOR_HOUSE_FLOATS_OR_HAS_WRONG_METERS_"+str(bounds))
+    var blueprint: Dictionary=actual_house.call("quote",house_id,{})
+    if not bool(blueprint.get("ok",false)) or bool(
+        blueprint.get("completed",true)):
+      _fail(330,"REV208_LICENSED_BUILDING_BLUEPRINT_IS_NOT_UNPAID_"+house_id)
       return
-  var resident_home: Node3D=room.get("finished_prefabs")["CL-HOME-V206-001"]
-  if not (resident_home.get_meta("assigned_resident_ids",[]) as Array).has(
-      "CL-NPC-0184-03"):
-    _fail(330,"REV206_COMPLETE_HOUSE_NEVER_ASSIGNED_TO_REAL_STEWARD")
-    return
+  for b in room.get("actual_wildlife").values():
+    if int(b.get("health",0))<=0 or int(b.get("mana",0))<=0 or (
+        int(b.get("max_health",0))<=0 or int(b.get("max_mana",0))<=0) or (
+        not is_instance_valid(b.get("collider",null))) or (
+        not String(b.get("name","")).contains("妖")):
+      _fail(351,"REV208_SMALL_ORDINARY_ANIMAL_WITHOUT_REAL_BEAST_REALM_HP_MP_COLLIDER")
+      return
+  print("PASS_REV208_NO_FREE_HOUSES_200WOOD150STONE_FIVE_RESIDENTS_AND_FOUR_TRUE_LARGE_YAO_BEASTS")
   if not bool(report.get("persistent_city_population_is_statistical_only",false)):
     _fail(331,"REV206_CITY_80000_RESIDENTS_MUST_NOT_BE_80000_GODOT_NODES")
     return
-  print("PASS_REV206_REAL_QUATERNIUS_CC0_COMPLETE_HOMES_WANDERING_ANIMATED_ANIMALS_AND_PERMANENTLY_RETIRED_BUILDER")
+  print("PASS_REV206_REAL_QUATERNIUS_CC0_SOURCE_HOUSES_REAL_YAO_BEASTS_PERSISTENT_PAID_WORKER_BUILDING")
   if not (report.get("native_resolution_ui",false) and report.get("no_auto_quality_switch",false)):
     _fail(91,"UI_SCALED_WITH_3D_OR_AUTOMATIC_QUALITY_DOWNGRADE")
     return
