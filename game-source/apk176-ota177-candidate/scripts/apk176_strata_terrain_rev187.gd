@@ -265,51 +265,50 @@ func _construct_pond() -> void:
   water.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
   add_child(water)
 
+# rev191: the visible 92m square used to be surrounded by a vertical
+# 22-metre "crust skirt", while the distant 6m mesh quads OVERLAPPED the
+# centre square. This is what the player's screenshot called a cut-out slab.
+# The far field must meet the *same* local heightfield at x/z=+/-46m.
+func far_height_at(x: float,z: float) -> float:
+  var outside: float=maxf(0.0,maxf(absf(x)-HALF,absf(z)-HALF))
+  if outside<=0.0001:
+    return _base_at(x,z)
+  var blend: float=clampf(outside/190.0,0.0,1.0)
+  blend=blend*blend*(3.0-2.0*blend) # C1 transition, no sudden cliff
+  var low_hills: float=(1.8*sin(x*0.029)*cos(z*0.021)+
+    1.3*sin(x*0.046+z*0.024))*blend
+  var mountains: float=pow(blend,2.4)*(9.0+6.0*sin(x*0.036)*cos(z*0.035))
+  return _base_at(x,z)+low_hills+mountains
+
+func _far_clip_marks(from: float,to: float) -> Array[float]:
+  # Local 2m grid ends at x/z +/-HALF. Split any six-metre LOD tile
+  # exactly at those coordinate planes BEFORE emitting triangles.
+  var result: Array[float]=[from]
+  if from < -HALF and to > -HALF:
+    result.append(-HALF)
+  if from < HALF and to > HALF:
+    result.append(HALF)
+  result.append(to)
+  result.sort()
+  return result
+
 func _construct_far_land() -> void:
-  # Real render geometry surrounds the 92m local excavation field for ~600m.
-  # Deep skirts cover the cutaway world edges from low/god/flying cameras.
-  # Outside terrain has no digging/physics and is explicitly distant LOD.
-  var border: SurfaceTool = SurfaceTool.new()
-  border.begin(Mesh.PRIMITIVE_TRIANGLES)
-  for z in range(GRID):
-    for side in [-1,1]:
-      var x: float = float(side)*HALF
-      var front_z: float = -HALF + float(z)*CELL
-      var end_z: float = front_z+CELL
-      var first: Vector3 = Vector3(x,_base_at(x,front_z),front_z)
-      var second: Vector3 = Vector3(x,_base_at(x,end_z),end_z)
-      _push_quad(border,first,second,Vector3(second.x,-22,second.z),
-        Vector3(first.x,-22,first.z))
-  for xstep in range(GRID):
-    for side in [-1,1]:
-      var z: float = float(side)*HALF
-      var begin_x: float = -HALF + float(xstep)*CELL
-      var end_x: float = begin_x+CELL
-      var first := Vector3(begin_x,_base_at(begin_x,z),z)
-      var second := Vector3(end_x,_base_at(end_x,z),z)
-      _push_quad(border,first,second,Vector3(second.x,-22,second.z),
-        Vector3(first.x,-22,first.z))
-  border.generate_normals()
-  var rim := MeshInstance3D.new()
-  rim.name = "RealEarthCrustBorderSkirtNotFloatingThinSheet"
-  rim.mesh = border.commit()
-  rim.material_override = world_materials["soil_dark"]
-  add_child(rim)
-  # Split the far field into bounded 18x18 tile meshes. The former single
-  # 106x106 SurfaceTool produced >67k unindexed vertices; on Mobile Vulkan
-  # it appeared as a pale sky hole and horizontal slivers in REAL captured
-  # APK176 screenshots. A few separate terrain meshes render reliably and
-  # their AABBs may now be culled per terrain chunk.
+  # True gap-free ring: DO NOT render any overlapping distant triangles on
+  # top of the diggable centre; DO NOT draw a 22m vertical cliff around it.
+  # Distant scenery is visual LOD only. Genuine global infinite chunks,
+  # physics, saving and NPC streaming are a SEPARATE uncompleted milestone.
   var far_parent:=Node3D.new()
   far_parent.name="FarGroundAndMountainFoothills_AllCameraDirections_600m"
   add_child(far_parent)
   var far_material:=StandardMaterial3D.new()
-  far_material.albedo_color=Color("#719c79")
+  far_material.albedo_color=Color("#83ad75")
   far_material.roughness=1.0
   far_material.cull_mode=BaseMaterial3D.CULL_DISABLED
   var far_size: int=106
   var tile_step: int=18
   var tile_index: int=0
+  var generated_quads: int=0
+  var clipped_seam_quads: int=0
   for ztile in range(0,far_size,tile_step):
     for xtile in range(0,far_size,tile_step):
       var terrain_chunk:=SurfaceTool.new()
@@ -321,18 +320,27 @@ func _construct_far_land() -> void:
           var x1: float=x0+6.0
           var z0: float=float(nz-53)*6.0
           var z1: float=z0+6.0
-          if x0 > -HALF and x1 < HALF and z0 > -HALF and z1 < HALF:
-            continue
-          var corners: Array[Vector3]=[]
-          for v in [Vector2(x0,z0),Vector2(x1,z0),
-              Vector2(x1,z1),Vector2(x0,z1)]:
-            var radius: float=v.length()
-            var extra: float=clampf((radius-70.0)/220.0,0.0,1.0)
-            var hills: float=(2.0*sin(v.x*0.029)*cos(v.y*0.021)+1.6*sin(v.x*0.049+v.y*0.024))*extra
-            var mountains: float=pow(extra,2.4)*(12.0+8.0*sin(v.x*0.036)*cos(v.y*0.035))
-            corners.append(Vector3(v.x,_base_at(v.x,v.y)-2.2*extra+hills+mountains,v.y))
-          _push_quad(terrain_chunk,corners[0],corners[3],corners[2],corners[1])
-          added+=1
+          var xs: Array[float]=_far_clip_marks(x0,x1)
+          var zs: Array[float]=_far_clip_marks(z0,z1)
+          for zi in range(zs.size()-1):
+            for xi in range(xs.size()-1):
+              var lx: float=xs[xi]
+              var rx: float=xs[xi+1]
+              var tz: float=zs[zi]
+              var bz: float=zs[zi+1]
+              var mid_x: float=0.5*(lx+rx)
+              var mid_z: float=0.5*(tz+bz)
+              if absf(mid_x)<HALF and absf(mid_z)<HALF:
+                continue # central diggable cells render EXACTLY ONCE
+              var a:=Vector3(lx,far_height_at(lx,tz),tz)
+              var b:=Vector3(rx,far_height_at(rx,tz),tz)
+              var c:=Vector3(rx,far_height_at(rx,bz),bz)
+              var d:=Vector3(lx,far_height_at(lx,bz),bz)
+              _push_quad(terrain_chunk,a,d,c,b)
+              added+=1
+              generated_quads+=1
+              if xs.size()>2 or zs.size()>2:
+                clipped_seam_quads+=1
       if added<=0:
         continue
       terrain_chunk.generate_normals()
@@ -344,6 +352,10 @@ func _construct_far_land() -> void:
       part.cast_shadow=GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
       far_parent.add_child(part)
   far_parent.set_meta("far_mesh_chunk_count",tile_index)
+  far_parent.set_meta("far_quads",generated_quads)
+  far_parent.set_meta("far_stitched_seam_quads",clipped_seam_quads)
+  far_parent.set_meta("far_terrain_overlaps_local_square",false)
+  far_parent.set_meta("real_infinite_chunk_streaming_complete",false)
 
 func can_dig(position: Vector3) -> bool:
   var idx: Vector2i = _indices(position.x,position.z)
@@ -410,6 +422,8 @@ func inventory_conserved() -> bool:
 func stats() -> Dictionary:
   return {"real_heightfield":true,"continuous_shared_vertex_slopes":true,
     "no_infinite_gray_void":true,"surrounding_far_land_m":636,
+    "far_seam_stitched":true,"far_cliff_skirt_removed":true,
+    "infinite_streaming_complete":false,
     "recolors_unlimited":true,
     "natural_terrace_walls":false,"layer_count":5,"real_water_basin":water!=null,
     "size_m":int(GRID*CELL),"cell_count":GRID*GRID,
