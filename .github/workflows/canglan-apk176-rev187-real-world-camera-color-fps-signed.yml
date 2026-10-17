@@ -284,7 +284,7 @@ jobs:
           assert len(files)==2,"MISSING_REAL_WORKSITE_2_VULKAN_PNG"
           for file in files:
               data=file.read_bytes()
-              assert data[:8]==b'\\x89PNG\\r\\n\\x1a\\n' and len(data)>30000
+              assert data[:8]==bytes.fromhex('89504e470d0a1a0a') and len(data)>30000
               w,h=struct.unpack(">II",data[16:24])
               assert w>=900 and h>=500,(w,h)
               print("PASS_REAL_SAME_SITE_GODOT_SCREENSHOT",file.name,w,h,len(data))
