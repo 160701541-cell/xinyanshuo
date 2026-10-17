@@ -872,8 +872,6 @@ func _spawn_licensed_living_understory() -> void:
     batch.transform_format=MultiMesh.TRANSFORM_3D
     batch.mesh=part.mesh
     batch.instance_count=locations.size()
-    for i in range(locations.size()):
-      batch.set_instance_transform(i,locations[i]*offset)
     var draw:=MultiMeshInstance3D.new()
     draw.name="RealQuaterniusLicensedPBRUnderstoryBatched_"+str(
       licensed_understory_draw_parts)
@@ -882,6 +880,12 @@ func _spawn_licensed_living_understory() -> void:
     draw.cast_shadow=GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
     draw.visibility_range_end=73.0
     world.add_child(draw)
+    # Assign the real per-entity transforms AFTER the MultiMesh draw node is
+    # attached to RenderingServer. Some Godot4 mobile backend allocations
+    # zero/init their instance buffers on first render registration, so
+    # writing them while freestanding can leave IDENTITY at world (0,0,0).
+    for i in range(locations.size()):
+      draw.multimesh.set_instance_transform(i,locations[i]*offset)
     licensed_understory_draws.append(draw)
     licensed_understory_source_offsets.append(offset)
     licensed_understory_draw_parts+=1
