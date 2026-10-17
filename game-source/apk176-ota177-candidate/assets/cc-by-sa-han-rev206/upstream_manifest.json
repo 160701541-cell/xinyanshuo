@@ -1,0 +1,93 @@
+{
+  "schema": 206,
+  "source_repo": "PhantomMatthew/ZeroAD-Godot",
+  "original_upstream": "0 A.D. by Wildfire Games",
+  "origin_url": "https://github.com/PhantomMatthew/ZeroAD-Godot",
+  "license": "CC-BY-SA-3.0",
+  "share_alike_notice": "Art assets and derived GLB materials must remain under CC BY-SA 3.0. Full legal credits required. GPL of source code does not relicense these separate art assets.",
+  "artifact_type": "authentic_existing_Han_architecture_3d",
+  "style": "ancient Chinese Han, not western medieval",
+  "models": [
+    {
+      "name": "han_house_a",
+      "git_sha1": "aae6f8aeadc9531732e43c981b9bf01923944067",
+      "approx_bytes": 82944,
+      "category": "home",
+      "source_path": "godot/assets/meshes/structural/han_house_a.glb",
+      "local_path": "game-source/apk176-ota177-candidate/assets/cc-by-sa-han-rev206/han_house_a.glb",
+      "status": "pending_verified_import"
+    },
+    {
+      "name": "han_house_b",
+      "git_sha1": "ca9d2328a7d774738dcce19d8bc02df731d0c5f5",
+      "approx_bytes": 166912,
+      "category": "home",
+      "source_path": "godot/assets/meshes/structural/han_house_b.glb",
+      "local_path": "game-source/apk176-ota177-candidate/assets/cc-by-sa-han-rev206/han_house_b.glb",
+      "status": "pending_verified_import"
+    },
+    {
+      "name": "han_house_c",
+      "git_sha1": "fabd1ec310f671c7e35c4d10494c1b073a514fc2",
+      "approx_bytes": 128000,
+      "category": "home",
+      "source_path": "godot/assets/meshes/structural/han_house_c.glb",
+      "local_path": "game-source/apk176-ota177-candidate/assets/cc-by-sa-han-rev206/han_house_c.glb",
+      "status": "pending_verified_import"
+    },
+    {
+      "name": "han_house_d",
+      "git_sha1": "937a842f972b6a7d425d8db941d2ed86b66adfc1",
+      "approx_bytes": 136192,
+      "category": "home",
+      "source_path": "godot/assets/meshes/structural/han_house_d.glb",
+      "local_path": "game-source/apk176-ota177-candidate/assets/cc-by-sa-han-rev206/han_house_d.glb",
+      "status": "pending_verified_import"
+    },
+    {
+      "name": "han_pagoda",
+      "git_sha1": "fb0f6d1963be5b9d5da48ce828453a69c342db72",
+      "approx_bytes": 75776,
+      "category": "sect",
+      "source_path": "godot/assets/meshes/structural/han_pagoda.glb",
+      "local_path": "game-source/apk176-ota177-candidate/assets/cc-by-sa-han-rev206/han_pagoda.glb",
+      "status": "pending_verified_import"
+    },
+    {
+      "name": "han_temple",
+      "git_sha1": "e123d9c4dec92c70ecdcac1dc9ff430f86802a64",
+      "approx_bytes": 189440,
+      "category": "sect",
+      "source_path": "godot/assets/meshes/structural/han_temple.glb",
+      "local_path": "game-source/apk176-ota177-candidate/assets/cc-by-sa-han-rev206/han_temple.glb",
+      "status": "pending_verified_import"
+    },
+    {
+      "name": "han_shrine",
+      "git_sha1": "62dfaac1db18c0c536d31b58a39ca3097a066a78",
+      "approx_bytes": 89088,
+      "category": "sect",
+      "source_path": "godot/assets/meshes/structural/han_shrine.glb",
+      "local_path": "game-source/apk176-ota177-candidate/assets/cc-by-sa-han-rev206/han_shrine.glb",
+      "status": "pending_verified_import"
+    },
+    {
+      "name": "han_academy",
+      "git_sha1": "e9bd6224ccccc5baf41b4e89beca00f5a7e666bd",
+      "approx_bytes": 399360,
+      "category": "sect",
+      "source_path": "godot/assets/meshes/structural/han_academy.glb",
+      "local_path": "game-source/apk176-ota177-candidate/assets/cc-by-sa-han-rev206/han_academy.glb",
+      "status": "pending_verified_import"
+    },
+    {
+      "name": "han_wall_gate",
+      "git_sha1": "853c3c4767855cb7d0d8b7c11b41613d27b63449",
+      "approx_bytes": 18432,
+      "category": "gate",
+      "source_path": "godot/assets/meshes/structural/han_wall_gate.glb",
+      "local_path": "game-source/apk176-ota177-candidate/assets/cc-by-sa-han-rev206/han_wall_gate.glb",
+      "status": "pending_verified_import"
+    }
+  ]
+}
