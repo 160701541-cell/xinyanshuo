@@ -277,7 +277,7 @@ jobs:
           manifest=json.loads((root/'manifest.json').read_text(encoding='utf-8'))
           assert manifest['release_policy']=='QUARANTINED_NO_SIGNING_NO_OTA'
           assert manifest['art_approval']=='PENDING_REAL_GODOT_AND_USER'
-          assert set(manifest['items'])=={'pine','cypress','conifer','fern','hydrangea','rose','lavender','grass'}
+          assert set(manifest['items'])=={'pine','cypress','conifer','fern','hydrangea','rose','lavender','grass','medicinal_wood','medicinal_fire','medicinal_water'}
           dest.mkdir(parents=True,exist_ok=True)
           for kind,entry in manifest['items'].items():
             data=(root/entry['file']).read_bytes()
@@ -291,7 +291,7 @@ jobs:
               assert 10000<entry['triangle_lod0']<80000
               assert entry['meshes']<120, 'old 1551 mesh 248k conifer prohibited in mobile candidate'
             (dest/entry['file']).write_bytes(data)
-          print('PASS_REV208_REAL_INDIVIDUALLY_LICENSED_EIGHT_BOTANICAL_GLBS_STAGED_IN_ORIGINAL_APK176_MAIN_UNAPPROVED')
+          print('PASS_REV208_REAL_INDIVIDUALLY_LICENSED_ELEVEN_BOTANICAL_MEDICINAL_GLBS_STAGED_IN_ORIGINAL_APK176_MAIN_UNAPPROVED')
           PY
           cp game-source/godot3d/assets/free_cc0/kenney/3d/castle/rocks-small.glb qa-stage/ota177/canglan_rev187/rocks_small.glb
           cp game-source/godot3d/assets/free_cc0/kenney/3d/castle/tree-log.glb qa-stage/ota177/canglan_rev187/tree_log.glb
@@ -410,6 +410,7 @@ jobs:
           grep -Fq 'PASS_REV206_ORIGINAL_PLAYER_TREE_STONE_PHYSICAL_TRANSPORT_WITH_LICENSED_FINISHED_CC0_HOUSES_NO_BROKEN_CONSTRUCTION' qa-results/rev187-original-main-3d.log
           grep -Fq 'PASS_REV208_NO_FREE_HOUSES_200WOOD150STONE_FIVE_RESIDENTS_AND_FOUR_TRUE_LARGE_YAO_BEASTS' qa-results/rev187-original-main-3d.log
           grep -Fq 'PASS_REV206_REAL_QUATERNIUS_CC0_SOURCE_HOUSES_REAL_YAO_BEASTS_PERSISTENT_PAID_WORKER_BUILDING' qa-results/rev187-original-main-3d.log
+          grep -Fq 'PASS_REV208_REAL_INDEPENDENT_MEDICINAL_HERB_STEMS_CC0_PERSISTED_IDS' qa-results/rev187-original-main-3d.log
           grep -Fq 'PASS_REV208_3_ACTUAL_8M_MATURE_VENDOR_PBR_TREES_REPLACE_THREE_NATURAL_IDS' qa-results/rev187-original-main-3d.log
           grep -Fq 'PASS_REV208_REMAINING_49_KENNEY_LOD_TREES_20_STONES_GPU_BUFFERS_RETAINED' qa-results/rev187-original-main-3d.log
           grep -Fq 'PASS_REV207_TRUE_MAIN_50000KM2_5000_ROOT_RATIO_BODY_CULTIVATION_5_SECTS_4_REAL_ORE_BEAST_GUARDS' qa-results/rev187-original-main-3d.log
