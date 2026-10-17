@@ -54,7 +54,7 @@ def collapse(raw):
  before=parse_glb(raw)
  after=parse_glb(raw2)
  if after["triangles"]!=before["triangles"] or after["mesh_parts"]!=4 or after["materials"]!=4:
-  raise ValueError("Conversion geometry/material count drift")
+  raise ValueError("Conversion geometry/material count drift source="+str(before)+" converted="+str(after)+" bucket_keys="+str(list(groups.keys())))
  if not np.allclose(merged.bounds,scene.bounds,rtol=0,atol=0.012):
   raise ValueError("Conversion displaced physical tree dimensions")
  return raw2,after,float(merged.extents[1])
