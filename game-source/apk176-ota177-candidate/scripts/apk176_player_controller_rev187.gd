@@ -1648,6 +1648,10 @@ func _set_mode(mode: String) -> void:
     return
   if camera_mode=="soar" and mode!="soar":
     _soar_altitude=0.0
+    _soar_target_altitude=0.0
+    _soar_landing=false
+    _air_velocity=Vector3.ZERO
+    _air_display_speed=0.0
   camera_mode=mode
   is_first_person=mode=="first"
   _first_fov=57.0 if mode!="first" else _first_fov
@@ -1671,10 +1675,14 @@ func _set_mode(mode: String) -> void:
     _pitch=0.0
     say("摄影机飞行：玩家留在世界原位，升高／降低自由看")
   elif mode=="soar":
-    _soar_altitude=3.0
-    _pitch=0.47
-    _distance=9.5
-    say("角色飞行测试：左摇杆移动｜右边看｜升高和降低")
+    # Gradual takeoff instead of instant camera-height teleport.
+    _soar_altitude=0.90
+    _soar_target_altitude=3.0
+    _soar_landing=false
+    _air_velocity=Vector3.ZERO
+    _pitch=0.70
+    _distance=11.0
+    say("御风试飞（非御剑）：有地面投影和真实高度｜升高、降低、降落")
   elif mode=="iso":
     _yaw=PI/4.0
     _pitch=PI/4.0
@@ -1697,19 +1705,16 @@ func fly_up() -> void:
   if camera_mode=="fly":
     _flight_position.y=minf(130.0,_flight_position.y+2.5)
     _flight_m+=2.5
-  elif camera_mode=="soar":
-    _soar_altitude=minf(90.0,_soar_altitude+2.5)
-    _flight_m+=2.5
-    actor.position.y=_ground_surface_y(actor.position.x,actor.position.z)+float(actor.get_meta("actor_ground_offset_y",0.0))+_soar_altitude
+  elif camera_mode=="soar" and not _soar_landing:
+    _soar_target_altitude=minf(90.0,maxf(_soar_target_altitude,_soar_altitude)+2.5)
   update_camera()
 
 func fly_down() -> void:
   if camera_mode=="fly":
     _flight_position.y=maxf(1.0,_flight_position.y-2.5)
     _flight_m+=2.5
-  elif camera_mode=="soar":
-    _soar_altitude=maxf(0.8,_soar_altitude-2.5)
-    actor.position.y=_ground_surface_y(actor.position.x,actor.position.z)+float(actor.get_meta("actor_ground_offset_y",0.0))+_soar_altitude
+  elif camera_mode=="soar" and not _soar_landing:
+    _soar_target_altitude=maxf(0.85,_soar_target_altitude-2.5)
   update_camera()
 
 func reset_camera() -> void:
@@ -1734,7 +1739,13 @@ func toggle_camera_lock() -> void:
   _refresh_game_hud()
 
 func toggle_avatar_flight() -> void:
-  _set_mode("third" if camera_mode=="soar" else "soar")
+  if camera_mode=="soar":
+    _soar_landing=true
+    _soar_target_altitude=0.0
+    _air_velocity=Vector3.ZERO
+    say("正在平稳降落，观察脚下的地面投影")
+  else:
+    _set_mode("soar")
 
 func _ground_surface_y(x: float,z: float) -> float:
   var normal: float=float(terrain.call("height_at",x,z))
@@ -1888,6 +1899,7 @@ func step(delta: float) -> void:
   _spar_tick(delta)
   terrain.call("stream_around",actor.position)
   _step_jump(delta)
+  _step_soar_altitude(delta)
   var previous_ground_y: float=_ground_surface_y(actor.position.x,actor.position.z)
   var input_axis: Vector2 = _joystick
   # Touch joystick wins while a finger is actually manipulating it.
@@ -1931,19 +1943,33 @@ func step(delta: float) -> void:
     _flight_position.y=maxf(1.4,_flight_position.y)
     _flight_m+=flight_dir.length()*delta
     _set_movement_animation(false)
-  elif input_axis.length()>0.08 and camera_mode=="soar":
-    # REAL avatar flight, not a camera-only illusion; streamed collision
-    # chunks remain populated as the actor moves across world coordinates.
-    var fly_vector: Vector3=(_right()*input_axis.x+_forward()*(-input_axis.y)).normalized()
-    var flying_target: Vector3=actor.position+fly_vector*8.0*delta
-    if _can_actor_move_to(flying_target,
+  elif camera_mode=="soar":
+    # Airborne movement accelerates/decays smoothly; never make the
+    # horizon flip or teleport by snapping the camera's own position.
+    var fly_vector: Vector3=Vector3.ZERO
+    if input_axis.length()>0.08 and not _soar_landing:
+      fly_vector=(_right()*input_axis.x+_forward()*(-input_axis.y)).normalized()
+    var speed: float=clampf(8.0+_soar_altitude*0.13,8.0,17.5)
+    _air_velocity=_air_velocity.lerp(fly_vector*speed,clampf(delta*4.4,0.0,1.0))
+    if _air_velocity.length()<0.05:
+      _air_velocity=Vector3.ZERO
+    _air_display_speed=_air_velocity.length()
+    var flying_target: Vector3=actor.position+_air_velocity*delta
+    if _air_velocity.length()>0.01 and _can_actor_move_to(flying_target,
         _ground_surface_y(flying_target.x,flying_target.z)+_soar_altitude):
+      var moved_m: float=Vector2(flying_target.x-actor.position.x,
+        flying_target.z-actor.position.z).length()
       actor.position.x=flying_target.x
       actor.position.z=flying_target.z
-      _soar_distance_m+=8.0*delta
-      _flight_m+=8.0*delta
-    actor.rotation.y=atan2(fly_vector.x,fly_vector.z)
-    _set_movement_animation(false)
+      _soar_distance_m+=moved_m
+      _flight_m+=moved_m
+    else:
+      _air_velocity=Vector3.ZERO
+      _air_display_speed=0.0
+    if fly_vector.length()>0.01:
+      var wanted_yaw: float=atan2(fly_vector.x,fly_vector.z)
+      actor.rotation.y=lerp_angle(actor.rotation.y,wanted_y,clampf(delta*6,0,1))
+    _set_movement_animation(_air_display_speed>0.35)
   elif input_axis.length()>0.08:
     _follow_npc=false
     room.set("_follow_builder",false)
@@ -1977,6 +2003,7 @@ func step(delta: float) -> void:
   if previous_ground_y-new_ground_y>2.3 and _fall_damage_cd<=0.0 and _jump_height<=0.0 and _soar_altitude<=0.0:
     apply_player_damage(roundi((previous_ground_y-new_ground_y-2.0)*10.0))
     _fall_damage_cd=0.8
+  _sync_flight_world_cues(delta)
   if not bool(room.get("_follow_builder")):
     update_camera()
   if _hud_flash>0.0:
@@ -1987,11 +2014,24 @@ func step(delta: float) -> void:
   _layout_hud()
 
 func _set_movement_animation(moving: bool) -> void:
-  if animator == null:
+  if animator==null:
     return
-  var animation: String = walking if moving else idle
-  if not animation.is_empty() and animator.current_animation != animation:
-    animator.play(animation)
+  var clip: String=walking if moving else idle
+  if camera_mode=="soar":
+    # The existing CC0 knight GLB (confirmed Godot-4 import) actually owns
+    # Idle_swordRight / Run_swordRight / Jump bone animations. No frozen
+    # default T-pose or counterfeit hand-drawn humanoid is substituted.
+    clip=_knight_clip("|Run_swordRight") if moving else _knight_clip("|Idle_swordRight")
+    if clip.is_empty():
+      clip=_knight_clip("|Jump")
+    animator.speed_scale=0.80
+  elif _jump_height>0.05:
+    clip=_knight_clip("|Jump")
+    animator.speed_scale=1.0
+  else:
+    animator.speed_scale=1.0
+  if not clip.is_empty() and animator.current_animation!=clip:
+    animator.play(clip)
 
 func _safe_camera_position(target: Vector3, desired: Vector3) -> Vector3:
   if world==null or world.get_world_3d()==null:
@@ -2188,6 +2228,13 @@ func stats() -> Dictionary:
     "jump_height_m":_jump_height,
     "actual_avatar_flight":camera_mode=="soar",
     "avatar_soar_altitude_m":_soar_altitude,
+    "avatar_soar_target_altitude_m":_soar_target_altitude,
+    "avatar_soar_current_speed_mps":_air_display_speed,
+    "avatar_soar_landing":_soar_landing,
+    "actual_wind_particles_emitting":_flight_wind_particles!=null and _flight_wind_particles.emitting,
+    "flight_altitude_world_reference":_flight_altitude_beam!=null,
+    "flight_ground_shadow_real_height":_flight_shadow!=null,
+    "actual_knight_bone_animation":animator.current_animation if animator!=null else "",
     "avatar_soar_distance_m":_soar_distance_m,
     "blocked_real_wall_steps":_blocked_wall_steps,
     "interaction_count":_interaction_count,
