@@ -1,12 +1,12 @@
 {
   "schema": 1,
   "channel": "android-preview",
-  "revision": 200,
+  "revision": 201,
   "minimum_android_code": 1176,
   "maximum_android_code": 1176,
-  "sha256": "57935c8122e4ff3e5d2a25e58fb2e94d61489065242d613575b312371d97d847",
-  "size_bytes": 22035040,
-  "pack_url": "https://160701541-cell.github.io/xinyanshuo/android-preview/canglan-content-rev-200.pck",
-  "notes": "苍岚原APK176 rev200：修复真人Godot截图发现的CC0长发缩到胸口而脸部秃头，校正世界头部坐标和45°、第三人称、空中飞剑截图；保留飞行风粒、高度速度HUD与全世界1/5/20/100倍时间。原APK本地AI仍缺Android推理库，修仙数据须后续正式审核；手机验收待完成。",
-  "signature": "LZjq9uky9N+fE+Q4r3kGny215UxVjPedZla+MJgwGdk9+hvg1jAILHd4KdWVRzFRMzkL3AFG6KcQ93CETsOHLiYdzWkIPJ+fLuRN4Xbw01MINjGToM4tt81dDB3FbqEMUg0V6mwvyBIBF+TbCT6k/Ejor57/dAjXtJiLwhCAZKZXFfOkuTInbbO6wbco4c17spbRRRNmR8W1gNVHyiDviRIsnqPIEH3+oYjpFVe7nrDqvNw30WVmqbctXWNE+15H8R/jsqHSivZFa4GgeFEDVdo47Mv/95zmD1VZrLSVU9FejGBVULjYdIU+2CDQt3ZY/sCjiJSZU9sglFrhG+kYBumsH6U3ildciquRnbdcC2KOLR0LCSMOcLVVC9AJbrRW0yTpUjVvo1ndNwHdbZFOmEyiNRo1Qz9kIjKv6U65K45DC9uhLnl78wVSMm8yHtHBkhrZe8Jq322Sjd1fjeNeSHlNXmxoO9GJN0JSC2iRiny1ljG2K2JZk+z1WHu+DQEM"
+  "sha256": "245762e18945383660ecf6a100760be993d86259f25753ac5f41121ffe27c687",
+  "size_bytes": 22037120,
+  "pack_url": "https://160701541-cell.github.io/xinyanshuo/android-preview/canglan-content-rev-201.pck",
+  "notes": "苍岚原APK176 rev201：世界灵脉种子存档、12名真实GLB修士独立作息，古石灵根检测台靠近交互后揭示灵根；已测灵根可按世界小时吐纳积累修为、消耗实际体力并突破炼气，存档保留。沿用已有御风飞剑/昼夜加速；本地Qwen因原APK缺原生推理库仍不可用，需签名APK升级。",
+  "signature": "eXpJS+coGac45FiZiGSovuUKz2kH/Hu4Yo4X7gn0w1Ae0/Ne6esFKkzs+GyIFFSEx7qaN8x7F0d6V29KDAqYE0oqq+8rDn3pMqNJjlWA86FaNdbTZ4ehnQbyiueIR8zlS5iuXZctfxdDZYca4Vxrqd/zUzYLHgalz/DJXeuAzWBnitZSZI0M+Fey8qCIvppD4RZdnWAsSNLvcPFtS8+6lp32cvibgdnACXEzUJ0BtehpgL2PwI/bhSim4oAKn2Yw/jfxUqRLgQdH5iC+JdV6jKnJXApd7+3p3PfPG59MF9wtlNM4s5opJSqtqGni32j1frOpJF0fcRPcW2IDC5PL5UNZ4hGZZVTr5tLcvRkUlthIxPlkZgt7u1UwlbqamWXjyKcVBRMRGqJN5afzWeZ5UTUaKueXpXkZbxvMwMOkwA3uUhnU/A9jPxai4UEHoddMb+nMDSS1OMZRPcantj4mSmTLn5VbzQWfYRp7QIxVceTFqeJ3haSGrJyyRWBaGM2n"
 }
