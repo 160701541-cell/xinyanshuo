@@ -48,6 +48,17 @@ const HQ_MATURE_TREES: Dictionary={
   "oak":"res://canglan_rev187/hq_rev208/mature_oak_hq_lod0.glb",
   "maple":"res://canglan_rev187/hq_rev208/mature_maple_hq_lod0.glb",
   "linden":"res://canglan_rev187/hq_rev208/mature_linden_hq_lod0.glb"}
+# Additional source-authored actual 3D botanical forms, never WorldX 2D cutouts.
+# Intake manifest and GLB SHA verified by the QA-only staging pipeline.
+const HQ_REV208_BOTANICAL: Dictionary={
+  "pine":"res://canglan_rev187/hq_rev208/hq_pine_cc0_lod0.glb",
+  "cypress":"res://canglan_rev187/hq_rev208/hq_cypress_cc0_lod0.glb",
+  "conifer":"res://canglan_rev187/hq_rev208/hq_conifer_cc0_lod0.glb",
+  "fern":"res://canglan_rev187/hq_rev208/hq_fern_cc0_lod0.glb",
+  "hydrangea":"res://canglan_rev187/hq_rev208/hq_hydrangea_cc0_lod0.glb",
+  "rose":"res://canglan_rev187/hq_rev208/hq_rose_cc0_lod0.glb",
+  "lavender":"res://canglan_rev187/hq_rev208/hq_lavender_cc0_lod0.glb",
+  "grass":"res://canglan_rev187/hq_rev208/hq_grass_cc0_lod0.glb"}
 const TOWN := "CL-REV186-HX-VILLAGE"
 const DEPOT := Vector3(0.0, 0.0, 10.0)
 const SITE := Vector3(0.0, 0.0, -3.0)
@@ -95,6 +106,12 @@ var asset_errors: Array[String] = []
 var asset_sources: Dictionary = {}
 var hq_mature_tree_sources: Dictionary={}
 var hq_mature_tree_visuals: Dictionary={}
+var hq_botanical_sources: Dictionary={}
+var hq_botanical_visuals: Dictionary={}
+var hq_botanical_terrain_sites: Dictionary={}
+var hq_botanical_colliders: Dictionary={}
+var hq_botanical_placement_failures: Array[String]=[]
+var _hq_botanical_clock: float=0.0
 # rev199 genuinely licensed CC0 hair and real sword are separate scene
 # sources; they MUST NOT inflate 7 original economy/batch material sources.
 var licensed_long_hair_source: Node3D
@@ -235,6 +252,7 @@ func _ready() -> void:
   # the physical quality/vegetation controller is initialized. The earlier
   # call ran before quality existed and rejected all genuine bush sources.
   _spawn_licensed_living_understory()
+  _spawn_rev208_hq_botanical_ecology()
   terrain_world.connect("terrain_cell_changed",
     Callable(self,"_on_understory_terrain_changed"))
   _set_dev_ui_visible(false)
@@ -636,6 +654,16 @@ func _load_assets() -> void:
       asset_errors.append("REV208_P0_HQ_VENDOR_PBR_NOT_FOUR_SURFACES_"+String(tree_kind))
       continue
     hq_mature_tree_sources[tree_kind]=source
+  for plant_kind in HQ_REV208_BOTANICAL:
+    var botanical: Node3D=_parse_existing_cc0(String(HQ_REV208_BOTANICAL[plant_kind]))
+    if botanical==null:
+      asset_errors.append("REV208_HQ_BOTANICAL_SOURCE_MISSING_"+String(plant_kind))
+      continue
+    var surface_meshes: Array[Node]=botanical.find_children("*","MeshInstance3D",true,false)
+    if surface_meshes.is_empty():
+      asset_errors.append("REV208_HQ_BOTANICAL_MESH_EMPTY_"+String(plant_kind))
+      continue
+    hq_botanical_sources[plant_kind]=botanical
   licensed_long_hair_source=_parse_existing_cc0(
     "res://canglan_rev187/quaternius_hair_long_static.glb")
   licensed_flying_sword_source=_parse_existing_cc0(
@@ -909,6 +937,7 @@ func _spawn_licensed_living_understory() -> void:
 func _on_understory_terrain_changed(at: Vector3,radius: float) -> void:
   if quality==null:
     return
+  _sync_rev208_botanical_terrain(at,radius)
   for index in range(licensed_understory_instances.size()):
     var pos: Vector3=licensed_understory_locations[index]
     if Vector2(pos.x-at.x,pos.z-at.z).length()>radius+1.5:
@@ -926,6 +955,135 @@ func _living_shrub_count() -> int:
     if is_instance_valid(living) and living.visible:
       visible+=1
   return visible
+
+
+# Non-inventory natural flora for visual ecology: these never produce free ore,
+# herbs, timber or duplicate the saved 52 natural resource IDs. A living tree
+# carries a deterministic ecological identity and real trunk collision.
+func _spawn_rev208_hq_botanical_ecology() -> void:
+  if terrain_world==null or quality==null:
+    return
+  # Large evergreen groves frame the existing left-side resource forest but
+  # never occupy the spawn clearing, spirit-root altar or NPC building sites.
+  var groves: Array=[
+    ["pine",Vector2(-35.0,-24.0)],["cypress",Vector2(-38.0,-9.0)],
+    ["conifer",Vector2(-32.0,25.0)],["pine",Vector2(-15.5,-34.0)],
+    ["cypress",Vector2(-38.0,29.0)],["conifer",Vector2(-15.0,31.0)]]
+  var rng:=RandomNumberGenerator.new()
+  rng.seed=208518
+  var placements: Array=groves.duplicate(true)
+  # Real CC0 ferns / shrubs / flowering understory: NOT shrunken oak trunks.
+  for plant_kind in ["fern","hydrangea","rose","lavender","grass"]:
+    for j in range(8):
+      var cx: float=-31.0 if j%2==0 else -19.0
+      var cz: float=-22.0 if j<4 else 23.0
+      placements.append([plant_kind,Vector2(
+        clampf(cx+rng.randf_range(-10.0,7.0),-43.0,-12.0),
+        clampf(cz+rng.randf_range(-8.0,8.0),-42.0,42.0))])
+  var ordinal: int=0
+  for placement in placements:
+    var kind: String=String(placement[0])
+    var horizontal: Vector2=placement[1]
+    if not hq_botanical_sources.has(kind):
+      hq_botanical_placement_failures.append("SOURCE_UNAVAILABLE_"+kind)
+      continue
+    var x: float=horizontal.x
+    var z: float=horizontal.y
+    if not bool(quality.call("_natural_plantable",x,z)):
+      continue
+    if Vector2(x-1.5,z-7.0).length()<9.0 or (
+        Vector2(x-12.0,z-7.0).length()<6.0):
+      continue
+    var housing_blocked: bool=false
+    for site in housing_blueprints.values():
+      var home: Vector3=site["at"]
+      if Vector2(x-home.x,z-home.z).length()<7.2:
+        housing_blocked=true
+        break
+    if housing_blocked:
+      continue
+    var actor: Node3D=(hq_botanical_sources[kind] as Node3D).duplicate()
+    var identity: String="CL-BOTANICAL-208-%s-%03d" % [kind,ordinal]
+    ordinal+=1
+    actor.name=identity
+    actor.position=Vector3(x,0.0,z)
+    actor.rotation.y=rng.randf_range(-PI,PI)
+    # Scales ONLY for minor natural variation, not fake 8m mature trees.
+    actor.scale=Vector3.ONE*(
+      rng.randf_range(0.94,1.06) if kind in ["pine","cypress","conifer"]
+      else rng.randf_range(0.82,1.12))
+    actor.set_meta("world_entity_id",identity)
+    actor.set_meta("hq_rev208_vendor_cc0_botanical",kind)
+    actor.set_meta("source_license","CC0 exact Innerscene source page")
+    actor.set_meta("never_free_inventory",true)
+    world.add_child(actor)
+    var bounds: Vector2=_visible_bounds(actor)
+    if bounds.y-bounds.x<0.15 or (
+        kind in ["pine","cypress","conifer"] and bounds.y-bounds.x<7.0):
+      hq_botanical_placement_failures.append("BAD_REAL_ASSET_METRES_"+identity)
+      actor.queue_free()
+      continue
+    var ground: float=float(terrain_world.call("height_at",x,z))
+    actor.position.y+=ground-bounds.x
+    var installed: Vector3=Vector3(x,ground,z)
+    hq_botanical_visuals[identity]=actor
+    hq_botanical_terrain_sites[identity]=installed
+    if kind in ["pine","cypress","conifer"]:
+      var collider:=StaticBody3D.new()
+      collider.name="ActualEvergreenTrunk_"+identity
+      collider.collision_layer=2
+      collider.collision_mask=0
+      collider.position=Vector3(x,ground+1.20,z)
+      var stem:=CollisionShape3D.new()
+      var cylinder:=CylinderShape3D.new()
+      cylinder.radius=0.36
+      cylinder.height=2.4
+      stem.shape=cylinder
+      collider.add_child(stem)
+      world.add_child(collider)
+      hq_botanical_colliders[identity]=collider
+  if hq_botanical_sources.size()!=HQ_REV208_BOTANICAL.size():
+    asset_errors.append("REV208_HQ_EIGHT_VENDOR_BOTANICAL_SOURCES_INCOMPLETE")
+  _add_event("rev208候选：真实CC0松柏蕨草生态 %d 株，手机美术验收待完成" % [
+    hq_botanical_visuals.size()])
+
+func _sync_rev208_botanical_terrain(at: Vector3,radius: float) -> void:
+  # Excavation never leaves hovering ferns/trunks. No plant grants materials.
+  for id in hq_botanical_terrain_sites:
+    var old_site: Vector3=hq_botanical_terrain_sites[id]
+    if Vector2(old_site.x-at.x,old_site.z-at.z).length()>radius+3.0:
+      continue
+    var plant: Node3D=hq_botanical_visuals[id]
+    if not is_instance_valid(plant):
+      continue
+    var ground: float=float(terrain_world.call(
+      "height_at",old_site.x,old_site.z))
+    var bounds: Vector2=_visible_bounds(plant)
+    plant.position.y+=ground-bounds.x
+    hq_botanical_terrain_sites[id]=Vector3(old_site.x,ground,old_site.z)
+    if hq_botanical_colliders.has(id):
+      var trunk: StaticBody3D=hq_botanical_colliders[id]
+      trunk.position.y=ground+1.20
+
+func _sync_rev208_botanical_visibility(player_at: Vector3) -> void:
+  # Distance culling is a safety limit UNTIL real LOD1/2, FPS and
+  # thermal acceptance. The selected quality is still user-controlled.
+  var mode: String=String(quality.get("selected"))
+  var far: float=72.0 if mode=="极致" else (
+    56.0 if mode=="高档" else 34.0)
+  for id in hq_botanical_visuals:
+    var plant: Node3D=hq_botanical_visuals[id]
+    if not is_instance_valid(plant):
+      continue
+    var site: Vector3=hq_botanical_terrain_sites[id]
+    var dx: float=player_at.x-site.x
+    var dz: float=player_at.z-site.z
+    var within: bool=dx*dx+dz*dz<=far*far
+    var planted: bool=bool(quality.call("_natural_plantable",site.x,site.z))
+    plant.visible=within and planted
+    if hq_botanical_colliders.has(id):
+      var trunk: StaticBody3D=hq_botanical_colliders[id]
+      trunk.collision_layer=2 if planted else 0
 
 func _spawn_spirit_resource_nodes() -> void:
   if spirit_resources==null or not bool(spirit_resources.get("_loaded")):
@@ -1830,6 +1988,11 @@ func _process(delta: float) -> void:
     var following: Node3D = workers[_current_focus_id]["node"]
     _camera_focus = _camera_focus.lerp(following.position+Vector3(0,1.15,0),clampf(delta*3.5,0,1))
     _update_camera()
+  if hero!=null:
+    _hq_botanical_clock+=delta
+    if _hq_botanical_clock>=0.5:
+      _hq_botanical_clock=0.0
+      _sync_rev208_botanical_visibility(hero.position)
   _render_sync_counter += delta
   if _render_sync_counter >= 0.10:
     _render_sync_counter = 0.0
@@ -1913,6 +2076,11 @@ func stats() -> Dictionary:
     "rev207_mine_guardian_positions_linked":actual_wildlife.values().filter(
       func(v): return String(v.get("guarded_ore",""))!="").size(),
     "rev208_hq_true_mature_tree_count":hq_mature_tree_visuals.size(),
+    "rev208_hq_botanical_genuine_source_species":hq_botanical_sources.keys(),
+    "rev208_hq_botanical_true_glb_count":hq_botanical_visuals.size(),
+    "rev208_hq_botanical_tree_trunk_colliders":hq_botanical_colliders.size(),
+    "rev208_hq_botanical_valid_ground_sites":hq_botanical_terrain_sites.size(),
+    "rev208_hq_botanical_placement_failures":hq_botanical_placement_failures.duplicate(),
     "rev208_hq_true_mature_tree_sources":hq_mature_tree_sources.size(),
     "rev208_hq_genuine_species":HQ_MATURE_TREES.keys(),
     "rev207_real_cc0_shrub_understory":licensed_understory_count,
