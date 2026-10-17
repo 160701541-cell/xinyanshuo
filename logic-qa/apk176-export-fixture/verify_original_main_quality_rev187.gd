@@ -644,7 +644,16 @@ func _run() -> void:
   var biome_colors: Dictionary={}
   for surface in range(actual_ground.mesh.get_surface_count()):
     var material: Material=actual_ground.mesh.surface_get_material(surface)
-    if material is StandardMaterial3D and (material as StandardMaterial3D).vertex_color_use_as_albedo:
+    # Rev207 shader samples the SAME continuous mesh vertex colors and
+    # adds minute world-space material texels. Old StandardMaterial3D-only
+    # QA would reject this richer actual shader despite 7+ untouched biomes.
+    var honors_vertex_biome: bool=(
+      material is StandardMaterial3D and (
+      material as StandardMaterial3D).vertex_color_use_as_albedo)
+    if material is ShaderMaterial:
+      honors_vertex_biome=bool((
+        material as ShaderMaterial).get_shader_parameter("vertex_biome"))
+    if honors_vertex_biome:
       continuous_biome_surfaces+=1
       var colors: PackedColorArray=actual_ground.mesh.surface_get_arrays(surface)[Mesh.ARRAY_COLOR]
       for idx in range(0,colors.size(),maxi(1,int(colors.size()/50))):
