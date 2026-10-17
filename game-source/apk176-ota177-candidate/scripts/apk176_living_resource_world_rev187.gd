@@ -204,6 +204,8 @@ func _ready() -> void:
   world_society=LivingRegions.new()
   if not bool(world_society.call("initialize",int(cultivation.get("world_seed")))):
     asset_errors.append("REV207_WORLD_50000KM2_MORTAL_ECOLOGY_SAVE_LOAD_FAILED")
+  else:
+    _sync_mine_guardian_realms()
   _create_quality_hud()
   _hide_old_render_world()
   _hide_original_debug_labels()
