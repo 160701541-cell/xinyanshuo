@@ -1,12 +1,12 @@
 {
   "schema": 1,
   "channel": "android-preview",
-  "revision": 193,
+  "revision": 194,
   "minimum_android_code": 1176,
   "maximum_android_code": 1176,
-  "sha256": "34e5032e405504cb6aa9ca32d4d2d3ef68663495d26ed62b6766634eeb6a13dc",
-  "size_bytes": 21741056,
-  "pack_url": "https://160701541-cell.github.io/xinyanshuo/android-preview/canglan-content-rev-193.pck",
-  "notes": "苍岚原APK176 rev193：新增92米村庄外46米区块可行走地形和同步真实静态物理碰撞，打破原42米移动边界；玩家左右摇杆、手柄和疾步可以沿连续地面越过原村庄边界。按世界坐标确定性生成附近区块，远离时卸载近场实体，区块内挖地1层=0.45米并先写入user://原子存档再给真实材料，返回原处保留挖痕，地形与碰撞同源。仍不等于完成无限NPC生态/可居住院落/完整修仙美术，手机实机待验收。",
-  "signature": "R7QPSNK2VRSikJ1uyjOtsLVPj+9IWfZlui4u0C7Sa0evOSy4X4y2t03Bxn2jrieOklGGZx20i0nY5q9sd96ONwEFbu0A1OeM0KHM6c0qnJQBqyboVovsXPeiEZyh0dgB0ojO4PKb+Mk5d5eEHm2+zyWXKljiWdAP91vTuRrkixpeeAqiITo/KG+Tf5T+Bx8uoHoUIPSIGS8fDL6GQWXdG9kg9qPEyITsvGwFpHPQrwwB/iOwpx1YfXsGR77UihdJAmLH7OoCraDvHupje0lXs/bI3cmn8/I/39t4WE2pFzq/oGZPdJdydeoAraO2xyRGcBP8NMWFxtjwGMExrkY411OyM+9M6GzX9igkkAlaDELBqzJHGZtVxpPRpr7ftv1RiM6FKFRyY6TkR/LQe2loi6lsPZjhRS+vW3csQ1L9JCbtRjWM6z3OUqK+3bPGRw+FctoB547fViJfSledPZjLviP5TtyTG+fD8EO1SxOVQ0cPJQfjNyFkCZVmvSgWe/NA"
+  "sha256": "cfe4633dc0bb3f3e556effe11adf59a4f5943b13b190e6a03e957ffac7698caa",
+  "size_bytes": 21747136,
+  "pack_url": "https://160701541-cell.github.io/xinyanshuo/android-preview/canglan-content-rev-194.pck",
+  "notes": "苍岚原APK176 rev194：修复灰白泛光世界，减轻雾、恢复深浅自然绿与暖土色，减少过曝；主村仍保持真实可挖材质/草甸，扩展物理区块改为可持续加载/卸载的聚簇草地MultiMesh，按三档画质裁剪、挖地立即移除对应植被，维持触屏/手柄和持久化挖掘。仍未制作完成真实中式院落与修仙法术，手机实机待验收。",
+  "signature": "fB95ZmKDUFZgV+sO0erQgvbcQGaapFSRtgjKsuATj5qPt0OTAzP1yzvhoE6KRhZw84fg/L4vL8hKO/gtBMjCFBxVle/uSDt48doQrH1zCPa5hKFdu29Vk9OZ/1aeewbpp6FAwi1pUdBZYdp9mEWgST1v5TUAgRU0+k/dMJpWchfmjQ+vu4dEEWpU1HcCGfiCpAtcEV0yGk/L7Db1cFZBJoODX3eRYzTxq0Q75jBY+iDgGkQTPUwZJUuXzoAHMt+5g8yflHWXIxHgQIippi2pmMpVNDvAPh7SiZ0Chg1KcakU/benO/oMN9DExQApRDGXj26SGDLIGE2znmPVKmJ+7uRRwPEPIbLdTMla5WFh9cz3BfxkDwz3jLaywZ8L/8goIKD6IQP5fDBIdl7a5PBKzxCCdEKSyeGwS2+vsjnNue9012COIh17wgtJH1DxtUf1rqUOUmSHOOcSPwHEnZgevIvKfLDuJcV6Hq0hZDGK4osUqi9u3UG7cw0cqKNM7AL1"
 }
