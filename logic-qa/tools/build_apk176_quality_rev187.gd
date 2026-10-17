@@ -14,6 +14,7 @@ const FILES := {
 	"res://canglan_rev187/visual_palette.gd": "canglan_rev187/visual_palette.gd",
 	"res://canglan_rev187/kenney_multimesh.gd": "canglan_rev187/kenney_multimesh.gd",
 	"res://canglan_rev187/strata_terrain.gd": "canglan_rev187/strata_terrain.gd",
+	"res://canglan_rev187/vivid_material.gd": "canglan_rev187/vivid_material.gd",
 	"res://canglan_rev187/player_controller.gd": "canglan_rev187/player_controller.gd",
 	"res://canglan_rev187/backpack.gd": "canglan_rev187/backpack.gd",
 	"res://canglan_rev187/cultivation_world.gd": "canglan_rev187/cultivation_world.gd",
@@ -52,6 +53,15 @@ func _initialize() -> void:
 		var rel: String = "canglan_rev187/ui/lucide/" + icon + ".svg"
 		files["res://" + rel] = rel
 	files["res://canglan_rev187/ui/lucide/LICENSE"] = "canglan_rev187/ui/lucide/LICENSE"
+	# Source-hashed genuine CC0 PBR maps. Tiny native texel detail only;
+	# original Quaternius 3D mesh, UV, normal and source art unchanged.
+	for name in ["plaster_albedo","plaster_normal","plaster_orm",
+			"tile_albedo","tile_normal","tile_roughness",
+			"timber_albedo","timber_normal","timber_roughness"]:
+		var tex_path: String="canglan_rev187/materials_rev207/"+name+".png"
+		files["res://"+tex_path]=tex_path
+	files["res://canglan_rev187/materials_rev207/manifest.json"]=(
+		"canglan_rev187/materials_rev207/manifest.json")
 	# All native ready-made CC0 buildings, outfits and animated fauna. They
 	# are unmodified original vendor GLBs, pinned by source-file SHA256 in
 	# asset_intake_proof.json. Missing one MUST fail PCK construction.
