@@ -189,7 +189,7 @@ func advance_world_hour() -> void:
   for id in nodes:
     var row: Dictionary=nodes[id]
     var kind: String=String(row["kind"])
-    var limit: int=int(RESOURCE_DEFS[kind]["max"])
+    var limit: int=int(row["max"])
     if int(row["remaining"])>=limit:
       row["hours_since_growth"]=0
       continue
