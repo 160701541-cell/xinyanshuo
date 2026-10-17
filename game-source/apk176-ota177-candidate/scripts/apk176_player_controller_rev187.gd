@@ -848,8 +848,19 @@ func _refresh_game_hud() -> void:
   (_game_actions["SpiritWard"] as Button).text=(
     "灵障 %d" % ceili(_ward_cd) if _ward_cd>0.0 else ("护体灵障" if ward_learned else "灵障·未学"))
   if _target_panel!=null:
-    _target_panel.visible=_spar_stage!="inactive"
-    if _spar_stage!="inactive":
+    var locked_cultivator: bool=_locked_target_kind=="cultivator"
+    _target_panel.visible=_spar_stage!="inactive" or locked_cultivator
+    if locked_cultivator and spiritual!=null:
+      var npc_records: Dictionary=spiritual.get("npc_data")
+      if npc_records.has(_locked_target_id):
+        var npc: Dictionary=npc_records[_locked_target_id]
+        _target_status.text="%s · %s  第%d层" % [
+          String(npc.get("name","修士")),String(npc.get("realm","凡人")),int(npc.get("layer",0))]
+        _target_health_bar.max_value=maxi(1,int(npc.get("max_health",1)))
+        _target_health_bar.value=int(npc.get("health",0))
+        _target_mana_bar.max_value=maxi(1,int(npc.get("max_mana",1)))
+        _target_mana_bar.value=int(npc.get("mana",0))
+    elif _spar_stage!="inactive":
       _target_status.text="演武教习 · 凡人武者   %d/%d" % [
         _spar_enemy_health,_spar_enemy_health_max]
       _target_health_bar.max_value=_spar_enemy_health_max
@@ -1058,11 +1069,20 @@ func practice_action() -> Dictionary:
   _guard_time=0.0
   _dodge_time=0.0
   _spar_last_outcome="预备"
+  # Initiate real lock-on once the physical opponent exists, so the very
+  # first sword action starts from an actual tracking view.
+  _clear_target_lock()
+  _locked_target=_spar_partner
+  _locked_target_kind="spar"
+  _locked_target_id="CL-DUEL-TRAINER"
+  _lock_on_count+=1
   say("切磋开始：红圈蓄势时格挡或闪避；失误会扣真实生命")
   _refresh_game_hud()
   return {"ok":true,"active":true,"opponent":_spar_partner.name}
 
 func stop_practice() -> void:
+  if _locked_target_kind=="spar":
+    _clear_target_lock()
   for node in [_spar_partner,_spar_collision,_spar_telegraph,_spar_opponent_tag]:
     if node!=null and is_instance_valid(node):
       node.queue_free()
@@ -2340,6 +2360,71 @@ func toggle_fly_view() -> void:
   # Diagnostic free-camera remains available from developer controls.
   _set_mode("third" if camera_mode=="fly" else "fly")
 
+func _clear_target_lock() -> void:
+  _locked_target=null
+  _locked_target_kind=""
+  _locked_target_id=""
+  if _target_panel!=null and _spar_stage=="inactive":
+    _target_panel.visible=false
+
+func toggle_target_lock() -> bool:
+  if _locked_target!=null and is_instance_valid(_locked_target):
+    _clear_target_lock()
+    say("索敌已解除，恢复自由视角")
+    return false
+  _clear_target_lock()
+  if actor==null or camera_mode in ["god","fly"]:
+    return false
+  # A real active training foe always outranks nonhostile citizens.
+  if _spar_stage!="inactive" and _spar_partner!=null and is_instance_valid(_spar_partner):
+    _locked_target=_spar_partner
+    _locked_target_kind="spar"
+    _locked_target_id="CL-DUEL-TRAINER"
+  else:
+    var spirit: RefCounted=room.get("cultivation")
+    if spirit==null:
+      say("附近没有可追踪实体")
+      return false
+    var npcs: Dictionary=spirit.get("npc_visuals")
+    var nearest: float=16.0
+    for id in npcs:
+      var other: Node3D=npcs[id].get("actor",null)
+      if other==null or not is_instance_valid(other):
+        continue
+      var dist: float=actor.position.distance_to(other.position)
+      var toward: Vector3=other.position-actor.position
+      toward.y=0.0
+      if dist<nearest and dist>0.8 and toward.normalized().dot(_forward())>0.05:
+        nearest=dist
+        _locked_target=other
+        _locked_target_kind="cultivator"
+        _locked_target_id=String(id)
+  if _locked_target==null:
+    say("前方16米内没有可锁定的目标")
+    return false
+  _lock_on_count+=1
+  say("锁定实体："+_locked_target_id+"（友善修士不可无故攻击）"
+      if _locked_target_kind=="cultivator" else "已锁定切磋对手，可面向目标施法")
+  _refresh_game_hud()
+  return true
+
+func _step_target_lock(delta: float) -> void:
+  if _locked_target==null:
+    return
+  if not is_instance_valid(_locked_target) or actor==null or (
+      actor.position.distance_to(_locked_target.position)>23.0):
+    _clear_target_lock()
+    return
+  if camera_mode in ["god","fly","iso"] or _camera_angle_locked:
+    return
+  # Truly rotate the player's camera to track the actual 3D enemy position,
+  # not a static portrait or a fake target marker anchored to screen center.
+  var vector: Vector3=_locked_target.position-actor.position
+  vector.y=0
+  if vector.length()>0.15:
+    var next_yaw: float=atan2(-vector.x,-vector.z)
+    _yaw=lerp_angle(_yaw,next_yaw,clampf(delta*5.5,0.0,1.0))
+
 func _set_mode(mode: String) -> void:
   if not ["first","third","god","fly","iso","soar"].has(mode):
     return
@@ -2655,6 +2740,7 @@ func step(delta: float) -> void:
   _fall_damage_cd=maxf(0.0,_fall_damage_cd-delta)
   _spar_tick(delta)
   _step_spiritual_combat(delta)
+  _step_target_lock(delta)
   terrain.call("stream_around",actor.position)
   _step_jump(delta)
   _step_soar_altitude(delta)
@@ -3002,7 +3088,10 @@ func stats() -> Dictionary:
     "pinch_zoom":true,
     "zoom_buttons":2,
     "pinch_events_real_input":_pinch_zoom_events,
-    "visible_camera_shortcuts":7,
+    "visible_camera_shortcuts":8,
+    "live_3d_target_lock_count":_lock_on_count,
+    "target_lock_kind":_locked_target_kind,
+    "target_lock_entity_id":_locked_target_id,
     "camera_angle_locked":_camera_angle_locked,
     "iso45_follow_camera":camera_mode=="iso" and absf(_pitch-PI/4.0)<0.001,
     "third_person_avatar_visible":actor!=null and actor.visible,
