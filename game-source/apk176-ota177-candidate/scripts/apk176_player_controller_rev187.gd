@@ -419,23 +419,41 @@ func rest_and_eat() -> bool:
   return true
 
 func _layout_hud() -> void:
-  if hud == null:
+  if hud==null:
     return
-  var size: Vector2 = room.get_viewport().get_visible_rect().size
-  joystick_ring.position = Vector2(27,maxf(150.0,size.y-178.0))
-  (buttons["PerspectiveButton"] as Button).position = Vector2(size.x-165,18)
-  (buttons["GodViewButton"] as Button).position = Vector2(size.x-165,79)
-  (buttons["FlyViewButton"] as Button).position = Vector2(size.x-165,139)
-  (buttons["FlyUpButton"] as Button).position = Vector2(size.x-168,maxf(235,size.y-299))
-  (buttons["FlyDownButton"] as Button).position = Vector2(size.x-168,maxf(296,size.y-238))
-  (buttons["ResetViewButton"] as Button).position = Vector2(size.x-330,18)
-  (buttons["FlyUpButton"] as Button).visible = camera_mode=="fly"
-  (buttons["FlyDownButton"] as Button).visible = camera_mode=="fly"
-  (buttons["ZoomInButton"] as Button).position = Vector2(size.x-303,maxf(95,size.y-190))
-  (buttons["ZoomOutButton"] as Button).position = Vector2(size.x-303,maxf(155,size.y-128))
-  (buttons["InteractButton"] as Button).position = Vector2(size.x-159,maxf(95,size.y-190))
-  (buttons["DigButton"] as Button).position = Vector2(size.x-159,maxf(155,size.y-128))
-  notice.position = Vector2(minf(315,size.x*0.25),maxf(210,size.y-56))
+  var size: Vector2=room.get_viewport().get_visible_rect().size
+  joystick_ring.position=Vector2(27,maxf(150.0,size.y-178.0))
+  var dev: bool=bool(room.get("developer_ui_visible"))
+  var debug_places: Dictionary={
+    "PerspectiveButton":Vector2(size.x-165,18),
+    "GodViewButton":Vector2(size.x-165,79),
+    "FlyViewButton":Vector2(size.x-165,139),
+    "ResetViewButton":Vector2(size.x-330,18),
+    "ZoomInButton":Vector2(size.x-303,maxf(95,size.y-190)),
+    "ZoomOutButton":Vector2(size.x-303,maxf(155,size.y-128)),
+    "InteractButton":Vector2(size.x-159,maxf(95,size.y-190)),
+    "DigButton":Vector2(size.x-159,maxf(155,size.y-128))}
+  for key in debug_places:
+    (buttons[key] as Button).position=debug_places[key]
+    (buttons[key] as Button).visible=dev
+  (buttons["FlyUpButton"] as Button).position=Vector2(size.x-145,maxf(215,size.y-310))
+  (buttons["FlyDownButton"] as Button).position=Vector2(size.x-145,maxf(275,size.y-250))
+  (buttons["FlyUpButton"] as Button).visible=camera_mode=="fly"
+  (buttons["FlyDownButton"] as Button).visible=camera_mode=="fly"
+  # Five compact top-right tabs, not ten QA buttons scattered over scenery.
+  var menu_names:=["角色","背包","修炼","菜单"]
+  var menu_x: float=maxf(365.0,size.x-4.0*104.0-22.0)
+  for idx in range(menu_names.size()):
+    var tab: Button=hud.get_node("GameMenu_"+menu_names[idx]) as Button
+    tab.position=Vector2(menu_x+float(idx)*104.0,16)
+    tab.size=Vector2(96,44)
+  var action_keys:=["GatherAction","DashAction","DigAction","InteractAction","ViewAction","LockedArt"]
+  for idx in range(action_keys.size()):
+    var col: int=idx%3
+    var row: int=int(idx/3)
+    (_game_actions[action_keys[idx]] as Button).position=Vector2(
+      size.x-295.0+float(col)*94.0,size.y-152.0+float(row)*66.0)
+  notice.position=Vector2(minf(370.0,size.x*0.27),maxf(210.0,size.y-47.0))
 
 func _ui_button_at(p: Vector2) -> bool:
   for node in buttons.values():
