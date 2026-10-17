@@ -18,7 +18,7 @@
 
 ## 第三阶段：HQ-Ecology + World-PBR（P0）
 
-- [ ] **REV208-HQ-020** 至少**3成熟大树 +2幼树+4灌木/地被+4类草/蕨**，成熟树常规8–20米，高出玩家；不同树冠/树皮/枝形、镜头遮挡时透明/镜头自动处理；真土壤坡度/湿度/道路/房屋/水体禁种。
+- [ ] **REV208-HQ-020（3种高乔木真实Godot已通过；整条仍P0未通过）** 原版 Main 真正导入三种源作者 CC0 8.612m/9.507m/8.822m 高树，单树约21.3万/17.6万/13.8万三角，4个原作者PBR颜色材质，实帧Godot4.4.1 run 39073461741 PASS；但是仅3个大树实体、49个Kenney低模资源树和200个矮小树苗外观仍不合用户认可，缺高品质灌木/草蕨/树干贴图/LOD1-2/真机FPS。至少**3成熟大树 +2幼树+4灌木/地被+4类草/蕨**，成熟树常规8–20米，高出玩家；不同树冠/树皮/枝形、镜头遮挡时透明/镜头自动处理；真土壤坡度/湿度/道路/房屋/水体禁种。
 - [ ] **REV208-HQ-021** 生态植被按32m/48m Cell + 物种 + LOD分离资源池，活跃槽位连续、swap-remove、`visible_instance_count`；**逐slot检查真实Godot GPU transform**，避免过去 `IDENTITY`/原点幽灵，手机近景地表不出现大面积单色空白。
 - [ ] **REV208-HQ-022** Poly Haven等合法CC0 PBR地表真源贴图建立 macro 2–8米、detail 2–8厘米两级着色；Alpha Scissor/Hash 叶子，Normal/ORM通道逐源核验；源8K不直接装入安卓PCK，手机纹理按1K/2K预算。全局 saturation不允许再作为万能修补工具。
 - [ ] **REV208-HQ-023** 灵草至少**5–8种**独立轮廓和幼株/成株/采摘后生长状态；6–10米无名字标签仍能区分普通草；微弱叶脉/花蕊局部灵气，不整株霓虹；**原13处资源逻辑及库存/30天种子库不破坏**。灵矿有精确材质与真实护矿妖兽。
@@ -34,7 +34,7 @@
 ## 第五阶段：Mobile-Sustain → REV208-RC → REV208-SIGNED（全部P0）
 
 - [ ] **REV208-HQ-040** 三档手机参数按源报告「极致/高/标准」试验。设备需记录GPU/画质档/3D scale、实际Draw与tris、平均FPS、1% low、内存、热状态；UI仍原生像素。若旧 `QUALITY_DEVICE_ACE5PRO.md` 的“禁止自动降档”与本报告“热严重时先降草/阴影/3D scale”冲突，**本报告的新可选热调节策略优先**；用户手动档不得被静默永久覆盖。
-- [ ] **REV208-HQ-041** 必须交至少**七张同原APK176 Main Godot截图**：`real_godot_rev208_hq_player_close_front.png`、`real_godot_rev208_hq_player_back_hair_cloth.png`、`real_godot_rev208_hq_cultivator_npc_close.png`、`real_godot_rev208_mature_dense_forest.png`、`real_godot_rev208_spirit_herb_vs_ground.png`、`real_godot_rev208_mine_beast_guard_combat.png`、`real_godot_rev208_npc_death_state.png`；必须逐张按真人尺度/真实材质/可辨灵草/HP变化审查，概念图不得混入。
+- [ ] **REV208-HQ-041（实机图部分通过，七张高精审美门禁仍P0 FAIL）** 三种成熟大树+人物同镜头Godot 1280×720中午实帧与原世界NPC真实死亡帧已保存/run 39073461741 PASS，但图上角色仍是Knight、矮树方块、灵草不可辨、地表不够密且PNG不够清晰，缺高精主角多视图；不得因测试帧存在而全通过。必须交至少**七张同原APK176 Main Godot截图**：`real_godot_rev208_hq_player_close_front.png`、`real_godot_rev208_hq_player_back_hair_cloth.png`、`real_godot_rev208_hq_cultivator_npc_close.png`、`real_godot_rev208_mature_dense_forest.png`、`real_godot_rev208_spirit_herb_vs_ground.png`、`real_godot_rev208_mine_beast_guard_combat.png`、`real_godot_rev208_npc_death_state.png`；必须逐张按真人尺度/真实材质/可辨灵草/HP变化审查，概念图不得混入。
 - [ ] **REV208-HQ-042** 用户原安装APK176 versionCode1176真实手机，从rev207保留旧存档进候选：主角转身360°、飞/降/索敌、进入屋内、森林/灵草/灵矿/击杀修士/重载；**连续30分钟**测中高低画质性能、温度、触屏和碰撞；没有设备结果始终 `PENDING_PHONE`。
 - [ ] **REV208-HQ-043** 所有HQ高精P0视觉闸门真实PASS后才能准备PR #14从Draft转正式、合并main；原Main所有功能与截图+实机验收通过之后才签名rev208。RSA私钥只能在GitHub Secrets；新不可变 `canglan-content-rev-208.pck`，公网站点RSA/SHA256/整包下载/HTTP Range 206，`android-preview/latest.json`、官网、更新日志版本同步一致。rev207历史PCK不可覆盖。
 
