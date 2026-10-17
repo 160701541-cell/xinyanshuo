@@ -393,6 +393,22 @@ func _run() -> void:
   if not terrain.call("stats").get("far_seam_stitched",false) or terrain.call("stats").get("infinite_streaming_complete",true):
     _fail(168,"REV191_NO_FALSE_CLAIMS_ABOUT_MINECRAFT_LIKE_STREAMING")
     return
+  if not terrain.call("stats").get("checkerboard_cell_materials_removed",false):
+    _fail(172,"REV192_NO_MORE_RANDOM_2M_GRASS_SOIL_CHECKERBOARD")
+    return
+  var actual_ground: MeshInstance3D=terrain.get_node("REAL_DEFORMABLE_TERRAIN_NOT_PLANE")
+  var continuous_biome_surfaces: int=0
+  var biome_colors: Dictionary={}
+  for surface in range(actual_ground.mesh.get_surface_count()):
+    var material: Material=actual_ground.mesh.surface_get_material(surface)
+    if material is StandardMaterial3D and (material as StandardMaterial3D).vertex_color_use_as_albedo:
+      continuous_biome_surfaces+=1
+      var colors: PackedColorArray=actual_ground.mesh.surface_get_arrays(surface)[Mesh.ARRAY_COLOR]
+      for idx in range(0,colors.size(),maxi(1,int(colors.size()/50))):
+        biome_colors[colors[idx].to_html()]=true
+  if continuous_biome_surfaces!=1 or biome_colors.size()<7:
+    _fail(173,"REV192_REAL_TOP_SURFACE_NEEDS_ONE_CONTINUOUS_MULTICOLOR_BIOME_MATERIAL")
+    return
   # Enumerate the genuine far-field triangles. Every exterior polygon stays
   # outside the central diggable square, and every +/-46m border vertex has
   # the EXACT elevation of the central unexcavated mesh it touches.
