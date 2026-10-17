@@ -23,6 +23,8 @@ REQUIRED = {
     "canglan_rev187/strata_terrain.gd",
     "canglan_rev187/player_controller.gd",
     "canglan_rev187/backpack.gd",
+    "canglan_rev187/root_taxonomy.gd",
+    "canglan_rev187/city_population.gd",
     "canglan_rev187/quality_profiles.gd",
     "canglan_rev187/Textures/colormap.png",
     "Textures/colormap.png",
