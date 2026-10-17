@@ -983,11 +983,12 @@ func _refresh_game_hud() -> void:
     else:
       _spirit_notice.text="灵根：未检测 · 请寻找青色灵根检测台"
   (buttons["RealJumpButton"] as Button).disabled=_jump_height>0.0 or camera_mode in ["fly","god","soar"] or energy<4
-  (buttons["CameraLockButton"] as Button).text="解锁视角" if _camera_angle_locked else "锁视角"
-  (buttons["Iso45Button"] as Button).text="第三人称" if camera_mode=="iso" else "俯视45°"
+  (buttons["CameraLockButton"] as Button).text="解锁" if _camera_angle_locked else "锁视角"
+  (buttons["Iso45Button"] as Button).text="第三" if camera_mode=="iso" else "45°"
   (buttons["SoarAvatarButton"] as Button).text=(
     "着陆中" if _soar_landing else ("降落" if camera_mode=="soar" else "飞行"))
-  (buttons["GodShortcutButton"] as Button).text="退出上帝" if camera_mode=="god" else "上帝"
+  (buttons["GodShortcutButton"] as Button).text="退出" if camera_mode=="god" else "鸟瞰"
+  (buttons["TargetLockButton"] as Button).text="解锁" if _locked_target!=null else "索敌"
   if _living_clock_label!=null:
     var clock: Dictionary=room.call("get_living_clock")
     _living_clock_label.text="世界 第%d天 %02d:%02d · 全世界 ×%d" % [
@@ -1880,9 +1881,9 @@ func _layout_hud() -> void:
   var quick_keys: Array=["Iso45Button","GodShortcutButton",
     "SoarAvatarButton","RealJumpButton","CameraLockButton",
     "PhoneZoomInButton","PhoneZoomOutButton","TargetLockButton"]
-  var quick_labels: Array=["俯视45°","地图","御剑",
+  var quick_labels: Array=["45°","鸟瞰","御剑",
     "跳跃","视角锁","放大+","缩小−",
-    "解除锁定" if _locked_target!=null else "索敌"]
+    "解锁" if _locked_target!=null else "索敌"]
   var quick_width: float=68.0
   var quick_start: float=maxf(376.0,size.x-float(quick_keys.size())*quick_width-16.0)
   for i in range(quick_keys.size()):
