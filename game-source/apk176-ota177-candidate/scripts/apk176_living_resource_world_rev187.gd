@@ -913,8 +913,14 @@ func _rebuild_visible_shrub_gpu_slots() -> void:
     mm.visible_instance_count=licensed_understory_render_indices.size()
     for active_slot in range(licensed_understory_render_indices.size()):
       var natural_id: int=licensed_understory_render_indices[active_slot]
-      mm.set_instance_transform(active_slot,
-        licensed_understory_locations[natural_id]*source)
+      var authored: Transform3D=licensed_understory_locations[natural_id]*source
+      mm.set_instance_transform(active_slot,authored)
+      if active_slot==0 and draw_idx==0:
+        print("REV207_MULTIMESH_DEBUG_WRITE",
+          " count=",mm.instance_count," visible=",mm.visible_instance_count,
+          " fmt=",mm.transform_format," vertex=",mm.mesh.get_surface_count(),
+          " saved=",mm.get_instance_transform(0)," input=",authored,
+          " drawid=",licensed_understory_draws[draw_idx].get_instance_id())
     # Slots beyond visible count are fully culled by Godot and cannot
     # erroneously materialize a monster-size shrub at world origin.
 
