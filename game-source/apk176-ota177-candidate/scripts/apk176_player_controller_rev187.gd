@@ -326,12 +326,20 @@ func _refresh_game_hud() -> void:
   var persons: Dictionary=sim.get("citizens")
   var person: Dictionary=persons.get(PLAYER_ID,{})
   var energy: int=int(person.get("energy",0))
-  _game_status.text="心魇说 · 凡人  |  体力 "+str(energy)+"\n生命：未接入    灵力：未觉醒"
+  _health_bar.value=_player_health
+  _energy_bar.value=energy
+  _game_status.text="心魇说 · 凡人   "+str(_player_health)+"/100"
+  (_game_actions["DashAction"] as Button).disabled=_dash_cd>0.0 or energy<8
+  (_game_actions["DashAction"] as Button).text="疾步 "+str(ceili(_dash_cd))+"秒" if _dash_cd>0.0 else "疾步"
+  (_game_actions["GatherAction"] as Button).disabled=_gather_cd>0.0
+  (_game_actions["GatherAction"] as Button).text="采集 "+str(ceili(_gather_cd))+"秒" if _gather_cd>0.0 else "采集"
+  _quality_sheet_button.visible=_game_sheet!=null and _game_sheet.visible and _game_sheet_mode=="settings"
+  _developer_sheet_button.visible=_quality_sheet_button.visible
   if _game_sheet==null or not _game_sheet.visible:
     return
   if _game_sheet_mode=="character":
     _game_sheet_title.text="角色 · 当前状态"
-    _game_sheet_body.text="体力："+str(energy)+"\n身份：村庄居民\n生命／灵力／装备：尚未实现"
+    _game_sheet_body.text="生命："+str(_player_health)+"/100  体力："+str(energy)+"/100\n饥饿："+str(person.get("hunger",0))+"  年龄："+str(person.get("age",21))+"\n身份：凡人旅者  灵根尚未鉴定\n当前生命可受跌落伤害、消耗食物恢复"
   elif _game_sheet_mode=="inventory":
     _game_sheet_title.text="背包 · 真实采集物资"
     var carried: Dictionary=sim.get("carried_by_actor")
@@ -340,9 +348,75 @@ func _refresh_game_hud() -> void:
       _game_sheet_body.text="携带："+String(item.get("kind","未知"))+" ×"+str(item.get("amount",0))+"\n回仓库点击「互动」交付"
     else:
       _game_sheet_body.text="随身背包空\n靠近树木、石块点击「互动」采集"
-  else:
+  elif _game_sheet_mode=="cultivation":
     _game_sheet_title.text="修炼 · 凡人"
-    _game_sheet_body.text="灵根检测：未开放\n功法／招式／灵力：尚未接入\n没有虚构的技能数值"
+    _game_sheet_body.text="灵根检测：尚未开放\n境界：凡人  法力：未解锁\n采集/疾步属于凡人生存动作，不冒充修仙法术"
+  else:
+    _game_sheet_title.text="菜单 · 系统设置"
+    _game_sheet_body.text="横屏触控：左侧走路，右侧旋转\n视角按键：切第一/第三视角\n画质帧率和研发工具在下方设置"
+
+# Real mortal actions, consuming the same finite-resource ledger as NPCs.
+func gather_action() -> Dictionary:
+  if _gather_cd>0.0:
+    return {"ok":false,"reason":"COOLDOWN"}
+  var result: Dictionary=interact()
+  if bool(result.get("ok",false)) and String(result.get("action",""))=="gather":
+    _gather_cd=1.0
+  return result
+
+func dash_action() -> bool:
+  if actor==null or _dash_cd>0.0 or camera_mode in ["god","fly"]:
+    return false
+  var sim=room.get("sim")
+  var person: Dictionary=sim.citizens.get(PLAYER_ID,{})
+  if int(person.get("energy",0))<8:
+    say("体力不足，无法疾步")
+    return false
+  var target: Vector3=actor.position+_forward()*2.0
+  if absf(target.x)>=41.0 or absf(target.z)>=41.0 or bool(terrain.call("is_water",target.x,target.z)):
+    say("前方地形无法通行")
+    return false
+  var surface_y: float=float(terrain.call("height_at",target.x,target.z))
+  var origin_y: float=float(terrain.call("height_at",actor.position.x,actor.position.z))
+  if absf(surface_y-origin_y)>0.65:
+    say("前方坡面过陡")
+    return false
+  var ray:=PhysicsRayQueryParameters3D.create(actor.position+Vector3.UP*0.8,target+Vector3.UP*0.8)
+  ray.collision_mask=2
+  if not world.get_world_3d().direct_space_state.intersect_ray(ray).is_empty():
+    say("前方有障碍，无法穿模")
+    return false
+  person["energy"]=int(person["energy"])-8
+  actor.position=Vector3(target.x,surface_y+float(actor.get_meta("actor_ground_offset_y",0.0)),target.z)
+  _movement_m+=2.0
+  _dash_cd=3.0
+  _set_movement_animation(true)
+  update_camera()
+  _refresh_game_hud()
+  return true
+
+func apply_player_damage(amount: int) -> int:
+  _player_health=maxi(0,_player_health-maxi(0,amount))
+  if actor!=null:
+    actor.set_meta("health",_player_health)
+  if _player_health==0:
+    say("重伤：请到仓库休整")
+  _refresh_game_hud()
+  return _player_health
+
+func rest_and_eat() -> bool:
+  if actor==null or Vector2(actor.position.x,actor.position.z-10.0).length()>4.0:
+    say("靠近村庄仓库才能休整")
+    return false
+  var sim=room.get("sim")
+  if not sim.feed_citizen(PLAYER_ID):
+    say("没有可消耗的真实食物")
+    return false
+  _player_health=mini(100,_player_health+12)
+  actor.set_meta("health",_player_health)
+  say("消耗村庄食物×1，恢复12生命和4体力")
+  _refresh_game_hud()
+  return true
 
 func _layout_hud() -> void:
   if hud == null:
