@@ -65,6 +65,9 @@ func _save() -> bool:
   last_error=""
   return true
 
+func display_name(kind: String) -> String:
+  return String(NAMES.get(kind,kind))
+
 func amount(kind: String) -> int:
   return int(items.get(kind,0))
 
