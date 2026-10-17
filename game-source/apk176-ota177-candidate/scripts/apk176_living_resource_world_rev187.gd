@@ -43,6 +43,7 @@ var quality_menu: PanelContainer
 var quality_menu_visible: bool = false
 var quality_summary: PanelContainer
 var quality_details_visible: bool = true
+var developer_ui_visible: bool = false # rev188: player-first default
 var hidden_performance_panels: int = 0
 var _old_profiler_nodes: Array[CanvasItem] = []
 var _foundation_dig_clock: float = 0.0
@@ -114,6 +115,7 @@ func _ready() -> void:
   _hide_original_debug_labels()
   quality = ManualQuality.new()
   quality.call("initialize",self)
+  _set_dev_ui_visible(false)
   _update_camera()
   _update_status()
   set_meta("prototype", "REUSABLE_MATERIALS_AND_INDEPENDENT_WORKERS")
@@ -317,6 +319,23 @@ func _create_quality_hud() -> void:
   close_button.text="收起设置"
   close_button.pressed.connect(_toggle_quality_settings)
   vertical.add_child(close_button)
+
+# The live world continues to update, but all diagnostics and demo buttons
+# are invisible until the player explicitly enables developer tools.
+func _set_dev_ui_visible(value: bool) -> void:
+  developer_ui_visible=value
+  if ui==null:
+    return
+  for node_name in ["ProductionInspector","VillageStockAndWorkerHUD",
+      "FollowActualBuilder","GeologicalEpochsOnly",
+      "NativeResolutionRealQualityTelemetry","OpenManualQualitySettings"]:
+    var item: CanvasItem=ui.get_node_or_null(node_name) as CanvasItem
+    if item!=null:
+      item.visible=value
+  if not value:
+    quality_menu_visible=false
+    if quality_menu!=null:
+      quality_menu.visible=false
 
 func _toggle_diagnostics() -> void:
   quality_details_visible=not quality_details_visible
