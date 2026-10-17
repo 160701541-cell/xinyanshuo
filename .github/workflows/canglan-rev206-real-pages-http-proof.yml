@@ -3,7 +3,7 @@ name: Canglan APK176 rev206 - Live Signed CC0 PBR OTA HTTPS RSA SHA256 and HTTP2
 on:
   workflow_run:
     workflows:
-      - Canglan ORIGINAL APK176 rev206 - Signed Real Herbs Spirit Ore and Tree Batch
+      - Canglan Official Website and APK176 OTA - Deploy to Pages
     types: [completed]
   workflow_dispatch:
 permissions:
