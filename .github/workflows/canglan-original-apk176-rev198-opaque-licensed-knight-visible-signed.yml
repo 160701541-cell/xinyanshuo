@@ -310,7 +310,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          python3 logic-qa/release-gate/sign_pck_release.py             --pack qa-results/canglan-apk176-rev187-3d-UNSIGNED.pck             --revision 198 --minimum-android-code 1176 --maximum-android-code 1176             --pack-url 'https://160701541-cell.github.io/xinyanshuo/android-preview/canglan-content-rev-198.pck'             --notes '苍岚原APK176 rev198：真实原引擎截图发现人物消失根因不是镜头按钮而是原Quaternius许可骑士GLB导入后Armor/皮肤等Solid材质Alpha=0、完全透明。直接修复现有合法授权带骨骼GLB的实体表面透明度，保留几何骨骼和动画；玩家、原村民NPC、切磋敌人共用修复源，正常第三视角、固定45度跟随与全部rev197角色跳跃、飞行、触屏放缩、摄像机锁定、全身胶囊及树石建筑避碰保持。新增实拍Godot帧每像素不再只有人形节点可见声明：近摄和45度双画面都必须通过真正不透明人体像素审计。尚非用户手机一加Ace5Pro实机验收，也不是高级精细人物造型修仙院落。'             --unsigned-template             --output qa-results/rev198-unsigned.json
+          python3 logic-qa/release-gate/sign_pck_release.py             --pack qa-results/canglan-apk176-rev187-3d-UNSIGNED.pck             --revision 198 --minimum-android-code 1176 --maximum-android-code 1176             --pack-url 'https://160701541-cell.github.io/xinyanshuo/android-preview/canglan-content-rev-198.pck'             --notes '苍岚原APK176 rev198：根据真实Godot第三人称、45度镜头截图修复人物完全透明P0：原已授权骑士GLB实体材质Alpha=0，现修正为不透明，保持骨骼、动画与原人物NPC。新增严格真实引擎像素截图验收，保留rev197跳跃、角色飞行、镜头锁、双指缩放和物理碰撞。原APK签名热更新，手机实机仍待验收。'             --unsigned-template             --output qa-results/rev198-unsigned.json
           python3 - <<'PY'
           import json,pathlib
           p=pathlib.Path('qa-results/rev198-unsigned.json')
