@@ -881,6 +881,87 @@ func _toggle_touch_invert() -> void:
   cfg.save("user://canglan_touch_camera_v2.cfg")
   _refresh_touch_option_label()
 
+func toggle_target_lock() -> void:
+  # Only people that truly exist in the original animated 3D world are
+  # candidates. This camera lock never converts neutral cultivators to prey.
+  if _locked_target!=null and is_instance_valid(_locked_target):
+    _clear_target_lock()
+    say("已解除索敌视角")
+    return
+  if camera_mode in ["god","fly","iso"] or actor==null:
+    say("请使用第三视角或御剑视角锁定目标")
+    return
+  var candidate: Node3D=null
+  var candidate_id: String=""
+  var best: float=22.0
+  if _spar_partner!=null and is_instance_valid(_spar_partner) and _spar_stage!="inactive":
+    var d: float=actor.position.distance_to(_spar_partner.position)
+    if d<best:
+      candidate=_spar_partner
+      candidate_id="CL-TRAINING-DUEL"
+      best=d
+  var cult: RefCounted=room.get("cultivation")
+  if cult!=null:
+    var visible: Dictionary=cult.get("npc_visuals")
+    for id in visible:
+      var person: Node3D=visible[id].get("actor",null)
+      if person==null or not is_instance_valid(person):
+        continue
+      var range_m: float=actor.position.distance_to(person.position)
+      if range_m<best and range_m>1.3:
+        candidate=person
+        candidate_id=String(id)
+        best=range_m
+  if candidate==null:
+    say("附近没有能够锁定的实体人物")
+    return
+  _locked_target=candidate
+  _locked_target_id=candidate_id
+  _locked_target_label.visible=true
+  _target_lock_button.text="解锁"
+  _auto_walking=false
+  _follow_npc=false
+  say("目标已锁定；中立修士不能被随意攻击")
+
+func _clear_target_lock() -> void:
+  _locked_target=null
+  _locked_target_id=""
+  if _locked_target_label!=null:
+    _locked_target_label.visible=false
+  if _target_lock_button!=null:
+    _target_lock_button.text="索敌"
+
+func _step_target_lock(delta: float) -> void:
+  if _locked_target==null:
+    return
+  if not is_instance_valid(_locked_target) or camera_mode in ["first","god","fly","iso"] or (
+      _game_sheet!=null and _game_sheet.visible):
+    _clear_target_lock()
+    return
+  var displacement: Vector3=_locked_target.position-actor.position
+  displacement.y=0.0
+  if displacement.length()>28.0 or displacement.length()<0.3:
+    _clear_target_lock()
+    return
+  var desired_yaw: float=atan2(-displacement.x,-displacement.z)
+  _yaw=lerp_angle(_yaw,desired_yaw,clampf(delta*5.0,0.0,1.0))
+  if _locked_target_id=="CL-TRAINING-DUEL":
+    _locked_target_label.text="◎ 演武教习 · 凡人  血 %d/%d  法力 0" % [
+      _spar_enemy_health,_spar_enemy_health_max]
+  else:
+    var cult: RefCounted=room.get("cultivation")
+    if cult==null:
+      _clear_target_lock()
+      return
+    var data: Dictionary=cult.get("npc_data").get(_locked_target_id,{})
+    if data.is_empty():
+      _clear_target_lock()
+      return
+    _locked_target_label.text="◎ %s · %s%s  生命 %d  法力 %d  [中立]" % [
+      String(data.get("name","修士")),String(data.get("realm","凡人")),
+      " 第%d层" % int(data.get("layer",0)) if int(data.get("layer",0))>0 else "",
+      int(data.get("health",0)),int(data.get("mana",0))]
+
 func toggle_quickbar() -> void:
   _quickbar_folded=not _quickbar_folded
   _quickbar_toggle.text="展开" if _quickbar_folded else "收起"
@@ -1144,6 +1225,8 @@ func stop_practice() -> void:
   for node in [_spar_partner,_spar_collision,_spar_telegraph,_spar_opponent_tag]:
     if node!=null and is_instance_valid(node):
       node.queue_free()
+  if _locked_target_id=="CL-TRAINING-DUEL":
+    _clear_target_lock()
   _spar_partner=null
   _spar_collision=null
   _spar_telegraph=null
@@ -2845,6 +2928,7 @@ func step(delta: float) -> void:
     apply_player_damage(roundi((previous_ground_y-new_ground_y-2.0)*10.0))
     _fall_damage_cd=0.8
   _sync_flight_world_cues(delta)
+  _step_target_lock(delta)
   if not bool(room.get("_follow_builder")):
     update_camera()
   if _hud_flash>0.0:
@@ -3101,7 +3185,9 @@ func stats() -> Dictionary:
     "position":actor.position if actor!=null else Vector3.ZERO,
     "current_foot_height":float(terrain.call("height_at",actor.position.x,actor.position.z)) if actor!=null else 0.0,
     "camera_mode":camera_mode,"god_view_available":true,"free_flight_available":true,
-    "vertical_drag_inverted_for_phone":_view_pitch_reversed,
+    "vertical_drag_inverted_for_phone":_touch_look_inverted,
+    "lock_on_real_actor":_locked_target!=null and is_instance_valid(_locked_target),
+    "ui_open_licensed_lucide":_open_icon("backpack")!=null,
     "camera_collision_avoidance_hits":_camera_collision_hits,
     "flight_distance":_flight_m,
     "gamepad_connected":_pad_device>=0,
