@@ -540,7 +540,7 @@ jobs:
           PY
           git config user.name 'canglan-original-apk176-ota-release'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add android-preview/latest.json android-preview/canglan-content-rev-207.pck art/actual-engine-capture/canglan-rev206-*.png data/updates.json
+          git add android-preview/latest.json android-preview/canglan-content-rev-207.pck art/actual-engine-capture/canglan-rev207-*.png data/updates.json
           git commit -m 'release(official): APK176 RSA signed REV207 living regions beast ore guardian sect root and herbs [skip ci]'
           # main may advance while QA runs; rebase ONLY if production is still rev204.
           for attempt in 1 2 3; do
