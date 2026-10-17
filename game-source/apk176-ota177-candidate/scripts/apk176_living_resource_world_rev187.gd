@@ -781,6 +781,8 @@ func _spawn_spirit_resource_nodes() -> void:
   var records: Dictionary=spirit_resources.get("nodes")
   var recipes: Dictionary=SpiritResources.RESOURCE_DEFS
   for id in records:
+    if spirit_resource_visuals.has(id):
+      continue
     var data: Dictionary=records[id]
     var kind: String=String(data["kind"])
     var prefab: String=String(recipes[kind]["prefab"])
@@ -836,7 +838,9 @@ func _spawn_spirit_resource_nodes() -> void:
     tag.position=Vector3(0,2.1,0)
     tag.visible=false
     model.add_child(tag)
-    model.visible=int(data["remaining"])>0
+    # The living stem/seed bank remains even after harvestable buds reach
+    # zero. Picking herbs never makes a species disappear from the land.
+    model.visible=int(data["remaining"])>0 or kind!="spirit_stone"
     spirit_resource_visuals[id]={"model":model,"caption":tag,
       "kind":kind,"display":String(recipes[kind]["display"])}
   _add_event("已生成%d株实体野生灵药/矿脉；全部由实际CC0花草岩石绘制" % [
@@ -852,7 +856,7 @@ func _sync_spirit_resource_visuals(hero: Node3D=null) -> void:
     if not is_instance_valid(entity):
       continue
     var remaining: int=int(ledger[id]["remaining"])
-    entity.visible=remaining>0
+    entity.visible=remaining>0 or String(visual["kind"])!="spirit_stone"
     var tag: Label3D=visual["caption"]
     if entity.visible and hero!=null:
       var distance: float=Vector2(
@@ -1603,7 +1607,10 @@ func _process(delta: float) -> void:
     if cultivation!=null:
       cultivation.call("advance_world_hour")
     if spirit_resources!=null:
+      var herb_count_before: int=int(spirit_resources.get("nodes").size())
       spirit_resources.call("advance_world_hour")
+      if int(spirit_resources.get("nodes").size())>herb_count_before:
+        _spawn_spirit_resource_nodes()
     if world_society!=null and bool(world_society.get("_loaded")):
       var month_before: int=int(world_society.get("months"))
       world_society.call("advance_world_hour")
