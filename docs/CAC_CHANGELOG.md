@@ -1168,3 +1168,11 @@ Godot 4.4.1对从**原签名Android APK176**提取的实际`update_protocol.gdc`
 - 本地AI原APK没有Native llama.cpp/GDExtension，升级必须恢复同一包名、原APK正式keystore覆盖签名打包，且在手机完成真实SHA256权重下载、安装、聊天推理、NPC行为与世界数据门禁；当前不能称Qwen正在游戏运行。
 - 世界 seed 目前只影响修仙层，不可更换原流式地形seed，否则会损坏用户已经采挖保存的区块；正式生成全地图须加多世界存档隔离/初始生成顺序/保存迁移后再交付。
 - 修仙NPC更多且有真实骨骼/碰撞/作息，但服装角色粗糙、人物模型重复，复杂宗门社会/经济支撑、门派成品材质和动画仍未达用户参考标准；下一步真实手机体验QA优先。
+
+## 2026-10-17 / CAC-3D-202 / 原APK176正式签名rev202：御剑升降、平稳降落与镜头防瞬移
+- **唯一真实游戏源**：公开仓库 `160701541-cell/xinyanshuo`。旧私人 `canglan-world` 的错误原型PR #23已经关闭，不得合并。正式原版代码为 `game-source/apk176-ota177-candidate/scripts/apk176_player_controller_rev187.gd`；原源PR #2已合并main（`b11f6f3`）。
+- **玩家可见修复**：御风真人飞行显示手机“升高/降低”两个按钮；按降落后两键禁用；起飞从物理地面逐步升高；空中切视角进入渐进降落而非瞬时把高度清零；水平飞行速度逐帧衰减而非突然刹停。原rev201灵根、吐纳、12名独立修士、世界时间和存档保留。
+- **真实Godot系统级QA**：公开Actions QA-only run [`39028126321`](https://github.com/160701541-cell/xinyanshuo/actions/runs/39028126321) **SUCCESS**。从真实APK176导出原主场景并匹配原生Terrain3D v1.0.2，Godot 4.4.1脚本解析、主游戏起降/触摸/镜头、资源消耗、真实NPC和rev201修仙回归全部通过。采集1280×720真实Godot渲染图片（不是手机截屏）到构建工件。
+- **原APK176真实RSA签名热更新已成功**：生产工作流 [`39028355653`](https://github.com/160701541-cell/xinyanshuo/actions/runs/39028355653) **SUCCESS**，其步骤包含全部原Main回归、真实引擎截图、原固定公钥签名、PCK哈希与防竞态发布。正式 `android-preview/latest.json` revision=**202**，兼容Android版码 **1176**，包大小 **22037600字节**，SHA-256 `4a9376cf922c0e213481e78cec170b4995f24c5e84b4ff0184e28df0ec5d94de`；签名和PCK不覆盖前代不可变版本。
+- **官网独立真实网络验收通过**：Pages部署 run `39028497124` SUCCESS；公开HTTPS原固定RSA校验+22MB全量SHA256+HTTP Range返回**206**在 [`39028644959`](https://github.com/160701541-cell/xinyanshuo/actions/runs/39028644959) **SUCCESS**，证据 `PASS_APK176_REAL_REV202_PUBLIC_PAGES_RSA_SHA256_HTTP_RANGE_PHONE_DOWNLOAD_READY`。
+- **本轮严格边界**：技术及官网下载验收通过**不等于**用户真实安卓设备的UI/人物脸部头发/飞剑姿态/发热/帧率审美通过；APK176没有本地LLM原生推理库，离线Qwen尚不可用；用户手机实际升级及15分钟实机测试仍待验收。

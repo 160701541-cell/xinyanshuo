@@ -1,10 +1,25 @@
 {
   "schema": 1,
   "channel": "signed-releases",
-  "updated_at": "2026-10-16T10:05:42Z",
+  "updated_at": "2026-10-17T11:25:49Z",
   "source": "android-preview/latest.json; RSA original APK key + official HTTPS PCK",
   "verification": "Godot signed manifest, Pages PCK SHA256 and real Android updater Range HTTP verified in GitHub Actions; user Android device visual/performance QA pending.",
   "entries": [
+    {
+      "revision": 202,
+      "first_seen_utc": "2026-10-17T11:23:13Z",
+      "notes": "苍岚原APK176 rev202：修复御风飞行升高按钮不可见、起飞高度瞬变和空中切换视角瞬间坠落，降落时禁用升降操作；完整保留rev201灵根、修炼、12名修士及原有存档。本地AI仍需原生APK升级。",
+      "sha256": "4a9376cf922c0e213481e78cec170b4995f24c5e84b4ff0184e28df0ec5d94de",
+      "size_bytes": 22037600,
+      "status": "signed_release",
+      "android_version_code": 1176,
+      "protocol": "RSA-3072 PKCS1-v1_5 / SHA-256",
+      "remote_https_verified": true,
+      "remote_range_206_verified": true,
+      "ci_run": 39028355653,
+      "remote_proof_run": 39028644959,
+      "android_real_device_qa": "pending"
+    },
     {
       "revision": 177,
       "first_seen_utc": "2026-10-16T10:05:42Z",

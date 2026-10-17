@@ -30,3 +30,10 @@
 - 已在隔离分支准备 `.github/workflows/canglan-original-apk176-rev202-signed.yml`（commit b8b6915）：只监听main上的专属workflow改动，需通过全部原Main测试和当前rev201 RSA签名连续性门禁才允许发布 rev202；目前**尚未合并到main、未启动正式签名工作流，绝不视为已发布**。
 - 队列节流：已停止反复改动运行测试脚本；先取得run 39028126321 的Godot QA真实结论，再决定是否修改、合并或发布，避免重复跑旧工作流。
 - 注意：原版rev201已正式签名资源包存在仓库并有公网页面QA历史成功，但手机实际画面仍需用户验收。当前手机rev201是否已安装不能仅从官方清单判断。
+
+## rev202正式签名发布与公网证据（2026-10-17）
+- QA-only `39028126321` success；原Godot 4.4.1 APK176全部Main回归及原生插件解析、真实截图完成，手机仍未验收。
+- 正式签名/发布工作流 `39028355653` success；网站Pages构建 `39028497124` success。
+- 官方manifest：rev202 / Android versionCode1176 / PCK 22037600字节 / sha256 `4a9376cf922c0e213481e78cec170b4995f24c5e84b4ff0184e28df0ec5d94de`，RSA有效，历史rev201资源完整保留。
+- 独立公网真实下载证明 `39028644959` success：`PASS_CURRENT_ORIGINAL_APK176_PUBLIC_HTTPS_RSA_SHA256_AND_RANGE`，HTTP Range=206，完整文件hash/大小匹配原APK固定公钥签名。
+- **可供已装原APK176在游戏更新器尝试rev202，不需要重装APK**。但此刻并无用户设备安装成功截图、人物审美通过或真机FPS/温度报告。机型用户测试验收继续PENDING。
