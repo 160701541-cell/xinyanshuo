@@ -302,7 +302,30 @@ jobs:
           d['_visual_goal']='ORIGINAL_3D_WORLD_PREVIEW'
           p.write_text(json.dumps(d,ensure_ascii=False,indent=2)+'\n')
           PY
+      - name: Detect pre-existing official rev187 release and protect signed PCK
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json, pathlib, sys
+          p=pathlib.Path('android-preview/latest.json')
+          d=json.loads(p.read_text(encoding='utf-8'))
+          current=int(d['revision'])
+          if current == 186:
+              assert not pathlib.Path('android-preview/canglan-content-rev-187.pck').exists(), 'rev187 file exists without manifest'
+              print('PASS_REV187_NOT_YET_RELEASED_SIGNING_ALLOWED')
+              with open(__import__('os').environ['GITHUB_ENV'],'a',encoding='utf-8') as f:
+                  f.write('REV187_ALREADY_PUBLISHED=false\\n')
+          elif current >= 187:
+              assert pathlib.Path('android-preview/canglan-content-rev-187.pck').is_file(), 'rev187 manifest but PCK missing'
+              print('PASS_REV187_ALREADY_PUBLISHED_QA_ONLY_NEVER_REPLACE_SIGNED_RELEASE',current)
+              with open(__import__('os').environ['GITHUB_ENV'],'a',encoding='utf-8') as f:
+                  f.write('REV187_ALREADY_PUBLISHED=true\\n')
+          else:
+              sys.exit('BLOCKED: unexpected OTA version; never publish out of order')
+          PY
       - name: Sign only actual same-APK176 Godot accepted rev187 candidate
+        if: env.REV187_ALREADY_PUBLISHED == 'false'
         shell: bash
         env:
           CANGLAN_PCK_SIGNING_KEY_B64: ${{ secrets.CANGLAN_PCK_SIGNING_KEY_B64 }}
@@ -315,6 +338,7 @@ jobs:
           python3 tools/stage_original_next_ota.py             --pck qa-results/canglan-apk176-rev187-3d-UNSIGNED.pck             --qa-template qa-results/rev187-unsigned.json             --qa-runtime-log qa-results/rev187-original-main-3d.log             --original-qa-success             --output qa-results/rev187-signed-stage
           python3 tools/ota_release_gate.py             --candidate qa-results/rev187-signed-stage/latest.json             --pck qa-results/rev187-signed-stage/canglan-content-rev-187.pck             --report qa-results/rev187-cryptographic-gate.json
       - name: Publish authentic rev187 signed original-game assets only after full QA
+        if: env.REV187_ALREADY_PUBLISHED == 'false'
         shell: bash
         run: |
           set -euo pipefail
