@@ -212,11 +212,14 @@ func _ready() -> void:
   else:
     _sync_mine_guardian_realms()
   _create_quality_hud()
-  _spawn_licensed_living_understory()
   _hide_old_render_world()
   _hide_original_debug_labels()
   quality = ManualQuality.new()
   quality.call("initialize",self)
+  # Its real terrain _natural_plantable() mask becomes available ONLY once
+  # the physical quality/vegetation controller is initialized. The earlier
+  # call ran before quality existed and rejected all genuine bush sources.
+  _spawn_licensed_living_understory()
   _set_dev_ui_visible(false)
   _update_camera()
   _sync_living_daylight()
