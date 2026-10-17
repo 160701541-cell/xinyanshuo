@@ -1193,7 +1193,10 @@ func stats() -> Dictionary:
 func _visible_bounds(actor: Node3D) -> Vector2:
   var smallest_y: float = INF
   var largest_y: float = -INF
-  for child in actor.find_children("*","MeshInstance3D",true,false):
+  var mesh_parts: Array[Node]=actor.find_children("*","MeshInstance3D",true,false)
+  if actor is MeshInstance3D:
+    mesh_parts.push_front(actor)
+  for child in mesh_parts:
     var part: MeshInstance3D = child as MeshInstance3D
     if part.mesh == null:
       continue
