@@ -3,7 +3,7 @@ extends Node3D
 ## Works with real licensed multi-surface Kenney assets; one part may have
 ## multiple surfaces and thus >1 draw. Never claim one draw for the whole GLB.
 const MAX_CAPACITY := {
-  "tree": 40, # 12 originals + <=24 seed descendants + small reserve
+  "tree": 144, # 12 originals + <=24 seed descendants + small reserve
   "stone": 12,
   "timber": 24,
   "fence": 12,
