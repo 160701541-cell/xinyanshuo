@@ -1016,7 +1016,7 @@ func _run() -> void:
   if not bool(player.call("guard_action")) or int(mortal["energy"])!=guard_energy_start-5:
     _fail(203,"REV196_GUARD_MUST_USE_AUTHORITATIVE_REAL_PLAYER_STAMINA")
     return
-  player.call("_spar_tick",0.09)
+  player.call("_spar_tick",0.11)
   if int(player.get("_spar_perfect_guards"))!=1 or int(player.get("_player_health"))!=100 or cue.visible:
     _fail(204,"REV196_TRUE_PERFECT_GUARD_SHOULD_BLOCK_HIT_AND_HIDE_ATTACK_WARNING")
     return
@@ -1025,7 +1025,7 @@ func _run() -> void:
   if not bool(player.call("guard_action")):
     _fail(205,"REV196_NORMAL_GUARD_UNEXPECTEDLY_BLOCKED")
     return
-  player.call("_spar_tick",0.33)
+  player.call("_spar_tick",0.35)
   if int(player.get("_spar_normal_guards"))!=1 or int(player.get("_player_health"))!=97:
     _fail(206,"REV196_NORMAL_GUARD_SHOULD_CAUSE_SMALL_REAL_DAMAGE_NOT_FAKE_INVULNERABILITY")
     return
@@ -1038,13 +1038,13 @@ func _run() -> void:
   if actor.position.distance_to(origin)<1.50:
     _fail(208,"REV196_EVADE_VISUAL_BUT_PLAYER_POSITION_UNCHANGED")
     return
-  player.call("_spar_tick",0.09)
+  player.call("_spar_tick",0.11)
   if int(player.get("_spar_perfect_dodges"))!=1 or int(player.get("_player_health"))!=97:
     _fail(209,"REV196_PERFECT_DODGE_DID_NOT_RECOGNIZE_TRUE_ATTACK_HIT_TIME")
     return
   player.call("_spar_tick",1.40)
   actor.position=origin
-  player.call("_spar_tick",0.68)
+  player.call("_spar_tick",0.70)
   if int(player.get("_spar_hits"))!=1 or int(player.get("_player_health"))!=85:
     _fail(210,"REV196_UNDEFENDED_ENEMY_MELEE_MUST_HIT_REAL_PLAYER_HP")
     return
