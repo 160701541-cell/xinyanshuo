@@ -1,12 +1,12 @@
 {
   "schema": 1,
   "channel": "android-preview",
-  "revision": 191,
+  "revision": 192,
   "minimum_android_code": 1176,
   "maximum_android_code": 1176,
-  "sha256": "0eac268f7269ad36ea4d7d4169a6fbeb46076a0a9fdb6f8219596f90cc88496e",
-  "size_bytes": 21723104,
-  "pack_url": "https://160701541-cell.github.io/xinyanshuo/android-preview/canglan-content-rev-191.pck",
-  "notes": "苍岚原APK176 rev191：第一阶段修复手机截图方形地面断崖，移除22米竖直假地壳；远景山地LOD在x/z±46m精准裁分共享高度并避免与可挖地面叠面；草地从五片胡茬升级到11片宽弯叶聚簇草甸，排除水/道路/施工地/陡坡。当前仅修可视接缝与近处植物，真实无限区块与可住人的修仙房屋仍未完成，等待手机真机验收。",
-  "signature": "mDsbeq9+VlaS4Mco+dJW37Olt6Bitb+YcUciY+2nVcCq46oBkOjL2RE6Q/z6ZUzI8U2tDSJ8d664ZIr5r5N88hMNYlx8hJLpGEMWV5fgx4xfqCDFZGizRERxeXw7gs4rW3IcrEgezEm0B+foOSTGpEhbood3ARwd7CyhzXu/HEG0jrnkGjEq7nYkJzHpsmkVE2MY5i0yh33vBkhhMsGmyW7zrVk4p3BD7zmHqNeGbWAxTJI0wxxP7hyiJA22y120RlUQ23JrpA44ceeRbQrl9VFdRNrmW5aKbHqNX/Y3H64ZYaV3Rm5z2op6hY7j/idvOnSKwSDSeV6SDko5rf4qLcq1JyFRnGXcTiEgROsLsNC8w/PdWYZz7iL9sdbbyYp407PjWrjajJ6s8Mvc0SwjmKO+yBNEHYawenKxj6NZIA4fQTXz/Mh/8X/ApPHb14pBre33IaSLPasZzRZheueSPaZ+icsUM7jaU/a9PPNgk+tuM5MkLQ2WKoj/0Bd/q7II"
+  "sha256": "395222d4c2264441d41040027caae01e397204244b6b18a354929d260d72035a",
+  "size_bytes": 21725632,
+  "pack_url": "https://160701541-cell.github.io/xinyanshuo/android-preview/canglan-content-rev-192.pck",
+  "notes": "苍岚原APK176 rev192：真实Godot截图发现中央92m地形完全没有渲染，旧截图83%地表像素和天空完全同色。已修掉土层表面的背面剔除错误，确保真实材质和碰撞地表显示；再将2m土/草随机棋盘格改成连续世界坐标的草土沙岸/道路颜色混合。保留rev191远景接缝裁分、11片自然簇草和禁生区。自动QA检查真正渲染像素不再是天空蓝色地块。真实无限区块、建筑室内与高品质修仙素材仍待后续，手机未验收。",
+  "signature": "dhenpynTINlfvma1XPpiI+gysXCD6jAnb8GpEJ2ZNQd7zrhquKX9jmer9TvHdbvQLhyH4I8UdAkdL5fNRON+aDifnVVj1OPUPv3OBwOs4EJrZVQnQjRJ4KrHUqlj94S+x5OIMUU+3k0mFgR0QA4VNES4w6X9gWNpaI+ptJvHQiEZ/uVKBC9R/IppIUbtrCek7Lg4HbuS9PE/Jc/dNML37D/OmfBIEpzMuAjtGZjQMM/39UkhhfRRDmAh5A2upyzy53huN1isOS/SZCnwv0QzSMWXwkzjCA6ejizFjdrcpK193jsbs7915F5yEnCfxVOjKgxYjsSt66xVmnhkYVaNBPiZcLzXdKhtU+dFDRN1YPvDCmm6Aj2CMU/5WFcYolv49MNfMdBmz9RpBlkOE7ssnJ1/xlh962T7sTAWUJf9Nh5JqUg8/lnsTqqVKTTmZ4TgoDjP3ixfx1LxMO4uUHPo3V0KtaFSP1WQeZi2ZyEIaoeDDOe3Y702O0NNzPtq2znl"
 }
