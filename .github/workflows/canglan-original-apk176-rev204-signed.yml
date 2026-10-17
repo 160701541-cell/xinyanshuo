@@ -1,9 +1,8 @@
-# rev204 reactivation after bounded original-Main landing regression QA run 39029837728 SUCCESS.
-# First signed build #39029641825 failed old single-tick rev199 landing QA, before signing.
-# rev204 deployment activation: full original-APK176 Godot QA-only run 39029314179 SUCCESS;
-# official update manifest must be rev202 before immutable RSA rev204 signing.
-# rev204 source QA: run 39028126321 SUCCESS; production target original APK176 code1176.
-# PCK signing guarded by real Main engine tests, official current revision=203 and original RSA key.
+# Original APK176 code1176. Candidate next signed version rev204, production must be rev203.
+# Production signing is forbidden unless the exact real Godot Main + spiritual
+# combat + historical rev187-203 QA and three genuine engine frames pass.
+# Only the original APK-bound RSA private key via official GitHub Actions secret
+# can publish a new immutable PCK; failing QA leaves rev203 intact.
 name: Canglan ORIGINAL APK176 rev204 - Real Cultivation Combat HP MP Spells RSA Signed Update
 on:
   push:
