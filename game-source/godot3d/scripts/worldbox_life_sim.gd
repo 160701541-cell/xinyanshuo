@@ -342,10 +342,13 @@ func request_construction(village_id: String, kind: String) -> bool:
 		"field": bill={"wood":2,"water":4}
 		"workshop": bill={"wood":18,"stone":8,"clay":6}
 		_: return false
+	var village: Dictionary = villages[village_id]
+	if kind=="home" and int(village["construction"].get("home",0))>0:
+		return false
 	if not _spend(village_id,bill):
 		return false
-	var village: Dictionary = villages[village_id]
-	village["construction"][kind] = int(village["construction"].get(kind,0))+1
+	# Existing construction tracks hours remaining, not "magic houses".
+	village["construction"][kind] = int(village["construction"].get(kind,0))+(3 if kind=="home" else 1)
 	_journal(village_id,"construction_started",1,kind)
 	return true
 
