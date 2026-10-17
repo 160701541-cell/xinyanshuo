@@ -1,0 +1,54 @@
+name: Canglan REV208 P0 HQ 3 real CC0 mature-tree GLB sources (UNAPPROVED INTAKE)
+on:
+  push:
+    branches: [feat/rev208-green-kenney-saplings-vegetation]
+    paths:
+      - '.github/workflows/canglan-rev208-hq-mature-trees-cc0-intake-qa.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: canglan-rev208-hq-real-mature-tree-source-intake-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  verify-third-party-cc0-physical-3d-tree-sources:
+    if: github.repository == '160701541-cell/xinyanshuo'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 9
+    env:
+      OUT_DIR: qa-results/rev208-hq-cc0-mature-tree-intake
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Verify source and JSON parsing with no paid APIs
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m py_compile tools/asset_factory/rev208_intake_real_mature_cc0_trees.py
+          python3 - <<'PY'
+          import importlib.util
+          path='tools/asset_factory/rev208_intake_real_mature_cc0_trees.py'
+          spec=importlib.util.spec_from_file_location('hqtrees',path)
+          x=importlib.util.module_from_spec(spec);spec.loader.exec_module(x)
+          assert len(x.SOURCE_PAGES)==3
+          assert x.MAX_BYTES<=18_000_000
+          assert all(h[1].endswith('m') for h in x.SOURCE_PAGES.values())
+          try: x.parse_glb(b'PNG header not real geometry')
+          except ValueError: pass
+          else: raise AssertionError('fake image passed glTF source validation')
+          print('PASS_REV208_REAL_3_TREE_SOURCE_INTAKE_ONLY_NO_FAKE_GLTF')
+          PY
+      - name: Fetch THREE source-author-claimed CC0 mature trees; validate actual glTF2 bytes/SHA/triangles
+        run: |
+          set -euo pipefail
+          python3 tools/asset_factory/rev208_intake_real_mature_cc0_trees.py "$OUT_DIR"
+      - name: Preserve genuine-source/blocked details and actual original GLBs if valid
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: CANGLAN-REV208-3-MATURE-TREE-REAL-CC0-SOURCE-UNAPPROVED-${{ github.run_id }}
+          path: ${{ env.OUT_DIR }}/
+          if-no-files-found: warn
+          retention-days: 30
+          compression-level: 0
