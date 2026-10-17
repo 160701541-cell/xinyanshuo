@@ -383,6 +383,37 @@ func _step_soar_altitude(delta: float) -> void:
   var new_y: float=_ground_surface_y(actor.position.x,actor.position.z)+proposal
   if _can_actor_move_to(actor.position,new_y):
     _soar_altitude=proposal
+  elif _soar_landing and _soar_altitude>0.045:
+    # Cannot descend into a real NPC, tree trunk or wall. Try a gentle
+    # horizontal physical glide to the nearest unobstructed landing column;
+    # every candidate MUST pass a swept capsule and terrain/water checks.
+    # Staying aloft when all nearby places are blocked is preferable to
+    # clipping through a human or teleporting through a house.
+    var landing_spot_found: bool=false
+    for radius in [0.65,1.25,1.9,2.4]:
+      if landing_spot_found:
+        break
+      for sector in range(16):
+        var phi: float=TAU*float(sector)/16.0
+        var target: Vector3=actor.position+Vector3(
+          cos(phi)*radius,0.0,sin(phi)*radius)
+        if bool(terrain.call("is_water",target.x,target.z)):
+          continue
+        if not bool(terrain.call("stream_contains_physical_chunk",
+            target.x,target.z)):
+          continue
+        # Sweep horizontally at the REAL CURRENT altitude first.
+        var lateral_y: float=_ground_surface_y(target.x,target.z)+_soar_altitude
+        if not _can_actor_move_to(target,lateral_y):
+          continue
+        var candidate_y: float=_ground_surface_y(target.x,target.z)+proposal
+        if not _can_actor_move_to(target,candidate_y):
+          continue
+        actor.position.x=target.x
+        actor.position.z=target.z
+        _soar_altitude=proposal
+        landing_spot_found=true
+        break
   # A real landing descends physically and then switches to the walk
   # state. No instantaneous 90m fall on pressing "降落".
   if _soar_landing and _soar_altitude<=0.045:
