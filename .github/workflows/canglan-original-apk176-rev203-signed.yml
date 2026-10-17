@@ -1,3 +1,5 @@
+# rev203 deployment activation: full original-APK176 Godot QA-only run 39029314179 SUCCESS;
+# official update manifest must be rev202 before immutable RSA rev203 signing.
 # rev203 source QA: run 39028126321 SUCCESS; production target original APK176 code1176.
 # PCK signing guarded by real Main engine tests, current revision=201 and pinned RSA key.
 name: Canglan ORIGINAL APK176 rev203 - Soar Hold, Body+Sword Bank, Camera Depth RSA Signed Update
