@@ -1869,10 +1869,10 @@ func _layout_hud() -> void:
   # is permanently usable on touch devices even with dev UI turned OFF.
   # One compact top row, including true lock-on, instead of seven giant
   # QA buttons spread across the sky and the target info panel.
-  var quick_keys: Array[String]=["Iso45Button","GodShortcutButton",
+  var quick_keys: Array=["Iso45Button","GodShortcutButton",
     "SoarAvatarButton","RealJumpButton","CameraLockButton",
     "PhoneZoomInButton","PhoneZoomOutButton","TargetLockButton"]
-  var quick_labels: Array[String]=["俯视45°","地图","御剑",
+  var quick_labels: Array=["俯视45°","地图","御剑",
     "跳跃","视角锁","放大+","缩小−",
     "解除锁定" if _locked_target!=null else "索敌"]
   var quick_width: float=80.0
@@ -1897,7 +1897,7 @@ func _layout_hud() -> void:
   # Exploration and battle are different actual game states: do not put
   # all 11 controls on top of a 3D landscape all the time.
   var battling: bool=_spar_stage!="inactive"
-  var action_keys: Array[String]=["LockedArt","GuardAction","EvadeAction",
+  var action_keys: Array=["LockedArt","GuardAction","EvadeAction",
     "SwordAttack","SpiritBolt","SpiritWard","InteractAction"] if battling else [
     "GatherAction","DashAction","DigAction","InteractAction","LockedArt"]
   for id in _game_actions:
