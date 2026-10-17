@@ -1182,7 +1182,7 @@ func _run() -> void:
   var stairs: StaticBody3D=world.get_node_or_null(
       "ConstructionOccluder_LicensedWorksiteVisibleStoneApproach")
   if stairs==null or stairs.collision_layer!=4 or stairs.get_node_or_null(
-      "CollisionShape3D")==null:
+      "TrueWalkableStairRampCollision")==null:
     _fail(229,"REV197_STAIR_SHOULD_HAVE_WALKABLE_RAMP_NOT_TALL_BLOCKING_CUBE")
     return
   var testwall:=StaticBody3D.new()
