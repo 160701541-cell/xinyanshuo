@@ -36,7 +36,7 @@ on:
       - 'logic-qa/apk176-export-fixture/capture_original_main_rev187_compare.gd'
   workflow_dispatch:
 permissions:
-  contents: read
+  contents: write
 concurrency:
   group: canglan-rev208-green-saplings-qa-only-${{ github.ref }}
   cancel-in-progress: false
@@ -48,7 +48,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          persist-credentials: false
+          persist-credentials: true
       - name: Source invariants for rev204 authentic combat without claiming gameplay QA
         shell: bash
         run: |
@@ -358,6 +358,18 @@ jobs:
             cat qa-results/rev208-screenshot-parse.log; exit 1
           fi
           echo PASS_REV208_SCREENSHOT_SCRIPT_COMPILED_BEFORE_MOBILE_VULKAN_ART_QA
+          # The actual original-Main verifier is a >2300 line SceneTree;
+          # compile it BEFORE expensive 3D QA and before software Vulkan.
+          timeout 25s /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless \
+            --path logic-qa/apk176-export-fixture --check-only \
+            --script res://verify_original_main_quality_rev187.gd \
+            > qa-results/rev208-main-qa-parse.log 2>&1 || {
+              cat qa-results/rev208-main-qa-parse.log; exit 1;
+            }
+          if grep -Eq 'SCRIPT ERROR:|Parse Error:|ERROR:' qa-results/rev208-main-qa-parse.log; then
+            cat qa-results/rev208-main-qa-parse.log; exit 1
+          fi
+          echo PASS_REV208_ORIGINAL_MAIN_FULL_QA_CHECK_ONLY_BEFORE_EXPENSIVE_SCENE
           echo PASS_REV187_ALL_ACTUAL_GODOT_SCRIPTS_PARSE_COMPILATION
       - name: Godot 4.4.1 13 real finite herbal/stone nodes, 108h actual regrowth, saved medicine consumed
         shell: bash
@@ -497,9 +509,13 @@ jobs:
           grep -Fq 'PASS_REV208_THREE_TRUE_8_9M_PBR_TREE_GODOT441_ORIGINAL_MAIN_RENDERED_SCREENSHOTS' qa-results/rev187-real-worksite/render.log
           grep -Fq 'REV208_TRUE_GODOT_COMPARISON_CAMERA_TIME_OVERRIDE_12H_RESTORE_' qa-results/rev187-real-worksite/render.log
           grep -Fq 'PASS_REV208_REAL_GODOT_CAMERA_CORPSE_FRAME_TRUE_MORTALITY_POPULATION_MINUS_ONE' qa-results/rev187-real-worksite/render.log
+          grep -Fq 'PASS_REV208_THREE_REAL_GODOT441_ORIGINAL_MAIN_EVERGREEN_AND_FERN_ART_EVIDENCE_UNAPPROVED' qa-results/rev187-real-worksite/render.log
           for f in real_godot_rev208_mature_oak_8m_vs_avatar.png \
               real_godot_rev208_mature_maple_9m_vs_avatar.png \
               real_godot_rev208_mature_linden_8m_vs_avatar.png \
+              real_godot_rev208_hq_pine_forest_actual_main.png \
+              real_godot_rev208_hq_cypress_grove_actual_main.png \
+              real_godot_rev208_hq_fern_understory_actual_main.png \
               real_godot_rev208_npc_death_state.png; do
             test -s "qa-results/rev187-real-worksite/$f"
           done
@@ -531,6 +547,48 @@ jobs:
               assert w>=900 and h>=500,(w,h)
               print("PASS_REAL_SAME_SITE_GODOT_SCREENSHOT",file.name,w,h,len(data))
           PY
+      - name: Preserve exact unedited original APK176 Main screenshots in Draft PR, NOT the phone release
+        if: success()
+        shell: bash
+        run: |
+          set -euo pipefail
+          snapshot_dir=art/actual-engine-capture/rev208-candidate
+          source_dir=qa-results/rev187-real-worksite
+          mkdir -p "$snapshot_dir"
+          for file in real_godot_rev208_mature_oak_8m_vs_avatar.png \
+                      real_godot_rev208_mature_maple_9m_vs_avatar.png \
+                      real_godot_rev208_mature_linden_8m_vs_avatar.png \
+                      real_godot_rev208_hq_pine_forest_actual_main.png \
+                      real_godot_rev208_hq_cypress_grove_actual_main.png \
+                      real_godot_rev208_hq_fern_understory_actual_main.png \
+                      real_godot_rev208_npc_death_state.png \
+                      real_apk176_rev206_spirit_herbs_original_quaternius.png \
+                      real_apk176_rev207_vivid_cc0_texture_forest_wide.png; do
+            test -s "$source_dir/$file" || exit 32
+            cp "$source_dir/$file" "$snapshot_dir/$file"
+          done
+          python3 - <<'PY'
+          from pathlib import Path
+          import struct
+          d=Path("art/actual-engine-capture/rev208-candidate")
+          for png in sorted(d.glob("*.png")):
+            b=png.read_bytes()
+            assert b[:8]==b'\x89PNG\r\n\x1a\n' and len(b)>20000,png
+            assert struct.unpack(">II",b[16:24])==(1280,720),png
+            print("REV208_GODOT_ORIGINAL_MAIN_DRAFT_SCREENSHOT_NOT_PHONE",png,len(b))
+          assert len(list(d.glob("*.png")))>=9
+          PY
+          git config user.name "canglan-rev208-original-main-visual-qa"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add "$snapshot_dir"
+          if git diff --cached --quiet; then
+            echo "No changes to authentic PNG comparison; keep Draft PR unchanged"
+            exit 0
+          fi
+          git commit -m "art(rev208 Draft): true unretouched Godot441 original APK176 forest and player comparisons"
+          git pull --rebase origin feat/rev208-green-kenney-saplings-vegetation
+          git push origin HEAD:feat/rev208-green-kenney-saplings-vegetation
+          echo PASS_REV208_ORIGINAL_MAIN_UNALTERED_GODOT_SCREENSHOTS_ONLY_IN_DRAFT_PR_NO_OTA
       - name: Preserve real engine QA logs and comparison screenshots (no signed content)
         if: always()
         uses: actions/upload-artifact@v4
