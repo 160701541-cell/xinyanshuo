@@ -1862,6 +1862,48 @@ func _run() -> void:
   econ.citizens["CL-PLAYER-0184-0001"]["energy"]=saved_energy
   actor.position=restored_loc
   player.call("update_camera")
+  var wild: RefCounted=room.get("spirit_resources")
+  var plants: Dictionary=room.get("spirit_resource_visuals")
+  if wild==null or plants.size()!=13 or not bool(
+      wild.call("conservation_ok")) or int(
+      wild.call("stats").get("live_spirit_stone_units",0))!=12:
+    _fail(346,"REV206_REAL_PHYSICAL_MEDICINAL_RESOURCE_NODES_NOT_CONSERVED")
+    return
+  for id in plants:
+    var mesh: Node3D=plants[id]["model"]
+    if mesh==null or not is_instance_valid(mesh) or (
+        mesh.find_children("*","MeshInstance3D",true,false).is_empty()) or (
+        mesh.get_meta("source_license","")!="Quaternius-CC0"):
+      _fail(347,"REV206_MEDICINE_ORE_MISSING_REAL_QUATERNIUS_MESH_AND_LICENSE")
+      return
+  actor.position=Vector3(-11.4,float(terrain.call(
+    "height_at",-11.4,-12.2)),-12.2)
+  econ.citizens["CL-PLAYER-0184-0001"]["energy"]=100
+  var herbs_before: int=int(backpack.call("amount","herb_wood"))
+  var picked: Dictionary=player.call("interact")
+  if not bool(picked.get("ok",false)) or String(
+      picked.get("kind",""))!="herb_wood" or int(
+      backpack.call("amount","herb_wood"))!=herbs_before+1 or (
+      int(picked.get("energy_spent",0))!=3):
+    _fail(348,"REV206_PLAYER_TOUCH_DID_NOT_HARVEST_REAL_HERB_WITH_STAMINA_"+str(picked))
+    return
+  if not bool(wild.call("conservation_ok")):
+    _fail(349,"REV206_REAL_SPIRIT_ORE_HERB_FINITE_MATERIAL_DEBIT_FAILED")
+    return
+  player.call("_open_game_menu","inventory")
+  var sheet_scroll: ScrollContainer=game_hud.get_node_or_null(
+    "Rev188CharacterInventoryCultivationMenu/Rev206RealScrollableCharacterSheet")
+  if sheet_scroll==null or not bool(player.get(
+      "_spirit_craft_row").visible) or (
+      sheet_scroll.custom_minimum_size.y>478):
+    _fail(350,"REV206_REAL_MEDICINE_CRAFT_BUTTONS_CLIPPED_OFF_PHONE")
+    return
+  player.call("_open_game_menu","inventory")
+  backpack.set("items",contents_before)
+  backpack.set("equipment",gear_before)
+  backpack.call("_save")
+  actor.position=restored_loc
+  print("PASS_REV206_REAL_MAIN_HAS_PERSISTENT_LICENCED_MEDICINAL_PLANTS_ORE_AND_TOUCH_MINING")
   print("PASS_REV205_TRUE_ORIGINAL_TOUCH_CAMERA_FLIGHT_RESTART_LOCK_ON_BAG_AND_ICONS")
   room.call("_focus_builder")
   if not bool(room.get("_follow_builder")) or float(room.get("_camera_distance")) > 14.0:
