@@ -2177,8 +2177,11 @@ func _run() -> void:
   cult_actor.position=open_duel_position
   cult_collider.position=open_duel_position+Vector3.UP*0.84
   spir.get("npc_visuals")[killed_id]["anchor"]=Vector3(29.0,0.0,29.0)
-  await physics_frame
-  await process_frame
+  # StaticBody3D updates its PhysicsServer transform synchronously here.
+  # Extra await physics_frame/process_frame caused four destroyed Lambda
+  # capture callbacks at SceneTree teardown in real Godot run 39072491086.
+  # Keep this regression fully synchronous, just like the earlier passing
+  # original Main tests; do not suppress the leak/error log.
   var hero_saved_position: Vector3=actor.position
   var hero_saved_yaw: float=float(player.get("_yaw"))
   var hero_saved_stamina: int=int(econ.citizens["CL-PLAYER-0184-0001"]["energy"])
