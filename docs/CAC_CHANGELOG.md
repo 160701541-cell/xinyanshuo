@@ -971,3 +971,24 @@ Godot 4.4.1对从**原签名Android APK176**提取的实际`update_protocol.gdc`
 - **GitHub Pages Build+Deploy**：run`38982016201`，官方main建站和deploy作业均`completed/success`。另一个自动HTTPS验签作业`38981795153`初次因Pages/CDN滞后返回revision184而fail，不是程序通过；**Pages正式重新部署后重跑同作业，新job`117245214387` `completed/success`**。
 - 真实GitHub Actions外部网络校验日志：`PASS_APK176_REAL_REV186_PUBLIC_PAGES_RSA_SHA256_HTTP_RANGE_PHONE_DOWNLOAD_READY`，公网官网确实返回revision`186`，正式原APK176固定RSA公钥验证通过；完整下载PCK字节数`21666016`，SHA256`16c636e2654efb8ead50cfe38e1ab27ac89f9c9cee72d4acb28f8cfb55f6a6ab`；HTTP Range响应206，CDN `Cache-Control: max-age=600`。因此**原版生产签名发布+真实公网可检索/可下载**已证实，用户原安装包APK176理论可通过游戏内更新器获取。
 - **保持手机黄灯**：上述所有严格CI及网络验签结果不能代替用户在一加Ace5Pro实际更新rev186后的真机验收；三档FPS/Draw/三角面仍全部**未验证**，明确等待三档手机截图，不写虚假稳定60或极致120。
+
+
+## 2026-10-17 / REV187-USER-REAL-DEVICE-P0-CAMERA-GRASS-FPS-RICH-NATURAL-PALETTE (代码已提交，持续QA，未通过绝不抢发)
+
+用户明确rev186实测存在**帧率上限意外30**/旧性能板60Hz与系统120冲突、双性能面板重叠、灰紫天空雾、薄片世界外缘灰色空洞、草为漂浮绿色大方形、镜头穿模遮挡、NPC职业错误“施工工”、右侧下滑向上眩晕、无法自由飞行/上帝视角/开局被困。**同时撤销全部五色锁定及任何限制颜色种类的既往规范**，但保留Kenney低多边形风格、三档画质/光影/性能、真实地层/资源经济/旧存档规则；要求“测试包名”及同一工地位置真实前后截图。
+
+### 真实提交变更
+- `apk176_kenney_visual_palette_rev187.gd` commit `3647440`，补色修复`1c0d051`：原“EXACTLY FIVE”废止，新增约30类可复用自然材料色，树冠黄绿深浅、木质棕系、矿石青灰/褐灰、泥土多色、屋瓦/白墙/门窗分色与青蓝水、白黄粉紫花；**保留原授权Kenney/Quaternius网格和能保留的原材质纹理/UV**，不是自己手搓整栋建筑。
+- `apk176_kenney_multimesh_rev187.gd` commit`a9cc440`：真正启用MultiMesh per-instance color，同源树石可不同绿/灰/棕而不会因为颜色变化把每棵拆成新drawcall。
+- `apk176_strata_terrain_rev187.gd` commit`247bad9`，GDScript编译修正`ed7b619`，远景渲染缺失进一步修复`fa0f68a`、编译行331修复`2d49235`：原92×92米真实三角网格可挖土层/碰撞和质量守恒继续；局部草土/浅沙地表多色，挖掘时发出`terrain_cell_changed`给草花；边缘加入真实土层侧裙`RealEarthCrustBorderSkirtNotFloatingThinSheet`，周围636m远景山丘Lod网格。**视觉首次真实引擎帧**发现背景far mesh单对象>6.7万未索引顶点在llvmpipe Vulkan仍显示蓝色空洞与山影横条，于是改为18×18网格小块裁剪，真实截图重新验证前不能宣称修好。
+- `apk176_quality_profiles_rev187.gd` commit`c6ffe4a`，Godot无headless vsync修复`c4cb2f6`、刷新率NaN提示修复`723c189`：三画质档保留原参数；FPS独立可选默认`跟随刷新率` (Engine.max_fps=120 + VSYNC)及30/60/90/120；别再使用旧报告30/60Hz直接误锁30；旧系统显示接口仅作辅助观察值，不代表设定120不可用；用户手动选择保存在`user://canglan_graphics_profiles_v1.cfg`。真实每丛五片三角细草叶0.31–0.586m、不再是QuadMesh方片、4500/2400/1100多绿光影、270四种野花、挖地草花及时跟地高程或移除；半透明有轮廓软白云、淡蓝雾、暖阳和轻量粒子按三档密度切换，GPU端真正高阶辉光和立体云在旧Godot Mobile下仍待专门支持。
+- `apk176_player_controller_rev187.gd` commit`3873da9`：右屏手指下滑=看向下（反转旧版眩晕设置），新增可进入/退出上帝视角可平移/缩放、自由飞行及升降、重置镜头退出卡住；第三人称与跟拍施工工将镜头-主角间用物理raycast对抗建筑穿模/整面遮挡。
+- `apk176_living_resource_world_rev187.gd` commit`bd3d1d3`，原APK176 CanvasLayer修复`6175f1a`，系统村庄ID稳定修复`8e1917c`：白蓝渐变天空、暖太阳、淡蓝雾、摄影机远距450m；唯一新性能面板使用垂直VBox不重叠可折叠，旧版FPS/GPU/Draw面板通过源Main隐藏并定期复查，返回旧游戏时复原；设置里FPS五选项+极致发热提示；工地原授权建材加入轻量镜头碰撞Proxy，NPC名字改“建筑工”并继续**保留后台系统ID**。
+- 原APK176继承Main与RSA OTA复用：`main_original_quality_rev187.tscn`/`main_rev187.tscn.remap`/`logic-qa/tools/build_apk176_quality_rev187.gd`/`tools/verify_apk176_rev187_3d_pck.py`/`verify_original_main_quality_rev187.gd`；QA仍验证原APK176的seven licensed GLB、NPC采集/树种、挖地层/材料守恒、原房屋出入、系统ID保留、真移动与左右Android触控、三画质/5fps上限、折叠警告、草叶与随挖更新、山形、蓝天、上帝飞行与右滑正确方向。编译脚本全部走Godot4.4.1 `--check-only`，不依赖文本grep假通过。
+- 原编译APK176真实Vulkan渲染截图 `capture_original_main_rev187_compare.gd` commit`5e546f3`：以真实已装APK176编译Main＋无签名临时rev187 PCK，固定工地远近机位，在开源Ubuntu24.04+Mesa llvmpipe上输出两张1280×720像素PNG；**这是Godot软件GPU真实frame，绝非一加手机实机图。** 首次CI`39000880166`产出真正PNG后被CI的PNG签名检验错写双转义码拒绝；修复`800d25e`使用原始PNG字节hex；对首帧发现的远景空洞也继续真实修正，不能用首帧冒充全部视觉通过。
+- 用户明确授权独立QA包：`game-source/apk176-ota177-candidate/qa-rev187/`含Project、Main、独立Android export preset(项目标识`com.xinyanshuo.canglan.rev187.qa`)，`.github/workflows/canglan-rev187-independent-qa-apk.yml` commit`a3bbdd3`在原版正式签名成功后自动构建同源3D可单独安装的测试APK，用不同debug签名/包名验证，与正式`org.canglan.ancient25d.preview`保留独立、不能代替原版游戏热更新或旧存档。**该独立测试包在真正Actions出安装APK字节前不能称已生成。**
+- 最高执行规范同步追加`AGENTS.md`、`docs/QUALITY_DEVICE_ACE5PRO.md`和`docs/GAME_ENGINEERING_MASTER.md`新最后优先条款，撤销任何历史限色，其他性能预算三档和NPC世界要求继续生效。
+
+### 实际QA失败和当前状态（严禁虚报）
+- `39000137447`最初缺生态脚本 -> commit `64231b1`；`39000211083` rev187 strata脚本解析错误 -> 增加每脚本真Godot check gate`f752158`；`39000300212`地形line315多行表达式 -> `ed7b619`；`39000362804`原CanvasLayer rev186名字误导致runtime查找失败 -> `6175f1a`；`39000451689`QA新材质名grass_deep fallback绿色 -> `1c0d051`；`39000619760`QA误把父子结点路径看成根节点 -> `5eba785`；`39000697812`真实全村资源核算失败因系统村庄ID误变CL-REV187 -> `8e1917c`恢复CL-REV186；`39000880166`严格原Main QA/旧房屋通过、Mesa实际截图两张成功，却被错误PNG字节检查拒绝，随后发现远景几何蓝空洞并改块/质量门禁；之后每轮仍须完整验证。失败全部是实际阻断发布，不把失败run包装成成功。
+- **rev187正式RSA/官网PCK/独立安装测试包：只有在后续完整CI成功并逐项检查证据后才能标PASS。** 现有公开正式渠道revision至少rev186；用户手机rev187极致/高档/普通实测FPS/Draw/三角面均**未验证**；用户要求实际手机截图才能进一步打绿。
