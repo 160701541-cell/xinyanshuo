@@ -1,10 +1,25 @@
 {
   "schema": 1,
   "channel": "signed-releases",
-  "updated_at": "2026-10-17T16:57:11Z",
+  "updated_at": "2026-10-17T18:25:59Z",
   "source": "android-preview/latest.json; RSA original APK key + official HTTPS PCK",
   "verification": "Signed RSA/SHA256 verified on official HTTPS complete PCK (rev205) + HTTP206 Range via GitHub Actions run 39051608266; phone hardware visual/FPS/heat acceptance pending.",
   "entries": [
+    {
+      "revision": 206,
+      "first_seen_utc": "2026-10-17T18:25:59Z",
+      "notes": "苍岚原APK176增量rev206：修复52棵树20个石矿原Kenney真实MultiMesh资源槽位及新生树扩容可见性；七份CC0灵药菌草与灵石原始GLB，13处有限资源采挖、背包入账、炼丹真实消耗、世界时间生长；保留32属性灵根法术、索敌、飞剑和原存档。完整房屋须真实库存付费及NPC工期，住宅室内、更多动画及手机实机仍待验收。",
+      "sha256": "d2b2fbd4a34b8dfeb90d20f1e302ff01803adf5b8c811aed78759d1b478ba022",
+      "size_bytes": 35782624,
+      "status": "signed_release",
+      "android_version_code": 1176,
+      "protocol": "RSA-3072 PKCS1-v1_5 / SHA-256",
+      "remote_https_verified": false,
+      "remote_range_206_verified": false,
+      "ci_run": 39057810555,
+      "android_real_device_qa": "pending",
+      "engine_visual_proof": "art/actual-engine-capture/canglan-rev206-real-spirit-herbs-godot-linux.png"
+    },
     {
       "revision": 205,
       "first_seen_utc": "2026-10-17T16:55:12Z",

@@ -1,12 +1,12 @@
 {
   "schema": 1,
   "channel": "android-preview",
-  "revision": 205,
+  "revision": 206,
   "minimum_android_code": 1176,
   "maximum_android_code": 1176,
-  "sha256": "91da8e9379cfe3decf9725ef6f637c21adf1fa85fcc4aa23085d6a6dd66b9637",
-  "size_bytes": 34968416,
-  "pack_url": "https://160701541-cell.github.io/xinyanshuo/android-preview/canglan-content-rev-205.pck",
-  "notes": "苍岚原APK176累计rev205：现成CC0房屋、服饰及真实动物，取消旧破房施工；九张源核对PBR贴图与64细像素每米地表，更浓绿色和蓝天；开源图标精简UI、索敌、镜头反向修正、御剑复飞、真实背包装备；32系灵根/法术，玩家及常规NPC必有灵根，每城1万至25万人数据模拟；保留旧存档和rev204法术。室内住宅、完整灵兽和本地AI仍待完成。",
-  "signature": "i+qOhZlugUXbZYfXtyZbP3RZczRSOd3a5DSNAmj8KvyoYYMJacwcgWdP13Gu9rJRJtkjhyBIfvIUqD2wQgr0jbYmWO5y8JCNF52z+Cs0njuwayXTDRzeWr1AJHGCnrbo6q9wl135S/0c4BTq45H9YPZTlMIpfx6qwl0FcgaVOOdGiXay4Fgr4nOLQrMrN1dVOONahxD7jPFXVZwi9iSihCW/JhuUVzKvNGzY6vh37mt+e9gChtcF3crq2fg2zxywNJjhigH9i5q01y5ligamQcYvlGgJO/yfqgz96O9hIawFASRO6ZdASmztJ2w+CGniFnRkj+GTcJECLAVf7HlXg4+cyTEWjYOjzBWgTX3thDB1Muv4HSYOoK3WN1dJ1t/oVv1FPVTmm4JiTf+7m3w0WkXHF+6RYi5/pl/cZcHVjELUKPiLYUKFWpaIbCgDJUv7fC3NG0ekYfhSTPjnnkg+zAyK94HrQcFVqDI/lHBSKA5hSsWloRPF0HwFdCsYkmK2"
+  "sha256": "d2b2fbd4a34b8dfeb90d20f1e302ff01803adf5b8c811aed78759d1b478ba022",
+  "size_bytes": 35782624,
+  "pack_url": "https://160701541-cell.github.io/xinyanshuo/android-preview/canglan-content-rev-206.pck",
+  "notes": "苍岚原APK176增量rev206：修复52棵树20个石矿原Kenney真实MultiMesh资源槽位及新生树扩容可见性；七份CC0灵药菌草与灵石原始GLB，13处有限资源采挖、背包入账、炼丹真实消耗、世界时间生长；保留32属性灵根法术、索敌、飞剑和原存档。完整房屋须真实库存付费及NPC工期，住宅室内、更多动画及手机实机仍待验收。",
+  "signature": "LOmwNZc1UdzvQfp1+IkkTDHnGC4/fBRCVmvtd+I8cBNtyQf5Y0/NezQbuktsJgJyNYlennAQO0tfbv7iu/hUpTe2FKgJ8Rmkah12a55mmuLzyipbr4fLPRAd1vS+IlJdQHHP+D74H+hd1UUivWEtMeInHLqJ433wyFPYi2rIqJb98P4BzH2epVY5ocZ+NXLUGX06V3oc3HyIGRSFwlEpjzBY3V1+E5N7+BTKw3Ido2yLIgQyTgdgpQ4ZnfVLRW5iNLWzFDjBvLZXmEv9B+zg6sLNDyI0RaJD5Cd9+PesxE6LniIQFOqm74yetG4CB/I/QLxozn2L6a6hRaVDX3YMdEfsqWn3I522DEQO/BBpW+pz5UexrwXyPvwruUfaVHaakW12oOHjCR/Icx3E2pT6kSn/jOL2Yo2KcVPE3S4nNzKYemKZEpgvaEYYE8uwbBw5DQqHY8Cz6r+9yHSS2uv4WXzOKCxowhXDOOMD+pR5X+tvl01gZK+Hm8WHfuA9BElc"
 }
