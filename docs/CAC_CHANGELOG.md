@@ -1,5 +1,12 @@
 # CAC 工序变更与开发日志
 
+## 2026-10-18 / CAC-REV208-AUTHENTIC-MORTALITY-AND-ART-GATE / 真实死亡通过引擎QA，低模画风仍拒绝发布
+- 以用户 Android 实机截图 `1000067794.jpg` 对照两类真实 Godot 截图与 AI 生成概念图，确认低模西式人物和头发、树木矮小、灵药同背景、地形缺层次、薄弱受击均为**美术/玩法 P0 未达标**。概念图仅作二维目标，不是实机，更没有通过 WorldXAI 实际导出高精三维角色。
+- 实际代码：`cultivation_world` 用稳定修士ID实现体力/有效剑伤/HP/仇恨反击/死亡时间/死因/停止行动/倒地可见/死亡后碰撞失效/原子存档；`player_controller` 近距三米内对被锁定修士进行真实武器攻击且遵守空间射线遮挡，解决原先修士只能被锁定却绝对不可击杀。中立修士攻击后开始真实反击。御剑着陆在下方有真人/树/房时以实体碰撞检查尝试水平寻找邻近无阻落点，不穿墙假瞬移。
+- **严格 Godot 4.4.1 原APK176 Main QA run `39065966234` SUCCESS**。关键信号 `PASS_REV208_REAL_LETHAL_CULTIVATOR_SWORD_COLLISION_DEATH_PERSISTENCE_AND_CORPSE`，包括实体剑击实际扣体力/敌人生命、杀死后不复活/不阻挡、存盘再读取保留死因；另有原真机导出资产的 Godot Vulkan 截图和原场景回归成功。这不是 Android 手机实测。
+- 真实 Vulkan 画面仍见矮而粗糙的绿色小树、廉价人物脸/服饰、稀疏且发暗的地面。**用户明确不准再以低多边形作最终素材，视觉验收 FAIL**。故 `PR #14` 为 Draft，未经合并/签名/上线；公共手机可升级的正式版本仍仅 `rev207`。新版 Godot QA 绿灯不可替代 P0 美术。
+- 六类高精规范：`docs/CAC_REV208_HIGH_FIDELITY_ART_AND_MORTALITY_GATE_20261018.md`。WorldX 原生只产出素材二维图/精灵并需图像模型提供端；高精 3D 人形另需商用授权、三视图一致、可蒙皮模型与 PBR。真正完成需开源/合法高精资产接入后从引擎截图比较，再走原签名发布与用户手机 QA。
+
 ## 2026-10-18 / CAC-REV208-FOLIAGE-THIRD-PERSON-CLIPPING / 真植被必须不能遮挡玩家
 - rev208 Godot4.4.1原Main逻辑验收过关，但首轮 **真实Vulkan截图QA失败**（`39064557498`）：第三人称近镜头的真实人物像素被新增绿叶幼树冠层遮住，出现`FAIL_REV198_RENDERED_PLAYER_IS_STILL_INVISIBLE_NOT_MERE_SCENE_NODE`。`QA SUCCESS`不成立，因此rev208仍未签名/发布。
 - 真正修复`788717836ab19d7cac0f436a58d9e2d6fe1c4276`：生态散布器给主角原始出生位置`(1.5,7.0)`留8m可移动/可看清身体的出生林间空地，保留灵根检测台`(12,7)`周围5m视野/交互空间；真实建筑道路水体仍然禁止种植，没有删掉人物视觉QA门禁。
