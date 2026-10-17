@@ -1,5 +1,12 @@
 # CAC 工序变更与开发日志
 
+## 2026-10-18 / CAC-HQ-ART-ECOLOGY-REPORT-MANDATORY / 用户上传正式高精美术与生态替换执行报告，最高P0执行规范落库
+- **用户新最高要求已写入唯一公开仓库 main，绝非仅聊天记忆/临时口头承诺**：完整用户原报告 `docs/CANGLAN_HQ_ART_ECOLOGY_EXECUTION_REPORT_USER_20261018.md`；逐项ID/质量出口/完成与阻塞状态 `docs/CAC_REV208_HQ_EXECUTION_CHECKLIST_20261018.md`；`AGENTS.md`、`docs/DEVELOPMENT_EXECUTION_RULES.md` 已提升为最高优先级美术发布门禁；WorldX风格 `tools/asset_factory/CANGLAN_WORLDX_STYLE_LOCK_V2_HQ3D.md` 替代低饱和固定斜俯视v1，旧文件已显式标为历史文档。
+- **质量路线冻结**：不能再用Quaternius Knight做近景主角/核心修士；不得用Kenney矮小橡树批量缩放冒充成熟森林；不以`bush.glb`红白菌体冒充绿灌木；树干叶片/地面/衣料与真实灵草必须拥有不同PBR/真实尺度/独立轮廓；WorldXAI仅产经审查的高质量四视母版/贴图美术参考，需进一步成为真实可蒙皮高精GLB才算游戏资产。真实第一/第三自由镜头与古风发髻衣装是硬标准。
+- **固定阶段与P0**：`HQ-Art-Lock → HQ-Character → HQ-Ecology → Combat-Life → World-PBR → Mobile-Sustain → REV208-RC → REV208-SIGNED`；主角1、核心修士至少4、成熟乔木3+幼树2+灌木4+草蕨4、独立可辨灵草5–8、真实死亡和地区人口扣减、至少7张原版Godot真截图、Android手机30分钟FPS/热/触屏复验；证据缺一不可，来源许可证/SHA/PBR/LOD/碰撞逐资产验证。
+- **真实状态不夸大**：主分支正式RSA/PCK公网**rev207**（APK176 versionCode1176），rev208候选仍在 Draft PR #14，未合并/签名/发布。Godot 4.4.1 原APK176 Main最新技术QA `39065966234` **SUCCESS**，已验证修士剑击有限HP、反击、真死亡尸体/存档与着陆回归；但是高精国风角色、成熟密林、灵植/地面美术与死亡动画/人口账本仍 **P0 FAIL/PENDING**，30分钟 Android实机 `PENDING`。不得因为这个引擎QA绿灯就发布rev208。
+- **未完成与后续唯一优先工作**：先接通 WorldXAI v2高质量图片真实生成与风格锁，再接入一名真正高精主角（四视、表情、布料、绑定动作），再做成熟树/绿被/独立灵草及PBR地表。完整原始报告里的数值是目标预算，未经真机测量不能标实际性能数据。后续每次完成逐项更新报告ID、提交SHA、引擎截图/QA号、手机与正式OTA状态，工作日志不得滞后官网。
+
 ## 2026-10-18 / CAC-REV207-SIGNED-PUBLIC-VERIFIED / 五万平方公里五千人世界真实原版发布
 - **正式版本已发布 rev207**：原APK176 `versionCode1176` 兼容的RSA签名 `android-preview/canglan-content-rev-207.pck`，字节数`35,815,712`，SHA256 `db64972a0615abbe0600919220398d11853b83cbd4c57121b125f12b10262812`。正式CI `39064174356`通过真实Godot4.4.1原Main、24世界月生态账本、全量QA、真实Vulkan截图、签名和提交。
 - **官网真实验证**：首次Pages部署在`39064423476`因“尚未上线时却要求新版本的远程HTTPS已经验证”的循环前置条件失败；`914c9b3d29d24e533a267d66a29c7f9554d5f20e`修复为先部署已签名真实PCK，再独立HTTP核查且不伪造验证状态。官网Pages正式部署`39064522807`为**SUCCESS**；正式线上独立复验`39064640688`为**SUCCESS**：完整公网上传文件35,815,712字节、RSA/SHA256、HTTP Range 206全通过。`data/updates.json`已写入真实验证状态，手机安卓实机仍明确**PENDING**。
