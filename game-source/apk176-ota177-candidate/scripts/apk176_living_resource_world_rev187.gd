@@ -13,6 +13,7 @@ const ManualQuality = preload("res://canglan_rev187/quality_profiles.gd")
 const VividMaterials = preload("res://canglan_rev187/vivid_material.gd")
 const CultivationWorld = preload("res://canglan_rev187/cultivation_world.gd")
 const SpiritResources = preload("res://canglan_rev187/spirit_resources.gd")
+const PaidHousing = preload("res://canglan_rev187/paid_housing.gd")
 const ASSETS := {
   "tree": "res://canglan_rev187/tree_oak.glb",
   "stone": "res://canglan_rev187/rocks_small.glb",
@@ -97,6 +98,9 @@ var finished_prefab_sources: Dictionary={}
 var licensed_outfits: Dictionary={}
 var native_wildlife_sources: Dictionary={}
 var actual_wildlife: Dictionary={}
+var housing: RefCounted
+var housing_blueprints: Dictionary={}
+var house_entry_colliders: Dictionary={}
 var spirit_resources: RefCounted
 var spirit_resource_sources: Dictionary={}
 var spirit_resource_visuals: Dictionary={}
@@ -157,6 +161,9 @@ func _ready() -> void:
   palette = NaturalPalette.new()
   vivid_materials=VividMaterials.new()
   vivid_materials.call("initialize")
+  housing=PaidHousing.new()
+  if not bool(housing.call("initialize")):
+    asset_errors.append("REV208_PAID_HOUSE_LEDGER_LOAD_FAILURE")
   _build_interface()
   _load_assets()
   spirit_resources=SpiritResources.new()
@@ -168,14 +175,10 @@ func _ready() -> void:
   _spawn_spirit_resource_nodes()
   _place_completed_cc0_village()
   _make_workers()
-  # Assign a real resident identity to the completed, placeable licensed
-  # house. Interior furnishing/access is a separate feature, not faked.
-  if finished_prefabs.has("CL-HOME-V206-001"):
-    (finished_prefabs["CL-HOME-V206-001"] as Node3D).set_meta(
-      "assigned_resident_ids",["CL-NPC-0184-03"])
-  # Each physical original prefabricated home is represented in actual
-  # economy capacity, not a pretend construction progress meter.
-  sim.villages[TOWN]["homes"]=5
+  # New houses are STRICTLY paid and constructed; no visual CC0 house
+  # or real residential capacity exists merely because a source GLB loads.
+  sim.villages[TOWN]["homes"]=int(housing.call("stats").get(
+    "actually_completed_houses",0))
   _spawn_native_animals()
   _create_playable_player()
   # Initialized only AFTER the real player, terrain, original NPC economy,
@@ -619,48 +622,138 @@ func _load_assets() -> void:
       native_wildlife_sources[model_id]=original
 
 func _place_completed_cc0_village() -> void:
-  # Replaces unfinished NPC-built 3m shacks with actual complete CC0
-  # buildings. Existing original warehouse and terrain stay real.
-  # Each complete house is one original licensed GLB, no house assembly.
-  var sites: Array=[
+  # Source CC0 prefabs remain uninstantiated until finite village warehouse
+  # spends EXACT material bill and worker completes the required game hours.
+  # A blueprint is ONLY a text site marker, never a finished building.
+  var specs: Array=[
     ["house_1",Vector3(-7.0,0.0,-18.0),-0.12,"CL-HOME-V206-001"],
     ["house_2",Vector3( 4.8,0.0,-24.0), 0.28,"CL-HOME-V206-002"],
     ["house_3",Vector3(-5.0,0.0, 25.0), 0.42,"CL-HOME-V206-003"],
     ["house_4",Vector3( 4.0,0.0, 31.0),-0.20,"CL-HOME-V206-004"],
     ["inn",Vector3(-6.0,0.0,-31.0),0.10,"CL-INN-V206-001"],
     ["gazebo",Vector3(-2.0,0.0,37.0),0.35,"CL-GAZEBO-V206-001"]]
-  for config in sites:
-    var kind: String=config[0]
-    if not finished_prefab_sources.has(kind):
+  for config in specs:
+    var id: String=String(config[3])
+    housing_blueprints[id]={"kind":String(config[0]),"at":config[1],
+      "yaw":float(config[2])}
+    if bool(housing.get("sites")[id]["completed"]):
+      _materialize_paid_house(id)
       continue
-    var at: Vector3=config[1]
-    var instance: Node3D=(finished_prefab_sources[kind] as Node3D).duplicate()
-    instance.name=String(config[3])
-    instance.position=Vector3(at.x,
-      float(terrain_world.call("height_at",at.x,at.z)),at.z)
-    instance.rotation.y=float(config[2])
-    instance.set_meta("source_license","Quaternius-CC0")
-    instance.set_meta("completed_prefab_not_npc_assembly",true)
-    instance.set_meta("building_type",kind)
-    instance.set_meta("resident_capacity",4 if kind.begins_with("house") else (
-      18 if kind=="inn" else 0))
-    instance.set_meta("assigned_resident_ids",[])
-    world.add_child(instance)
-    # Vendor GLB geometry varies in scale and origin. Normalize actual world
-    # mesh height, align base to the physical 3D terrain after scaling.
-    var bounds: Vector2=_visible_bounds(instance)
-    var source_height: float=bounds.y-bounds.x
-    var intended_m: float=8.0 if kind=="inn" else (
-      4.0 if kind=="gazebo" else 5.0)
-    if source_height>0.10 and is_finite(source_height):
-      instance.scale*=clampf(intended_m/source_height,0.08,6.0)
-      var real_bbox: Vector2=_visible_bounds(instance)
-      instance.position.y+=float(terrain_world.call(
-        "height_at",at.x,at.z))-real_bbox.x
-    instance.set_meta("source_ready_meters",intended_m)
-    finished_prefabs[instance.name]=instance
-  _add_event("村落使用%d座完整CC0房屋和亭阁；旧脚手架施工停止" % [
-    finished_prefabs.size()])
+    var tag:=Label3D.new()
+    tag.name="OnlyBluePrintNoFreeConstructedHouse_"+id
+    tag.text="住宅图纸：木200 / 石150 / 5人" if id.begins_with(
+      "CL-HOME") else "公共建筑蓝图 · 施工需真实资源"
+    tag.font_size=35
+    tag.pixel_size=0.008
+    tag.billboard=BaseMaterial3D.BILLBOARD_ENABLED
+    tag.modulate=Color("#dfbb74")
+    var pos: Vector3=config[1]
+    tag.position=Vector3(pos.x,float(terrain_world.call(
+      "height_at",pos.x,pos.z))+1.2,pos.z)
+    tag.visibility_range_end=14.0
+    world.add_child(tag)
+    housing_blueprints[id]["marker"]=tag
+  _add_event("6项真实建造蓝图；木200石150，NPC付费施工后才显示原版整屋")
+
+func _materialize_paid_house(id: String) -> bool:
+  if finished_prefabs.has(id) or not housing_blueprints.has(id):
+    return false
+  if not bool(housing.get("sites")[id]["paid"]) or not (
+      bool(housing.get("sites")[id]["completed"])):
+    return false
+  var site: Dictionary=housing_blueprints[id]
+  var kind: String=String(site["kind"])
+  if not finished_prefab_sources.has(kind):
+    return false
+  var at: Vector3=site["at"]
+  var house: Node3D=(finished_prefab_sources[kind] as Node3D).duplicate()
+  house.name=id
+  house.position=Vector3(at.x,float(terrain_world.call(
+    "height_at",at.x,at.z)),at.z)
+  house.rotation.y=float(site["yaw"])
+  house.set_meta("source_license","Quaternius-CC0")
+  house.set_meta("no_free_material_building",true)
+  house.set_meta("building_type",kind)
+  house.set_meta("resident_capacity",int(housing.get("sites")[
+    id]["real_resident_capacity"]))
+  house.set_meta("assigned_resident_ids",(housing.get("sites")[
+    id]["residents"] as Array).duplicate())
+  world.add_child(house)
+  var bounds: Vector2=_visible_bounds(house)
+  var height: float=bounds.y-bounds.x
+  var intended: float=8.0 if kind=="inn" else (
+    4.0 if kind=="gazebo" else 5.0)
+  if height>0.10 and is_finite(height):
+    house.scale*=clampf(intended/height,0.08,6.0)
+    var after: Vector2=_visible_bounds(house)
+    house.position.y+=float(terrain_world.call("height_at",
+      at.x,at.z))-after.x
+  house.set_meta("source_ready_meters",intended)
+  finished_prefabs[id]=house
+  if kind.begins_with("house"):
+    sim.villages[TOWN]["homes"]=int(sim.villages[TOWN]["homes"])+1
+  # The collider matches a furnished WALKABLE ENTRY opening at the
+  # front, while exterior walls/corners stop the original swept capsule.
+  # Only completed paid houses receive collision.
+  _add_house_shell_collision(id,house)
+  if housing_blueprints[id].has("marker"):
+    var marker: Label3D=housing_blueprints[id]["marker"]
+    if is_instance_valid(marker):
+      marker.visible=false
+  return true
+
+func _add_house_shell_collision(id: String,house: Node3D) -> void:
+  var base: StaticBody3D=StaticBody3D.new()
+  base.name="RealPaidDwellingCollisionDoorGap_"+id
+  base.collision_layer=2
+  base.collision_mask=0
+  base.position=house.position
+  base.rotation.y=house.rotation.y
+  world.add_child(base)
+  # Four exterior walls made from cheap independent physical primitives,
+  # not a sealed whole-house collision cube. Front doorway has 1.6m gap.
+  var is_house: bool=String(house.get_meta(
+    "building_type","")).begins_with("house")
+  var edge: float=3.15 if is_house else 4.4
+  for edge_spec in [
+    ["back",Vector3(0,1.5,-edge),Vector3(edge*2,3.0,0.34)],
+    ["left",Vector3(-edge,1.5,0),Vector3(0.34,3.0,edge*2)],
+    ["right",Vector3(edge,1.5,0),Vector3(0.34,3.0,edge*2)],
+    ["front_left",Vector3(-edge*0.67,1.5,edge),
+      Vector3(edge*0.65,3.0,0.34)],
+    ["front_right",Vector3(edge*0.67,1.5,edge),
+      Vector3(edge*0.65,3.0,0.34)]]:
+    var hit: CollisionShape3D=CollisionShape3D.new()
+    hit.name="NonPhantomActualHouseWall_"+String(edge_spec[0])
+    hit.position=edge_spec[1]
+    var shape: BoxShape3D=BoxShape3D.new()
+    shape.size=edge_spec[2]
+    hit.shape=shape
+    base.add_child(hit)
+  house_entry_colliders[id]=base
+
+func quote_and_fund_near_house(point: Vector3) -> Dictionary:
+  if housing==null or not bool(housing.get("_loaded")):
+    return {"ok":false,"reason":"HOUSE_LEDGER_NOT_AVAILABLE"}
+  var best_id: String=""
+  var best: float=3.2
+  for id in housing_blueprints:
+    var p: Vector3=housing_blueprints[id]["at"]
+    var dist: float=Vector2(point.x-p.x,point.z-p.z).length()
+    if dist<best:
+      best=dist
+      best_id=String(id)
+  if best_id.is_empty():
+    return {"ok":false,"reason":"NO_HOUSE_BLUEPRINT_NEARBY"}
+  if bool(housing.get("sites")[best_id]["completed"]):
+    var occupied: Dictionary=housing.call("quote",best_id)
+    occupied["reason"]="HOUSE_ALREADY_COMPLETED"
+    return occupied
+  var result: Dictionary=housing.call("try_fund",best_id,sim,TOWN)
+  if bool(result.get("ok",false)):
+    _add_event("真实仓库扣木%d石%d；%s排入NPC工期" % [
+      int(result["spent_wood"]),int(result["spent_stone"]),best_id])
+  return result
 
 func _spawn_spirit_resource_nodes() -> void:
   if spirit_resources==null or not bool(spirit_resources.get("_loaded")):
@@ -1186,6 +1279,15 @@ func _move_steward(worker: Dictionary, delta: float) -> void:
   # The old perpetual tiny-hut constructor is retired. This actual licensed
   # NPC has a home and a finite daily route, receives no fictitious tools.
   var home: Node3D=finished_prefabs.get("CL-HOME-V206-001",null)
+  # Workers are not merely staring at an unfinished home. If the wood+
+  # stone were paid, they physically commute to the site during workdays.
+  for bid in housing_blueprints:
+    var source: Dictionary=housing.get("sites")[bid]
+    if bool(source["paid"]) and not bool(source["completed"]):
+      worker["phase"]="licensed_paid_house_building"
+      worker["target"]=housing_blueprints[bid]["at"]
+      _navigate(worker,delta)
+      return
   var night: bool=int(sim.hour)>=19 or int(sim.hour)<6
   worker["home_id"]="CL-HOME-V206-001"
   worker["phase"]="home_rest" if night else "inspecting_prefab_houses"
@@ -1208,8 +1310,8 @@ func _update_status() -> void:
     return
   var village: Dictionary = sim.villages[TOWN]
   var stock: Dictionary = village["stock"]
-  var build: String="%d座正版CC0整屋/客栈/亭阁，禁止旧破屋施工" % [
-    finished_prefabs.size()]
+  var build: String="已完工%d栋 · 施工蓝图%d个 · 标准住宅200木150石/住5人" % [
+    finished_prefabs.size(),housing_blueprints.size()-finished_prefabs.size()]
   var terrain_state: Dictionary = terrain_world.call("stats") if terrain_world!=null else {}
   status.text = ("木 %d  石 %d  树种库存 %d  伐倒产种 %d\n" +
     "入库 %d  种下 %d  地下矿脉露出 %d\n" +
@@ -1302,6 +1404,10 @@ func _process(delta: float) -> void:
     _economy_clock-=12.0
     sim.tick()
     eco.advance_ecology_hours(1)
+    if housing!=null:
+      var paid_finished: Array=housing.call("advance_one_world_hour",1)
+      for built_id in paid_finished:
+        _materialize_paid_house(String(built_id))
     if cultivation!=null:
       cultivation.call("advance_world_hour")
     if spirit_resources!=null:
@@ -1399,6 +1505,9 @@ func stats() -> Dictionary:
     "whole_world_speed_includes_npc_construction":false,
     "rev206_perpetual_house_construction_retired":true,
     "rev206_cc0_completed_building_count":finished_prefabs.size(),
+    "rev208_paid_construction_actual":housing.call("stats") if housing!=null else {},
+    "rev208_genuine_unpaid_house_blueprints":housing_blueprints.size(),
+    "rev208_paid_house_physics_colliders":house_entry_colliders.size(),
     "rev206_native_wildlife_count":actual_wildlife.size(),
     "rev206_real_spirit_herbs_ore":spirit_resources.call("stats") if spirit_resources!=null else {},
     "rev206_world_spirit_resource_visuals":spirit_resource_visuals.size(),
