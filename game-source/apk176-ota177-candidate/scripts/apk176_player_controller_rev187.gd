@@ -91,6 +91,7 @@ func _spawn_player() -> void:
   actor.position.y = float(terrain.call("height_at",actor.position.x,actor.position.z)) + float(actor.get_meta("actor_ground_offset_y",0.0))
   actor.set_meta("entity_id",PLAYER_ID)
   actor.set_meta("controllable",true)
+  actor.set_meta("health",_player_health)
   var possible: Array[Node] = actor.find_children("*","AnimationPlayer",true,false)
   for item in possible:
     var player: AnimationPlayer = item as AnimationPlayer
@@ -288,6 +289,11 @@ func _build_game_hud() -> void:
   _developer_sheet_button.text="开发工具（默认关闭）"
   _developer_sheet_button.pressed.connect(func(): room.call("_set_dev_ui_visible",not bool(room.get("developer_ui_visible"))))
   v.add_child(_developer_sheet_button)
+  var eat_button:=Button.new()
+  eat_button.name="EatRealWarehouseFoodToRest"
+  eat_button.text="在仓库消耗食物休整"
+  eat_button.pressed.connect(Callable(self,"rest_and_eat"))
+  v.add_child(eat_button)
   _add_game_action("GatherAction","采集",Callable(self,"gather_action"))
   _add_game_action("DashAction","疾步",Callable(self,"dash_action"))
   _add_game_action("DigAction","挖掘",Callable(self,"dig"))
@@ -335,6 +341,8 @@ func _refresh_game_hud() -> void:
   (_game_actions["GatherAction"] as Button).text="采集 "+str(ceili(_gather_cd))+"秒" if _gather_cd>0.0 else "采集"
   _quality_sheet_button.visible=_game_sheet!=null and _game_sheet.visible and _game_sheet_mode=="settings"
   _developer_sheet_button.visible=_quality_sheet_button.visible
+  var eat_button: Button=_game_sheet.get_node("VBoxContainer/EatRealWarehouseFoodToRest")
+  eat_button.visible=_game_sheet.visible and _game_sheet_mode=="character"
   if _game_sheet==null or not _game_sheet.visible:
     return
   if _game_sheet_mode=="character":
@@ -789,6 +797,10 @@ func _keyboard_axis() -> Vector2:
 func step(delta: float) -> void:
   if not _enabled or actor == null:
     return
+  _dash_cd=maxf(0.0,_dash_cd-delta)
+  _gather_cd=maxf(0.0,_gather_cd-delta)
+  _fall_damage_cd=maxf(0.0,_fall_damage_cd-delta)
+  var previous_ground_y: float=float(terrain.call("height_at",actor.position.x,actor.position.z))
   var input_axis: Vector2 = _joystick
   var keys: Vector2 = _keyboard_axis()
   if keys.length() > 0.01:
@@ -835,7 +847,11 @@ func step(delta: float) -> void:
     _set_movement_animation(false)
   # Character visual standing on actual physical surface, not a 2D painted
   # panel. Re-snap to the currently excavated triangle beneath the feet.
-  actor.position.y = float(terrain.call("height_at",actor.position.x,actor.position.z)) + float(actor.get_meta("actor_ground_offset_y",0.0))
+  var new_ground_y: float=float(terrain.call("height_at",actor.position.x,actor.position.z))
+  actor.position.y = new_ground_y + float(actor.get_meta("actor_ground_offset_y",0.0))
+  if previous_ground_y-new_ground_y>2.3 and _fall_damage_cd<=0.0:
+    apply_player_damage(roundi((previous_ground_y-new_ground_y-2.0)*10.0))
+    _fall_damage_cd=0.8
   if not bool(room.get("_follow_builder")):
     update_camera()
   if _hud_flash>0.0:
