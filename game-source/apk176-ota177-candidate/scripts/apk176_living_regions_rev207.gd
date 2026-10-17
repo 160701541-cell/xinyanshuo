@@ -112,7 +112,10 @@ func initialize(world_seed: int=WORLD_SEED_DEFAULT) -> bool:
       "id":id,"name":String(blueprint["name"]),
       "primary":String(blueprint["primary"]),"secondary":String(blueprint["secondary"]),
       "territory":"CL-REGION-%03d" % int(blueprint["seat"]),
-      "members":0,"foundation":"山门/功法阁/练功场/药园/丹房须逐步建设",
+      # Five actually existing devotees founded each school. They are
+      # drawn from the 125 spirit-root and rootless body-cultivator census;
+      # do not count them as 25 newly created additional human beings.
+      "members":5,"foundation":"山门/功法阁/练功场/药园/丹房须逐步建设",
       "study_hours":0,"technique_experience":0,"founded":true,
       "reserves_spirit_stones":0,"reserves_herbs":0,
       "real_rendered_sect_buildings":0}
