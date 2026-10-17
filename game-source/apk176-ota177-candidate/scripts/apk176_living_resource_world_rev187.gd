@@ -41,12 +41,8 @@ const READY_MADE_CC0: Dictionary={
 const TOWN := "CL-REV186-HX-VILLAGE"
 const DEPOT := Vector3(0.0, 0.0, 10.0)
 const SITE := Vector3(0.0, 0.0, -3.0)
-const STAGES := [
-  {"id": "stone_foundation", "consume": {"stone": 6}, "time": 6.0},
-  {"id": "timber_posts", "consume": {"wood": 9}, "time": 7.0},
-  {"id": "fenced_walls", "consume": {"wood": 6}, "time": 7.0},
-  {"id": "door_frame", "consume": {"wood": 3, "stone": 3}, "time": 8.0}
-]
+# No staged scaffold/repair/building construction: all real buildings
+# in this scene come from licensed complete third-party CC0 GLB prefabs.
 var sim
 var eco
 var palette: RefCounted
@@ -135,7 +131,7 @@ func _ready() -> void:
     "food": 24, "grain": 0, "water": 24, "wood": 0, "stone": 0}))
   assert(sim.add_citizen("CL-NPC-0184-01", TOWN, "woodcutter", 28))
   assert(sim.add_citizen("CL-NPC-0184-02", TOWN, "quarryman", 31))
-  assert(sim.add_citizen("CL-NPC-0184-03", TOWN, "builder", 24))
+  assert(sim.add_citizen("CL-NPC-0184-03", TOWN, "steward", 24))
   # The human player is a genuine world citizen with an identity and an
   # authoritative economy backpack, not a passive floating observer.
   assert(sim.add_citizen("CL-PLAYER-0184-0001", TOWN, "traveler", 21))
@@ -152,6 +148,9 @@ func _ready() -> void:
   _seed_resources()
   _place_completed_cc0_village()
   _make_workers()
+  # Each physical original prefabricated home is represented in actual
+  # economy capacity, not a pretend construction progress meter.
+  sim.villages[TOWN]["homes"]=5
   _spawn_native_animals()
   _create_playable_player()
   # Initialized only AFTER the real player, terrain, original NPC economy,
@@ -890,7 +889,7 @@ func _make_workers() -> void:
   var identities := [
     {"id":"CL-NPC-0184-01","kind":"tree","name":"樵夫"},
     {"id":"CL-NPC-0184-02","kind":"stone","name":"采石工"},
-    {"id":"CL-NPC-0184-03","kind":"builder","name":"建筑工"}
+    {"id":"CL-NPC-0184-03","kind":"steward","name":"巡游管事"}
   ]
   for profile in identities:
     var code: String = profile["id"]
@@ -1031,102 +1030,21 @@ func _move_gatherer(worker: Dictionary, delta: float) -> void:
       _add_event(code + " 运输入库")
       worker["phase"] = "idle"
 
-func _place_stage_art(stage_name: String) -> void:
-  if stage_name == "stone_foundation":
-    for i in range(4):
-      if _place_asset("steps", "NPCStoneFoundation_%02d" % i,
-        SITE + Vector3(-2.1 + i*1.35,0,0), 1.6) != null:
-        _built_pieces += 1
-  elif stage_name == "timber_posts":
-    for i in range(4):
-      if _place_asset("timber", "NPCPlacedTimber_%02d" % i,
-        SITE + Vector3(-2.5 + i*1.7,0,-2.4), 1.7) != null:
-        _built_pieces += 1
-  elif stage_name == "fenced_walls":
-    for i in range(4):
-      if _place_asset("fence", "NPCAssembledFence_%02d" % i,
-        SITE + Vector3(-2.0 + i*1.4,0,2.2), 1.65) != null:
-        _built_pieces += 1
-  elif stage_name == "door_frame":
-    if _place_asset("door", "NPCInstalledLicensedDoor", SITE + Vector3(0,0,2.1), 2.0) != null:
-      _built_pieces += 1
-
-func _move_builder(worker: Dictionary, delta: float) -> void:
-  # A real foundation is EXCAVATED before stone is placed. Every cut alters
-  # the physical terrain mesh, rebuilds collision and debits strata mass.
-  if _stage_index == 0 and terrain_world != null and not bool(terrain_world.call("foundation_ready")):
-    worker["phase"] = "excavating_foundation"
-    worker["target"] = SITE + Vector3(2.0,0,0.0)
-    if not _navigate(worker,delta):
-      return
-    _set_worker_animation(worker,false)
-    _foundation_dig_clock += delta
-    if _foundation_dig_clock>=1.8:
-      _foundation_dig_clock = 0.0
-      var spoil: Dictionary = terrain_world.call("next_foundation_cut")
-      if bool(spoil.get("ok",false)):
-        _foundation_excavation_count += 1
-        _add_event("建筑工挖出" + String(spoil.get("kind","土")) + "·地基深" + str(spoil.get("depth_m",0.0))+"米")
+func _move_steward(worker: Dictionary, delta: float) -> void:
+  # The old perpetual tiny-hut constructor is retired. This actual licensed
+  # NPC has a home and a finite daily route, receives no fictitious tools.
+  var home: Node3D=finished_prefabs.get("CL-HOME-V206-001",null)
+  var night: bool=int(sim.hour)>=19 or int(sim.hour)<6
+  worker["home_id"]="CL-HOME-V206-001"
+  worker["phase"]="home_rest" if night else "inspecting_prefab_houses"
+  if night and home!=null:
+    worker["target"]=home.position+Vector3(0,0,2.1)
+  else:
+    worker["target"]=Vector3(-6.0,0,-31.0) if (
+      sim.hour%4<2) else DEPOT
+  if not _navigate(worker,delta):
     return
-  if _stage_index >= STAGES.size():
-    worker["phase"] = "waiting_for_roof_components"
-    _set_worker_animation(worker, false)
-    return
-  var phase: Dictionary = STAGES[_stage_index]
-  var worker_node: Node3D = worker["node"]
-  if not _stage_paid:
-    # Builder MUST first walk back to the real warehouse; no teleporting
-    # materials from village stock directly to the worksite.
-    worker["phase"] = "to_warehouse_for_materials"
-    worker["target"] = DEPOT
-    if not _navigate(worker, delta):
-      return
-    if not sim._spend(TOWN, phase["consume"]):
-      worker["phase"] = "waiting_materials"
-      return
-    _stage_paid = true
-    _stage_progress = 0.0
-    # Stock is now in this specific builder's finite load, *not minted*.
-    worker["carried_materials"] = phase["consume"].duplicate(true)
-    worker["phase"] = "to_building_site"
-    worker["target"] = SITE
-    var role: String = "timber" if int(phase["consume"].get("wood",0))>0 else "stone"
-    if asset_sources.has(role):
-      var visual: Node3D = (asset_sources[role] as Node3D).duplicate()
-      visual.name = "ActualCarriedLicensedMaterial"
-      visual.position = Vector3(0.25, 1.1, -0.1)
-      visual.scale = Vector3.ONE * 0.54
-      worker_node.add_child(visual)
-      worker["cargo_visual"] = visual
-    _add_event("工人领取实体材料 " + String(phase["id"]))
-    return
-  if String(worker.get("phase","")) == "to_building_site":
-    if not _navigate(worker, delta):
-      return
-    # Materials are delivered only on physical arrival, before labor starts.
-    worker["delivered_materials"] = worker.get("carried_materials",{}).duplicate(true)
-    worker.erase("carried_materials")
-    if worker.has("cargo_visual"):
-      var cargo: Node3D = worker["cargo_visual"]
-      if is_instance_valid(cargo):
-        cargo.queue_free()
-      worker.erase("cargo_visual")
-    worker["phase"] = "working_" + String(phase["id"])
-    _add_event("实体材料到达工地 " + String(phase["id"]))
-    return
-  # Work is measured in elapsed physical seconds after delivery; no instant
-  # spawn on job assignment and no appearance before material reservation.
-  _set_worker_animation(worker, false)
-  _stage_progress += delta
-  if _stage_progress >= float(phase["time"]):
-    _place_stage_art(String(phase["id"]))
-    _add_event("NPC竣工阶段 " + String(phase["id"]))
-    worker.erase("delivered_materials")
-    _stage_index += 1
-    _stage_paid = false
-    _stage_progress = 0.0
-    worker["phase"] = "return_to_warehouse"
-    worker["target"] = DEPOT
+  _set_worker_animation(worker,false)
 
 func _add_event(message: String) -> void:
   _events.append(message)
@@ -1138,15 +1056,12 @@ func _update_status() -> void:
     return
   var village: Dictionary = sim.villages[TOWN]
   var stock: Dictionary = village["stock"]
-  var build: String = "等待授权瓦件/屋顶工程" if _stage_index >= STAGES.size() else (
-    "阶段 %d/%d %s %d%%" % [_stage_index+1,STAGES.size(),
-      STAGES[_stage_index]["id"],
-      int(100.0 * _stage_progress/maxf(1.0,float(STAGES[_stage_index]["time"])))]
-  )
+  var build: String="%d座正版CC0整屋/客栈/亭阁，禁止旧破屋施工" % [
+    finished_prefabs.size()]
   var terrain_state: Dictionary = terrain_world.call("stats") if terrain_world!=null else {}
   status.text = ("木 %d  石 %d  树种库存 %d  伐倒产种 %d\n" +
     "入库 %d  种下 %d  地下矿脉露出 %d\n" +
-    "施工 %s  构件 %d\n" +
+    "现成建筑 %s  已修复旧脚手架数 %d\n" +
     "樵夫:%s  采石:%s\n" +
     "真实地层挖掘 %d格·深可至3.6米 / 水塘有实河床\n" +
     "地质(独立年代) %d万年 / 远景海拔 %.0fm\n" +
@@ -1243,10 +1158,11 @@ func _process(delta: float) -> void:
     _refresh_ecology_meshes()
   _sync_living_daylight()
   for worker in workers.values():
-    if String(worker["kind"]) == "builder":
-      _move_builder(worker, accelerated_delta)
+    if String(worker["kind"])=="steward":
+      _move_steward(worker,accelerated_delta)
     else:
       _move_gatherer(worker, accelerated_delta)
+  _step_native_animals(delta)
   if cultivation!=null:
     cultivation.call("update_visible_npcs",accelerated_delta)
   var hero: Node3D = controls.get("actor") if controls!=null else null
@@ -1325,7 +1241,15 @@ func stats() -> Dictionary:
     "worker_count": workers.size(), "resource_node_count": sim.natural_nodes.size(),
     "living_clock":get_living_clock(),
     "spiritual_world":cultivation.call("stats") if cultivation!=null else {},
-    "whole_world_speed_includes_npc_construction":true,
+    "whole_world_speed_includes_npc_construction":false,
+    "rev206_perpetual_house_construction_retired":true,
+    "rev206_cc0_completed_building_count":finished_prefabs.size(),
+    "rev206_native_wildlife_count":actual_wildlife.size(),
+    "rev206_native_animated_wildlife_count":_wildlife_anim_count,
+    "rev206_outfit_source_count":licensed_outfits.size(),
+    "rev206_completed_house_occupancy":(finished_prefabs.get(
+      "CL-HOME-V206-001",null) as Node3D).get_meta("resident_capacity",0) if (
+      finished_prefabs.has("CL-HOME-V206-001")) else 0,
     "local_gguf_installed":false,
     "native_llama_bridge_present":ClassDB.class_exists("CanglanLocalLLM"),
     "source_assets": asset_sources.size(), "missing_assets": asset_errors.duplicate(),
@@ -1336,7 +1260,7 @@ func stats() -> Dictionary:
     "animation_reports": animation_report.duplicate(true),
     "harvests": _harvests, "deliveries": _deliveries,
     "stock_wood": int(stock["wood"]), "stock_stone": int(stock["stone"]),
-    "stage": _stage_index, "built_cc0_parts": _built_pieces,
+    "stage":0,"built_cc0_parts":finished_prefabs.size(),
     "tree_seeds_village": int(stock.get("tree_seed",0)),
     "tree_seeds_carried": eco.awaiting_seed_delivery.duplicate(true),
     "felled_seed_events": eco.minted_seed_events,
@@ -1368,7 +1292,7 @@ func stats() -> Dictionary:
       "quarryman": float(workers["CL-NPC-0184-02"]["node"].get_meta("actor_visual_height_m",0.0)) if workers.has("CL-NPC-0184-02") else 0.0,
       "builder": float(workers["CL-NPC-0184-03"]["node"].get_meta("actor_visual_height_m",0.0)) if workers.has("CL-NPC-0184-03") else 0.0
     },
-    "not_whole_finished_house": true, "save_unchanged": true}
+    "not_whole_finished_house":false, "save_unchanged":true}
 
 
 func _visible_bounds(actor: Node3D) -> Vector2:
