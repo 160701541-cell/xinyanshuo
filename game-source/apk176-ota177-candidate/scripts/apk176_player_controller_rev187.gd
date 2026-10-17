@@ -805,12 +805,12 @@ func _refresh_game_hud() -> void:
   var spiritual: RefCounted=room.get("cultivation")
   var record: Dictionary=spiritual.call("public_player_status") if spiritual!=null else {}
   var realm: String=String(record.get("realm","凡人"))
-  var level: int=int(record.get("layer",0))
+  var player_level: int=int(record.get("layer",0))
   var mana_now: int=int(record.get("mana",0))
-  _mana_bar.max_value=maxi(1,level*12)
+  _mana_bar.max_value=maxi(1,player_level*12)
   _mana_bar.value=mana_now
   _game_status.text="心魇说 · %s%s  %d/100" % [
-    realm,(" 第%d层" % level) if level>0 else "",_player_health]
+    realm,(" 第%d层" % player_level) if player_level>0 else "",_player_health]
   (_game_actions["DashAction"] as Button).disabled=_dash_cd>0.0 or energy<8
   (_game_actions["DashAction"] as Button).text="疾步 "+str(ceili(_dash_cd))+"秒" if _dash_cd>0.0 else "疾步"
   (_game_actions["GatherAction"] as Button).disabled=_gather_cd>0.0
@@ -858,7 +858,7 @@ func _refresh_game_hud() -> void:
       var level: int=int(record.get("layer",0))
       _spirit_notice.text="%s  %s · %s  修为%d  经脉%d" % [
         root,String(record.get("realm","凡人")),
-        "第%d层" % level if level>0 else "未入炼气",
+        "第%d层" % player_level if player_level>0 else "未入炼气",
         int(record.get("qi",0)),int(record.get("stress",0))]
     else:
       _spirit_notice.text="灵根：未检测 · 请寻找青色灵根检测台"
@@ -885,7 +885,7 @@ func _refresh_game_hud() -> void:
       _flight_altitude_label.visible=false
   if _spar_stage!="inactive":
     _spirit_notice.text="切磋 %s · %s  法力%d/%d" % [
-      _spar_stage,_spar_last_outcome,mana_now,level*12]
+      _spar_stage,_spar_last_outcome,mana_now,player_level*12]
   elif spiritual==null:
     _spirit_notice.text="灵根：未检测（检测台尚未装载）"
   _quality_sheet_button.visible=_game_sheet!=null and _game_sheet.visible and _game_sheet_mode=="settings"
