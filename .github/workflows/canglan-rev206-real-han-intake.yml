@@ -1,0 +1,83 @@
+name: Canglan rev206 Ancient Chinese Han Real CC-BY-SA 3D original source intake
+on:
+  push:
+    branches: [feat/rev206-true-housing-physical-combat-vitals]
+    paths: ['.github/workflows/canglan-rev206-real-han-intake.yml']
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: canglan-han-chinese-source-intake
+  cancel-in-progress: false
+jobs:
+  import-original:
+    if: github.repository == '160701541-cell/xinyanshuo' && github.ref_name == 'feat/rev206-true-housing-physical-combat-vitals'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 18
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+          persist-credentials: true
+      - name: Fetch only nine pinned ORIGINAL Han house/sect GLBs with CC BY-SA 3.0 and source hashes
+        run: |
+          set -euo pipefail
+          python3 tools/ingest_rev206_real_han_ccby_3d.py
+          python3 - <<'PY'
+          from pathlib import Path
+          import json,hashlib
+          base=Path('game-source/apk176-ota177-candidate/assets/cc-by-sa-han-rev206')
+          proof=json.loads((base/'verified_real_han_art.json').read_text())
+          assert proof['license']=='CC-BY-SA-3.0' and len(proof['models'])==9
+          assert (base/'ART_LICENSE_ATTRIBUTION.md').is_file()
+          assert len([a for a in proof['models'] if a['category']=='home'])==4
+          for model in proof['models']:
+              content=Path(model['path']).read_bytes()
+              assert hashlib.sha256(content).hexdigest()==model['sha256']
+              assert content[:4]==b'glTF'
+          print('PASS_REV206_REAL_CHINESE_0AD_HAN_HOME_NOT_WESTERN_PREFABS_WITH_PROOF')
+          PY
+      - name: Native Godot 4.4.1 real full 3D parser imports all nine original Han assets
+        run: |
+          set -euo pipefail
+          curl -fL --retry 3 --connect-timeout 20 \
+            https://github.com/godotengine/godot/releases/download/4.4.1-stable/Godot_v4.4.1-stable_linux.x86_64.zip \
+            -o /tmp/canglan-han-godot.zip
+          unzip -q /tmp/canglan-han-godot.zip -d /tmp
+          chmod +x /tmp/Godot_v4.4.1-stable_linux.x86_64
+          mkdir -p /tmp/han-qa/assets
+          printf 'config_version=5\n' > /tmp/han-qa/project.godot
+          cp game-source/apk176-ota177-candidate/assets/cc-by-sa-han-rev206/*.glb /tmp/han-qa/assets/
+          test "$(find /tmp/han-qa/assets -maxdepth 1 -name '*.glb' | wc -l)" -eq 9
+          timeout 150s /tmp/Godot_v4.4.1-stable_linux.x86_64 \
+            --headless --editor --path /tmp/han-qa --import \
+            > /tmp/rev206-han-godot.log 2>&1 || {
+              tail -100 /tmp/rev206-han-godot.log; exit 1;
+            }
+          if grep -E 'SCRIPT ERROR:|Parse Error:|ERROR:.*(Import|Importer|GLTF)' \
+            /tmp/rev206-han-godot.log; then
+            echo FAIL_REV206_GODOT_CHINESE_ARCHITECTURE_IMPORT
+            exit 1
+          fi
+          echo PASS_REV206_REAL_NATIVE_GODOT44_NINE_HAN_HOUSE_TEMPLE_FACADES
+      - name: Commit verified original Han assets, no candidate signing or live updater
+        run: |
+          set -euo pipefail
+          git config user.name 'canglan-source-asset-bot'
+          git config user.email 'actions@users.noreply.github.com'
+          git add game-source/apk176-ota177-candidate/assets/cc-by-sa-han-rev206
+          if git diff --cached --quiet; then
+             echo PASS_REV206_ORIGINAL_HAN_GLBS_UNCHANGED
+          else
+             git commit -m 'assets(rev206): nine authentic CC-BY-SA 3.0 0AD Han homes temple and gate [skip ci]'
+             git push origin HEAD:feat/rev206-true-housing-physical-combat-vitals
+          fi
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: Canglan-Rev206-Actual-Han-CCBYSA-Model-Proof
+          path: |
+            game-source/apk176-ota177-candidate/assets/cc-by-sa-han-rev206/verified_real_han_art.json
+            game-source/apk176-ota177-candidate/assets/cc-by-sa-han-rev206/ART_LICENSE_ATTRIBUTION.md
+          retention-days: 14
+          if-no-files-found: warn
