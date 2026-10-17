@@ -1,5 +1,11 @@
 # CAC 工序变更与开发日志
 
+## 2026-10-18 / CAC-REV207-SHRUB-INIT-ORDER / 检查出首帧生态渲染依赖顺序并真实修复
+- GitHub Actions `39061700710` 原APK176 Godot 4.4.1全场景QA **FAIL**：`REV207_UNDERSTORY_CC0_BUSH_NOT_IMPORTED`，已确认真实开源 bush.glb 已被加载，不是缺许可或资源路径；根因是新增灌木渲染调用早于`quality = ManualQuality.new()`初始化，而合法可种区域判定需要quality实例。
+- 真正修改原`_ready()`顺序（提交`4794a0800bc1b084862480e17964c64b71c2e833`）：在原树木、石矿、角色、原Main、质量/流式草地均初始化后，再创建真实授权灌木MultiMesh，保留全部源模型/PBR和QA门禁，不删检测、不放宽真实GLB要求。
+- 严格QA后续执行`39061896938`（提交时仍未出结论）。原已发布签名 rev206 仍不变；只有最新rev207 Godot Main、Godot引擎截图、RSA签发和公网站验签全绿才可合并发布。
+
+
 ## 2026-10-18 / CAC-REV207-REAL-CC0-UNDERSTORY / 真GLB授权灌木填植被空白（需新Godot截图复测）
 - 对照实际rev207候选Godot 1280×720截图：原近景草丛虽有10800 MultiMesh，但局部仍有明显单一裸绿地。用户最新要求“除建筑用地外不能空白”，不能只写500区块生态数据；须让原真3D场景有实物群落。
 - 真正修改`scripts/apk176_living_resource_world_rev187.gd`：使用已授权且哈希固定的Quaternius `cc0_spirit/herb/bush.glb`，复用原GLB Mesh/UV/PBR及作者局部变换，按源mesh面数估算GPU三角预算(≤35万)，逐MeshPart的MultiMesh场景批绘和可缩放植株，采样真实可种土壤，明确排除路/水/已挖土壤/六处住宅地基，保证不是建筑内乱长草。
