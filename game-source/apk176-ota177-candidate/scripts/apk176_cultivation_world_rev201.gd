@@ -10,6 +10,8 @@ extends RefCounted
 const SAVE_PATH: String="user://canglan_original_cultivation_seed_v1.json"
 const SCHEMA: int=1
 const NPC_COUNT: int=12
+const RootTaxonomy = preload("res://canglan_rev187/root_taxonomy.gd")
+const CityPopulation = preload("res://canglan_rev187/city_population.gd")
 # These are actual learned arts, not dummy buttons that give mortals free mana.
 const ART_SPIRIT_BOLT: String="CL-ART-SPIRIT-BOLT-V1"
 const ART_SPIRIT_WARD: String="CL-ART-SPIRIT-WARD-V1"
@@ -32,6 +34,8 @@ var npc_visuals: Dictionary={}
 var npc_labels: Dictionary={}
 var npc_vitals_bars: Dictionary={}
 var npc_colliders: Dictionary={}
+var root_catalog: RefCounted
+var city_population: RefCounted
 var altar: Node3D
 var altar_marker: MeshInstance3D
 var altar_caption: Label3D
@@ -45,6 +49,11 @@ func initialize(active_room: Node) -> void:
   world=room.get("world")
   terrain=room.get("terrain_world")
   sim=room.get("sim")
+  root_catalog=RootTaxonomy.new()
+  city_population=CityPopulation.new()
+  city_population.call("initialize",root_catalog)
+  # A single large off-screen city uses COUNTS only, preserved inside the
+  # existing rev201 cultivation save after its seed has been restored.
   _load_or_initialize()
   _build_existing_stone_exam_altar()
   _generate_actual_visible_cultivators()
@@ -53,9 +62,18 @@ func _default_player() -> Dictionary:
   return {"tested":false,"root_kind":"","root_weights":[],
     "realm":"凡人","layer":0,"qi":0,"mana":0,
     "stress":0,"method":"","known_arts":[],"meditating":false,
-    "practice_hours":0,"breakthrough_count":0}
+    "practice_hours":0,"breakthrough_count":0,
+    "latent_root_profile":{},"root_profile":{}}
 
 func _load_or_initialize() -> void:
+  # Regression/backward-compatible migration may instantiate a detached
+  # cultivation ledger and call this loader directly, without initialize().
+  # Setup deterministic catalog and virtual census before touching save state.
+  if root_catalog==null:
+    root_catalog=RootTaxonomy.new()
+  if city_population==null:
+    city_population=CityPopulation.new()
+    city_population.call("initialize",root_catalog)
   var parsed: Variant=null
   if FileAccess.file_exists(SAVE_PATH):
     var file:=FileAccess.open(SAVE_PATH,FileAccess.READ)
@@ -78,10 +96,43 @@ func _load_or_initialize() -> void:
     player_data=_default_player()
     npc_data={}
     total_hours=0
+  var census_stored: Dictionary=parsed.get("city_population",{}) if parsed is Dictionary else {}
+  if census_stored.has("CL-CITY-HEXI-0001") and int(
+      census_stored["CL-CITY-HEXI-0001"].get("population",0))>=10000 and int(
+      census_stored["CL-CITY-HEXI-0001"].get("population",0))<=250000:
+    city_population.set("cities",census_stored.duplicate(true))
+  else:
+    city_population.call("create_city","CL-CITY-HEXI-0001",
+      world_seed,80000)
   # Backward compatible: preserve a rev201 save and learn the arts from
   # already-reached milestones instead of resetting progress on hot update.
   if not player_data.has("known_arts"):
     player_data["known_arts"]=[]
+  # Existing player saves from rev201 MUST NOT be wiped or rerolled each load.
+  # Player always owns a root at birth, but before visiting the altar its
+  # profile is secret. Previous "无灵根" rolls migrate once without
+  # changing the existing realm, Qi, learned arts, position or inventory.
+  var previous_kind: String=String(player_data.get("root_kind",""))
+  var born_root: Dictionary=player_data.get("latent_root_profile",{})
+  if born_root.is_empty():
+    born_root=root_catalog.call("migrate_existing",world_seed,
+      "CL-PLAYER-0184-0001",previous_kind,
+      player_data.get("root_weights",[]),"player")
+  if not bool(born_root.get("has_root",false)):
+    born_root=root_catalog.call("generate",world_seed,
+      "CL-PLAYER-0184-0001","player")
+  born_root["detected"]=bool(player_data.get("tested",false))
+  player_data["latent_root_profile"]=born_root
+  if bool(player_data.get("tested",false)):
+    player_data["root_kind"]=String(born_root.get("kind",""))
+    player_data["root_weights"]=born_root.get("root_weights",[])
+    player_data["root_profile"]=born_root.duplicate(true)
+    if String(player_data.get("method",""))=="":
+      player_data["method"]="CL-TECH-NAYUAN-BREATHING-V1"
+  else:
+    player_data["root_profile"]={}
+    player_data["root_kind"]=""
+    player_data["root_weights"]=[]
   var known: Array=player_data["known_arts"]
   if int(player_data.get("layer",0))>=1 and not String(
       player_data.get("method","")).is_empty() and not known.has(ART_SPIRIT_BOLT):
@@ -95,6 +146,11 @@ func _load_or_initialize() -> void:
       # Existing citizens retain their real age, root, Qi and schedule.
       # Their newly added vitals are initialized only once per saved identity.
       var old: Dictionary=npc_data[id]
+      if not old.has("root_profile"):
+        var legacy_element: String=String(old.get("root_element",""))
+        old["root_profile"]=root_catalog.call("migrate_existing",
+          world_seed,id,legacy_element+"灵根" if legacy_element!="" else "",
+          [],"cultivator")
       var layer: int=int(old.get("layer",0))
       var hpmax: int=110+layer*12
       var mpmax: int=12+layer*9 if String(old.get("realm",""))=="炼气" else 0
@@ -108,11 +164,14 @@ func _load_or_initialize() -> void:
         old["mana"]=int(old["max_mana"])
       continue
     var rng:=_entity_rng(id)
+    var born_npc: Dictionary=root_catalog.call("generate",
+      world_seed,id,"cultivator")
     npc_data[id]={
       "entity_id":id,"name":CULT_NAMES[i],"occupation":CULT_JOBS[i],
       "realm":"炼气" if i%4!=3 else "凡人武者",
       "layer":rng.randi_range(1,4) if i%4!=3 else 0,
-      "root_element":ELEMENTS[rng.randi_range(0,ELEMENTS.size()-1)],
+      "root_element":String(born_npc.get("roots",["金"])[0]),
+      "root_profile":born_npc,
       "age":rng.randi_range(18,70),"hunger":rng.randi_range(8,36),
       "energy":rng.randi_range(45,90),"qi":rng.randi_range(0,60),
       "schedule":"歇息","life_hours":0,
@@ -123,7 +182,28 @@ func _load_or_initialize() -> void:
     original["health"]=int(original["max_health"])
     original["max_mana"]=12+layer*9 if String(original["realm"])=="炼气" else 0
     original["mana"]=int(original["max_mana"])
+  if sim!=null:
+    _ensure_all_existing_world_citizens_have_roots()
   save_state()
+
+func _ensure_all_existing_world_citizens_have_roots() -> void:
+  # Three original live workers and the hero are actual named citizens,
+  # not "rootless because their public realm is mortal".
+  for person_id in sim.citizens:
+    var citizen: Dictionary=sim.citizens[person_id]
+    if person_id=="CL-PLAYER-0184-0001":
+      citizen["root_profile"]=player_data.get(
+        "latent_root_profile",{}).duplicate(true)
+    elif not citizen.has("root_profile"):
+      var profession: String=String(citizen.get("profession","citizen"))
+      var origin: String="bonded_labor" if profession in [
+        "bonded_labor","enslaved_labor","recruitable_servant"] else "citizen"
+      citizen["root_profile"]=root_catalog.call(
+        "generate",world_seed,String(person_id),origin)
+    citizen["has_root"]=bool(citizen["root_profile"].get("has_root",false))
+    if person_id=="CL-PLAYER-0184-0001" or not String(
+        citizen.get("profession","")).contains("bonded"):
+      assert(citizen["has_root"])
 
 func _entity_rng(code: String) -> RandomNumberGenerator:
   var state: int=world_seed
@@ -322,17 +402,17 @@ func at_altar(max_distance: float=3.4) -> bool:
     hero.position.z-altar.position.z).length()<=max_distance
 
 func _roll_player_roots() -> Dictionary:
-  var rng:=_entity_rng("CL-PLAYER-0184-0001-SPIRITROOT-LOCKED")
-  var no_root: bool=rng.randi_range(0,99)<12
-  var weights: Array=[]
-  for i in range(ELEMENTS.size()):
-    weights.append(rng.randi_range(5,98))
-  var dominant: int=0
-  for i in range(ELEMENTS.size()):
-    if int(weights[i])>int(weights[dominant]):
-      dominant=i
-  return {"kind":"无灵根" if no_root else ELEMENTS[dominant]+"灵根",
-    "weights":weights if not no_root else []}
+  # Read a locked-at-birth identity profile; ritual is a revelation, NOT a
+  # 12% chance of forbidding player cultivation or an ad reroll lottery.
+  var birth: Dictionary=player_data.get("latent_root_profile",{})
+  if birth.is_empty() and root_catalog!=null:
+    birth=root_catalog.call("generate",world_seed,
+      "CL-PLAYER-0184-0001","player")
+  return {"kind":String(birth.get("kind","金灵根")),
+    "weights":birth.get("root_weights",[]),
+    "grade":String(birth.get("grade","凡品")),
+    "constitution":String(birth.get("constitution","凡体")),
+    "roots":birth.get("roots",[])}
 
 func examine_player_root() -> Dictionary:
   if not at_altar():
@@ -342,16 +422,20 @@ func examine_player_root() -> Dictionary:
     player_data["tested"]=true
     player_data["root_kind"]=result["kind"]
     player_data["root_weights"]=result["weights"]
+    var revealed: Dictionary=player_data.get("latent_root_profile",{}).duplicate(true)
+    revealed["detected"]=true
+    player_data["root_profile"]=revealed
     if result["kind"]!="无灵根":
       # Technique knowledge, not a physical inventory item or paid relic.
       player_data["method"]="CL-TECH-NAYUAN-BREATHING-V1"
     save_state()
   var kind: String=String(player_data["root_kind"])
   return {"ok":true,"tested":true,"root_kind":kind,
-    "can_cultivate":kind!="无灵根",
+    "can_cultivate":true,
     "method":String(player_data.get("method","")),
-    "message":"检测结果："+kind+"；检测台石刻传下《纳元吐息法》" if kind!="无灵根"
-      else "检测结果：无灵根；可以继续修行凡人武学，不能凭空释放仙法"}
+    "root_description":root_catalog.call("describe",player_data["root_profile"]),
+    "message":"检测结果："+root_catalog.call("describe",
+      player_data["root_profile"])+"；石刻传下《纳元吐息法》"}
 
 func toggle_player_meditation() -> Dictionary:
   if not bool(player_data.get("tested",false)):
@@ -402,6 +486,10 @@ func player_breakthrough() -> Dictionary:
 
 func advance_world_hour() -> void:
   total_hours+=1
+  # True statistical city life uses the SAME hour ticker as all 12 live NPCs,
+  # but advances aggregate 80k population only once per simulated day.
+  if city_population!=null and total_hours%24==0:
+    city_population.call("advance_city_day","CL-CITY-HEXI-0001")
   # This is the same sim.tick() hour already advanced by the original world
   # clock. No second phantom clock can advance qi without economic time.
   if bool(player_data.get("meditating",false)) and (
@@ -539,14 +627,30 @@ func spend_player_mana_for_art(art: String) -> Dictionary:
 
 func public_player_status() -> Dictionary:
   var safe: Dictionary=player_data.duplicate(true)
+  safe.erase("latent_root_profile")
   if not bool(safe.get("tested",false)):
     safe.erase("root_kind")
     safe.erase("root_weights")
+    safe.erase("root_profile")
   return safe
+
+func visual_root_signature() -> Dictionary:
+  if root_catalog==null or not bool(player_data.get("tested",false)):
+    return {"color":"#7dc9f0","effect":"none","debuff":"none"}
+  return root_catalog.call("signature",
+    player_data.get("root_profile",{}))
+
+func city_census() -> Dictionary:
+  if city_population==null:
+    return {}
+  return city_population.call("describe_city","CL-CITY-HEXI-0001")
 
 func stats() -> Dictionary:
   return {"world_seed":world_seed,
     "seed_is_persistent":FileAccess.file_exists(SAVE_PATH),
+    "all_normal_spirit_roots_guaranteed":true,
+    "root_catalog_element_count":int(root_catalog.call("catalog_size")) if root_catalog!=null else 0,
+    "city_population_record":city_census(),
     "cultivator_count":npc_visuals.size(),
     "cultivator_identity_count":npc_data.size(),
     "physical_cultivator_colliders":npc_colliders.size(),
@@ -565,7 +669,8 @@ func save_state() -> bool:
     return false
   var data: Dictionary={"schema":SCHEMA,"world_seed":world_seed,
     "player":player_data,"npcs":npc_data,
-    "whole_world_cultivation_hours":total_hours}
+    "whole_world_cultivation_hours":total_hours,
+    "city_population":city_population.get("cities").duplicate(true) if city_population!=null else {}}
   var json: String=JSON.stringify(data)
   var temp: String=SAVE_PATH+".tmp"
   var stream:=FileAccess.open(temp,FileAccess.WRITE)

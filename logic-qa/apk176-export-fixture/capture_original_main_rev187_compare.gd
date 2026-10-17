@@ -413,6 +413,67 @@ func _capture() -> void:
   player.call("_open_game_menu","inventory")
   fighter.position=source_hero_pos
   print("PASS_REV205_GENUINE_GODOT_1280X720_LUCIDE_UI_TARGET_LOCK_AND_FINITE_BACKPACK_FRAMES")
+  # REV207 ART - 100% real original APK176 / Godot4.4 scene frames.
+  # Render the vendor-prefabricated house with actual 512px PBR roof/wall/
+  # wood maps and the real physical shader-textured meadow from TWO distances.
+  # No generated composite / concept illustration / fake phone screenshot.
+  var painter: RefCounted=room.get("vivid_materials")
+  if painter==null or int(painter.call("summary").get("material_maps_loaded",0))!=9:
+    _fail("REV207_REAL_VENDOR_TEXTURES_WERE_NOT_BOUND_TO_RUNTIME_PBR")
+    return
+  var house: Node3D=room.get("finished_prefabs").get("CL-HOME-V206-001",null)
+  if house==null or not is_instance_valid(house):
+    _fail("REV207_COMPLETE_LICENSED_HOUSE_MISSING_FOR_VISIBLE_PBR_CLOSE_FRAME")
+    return
+  var real_ground: Node3D=room.get("terrain_world")
+  player.call("_set_mode","third")
+  var art_target: Vector3=house.position
+  var art_y: float=float(real_ground.call(
+    "height_at",art_target.x,art_target.z+9.0))
+  fighter.position=Vector3(art_target.x,art_y+
+    float(fighter.get_meta("actor_ground_offset_y",0.0)),art_target.z+9.0)
+  player.set("_yaw",0.0)
+  player.set("_pitch",0.44)
+  player.set("_distance",12.2)
+  player.call("update_camera")
+  for i in range(4):
+    await process_frame
+  await RenderingServer.frame_post_draw
+  if not _save("real_apk176_rev207_vivid_cc0_texture_forest_wide.png"):
+    _fail("REV207_REAL_GODOT_RICH_FOREST_CC0_MATERIAL_WIDE_FRAME_MISSING")
+    return
+  player.set("_distance",5.9)
+  fighter.position=Vector3(art_target.x,
+    float(real_ground.call("height_at",art_target.x,art_target.z+5.0))+
+    float(fighter.get_meta("actor_ground_offset_y",0.0)),
+    art_target.z+5.0)
+  player.call("update_camera")
+  for i in range(3):
+    await process_frame
+  await RenderingServer.frame_post_draw
+  if not _save("real_apk176_rev207_dense_tiny_pixel_cc0_pbr_house_close.png"):
+    _fail("REV207_REAL_CC0_WALL_ROOF_NORMAL_MICROTEXELS_MISSING_CLOSE_FRAME")
+    return
+  var frame: Image=get_root().get_texture().get_image()
+  var avg_saturation: float=0.0
+  var sample_count: int=0
+  var actual_colors: Dictionary={}
+  for y in range(370,630,12):
+    for x in range(240,1050,12):
+      var sample: Color=frame.get_pixel(x,y)
+      avg_saturation+=sample.s
+      actual_colors[sample.to_html(false)]=true
+      sample_count+=1
+  avg_saturation/=maxf(1.0,float(sample_count))
+  print("REV207_ACTUAL_GODOT_FOREGROUND_SATURATION=",avg_saturation,
+    " unique_12px_rgb_samples=",actual_colors.size(),
+    " material=",painter.call("summary"))
+  if avg_saturation<0.225 or actual_colors.size()<80:
+    _fail("REV207_TRUE_GODOT_FOREGROUND_STILL_GREY_LOW_SAT_OR_FLAT_TEXEL"+
+      " saturation="+str(avg_saturation)+
+      " samples="+str(actual_colors.size()))
+    return
+  print("PASS_REV207_ORIGINAL_APK176_GODOT_REAL_COLOR_512PBR_64TEXELS_IMAGES")
   print("PASS_REV197_ORIGINAL_GODOT_ENGINE_VISIBLE_ANIMATED_PLAYER_CLOSE_AND_45DEG_REAL_FRAMES")
   print("PASS_REV187_TWO_GENUINE_ENGINE_RENDERED_WORKSITE_FRAMES_NOT_PHONE_TESTS")
   base.queue_free()

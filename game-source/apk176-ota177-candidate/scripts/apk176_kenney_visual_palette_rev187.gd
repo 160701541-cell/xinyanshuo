@@ -3,36 +3,40 @@ extends RefCounted
 ## Unlimited natural colour variety; preserve original licensed Kenney GLB
 ## geometry/UVs/material texture if available, tint per real material surface
 ## AND per individual world entity using MultiMesh instance colour.
+# Rev207 genuine deep chroma palette. Source GLB UV/PBR texture survives;
+# no global five-color posterization and no chalky white multiplying trees.
 const SWATCHES := {
- "grass": Color("#7caf67"), "grass_dark": Color("#4f8950"),
- "grass_deep": Color("#356d3c"), "grass_light": Color("#bfd581"),
- "grass_sun": Color("#acc977"), "grass_yellow": Color("#b9be69"),
- "grass_shadow": Color("#3b7350"),
- "leaf": Color("#499452"), "leaf_spring": Color("#9abf52"),
- "leaf_deep": Color("#28744e"), "leaf_warm": Color("#6caa54"),
- "leaf_soft": Color("#80b56c"),
- "wood": Color("#90613e"), "wood_dark": Color("#674329"),
- "wood_light": Color("#be8b5c"), "wood_warm": Color("#a66c44"),
- "stone": Color("#92999a"), "stone_blue": Color("#698b91"),
- "stone_brown": Color("#9b9081"), "stone_light": Color("#bababa"),
- "soil": Color("#bd9166"), "clay": Color("#a16e4c"),
- "soil_sand": Color("#d0b687"), "soil_deep": Color("#805a43"),
- "wall": Color("#e6dac1"), "roof": Color("#425a65"),
- "roof_slate": Color("#596a72"), "door_paint": Color("#813f33"),
- "water": Color("#4babb6"),
- "flower_white": Color("#f6f1de"), "flower_yellow": Color("#eacb56"),
- "flower_pink": Color("#e79cb3"), "flower_purple": Color("#b0a2d7")
+ "grass":Color("#347544"),"grass_dark":Color("#275f38"),
+ "grass_deep":Color("#184f31"),"grass_light":Color("#67a445"),
+ "grass_sun":Color("#7bb24c"),"grass_yellow":Color("#8ca23e"),
+ "grass_shadow":Color("#204f3d"),
+ "leaf":Color("#338648"),"leaf_spring":Color("#75b743"),
+ "leaf_deep":Color("#176538"),"leaf_warm":Color("#559737"),
+ "leaf_soft":Color("#5ca351"),
+ "wood":Color("#89552d"),"wood_dark":Color("#59351f"),
+ "wood_light":Color("#b57a3b"),"wood_warm":Color("#9f5834"),
+ "stone":Color("#626e74"),"stone_blue":Color("#4d6876"),
+ "stone_brown":Color("#746956"),"stone_light":Color("#abb2ac"),
+ "soil":Color("#9d673f"),"clay":Color("#8b4f35"),
+ "soil_sand":Color("#be9858"),"soil_deep":Color("#553b2a"),
+ "wall":Color("#e0d0ab"),"roof":Color("#344e63"),
+ "roof_slate":Color("#48606d"),"door_paint":Color("#8c3528"),
+ "water":Color("#207fac"),
+ "flower_white":Color("#f4ebce"),"flower_yellow":Color("#e8ad24"),
+ "flower_pink":Color("#ee658c"),"flower_purple":Color("#986ace")
 }
 const VARIANTS := {
- "tree": [Color("#e3ffe0"),Color("#d3f4d8"),Color("#efffd5"),Color("#e1e9cc"),
-          Color("#d5e7d6"),Color("#f6f6c8")],
- "stone": [Color("#f2f4f7"),Color("#d5e6ed"),Color("#e3dccc"),Color("#bbd1ce"),
-           Color("#e8e0d2"),Color("#c4d1d3")],
- "timber": [Color("#f3dcc4"),Color("#e9caa8"),Color("#dbbb9b"),Color("#ffead1")],
- "fence": [Color("#e4cdac"),Color("#b8a58b"),Color("#d4baa0")],
- "steps": [Color("#dae3ed"),Color("#e7ddd1"),Color("#bdd0d1")],
- "door": [Color("#e7b99b"),Color("#f9dec1"),Color("#ba7968")]
+ "tree":[Color("#b6e6b4"),Color("#a8dba9"),Color("#a3e8ae"),
+         Color("#c4ef9e"),Color("#b9e3bf"),Color("#c5e3a6")],
+ "stone":[Color("#b5c6ce"),Color("#b1c4ce"),Color("#c3bcac"),
+          Color("#849aa4"),Color("#a8b5c1"),Color("#98aaa8")],
+ "timber":[Color("#dfad7e"),Color("#c58a5d"),Color("#aa7654"),
+           Color("#e0a269")],
+ "fence":[Color("#d2a076"),Color("#b38966"),Color("#a7784a")],
+ "steps":[Color("#c8d3d2"),Color("#b6bfc9"),Color("#93a4ad")],
+ "door":[Color("#d29370"),Color("#cd825b"),Color("#a65642")]
 }
+
 var materials: Dictionary = {}
 
 func swatch(role: String) -> Color:
@@ -46,7 +50,8 @@ func material(role: String) -> StandardMaterial3D:
   var mat := StandardMaterial3D.new()
   mat.resource_name = "CanglanNaturalKenney_" + role
   mat.albedo_color = swatch(role)
-  mat.roughness = 0.88
+  mat.roughness = 0.92
+  mat.texture_filter=BaseMaterial3D.TEXTURE_FILTER_NEAREST_WITH_MIPMAPS_ANISOTROPIC
   mat.metallic = 0.0
   mat.vertex_color_use_as_albedo = true
   materials[role] = mat
@@ -86,7 +91,15 @@ func palettize_static_mesh(source: Mesh, asset_role: String, mesh_path: String) 
     var tinted: StandardMaterial3D
     if original is StandardMaterial3D:
       tinted = (original as StandardMaterial3D).duplicate()
-      tinted.albedo_color = tinted.albedo_color.lerp(swatch(role),0.43)
+      # Only 22% art-direction tint. Do not bleach/erase real glTF UV or
+      # source albedo textures; rich local material owns most of its color.
+      var source_tint: Color=tinted.albedo_color
+      if source_tint.s>0.07:
+        source_tint=Color.from_hsv(source_tint.h,
+          clampf(source_tint.s*1.30,0.0,1.0),
+          clampf(source_tint.v*0.95,0.0,1.0),source_tint.a)
+      tinted.albedo_color=source_tint.lerp(swatch(role),0.22)
+      tinted.texture_filter=BaseMaterial3D.TEXTURE_FILTER_NEAREST_WITH_MIPMAPS_ANISOTROPIC
     else:
       tinted = material(role)
     tinted.vertex_color_use_as_albedo = true

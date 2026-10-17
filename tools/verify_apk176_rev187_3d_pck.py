@@ -6,6 +6,7 @@ checks or Android device acceptance.
 """
 from __future__ import annotations
 import hashlib
+import json
 from pathlib import Path
 import struct
 import sys
@@ -21,8 +22,11 @@ REQUIRED = {
     "canglan_rev187/visual_palette.gd",
     "canglan_rev187/kenney_multimesh.gd",
     "canglan_rev187/strata_terrain.gd",
+    "canglan_rev187/vivid_material.gd",
     "canglan_rev187/player_controller.gd",
     "canglan_rev187/backpack.gd",
+    "canglan_rev187/root_taxonomy.gd",
+    "canglan_rev187/city_population.gd",
     "canglan_rev187/quality_profiles.gd",
     "canglan_rev187/Textures/colormap.png",
     "Textures/colormap.png",
@@ -45,6 +49,29 @@ UI_ICONS = ("backpack","swords","crosshair","pickaxe","shield",
             "book-open","house","compass","eye","move-3d","leaf","menu","zap")
 REQUIRED.update("canglan_rev187/ui/lucide/" + name + ".svg" for name in UI_ICONS)
 REQUIRED.add("canglan_rev187/ui/lucide/LICENSE")
+# Source-verified original GLBs from Quaternius CC0 (no procedural meshes)
+ASSET_ROOT = BASE_DIR / "game-source/apk176-ota177-candidate/assets/cc0-rev206"
+CC0_PROOF = json.loads((ASSET_ROOT / "asset_intake_proof.json").read_text())
+assert CC0_PROOF["asset_total"] == 14 and CC0_PROOF["committed_under_license"] == "CC0-1.0"
+CC0_MODELS = {}
+for item in CC0_PROOF["models"]:
+    key = "canglan_rev187/cc0_rev206/" + item["role"] + "/" + item["name"] + ".glb"
+    CC0_MODELS[key] = (BASE_DIR / item["path"], item["sha256"])
+REQUIRED.update(CC0_MODELS)
+# Nine 512px source-verified original Quaternius CC0 albedo/normal/ORM maps:
+# a missing, corrupted or substituted white flat map is a HARD release fail.
+PBR_ROOT = BASE_DIR / "game-source/apk176-ota177-candidate/materials/rev207"
+PBR_PROOF = json.loads((PBR_ROOT / "manifest.json").read_text())
+assert PBR_PROOF["schema"] == 207 and PBR_PROOF["count"] == 9
+assert PBR_PROOF["size"] == 512 and PBR_PROOF["license"] == "CC0-1.0"
+REAL_PBR = {
+    "canglan_rev187/materials_rev207/" + item["file"]: (PBR_ROOT / item["file"], item["output_sha256"])
+    for item in PBR_PROOF["maps"]
+}
+assert len(REAL_PBR) == 9
+REQUIRED.update(REAL_PBR)
+REQUIRED.add("canglan_rev187/materials_rev207/manifest.json")
+
 
 
 
@@ -58,7 +85,7 @@ def audit(path: Path) -> dict:
         raise ValueError("BLOCKED: incompatible or flagged Godot PCK")
     file_base = struct.unpack_from("<Q", raw, 0x18)[0]
     count = struct.unpack_from("<I", raw, 0x60)[0]
-    if not (0x68 <= file_base <= len(raw) and 7 <= count <= 80):
+    if not (0x68 <= file_base <= len(raw) and 7 <= count <= 140):
         raise ValueError("BLOCKED: invalid PCK file table")
     offset = 0x64
     found: dict[str, bytes] = {}
@@ -102,6 +129,23 @@ def audit(path: Path) -> dict:
         target = "canglan_rev187/ui/lucide/" + filename
         assert found[target] == (UI_SOURCE / filename).read_bytes(), (
             "BLOCKED: non-source or missing licensed UI vector " + filename)
+    for model_path, (source, expected_sha256) in CC0_MODELS.items():
+        packed = found[model_path]
+        assert packed[:4] == b"glTF"
+        assert len(packed) >= 20 and struct.unpack_from("<I", packed, 8)[0] == len(packed)
+        assert hashlib.sha256(packed).hexdigest() == expected_sha256, (
+            "BLOCKED: Altered original Quaternius CC0 model: " + model_path)
+        assert packed == source.read_bytes(), (
+            "BLOCKED: Original model packed with changed content: " + model_path)
+    assert json.loads(found["canglan_rev187/materials_rev207/manifest.json"]) == PBR_PROOF, (
+        "BLOCKED: signed PCK PBR license/texture provenance mismatch")
+    for rel, (actual_source, sha256) in REAL_PBR.items():
+        raw_texture = found[rel]
+        assert raw_texture.startswith(bytes.fromhex("89504e470d0a1a0a")), (
+            "BLOCKED: not real source-derived PNG "+rel)
+        assert hashlib.sha256(raw_texture).hexdigest()==sha256
+        assert raw_texture==actual_source.read_bytes(), (
+            "BLOCKED: PBR texture not from licensed artist "+rel)
     palette = found["canglan_rev187/Textures/colormap.png"]
     if palette[:8] != bytes.fromhex("89504e470d0a1a0a") or len(palette) < 128:
         raise ValueError("BLOCKED: official Kenney external palette is missing or corrupt")

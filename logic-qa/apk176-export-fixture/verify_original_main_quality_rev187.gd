@@ -122,7 +122,7 @@ func _run() -> void:
     _fail(27, "MISSING_VISIBLE_NPC_WORKER_JOB_LABELS")
     return
   var heights: Dictionary = first.get("worker_visual_heights_m",{})
-  for profession in ["woodcutter","quarryman","builder"]:
+  for profession in ["woodcutter","quarryman","steward"]:
     var actual_height: float = float(heights.get(profession,0.0))
     if actual_height < 1.5 or actual_height > 2.2:
       _fail(28, "NPC_NOT_SCALED_TO_VISIBLE_REAL_HEIGHT_" + profession + "_" + str(actual_height))
@@ -471,8 +471,8 @@ func _run() -> void:
     return
   print("PASS_REV194_PHYSICAL_STREAMED_MEADOWS_DEEP_GREENS_AND_NO_WASHOUT_FOG",visible_stream_tufts)
   var native_screen: Vector2i = quality.get("physical_screen")
-  if viewport.size != Vector2i(roundi(float(native_screen.x)*0.85),roundi(float(native_screen.y)*0.85)):
-    _fail(80,"ACTUAL_THREE_DIMENSIONAL_RESOLUTION_MUST_BE_EXACTLY_85_PERCENT_DEFAULT")
+  if viewport.size != Vector2i(roundi(float(native_screen.x)*0.96),roundi(float(native_screen.y)*0.96)):
+    _fail(80,"REV207_HIGH_QUALITY_MUST_BE_SHARP_96_PERCENT_OR_ABOVE_NOT_BLURRY_85")
     return
   if viewport.msaa_3d!=Viewport.MSAA_2X:
     _fail(81,"HIGH_QUALITY_MUST_HAVE_REAL_2X_MSAA")
@@ -483,9 +483,9 @@ func _run() -> void:
   var profiles: Array = [
     {"key":"极致画质","scale":1.0,"msaa":Viewport.MSAA_4X,"shadows":100.0,
      "draw":1500,"triangles":1500000,"grass":4500,"grass_m":80.0,"fireflies":100,"clouds":9},
-    {"key":"高档","scale":0.85,"msaa":Viewport.MSAA_2X,"shadows":60.0,
+    {"key":"高档","scale":0.96,"msaa":Viewport.MSAA_2X,"shadows":60.0,
      "draw":800,"triangles":600000,"grass":2400,"grass_m":40.0,"fireflies":60,"clouds":5},
-    {"key":"普通","scale":0.67,"msaa":Viewport.MSAA_DISABLED,"shadows":30.0,
+    {"key":"普通","scale":0.80,"msaa":Viewport.MSAA_DISABLED,"shadows":30.0,
      "draw":400,"triangles":300000,"grass":1100,"grass_m":20.0,"fireflies":20,"clouds":2}
   ]
   for expected in profiles:
@@ -521,9 +521,14 @@ func _run() -> void:
     if mobile_env.glow_enabled!=should_glow:
       _fail(192,"REV195_GODOT_MOBILE_GLOW_IGNORES_MANUAL_GRAPHICS_TIER_"+String(expected["key"]))
       return
-    if should_glow and (absf(mobile_env.glow_hdr_threshold-0.90)>0.001 or
-        mobile_env.glow_intensity<1.2 or mobile_env.glow_bloom<=0.0):
-      _fail(193,"REV195_MOBILE_HDR_GLOW_IS_CONFIGURED_BUT_STILL_INVISIBLE")
+    if should_glow and (absf(mobile_env.glow_hdr_threshold-1.13)>0.001 or
+        mobile_env.glow_intensity>0.98 or mobile_env.glow_intensity<0.55 or (
+        mobile_env.glow_bloom<=0.0)):
+      _fail(193,"REV207_MOBILE_GLOW_MUST_BE_VISIBLE_WITHOUT_BLEACHING_ALL_COLOURS")
+      return
+    if not mobile_env.adjustment_enabled or mobile_env.adjustment_saturation<1.25 or (
+        mobile_env.adjustment_contrast<1.07 or mobile_env.fog_density>=0.00120):
+      _fail(332,"REV207_ACTUAL_GODOT_MOBILE_SATURATION_CONTRAST_AND_FOG_NOT_APPLIED")
       return
     if not should_glow and mobile_env.fog_sun_scatter>=0.05:
       _fail(194,"REV195_LOW_PROFILE_WASTES_FOG_SUN_SCATTER")
@@ -532,6 +537,48 @@ func _run() -> void:
     if bool(actual_glow.get("real_mobile_glow_enabled",not should_glow))!=should_glow:
       _fail(195,"REV195_PERFORMANCE_TELEMETRY_MUST_REPORT_ACTUAL_GLOW_STATE")
       return
+  # Material QA uses the actual Godot/GLTF materials inside the original
+  # running world. Material count alone does NOT prove textures are bound.
+  var vivid: RefCounted=room.get("vivid_materials")
+  if vivid==null:
+    _fail(333,"REV207_NEW_COLOR_PIPELINE_NOT_IN_REAL_ORIGINAL_APK_MAIN")
+    return
+  var evidence: Dictionary=vivid.call("summary")
+  if int(evidence.get("material_maps_loaded",0))!=9 or not (
+      (evidence.get("source_png_errors",[]) as Array).is_empty()) or (
+      int(evidence.get("micro_texels_per_metre",0))!=64):
+    _fail(334,"REV207_GENUINE_512PX_QUATERNIUS_PBR_OR_WORLD_TINY_PIXEL_MATERIAL_MISSING_"+str(evidence))
+    return
+  var a_real_roof: Node3D=room.get("finished_prefabs").get("CL-HOME-V206-001",null)
+  if a_real_roof==null:
+    _fail(335,"REV207_ART_MUST_USE_REAL_QUATERNIUS_SOURCE_HOUSE_GLTF")
+    return
+  var source_materials: int=0
+  var normal_mapped: int=0
+  var texture_sampling: int=0
+  for mesh_part in a_real_roof.find_children("*","MeshInstance3D",true,false):
+    var body: MeshInstance3D=mesh_part as MeshInstance3D
+    if body.mesh==null:
+      continue
+    for surface in range(body.mesh.get_surface_count()):
+      var mm: Material=body.get_active_material(surface)
+      if mm is StandardMaterial3D:
+        var m: StandardMaterial3D=mm as StandardMaterial3D
+        if m.albedo_texture!=null:
+          source_materials+=1
+        if m.normal_texture!=null:
+          normal_mapped+=1
+        if m.texture_filter==BaseMaterial3D.TEXTURE_FILTER_NEAREST_WITH_MIPMAPS_ANISOTROPIC:
+          texture_sampling+=1
+  if source_materials<=0 or normal_mapped<=0 or texture_sampling<=0:
+    _fail(336,"REV207_QUATERNIUS_HOUSE_IS_STILL_FLAT_COLOR_NO_PBR_NORMAL_"+str({
+      "albedo":source_materials,"normals":normal_mapped,"small_pixel_sampling":texture_sampling}))
+    return
+  var live_mat: Material=(terrain.get("world_materials") as Dictionary).get("natural_ground",null)
+  if not (live_mat is ShaderMaterial) or (terrain.get("collision") as CollisionShape3D).shape==null:
+    _fail(337,"REV207_MICRO_TEXELS_MUST_STAY_ON_PHYSICAL_DIGGABLE_TERRAIN_WITH_COLLISION")
+    return
+  print("PASS_REV207_MOBILE_UNBLEACHED_SATURATED_PBR_NORMAL_MAPS_WORLDSPACE_64PIX_PER_METRE")
   print("PASS_REV195_REAL_GODOT_MOBILE_GLOW_HDR_THRESHOLD_AND_THREE_USER_GRAPHICS_TIERS")
   var caps: Array = ["30","60","90","120","跟随刷新率"]
   for mode in caps:
@@ -597,7 +644,16 @@ func _run() -> void:
   var biome_colors: Dictionary={}
   for surface in range(actual_ground.mesh.get_surface_count()):
     var material: Material=actual_ground.mesh.surface_get_material(surface)
-    if material is StandardMaterial3D and (material as StandardMaterial3D).vertex_color_use_as_albedo:
+    # Rev207 shader samples the SAME continuous mesh vertex colors and
+    # adds minute world-space material texels. Old StandardMaterial3D-only
+    # QA would reject this richer actual shader despite 7+ untouched biomes.
+    var honors_vertex_biome: bool=(
+      material is StandardMaterial3D and (
+      material as StandardMaterial3D).vertex_color_use_as_albedo)
+    if material is ShaderMaterial:
+      honors_vertex_biome=bool((
+        material as ShaderMaterial).get_shader_parameter("vertex_biome"))
+    if honors_vertex_biome:
       continuous_biome_surfaces+=1
       var colors: PackedColorArray=actual_ground.mesh.surface_get_arrays(surface)[Mesh.ARRAY_COLOR]
       for idx in range(0,colors.size(),maxi(1,int(colors.size()/50))):
@@ -707,89 +763,83 @@ func _run() -> void:
   if _total_inventory(econ,"tree",0)!=INITIAL_WOOD or _total_inventory(econ,"stone",0)!=INITIAL_STONE:
     _fail(15,"NONZERO_WOOD_STONE_DEPOT_OR_INITIAL_ACCOUNTING_ERROR")
     return
-  var paid_wood := 0
-  var paid_stone := 0
-  var known_stage := 0
-  var paid_stage := false
-  var observed_real_foundation_digging: bool = false
-  var observed_live_tree_seed_rewards: bool = false
-  var saw_seed_in_depot: bool = false
-  var observed_planting: bool = false
-  var observed_builder_carried_real_materials := false
-  var observed_builder_depot_with_material_pickup := false
-  var returned_for_second_stage := false
+  # REV206: user removed all bespoke broken stage-house construction.
+  # Material conservation must hold WITHOUT paid material disappearance in
+  # unfinished scaffolds. Third NPC stewards existing complete houses.
+  var observed_live_tree_seed_rewards: bool=false
+  var saw_seed_in_depot: bool=false
+  var observed_planting: bool=false
   for tick in range(360):
-    room.call("_process", 1.0)
+    room.call("_process",1.0)
     if not bool(terrain.call("inventory_conserved")):
-      _fail(65,"EXCAVATION_CREATED_SOIL_OUT_OF_NOTHING_OR_LOST_MASS")
+      _fail(65,"REAL_EXCAVATION_CONSERVATION_BROKEN")
       return
-    if int(terrain.call("stats").get("excavation_units",0)) > 0:
-      observed_real_foundation_digging = true
-    var live_workers: Dictionary = room.get("workers")
-    var builder: Dictionary = live_workers.get("CL-NPC-0184-03", {})
-    if String(builder.get("phase","")) == "to_building_site":
-      var held: Dictionary = builder.get("carried_materials", {})
-      if held.is_empty() or not builder.has("cargo_visual"):
-        _fail(25, "BUILDER_ARRIVED_WITHOUT_PHYSICALLY_CARRIED_LICENSED_MATERIALS")
-        return
-      observed_builder_carried_real_materials = true
-      if (builder["node"] as Node3D).position.distance_to(Vector3(0,0,10)) < 1.5:
-        observed_builder_depot_with_material_pickup = true
-    if String(builder.get("phase","")) == "to_warehouse_for_materials" and int(room.get("_stage_index"))>=1:
-      returned_for_second_stage = true
-    var ecology = room.get("eco")
-    var seed_stock: int = int(econ.get("villages")["CL-REV186-HX-VILLAGE"]["stock"].get("tree_seed",0))
-    var seed_pending: int = 0
+    var ecology=room.get("eco")
+    var seed_stock: int=int(econ.get("villages")[
+      "CL-REV186-HX-VILLAGE"]["stock"].get("tree_seed",0))
+    var pending: int=0
     for count in ecology.awaiting_seed_delivery.values():
-      seed_pending += int(count)
-    if seed_stock+seed_pending+ecology.planted_count != ecology.minted_seed_events:
-      _fail(29,"TREE_SEED_MULTIPLICATION_LOSS_OR_UNPAID_PLANTING")
+      pending+=int(count)
+    if seed_stock+pending+ecology.planted_count != ecology.minted_seed_events:
+      _fail(29,"REV206_SEED_MINTING_VS_NATURAL_PLANTED_CONSERVATION")
       return
-    observed_live_tree_seed_rewards = observed_live_tree_seed_rewards or ecology.minted_seed_events > 0
-    observed_planting = observed_planting or ecology.planted_count > 0
-    saw_seed_in_depot = saw_seed_in_depot or seed_stock > 0
-    var stage: int = int(room.get("_stage_index"))
-    var stage_paid_now: bool = bool(room.get("_stage_paid"))
-    if stage < known_stage or stage > 4:
-      _fail(16, "CONSTRUCTION_STAGE_ROLLBACK_OR_OVERFLOW")
+    observed_live_tree_seed_rewards=observed_live_tree_seed_rewards or (
+      ecology.minted_seed_events>0)
+    observed_planting=observed_planting or ecology.planted_count>0
+    saw_seed_in_depot=saw_seed_in_depot or seed_stock>0
+    if _total_inventory(econ,"tree",0)!=INITIAL_WOOD:
+      _fail(17,"PREFAB_HOUSES_CANNOT_STEAL_RAW_WOOD_STOCK_"+str(tick))
       return
-    known_stage = stage
-    paid_wood = 0
-    paid_stone = 0
-    for i in range(stage):
-      paid_wood += int(PHASE_WOOD[i])
-      paid_stone += int(PHASE_STONE[i])
-    if stage_paid_now:
-      paid_wood += int(PHASE_WOOD[stage])
-      paid_stone += int(PHASE_STONE[stage])
-    if _total_inventory(econ,"tree",paid_wood)!=INITIAL_WOOD:
-      _fail(17, "PHYSICAL_WOOD_INFLATION_OR_LOSS_TICK_%d" % tick)
+    if _total_inventory(econ,"stone",0)!=INITIAL_STONE:
+      _fail(18,"PREFAB_HOUSES_CANNOT_STEAL_RAW_STONE_STOCK_"+str(tick))
       return
-    if _total_inventory(econ,"stone",paid_stone)!=INITIAL_STONE:
-      _fail(18, "PHYSICAL_STONE_INFLATION_OR_LOSS_TICK_%d" % tick)
+    if int(room.get("_stage_index"))!=0 or (
+        bool(room.get("_stage_paid"))):
+      _fail(324,"REV206_OLD_BROKEN_HUT_CONSTRUCTION_REACTIVATED")
       return
-    paid_stage = paid_stage or stage_paid_now
+  if (room.get("workers")["CL-NPC-0184-03"] as Dictionary).get(
+      "kind","")!="steward":
+    _fail(325,"REV206_STILL_SPAWNS_DYSFUNCTIONAL_BUILDING_WORKER")
+    return
   var report: Dictionary = room.call("stats")
-  if not observed_real_foundation_digging or not bool(terrain.call("foundation_ready")):
-    _fail(66,"NPC_MUST_EXCAVATE_LAYERED_3D_PIT_BEFORE_BUILDING_FOUNDATION")
+  if not bool(report.get("rev206_perpetual_house_construction_retired",false)) or (
+      int(report.get("rev206_cc0_completed_building_count",0))!=6):
+    _fail(326,"REV206_SIX_GENUINE_FINISHED_BUILDINGS_MUST_REPLACE_TINY_SHACKS")
     return
-  if int(report.get("foundation_excavation_npc_cuts",0)) < 6:
-    _fail(67,"REAL_NPC_NEVER_ACTUALLY_REMOVED_FOUNDATION_SOIL")
+  if int(report.get("rev206_native_wildlife_count",0))!=4 or (
+      int(report.get("rev206_native_animated_wildlife_count",0))!=4) or (
+      int(report.get("rev206_outfit_source_count",0))!=2):
+    _fail(327,"REV206_GENUINE_ANIMATED_ANIMALS_OR_LICENSED_OUTFITS_MISSING")
     return
+  for house_id in ["CL-HOME-V206-001","CL-HOME-V206-002",
+      "CL-HOME-V206-003","CL-HOME-V206-004",
+      "CL-INN-V206-001","CL-GAZEBO-V206-001"]:
+    var full_home: Node3D=room.get("finished_prefabs").get(house_id,null)
+    if full_home==null or not is_instance_valid(full_home) or not (
+        bool(full_home.get_meta("completed_prefab_not_npc_assembly",false))):
+      _fail(328,"REV206_MISSING_SOURCE_COMPLETE_ORIGINAL_CC0_HOUSE_"+house_id)
+      return
+    var bounds: Vector2=room.call("_visible_bounds",full_home)
+    if bounds.y-bounds.x<2.5 or bounds.y-bounds.x>10.0:
+      _fail(329,"REV206_FINISHED_VENDOR_HOUSE_FLOATS_OR_HAS_WRONG_METERS_"+str(bounds))
+      return
+  var resident_home: Node3D=room.get("finished_prefabs")["CL-HOME-V206-001"]
+  if not (resident_home.get_meta("assigned_resident_ids",[]) as Array).has(
+      "CL-NPC-0184-03"):
+    _fail(330,"REV206_COMPLETE_HOUSE_NEVER_ASSIGNED_TO_REAL_STEWARD")
+    return
+  if not bool(report.get("persistent_city_population_is_statistical_only",false)):
+    _fail(331,"REV206_CITY_80000_RESIDENTS_MUST_NOT_BE_80000_GODOT_NODES")
+    return
+  print("PASS_REV206_REAL_QUATERNIUS_CC0_COMPLETE_HOMES_WANDERING_ANIMATED_ANIMALS_AND_PERMANENTLY_RETIRED_BUILDER")
   if not (report.get("native_resolution_ui",false) and report.get("no_auto_quality_switch",false)):
     _fail(91,"UI_SCALED_WITH_3D_OR_AUTOMATIC_QUALITY_DOWNGRADE")
     return
   if int(report["harvests"]) < 4 or int(report["deliveries"]) < 4:
     _fail(19, "NPC_MUST_ACTUALLY_WALK_TO_RESOURCES_AND_DELIVER")
     return
-  if int(report["stage"]) < 2 or int(report["built_cc0_parts"]) < 6:
-    _fail(20, "REAL_MATERIAL_PAID_MULTI_STAGE_CONSTRUCTION_MUST_PROGRESS")
-    return
-  if not paid_stage:
-    _fail(21, "NO_EVIDENCE_OF_ACTUAL_STOCK_RESERVATION")
-    return
-  if not (observed_builder_carried_real_materials and observed_builder_depot_with_material_pickup and returned_for_second_stage):
-    _fail(26, "BUILDER_MUST_WALK_TO_WAREHOUSE_AND_TRANSPORT_STAGED_MATERIALS")
+  if int(report.get("built_cc0_parts",0))!=6:
+    _fail(20,"REV206_ONLY_COMPLETE_CC0_PREFABS_NOT_CUSTOM_SCAFFOLD_PARTS")
     return
   if not observed_live_tree_seed_rewards or not observed_planting:
     _fail(30,"TREE_MUST_ONLY_DROP_ONE_SEED_WHEN_FULLY_CUT_AND_REAL_SEED_MUST_GERMINATE")
@@ -1828,7 +1878,7 @@ func _run() -> void:
   print("PASS_APK176_REAL_3D_PREVIEW")
   print("OBSERVED_APK176_MAIN_INSTANCE_WITH_PORTAL_AND_IMAGES_PENDING_ENGINE_ERROR_AUDIT")
   print("PASS_APK176_ACTUAL_MAIN_INSTANTIATED_NO_ENGINE_ERRORS_WITH_REAL_HOUSE")
-  print("PASS_REV187_LICENSED_3D_NPC_RESOURCE_TRANSPORT_MATERIAL_CONSERVATION_STAGE_BUILD")
+  print("PASS_REV206_ORIGINAL_PLAYER_TREE_STONE_PHYSICAL_TRANSPORT_WITH_LICENSED_FINISHED_CC0_HOUSES_NO_BROKEN_CONSTRUCTION")
   print("PASS_REV187_PHONE_VISIBILITY_TREE_SEED_BEDROCK_EXCLUSION_AND_TECTONIC_MILLIONS_OF_YEARS")
   print("PASS_REV187_UNLIMITED_NATURAL_MULTIHUE_KENNEY_MESH_BATCH_SINGLE_WARM_SUN")
   print("REV187_ONEPLUS_1500_800_400_DRAW_REFERENCE_REAL_DEVICE_UNVERIFIED")

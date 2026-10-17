@@ -8,15 +8,15 @@ const SETTINGS_PATH := "user://canglan_graphics_profiles_v1.cfg"
 const PROFILES := {
  "极致画质":{"scale":1.00,"msaa":Viewport.MSAA_4X,"shadow_m":100.0,
    "shadow_splits":2,"grass_distance":80.0,"grass_instances":4500,
-   "fireflies":100,"clouds":9,"fog_density":0.0020,"name_distance":20.0,
+   "fireflies":100,"clouds":9,"fog_density":0.00105,"name_distance":20.0,
    "glow":true,"draw_reference":1500,"triangle_reference":1500000,"target_fps":90},
- "高档":{"scale":0.85,"msaa":Viewport.MSAA_2X,"shadow_m":60.0,
+ "高档":{"scale":0.96,"msaa":Viewport.MSAA_2X,"shadow_m":60.0,
    "shadow_splits":1,"grass_distance":40.0,"grass_instances":2400,
-   "fireflies":60,"clouds":5,"fog_density":0.0018,"name_distance":13.0,
+   "fireflies":60,"clouds":5,"fog_density":0.00092,"name_distance":13.0,
    "glow":true,"draw_reference":800,"triangle_reference":600000,"target_fps":60},
- "普通":{"scale":0.67,"msaa":Viewport.MSAA_DISABLED,"shadow_m":30.0,
+ "普通":{"scale":0.80,"msaa":Viewport.MSAA_DISABLED,"shadow_m":30.0,
    "shadow_splits":0,"grass_distance":20.0,"grass_instances":1100,
-   "fireflies":20,"clouds":2,"fog_density":0.00145,"name_distance":8.0,
+   "fireflies":20,"clouds":2,"fog_density":0.00085,"name_distance":8.0,
    "glow":false,"draw_reference":400,"triangle_reference":300000,"target_fps":60}
 }
 var selected: String = "高档"
@@ -48,8 +48,8 @@ var streamed_meadow_points: Dictionary = {}
 var streamed_meadow_rotations: Dictionary = {}
 const STREAMED_GRASS_INSTANCES: int = 320
 const STREAMED_GRASS_COLORS: Array[Color] = [
-  Color("#35673d"),Color("#497945"),Color("#5c8c48"),Color("#70934c"),
-  Color("#8e9f5d"),Color("#3b6c42"),Color("#649653"),Color("#a09f64")]
+  Color("#175d35"),Color("#267c41"),Color("#3b893d"),Color("#4f9739"),
+  Color("#6a9334"),Color("#266f4b"),Color("#548839"),Color("#717a2d")]
 var _hidden_transform: Transform3D = Transform3D(Basis.IDENTITY.scaled(Vector3.ZERO),Vector3.ZERO)
 
 func initialize(room: Node) -> void:
@@ -206,9 +206,9 @@ func _create_grass_and_flowers(room: Node) -> void:
   grass_mm.mesh=_grass_mesh()
   grass_mm.instance_count=4500
   var greens: Array[Color]=[
-    Color("#32643e"),Color("#41733d"),Color("#5b9147"),Color("#688d3a"),
-    Color("#829b49"),Color("#72944c"),Color("#3d7041"),Color("#a7a261"),
-    Color("#477a48"),Color("#5a8954"),Color("#899f55"),Color("#496b3f")]
+    Color("#185d35"),Color("#277142"),Color("#3f8b3b"),Color("#5c962e"),
+    Color("#6c9836"),Color("#527d3d"),Color("#287947"),Color("#858730"),
+    Color("#2c7843"),Color("#438d44"),Color("#648935"),Color("#266939")]
   # Deterministic meadow ecology: patches of lush grass interspersed with
   # lighter trampled corridors, soil and rock. The high/normal 3D LODs
   # sample all patches, not only the first N positions in one corner.
@@ -248,7 +248,7 @@ func _create_grass_and_flowers(room: Node) -> void:
   flower_mm.mesh=_flower_mesh()
   flower_mm.instance_count=270
   var flower_shades: Array[Color]=[
-    Color("#f4f0e3"),Color("#e8cd55"),Color("#e997b8"),Color("#baa2de")]
+    Color("#f5f1da"),Color("#efc32a"),Color("#eb6497"),Color("#966fd8")]
   for i in range(flower_mm.instance_count):
     var flower_patch: Vector2=meadow_centers[(i*7)%meadow_centers.size()]
     var x: float=clampf(flower_patch.x+rng.randfn(0.0,1.85),-42.4,42.4)
@@ -508,23 +508,29 @@ func apply(profile_name: String,save: bool=true) -> bool:
   sun.shadow_enabled=true
   sun.light_energy=0.96 if selected=="普通" else (1.03 if selected=="高档" else 1.08)
   scene_environment.fog_enabled=true
-  scene_environment.fog_light_color=Color("#8fb5c5")
+  scene_environment.fog_light_color=Color("#699eae")
   scene_environment.fog_density=float(p["fog_density"])
   # Avoid bleached near-field: atmospheric perspective only in the distance.
-  scene_environment.ambient_light_energy=0.46
+  scene_environment.ambient_light_energy=0.35
+  # Real Godot Mobile color grading, not a few pastel material swatches.
+  # Rich saturated chroma but with true light/shade gradation, not neon HDR.
+  scene_environment.adjustment_enabled=true
+  scene_environment.adjustment_saturation=1.30
+  scene_environment.adjustment_contrast=1.095
+  scene_environment.adjustment_brightness=0.975
   # REV195: God's own 4.4 docs confirm Mobile DOES support Glow.
   # The previous code always turned it OFF even when both premium
   # quality profiles explicitly declared "glow":true. Use a restrained
   # native Mobile threshold (HDR range tops at 2.0), not desktop values.
   scene_environment.glow_enabled=bool(p["glow"])
-  scene_environment.glow_hdr_threshold=0.90
-  scene_environment.glow_intensity=1.45 if selected=="极致画质" else 1.25
-  scene_environment.glow_bloom=0.040 if selected=="极致画质" else 0.018
-  scene_environment.glow_strength=0.90
+  scene_environment.glow_hdr_threshold=1.13
+  scene_environment.glow_intensity=0.88 if selected=="极致画质" else 0.72
+  scene_environment.glow_bloom=0.008 if selected=="极致画质" else 0.004
+  scene_environment.glow_strength=0.68
   # Sun-tinted scattering in ordinary distance fog; NOT Forward+-only
   # volumetric fog, and never used to bleach the close foreground.
-  scene_environment.fog_sun_scatter=0.16 if selected=="极致画质" else (
-    0.10 if selected=="高档" else 0.025)
+  scene_environment.fog_sun_scatter=0.040 if selected=="极致画质" else (
+    0.025 if selected=="高档" else 0.008)
   grass.visibility_range_end=float(p["grass_distance"])
   grass.multimesh.visible_instance_count=int(p["grass_instances"])
   flowers.multimesh.visible_instance_count=int(roundi(float(p["grass_instances"])/4500.0*270.0))
@@ -556,6 +562,11 @@ func update_diagnostics() -> Dictionary:
   var size: Vector2i=view.size
   var cap_label: String="跟随刷新率（最高120）" if fps_mode=="跟随刷新率" else fps_mode
   last_metrics={
+    "rev207_actual_mobile_saturation":scene_environment.adjustment_saturation,
+    "rev207_actual_mobile_contrast":scene_environment.adjustment_contrast,
+    "rev207_actual_mobile_fog_density":scene_environment.fog_density,
+    "rev207_real_3d_pixel_density_not_320x180":view.size.x>=1024,
+    "rev207_nearest_mipmap_small_surface_texels":true,
     "profile":selected,"fps":fps,"draw_calls":draws,"triangles":triangles,
     "render_3d_size":size,"render_scale":float(p["scale"]),
     "screen_pixels":physical_screen,"screen_api_reported_hz":actual_refresh,

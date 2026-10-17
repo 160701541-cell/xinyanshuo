@@ -1,4 +1,7 @@
 extends Node3D
+const VividMaterial = preload("res://canglan_rev187/vivid_material.gd")
+var vivid_material_style: RefCounted
+
 ## APK176 rev187: real deformable triangulated terrain with stratified subsurface
 ## cells. Buildings remove SOIL VOLUME and expose actual vertical soil walls.
 ## Top-layer elevations, below-grade inventory, collision and pond basin are
@@ -16,11 +19,11 @@ const SOIL_KEYS := ["topsoil", "topsoil", "clay", "clay", "gravel", "gravel", "w
 # Surface treatments do not limit the number of colors; natural variation
 # is driven by deterministic world position and layer depth.
 const STONE_COLORS := {
-  "grass":Color("#7fac70"),"grass_deep":Color("#4c8651"),
-  "grass_light":Color("#a6bf68"),"grass_warm":Color("#a5a76a"),
-  "soil":Color("#c2a078"),"soil_dark":Color("#875f43"),
-  "soil_sand":Color("#d8bd8e"),"clay":Color("#a87956"),
-  "gravel":Color("#909393"),"weathered_rock":Color("#6e8584")
+  "grass":Color("#347e48"),"grass_deep":Color("#1f5736"),
+  "grass_light":Color("#70ad4c"),"grass_warm":Color("#728a37"),
+  "soil":Color("#98633d"),"soil_dark":Color("#583822"),
+  "soil_sand":Color("#be9052"),"clay":Color("#8a4d37"),
+  "gravel":Color("#626e71"),"weathered_rock":Color("#4f5f65")
 }
 signal terrain_cell_changed(center: Vector3, radius: float)
 var cells: Dictionary = {}
@@ -58,6 +61,9 @@ var stream_terrain_mesh_triangles: int = 0
 
 func _ready() -> void:
   name = "PhysicalDeformable92mVillageStrata"
+  if vivid_material_style==null:
+    vivid_material_style=VividMaterial.new()
+    vivid_material_style.call("initialize")
   for kind in STONE_COLORS:
     var mat := StandardMaterial3D.new()
     mat.albedo_color = STONE_COLORS[kind]
@@ -77,7 +83,13 @@ func _ready() -> void:
   ground_mat.vertex_color_use_as_albedo=true
   ground_mat.cull_mode=BaseMaterial3D.CULL_DISABLED
   ground_mat.roughness=0.96
-  world_materials["natural_ground"]=ground_mat
+  world_materials["natural_ground"]=vivid_material_style.call(
+    "material_for_real_terrain","natural_ground",Color.WHITE,true)
+  # Preserve finite excavated soil/stone geometry but reveal per-metre
+  # microscopic rock grains on cut faces, not flat brown rectangles.
+  for kind in STONE_COLORS:
+    world_materials[kind]=vivid_material_style.call(
+      "material_for_real_terrain",String(kind),STONE_COLORS[kind],false)
   terrain = MeshInstance3D.new()
   terrain.name = "REAL_DEFORMABLE_TERRAIN_NOT_PLANE"
   terrain.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_ON
@@ -477,8 +489,8 @@ func _mat_for_depth(depth: float) -> String:
 func ground_color_at(x: float,z: float) -> Color:
   var low: float=0.5+0.5*sin(x*0.075+0.7*sin(z*0.11))*cos(z*0.092)
   var high: float=0.5+0.5*sin(x*0.39+z*0.28)*cos(z*0.43-x*0.19)
-  var grass_a:=Color("#456d3d")
-  var grass_b:=Color("#8da55c")
+  var grass_a:=Color("#245e36")
+  var grass_b:=Color("#539844")
   var grass:=grass_a.lerp(grass_b,clampf(0.23+0.54*low+0.23*high,0.0,1.0))
   # Narrow natural cart-road shoulders; no one-cell ochre checkerboard.
   var road_weight: float=0.0
@@ -490,8 +502,8 @@ func ground_color_at(x: float,z: float) -> Color:
     road_weight=maxf(road_weight,1.0-smoothstep(1.1,3.2,absf(z-(2.5-0.25*x))))
   var sand_dist: float=Vector2(x,z).distance_to(POND_CENTER)
   var shore_weight: float=1.0-smoothstep(POND_RADIUS+1.1,POND_RADIUS+4.5,sand_dist)
-  var soil:=Color("#9a8666").lerp(Color("#ad956c"),low*0.35)
-  var sand:=Color("#c7ae80").lerp(Color("#bfa67c"),high*0.24)
+  var soil:=Color("#875534").lerp(Color("#b77a46"),low*0.43)
+  var sand:=Color("#ba9456").lerp(Color("#d0ac71"),high*0.21)
   var mixed:=grass.lerp(sand,shore_weight*0.84)
   return mixed.lerp(soil,road_weight*0.95)
 
@@ -656,10 +668,8 @@ func _construct_far_land() -> void:
   var far_parent:=Node3D.new()
   far_parent.name="FarGroundAndMountainFoothills_AllCameraDirections_600m"
   add_child(far_parent)
-  var far_material:=StandardMaterial3D.new()
-  far_material.albedo_color=Color("#648b60")
-  far_material.roughness=1.0
-  far_material.cull_mode=BaseMaterial3D.CULL_DISABLED
+  var far_material: ShaderMaterial=vivid_material_style.call(
+    "material_for_real_terrain","far_mountain",Color("#3b7049"),false)
   var far_size: int=106
   var tile_step: int=18
   var tile_index: int=0

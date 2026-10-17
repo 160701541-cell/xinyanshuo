@@ -1,0 +1,111 @@
+{
+  "schema": 207,
+  "source": "Quaternius CC0 original PBR source PNGs",
+  "source_directory": "game-source/godot3d/assets/free_cc0/quaternius/glTF",
+  "license": "CC0-1.0",
+  "size": 512,
+  "count": 9,
+  "bytes": 1916475,
+  "maps": [
+    {
+      "file": "plaster_albedo.png",
+      "source": "T_Plaster_BaseColor.png",
+      "source_blob_sha1": "14ff755f0dc786a775faea8eb9d51ef1e4dcd613",
+      "output_sha256": "02b701215005eab32c0cb41c00c049a47ee76f1e2eca26791d62ea670467ae0b",
+      "bytes": 252488,
+      "width": 512,
+      "height": 512,
+      "role": "albedo",
+      "license": "CC0-1.0"
+    },
+    {
+      "file": "plaster_normal.png",
+      "source": "T_Plaster_Normal.png",
+      "source_blob_sha1": "2acb6dca1684544e4a99eb19aff8892c0c2ee232",
+      "output_sha256": "bfd45272d075951860dc0c82fb946df0e42c6393eb2f955e370a1868262561ff",
+      "bytes": 277154,
+      "width": 512,
+      "height": 512,
+      "role": "normal",
+      "license": "CC0-1.0"
+    },
+    {
+      "file": "plaster_orm.png",
+      "source": "T_Plaster_ORM.png",
+      "source_blob_sha1": "460dbd52ccfb6ab72eaa4223c889f24b6f659cfa",
+      "output_sha256": "4741789ade0bef8a2e066765c381e31df4a3c49f9496c49a0697e220e3dc7ff9",
+      "bytes": 158978,
+      "width": 512,
+      "height": 512,
+      "role": "orm",
+      "license": "CC0-1.0"
+    },
+    {
+      "file": "tile_albedo.png",
+      "source": "T_RoundTiles_BaseColor.png",
+      "source_blob_sha1": "1499f2b4d6eda2da8ca7512c342ed29632cf3d1e",
+      "output_sha256": "dced8ec0f6d12a09ed07e93f0a42c2be55cb512d8a8bcb6725accb6f328550e8",
+      "bytes": 268289,
+      "width": 512,
+      "height": 512,
+      "role": "albedo",
+      "license": "CC0-1.0"
+    },
+    {
+      "file": "tile_normal.png",
+      "source": "T_RoundTiles_Normal.png",
+      "source_blob_sha1": "abf6b84678b40f1bdbb5f557c73414d8568bfa15",
+      "output_sha256": "2591dad2140cd1f15beae3e464735fb62fa4901fb64208faeea826ff9cf8e88b",
+      "bytes": 193995,
+      "width": 512,
+      "height": 512,
+      "role": "normal",
+      "license": "CC0-1.0"
+    },
+    {
+      "file": "tile_roughness.png",
+      "source": "T_RoundTiles_Roughness.png",
+      "source_blob_sha1": "625b67a09c51c5db00c8500bb473002d8fc82367",
+      "output_sha256": "6e2075337f86d21dce2d0ae7e4e4046903e100710d87765ae449ca91e7e65140",
+      "bytes": 91161,
+      "width": 512,
+      "height": 512,
+      "role": "roughness",
+      "license": "CC0-1.0"
+    },
+    {
+      "file": "timber_albedo.png",
+      "source": "T_WoodTrim_BaseColor.png",
+      "source_blob_sha1": "3547da835b7b1aa89e27e98c68b1582bd203ef93",
+      "output_sha256": "563a6cfdb9133296f3ed40b0cc230313108fe06e8f1d16f119a1155bebc975c4",
+      "bytes": 251972,
+      "width": 512,
+      "height": 512,
+      "role": "albedo",
+      "license": "CC0-1.0"
+    },
+    {
+      "file": "timber_normal.png",
+      "source": "T_WoodTrim_Normal.png",
+      "source_blob_sha1": "f959c6344604f28800497bb276f70043aee0fea2",
+      "output_sha256": "3486bcdbe305b228460af124c98fb37821be1e247bba59dab8065b53413cfabf",
+      "bytes": 281029,
+      "width": 512,
+      "height": 512,
+      "role": "normal",
+      "license": "CC0-1.0"
+    },
+    {
+      "file": "timber_roughness.png",
+      "source": "T_WoodTrim_Roughness.png",
+      "source_blob_sha1": "ce396e8c01df5bb1d7a584e46e696a9904223f41",
+      "output_sha256": "58a9a938db1a27e2cbc50bffc8b6bd24cda299ec70c661e0cfc40ef33b4f0f52",
+      "bytes": 141409,
+      "width": 512,
+      "height": 512,
+      "role": "roughness",
+      "license": "CC0-1.0"
+    }
+  ],
+  "modification": "512x512 Lanczos preserving original normal/roughness; 1.24x chroma & restrained contrast on albedo only"
+}
