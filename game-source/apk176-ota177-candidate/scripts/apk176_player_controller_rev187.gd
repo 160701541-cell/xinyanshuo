@@ -745,6 +745,7 @@ func _build_game_hud() -> void:
   _game_sheet.add_theme_stylebox_override("panel",_rounded(Color(0.06,0.11,0.13,0.95),12))
   hud.add_child(_game_sheet)
   var v:=VBoxContainer.new()
+  v.name="Rev205RealBackpackAndCharacterGameSheet"
   v.add_theme_constant_override("separation",9)
   _game_sheet.add_child(v)
   _game_sheet_title=Label.new()
