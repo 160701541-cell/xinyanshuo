@@ -13,7 +13,8 @@ func _run() -> void:
     return
   for filename in [
       "chinese_four_corner_pavilion.glb",
-      "chinese_classical_garden_wall.glb"]:
+      "chinese_moongate_medium.glb",
+      "chinese_garden_wall_medium_section.glb"]:
     var path: String=folder.path_join(filename)
     if not FileAccess.file_exists(path):
       printerr("FAIL_REV208_CHINESE_GLTF_NO_REAL_VENDOR_CONVERTED_BINARY "+path)
@@ -52,8 +53,12 @@ func _run() -> void:
           triangles+=(arrays[Mesh.ARRAY_VERTEX] as PackedVector3Array).size()/3
         if mesh.mesh.surface_get_material(idx)!=null:
           real_materials+=1
+    # An exported 78-piece catalog was 838760 triangles. A complete
+    # village cannot afford to import that as one prop. Real individual
+    # moon gate and one garden wall must be author-authentic <100k each.
+    var safe_limit: int=125000 if filename.contains("pavilion") else 100000
     if parts.is_empty() or surfaces<1 or uv_parts<1 or triangles<100 or (
-        triangles>5000000):
+        triangles>safe_limit):
       printerr("FAIL_REV208_CHINESE_CC0_GODOT_IMPORT_NOT_REAL_UV_MESHES "+
         str({"file":filename,"nodes":parts.size(),"surfaces":surfaces,
           "uv_surfaces":uv_parts,"triangles":triangles}))
@@ -65,5 +70,5 @@ func _run() -> void:
         "uv_surfaces":uv_parts,"materials":real_materials,
         "triangles":triangles,"pending_original_main_art_p0":true}))
     scene.free()
-  print("PASS_REV208_CHINESE_PAVILION_AND_MOONGATE_REAL_3D_GODOT_SOURCE_IMPORT_QUARANTINED_NOT_GAME_ART_ACCEPTED")
+  print("PASS_REV208_CHINESE_PAVILION_MOONGATE_AND_SINGLE_WALL_REAL_3D_GODOT_SOURCE_IMPORT_QUARANTINED_NOT_GAME_ART_ACCEPTED")
   quit(0)
