@@ -172,6 +172,17 @@ jobs:
           test -s qa-stage/ota177/canglan_rev187/quaternius_hair_long_static.glb
           test -s qa-stage/ota177/canglan_rev187/quaternius_knight_sword.glb
           grep -Fq 'quaternius.com' qa-stage/ota177/canglan_rev187/rev199_cc0_asset_provenance.json
+      - name: Stage rev208 real CC0 two-scale terrain PBR and scanned groundcover into the original PCK tree
+        shell: bash
+        run: |
+          set -euo pipefail
+          # 与 main 的 rev208 签名工作流共用同一份 staging 逻辑：
+          # 少了这一步，构建会在 hq_terrain_pbr.gd 缺失处 BLOCKED，
+          # 一帧都出不来（run 39117757479 的实际失败点）。
+          python3 tools/stage_rev208_hq_ecology.py --dest qa-stage/ota177
+          test -s qa-stage/ota177/canglan_rev187/hq_terrain_pbr.gd
+          test -s qa-stage/ota177/canglan_rev187/hq_ecology_terrain/ecology-intake-provenance.json
+          test -s qa-stage/ota177/canglan_rev187/hq_ecology_groundcover/fern_clump/fern_clump_1k.gltf
       - name: Install actual Godot 4.4.1 engine
         shell: bash
         run: |
