@@ -119,9 +119,9 @@ uniform sampler2D detail_normal : hint_normal, repeat_enable, filter_linear_mipm
 uniform float macro_tiles_per_metre = 0.1666;
 uniform float detail_tiles_per_metre = 16.6666;
 uniform float detail_strength = 0.55;
-uniform float vertex_tint_strength = 0.45;
+uniform float vertex_tint_strength = 0.22;
 uniform float global_brightness = 1.0;
-uniform bool use_vertex_biome = true;
+uniform bool vertex_biome = true;
 
 varying vec3 world_pos;
 varying vec3 world_normal;
@@ -182,7 +182,7 @@ void fragment() {
     albedo *= clamp(d_l, 0.72, 1.28);
 
     // 顶点 biome 色只作为色相调制参与，不让它抹掉真实纹理细节。
-    if (use_vertex_biome) {
+    if (vertex_biome) {
         float cl = max(luma(COLOR.rgb), 0.06);
         vec3 tint = COLOR.rgb / cl;
         albedo *= mix(vec3(1.0), tint, vertex_tint_strength);
@@ -234,8 +234,8 @@ func build_ground_material(vertex_biome: bool = true) -> ShaderMaterial:
   material.set_shader_parameter("macro_tiles_per_metre", 1.0 / float(MACRO_METRES["forest_floor"]))
   material.set_shader_parameter("detail_tiles_per_metre", 1.0 / DETAIL_METRES)
   material.set_shader_parameter("detail_strength", 0.55)
-  material.set_shader_parameter("vertex_tint_strength", 0.45)
-  material.set_shader_parameter("use_vertex_biome", vertex_biome)
+  material.set_shader_parameter("vertex_tint_strength", 0.22)
+  material.set_shader_parameter("vertex_biome", vertex_biome)
   _cached_ground = material
   last_build_report = {
     "material": material.resource_name,

@@ -876,8 +876,9 @@ func _run() -> void:
       material is StandardMaterial3D and (
       material as StandardMaterial3D).vertex_color_use_as_albedo)
     if material is ShaderMaterial:
-      honors_vertex_biome=bool((
-        material as ShaderMaterial).get_shader_parameter("vertex_biome"))
+      # 不能直接 bool(null)：任何未暴露该参数的材质都会把整条 QA 打断。
+      var vb: Variant=(material as ShaderMaterial).get_shader_parameter("vertex_biome")
+      honors_vertex_biome=(vb is bool and bool(vb))
     if honors_vertex_biome:
       continuous_biome_surfaces+=1
       var colors: PackedColorArray=actual_ground.mesh.surface_get_arrays(surface)[Mesh.ARRAY_COLOR]
