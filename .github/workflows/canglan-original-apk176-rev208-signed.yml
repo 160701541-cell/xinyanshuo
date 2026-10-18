@@ -88,9 +88,9 @@ jobs:
           test -s qa-stage/ota177/canglan_rev187/hq_ecology_terrain/forest_floor/forest_floor_albedo_1k.jpg
           test -s qa-stage/ota177/canglan_rev187/hq_ecology_terrain/ecology-intake-provenance.json
           for slug in fern_clump shrub_low moss_patch rock_moss_set; do
-            test -s "qa-stage/ota177/canglan_rev187/hq_ecology_groundcover/$slug/$slug_1k.gltf" \
+            test -s "qa-stage/ota177/canglan_rev187/hq_ecology_groundcover/${slug}/${slug}_1k.gltf" \
               || { echo "BLOCKED: missing staged groundcover $slug"; exit 1; }
-            test -s "qa-stage/ota177/canglan_rev187/hq_ecology_groundcover/$slug/$slug.bin" \
+            test -s "qa-stage/ota177/canglan_rev187/hq_ecology_groundcover/${slug}/${slug}.bin" \
               || { echo "BLOCKED: missing staged groundcover bin $slug"; exit 1; }
           done
           python3 tools/asset_factory/rev208_ecology_polyhaven_intake.mjs --verify
