@@ -27,6 +27,7 @@ on:
       - 'game-source/apk176-ota177-candidate/assets/cc0-rev206/asset_intake_proof.json'
       - 'game-source/apk176-ota177-candidate/assets/cc0-rev206/**/*.glb'
       - 'game-source/apk176-ota177-candidate/scripts/apk176_living_resource_world_rev187.gd'
+      - 'game-source/apk176-ota177-candidate/scripts/apk176_spirit_resources_rev206.gd'
       - 'game-source/apk176-ota177-candidate/scripts/apk176_hq_forest_floor_pool_rev208.gd'
       - 'game-source/apk176-ota177-candidate/scripts/apk176_vivid_material_rev207.gd'
       - 'game-source/apk176-ota177-candidate/scripts/apk176_kenney_visual_palette_rev187.gd'
@@ -447,6 +448,7 @@ jobs:
           grep -Fq 'PASS_REV208_NO_FREE_HOUSES_200WOOD150STONE_FIVE_RESIDENTS_AND_FOUR_TRUE_LARGE_YAO_BEASTS' qa-results/rev187-original-main-3d.log
           grep -Fq 'PASS_REV206_REAL_QUATERNIUS_CC0_SOURCE_HOUSES_REAL_YAO_BEASTS_PERSISTENT_PAID_WORKER_BUILDING' qa-results/rev187-original-main-3d.log
           grep -Fq 'PASS_REV208_REAL_INDEPENDENT_MEDICINAL_HERB_STEMS_CC0_PERSISTED_IDS' qa-results/rev187-original-main-3d.log
+          grep -Fq 'PASS_REV208_NATURALLY_BORN_RANDOM_HERB_AND_ORE_RESOURCES_WORLD_HOURS_PHYSICAL_GLBS_SAVED_IDS_NO_INVENTORY_MINTING' qa-results/rev187-original-main-3d.log
           grep -Fq 'PASS_REV208_HQ023_TRUE_3D_CC0_INDEPENDENT_HERBS_FOUR_VISUAL_LIFE_STATES_NO_INVENTORY_CHANGE' qa-results/rev187-original-main-3d.log
           grep -Fq 'PASS_REV208_REAL_SPIRIT_HERB_HARVEST_PHYSICAL_BUDDING_STAGE_PBR_MESH_ON_SOIL_AND_ZERO_FREE_STOCK' qa-results/rev187-original-main-3d.log
           grep -Fq 'PASS_REV208_HQ021_REAL_VENDOR_CC0_32M_CELLS_NONINVENTORY_ACTUAL_PBR_VISUAL_FALLBACK_NO_ORIGIN_GHOSTS_SWAP_REMOVE' qa-results/rev187-original-main-3d.log
