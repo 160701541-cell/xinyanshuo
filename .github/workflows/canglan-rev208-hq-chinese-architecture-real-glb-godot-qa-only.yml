@@ -53,10 +53,23 @@ jobs:
           sudo apt-get update -qq
           sudo DEBIAN_FRONTEND=noninteractive apt-get install -y -qq --no-install-recommends blender
           blender --version | head -3
+          # Ubuntu's apt Blender FBX add-on imports NumPy but the default
+          # headless package does not install a NumPy wheel in Blender's own
+          # embedded CPython interpreter. Pin the exact ABI-compatible wheel.
+          blender_minor="$(blender -b -noaudio --python-expr "import sys;print('CANGLAN_BLENDER_PY_MINOR='+str(sys.version_info.minor))" 2>&1 | sed -n 's/.*CANGLAN_BLENDER_PY_MINOR=\\([0-9]*\\).*/\\1/p' | tail -1)"
+          test -n "$blender_minor"
+          python3 -m pip install --quiet --no-deps --target /tmp/canglan-blender-python \
+            --only-binary=:all: --python-version "3.$blender_minor" \
+            --implementation cp --abi "cp3$blender_minor" 'numpy==1.26.4'
+          PYTHONPATH=/tmp/canglan-blender-python blender -b -noaudio \
+            --python-expr "import numpy;print('PASS_REV208_BLENDER_FBX_NUMPY_ABI='+numpy.__version__)" 2>&1 \
+            | tee qa-architecture/proof/blender_imports.log
+          grep -Fq 'PASS_REV208_BLENDER_FBX_NUMPY_ABI=1.26.4' qa-architecture/proof/blender_imports.log
       - name: Convert both real author FBX models to Godot GLB2 retaining source UV topology
         shell: bash
         run: |
           set -euo pipefail
+          export PYTHONPATH="/tmp/canglan-blender-python:${PYTHONPATH:-}"
           python3 - <<'PY'
           from pathlib import Path
           import subprocess
