@@ -2200,6 +2200,12 @@ func _process(delta: float) -> void:
     _sync_resource_collisions()
   if _clock >= 0.5:
     _clock=0.0
+    # The authoritative resource counters change on harvesting, NOT when
+    # rendering. Immediately persist only changed wild node amounts.
+    if natural_world_births!=null and bool(natural_world_births.get("_loaded")):
+      if not bool(natural_world_births.call(
+          "save_if_authoritative_amount_changed")):
+        asset_errors.append("REV208_WILD_TREE_STONE_HARVEST_PERSISTENCE_FAILED")
     _sync_spirit_resource_visuals(hero)
     _update_status()
     _hide_original_debug_labels()
