@@ -178,24 +178,24 @@ jobs:
           cp game-source/apk176-ota177-candidate/scripts/apk176_kenney_visual_palette_rev187.gd qa-stage/ota177/canglan_rev187/visual_palette.gd
           cp game-source/apk176-ota177-candidate/scripts/apk176_kenney_multimesh_rev187.gd qa-stage/ota177/canglan_rev187/kenney_multimesh.gd
           cp game-source/apk176-ota177-candidate/scripts/apk176_strata_terrain_rev187.gd qa-stage/ota177/canglan_rev187/strata_terrain.gd
-          cp game-source/apk176-ota177-candidate/scripts/apk176_vivid_material_rev208.gd qa-stage/ota177/canglan_rev187/vivid_material.gd
-          mkdir -p qa-stage/ota177/canglan_rev187/materials_rev208
-          cp game-source/apk176-ota177-candidate/materials/rev208/*.png qa-stage/ota177/canglan_rev187/materials_rev208/
-          cp game-source/apk176-ota177-candidate/materials/rev208/manifest.json qa-stage/ota177/canglan_rev187/materials_rev208/
+          cp game-source/apk176-ota177-candidate/scripts/apk176_vivid_material_rev207.gd qa-stage/ota177/canglan_rev187/vivid_material.gd
+          mkdir -p qa-stage/ota177/canglan_rev187/materials_rev207
+          cp game-source/apk176-ota177-candidate/materials/rev207/*.png qa-stage/ota177/canglan_rev187/materials_rev207/
+          cp game-source/apk176-ota177-candidate/materials/rev207/manifest.json qa-stage/ota177/canglan_rev187/materials_rev207/
           python3 - <<'PY'
           import hashlib,json
           from pathlib import Path
-          m=json.loads(Path('qa-stage/ota177/canglan_rev187/materials_rev208/manifest.json').read_text())
+          m=json.loads(Path('qa-stage/ota177/canglan_rev187/materials_rev207/manifest.json').read_text())
           assert m['schema']==207 and m['count']==9 and m['size']==512
           for item in m['maps']:
-            raw=(Path('qa-stage/ota177/canglan_rev187/materials_rev208')/item['file']).read_bytes()
+            raw=(Path('qa-stage/ota177/canglan_rev187/materials_rev207')/item['file']).read_bytes()
             assert hashlib.sha256(raw).hexdigest()==item['output_sha256']
           print('PASS_REV208_REAL_QUATERNIUS_NINE_FINE_PBR_MAPS_SOURCE_SHA256_IN_ORIGINAL_APK_STAGE')
           PY
           cp game-source/apk176-ota177-candidate/scripts/apk176_player_controller_rev187.gd qa-stage/ota177/canglan_rev187/player_controller.gd
           cp game-source/apk176-ota177-candidate/scripts/apk176_backpack_rev205.gd qa-stage/ota177/canglan_rev187/backpack.gd
           cp game-source/apk176-ota177-candidate/scripts/apk176_spirit_resources_rev206.gd qa-stage/ota177/canglan_rev187/spirit_resources.gd
-          cp game-source/apk176-ota177-candidate/scripts/apk176_living_regions_rev208.gd qa-stage/ota177/canglan_rev187/living_regions.gd
+          cp game-source/apk176-ota177-candidate/scripts/apk176_living_regions_rev207.gd qa-stage/ota177/canglan_rev187/living_regions.gd
           cp game-source/apk176-ota177-candidate/scripts/apk176_paid_housing_rev208.gd qa-stage/ota177/canglan_rev187/paid_housing.gd
           python3 - <<'PY'
           from pathlib import Path
@@ -304,9 +304,9 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          cp logic-qa/apk176-export-fixture/verify_rev208_living_regions.gd qa-stage/ota177/verify_rev208_living_regions.gd
+          cp logic-qa/apk176-export-fixture/verify_rev207_living_regions.gd qa-stage/ota177/verify_rev207_living_regions.gd
           timeout 110s /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless \
-            --path qa-stage/ota177 --script res://verify_rev208_living_regions.gd \
+            --path qa-stage/ota177 --script res://verify_rev207_living_regions.gd \
             > qa-results/rev208-living-world-ledger.log 2>&1 || {
               tail -120 qa-results/rev208-living-world-ledger.log; exit 1;
             }
@@ -422,8 +422,8 @@ jobs:
           grep -Fq 'PASS_REV206_GODOT_REAL_3D_WILD_MEDICINAL_HERB_AND_LUMINOUS_ORE_VIEW' qa-results/rev187-real-worksite/render.log
           test -s qa-results/rev187-real-worksite/real_apk176_rev206_spirit_herbs_original_quaternius.png
           test -s qa-results/rev187-real-worksite/real_apk176_rev206_luminous_spirit_ore_true_3d.png
-          test -s qa-results/rev187-real-worksite/real_apk176_rev208_vivid_cc0_texture_forest_wide.png
-          test -s qa-results/rev187-real-worksite/real_apk176_rev208_dense_tiny_pixel_cc0_pbr_house_close.png
+          test -s qa-results/rev187-real-worksite/real_apk176_rev207_vivid_cc0_texture_forest_wide.png
+          test -s qa-results/rev187-real-worksite/real_apk176_rev207_dense_tiny_pixel_cc0_pbr_house_close.png
           test -s qa-results/rev187-real-worksite/real_apk176_rev205_genuine_open_source_hud_target_lock.png
           test -s qa-results/rev187-real-worksite/real_apk176_rev205_real_backpack_lucide_equipment.png
           test -s qa-results/rev187-real-worksite/real_apk176_rev204_qi_bolt_real_impact_damage.png
@@ -520,7 +520,7 @@ jobs:
           for filename,output in [
               ('real_apk176_rev206_luminous_spirit_ore_true_3d.png','canglan-rev208-ore-guardian-biome-godot-linux.png'),
               ('real_apk176_rev206_spirit_herbs_original_quaternius.png','canglan-rev208-living-herbs-godot-linux.png'),
-              ('real_apk176_rev208_vivid_cc0_texture_forest_wide.png','canglan-rev208-green-forest-godot-linux.png'),
+              ('real_apk176_rev207_vivid_cc0_texture_forest_wide.png','canglan-rev208-green-forest-godot-linux.png'),
               ('real_apk176_rev205_real_backpack_lucide_equipment.png','canglan-rev208-backpack-godot-linux.png')]:
               src=source/filename
               raw=src.read_bytes()
