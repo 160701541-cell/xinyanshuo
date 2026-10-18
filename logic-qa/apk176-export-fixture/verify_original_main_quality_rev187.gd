@@ -253,12 +253,23 @@ func _run() -> void:
       int(forest_status.get("active_real_cc0_plants",0))<25) or (
       int(forest_status.get("gpu_real_pbr_parts",0))<32) or (
       int(forest_status.get("verified_live_gpu_slots",0))<25) or (
+      int(forest_status.get("protected_site_count",0))<19) or (
       not bool(forest_status.get("all_visible_slots_contiguous",false))) or (
       not bool(forest_status.get("never_free_inventory",false))) or (
       not forest_status.get("errors",[]).is_empty()) or live_ids.is_empty():
     _fail(415,"REV208_LIVE_AUTHOR_LICENSED_FERN_GRASS_NATIVE_GPU_POOL_BAD_"+
       str(forest_status))
     return
+  # All 6 paid-only future houses and all 13 finite live spirit herbs
+  # must remain free of these non-inventory decorative plant instances.
+  for floor_id in live_ids:
+    var ground_at: Vector3=floor_positions[floor_id]["xz"]
+    for blueprint in (room.get("housing_blueprints") as Dictionary).values():
+      var reserved: Vector3=blueprint["at"]
+      if Vector2(ground_at.x-reserved.x,
+          ground_at.z-reserved.z).length()<7.0:
+        _fail(418,"REV208_AUTHORED_FERN_GRASS_COVER_CLIPPED_PAID_HOUSE_"+String(floor_id))
+        return
   var original_pool_count: int=int(forest_status["active_real_cc0_plants"])
   if not bool(forest_pool.call("verify_swap_remove",String(live_ids[0]))):
     _fail(416,"REV208_REAL_GPU_FLOOR_SWAPPED_SLOT_NOT_RESTORED")
