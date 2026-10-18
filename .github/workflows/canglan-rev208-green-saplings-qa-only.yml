@@ -498,6 +498,7 @@ jobs:
           grep -Fq 'PASS_REV208_REAL_SPIRIT_HERB_HARVEST_PHYSICAL_BUDDING_STAGE_PBR_MESH_ON_SOIL_AND_ZERO_FREE_STOCK' qa-results/rev187-original-main-3d.log
           grep -Fq 'PASS_REV208_HQ021_REAL_VENDOR_CC0_32M_CELLS_NONINVENTORY_ACTUAL_PBR_VISUAL_FALLBACK_NO_ORIGIN_GHOSTS_SWAP_REMOVE' qa-results/rev187-original-main-3d.log
           grep -Fq 'BLOCKED_REV208_HQ021_GODOT441_REAL_IMPORTED_GLTF_MULTIMESH_GPU_TRANSFORM_NO_FALSE_GREEN' qa-results/rev187-original-main-3d.log
+          grep -Fq 'PASS_REV208_ACTUAL_APK176_MAIN_CHINESE_CC0_SOURCE_3D_PAVILION_MOON_GATE_GARDEN_WALL_AUTHOR_UV_PBR_HUMAN_SCALE_PHYSICS_NO_FREE_HOUSES' qa-results/rev187-original-main-3d.log
           grep -Fq 'PASS_REV208_3_ACTUAL_8M_MATURE_VENDOR_PBR_TREES_REPLACE_THREE_NATURAL_IDS' qa-results/rev187-original-main-3d.log
           grep -Fq 'PASS_REV208_REMAINING_49_KENNEY_LOD_TREES_20_STONES_GPU_BUFFERS_RETAINED' qa-results/rev187-original-main-3d.log
           grep -Fq 'PASS_REV207_TRUE_MAIN_50000KM2_5000_ROOT_RATIO_BODY_CULTIVATION_5_SECTS_4_REAL_ORE_BEAST_GUARDS' qa-results/rev187-original-main-3d.log
@@ -586,6 +587,7 @@ jobs:
           grep -Fq 'REV208_TRUE_GODOT_COMPARISON_CAMERA_TIME_OVERRIDE_12H_RESTORE_' qa-results/rev187-real-worksite/render.log
           grep -Fq 'PASS_REV208_REAL_GODOT_CAMERA_CORPSE_FRAME_TRUE_MORTALITY_POPULATION_MINUS_ONE' qa-results/rev187-real-worksite/render.log
           grep -Fq 'PASS_REV208_THREE_REAL_GODOT441_ORIGINAL_MAIN_EVERGREEN_AND_FERN_ART_EVIDENCE_UNAPPROVED' qa-results/rev187-real-worksite/render.log
+          grep -Fq 'PASS_REV208_TRUE_ORIGINAL_GODOT441_PAVILION_MOON_GATE_COURTYARD_REAL_3D_AUTHOR_GLTF_FRAMES_PENDING_USER_P0_ART' qa-results/rev187-real-worksite/render.log
           grep -Fq 'PASS_REV208_REAL_GODOT441_ORIGINAL_APK176_HQ021_FERN_GRASS_PHYSICAL_3D_ECOLOGY_FRAME_PENDING_ART_QA' qa-results/rev187-real-worksite/render.log
           grep -Fq 'PASS_REV208_REAL_ORIGINAL_GODOT441_NATURAL_FOREST_GROUND_EMERALD_NONWASHOUT_RGB_FRAME_PENDING_FULL_P0' qa-results/rev187-real-worksite/render.log
           grep -Fq 'PASS_REV208_HQ_P0_REAL_ORIGINAL_GODOT_FOREST_AUTHOR_PBR_MATURE_PINE_NO_24M_TOY_SAPLING_SCREENSHOT_UNAPPROVED_ART' qa-results/rev187-real-worksite/render.log
@@ -595,6 +597,8 @@ jobs:
               real_godot_rev208_hq_pine_forest_actual_main.png \
               real_godot_rev208_hq_cypress_grove_actual_main.png \
               real_godot_rev208_hq_fern_understory_actual_main.png \
+              real_godot_rev208_chinese_cc0_pavilion_original_main_p0_unapproved.png \
+              real_godot_rev208_chinese_cc0_moon_gate_original_main_p0_unapproved.png \
               real_godot_rev208_32m_vendor_fern_grass_actual_3d_floor_main.png \
               real_godot_rev208_p0_actual_mature_pine_no_toy_foreground_pbr_understory.png \
               real_godot_rev208_npc_death_state.png; do
@@ -649,6 +653,8 @@ jobs:
                       real_godot_rev208_hq_pine_forest_actual_main.png \
                       real_godot_rev208_hq_cypress_grove_actual_main.png \
                       real_godot_rev208_hq_fern_understory_actual_main.png \
+                      real_godot_rev208_chinese_cc0_pavilion_original_main_p0_unapproved.png \
+                      real_godot_rev208_chinese_cc0_moon_gate_original_main_p0_unapproved.png \
                       real_godot_rev208_32m_vendor_fern_grass_actual_3d_floor_main.png \
                       real_godot_rev208_p0_actual_mature_pine_no_toy_foreground_pbr_understory.png \
                       real_godot_rev208_npc_death_state.png \
