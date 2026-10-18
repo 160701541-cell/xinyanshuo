@@ -372,6 +372,27 @@ func _initialize() -> void:
     fake_world.free()
     fake_terrain.free()
 
+
+    # 正式 OTA PCK 里放的是原始 .gltf（未导入），必须验证运行时 GLTFDocument
+    # 解析路径真的能用——否则资产进包了但游戏里看不见。
+    var abs_gltf := ProjectSettings.globalize_path(
+      "res://canglan_rev187/hq_ecology_groundcover/fern_clump/fern_clump_1k.gltf")
+    var runtime_scene: Node3D = mod2.call("_load_gltf_runtime", abs_gltf)
+    _ok(runtime_scene != null, "runtime GLTFDocument parse of raw .gltf failed")
+    if runtime_scene != null:
+      var rt_tris := 0
+      for c in runtime_scene.find_children("*", "MeshInstance3D", true, false):
+        var mi2: MeshInstance3D = c as MeshInstance3D
+        if mi2 == null or mi2.mesh == null:
+          continue
+        for s2 in range(mi2.mesh.get_surface_count()):
+          var arr := mi2.mesh.surface_get_arrays(s2)
+          var idx2: PackedInt32Array = arr[Mesh.ARRAY_INDEX]
+          rt_tris += int((idx2.size() if idx2.size() > 0 else (arr[Mesh.ARRAY_VERTEX] as PackedVector3Array).size()) / 3)
+      _ok(rt_tris == 6232, "runtime-packed fern triangles %d != 6232" % rt_tris)
+      print("  runtime raw-gltf load OK tris=", rt_tris)
+      runtime_scene.free()
+
     # 树皮接管：只改无贴图表面
     var tree := Node3D.new()
     var mi := MeshInstance3D.new()
