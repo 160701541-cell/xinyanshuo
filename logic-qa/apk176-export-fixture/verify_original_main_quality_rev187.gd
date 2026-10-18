@@ -2510,6 +2510,125 @@ func _run() -> void:
     _fail(427,"REV208_RANDOM_WORLD_RESOURCE_QA_ISOLATION_ROLLBACK_FAILED")
     return
   print("PASS_REV208_NATURALLY_BORN_RANDOM_HERB_AND_ORE_RESOURCES_WORLD_HOURS_PHYSICAL_GLBS_SAVED_IDS_NO_INVENTORY_MINTING")
+  # REV208 actual new spontaneous FOREST WOOD and QUARRY STONE sources.
+  # Exercise real authoritative Economy+Ecology scripts against the same
+  # original Main terrain and building reservations, in an isolated saved
+  # simulation. CI may NEVER deposit test resources into the user's world.
+  var production_natural: RefCounted=room.get("natural_world_births")
+  if production_natural==null or not bool(production_natural.get("_loaded")) or (
+      not room.has_method("_materialize_wild_tree_stone")):
+    _fail(428,"REV208_ACTUAL_MAIN_MISSING_NATURAL_TREE_STONE_WORLD_SPAWNER")
+    return
+  var birth_script: GDScript=production_natural.get_script() as GDScript
+  var economic_script: GDScript=econ.get_script() as GDScript
+  var ecological_script: GDScript=room.get("eco").get_script() as GDScript
+  var test_file: String="user://canglan_rev208_qa_tree_stone_natural_births.json"
+  var global_test_file: String=ProjectSettings.globalize_path(test_file)
+  if FileAccess.file_exists(test_file):
+    DirAccess.remove_absolute(global_test_file)
+  var trial_economy: RefCounted=economic_script.new()
+  trial_economy.call("start",20261018)
+  if not bool(trial_economy.call("create_village",
+      "CL-REV186-HX-VILLAGE",{"homes":1,"food":24,"water":24})):
+    _fail(429,"REV208_NATURAL_WORLD_BIRTH_TEST_CANNOT_MAKE_VILLAGE")
+    return
+  var trial_ecology: RefCounted=ecological_script.new()
+  trial_ecology.call("setup",trial_economy,"CL-REV186-HX-VILLAGE",
+    Vector3(0,0,-3),Vector3(0,0,10))
+  var trial: RefCounted=birth_script.new()
+  trial.set("save_path",test_file)
+  if not bool(trial.call("initialize",trial_economy,trial_ecology,
+      room.get("terrain_world"),room.get("quality"),
+      room.get("housing_blueprints"),wild)):
+    _fail(429,"REV208_AUTHENTIC_NATURAL_TREE_STONE_SPAWNER_INIT_FAILED_"+
+      String(trial.get("last_error")))
+    return
+  for wild_hour in range(240):
+    trial.call("advance_world_hour")
+  var natural_events: Dictionary=trial.call("stats")
+  if int(natural_events.get("source_generated_trees",0))<2 or (
+      int(natural_events.get("source_generated_stones",0))<1) or (
+      int(natural_events.get("wild_nodes",0))<3) or (
+      trial_economy.get("natural_nodes").size()!=3) or (
+      trial_economy.get("resource_positions").size()!=3):
+    _fail(430,"REV208_WILD_TREE_AND_QUARRY_RANDOM_BIRTH_FAILED_"+
+      str(natural_events))
+    return
+  var fresh_natural: Dictionary=trial.get("records")
+  var test_tree_id: String=""
+  var all_local_positions: Array[Vector2]=[]
+  for natural_id in fresh_natural:
+    var record: Dictionary=fresh_natural[natural_id]
+    var real_source_kind: String=String(record["kind"])
+    if (real_source_kind=="tree" and not String(natural_id).begins_with(
+        "CL-WILD-TREE-R208-")) or (real_source_kind=="stone" and not (
+        String(natural_id).begins_with("CL-WILD-STONE-R208-"))) or (
+        not trial_economy.get("natural_nodes").has(natural_id)) or (
+        not trial_economy.get("resource_positions").has(natural_id)):
+      _fail(431,"REV208_RANDOM_TREE_STONE_NODE_NOT_REAL_ECONOMY_RESOURCE_"+String(natural_id))
+      return
+    if real_source_kind=="tree":
+      test_tree_id=String(natural_id)
+    var real_ground: Vector3=trial_economy.get("resource_positions")[natural_id]
+    if absf(real_ground.y-float(room.get("terrain_world").call(
+        "height_at",real_ground.x,real_ground.z)))>0.02 or (
+        not bool(room.get("quality").call("_natural_plantable",
+          real_ground.x,real_ground.z))):
+      _fail(432,"REV208_NEW_NATURAL_RESOURCE_NOT_PLANTED_IN_TRUE_TERRAIN")
+      return
+    var horizontal: Vector2=Vector2(real_ground.x,real_ground.z)
+    for old_place in all_local_positions:
+      if horizontal.distance_to(old_place)<3.0:
+        _fail(433,"REV208_SPAWNER_CREATED_RESOURCE_OVERLAP_IN_SAME_WORLD")
+        return
+    all_local_positions.append(horizontal)
+  var main_stock_before_birth: Dictionary=econ.villages[
+    "CL-REV186-HX-VILLAGE"]["stock"].duplicate(true)
+  if main_stock_before_birth!=econ.villages[
+      "CL-REV186-HX-VILLAGE"]["stock"] or test_tree_id.is_empty():
+    _fail(434,"REV208_SPAWN_TEST_INVENTORY_OR_MISSING_TREE_ID")
+    return
+  if not bool(trial_economy.call("add_citizen",
+      "CL-REV208-GATHERER-QA","CL-REV186-HX-VILLAGE","woodcutter",26)) or (
+      not bool(trial_economy.call("gather_to_actor",
+      "CL-REV208-GATHERER-QA",test_tree_id))):
+    _fail(435,"REV208_RANDOM_WILD_TREE_CANNOT_BE_PHYSICALLY_GATHERED")
+    return
+  var tree_remaining_after_gather: int=int(trial_economy.get(
+    "natural_nodes")[test_tree_id]["remaining"])
+  if tree_remaining_after_gather>=int(fresh_natural[
+      test_tree_id]["capacity"]) or not bool(trial.call("save_state")):
+    _fail(436,"REV208_NATURAL_TREE_HARVEST_NOT_AUTHORITY_SAVED")
+    return
+  var reload_economy: RefCounted=economic_script.new()
+  reload_economy.call("start",20261018)
+  if not bool(reload_economy.call("create_village",
+      "CL-REV186-HX-VILLAGE",{"homes":1,"food":24,"water":24})):
+    _fail(437,"REV208_WILD_SAVE_LOAD_SIM_START_FAILED")
+    return
+  var reload_ecology: RefCounted=ecological_script.new()
+  reload_ecology.call("setup",reload_economy,"CL-REV186-HX-VILLAGE",
+    Vector3(0,0,-3),Vector3(0,0,10))
+  var reloaded: RefCounted=birth_script.new()
+  reloaded.set("save_path",test_file)
+  if not bool(reloaded.call("initialize",reload_economy,reload_ecology,
+      room.get("terrain_world"),room.get("quality"),
+      room.get("housing_blueprints"),wild)) or (
+      int(reloaded.get("world_hours"))!=240) or (
+      reload_economy.get("natural_nodes").size()!=3) or (
+      int(reload_economy.get("natural_nodes")[test_tree_id][
+      "remaining"])!=tree_remaining_after_gather) or (
+      not reloaded.get("records").has(test_tree_id)):
+    _fail(438,"REV208_RNG_NATURAL_WOOD_MINE_PERSISTENCE_OR_CONSERVATION_FAILED_"+
+      str(reloaded.call("stats")))
+    return
+  DirAccess.remove_absolute(global_test_file)
+  if econ.villages["CL-REV186-HX-VILLAGE"]["stock"]!=main_stock_before_birth or (
+      int(production_natural.get("records").size())!=0):
+    _fail(439,"REV208_NATURAL_RESOURCE_QA_MUTATED_PLAYER_REAL_WORLD")
+    return
+  print("PASS_REV208_NATURAL_SPONTANEOUS_TREE_AND_STONE_WORLD_BIRTH_240H_UNIQUE_3D_TERRAIN_ECONOMY_IDS_HARVEST_SAVE_RELOAD_NO_FREE_STOCK")
+
   room.call("_focus_builder")
   if not bool(room.get("_follow_builder")) or float(room.get("_camera_distance")) > 14.0:
     _fail(42,"BUTTON_MUST_ACTUALLY_FOCUS_VISIBLE_NPC")
