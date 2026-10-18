@@ -34,6 +34,14 @@ func _plate_file(mode: String) -> String:
 		return PLATE_DIR + "plate03_night_lantern_street.png"
 	if mode == "bamboo":
 		return PLATE_DIR + "plate02_bamboo_dusk.png"
+	if mode == "m3d":
+		return PLATE_DIR + "plate12_market_3d.png"
+	if mode == "c3d":
+		return PLATE_DIR + "plate13_court_3d.png"
+	if mode == "i3d":
+		return PLATE_DIR + "plate14_inn_3d.png"
+	if mode == "b3d":
+		return PLATE_DIR + "plate15_bamboo_3d.png"
 	if mode == "market":
 		return PLATE_DIR + "plate08_market_street_day.png"
 	if mode == "court":
@@ -228,22 +236,72 @@ func _add_shadows() -> void:
 func _cast_for(mode: String) -> Array:
 	if mode == "market":
 		return [
-			{"npc": 0, "feet": Vector2(470, 520), "scale": 0.20},
-			{"npc": 5, "feet": Vector2(792, 556), "scale": 0.24},
-			{"npc": 3, "feet": Vector2(566, 616), "scale": 0.34},
-			{"npc": 4, "feet": Vector2(676, 676), "scale": 0.44},
+			{"npc": 0, "feet": Vector2(470, 500), "scale": 0.20},
+			{"npc": 5, "feet": Vector2(792, 528), "scale": 0.23},
+			{"npc": 3, "feet": Vector2(566, 580), "scale": 0.31},
+			{"npc": 4, "feet": Vector2(700, 618), "scale": 0.40},
+		]
+	if mode == "m3d":
+		return [
+			{"npc": 0, "feet": Vector2(470, 505), "scale": 0.20},
+			{"npc": 5, "feet": Vector2(800, 540), "scale": 0.24},
+			{"npc": 3, "feet": Vector2(560, 585), "scale": 0.31},
+			{"npc": 4, "feet": Vector2(700, 620), "scale": 0.40},
+		]
+	if mode == "c3d":
+		return [
+			{"npc": 1, "feet": Vector2(430, 560), "scale": 0.24},
+			{"npc": 0, "feet": Vector2(880, 575), "scale": 0.27},
+			{"npc": 4, "feet": Vector2(650, 625), "scale": 0.40},
+		]
+	if mode == "i3d":
+		return [
+			{"npc": 2, "feet": Vector2(330, 590), "scale": 0.30},
+			{"npc": 5, "feet": Vector2(940, 600), "scale": 0.32},
+			{"npc": 4, "feet": Vector2(640, 625), "scale": 0.42},
+		]
+	if mode == "b3d":
+		return [
+			{"npc": 0, "feet": Vector2(500, 540), "scale": 0.24},
+			{"npc": 3, "feet": Vector2(760, 570), "scale": 0.28},
+			{"npc": 4, "feet": Vector2(620, 625), "scale": 0.40},
+		]
+	if mode == "m3d":
+		return [
+			{"npc": 0, "feet": Vector2(470, 505), "scale": 0.20},
+			{"npc": 5, "feet": Vector2(800, 540), "scale": 0.24},
+			{"npc": 3, "feet": Vector2(560, 585), "scale": 0.31},
+			{"npc": 4, "feet": Vector2(700, 620), "scale": 0.40},
+		]
+	if mode == "c3d":
+		return [
+			{"npc": 1, "feet": Vector2(430, 560), "scale": 0.24},
+			{"npc": 0, "feet": Vector2(880, 575), "scale": 0.27},
+			{"npc": 4, "feet": Vector2(650, 625), "scale": 0.40},
+		]
+	if mode == "i3d":
+		return [
+			{"npc": 2, "feet": Vector2(330, 590), "scale": 0.30},
+			{"npc": 5, "feet": Vector2(940, 600), "scale": 0.32},
+			{"npc": 4, "feet": Vector2(640, 625), "scale": 0.42},
+		]
+	if mode == "b3d":
+		return [
+			{"npc": 0, "feet": Vector2(500, 540), "scale": 0.24},
+			{"npc": 3, "feet": Vector2(760, 570), "scale": 0.28},
+			{"npc": 4, "feet": Vector2(620, 625), "scale": 0.40},
 		]
 	if mode == "court":
 		return [
-			{"npc": 1, "feet": Vector2(404, 560), "scale": 0.22},
-			{"npc": 0, "feet": Vector2(884, 588), "scale": 0.26},
-			{"npc": 4, "feet": Vector2(640, 690), "scale": 0.46},
+			{"npc": 1, "feet": Vector2(410, 536), "scale": 0.22},
+			{"npc": 0, "feet": Vector2(884, 560), "scale": 0.25},
+			{"npc": 4, "feet": Vector2(656, 622), "scale": 0.40},
 		]
 	if mode == "inn":
 		return [
-			{"npc": 2, "feet": Vector2(300, 596), "scale": 0.28},
-			{"npc": 5, "feet": Vector2(980, 604), "scale": 0.30},
-			{"npc": 4, "feet": Vector2(606, 672), "scale": 0.46},
+			{"npc": 2, "feet": Vector2(300, 574), "scale": 0.27},
+			{"npc": 5, "feet": Vector2(980, 580), "scale": 0.29},
+			{"npc": 4, "feet": Vector2(640, 618), "scale": 0.40},
 		]
 	if mode == "alchemy":
 		return [

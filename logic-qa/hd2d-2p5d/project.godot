@@ -11,6 +11,6 @@ window/stretch/mode="canvas_items"
 
 [rendering]
 renderer/rendering_method="forward_plus"
-viewport/hdr_2d=true
+viewport/hdr_2d=false
 anti_aliasing/quality/msaa_2d=2
 textures/default_filters/use_nearest_mipmap_filter=false

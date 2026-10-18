@@ -15,8 +15,9 @@ func _ready() -> void:
 	add_child(world)
 	world.build(mode)
 
-	_add_env()
-	_add_grade(mode)
+	if not OS.has_environment("NOFX"):
+		_add_env()
+		_add_grade(mode)
 
 	var ui := Control.new()
 	ui.name = "Hud"
