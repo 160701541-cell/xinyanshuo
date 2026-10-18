@@ -101,7 +101,9 @@ def audit(path: Path) -> dict:
         raise ValueError("BLOCKED: incompatible or flagged Godot PCK")
     file_base = struct.unpack_from("<Q", raw, 0x18)[0]
     count = struct.unpack_from("<I", raw, 0x60)[0]
-    if not (0x68 <= file_base <= len(raw) and 7 <= count <= 140):
+    # rev208 让 PCK 同时携带地表 PBR、地被 GLB 与高精树，文件数会超过 140；
+    # 上限只防畸形包，真实完整性由后面的 REQUIRED/SHA256 校验负责。
+    if not (0x68 <= file_base <= len(raw) and 7 <= count <= 400):
         raise ValueError("BLOCKED: invalid PCK file table")
     offset = 0x64
     found: dict[str, bytes] = {}
