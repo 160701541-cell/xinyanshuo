@@ -157,9 +157,19 @@ func _run() -> void:
     return
   var first_id: String=actual_ids[0]
   sim.natural_nodes[first_id]["remaining"]-=1
-  if not bool(real.call("save_if_authoritative_amount_changed")):
-    _fail("HARVEST_DEPLETION_FAILED_TO_SAVE")
+  var before: int=int(real.get("records")[first_id]["remaining"])
+  real.set("save_path","user://__gpt6_no_parent__/bad.json")
+  if bool(real.call("save_if_authoritative_amount_changed")):
+    _fail("FAILED_WRITE_ACCEPTED")
     return
+  if int(real.get("records")[first_id]["remaining"])!=before:
+    _fail("FAILED_WRITE_MUTATED_BASELINE")
+    return
+  real.set("save_path",real_save)
+  if not bool(real.call("save_if_authoritative_amount_changed")):
+    _fail("HARVEST_RETRY_FAILED")
+    return
+  print("PASS_GPT6_REV208_HARVEST_FAILED_WRITE_RETRY")
   var refresh_sim:=MockEconomy.new()
   var refresh_eco:=MockEcology.new()
   refresh_eco.economy=refresh_sim
