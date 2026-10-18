@@ -8,7 +8,7 @@ on:
       - 'tools/asset_factory/rev208_convert_cc0_chinese_fbx_to_glb.py'
       - 'tools/asset_factory/rev208_verify_chinese_gltf_godot441.gd'
 permissions:
-  contents: read
+  contents: write
 jobs:
   convert-source-to-author-real-mesh:
     runs-on: ubuntu-latest
@@ -117,6 +117,79 @@ jobs:
           if grep -Eq 'SCRIPT ERROR:|Parse Error:|ERROR:|FAIL_REV208' qa-architecture/proof/godot441_import.log; then
             cat qa-architecture/proof/godot441_import.log; exit 1
           fi
+      - name: Pin 3 source-author Chinese GLB models into same Draft PR repository as QUARANTINED art only
+        if: success()
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Protect the working original game: do not claim mobile approval.
+          # Never overwrite a newer commit with stale binary art artifacts.
+          remote_sha="$(git ls-remote origin refs/heads/feat/rev208-green-kenney-saplings-vegetation | cut -f1)"
+          if [ "$remote_sha" != "$GITHUB_SHA" ]; then
+            echo "REV208_STALE_ARCHITECTURE_GLBS_IN_RUN_ARTIFACT_ONLY_NO_CROSS_COMMIT"
+            exit 0
+          fi
+          python3 - <<'PY'
+          import hashlib,json,shutil
+          from pathlib import Path
+          dst=Path('game-source/apk176-ota177-candidate/assets/hq-rev208/architecture-chinese-cc0')
+          dst.mkdir(parents=True,exist_ok=True)
+          specs={
+            'chinese_four_corner_pavilion':{
+              'original_download':'https://store.godotengine.org/asset/vvaytoyek/chinese-four-corner-pavilion-free/download/1144/',
+              'original_zip_sha256':'008fb5c4508ce57c4203e5763fd01a177ded16ca94fd5de34ea26c422b483efa',
+              'author_page':'https://store.godotengine.org/asset/vvaytoyek/chinese-four-corner-pavilion-free/',
+              'shape':'7-part traditional four-sided Chinese tiled-roof pavilion with structural dougong and columns'},
+            'chinese_moongate_medium':{
+              'original_download':'https://store.godotengine.org/asset/vvaytoyek/chinese-classical-garden-wall/download/1167/',
+              'original_zip_sha256':'49478a1d43f1e4b11e6dc3d1e977011cdbba5a7b77ee56890f586166697da38e',
+              'author_page':'https://store.godotengine.org/asset/vvaytoyek/chinese-classical-garden-wall/',
+              'shape':'isolated single real author circular moon-door wall module'},
+            'chinese_garden_wall_medium_section':{
+              'original_download':'https://store.godotengine.org/asset/vvaytoyek/chinese-classical-garden-wall/download/1167/',
+              'original_zip_sha256':'49478a1d43f1e4b11e6dc3d1e977011cdbba5a7b77ee56890f586166697da38e',
+              'author_page':'https://store.godotengine.org/asset/vvaytoyek/chinese-classical-garden-wall/',
+              'shape':'single genuine Chinese garden wall segment UV authored, not full 78-mesh catalog'}
+          }
+          report={'schema':208,'license':'CC0-1.0','copyright_holder':'VVaytoyek',
+            'source_page_verified_run':39102085971,
+            'native_godot_441_verified':True,
+            'release_policy':'QA_ONLY_NOT_SIGNED_NOT_PUBLISHED',
+            'P0_art_approved':False,'Android_real_device_30min':'NOT_TESTED',
+            'original_world_main_scene_qa':'NOT_TESTED',
+            'source_uv_layout_pngs_are_not_pbr_textures':True,
+            'pbr_source':'CC0 Quaternius game material package ONLY IF APPLIED TO INGAME UV SOURCE',
+            'assets':{}}
+          for name,meta in specs.items():
+            model=Path('qa-architecture/actual-glb')/(name+'.glb')
+            proof=Path('qa-architecture/proof')/(name+'.json')
+            assert model.is_file() and proof.is_file(),name
+            row=json.loads(proof.read_text())
+            content=model.read_bytes()
+            assert content[:4]==b'glTF' and hashlib.sha256(content).hexdigest()==row['converted_glb_sha256']
+            assert row['source_polygon_triangles']<= (125000 if name.endswith('pavilion') else 100000)
+            assert row['source_uv_mesh_objects']>=1 and row['source_actual_mesh_objects']>=1
+            shutil.copyfile(model,dst/model.name)
+            report['assets'][name]={**meta,**row,'source_license':'CC0-1.0',
+              'geometry_status':'NATIVE_GODOT441_GLTF_SOURCE_QA_PASS',
+              'uv_pbr_game_approval':False}
+          (dst/'manifest.json').write_text(json.dumps(report,indent=2,ensure_ascii=False)+'\n')
+          print('PASS_REV208_CHINESE_CC0_3_AUTHENTIC_SOURCE_GLBS_SHA_TRI_MATERIALS_REPOSITORY_QUARANTINE')
+          PY
+          git config user.name 'canglan-qa-architecture[bot]'
+          git config user.email 'canglan-qa-architecture[bot]@users.noreply.github.com'
+          git add game-source/apk176-ota177-candidate/assets/hq-rev208/architecture-chinese-cc0/
+          if git diff --cached --quiet; then
+            echo "REV208_PINNED_CHINESE_GLB_QUARANTINE_ALREADY_IDENTICAL"
+            exit 0
+          fi
+          git commit -m "art(rev208 HQ): add 3 genuine CC0 Chinese pavilion moon gate wall GLBs for original Main visual QA only"
+          remote_after="$(git ls-remote origin refs/heads/feat/rev208-green-kenney-saplings-vegetation | cut -f1)"
+          if [ "$remote_after" != "$GITHUB_SHA" ]; then
+            echo "REV208_GIT_HEAD_CHANGED_NO_UNVERIFIED_BINARY_PUSH"
+            exit 0
+          fi
+          git push origin HEAD:refs/heads/feat/rev208-green-kenney-saplings-vegetation
       - name: Preserve genuine converted source GLBs and provenance for P0 ART decision, never sign
         if: always()
         uses: actions/upload-artifact@v4
