@@ -1195,9 +1195,80 @@ func _spawn_spirit_resource_nodes() -> void:
     # zero. Picking herbs never makes a species disappear from the land.
     model.visible=int(data["remaining"])>0 or kind!="spirit_stone"
     spirit_resource_visuals[id]={"model":model,"caption":tag,
-      "kind":kind,"display":String(recipes[kind]["display"])}
+      "kind":kind,"display":String(recipes[kind]["display"]),
+      "rev208_hq_full_bloom_author_scale":model.scale,
+      "rev208_hq_growth_stage":"bloom",
+      "rev208_hq_last_growth_factor":1.0,
+      "rev208_hq_last_real_3d_growth_hour":-1}
   _add_event("已生成%d株实体野生灵药/矿脉；全部由实际CC0花草岩石绘制" % [
     spirit_resource_visuals.size()])
+
+# HQ-023: independently-authored source CC0 wood/fire/water herb stems now
+# grow through real 3D life states on WORLD HOURS. This changes only
+# source-mesh transforms; the authoritative inventory, root species, saved
+# IDs, harvest stamina and renewable stock ledger are never rewritten here.
+# Never swap real authored PBR geometry for a tinted billboard or a tree.
+func _rev208_medicinal_growth_state(row: Dictionary) -> String:
+  var current: int=int(row.get("remaining",0))
+  var full: int=int(row.get("max",1))
+  if current<=0:
+    return "dormant"
+  if current==1 and full>2:
+    return "sprout"
+  if current<full:
+    return "budding"
+  return "bloom"
+
+func _sync_rev208_medicinal_growth_visual(id: String,visual: Dictionary,
+    row: Dictionary) -> void:
+  var herb: Node3D=visual["model"]
+  if not is_instance_valid(herb) or not bool(herb.get_meta(
+      "rev208_authored_independent_herb_stem",false)):
+    return
+  var kind: String=String(visual["kind"])
+  if not hq_medicinal_source_templates.has(kind):
+    asset_errors.append("REV208_HQ023_MISSING_SOURCE_OF_LIVING_HERB_"+id)
+    return
+  var state: String=_rev208_medicinal_growth_state(row)
+  var renew: int=maxi(1,int(SpiritResources.RESOURCE_DEFS[kind]["renew_hours"]))
+  var progress: float=clampf(float(row.get("hours_since_growth",0))/
+    float(renew),0.0,1.0)
+  var stage_factor: float=0.48 if state=="dormant" else (
+    0.67 if state=="sprout" else (
+      lerpf(0.80,0.92,progress) if state=="budding" else 1.0))
+  if absf(stage_factor-float(visual.get(
+      "rev208_hq_last_growth_factor",1.0)))<0.0001 and (
+      String(visual.get("rev208_hq_growth_stage",""))==state):
+    return
+  var original_scale: Vector3=visual["rev208_hq_full_bloom_author_scale"]
+  herb.scale=original_scale*stage_factor
+  var x: float=float(row["x"])
+  var z: float=float(row["z"])
+  # Root at measured natural soil after scaling true GLB mesh,
+  # including animated terraforming, not synthetic raised/hovering stems.
+  var floor_y: float=float(terrain_world.call("height_at",x,z))
+  var aabb_y: Vector2=_visible_bounds(herb)
+  herb.position=Vector3(x,herb.position.y+floor_y-aabb_y.x,z)
+  herb.set_meta("rev208_hq_true_3d_phenology_stage",state)
+  herb.set_meta("rev208_hq_true_3d_phenology_factor",stage_factor)
+  herb.set_meta("rev208_hq_phenology_author_glb_preserved",true)
+  herb.set_meta("world_entity_id",id)
+  visual["rev208_hq_growth_stage"]=state
+  visual["rev208_hq_last_growth_factor"]=stage_factor
+  visual["rev208_hq_last_real_3d_growth_hour"]=int(
+    spirit_resources.get("world_hours"))
+
+func _rev208_medicinal_stage_counts() -> Dictionary:
+  var result: Dictionary={"dormant":0,"sprout":0,"budding":0,"bloom":0,
+    "real_author_glb_stems":0,"extra_item_stock_created":0}
+  for id in spirit_resource_visuals:
+    var visual: Dictionary=spirit_resource_visuals[id]
+    if hq_medicinal_source_templates.has(String(visual["kind"])):
+      result["real_author_glb_stems"]+=1
+      var stage: String=String(visual.get("rev208_hq_growth_stage",""))
+      if result.has(stage):
+        result[stage]+=1
+  return result
 
 func _sync_spirit_resource_visuals(hero: Node3D=null) -> void:
   if spirit_resources==null:
@@ -1209,6 +1280,7 @@ func _sync_spirit_resource_visuals(hero: Node3D=null) -> void:
     if not is_instance_valid(entity):
       continue
     var remaining: int=int(ledger[id]["remaining"])
+    _sync_rev208_medicinal_growth_visual(String(id),visual,ledger[id])
     entity.visible=remaining>0 or String(visual["kind"])!="spirit_stone"
     var tag: Label3D=visual["caption"]
     if entity.visible and hero!=null:
@@ -2127,6 +2199,7 @@ func stats() -> Dictionary:
     "rev208_hq021_original_vendor_gpu_forest_floor":(
       forest_floor_pool.call("stats") if forest_floor_pool!=null else {}),
     "rev208_hq_independent_spirit_herb_source_count":hq_medicinal_source_templates.size(),
+    "rev208_hq_real_glb_medicinal_phenology":_rev208_medicinal_stage_counts(),
     "rev208_hq_botanical_tree_trunk_colliders":hq_botanical_colliders.size(),
     "rev208_hq_botanical_valid_ground_sites":hq_botanical_terrain_sites.size(),
     "rev208_hq_botanical_placement_failures":hq_botanical_placement_failures.duplicate(),
