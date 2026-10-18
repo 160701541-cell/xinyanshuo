@@ -217,7 +217,7 @@ func _capture() -> void:
   # not an image-generation, a Blender render or a marketing mock-up.
   var floor_pool: Node3D=room.get("forest_floor_pool")
   if floor_pool==null or not floor_pool.get("initialized"):
-    _fail("REV208_REAL_HABITAT_CELLS_GPU_3D_PREVIEW_ABSENT")
+    _fail("REV208_REAL_HABITAT_CELLS_SOURCE_AUTHORED_GLTF_PREVIEW_ABSENT")
     return
   var floor_locations: Dictionary=floor_pool.get("position_by_id")
   var native_fern_site: Vector3=Vector3.ZERO
@@ -246,10 +246,10 @@ func _capture() -> void:
   for hq_floor_frame in range(5):
     await process_frame
   await RenderingServer.frame_post_draw
-  if not _save("real_godot_rev208_32m_vendor_fern_grass_gpu_floor_main.png"):
+  if not _save("real_godot_rev208_32m_vendor_fern_grass_actual_3d_floor_main.png"):
     _fail("REV208_MISSING_ACTUAL_MAIN_VENDOR_GREEN_FOREST_FLOOR_FRAME")
     return
-  print("PASS_REV208_REAL_GODOT441_ORIGINAL_APK176_HQ021_FERN_GRASS_GPU_ECOLOGY_FRAME_PENDING_ART_QA")
+  print("PASS_REV208_REAL_GODOT441_ORIGINAL_APK176_HQ021_FERN_GRASS_PHYSICAL_3D_ECOLOGY_FRAME_PENDING_ART_QA")
   opening_actor.position=opening_actor_pos
   room.get("sim").hour=qa_old_hour
   room.call("_sync_living_daylight")
