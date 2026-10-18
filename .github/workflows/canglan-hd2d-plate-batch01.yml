@@ -1,5 +1,9 @@
 name: Canglan HD2D artgen batch01 (2.5D plates + props)
 on:
+  push:
+    branches: [agent/dsh-p0-xianxia-ecology]
+    paths:
+      - '.github/workflows/canglan-hd2d-plate-batch01.yml'
   workflow_dispatch:
 permissions:
   contents: read
