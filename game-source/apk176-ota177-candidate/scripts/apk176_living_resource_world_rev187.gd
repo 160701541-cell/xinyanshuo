@@ -255,6 +255,11 @@ func _ready() -> void:
   _hide_original_debug_labels()
   quality = ManualQuality.new()
   quality.call("initialize",self)
+  # Born world nodes can appear naturally at any world-hour interval.
+  # Check REAL original-game terrain/building reservations before making
+  # a fresh unique CC0 herb/ore visible; no tap, NPC or stored seed needed.
+  spirit_resources.call("set_habitat_check",
+    Callable(self,"_rev208_natural_spawn_habitat"))
   # Its real terrain _natural_plantable() mask becomes available ONLY once
   # the physical quality/vegetation controller is initialized. The earlier
   # call ran before quality existed and rejected all genuine bush sources.
@@ -1120,6 +1125,31 @@ func _sync_rev208_botanical_visibility(player_at: Vector3) -> void:
       var trunk: StaticBody3D=hq_botanical_colliders[id]
       trunk.collision_layer=2 if planted else 0
 
+func _rev208_natural_spawn_habitat(kind: String,x: float,z: float) -> bool:
+  if terrain_world==null or quality==null or (
+      absf(x)>42.0 or absf(z)>42.0):
+    return false
+  if bool(terrain_world.call("_is_road",x,z)) or bool(
+      terrain_world.call("is_water",x,z)):
+    return false
+  var cell: Vector2i=terrain_world.call("_indices",x,z)
+  if int(terrain_world.call("_load_cell",cell.x,cell.y)["cuts"])>0:
+    return false
+  for site in housing_blueprints.values():
+    var location: Vector3=site["at"]
+    if Vector2(x-location.x,z-location.z).length()<7.7:
+      return false
+  for existing in spirit_resource_visuals.values():
+    var plant: Node3D=existing["model"]
+    if is_instance_valid(plant) and Vector2(
+        x-plant.position.x,z-plant.position.z).length()<3.5:
+      return false
+  if kind=="spirit_stone":
+    # Ore is naturally generated along outer hill bands, not in the
+    # village plaza or a timber/log pile, and no inventory is minted.
+    return x>=16.0
+  return bool(quality.call("_natural_plantable",x,z))
+
 func _spawn_spirit_resource_nodes() -> void:
   if spirit_resources==null or not bool(spirit_resources.get("_loaded")):
     return
@@ -1134,9 +1164,9 @@ func _spawn_spirit_resource_nodes() -> void:
     if not spirit_resource_sources.has(prefab):
       asset_errors.append("REV206_SPIRIT_RESOURCE_NO_CC0_"+prefab)
       continue
-    # True botanical real authored 3D flowers replace the existing three
-    # repeated source stems. Original herb/ore identity, inventory,
-    # renewal times and saved 13 finite resource nodes remain unchanged.
+    # Real authored CC0 GLB source for both original 13 physical nodes and
+    # NEW naturally generated world nodes. Unique saved IDs and world units
+    # are born into the ecosystem; no backpack or warehouse is auto-credited.
     var high_detail: bool=hq_medicinal_source_templates.has(kind)
     var original: Node3D=(
       hq_medicinal_source_templates[kind] if high_detail
