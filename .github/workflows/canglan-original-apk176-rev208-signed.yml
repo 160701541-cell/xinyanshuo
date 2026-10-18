@@ -88,12 +88,45 @@ jobs:
           test -s qa-stage/ota177/canglan_rev187/hq_ecology_terrain/forest_floor/forest_floor_albedo_1k.jpg
           test -s qa-stage/ota177/canglan_rev187/hq_ecology_terrain/ecology-intake-provenance.json
           for slug in fern_clump shrub_low moss_patch rock_moss_set; do
-            test -s "qa-stage/ota177/canglan_rev187/hq_ecology_groundcover/$slug/$slug_1k.gltf" \
+            test -s "qa-stage/ota177/canglan_rev187/hq_ecology_groundcover/${slug}/${slug}_1k.gltf" \
               || { echo "BLOCKED: missing staged groundcover $slug"; exit 1; }
-            test -s "qa-stage/ota177/canglan_rev187/hq_ecology_groundcover/$slug/$slug.bin" \
+            test -s "qa-stage/ota177/canglan_rev187/hq_ecology_groundcover/${slug}/${slug}.bin" \
               || { echo "BLOCKED: missing staged groundcover bin $slug"; exit 1; }
           done
-          python3 tools/asset_factory/rev208_ecology_polyhaven_intake.mjs --verify
+          # rev208 候选分支带来的真实高乔木/松柏/灵草被与生态脚本，
+          # 原 rev207 正式链没有这些 staging，必须一并装进原版 PCK 树，
+          # 否则 build_apk176_quality_rev187.gd 会 BLOCKED 而不是静默少资源。
+          mkdir -p qa-stage/ota177/canglan_rev187/hq_rev208
+          cp game-source/apk176-ota177-candidate/assets/hq-rev208/vegetation/trees/mature_*_hq_lod0.glb \
+            qa-stage/ota177/canglan_rev187/hq_rev208/
+          cp game-source/apk176-ota177-candidate/assets/hq-rev208/vegetation/botanical-optimized/hq_*_cc0_drawmerged.glb \
+            qa-stage/ota177/canglan_rev187/hq_rev208/
+          cp game-source/apk176-ota177-candidate/scripts/apk176_hq_forest_floor_pool_rev208.gd \
+            qa-stage/ota177/canglan_rev187/hq_forest_floor_pool_rev208.gd
+          cp game-source/apk176-ota177-candidate/scripts/apk176_wild_tree_stone_birth_rev208.gd \
+            qa-stage/ota177/canglan_rev187/wild_tree_stone_birth_rev208.gd
+          python3 - <<'PY'
+          from pathlib import Path
+          import json,hashlib
+          root=Path('game-source/apk176-ota177-candidate/assets/hq-rev208/vegetation')
+          dest=Path('qa-stage/ota177/canglan_rev187/hq_rev208')
+          trees=json.loads((root/'trees/manifest.json').read_text(encoding='utf-8'))
+          assert set(trees['items'])=={'oak','maple','linden'}
+          for kind,entry in trees['items'].items():
+            data=(root/'trees'/entry['file']).read_bytes()
+            staged=(dest/entry['file']).read_bytes()
+            assert data==staged and hashlib.sha256(data).hexdigest()==entry['converted_sha256']
+          rendered=json.loads((root/'botanical-optimized/manifest.json').read_text(encoding='utf-8'))
+          assert len(rendered['items'])==11
+          for kind,entry in rendered['items'].items():
+            merged=(root/'botanical-optimized'/entry['file']).read_bytes()
+            staged=(dest/entry['file']).read_bytes()
+            assert merged==staged and hashlib.sha256(merged).hexdigest()==entry['sha256']
+          print('PASS_REV208_THREE_MATURE_TREES_AND_11_BOTANICAL_SHA_STAGED_INTO_ORIGINAL_PCK')
+          PY
+          test -s qa-stage/ota177/canglan_rev187/hq_forest_floor_pool_rev208.gd
+          test -s qa-stage/ota177/canglan_rev187/wild_tree_stone_birth_rev208.gd
+          node tools/asset_factory/rev208_ecology_polyhaven_intake.mjs --verify
           echo 'PASS_REV208_HQ_ECOLOGY_REAL_CC0_PBR_STAGED_WITH_SHA_INTO_ORIGINAL_PCK_TREE'
       - name: Recover exact-matching Terrain3D Linux QA plugin from trusted upstream releases
         shell: bash
@@ -178,24 +211,24 @@ jobs:
           cp game-source/apk176-ota177-candidate/scripts/apk176_kenney_visual_palette_rev187.gd qa-stage/ota177/canglan_rev187/visual_palette.gd
           cp game-source/apk176-ota177-candidate/scripts/apk176_kenney_multimesh_rev187.gd qa-stage/ota177/canglan_rev187/kenney_multimesh.gd
           cp game-source/apk176-ota177-candidate/scripts/apk176_strata_terrain_rev187.gd qa-stage/ota177/canglan_rev187/strata_terrain.gd
-          cp game-source/apk176-ota177-candidate/scripts/apk176_vivid_material_rev208.gd qa-stage/ota177/canglan_rev187/vivid_material.gd
-          mkdir -p qa-stage/ota177/canglan_rev187/materials_rev208
-          cp game-source/apk176-ota177-candidate/materials/rev208/*.png qa-stage/ota177/canglan_rev187/materials_rev208/
-          cp game-source/apk176-ota177-candidate/materials/rev208/manifest.json qa-stage/ota177/canglan_rev187/materials_rev208/
+          cp game-source/apk176-ota177-candidate/scripts/apk176_vivid_material_rev207.gd qa-stage/ota177/canglan_rev187/vivid_material.gd
+          mkdir -p qa-stage/ota177/canglan_rev187/materials_rev207
+          cp game-source/apk176-ota177-candidate/materials/rev207/*.png qa-stage/ota177/canglan_rev187/materials_rev207/
+          cp game-source/apk176-ota177-candidate/materials/rev207/manifest.json qa-stage/ota177/canglan_rev187/materials_rev207/
           python3 - <<'PY'
           import hashlib,json
           from pathlib import Path
-          m=json.loads(Path('qa-stage/ota177/canglan_rev187/materials_rev208/manifest.json').read_text())
+          m=json.loads(Path('qa-stage/ota177/canglan_rev187/materials_rev207/manifest.json').read_text())
           assert m['schema']==207 and m['count']==9 and m['size']==512
           for item in m['maps']:
-            raw=(Path('qa-stage/ota177/canglan_rev187/materials_rev208')/item['file']).read_bytes()
+            raw=(Path('qa-stage/ota177/canglan_rev187/materials_rev207')/item['file']).read_bytes()
             assert hashlib.sha256(raw).hexdigest()==item['output_sha256']
           print('PASS_REV208_REAL_QUATERNIUS_NINE_FINE_PBR_MAPS_SOURCE_SHA256_IN_ORIGINAL_APK_STAGE')
           PY
           cp game-source/apk176-ota177-candidate/scripts/apk176_player_controller_rev187.gd qa-stage/ota177/canglan_rev187/player_controller.gd
           cp game-source/apk176-ota177-candidate/scripts/apk176_backpack_rev205.gd qa-stage/ota177/canglan_rev187/backpack.gd
           cp game-source/apk176-ota177-candidate/scripts/apk176_spirit_resources_rev206.gd qa-stage/ota177/canglan_rev187/spirit_resources.gd
-          cp game-source/apk176-ota177-candidate/scripts/apk176_living_regions_rev208.gd qa-stage/ota177/canglan_rev187/living_regions.gd
+          cp game-source/apk176-ota177-candidate/scripts/apk176_living_regions_rev207.gd qa-stage/ota177/canglan_rev187/living_regions.gd
           cp game-source/apk176-ota177-candidate/scripts/apk176_paid_housing_rev208.gd qa-stage/ota177/canglan_rev187/paid_housing.gd
           python3 - <<'PY'
           from pathlib import Path
@@ -304,16 +337,16 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          cp logic-qa/apk176-export-fixture/verify_rev208_living_regions.gd qa-stage/ota177/verify_rev208_living_regions.gd
+          cp logic-qa/apk176-export-fixture/verify_rev207_living_regions.gd qa-stage/ota177/verify_rev207_living_regions.gd
           timeout 110s /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless \
-            --path qa-stage/ota177 --script res://verify_rev208_living_regions.gd \
+            --path qa-stage/ota177 --script res://verify_rev207_living_regions.gd \
             > qa-results/rev208-living-world-ledger.log 2>&1 || {
               tail -120 qa-results/rev208-living-world-ledger.log; exit 1;
             }
-          grep -Fq 'PASS_REV208_REAL_WORLD_INITIAL_50000_KM2_500_REGIONS_5000_MORTALS_ONLY_125_SPIRIT_ROOTS_OTHER_CAN_BODY_REFINE' qa-results/rev208-living-world-ledger.log
-          grep -Fq 'PASS_REV208_REAL_24_MONTH_DEMOGRAPHIC_BIRTHS_DEATHS_SECT_PROFESSIONS_ANNUAL_BODY_CULTIVATION_ATOMIC_SAVE' qa-results/rev208-living-world-ledger.log
-          grep -Fq 'PASS_REV208_REAL_ORE_GUARD_YAO_BEAST_CULTIVATION_BREEDING_MORTALITY_PHYSICAL_DEATH_DEBIT' qa-results/rev208-living-world-ledger.log
-          grep -Fq 'PASS_REV208_REAL_EVERGREEN_SEEDBANK_FORESTS_AND_WILD_HERBS_NO_BARREN_UNBUILT_REGIONS' qa-results/rev208-living-world-ledger.log
+          grep -Fq 'PASS_REV207_REAL_WORLD_INITIAL_50000_KM2_500_REGIONS_5000_MORTALS_ONLY_125_SPIRIT_ROOTS_OTHER_CAN_BODY_REFINE' qa-results/rev208-living-world-ledger.log
+          grep -Fq 'PASS_REV207_REAL_24_MONTH_DEMOGRAPHIC_BIRTHS_DEATHS_SECT_PROFESSIONS_ANNUAL_BODY_CULTIVATION_ATOMIC_SAVE' qa-results/rev208-living-world-ledger.log
+          grep -Fq 'PASS_REV207_REAL_ORE_GUARD_YAO_BEAST_CULTIVATION_BREEDING_MORTALITY_PHYSICAL_DEATH_DEBIT' qa-results/rev208-living-world-ledger.log
+          grep -Fq 'PASS_REV207_REAL_EVERGREEN_SEEDBANK_FORESTS_AND_WILD_HERBS_NO_BARREN_UNBUILT_REGIONS' qa-results/rev208-living-world-ledger.log
       - name: Real Godot engine deterministic 32 spiritual roots, 640 mortal identities and virtual city of 10k to 250k
         shell: bash
         run: |
@@ -339,11 +372,11 @@ jobs:
           grep -Fq 'PASS_REV206_ORIGINAL_PLAYER_TREE_STONE_PHYSICAL_TRANSPORT_WITH_LICENSED_FINISHED_CC0_HOUSES_NO_BROKEN_CONSTRUCTION' qa-results/rev187-original-main-3d.log
           grep -Fq 'PASS_REV208_NO_FREE_HOUSES_200WOOD150STONE_FIVE_RESIDENTS_AND_FOUR_TRUE_LARGE_YAO_BEASTS' qa-results/rev187-original-main-3d.log
           grep -Fq 'PASS_REV206_REAL_QUATERNIUS_CC0_SOURCE_HOUSES_REAL_YAO_BEASTS_PERSISTENT_PAID_WORKER_BUILDING' qa-results/rev187-original-main-3d.log
-          grep -Fq 'PASS_REV206_ALL_52_TREES_20_STONES_REAL_DRAWABLE_BATCH_SLOTS_GROW_WITHOUT_LOSS' qa-results/rev187-original-main-3d.log
-          grep -Fq 'PASS_REV208_TRUE_MAIN_50000KM2_5000_ROOT_RATIO_BODY_CULTIVATION_5_SECTS_4_REAL_ORE_BEAST_GUARDS' qa-results/rev187-original-main-3d.log
-          grep -Fq 'PASS_REV208_TRUE_LICENSED_QUATERNIUS_SHRUB_UNDERSTORY_NONBUILDING_BOUNDED_REAL_SOURCE_GLTF_GEOMETRY' qa-results/rev187-original-main-3d.log
-          grep -Fq 'PASS_REV208_ACTUAL_12_LICENSED_3D_CULTIVATORS_HAVE_NAMED_SECTS_14_DISCIPLINES_AND_ROOTLESS_WORKER_BODY_PATH' qa-results/rev187-original-main-3d.log
-          grep -Fq 'PASS_REV208_MOBILE_UNBLEACHED_SATURATED_PBR_NORMAL_MAPS_WORLDSPACE_64PIX_PER_METRE' qa-results/rev187-original-main-3d.log
+          grep -Fq 'PASS_REV208_ALL_52_REAL_ORIGINAL_TREE_IDS_NATURALLY_RENEW_AFTER_CUT_WITHOUT_FREE_INVENTORY' qa-results/rev187-original-main-3d.log
+          grep -Fq 'PASS_REV207_TRUE_MAIN_50000KM2_5000_ROOT_RATIO_BODY_CULTIVATION_5_SECTS_4_REAL_ORE_BEAST_GUARDS' qa-results/rev187-original-main-3d.log
+          grep -Fq 'PASS_REV208_TRUE_LICENSED_KENNEY_GREEN_SAPLING_NONBUILDING_BOUNDED_REAL_SOURCE_GLTF_GEOMETRY' qa-results/rev187-original-main-3d.log
+          grep -Fq 'PASS_REV207_ACTUAL_12_LICENSED_3D_CULTIVATORS_HAVE_NAMED_SECTS_14_DISCIPLINES_AND_ROOTLESS_WORKER_BODY_PATH' qa-results/rev187-original-main-3d.log
+          grep -Fq 'PASS_REV207_MOBILE_UNBLEACHED_SATURATED_PBR_NORMAL_MAPS_WORLDSPACE_64PIX_PER_METRE' qa-results/rev187-original-main-3d.log
           grep -Fq 'PASS_REV206_REAL_MAIN_HAS_PERSISTENT_LICENCED_MEDICINAL_PLANTS_ORE_AND_TOUCH_MINING' qa-results/rev187-original-main-3d.log
           grep -Fq 'PASS_REV188_REAL_HEALTH_STAMINA_GAME_HUD_BAG_MENU_AND_OPT_IN_DEV_TOOLS' qa-results/rev187-original-main-3d.log
           grep -Fq 'PASS_REV189_SYNTHETIC_GODOT_JOYPAD_BUTTON_MENU_LOOK_DEADZONE_HOTPLUG_AND_TOUCH_FALLBACK_NOT_ANDROID_HARDWARE' qa-results/rev187-original-main-3d.log
@@ -418,12 +451,12 @@ jobs:
           grep -Fq 'PASS_REV204_REAL_GODOT_RENDERED_MANA_PAID_SPIRIT_BOLT_IN_FLIGHT' qa-results/rev187-real-worksite/render.log
           grep -Fq 'PASS_REV204_REAL_GODOT_MIDFLIGHT_AND_IMPACT_FINITE_MANA_REAL_HP_DAMAGE_FRAMES' qa-results/rev187-real-worksite/render.log
           grep -Fq 'PASS_REV205_GENUINE_GODOT_1280X720_LUCIDE_UI_TARGET_LOCK_AND_FINITE_BACKPACK_FRAMES' qa-results/rev187-real-worksite/render.log
-          grep -Fq 'PASS_REV208_ORIGINAL_APK176_GODOT_REAL_COLOR_512PBR_64TEXELS_IMAGES' qa-results/rev187-real-worksite/render.log
+          grep -Fq 'PASS_REV207_ORIGINAL_APK176_GODOT_REAL_COLOR_512PBR_64TEXELS_IMAGES' qa-results/rev187-real-worksite/render.log
           grep -Fq 'PASS_REV206_GODOT_REAL_3D_WILD_MEDICINAL_HERB_AND_LUMINOUS_ORE_VIEW' qa-results/rev187-real-worksite/render.log
           test -s qa-results/rev187-real-worksite/real_apk176_rev206_spirit_herbs_original_quaternius.png
           test -s qa-results/rev187-real-worksite/real_apk176_rev206_luminous_spirit_ore_true_3d.png
-          test -s qa-results/rev187-real-worksite/real_apk176_rev208_vivid_cc0_texture_forest_wide.png
-          test -s qa-results/rev187-real-worksite/real_apk176_rev208_dense_tiny_pixel_cc0_pbr_house_close.png
+          test -s qa-results/rev187-real-worksite/real_apk176_rev207_vivid_cc0_texture_forest_wide.png
+          test -s qa-results/rev187-real-worksite/real_apk176_rev207_dense_tiny_pixel_cc0_pbr_house_close.png
           test -s qa-results/rev187-real-worksite/real_apk176_rev205_genuine_open_source_hud_target_lock.png
           test -s qa-results/rev187-real-worksite/real_apk176_rev205_real_backpack_lucide_equipment.png
           test -s qa-results/rev187-real-worksite/real_apk176_rev204_qi_bolt_real_impact_damage.png
@@ -520,7 +553,7 @@ jobs:
           for filename,output in [
               ('real_apk176_rev206_luminous_spirit_ore_true_3d.png','canglan-rev208-ore-guardian-biome-godot-linux.png'),
               ('real_apk176_rev206_spirit_herbs_original_quaternius.png','canglan-rev208-living-herbs-godot-linux.png'),
-              ('real_apk176_rev208_vivid_cc0_texture_forest_wide.png','canglan-rev208-green-forest-godot-linux.png'),
+              ('real_apk176_rev207_vivid_cc0_texture_forest_wide.png','canglan-rev208-green-forest-godot-linux.png'),
               ('real_apk176_rev205_real_backpack_lucide_equipment.png','canglan-rev208-backpack-godot-linux.png')]:
               src=source/filename
               raw=src.read_bytes()
