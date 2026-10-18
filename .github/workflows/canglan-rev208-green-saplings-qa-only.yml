@@ -29,6 +29,7 @@ on:
       - 'game-source/apk176-ota177-candidate/scripts/apk176_living_resource_world_rev187.gd'
       - 'game-source/apk176-ota177-candidate/scripts/apk176_spirit_resources_rev206.gd'
       - 'game-source/apk176-ota177-candidate/scripts/apk176_hq_forest_floor_pool_rev208.gd'
+      - 'game-source/apk176-ota177-candidate/scripts/apk176_wild_tree_stone_birth_rev208.gd'
       - 'game-source/apk176-ota177-candidate/scripts/apk176_vivid_material_rev207.gd'
       - 'game-source/apk176-ota177-candidate/scripts/apk176_kenney_visual_palette_rev187.gd'
       - 'game-source/apk176-ota177-candidate/scripts/apk176_quality_profiles_rev187.gd'
@@ -192,6 +193,7 @@ jobs:
           cp game-source/apk176-ota177-candidate/scripts/apk176_kenney_visual_palette_rev187.gd qa-stage/ota177/canglan_rev187/visual_palette.gd
           cp game-source/apk176-ota177-candidate/scripts/apk176_kenney_multimesh_rev187.gd qa-stage/ota177/canglan_rev187/kenney_multimesh.gd
           cp game-source/apk176-ota177-candidate/scripts/apk176_hq_forest_floor_pool_rev208.gd qa-stage/ota177/canglan_rev187/hq_forest_floor_pool_rev208.gd
+          cp game-source/apk176-ota177-candidate/scripts/apk176_wild_tree_stone_birth_rev208.gd qa-stage/ota177/canglan_rev187/wild_tree_stone_birth_rev208.gd
           cp game-source/apk176-ota177-candidate/scripts/apk176_strata_terrain_rev187.gd qa-stage/ota177/canglan_rev187/strata_terrain.gd
           cp game-source/apk176-ota177-candidate/scripts/apk176_vivid_material_rev207.gd qa-stage/ota177/canglan_rev187/vivid_material.gd
           mkdir -p qa-stage/ota177/canglan_rev187/materials_rev207
@@ -357,7 +359,7 @@ jobs:
         run: |
           set -euo pipefail
           printf 'config_version=5\n' > qa-stage/ota177/project.godot
-          for script in strata_terrain vivid_material quality_profiles player_controller backpack spirit_resources paid_housing cultivation_world root_taxonomy city_population living_regions visual_palette kenney_multimesh hq_forest_floor_pool_rev208 ecology_growth; do
+          for script in strata_terrain vivid_material quality_profiles player_controller backpack spirit_resources paid_housing cultivation_world root_taxonomy city_population living_regions visual_palette kenney_multimesh hq_forest_floor_pool_rev208 wild_tree_stone_birth_rev208 ecology_growth; do
             echo "GODOT_GDSCRIPT_COMPILE_CHECK $script"
             if ! timeout 35s /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless \
                 --path qa-stage/ota177 --check-only --script "res://canglan_rev187/$script.gd" \
@@ -449,6 +451,7 @@ jobs:
           grep -Fq 'PASS_REV206_REAL_QUATERNIUS_CC0_SOURCE_HOUSES_REAL_YAO_BEASTS_PERSISTENT_PAID_WORKER_BUILDING' qa-results/rev187-original-main-3d.log
           grep -Fq 'PASS_REV208_REAL_INDEPENDENT_MEDICINAL_HERB_STEMS_CC0_PERSISTED_IDS' qa-results/rev187-original-main-3d.log
           grep -Fq 'PASS_REV208_NATURALLY_BORN_RANDOM_HERB_AND_ORE_RESOURCES_WORLD_HOURS_PHYSICAL_GLBS_SAVED_IDS_NO_INVENTORY_MINTING' qa-results/rev187-original-main-3d.log
+          grep -Fq 'PASS_REV208_NATURAL_SPONTANEOUS_TREE_AND_STONE_WORLD_BIRTH_240H_UNIQUE_3D_TERRAIN_ECONOMY_IDS_HARVEST_SAVE_RELOAD_NO_FREE_STOCK' qa-results/rev187-original-main-3d.log
           grep -Fq 'PASS_REV208_HQ023_TRUE_3D_CC0_INDEPENDENT_HERBS_FOUR_VISUAL_LIFE_STATES_NO_INVENTORY_CHANGE' qa-results/rev187-original-main-3d.log
           grep -Fq 'PASS_REV208_REAL_SPIRIT_HERB_HARVEST_PHYSICAL_BUDDING_STAGE_PBR_MESH_ON_SOIL_AND_ZERO_FREE_STOCK' qa-results/rev187-original-main-3d.log
           grep -Fq 'PASS_REV208_HQ021_REAL_VENDOR_CC0_32M_CELLS_NONINVENTORY_ACTUAL_PBR_VISUAL_FALLBACK_NO_ORIGIN_GHOSTS_SWAP_REMOVE' qa-results/rev187-original-main-3d.log
