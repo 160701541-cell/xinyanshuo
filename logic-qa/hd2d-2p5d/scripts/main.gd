@@ -33,14 +33,14 @@ func _add_env() -> void:
 	var env := Environment.new()
 	env.background_mode = Environment.BG_CANVAS
 	env.glow_enabled = true
-	env.glow_intensity = 0.20
+	env.glow_intensity = 0.24
 	env.glow_strength = 1.0
 	env.glow_bloom = 0.03
 	env.glow_hdr_threshold = 1.10
 	env.glow_blend_mode = Environment.GLOW_BLEND_MODE_ADDITIVE
 	env.adjustment_enabled = true
-	env.adjustment_brightness = 1.0
-	env.adjustment_contrast = 1.02
+	env.adjustment_brightness = 1.06
+	env.adjustment_contrast = 1.03
 	env.adjustment_saturation = 1.0
 	var we := WorldEnvironment.new()
 	we.environment = env
@@ -55,14 +55,25 @@ func _add_grade(mode: String) -> void:
 	rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	var mat := ShaderMaterial.new()
 	mat.shader = sh
-	if mode == "night":
-		mat.set_shader_parameter("shadow_cool", 0.55)
-		mat.set_shader_parameter("light_warm", 0.10)
-		mat.set_shader_parameter("sat", 0.96)
-	else:
-		mat.set_shader_parameter("shadow_cool", 0.34)
-		mat.set_shader_parameter("light_warm", 0.14)
-		mat.set_shader_parameter("sat", 1.02)
+	var cool := 0.18
+	var warm := 0.05
+	var sat := 1.04
+	match mode:
+		"night":
+			cool = 0.30
+			warm = 0.04
+			sat = 1.02
+		"bamboo":
+			cool = 0.20
+			warm = 0.04
+			sat = 1.03
+		"inn":
+			cool = 0.10
+			warm = 0.08
+			sat = 1.05
+	mat.set_shader_parameter("shadow_cool", cool)
+	mat.set_shader_parameter("light_warm", warm)
+	mat.set_shader_parameter("sat", sat)
 	rect.material = mat
 	var layer := CanvasLayer.new()
 	layer.layer = 1

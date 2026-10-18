@@ -35,7 +35,11 @@ func _plate_file(mode: String) -> String:
 	if mode == "bamboo":
 		return PLATE_DIR + "plate02_bamboo_dusk.png"
 	if mode == "market":
-		return PLATE_DIR + "plate04_market_day.png"
+		return PLATE_DIR + "plate08_market_street_day.png"
+	if mode == "court":
+		return PLATE_DIR + "plate09_sect_courtyard_day.png"
+	if mode == "inn":
+		return PLATE_DIR + "plate10_inn_interior.png"
 	if mode == "alchemy":
 		return PLATE_DIR + "plate07_alchemy_room.png"
 	return PLATE_DIR + "plate01_shanmen_day.png"
@@ -224,10 +228,22 @@ func _add_shadows() -> void:
 func _cast_for(mode: String) -> Array:
 	if mode == "market":
 		return [
-			{"npc": 0, "feet": Vector2(968, 492), "scale": 0.17},
-			{"npc": 1, "feet": Vector2(404, 566), "scale": 0.30},
-			{"npc": 3, "feet": Vector2(772, 604), "scale": 0.34},
-			{"npc": 4, "feet": Vector2(612, 668), "scale": 0.44},
+			{"npc": 0, "feet": Vector2(470, 520), "scale": 0.20},
+			{"npc": 5, "feet": Vector2(792, 556), "scale": 0.24},
+			{"npc": 3, "feet": Vector2(566, 616), "scale": 0.34},
+			{"npc": 4, "feet": Vector2(676, 676), "scale": 0.44},
+		]
+	if mode == "court":
+		return [
+			{"npc": 1, "feet": Vector2(404, 560), "scale": 0.22},
+			{"npc": 0, "feet": Vector2(884, 588), "scale": 0.26},
+			{"npc": 4, "feet": Vector2(640, 690), "scale": 0.46},
+		]
+	if mode == "inn":
+		return [
+			{"npc": 2, "feet": Vector2(300, 596), "scale": 0.28},
+			{"npc": 5, "feet": Vector2(980, 604), "scale": 0.30},
+			{"npc": 4, "feet": Vector2(606, 672), "scale": 0.46},
 		]
 	if mode == "alchemy":
 		return [

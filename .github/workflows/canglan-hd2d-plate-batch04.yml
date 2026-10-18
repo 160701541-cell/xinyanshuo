@@ -1,0 +1,30 @@
+name: Canglan HD2D artgen batch04 (3D render style) (plates 8-11 + props (eye-level camera lock))
+on:
+  push:
+    branches: [agent/dsh-p0-xianxia-ecology]
+    paths:
+      - '.github/workflows/canglan-hd2d-plate-batch04.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  generate:
+    if: github.repository == '160701541-cell/xinyanshuo'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Generate 4 eye-level plates + 2 props
+        env:
+          SILICONFLOW_API_KEY: ${{ secrets.SILICONFLOW_API_KEY }}
+          RUN_URL: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: node tools/asset_factory/hd2d_plate_batch04.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: hd2d-artgen-batch04
+          path: game-source/apk176-ota177-candidate/hd2d/artgen-batch04/
+          if-no-files-found: warn
