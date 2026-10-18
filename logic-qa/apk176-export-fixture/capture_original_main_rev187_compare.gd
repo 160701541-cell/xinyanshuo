@@ -564,11 +564,20 @@ func _capture() -> void:
     return
   print("PASS_REV204_REAL_GODOT_RENDERED_MANA_PAID_SPIRIT_BOLT_IN_FLIGHT")
   print("PASS_REV204_REAL_GODOT_MIDFLIGHT_AND_IMPACT_FINITE_MANA_REAL_HP_DAMAGE_FRAMES")
+  print("REV208_TRACE_after_rev204_frames")
   player.call("stop_practice")
+  print("REV208_TRACE_practice_stopped")
   arts.set("player_data",saved)
+  print("REV208_TRACE_arts_data_set")
   arts.call("save_state")
+  print("REV208_TRACE_arts_saved")
   player.call("_set_mode","third")
-  var real_person: Node3D=arts.get("npc_visuals")["CL-XIUXIAN-001"]["actor"]
+  var visuals_d: Dictionary=arts.get("npc_visuals")
+  if not visuals_d.has("CL-XIUXIAN-001"):
+    _fail("REV205_REAL_LICENSED_NPC_VISUAL_SLOT_MISSING_"+str(visuals_d.keys().slice(0,6)))
+    return
+  print("REV208_TRACE_visuals_ok")
+  var real_person: Node3D=visuals_d["CL-XIUXIAN-001"]["actor"]
   var source_hero_pos: Vector3=fighter.position
   fighter.position=real_person.position+Vector3(2.7,0,0.8)
   player.call("toggle_target_lock")
