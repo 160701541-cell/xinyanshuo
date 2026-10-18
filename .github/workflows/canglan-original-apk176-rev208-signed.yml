@@ -485,7 +485,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          python3 logic-qa/release-gate/sign_pck_release.py             --pack qa-results/canglan-apk176-rev187-3d-UNSIGNED.pck             --revision 208 --minimum-android-code 1176 --maximum-android-code 1176             --pack-url 'https://160701541-cell.github.io/xinyanshuo/android-preview/canglan-content-rev-208.pck'             --notes '苍岚原APK176 rev208：在 rev207 五万平方公里/五千凡人、宗门妖兽灵草经济之上，新增真实 CC0 扫描的两级地表 PBR（macro 2–8米 + detail 2–8厘米，albedo/normal/ORM 全部逐源核验），林地腐殖土、林缘草甸、湿润落叶泥土、林间空地、细枝落叶细节、苔藓山石六类真源材质替换原程序噪点地表；新增 4 类真实扫描地被（蕨 6232 面、灌木 8287、苔藓、苔石 63127）按真实地形高度落地；苍松与古柏树干接入真源 CC0 树皮 PBR（中国雪松 / 疙瘩松）。原存档、实体ID、修士永久死亡、5000 人口账本、灵草种子库与采矿炼丹战斗全部保留。高精国风主角/核心修士与宗门建筑仍为未完成项，Android 实机 30 分钟未测。'             --unsigned-template             --output qa-results/rev208-unsigned.json
+          python3 logic-qa/release-gate/sign_pck_release.py             --pack qa-results/canglan-apk176-rev187-3d-UNSIGNED.pck             --revision 208 --minimum-android-code 1176 --maximum-android-code 1176             --pack-url 'https://160701541-cell.github.io/xinyanshuo/android-preview/canglan-content-rev-208.pck'             --notes 'rev208：新增真实CC0扫描地被（蕨6232面/灌木/苔藓/苔石63127面）、苍松古柏真源树皮PBR、六类林地真扫描材质与四类灵草生态已入包（两级地表材质暂关闭，待出图验证）。原存档、5000人口经济、战斗与永久死亡全保留。主角与宗门建筑仍未完成。'             --unsigned-template             --output qa-results/rev208-unsigned.json
           python3 - <<'PY'
           import json,pathlib
           p=pathlib.Path('qa-results/rev208-unsigned.json')
