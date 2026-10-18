@@ -625,6 +625,18 @@ func update_visible_npcs(delta: float) -> void:
         int(state.get("health",0)),int(state.get("max_health",0)),
         int(state.get("mana",0)),int(state.get("max_mana",0))]
     _sync_npc_status_bar(id)
+    # 宗门记仇：玩家杀过本门的人，门人见到玩家即敌对；不追全城传闻，
+    # 也不无中生有：只在同门活着、玩家真的走进视野时提高敌对值。
+    var grudge_sect: String=String(state.get("rev207_sect_id",""))
+    if grudge_sect!="" and room.get("world_society")!=null:
+      var live_sects: Dictionary=room.get("world_society").get("sects")
+      if live_sects.has(grudge_sect) and bool(
+          live_sects[grudge_sect].get("player_hostility",false)) and room.get(
+          "controls")!=null:
+        var seen: Node3D=room.get("controls").get("actor")
+        if seen!=null and Vector2(seen.position.x-node.position.x,
+            seen.position.z-node.position.z).length()<=8.0:
+          state["hostility"]=100
     # A live cultivator remembers an actual assault and defends themselves
     # with a true range/cooldown and HP debit. Neutral citizens never attack.
     if int(state.get("hostility",0))>=100 and room.get("controls")!=null:

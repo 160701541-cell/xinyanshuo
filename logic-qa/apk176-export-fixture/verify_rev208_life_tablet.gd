@@ -36,6 +36,8 @@ func _run() -> void:
   var row: Dictionary=(obits[sect_id] as Array)[0]
   _check(String(row.get("entity_id",""))=="CL-XIUXIAN-002","obit_entity")
   _check(String(row.get("confirmed_by",""))=="life_tablet","obit_confirmed_by")
+  _check(bool((model.get("sects") as Dictionary)[sect_id].get("player_hostility",false)),"sect_grudge_on")
+  _check(int(model.call("stats")["hostile_sects"])==1,"hostile_sects_1")
   # 2) 散修无人发现 -> 失踪，不进宗门文献
   var b: Dictionary=model.call("record_named_cultivator_death","CL-XIUXIAN-001",true,false,"test_sword","",false)
   _check(bool(b.get("ok",false)),"loner_ok_"+str(b))
@@ -66,6 +68,7 @@ func _run() -> void:
   _check(String(named["CL-XIUXIAN-001"].get("status",""))=="missing","reload_missing_kept")
   _check(String(named["CL-XIUXIAN-002"].get("confirmed_by",""))=="life_tablet","reload_life_tablet_kept")
   _check((reload.get("sect_obituaries")[sect_id] as Array).size()==1,"reload_obituary_kept")
+  _check(bool((reload.get("sects") as Dictionary)[sect_id].get("player_hostility",false)),"reload_grudge_kept")
   if failures.is_empty():
     print("PASS_REV208_LIFE_TABLET_CONFIRMED_VS_MISSING_OBITUARY_IDEMPOTENT_ATOMIC_RELOAD")
     quit(0)

@@ -366,6 +366,9 @@ func record_named_cultivator_death(id: String,is_spirit_rooted: bool,
   var old_confirmed: int=confirmed_deaths
   var old_missing: int=missing_total
   var old_obituaries: Dictionary=sect_obituaries.duplicate(true)
+  var old_grudge: bool=false
+  if confirmed and sect_id!="" and sects.has(sect_id):
+    old_grudge=bool(sects[sect_id].get("player_hostility",false))
   region["people"]=int(region["people"])-1
   region["adults"]=int(region["adults"])-1
   if confirmed:
@@ -386,6 +389,9 @@ func record_named_cultivator_death(id: String,is_spirit_rooted: bool,
     "status":("dead" if confirmed else "missing"),
     "confirmed_by":confirmed_by,"sect_id":sect_id,
     "death_outside_sect":outside_sect}
+  if confirmed and sect_id!="" and sects.has(sect_id):
+    # 宗门记仇：玩家杀了本门的人，门人见到玩家即敌对（只在本宗门内，不扩散全城）。
+    sects[sect_id]["player_hostility"]=true
   if confirmed and sect_id!="":
     # 宗门文献：只记确认死亡，独立小表，不刷全城传闻。
     var rows: Array=sect_obituaries.get(sect_id,[])
@@ -403,6 +409,8 @@ func record_named_cultivator_death(id: String,is_spirit_rooted: bool,
     confirmed_deaths=old_confirmed
     missing_total=old_missing
     sect_obituaries=old_obituaries
+    if sect_id!="" and sects.has(sect_id):
+      sects[sect_id]["player_hostility"]=old_grudge
     named_deaths.erase(id)
     return {"ok":false,"reason":"CENSUS_CONSERVATION_OR_DISK_FAILURE_"+_last_error}
   return {"ok":true,"already_recorded":false,
@@ -499,6 +507,13 @@ func region_at(world_x_km: float,world_z_km: float) -> Dictionary:
   var zi: int=clampi(floori(world_z_km/float(REGION_SIDE_KM)),0,REGION_HEIGHT-1)
   return (regions.get("CL-REGION-%03d" % (zi*REGION_WIDTH+xi),{}) as Dictionary).duplicate(true)
 
+func _hostile_sect_count() -> int:
+  var n: int=0
+  for key in sects:
+    if bool(sects[key].get("player_hostility",false)):
+      n+=1
+  return n
+
 func _named_dead_count() -> int:
   var n: int=0
   for id in named_deaths:
@@ -526,6 +541,7 @@ func stats() -> Dictionary:
     "births":born_total,"deaths":confirmed_deaths,"missing":missing_total,
     "departed_total":died_total,
     "named_confirmed_deaths":_named_dead_count(),"named_deaths_total":named_deaths.size(),
+    "hostile_sects":_hostile_sect_count(),
     "months":months,
     "hours":hours,"factions":sects.size(),
     "disciplines":DISCIPLINES.size(),
