@@ -327,12 +327,9 @@ func spawn_groundcover(world: Node3D, terrain: Node3D, quality: RefCounted,
   for slug in GROUNDCOVER_SPECIES:
     var cfg: Dictionary = GROUNDCOVER_SPECIES[slug]
     var path: String = "%s/%s/%s_1k.gltf" % [GROUNDCOVER_ROOT, slug, slug]
-    if not ResourceLoader.exists(path):
-      report["skipped"].append(slug + ":RESOURCE_ABSENT")
-      continue
-    var packed: Resource = ResourceLoader.load(path)
-    if not (packed is PackedScene):
-      report["skipped"].append(slug + ":NOT_A_SCENE")
+    var actor: Node3D = _load_gltf_runtime(path)
+    if actor == null:
+      report["skipped"].append(slug + ":RESOURCE_ABSENT_OR_UNPARSABLE")
       continue
     var placed: int = 0
     var attempt: int = 0
@@ -344,23 +341,24 @@ func spawn_groundcover(world: Node3D, terrain: Node3D, quality: RefCounted,
       if quality != null and quality.has_method("_natural_plantable"):
         if not bool(quality.call("_natural_plantable", x, z)):
           continue
-      var actor: Node3D = (packed as PackedScene).instantiate()
-      if actor == null:
+      # 每个实例都要独立拷贝，不能共用同一个模板节点。
+      var instance: Node3D = actor.duplicate()
+      if instance == null:
         continue
       var identity: String = "CL-ECOLOGY208-%s-%03d" % [slug, placed]
-      actor.name = identity
+      instance.name = identity
       var ground: float = 0.0
       if terrain.has_method("height_at"):
         ground = float(terrain.call("height_at", x, z))
       # 真实高度落地：把网格最低点压到地形高度，不悬空也不埋进土里。
-      var bounds: Vector3 = _node_low_point(actor)
-      actor.position = Vector3(x, ground - bounds.y, z)
-      actor.rotation.y = rng.randf_range(-PI, PI)
-      actor.set_meta("world_entity_id", identity)
-      actor.set_meta("hq_rev208_real_scanned_groundcover", slug)
-      actor.set_meta("source_license", "CC0 Poly Haven exact source page")
-      actor.set_meta("never_free_inventory", true)
-      world.add_child(actor)
+      var bounds: Vector3 = _node_low_point(instance)
+      instance.position = Vector3(x, ground - bounds.y, z)
+      instance.rotation.y = rng.randf_range(-PI, PI)
+      instance.set_meta("world_entity_id", identity)
+      instance.set_meta("hq_rev208_real_scanned_groundcover", slug)
+      instance.set_meta("source_license", "CC0 Poly Haven exact source page")
+      instance.set_meta("never_free_inventory", true)
+      world.add_child(instance)
       if bool(cfg["collider"]):
         var body: StaticBody3D = StaticBody3D.new()
         body.name = "EcologyRock_" + identity
@@ -368,18 +366,20 @@ func spawn_groundcover(world: Node3D, terrain: Node3D, quality: RefCounted,
         body.collision_mask = 0
         var shape: CollisionShape3D = CollisionShape3D.new()
         var box: BoxShape3D = BoxShape3D.new()
-        var aabb: AABB = _node_aabb(actor)
+        var aabb: AABB = _node_aabb(instance)
         box.size = Vector3(maxf(aabb.size.x, 0.4), maxf(aabb.size.y, 0.4),
           maxf(aabb.size.z, 0.4))
         shape.shape = box
         shape.position.y = box.size.y * 0.5
         body.add_child(shape)
-        body.position = actor.position
+        body.position = instance.position
         world.add_child(body)
       report["installed"].append(identity)
       placed += 1
       report["spawned"] = int(report["spawned"]) + 1
     report["by_species"][slug] = placed
+    if is_instance_valid(actor):
+      actor.free()
   return report
 
 func _node_aabb(root: Node3D) -> AABB:
@@ -428,3 +428,24 @@ func apply_bark_to_tree(root: Node3D, kind: String) -> int:
       mi.set_surface_override_material(s, bark)
       replaced += 1
   return replaced
+
+## 正式 OTA PCK 里放的是原始 .gltf/.bin/textures（未导入成 .scn），
+## 所以必须走 GLTFDocument 直接解析，和原项目 `_parse_existing_cc0` 一致。
+func _load_gltf_runtime(path: String) -> Node3D:
+  if ResourceLoader.exists(path):
+    var res: Resource = ResourceLoader.load(path)
+    if res is PackedScene:
+      var n: Node = (res as PackedScene).instantiate()
+      if n is Node3D:
+        return n as Node3D
+  if not FileAccess.file_exists(path):
+    return null
+  var binary: PackedByteArray = FileAccess.get_file_as_bytes(path)
+  if binary.size() < 256:
+    return null
+  var doc: GLTFDocument = GLTFDocument.new()
+  var state: GLTFState = GLTFState.new()
+  if doc.append_from_buffer(binary, path.get_base_dir(), state) != OK:
+    return null
+  var scene: Node3D = doc.generate_scene(state)
+  return scene
