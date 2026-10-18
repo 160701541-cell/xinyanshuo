@@ -207,6 +207,88 @@ func _run() -> void:
       _fail(441,"REV208_ORIGINAL_TREE_STUMP_CAN_NEVER_NATURALLY_REGROW_"+reusable_tree_id)
       return
   print("PASS_REV208_ALL_52_REAL_ORIGINAL_TREE_IDS_NATURALLY_RENEW_AFTER_CUT_WITHOUT_FREE_INVENTORY")
+  # HQ-P0 genuine Chinese cultural architecture / original APK176 Main
+  # all three are author VVaytoyek CC0 real converted FBX mesh sources.
+  # Do not mistake an imported GLB for a completed building, dwelling,
+  # AI-generated style master or signed phone release.
+  var chinese_sources: Dictionary=room.get("hq_chinese_architecture_sources")
+  var chinese_visuals: Dictionary=room.get("hq_chinese_architecture_visuals")
+  var chinese_collision: Dictionary=room.get("hq_chinese_architecture_colliders")
+  var chinese_pbr: Dictionary=room.get("hq_chinese_architecture_source_audit")
+  if chinese_sources.size()!=3 or chinese_visuals.size()!=3 or (
+      chinese_collision.size()!=2) or chinese_pbr.size()!=3 or (
+      int(first.get("rev208_hq_chinese_vendor_real_GLTF_3d_models",-1))!=3) or (
+      int(first.get("rev208_hq_chinese_real_architecture_instances",-1))!=3):
+    _fail(455,"REV208_CHINESE_ARCHITECTURE_NOT_AUTHOR_REAL_3D_IN_ORIGINAL_MAIN_"+
+      str({"sources":chinese_sources.size(),"visuals":chinese_visuals.size(),
+        "colliders":chinese_collision.size(),"pbr":chinese_pbr}))
+    return
+  for pagoda in [
+      {"id":"CL-REV208-HQ-CHINESE-PAVILION-01","kind":"pavilion",
+        "height":7.8,"min_meshes":60},
+      {"id":"CL-REV208-HQ-CHINESE-MOONGATE-01","kind":"moon_gate",
+        "height":4.2,"min_meshes":1},
+      {"id":"CL-REV208-HQ-CHINESE-GARDEN-WALL-01","kind":"garden_wall",
+        "height":4.1,"min_meshes":1}]:
+    var landmark_id: String=String(pagoda["id"])
+    if not chinese_visuals.has(landmark_id):
+      _fail(456,"REV208_REQUIRED_SOURCE_CHINESE_REAL_ARCHITECTURE_MISSING_"+landmark_id)
+      return
+    var authentic: Node3D=chinese_visuals[landmark_id]
+    if not is_instance_valid(authentic) or not authentic.is_inside_tree() or (
+        authentic.get_parent()!=world) or (
+        String(authentic.get_meta("world_entity_id",""))!=landmark_id) or (
+        not bool(authentic.get_meta("source_true_author_mesh",false))) or (
+        not bool(authentic.get_meta("real_license_uv_preserved",false))) or (
+        not bool(authentic.get_meta("not_a_free_completed_house",false))) or (
+        not String(authentic.get_meta("source_license","")).contains("CC0")):
+      _fail(456,"REV208_GLTF_CHINESE_STRUCTURAL_SCENE_NOT_TRUE_AUTHORED_SOURCE_"+landmark_id)
+      return
+    var actual_size: Vector2=room.call("_visible_bounds",authentic)
+    if absf((actual_size.y-actual_size.x)-float(pagoda["height"]))>0.26:
+      _fail(457,"REV208_AUTHORED_CHINESE_STRUCTURE_HUMAN_HEIGHT_MISMATCH_"+
+        landmark_id+" "+str(actual_size))
+      return
+    var physical_ground: float=float(room.get("terrain_world").call(
+      "height_at",authentic.position.x,authentic.position.z))
+    if absf(actual_size.x-physical_ground)>0.24:
+      _fail(458,"REV208_REAL_CHINESE_PAVILION_WALL_FLOATING_IN_3D_SOIL_"+
+        landmark_id+" "+str(actual_size)+" ground="+str(physical_ground))
+      return
+    var true_parts: Array[Node]=authentic.find_children(
+      "*","MeshInstance3D",true,false)
+    if true_parts.size()<int(pagoda["min_meshes"]):
+      _fail(459,"REV208_CHINESE_AUTHOR_GEOMETRY_WAS_REPLACED_BY_CHEAP_FAKE_SHAPE_"+
+        landmark_id)
+      return
+    var actual_uv_surfaces: int=0
+    var real_pbr_normals: int=0
+    for part in true_parts:
+      var real_part: MeshInstance3D=part as MeshInstance3D
+      if real_part.mesh==null:
+        continue
+      for surface_idx in range(real_part.mesh.get_surface_count()):
+        var arrays: Array=real_part.mesh.surface_get_arrays(surface_idx)
+        if arrays[Mesh.ARRAY_TEX_UV]!=null and (
+            arrays[Mesh.ARRAY_TEX_UV] as PackedVector2Array).size()>3:
+          actual_uv_surfaces+=1
+        var original_pbr: Material=real_part.get_active_material(surface_idx)
+        if original_pbr is StandardMaterial3D and (
+            (original_pbr as StandardMaterial3D).normal_texture!=null):
+          real_pbr_normals+=1
+    if actual_uv_surfaces<int(pagoda["min_meshes"]) or real_pbr_normals<1:
+      _fail(460,"REV208_CHINESE_TRADITIONAL_STRUCTURE_HAD_NO_AUTHOR_UVS_OR_CC0_NORMAL_MAPS_"+
+        landmark_id+" uv="+str(actual_uv_surfaces)+" pbr="+str(real_pbr_normals))
+      return
+    var is_moon_gate: bool=String(pagoda["kind"])=="moon_gate"
+    if is_moon_gate and chinese_collision.has(landmark_id):
+      _fail(461,"REV208_MOON_GATE_OPENING_BLOCKED_BY_INVISIBLE_SOLID_BOX")
+      return
+    if not is_moon_gate and (
+        not chinese_collision.has(landmark_id)):
+      _fail(462,"REV208_AUTHORED_STRUCTURE_HAS_NO_REAL_SOIL_PLATFORM_OR_WALL_COLLISION")
+      return
+  print("PASS_REV208_ACTUAL_APK176_MAIN_CHINESE_CC0_SOURCE_3D_PAVILION_MOON_GATE_GARDEN_WALL_AUTHOR_UV_PBR_HUMAN_SCALE_PHYSICS_NO_FREE_HOUSES")
   print("PASS_REV208_3_ACTUAL_8M_MATURE_VENDOR_PBR_TREES_REPLACE_THREE_NATURAL_IDS")
   # Extra source-authored conifers and understory live INSIDE original Main.
   # They cannot fabricate the authoritative 52-tree resource ledger.
