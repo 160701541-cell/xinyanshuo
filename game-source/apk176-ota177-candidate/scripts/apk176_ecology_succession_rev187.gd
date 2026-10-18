@@ -1,6 +1,7 @@
 extends RefCounted
 ## Original APK176 rev187: deterministic ecological succession, with accountable
-## seeds and exposed bedrock. This class does not spawn material ex nihilo.
+## seeds and exposed bedrock. In REV208 the NATURAL WORLD may generate
+## and regenerate trees/stones independently of economic NPC inventory.
 ## Long-term tectonic orogeny is separate from replenishing a quarried rock.
 const MAX_PLANTED := 24
 const MATURITY_HOURS := 72
@@ -135,7 +136,22 @@ func advance_ecology_hours(hours: int = 1) -> void:
   absolute_hour += hours
   for id in trees:
     var entry: Dictionary = trees[id]
-    if not bool(entry["planted"]) or String(entry["stage"]) == "mature":
+    # Rev208 natural-tree renewal: true economy recovery, not a cloned bag.
+    # Reset the one-seed-per-felling entitlement ONLY after the authoritatively
+    # depleted node has received at least one biological replacement unit.
+    # This preserves seed conservation even when a tree is cut repeatedly.
+    if not bool(entry["planted"]):
+      if economy.natural_nodes.has(id):
+        var original_node: Dictionary=economy.natural_nodes[id]
+        var remaining: int=int(original_node["remaining"])
+        if String(entry["stage"])=="stump" and remaining>0:
+          entry["stage"]="natural_regrowth"
+          entry["seed_awarded"]=false
+        elif String(entry["stage"])=="natural_regrowth" and remaining>=int(
+            original_node["capacity"]):
+          entry["stage"]="mature"
+      continue
+    if String(entry["stage"])=="mature":
       continue
     entry["hours"] = int(entry["hours"]) + hours
     var age: int = int(entry["hours"])
