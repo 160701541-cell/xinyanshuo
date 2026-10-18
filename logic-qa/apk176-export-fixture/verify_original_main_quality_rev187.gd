@@ -2437,7 +2437,7 @@ func _run() -> void:
   var wild_original_herb_events: int=int(wild.get("wild_random_herb_births"))
   var wild_original_ore_events: int=int(wild.get("wild_random_ore_births"))
   var wild_initial_mesh_ids: Array=plants.keys()
-  var original_stock: Dictionary=econ.villages[room.TOWN]["stock"].duplicate(true)
+  var original_stock: Dictionary=econ.villages["CL-REV186-HX-VILLAGE"]["stock"].duplicate(true)
   if wild_initial_mesh_ids.size()!=13 or wild_original_rows.size()!=13:
     _fail(420,"REV208_RESOURCE_RANDOM_SPAWN_TEST_MUST_START_WITH_13_REAL_INITIAL_WORLD_NODES")
     return
@@ -2462,7 +2462,7 @@ func _run() -> void:
         return
   if herb_appearance<2 or ore_appearance<1 or (
       not bool(wild.call("conservation_ok"))) or (
-      original_stock!=econ.villages[room.TOWN]["stock"]):
+      original_stock!=econ.villages["CL-REV186-HX-VILLAGE"]["stock"]):
     _fail(422,"REV208_RANDOM_WILD_WORLD_RESOURCE_BIRTH_OR_ECONOMY_CONSERVATION_FAILED_"+
       str({"new_herb":herb_appearance,"new_ore":ore_appearance,
       "ledger_ok":wild.call("conservation_ok")}))
