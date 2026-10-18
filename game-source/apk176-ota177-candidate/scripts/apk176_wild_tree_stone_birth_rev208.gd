@@ -229,6 +229,24 @@ func save_state() -> bool:
   last_error=""
   return true
 
+func save_if_authoritative_amount_changed() -> bool:
+  # A player can close the Android app just after harvesting a randomly
+  # appeared tree. Persist promptly instead of silently resurrecting loot
+  # from the previous day's save. This does NO writes if nothing changed.
+  if not _loaded:
+    return false
+  for id in records:
+    if not _economy.natural_nodes.has(id):
+      last_error="REV208_AUTHORITY_NODE_DISAPPEARED_BEFORE_SAVE"
+      return false
+    var saved: Dictionary=records[id]
+    var real: Dictionary=_economy.natural_nodes[id]
+    if int(saved["remaining"])!=int(real["remaining"]) or (
+        int(saved.get("next_regen_hour",-1))!=int(
+          real.get("next_regen_hour",-1))):
+      return save_state()
+  return true
+
 func stats() -> Dictionary:
   return {"loaded":_loaded,"world_hours":world_hours,
     "source_generated_trees":spawn_tree_events,
