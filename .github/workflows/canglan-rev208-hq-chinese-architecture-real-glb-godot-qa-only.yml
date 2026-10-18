@@ -56,7 +56,7 @@ jobs:
           # Ubuntu's apt Blender FBX add-on imports NumPy but the default
           # headless package does not install a NumPy wheel in Blender's own
           # embedded CPython interpreter. Pin the exact ABI-compatible wheel.
-          blender_minor="$(blender -b -noaudio --python-expr "import sys;print('CANGLAN_BLENDER_PY_MINOR='+str(sys.version_info.minor))" 2>&1 | sed -n 's/.*CANGLAN_BLENDER_PY_MINOR=\\([0-9]*\\).*/\\1/p' | tail -1)"
+          blender_minor="$(blender -b -noaudio --python-expr "import sys;print('CANGLAN_BLENDER_PY_MINOR='+str(sys.version_info.minor))" 2>&1 | grep -oE 'CANGLAN_BLENDER_PY_MINOR=[0-9]+' | tail -1 | cut -d= -f2)"
           test -n "$blender_minor"
           python3 -m pip install --quiet --no-deps --target /tmp/canglan-blender-python \
             --only-binary=:all: --python-version "3.$blender_minor" \
