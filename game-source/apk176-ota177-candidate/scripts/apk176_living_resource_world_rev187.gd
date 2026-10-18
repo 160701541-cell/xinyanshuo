@@ -8,6 +8,7 @@ const Ecology = preload("res://canglan_rev187/ecology_growth.gd")
 const NaturalPalette = preload("res://canglan_rev187/visual_palette.gd")
 const KenneyMultiMesh = preload("res://canglan_rev187/kenney_multimesh.gd")
 const HQForestFloorPool = preload("res://canglan_rev187/hq_forest_floor_pool_rev208.gd")
+const Rev208NaturalBirth = preload("res://canglan_rev187/wild_tree_stone_birth_rev208.gd")
 const RealSoilTerrain = preload("res://canglan_rev187/strata_terrain.gd")
 const PlayerControl = preload("res://canglan_rev187/player_controller.gd")
 const ManualQuality = preload("res://canglan_rev187/quality_profiles.gd")
@@ -113,6 +114,7 @@ var hq_mature_tree_sources: Dictionary={}
 var hq_mature_tree_visuals: Dictionary={}
 var hq_medicinal_source_templates: Dictionary={}
 var forest_floor_pool: Node3D
+var natural_world_births: RefCounted
 var hq_botanical_sources: Dictionary={}
 var hq_botanical_visuals: Dictionary={}
 var hq_botanical_terrain_sites: Dictionary={}
@@ -260,6 +262,17 @@ func _ready() -> void:
   # a fresh unique CC0 herb/ore visible; no tap, NPC or stored seed needed.
   spirit_resources.call("set_habitat_check",
     Callable(self,"_rev208_natural_spawn_habitat"))
+  # Every original tree and stone remains in place; separate additive
+  # world-birth save restores NATURALLY created resources with same IDs,
+  # never free player/NPC resources or warehouse inventory.
+  natural_world_births=Rev208NaturalBirth.new()
+  if not bool(natural_world_births.call("initialize",sim,eco,
+      terrain_world,quality,housing_blueprints,spirit_resources)):
+    asset_errors.append("REV208_NATURAL_WILD_TREE_STONE_SAVE_INIT_FAILURE_"+
+      String(natural_world_births.get("last_error")))
+  else:
+    for world_born_id in natural_world_births.get("records"):
+      _materialize_wild_tree_stone(String(world_born_id))
   # Its real terrain _natural_plantable() mask becomes available ONLY once
   # the physical quality/vegetation controller is initialized. The earlier
   # call ran before quality existed and rejected all genuine bush sources.
@@ -1816,6 +1829,33 @@ func _seed_resources() -> void:
     if instance != null:
       natural_meshes[entity_id] = instance
 
+func _materialize_wild_tree_stone(id: String) -> bool:
+  # Materialize the existing economic node at its authoritative terrain
+  # position. This is NOT a decoration-only placeholder or free loot.
+  if natural_meshes.has(id):
+    return true
+  if not sim.natural_nodes.has(id) or (
+      not sim.resource_positions.has(id)):
+    return false
+  var node: Dictionary=sim.natural_nodes[id]
+  var kind: String=String(node["kind"])
+  if kind not in ["tree","stone"] or not (
+      (kind=="tree" and id.begins_with("CL-WILD-TREE-R208-")) or (
+      kind=="stone" and id.begins_with("CL-WILD-STONE-R208-"))):
+    return false
+  var point: Vector3=sim.resource_positions[id]
+  var scale_amount: float=1.48 if kind=="tree" else 1.17
+  var visual: Node3D=_place_asset(kind,id,point,scale_amount)
+  if visual==null:
+    asset_errors.append("REV208_NATURALLY_BORN_REAL_3D_SOURCE_MISSING_"+id)
+    return false
+  visual.set_meta("world_naturally_created",true)
+  visual.set_meta("source_license","Kenney CC0 verified original GLB")
+  visual.set_meta("source_entity_id",id)
+  visual.set_meta("not_created_in_player_inventory",true)
+  natural_meshes[id]=visual
+  return true
+
 func _make_workers() -> void:
   var identities := [
     {"id":"CL-NPC-0184-01","kind":"tree","name":"樵夫"},
@@ -2090,6 +2130,10 @@ func _process(delta: float) -> void:
     _economy_clock-=12.0
     sim.tick()
     eco.advance_ecology_hours(1)
+    if natural_world_births!=null and bool(natural_world_births.get("_loaded")):
+      for born_id in natural_world_births.call("advance_world_hour"):
+        if not _materialize_wild_tree_stone(String(born_id)):
+          asset_errors.append("REV208_NEW_NATURAL_SOURCE_HAS_NO_PHYSICAL_GLTF_"+String(born_id))
     if housing!=null:
       var paid_finished: Array=housing.call("advance_one_world_hour",1)
       for built_id in paid_finished:
@@ -2217,6 +2261,9 @@ func stats() -> Dictionary:
     "rev208_true_yao_beast_real_hit_events":_beast_hit_events,
     "rev208_yao_beast_deaths":_beast_deaths,
     "rev206_real_spirit_herbs_ore":spirit_resources.call("stats") if spirit_resources!=null else {},
+    "rev208_tree_stone_naturally_appeared":natural_world_births.call("stats") if natural_world_births!=null else {},
+    "rev208_real_natural_birth_visual_count":natural_meshes.keys().filter(
+      func(id): return String(id).begins_with("CL-WILD-")).size(),
     "rev207_real_living_world":world_society.call("stats") if world_society!=null else {},
     "rev207_authoritative_mortal_population":int(world_society.call(
       "population")) if world_society!=null and bool(
@@ -2404,6 +2451,10 @@ func _rebuild_geological_ridge() -> void:
   hill_zone.set_meta("preview_terrain_reduced_vertical_scale",true)
 
 func _exit_tree() -> void:
+  # World-born tree/stone deposit sizes are saved to an ADDITIVE file,
+  # without ever resetting the original 52/20 saved natural identities.
+  if natural_world_births!=null and bool(natural_world_births.get("_loaded")):
+    natural_world_births.call("save_state")
   # GLTFDocument.generate_scene produces freestanding Node3D templates.
   # They are NOT in the SceneTree, so main.queue_free() cannot clean them.
   # Release their Skeleton/Mesh/Animation resources before the renderer exits.
