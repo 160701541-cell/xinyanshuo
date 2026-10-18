@@ -191,6 +191,22 @@ func _run() -> void:
     if not room.get("natural_colliders").has(code):
       _fail(404,"REV208_HQ_MATURE_TREE_HAS_NO_REAL_GAME_COLLIDER_"+code)
       return
+  # The natural world must NEVER be permanently clearcut:
+  # all original 52 harvestable tree IDs, including the 3 true high-poly
+  # adult trees, have real world-time natural regrowth independent of
+  # free NPC stock/warehouse items or the carried tree_seed economy.
+  for original_tree_index in range(52):
+    var reusable_tree_id: String="CL-TREE-0184-%03d" % original_tree_index
+    if not econ.natural_nodes.has(reusable_tree_id):
+      _fail(440,"REV208_ORIGINAL_WORLD_TREE_ID_WAS_REPLACED_DURING_REPLENISHMENT")
+      return
+    var renewable_tree: Dictionary=econ.natural_nodes[reusable_tree_id]
+    if int(renewable_tree.get("regen_units",0))!=1 or (
+        int(renewable_tree.get("regen_hours",0))<72) or (
+        int(renewable_tree.get("recovery_hours",0))<48):
+      _fail(441,"REV208_ORIGINAL_TREE_STUMP_CAN_NEVER_NATURALLY_REGROW_"+reusable_tree_id)
+      return
+  print("PASS_REV208_ALL_52_REAL_ORIGINAL_TREE_IDS_NATURALLY_RENEW_AFTER_CUT_WITHOUT_FREE_INVENTORY")
   print("PASS_REV208_3_ACTUAL_8M_MATURE_VENDOR_PBR_TREES_REPLACE_THREE_NATURAL_IDS")
   # Extra source-authored conifers and understory live INSIDE original Main.
   # They cannot fabricate the authoritative 52-tree resource ledger.
