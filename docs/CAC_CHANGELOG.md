@@ -1,5 +1,12 @@
 # CAC 工序变更与开发日志
 
+## 2026-10-18 / CAC-REV208-GROUND-PBR-A-B-ISOLATED-AND-RELEASE-GATE-REPAIR / 用 A/B 实验定位"青色地面"真因（是我的材质），并修通到捕获阶段
+- **A/B 隔离实验（可复现）**：把两级地表材质**全部关闭**后重跑正式链（run `39112007473`），`REV191_REAL_RENDER_SOIL_VS_SKY_BLUE_VOID_PIXEL_RATIO` 从 **0.771→0.0**，`PASS_REV187_TWO_GENUINE_ENGINE_RENDERED_WORKSITE_FRAMES_NOT_PHONE_TESTS` 通过。**结论：把它画成一片青色的就是我的地表材质（自定义 shader 与原生三平面都一样），不是场景/水面。** 两个实现都已在 `apk176_vivid_material_rev207.gd` 用 `HQ_GROUND_SHADER_ENABLED=false` / `HQ_GROUND_NATIVE_ENABLED=false` 默认关闭，资源与解析器保留，等能本地出图再开。
+- **同时保留的合法改动**：`material_for_real_terrain` 返回类型改为 `Material`（地表可以是 ShaderMaterial 或 StandardMaterial3D）；主 QA 的地表门禁 `code 337` 现在接受两种合法形态，其中"真 CC0 PBR"分支要求 albedo≥512² + 真 normal + roughness + triplanar，比原来更严而不是放宽。
+- **本次修通到的位置**：捕获步骤已跑到 rev204 全部帧并全部 PASS，之后脚本不再产出 rev205/206/207/worksite 帧，导致 `test -s` 与 4 个 grep 失败。**这是捕获脚本自身后续段落的既有问题，与本轮美术内容无关**（同一 run 里 worksite 审计已 0.0 通过）。
+- **still 未签发**：rev208 仍是候选，公网正式版本仍 **rev207**（35,815,712 字节 / SHA256 `db64972a…`），手机端不需要做任何操作也不会有变化。
+- **下一步**：①修 `capture_original_main_rev187_compare.gd` 在 rev204 之后的段落（为何提前结束、rev205/206/207 三组帧没写出）；②地表材质必须能在本机或 CI 出图验证后再启用；③两者绿了才允许签名发布。
+
 ## 2026-10-18 / CAC-REV208-HQ-ECOLOGY-MERGED-TO-MAIN-AND-RELEASE-CHAIN-AUDIT / 真实CC0两级地表PBR已并入main；正式OTA链逐项体检（诚实结论：rev208仍未签发）
 - **已真实并入 main**：分支 `agent/dsh-p0-xianxia-ecology` 以"保留 main 独有已签发文件"的两父合并提交并入 main（`08a3298`）。内容：8 组 Poly Haven CC0 扫描 PBR（24 张 1K 贴图）、4 类真扫描地被（蕨 6232 面/灌木 8287/苔藓 204/苔石 63127）、两级地表着色宏（macro 2–8m + detail 2–8cm）、苍松/古柏真源树皮 PBR。本机真实 Godot 4.4.1(arm64) 断言 **215 项 / 0 失败**。
 - **我引入并已修复的严重回归（必须记录）**：该合并把 rev208 候选分支里**较旧的 `android-preview/latest.json`（revision 206）**带回了 main，等于把正式清单从已签发的 **rev207 降级到 rev206**；`data/updates.json` 同样回退。已用 `ac20729` 恢复两个文件为 main 原值，并重新派发 Pages 部署 **39109988451 success**，公网 `https://160701541-cell.github.io/xinyanshuo/android-preview/latest.json` 复核已回到 **revision 207 / 35,815,712 字节**。教训：**任何合并前必须比对 `android-preview/latest.json`、`data/updates.json` 与目标分支，不能整树覆盖。**
