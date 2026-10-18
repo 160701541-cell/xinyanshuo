@@ -325,11 +325,13 @@ func _initialize() -> void:
       "natural_ground", Color(0.3, 0.55, 0.32), true)
     _ok(real_ground != null, "material_for_real_terrain(natural_ground) returned null")
     if real_ground != null:
-      _ok(String(real_ground.resource_name).contains("HQ_TwoScale"),
-        "natural_ground is NOT the HQ two-scale PBR material: " + String(real_ground.resource_name))
-      _ok(real_ground.get_shader_parameter("macro_floor_albedo") != null,
-        "delegated ground material has no bound albedo")
-      print("  vivid delegation OK: ", real_ground.resource_name)
+      # 两级 PBR 地表 shader 在真实渲染里输出青色（CI run 39109440674 的
+      # real_godot_rev208_* 帧 + REV191 地面审计 ratio 0.777），因此默认关闭。
+      # 这里必须断言“默认没启用”，防止把坏材质悄悄放回游戏。
+      _ok(not String(real_ground.resource_name).contains("HQ_TwoScale"),
+        "HQ terrain shader must stay disabled until it renders correctly: "
+        + String(real_ground.resource_name))
+      print("  ground material is the safe vivid fallback: ", real_ground.resource_name)
     # 非自然地面角色必须保持旧 Vivid 方案，不能被误替换。
     var soil: ShaderMaterial = vivid.call("material_for_real_terrain",
       "soil", Color(0.4, 0.3, 0.2), false)

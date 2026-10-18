@@ -132,7 +132,12 @@ func material_for_real_terrain(role: String,base_color: Color,
     initialize()
   # REV208-HQ-022：真实自然地面优先使用 Poly Haven CC0 扫描的两级 PBR。
   # 只替换 natural_ground；石壁/土层等分层地表仍走原有 Vivid 逻辑。
-  if role=="natural_ground" and hq_ecology!=null:
+  # REV208-HQ-022 两级 PBR 地表：真机/CI 实测（run 39109440674 的
+  # real_godot_rev208_* 帧）显示该自定义 shader 在地形上输出为一片均匀青色，
+  # 被既有 REV191 地面可见性审计判 FAIL(ratio 0.777)。**在真实渲染下修好之前
+  # 必须默认关闭**，绝不能让玩家看到一块青色的地。资源与解析器保留，等修好再开。
+  const HQ_GROUND_SHADER_ENABLED: bool = false
+  if role=="natural_ground" and hq_ecology!=null and HQ_GROUND_SHADER_ENABLED:
     var hq_ground: ShaderMaterial=hq_ecology.call(
       "build_ground_material",vertex_biome) as ShaderMaterial
     if hq_ground!=null:
