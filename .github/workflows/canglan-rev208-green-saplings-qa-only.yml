@@ -8,6 +8,7 @@ on:
       - 'game-source/apk176-ota177-candidate/scripts/apk176_spirit_resources_rev206.gd'
       - 'game-source/apk176-ota177-candidate/scripts/apk176_living_regions_rev207.gd'
       - 'logic-qa/apk176-export-fixture/verify_rev207_living_regions.gd'
+      - 'logic-qa/apk176-export-fixture/verify_rev208_life_tablet.gd'
       - 'game-source/apk176-ota177-candidate/scripts/apk176_paid_housing_rev208.gd'
       - 'logic-qa/apk176-export-fixture/verify_rev206_spirit_resources.gd'
       - 'game-source/apk176-ota177-candidate/assets/cc0-spirit-rev206/**'
@@ -435,6 +436,17 @@ jobs:
           grep -Fq 'PASS_REV207_REAL_24_MONTH_DEMOGRAPHIC_BIRTHS_DEATHS_SECT_PROFESSIONS_ANNUAL_BODY_CULTIVATION_ATOMIC_SAVE' qa-results/rev207-living-world-ledger.log
           grep -Fq 'PASS_REV207_REAL_ORE_GUARD_YAO_BEAST_CULTIVATION_BREEDING_MORTALITY_PHYSICAL_DEATH_DEBIT' qa-results/rev207-living-world-ledger.log
           grep -Fq 'PASS_REV207_REAL_EVERGREEN_SEEDBANK_FORESTS_AND_WILD_HERBS_NO_BARREN_UNBUILT_REGIONS' qa-results/rev207-living-world-ledger.log
+      - name: Godot 4.4.1 sect life tablets confirm deaths, loners without witnesses are only missing
+        shell: bash
+        run: |
+          set -euo pipefail
+          cp logic-qa/apk176-export-fixture/verify_rev208_life_tablet.gd qa-stage/ota177/verify_rev208_life_tablet.gd
+          timeout 110s /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless \
+            --path qa-stage/ota177 --script res://verify_rev208_life_tablet.gd \
+            > qa-results/rev208-life-tablet.log 2>&1 || {
+              tail -120 qa-results/rev208-life-tablet.log; exit 1;
+            }
+          grep -Fq 'PASS_REV208_LIFE_TABLET_CONFIRMED_VS_MISSING_OBITUARY_IDEMPOTENT_ATOMIC_RELOAD' qa-results/rev208-life-tablet.log
       - name: Real Godot engine deterministic 32 spiritual roots, 640 mortal identities and virtual city of 10k to 250k
         shell: bash
         run: |

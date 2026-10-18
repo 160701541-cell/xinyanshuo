@@ -718,8 +718,10 @@ func apply_npc_damage(id: String, incoming: int, damage_source: String="player_s
     if ledger==null:
       return {"ok":false,"reason":"NO_REAL_CENSUS_FOR_VISIBLE_CITIZEN_DEATH"}
     var rooted: bool=String(state.get("realm",""))=="炼气"
+    # 杀这个 NPC 的永远是玩家本人（本函数只由玩家剑击进入），所以 witnessed=true；
+    # 有宗门的再由宗门命牌确认（命牌比目击更早更确定）。
     census=ledger.call("record_named_cultivator_death",id,rooted,
-      not rooted,damage_source)
+      not rooted,damage_source,String(state.get("rev207_sect_id","")),true)
     if not bool(census.get("ok",false)):
       return {"ok":false,"reason":"CENSUS_DEATH_DEBIT_REFUSED_"+String(census.get("reason",""))}
   state["health"]=int(state["health"])-damage
@@ -738,11 +740,31 @@ func apply_npc_damage(id: String, incoming: int, damage_source: String="player_s
   else:
     _sync_npc_status_bar(id)
   var saved: bool=save_state()
+  # rev208 死亡后果：把「怎么被确认的」一路带到控制器，由它决定给玩家看哪句话。
+  var confirmed_by: String=String(census.get("confirmed_by",""))
+  var death_status: String=String(census.get("status",""))
+  var notice: String=""
+  if int(state["health"])==0:
+    var sect_name: String=String(state.get("sect",""))
+    if death_status=="missing":
+      notice="%s 失踪（无人目击、无命牌）" % String(state.get("name","无名修士"))
+    elif confirmed_by=="life_tablet":
+      notice="%s命牌已碎：%s 陨落，宗门文献已记" % [sect_name,
+        String(state.get("name","无名修士"))]
+    elif confirmed_by=="witness":
+      notice="%s 陨落，被你所见；%s尚不知情" % [
+        String(state.get("name","无名修士")),
+        (sect_name+" " if sect_name!="" else "宗门")]
+    else:
+      notice="%s 陨落" % String(state.get("name","无名修士"))
   return {"ok":true,"id":id,"damage":damage,
     "health":int(state["health"]),"dead":int(state["health"])==0,
     "persisted":saved and (not fatal or bool(census.get("ok",false))),
     "death_region_id":String(state.get("death_region_id","")),
-    "death_hour":int(state.get("death_world_hour",-1))}
+    "death_hour":int(state.get("death_world_hour",-1)),
+    "death_status":death_status,"confirmed_by":confirmed_by,
+    "death_outside_sect":bool(census.get("death_outside_sect",false)),
+    "notice":notice}
 
 func available_player_arts() -> Array[Dictionary]:
   var known: Array=player_data.get("known_arts",[])

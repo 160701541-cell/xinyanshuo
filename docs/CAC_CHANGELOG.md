@@ -1,5 +1,13 @@
 # CAC 工序变更与开发日志
 
+## 2026-10-18 / CAC-REV208-P0-COMBAT-LIFE-LIFE-TABLET / 命牌确认死亡、失踪判定与宗门文献（分支 `agent/dsh-p0-xianxia-ecology`，严格未签名未发布）
+- **用户最新口径（本轮依据）**：「死后被人发现就会传播，没人发现就最多会被人认为是失踪了」「宗门有命牌死了会知道的」「死了保留ID」。本轮只做 rev208 能承受的一层：命牌确认 + 目击确认 + 失踪 + 宗门文献；轮回/地府/鬼修/尸魁/尸体搜刮明确留作 DLC 钩子，不在本轮。
+- **代码（3 个文件）**：`apk176_living_regions_rev207.gd` 的 `record_named_cultivator_death(id,is_spirit_rooted,is_body_cultivator,source,sect_id="",witnessed=true)` 现在区分 confirmed/missing：有宗门 = 命牌确认（confirmed_by=`life_tablet`），无宗门靠目击（`witness`），两者都没有只记 `missing`；`people/adults` 一律 -1，确认死亡才 `region.deaths+1`/`confirmed_deaths+1` 并写入 `sect_obituaries[sect_id]`（每宗门上限 200 条），否则 `region.missing+1`/`missing_total+1`；`died_total` 继续做人口守恒（=确认死亡+失踪），存档新字段 `sect_obituaries/confirmed_deaths/missing_total` 原子写入，旧档 `died_total>0` 且无新计数时按确认死亡迁移。`apk176_cultivation_world_rev201.gd` 的 `apply_npc_damage` 传入 `state.rev207_sect_id` 与 witnessed=true，并在返回里带 `death_status/confirmed_by/death_outside_sect/notice`；`apk176_player_controller_rev187.gd` 击杀提示改为按 `notice` 播报（命牌已碎 / 被你所见宗门尚不知情 / 失踪）。
+- **真实引擎验证（本机 Godot 4.4.1 arm64 headless）**：新增 `logic-qa/apk176-export-fixture/verify_rev208_life_tablet.gd`，实跑断言 6 组 —— 宗门无目击也 confirmed_by=life_tablet 且文献 1 条、散修无目击记 missing 不进文献、散修被目击记 witness、同 ID 重复调用不重复扣人口、人口守恒、存档重读后 status/confirmed_by/文献全部保留；输出 `PASS_REV208_LIFE_TABLET_CONFIRMED_VS_MISSING_OBITUARY_IDEMPOTENT_ATOMIC_RELOAD`，3 个改动脚本 `--check-only` 解析通过（exit 0）。
+- **CI 工作流**：`.github/workflows/canglan-rev208-green-saplings-qa-only.yml` 新增该 QA 步骤并 grep 上述 PASS；同时修复了 `hq_terrain_pbr.gd` 未被 staging 导致 rev208 QA 构建 BLOCKED 的缺口（`tools/stage_rev208_hq_ecology.py`）。**本轮尚未拿到该 workflow 的新 run 结论，不得当成已绿。**
+- **诚实边界**：本轮只覆盖 12 名具名修士的死亡确认与记录，宗门记仇/衣冠冢实体/NPC 互杀引起的 missing 尚未做；`sect_obituaries` 目前只进存档，还没有宗门文献 UI；Android 真机未测，`android-preview/latest.json` 未改、未签名、未发布。
+
+
 ## 2026-10-18 / CAC-REV208-P0-HQ-ECOLOGY-XIANXIA-FOREST-PBR / 国风森林两级地表PBR + 4类真扫描地被 + 苍松古柏树皮（分支 `agent/dsh-p0-xianxia-ecology`，严格未签名未发布）
 - **本轮不是只交文档，是真代码+真资产+真引擎验证。** 分支 `agent/dsh-p0-xianxia-ecology`（从 rev208 候选 `f1bc797` 起），代码提交 `c4bfdd6`，改动 58 文件 / +6146 行。**未合并 main、未签名、未改 `android-preview/latest.json`、未产 APK。**
 - **补的是哪条 P0 缺口（先查后做，不重复已完成工作）**：现有 `assets/hq-rev208/vegetation/trees/manifest.json` 与 `botanical/manifest.json` 里，`texture_resolution`/`material_channels` 是 `NOT_MEASURED`、`triangle_lod1`/`lod2` 是 `NOT_PRODUCED`，三棵成熟树（oak/maple/linden）是**欧洲行道树且完全没有贴图**；`materials/rev207/` 只有 512² 的灰泥/瓦/木三组建筑贴图，地表靠 256² 程序 grain。也就是说 **REV208-HQ-022「Poly Haven 类 CC0 真源 PBR 建立 macro 2–8m + detail 2–8cm 两级着色」从未落地**，本轮就是补它，并顺带补 `HQ-020` 的灌木/地被/蕨/苔/山石层级。

@@ -2001,8 +2001,12 @@ func _sword_attack_cultivator() -> bool:
   _spawn_real_combat_hit(body.position+Vector3.UP*1.05,Color("#dfb6ab"),3)
   _show_actual_damage_number(body.position,int(event["damage"]),Color("#f7c3b2"))
   if bool(event.get("dead",false)):
-    say("%s 已陨落。其身份、死亡时间、攻击者已写入世界存档" %
-      String(person.get("name","修士")))
+    # rev208：死讯传不传得出去，取决于命牌/目击，不再是同一句话。
+    var notice: String=String(event.get("notice",""))
+    if notice.is_empty():
+      notice="%s 已陨落。其身份、死亡时间、攻击者已写入世界存档" % String(
+        person.get("name","修士"))
+    say(notice)
     _clear_target_lock()
   else:
     say("攻击%s：真实生命 -%d（剩余%d），目标进入敌对反击" % [
