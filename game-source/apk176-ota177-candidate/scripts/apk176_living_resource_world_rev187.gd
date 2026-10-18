@@ -118,6 +118,9 @@ var natural_world_births: RefCounted
 var hq_botanical_sources: Dictionary={}
 var hq_botanical_visuals: Dictionary={}
 var hq_botanical_terrain_sites: Dictionary={}
+# rev208 P0-HQ-ECOLOGY：真实扫描地被（蕨/灌木/苔藓/苔石）布置报告。
+# 资源不在包里时保持空报告并记录原因，不影响原世界启动。
+var rev208_groundcover_report: Dictionary={}
 var hq_botanical_colliders: Dictionary={}
 var hq_botanical_placement_failures: Array[String]=[]
 var _hq_botanical_clock: float=0.0
@@ -281,6 +284,7 @@ func _ready() -> void:
   # call ran before quality existed and rejected all genuine bush sources.
   _spawn_licensed_living_understory()
   _spawn_rev208_hq_botanical_ecology()
+  _spawn_rev208_real_scanned_groundcover()
   # Actual CC0 fern + original PBR grass GLB meshes are physically instanced
   # in compact per-species/per-habitat-cell GPU pools (not colored quads).
   forest_floor_pool=HQForestFloorPool.new()
@@ -1032,6 +1036,48 @@ func _living_shrub_count() -> int:
 # Non-inventory natural flora for visual ecology: these never produce free ore,
 # herbs, timber or duplicate the saved 52 natural resource IDs. A living tree
 # carries a deterministic ecological identity and real trunk collision.
+func _spawn_rev208_real_scanned_groundcover() -> void:
+  # REV208-HQ-020：4 类真实扫描地被（Poly Haven CC0）。
+  # 只有在 staging 真的把 res://canglan_rev187/hq_ecology_groundcover 装进
+  # PCK 时才会生成；否则明确记录 SKIPPED，不伪造一株植物。
+  rev208_groundcover_report={"spawned":0,"skipped":["MODULE_ABSENT"],
+    "by_species":{},"installed":[]}
+  if vivid_materials==null or world==null or terrain_world==null:
+    return
+  var module: Variant=vivid_materials.get("hq_ecology")
+  if module==null:
+    rev208_groundcover_report["skipped"]=["HQ_ECOLOGY_MODULE_NOT_LOADED"]
+    return
+  if not (module as RefCounted).has_method("spawn_groundcover"):
+    rev208_groundcover_report["skipped"]=["SPAWN_API_MISSING"]
+    return
+  rev208_groundcover_report=module.call("spawn_groundcover",
+    world,terrain_world,quality,208311)
+  var spawned: int=int(rev208_groundcover_report.get("spawned",0))
+  if spawned>0:
+    _add_event("rev208候选：真实扫描地被 %d 株（蕨/灌木/苔藓/苔石），美术验收待完成" % spawned)
+
+## 把真源 CC0 树皮 PBR 应用到近景针叶树干：苍松用 knotted pine bark、
+## 古柏用 Chinese cedar bark。只覆盖“原本没有任何贴图”的材质，
+## 不改写第三方已有的 UV/PBR。
+func _apply_rev208_real_bark() -> void:
+  if vivid_materials==null:
+    return
+  var module: Variant=vivid_materials.get("hq_ecology")
+  if module==null or not (module as RefCounted).has_method("apply_bark_to_tree"):
+    return
+  var kinds: Dictionary={"pine":"pine","cypress":"cypress","conifer":"pine"}
+  var covered: int=0
+  for kind in kinds:
+    if not hq_botanical_sources.has(kind):
+      continue
+    var source: Node3D=hq_botanical_sources[kind]
+    if not is_instance_valid(source):
+      continue
+    covered+=int(module.call("apply_bark_to_tree",source,String(kinds[kind])))
+  if covered>0:
+    _add_event("rev208候选：%d 个近景针叶树干使用真源 CC0 树皮 PBR" % covered)
+
 func _spawn_rev208_hq_botanical_ecology() -> void:
   if terrain_world==null or quality==null:
     return
@@ -1119,6 +1165,7 @@ func _spawn_rev208_hq_botanical_ecology() -> void:
       collider.add_child(stem)
       world.add_child(collider)
       hq_botanical_colliders[identity]=collider
+  _apply_rev208_real_bark()
   if hq_botanical_sources.size()!=HQ_REV208_BOTANICAL.size():
     asset_errors.append("REV208_HQ_EIGHT_VENDOR_BOTANICAL_SOURCES_INCOMPLETE")
   _add_event("rev208候选：真实CC0松柏蕨草生态 %d 株，手机美术验收待完成" % [
@@ -2309,6 +2356,7 @@ func stats() -> Dictionary:
     "rev208_hq_true_mature_tree_count":hq_mature_tree_visuals.size(),
     "rev208_hq_botanical_genuine_source_species":hq_botanical_sources.keys(),
     "rev208_hq_botanical_true_glb_count":hq_botanical_visuals.size(),
+    "rev208_real_scanned_groundcover":rev208_groundcover_report.duplicate(true),
     "rev208_hq021_original_vendor_gpu_forest_floor":(
       forest_floor_pool.call("stats") if forest_floor_pool!=null else {}),
     "rev208_hq_independent_spirit_herb_source_count":hq_medicinal_source_templates.size(),
