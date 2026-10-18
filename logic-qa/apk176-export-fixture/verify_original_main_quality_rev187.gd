@@ -876,8 +876,13 @@ func _run() -> void:
       material is StandardMaterial3D and (
       material as StandardMaterial3D).vertex_color_use_as_albedo)
     if material is ShaderMaterial:
-      honors_vertex_biome=bool((
-        material as ShaderMaterial).get_shader_parameter("vertex_biome"))
+      # rev208 两级地表 PBR 的参数名是 use_vertex_biome；旧脚本只读 vertex_biome。
+      # get_shader_parameter 对不存在的参数返回 null，null 直接 bool() 会让 QA 崩。
+      var vb: Variant=(material as ShaderMaterial).get_shader_parameter(
+        "use_vertex_biome")
+      if vb==null:
+        vb=(material as ShaderMaterial).get_shader_parameter("vertex_biome")
+      honors_vertex_biome=(vb is bool and bool(vb))
     if honors_vertex_biome:
       continuous_biome_surfaces+=1
       var colors: PackedColorArray=actual_ground.mesh.surface_get_arrays(surface)[Mesh.ARRAY_COLOR]
