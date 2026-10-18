@@ -46,6 +46,26 @@ for mesh in list(bpy.data.meshes):
 bpy.ops.import_scene.fbx(filepath=str(inp), use_anim=False)
 bpy.context.view_layer.update()
 nodes = [o for o in bpy.context.scene.objects if o.type == "MESH"]
+selected_name = params.get("only-object", "")
+if selected_name:
+    original_count = len(nodes)
+    nodes = [node for node in nodes if node.name == selected_name]
+    if len(nodes) != 1:
+        raise RuntimeError("NO_EXACT_ORIGINAL_CHINESE_WALL_MOONGATE_MESH_" +
+                           selected_name + "_ORIGINAL_COUNT_" + str(original_count))
+    # The publisher displays 78 independent courtyard wall modules as an
+    # enormous 295m x 288m sample catalog. ONE authentic Chinese moon-door
+    # or wall segment is needed in the mobile village, not all 838k tris.
+    # Relocate its WHOLE OBJECT by its original world-space AABB center:
+    # preserve original topology, normals, UVs, materials and visual size.
+    bpy.context.view_layer.update()
+    original = nodes[0]
+    original_points = [original.matrix_world @ Vector(c) for c in original.bound_box]
+    center = Vector(sum(c[i] for c in original_points) / 8.0 for i in range(3))
+    translated = original.matrix_world.copy()
+    translated.translation -= center
+    original.matrix_world = translated
+    bpy.context.view_layer.update()
 if not nodes:
     raise RuntimeError("NO_ACTUAL_VENDOR_3D_GEOMETRY_IMPORT")
 triangles = 0
@@ -108,6 +128,8 @@ if not any("TEXCOORD_0" in primitive.get("attributes", {})
 record = {
     "schema": 208,
     "source_name": inp.name,
+    "selected_authentic_source_component": selected_name if selected_name else "ENTIRE_AUTHOR_FBX",
+    "original_author_mesh_coordinates_recentred_without_rescaling": bool(selected_name),
     "source_fbx_sha256": hashlib.sha256(inp.read_bytes()).hexdigest(),
     "converted_glb_name": out.name,
     "converted_glb_sha256": hashlib.sha256(raw).hexdigest(),
