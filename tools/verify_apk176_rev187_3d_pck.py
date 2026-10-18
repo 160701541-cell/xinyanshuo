@@ -101,7 +101,9 @@ def audit(path: Path) -> dict:
         raise ValueError("BLOCKED: incompatible or flagged Godot PCK")
     file_base = struct.unpack_from("<Q", raw, 0x18)[0]
     count = struct.unpack_from("<I", raw, 0x60)[0]
-    if not (0x68 <= file_base <= len(raw) and 7 <= count <= 140):
+    # rev208 增加了真实 CC0 地表 PBR(24张) + 4 类真扫描地被(gltf/bin/贴图)，
+    # 资源条目上限随之上调；下限不变，仍然是“必须真的是多资源包”。
+    if not (0x68 <= file_base <= len(raw) and 7 <= count <= 400):
         raise ValueError("BLOCKED: invalid PCK file table")
     offset = 0x64
     found: dict[str, bytes] = {}
@@ -183,12 +185,45 @@ def audit(path: Path) -> dict:
     if (b"apk176_living_resource_world_rev187.gd" not in scene
             or b"export-3ad5c15c4f3250da0cc7c1af1770d85f-main.scn" not in scene):
         raise ValueError("BLOCKED: original compiled APK176 scene not inherited")
+    # ---- rev208 P0-HQ-ECOLOGY：真实 CC0 两级地表 PBR 与真扫描地被必须真的在包里
+    ecology = json.loads(found["canglan_rev187/hq_ecology_terrain/ecology-intake-provenance.json"])
+    assert ecology["release_policy"] == "QUARANTINED_CANDIDATE_NOT_OTA_NOT_PHONE_PASSED"
+    pbr_textures = 0
+    for tex in ecology["textures"]:
+        assert tex["license"] == "CC0", "BLOCKED: non-CC0 terrain texture " + tex["slug"]
+        for m in tex["maps"]:
+            rel = "canglan_rev187/hq_ecology_terrain/%s/%s" % (tex["slug"], m["file"])
+            data = found[rel]
+            if not data.startswith(b"\xff\xd8\xff"):
+                raise ValueError("BLOCKED: terrain PBR map is not a real JPEG " + rel)
+            if hashlib.sha256(data).hexdigest() != m["sha256"]:
+                raise ValueError("BLOCKED: terrain PBR SHA mismatch " + rel)
+            pbr_textures += 1
+    assert pbr_textures == 24, "BLOCKED: expected 24 real terrain PBR maps, got %d" % pbr_textures
+    groundcover = 0
+    for model in ecology["models"]:
+        assert model["license"] == "CC0", "BLOCKED: non-CC0 groundcover " + model["slug"]
+        for f in model["files"]:
+            rel = "canglan_rev187/hq_ecology_groundcover/%s/%s" % (model["slug"], f["file"])
+            data = found[rel]
+            if hashlib.sha256(data).hexdigest() != f["sha256"]:
+                raise ValueError("BLOCKED: groundcover SHA mismatch " + rel)
+            if rel.endswith(".gltf") and b'"asset"' not in data:
+                raise ValueError("BLOCKED: groundcover gltf is not real glTF JSON " + rel)
+            groundcover += 1
+    assert groundcover == 20, "BLOCKED: expected 20 staged groundcover files, got %d" % groundcover
+    terrain_script = found["canglan_rev187/hq_terrain_pbr.gd"]
+    assert b"HQ_TwoScale" in terrain_script or b"macro_tiles_per_metre" in terrain_script, (
+        "BLOCKED: two-scale terrain PBR module missing from signed PCK")
+    assert b"spawn_groundcover" in terrain_script
     if b"main_original_quality_rev187.tscn" not in found["scenes/main.tscn.remap"]:
         raise ValueError("BLOCKED: original APK entrypoint not pointed at 3D preview")
     if (b"gather_to_actor" not in found["canglan_rev187/worldbox_life_sim.gd"] or
             b"deliver_carried" not in found["canglan_rev187/worldbox_life_sim.gd"]):
         raise ValueError("BLOCKED: actual finite resource transport backend missing")
     return {"resource_count": len(found), "real_verified_cc0_glb_count": len(EXPECTED_MODELS),
+            "rev208_real_terrain_pbr_maps": pbr_textures,
+            "rev208_real_scanned_groundcover_files": groundcover,
             "size_bytes": len(raw), "sha256": hashlib.sha256(raw).hexdigest(),
             "original_compiled_main_preserved": True}
 

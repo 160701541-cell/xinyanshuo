@@ -126,13 +126,31 @@ void fragment() {
 """
   return shader
 
+## 返回 Material（不再限定 ShaderMaterial）：真实 CC0 地表用引擎原生
+## StandardMaterial3D 三平面管线，石壁/土层等仍走旧的 WorldSpace ShaderMaterial。
 func material_for_real_terrain(role: String,base_color: Color,
-    vertex_biome: bool) -> ShaderMaterial:
+    vertex_biome: bool) -> Material:
   if _microtexture==null or _shared_shader==null:
     initialize()
   # REV208-HQ-022：真实自然地面优先使用 Poly Haven CC0 扫描的两级 PBR。
   # 只替换 natural_ground；石壁/土层等分层地表仍走原有 Vivid 逻辑。
-  if role=="natural_ground" and hq_ecology!=null:
+  # REV208-HQ-022 两级 PBR 地表：真机/CI 实测（run 39109440674 的
+  # real_godot_rev208_* 帧）显示该自定义 shader 在地形上输出为一片均匀青色，
+  # 被既有 REV191 地面可见性审计判 FAIL(ratio 0.777)。**在真实渲染下修好之前
+  # 必须默认关闭**，绝不能让玩家看到一块青色的地。资源与解析器保留，等修好再开。
+  # 自定义两级 shader 在真实 Vulkan 帧里把地形画成均匀青色（run 39109440674），
+  # 在能本地出图前保持关闭；改用引擎原生 StandardMaterial3D 三平面方案。
+  const HQ_GROUND_SHADER_ENABLED: bool = false
+  # 原生三平面也先关：CI run 39111379602 里地面仍是大片青色（REV191 审计
+  # ratio 0.771），必须先证明“换不换材质都不影响青色”才能判断根因。
+  const HQ_GROUND_NATIVE_ENABLED: bool = false
+  if role=="natural_ground" and hq_ecology!=null and HQ_GROUND_NATIVE_ENABLED:
+    var native_ground: StandardMaterial3D=hq_ecology.call(
+      "build_ground_standard_material",vertex_biome) as StandardMaterial3D
+    if native_ground!=null:
+      hq_ecology_status="NATIVE_TRIPLANAR_REAL_CC0"
+      return native_ground
+  if role=="natural_ground" and hq_ecology!=null and HQ_GROUND_SHADER_ENABLED:
     var hq_ground: ShaderMaterial=hq_ecology.call(
       "build_ground_material",vertex_biome) as ShaderMaterial
     if hq_ground!=null:
