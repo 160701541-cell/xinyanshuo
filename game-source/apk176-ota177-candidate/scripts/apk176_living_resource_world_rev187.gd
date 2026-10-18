@@ -56,6 +56,10 @@ const HQ_REV208_MEDICINAL: Dictionary={
   "herb_wood":"res://canglan_rev187/hq_rev208/hq_medicinal_wood_cc0_drawmerged.glb",
   "herb_fire":"res://canglan_rev187/hq_rev208/hq_medicinal_fire_cc0_drawmerged.glb",
   "herb_water":"res://canglan_rev187/hq_rev208/hq_medicinal_water_cc0_drawmerged.glb"}
+const HQ_REV208_CHINESE_ARCHITECTURE: Dictionary={
+  "pavilion":"res://canglan_rev187/hq_rev208/chinese_four_corner_pavilion.glb",
+  "moon_gate":"res://canglan_rev187/hq_rev208/chinese_moongate_medium.glb",
+  "garden_wall":"res://canglan_rev187/hq_rev208/chinese_garden_wall_medium_section.glb"}
 const HQ_REV208_BOTANICAL: Dictionary={
   "pine":"res://canglan_rev187/hq_rev208/hq_pine_cc0_drawmerged.glb",
   "cypress":"res://canglan_rev187/hq_rev208/hq_cypress_cc0_drawmerged.glb",
@@ -115,6 +119,10 @@ var hq_mature_tree_visuals: Dictionary={}
 var hq_medicinal_source_templates: Dictionary={}
 var forest_floor_pool: Node3D
 var natural_world_births: RefCounted
+var hq_chinese_architecture_sources: Dictionary={}
+var hq_chinese_architecture_visuals: Dictionary={}
+var hq_chinese_architecture_colliders: Dictionary={}
+var hq_chinese_architecture_source_audit: Dictionary={}
 var hq_botanical_sources: Dictionary={}
 var hq_botanical_visuals: Dictionary={}
 var hq_botanical_terrain_sites: Dictionary={}
@@ -281,6 +289,10 @@ func _ready() -> void:
   # call ran before quality existed and rejected all genuine bush sources.
   _spawn_licensed_living_understory()
   _spawn_rev208_hq_botanical_ecology()
+  # CC0 author pavilion, genuine circular moon-door garden wall, actual
+  # Chinese timber roof/body geometry inside ORIGINAL APK176 Main 3D world,
+  # not an HTML showroom, western medieval gazebo or instant free housing.
+  _spawn_rev208_real_chinese_sect_scenery()
   # Actual CC0 fern + original PBR grass GLB meshes are physically instanced
   # in compact per-species/per-habitat-cell GPU pools (not colored quads).
   forest_floor_pool=HQForestFloorPool.new()
@@ -697,6 +709,25 @@ func _load_assets() -> void:
       asset_errors.append("REV208_P0_HQ_VENDOR_PBR_NOT_FOUR_SURFACES_"+String(tree_kind))
       continue
     hq_mature_tree_sources[tree_kind]=source
+  for architecture_kind in HQ_REV208_CHINESE_ARCHITECTURE:
+    var authentic_structure: Node3D=_parse_existing_cc0(String(
+      HQ_REV208_CHINESE_ARCHITECTURE[architecture_kind]))
+    if authentic_structure==null:
+      asset_errors.append("REV208_P0_CHINESE_ARCHITECTURE_GLTF_MISSING_"+
+        String(architecture_kind))
+      continue
+    var true_meshes: Array[Node]=authentic_structure.find_children(
+      "*","MeshInstance3D",true,false)
+    if true_meshes.is_empty():
+      asset_errors.append("REV208_P0_CHINESE_SOURCE_HAS_NO_AUTHOR_UV_MESH_"+
+        String(architecture_kind))
+      authentic_structure.free()
+      continue
+    var source_qa: Dictionary=vivid_materials.call(
+      "upgrade_completed_cc0_model",authentic_structure,
+      String(architecture_kind),"building")
+    hq_chinese_architecture_source_audit[architecture_kind]=source_qa
+    hq_chinese_architecture_sources[architecture_kind]=authentic_structure
   for plant_kind in HQ_REV208_BOTANICAL:
     var botanical: Node3D=_parse_existing_cc0(String(HQ_REV208_BOTANICAL[plant_kind]))
     if botanical==null:
@@ -1032,6 +1063,89 @@ func _living_shrub_count() -> int:
 # Non-inventory natural flora for visual ecology: these never produce free ore,
 # herbs, timber or duplicate the saved 52 natural resource IDs. A living tree
 # carries a deterministic ecological identity and real trunk collision.
+func _spawn_rev208_real_chinese_sect_scenery() -> void:
+  # Rev208 HQ Chinese architecture source (VVaytoyek, Godot Asset Store
+  # CC0). Unlike prior prefab houses, these are scenic cultural landmarks,
+  # NOT completed dwellings/sect service buildings, population capacity,
+  # NPC labour or construction outputs. All three sources are authentic
+  # mesh/UV GLB 2.0 with provenance source SHA and real Godot 4.4.1 QA.
+  # The vendor distributes wall sample as 78 parts/838,760 triangles;
+  # only individually authorized 18,412-triangle moon-door and 1,188-tri
+  # real wall section are included in mobile. Pavilion 76,926 tris.
+  var landmarks: Array=[
+    {"kind":"pavilion","id":"CL-REV208-HQ-CHINESE-PAVILION-01",
+      "at":Vector2(-21.5,-34.5),"metres":7.8,"yaw":0.16},
+    {"kind":"moon_gate","id":"CL-REV208-HQ-CHINESE-MOONGATE-01",
+      "at":Vector2(-32.0,3.0),"metres":4.2,"yaw":0.0},
+    {"kind":"garden_wall","id":"CL-REV208-HQ-CHINESE-GARDEN-WALL-01",
+      "at":Vector2(-35.2,3.0),"metres":4.1,"yaw":0.0}]
+  for spec in landmarks:
+    var kind: String=String(spec["kind"])
+    if not hq_chinese_architecture_sources.has(kind):
+      asset_errors.append("REV208_REAL_CHINESE_ARCHITECTURE_NOT_LOADED_"+kind)
+      continue
+    var authored: Node3D=(hq_chinese_architecture_sources[kind] as Node3D).duplicate()
+    authored.name=String(spec["id"])
+    authored.position=Vector3(float(spec["at"].x),0,float(spec["at"].y))
+    authored.rotation.y=float(spec["yaw"])
+    authored.set_meta("source_author","VVaytoyek")
+    authored.set_meta("source_license","Godot Foundation Store verified CC0-1.0")
+    authored.set_meta("source_true_author_mesh",true)
+    authored.set_meta("not_a_free_completed_house",true)
+    authored.set_meta("not_a_new_resource_or_loot",true)
+    authored.set_meta("sect_scenery_P0_art_pending",true)
+    authored.set_meta("world_entity_id",String(spec["id"]))
+    world.add_child(authored)
+    # Blender original FBX is authored in Z-up; GLB and Godot are Y-up.
+    # Determine actual 3D mesh bounds, not source filename guesswork.
+    var original_bounds: Vector2=_visible_bounds(authored)
+    var original_height: float=original_bounds.y-original_bounds.x
+    if original_height<1.0 or original_height>800.0:
+      asset_errors.append("REV208_REAL_CHINESE_VENDOR_GLTF_BAD_HEIGHT_"+kind+
+        "_actual_"+str(original_height))
+      authored.queue_free()
+      continue
+    var human_target_metres: float=float(spec["metres"])
+    var safe_factor: float=human_target_metres/original_height
+    authored.scale=Vector3.ONE*safe_factor
+    var measured: Vector2=_visible_bounds(authored)
+    var actual_height: float=measured.y-measured.x
+    if absf(actual_height-human_target_metres)>0.26:
+      asset_errors.append("REV208_CHINESE_BUILDING_VISIBLE_HUMAN_HEIGHT_WRONG_"+
+        kind+"_"+str(actual_height))
+      authored.queue_free()
+      continue
+    var x: float=float(spec["at"].x)
+    var z: float=float(spec["at"].y)
+    var floor_y: float=float(terrain_world.call("height_at",x,z))
+    authored.position.y+=floor_y-measured.x
+    authored.set_meta("source_actual_Godot_height_m",actual_height)
+    authored.set_meta("real_license_uv_preserved",true)
+    hq_chinese_architecture_visuals[String(spec["id"])]=authored
+    # Enforce physical collision on pavilion walkable base and wall only.
+    # A solid box through the moon-gate opening would trap the player;
+    # its opening MUST remain passable in original free first/third camera.
+    if kind=="moon_gate":
+      continue
+    var solid:=StaticBody3D.new()
+    solid.name="REV208ChineseAuthoredStructureSolid_"+kind
+    solid.collision_layer=2
+    solid.collision_mask=0
+    var shape:=CollisionShape3D.new()
+    var bounds:=BoxShape3D.new()
+    if kind=="pavilion":
+      bounds.size=Vector3(7.0,0.38,7.0)
+      solid.position=Vector3(x,floor_y+0.10,z)
+      # Pavilion open sides are walkable, no fabricated solid room.
+    else:
+      bounds.size=Vector3(0.75,2.9,0.85)
+      solid.position=Vector3(x,floor_y+1.45,z)
+    shape.shape=bounds
+    solid.add_child(shape)
+    world.add_child(solid)
+    solid.set_meta("architecture_id",String(spec["id"]))
+    hq_chinese_architecture_colliders[String(spec["id"])]=solid
+
 func _spawn_rev208_hq_botanical_ecology() -> void:
   if terrain_world==null or quality==null:
     return
@@ -2307,6 +2421,10 @@ func stats() -> Dictionary:
     "rev207_mine_guardian_positions_linked":actual_wildlife.values().filter(
       func(v): return String(v.get("guarded_ore",""))!="").size(),
     "rev208_hq_true_mature_tree_count":hq_mature_tree_visuals.size(),
+    "rev208_hq_chinese_vendor_real_GLTF_3d_models":hq_chinese_architecture_sources.size(),
+    "rev208_hq_chinese_real_architecture_instances":hq_chinese_architecture_visuals.size(),
+    "rev208_hq_chinese_real_structural_colliders":hq_chinese_architecture_colliders.size(),
+    "rev208_hq_chinese_cc0_quaternius_pbr_audit":hq_chinese_architecture_source_audit.duplicate(true),
     "rev208_hq_botanical_genuine_source_species":hq_botanical_sources.keys(),
     "rev208_hq_botanical_true_glb_count":hq_botanical_visuals.size(),
     "rev208_hq021_original_vendor_gpu_forest_floor":(
@@ -2534,6 +2652,14 @@ func _exit_tree() -> void:
     if botanical is Node3D and is_instance_valid(botanical):
       (botanical as Node3D).free()
   hq_botanical_sources.clear()
+  for chinese_architecture_template in hq_chinese_architecture_sources.values():
+    if chinese_architecture_template is Node3D and is_instance_valid(
+        chinese_architecture_template):
+      (chinese_architecture_template as Node3D).free()
+  hq_chinese_architecture_sources.clear()
+  hq_chinese_architecture_visuals.clear()
+  hq_chinese_architecture_colliders.clear()
+  hq_chinese_architecture_source_audit.clear()
   for herb_template in hq_medicinal_source_templates.values():
     if herb_template is Node3D and is_instance_valid(herb_template):
       (herb_template as Node3D).free()
