@@ -536,14 +536,14 @@ jobs:
           grep -Fq 'REV208_TRUE_GODOT_COMPARISON_CAMERA_TIME_OVERRIDE_12H_RESTORE_' qa-results/rev187-real-worksite/render.log
           grep -Fq 'PASS_REV208_REAL_GODOT_CAMERA_CORPSE_FRAME_TRUE_MORTALITY_POPULATION_MINUS_ONE' qa-results/rev187-real-worksite/render.log
           grep -Fq 'PASS_REV208_THREE_REAL_GODOT441_ORIGINAL_MAIN_EVERGREEN_AND_FERN_ART_EVIDENCE_UNAPPROVED' qa-results/rev187-real-worksite/render.log
-          grep -Fq 'PASS_REV208_REAL_GODOT441_ORIGINAL_APK176_HQ021_FERN_GRASS_GPU_ECOLOGY_FRAME_PENDING_ART_QA' qa-results/rev187-real-worksite/render.log
+          grep -Fq 'PASS_REV208_REAL_GODOT441_ORIGINAL_APK176_HQ021_FERN_GRASS_PHYSICAL_3D_ECOLOGY_FRAME_PENDING_ART_QA' qa-results/rev187-real-worksite/render.log
           for f in real_godot_rev208_mature_oak_8m_vs_avatar.png \
               real_godot_rev208_mature_maple_9m_vs_avatar.png \
               real_godot_rev208_mature_linden_8m_vs_avatar.png \
               real_godot_rev208_hq_pine_forest_actual_main.png \
               real_godot_rev208_hq_cypress_grove_actual_main.png \
               real_godot_rev208_hq_fern_understory_actual_main.png \
-              real_godot_rev208_32m_vendor_fern_grass_gpu_floor_main.png \
+              real_godot_rev208_32m_vendor_fern_grass_actual_3d_floor_main.png \
               real_godot_rev208_npc_death_state.png; do
             test -s "qa-results/rev187-real-worksite/$f"
           done
@@ -596,7 +596,7 @@ jobs:
                       real_godot_rev208_hq_pine_forest_actual_main.png \
                       real_godot_rev208_hq_cypress_grove_actual_main.png \
                       real_godot_rev208_hq_fern_understory_actual_main.png \
-              real_godot_rev208_32m_vendor_fern_grass_gpu_floor_main.png \
+              real_godot_rev208_32m_vendor_fern_grass_actual_3d_floor_main.png \
                       real_godot_rev208_npc_death_state.png \
                       real_apk176_rev206_spirit_herbs_original_quaternius.png \
                       real_apk176_rev207_vivid_cc0_texture_forest_wide.png; do
