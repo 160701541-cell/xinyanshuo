@@ -137,7 +137,23 @@ func _diagnose_ground_once() -> void:
     if found:
       targets.append(mi)
   print("DIAG_HQ_MESH_COUNT ",targets.size())
-  var space: PhysicsDirectSpaceState3D=room.get_world_3d().direct_space_state
+  var w3: World3D=camera.get_world_3d()
+  var env: Environment=w3.environment
+  if env!=null:
+    print("DIAG_ENV bg_mode=",env.background_mode," bg_color=",env.background_color,
+      " ambient_source=",env.ambient_light_source," fog_enabled=",env.fog_enabled,
+      " fog_light_color=",env.fog_light_color)
+  # 大而薄的平面候选：谁在相机前铺了一大块？
+  for node in room.find_children("*","MeshInstance3D",true,false):
+    var flat: MeshInstance3D=node as MeshInstance3D
+    if flat.mesh==null:
+      continue
+    var bb: AABB=flat.mesh.get_aabb()
+    if bb.size.y<=0.8 and max(bb.size.x,bb.size.z)>=12.0:
+      print("DIAG_FLAT_PLANE mesh=",String(flat.get_path())," aabb=",bb,
+        " origin=",flat.global_transform.origin," visible=",flat.visible,
+        " material=",str(flat.get_active_material(0)))
+  var space: PhysicsDirectSpaceState3D=w3.direct_space_state
   for probe in [Vector2(640,620),Vector2(640,560),Vector2(480,600)]:
     var o: Vector3=camera.project_ray_origin(probe)
     var dir: Vector3=camera.project_ray_normal(probe)
@@ -162,6 +178,13 @@ func _diagnose_ground_once() -> void:
   if pink_img!=null and not pink_img.is_empty():
     pink_img.save_png(out.path_join("diag_rev208_worksite_pink.png"))
     print("DIAG_PINK_REGION_MEAN ",_diag_region_mean(pink_img))
+    var magenta:=0
+    for yp in range(500,700,8):
+      for xp in range(200,1000,8):
+        var pc: Color=pink_img.get_pixel(xp,yp)
+        if pc.r>0.5 and pc.g<0.3 and pc.b>0.5:
+          magenta+=1
+    print("DIAG_PINK_MAGENTA_SAMPLES ",magenta)
   for mi in targets:
     (mi as MeshInstance3D).material_override=null
     (mi as MeshInstance3D).visible=false
