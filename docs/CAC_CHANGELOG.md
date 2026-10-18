@@ -1,5 +1,13 @@
 # CAC 工序变更与开发日志
 
+## 2026-10-18 / REV208-P0-USER-CORRECTION-NATURAL-RANDOM-RESOURCE-BIRTH / 天然资源先生成、后随机出现，库存仍需劳动获得（用户最新硬规则）
+- **用户修正并立即改持续研发任务**：新世界初始资源**本来就是世界生成器直接凭空生成**，后续木材源/石矿脉/草药/灵矿等**还要在合适区域随机刷新出现**，不能因为工人不断开采把全地图永久耗尽。过去“无免费资源/NO_RESOURCE_EX_NIHILO”描述只用于禁止NPC凭空领免费背包货物、村庄库存和金币，**不禁止自然资源节点生成**；新规范已直接写入 `AGENTS.md` `da68f18`、`docs/DEVELOPMENT_EXECUTION_RULES.md` `ab1652c`，每小时自动研发任务也已改正。
+- **已真实改原APK176资源账代码**：`game-source/apk176-ota177-candidate/scripts/apk176_spirit_resources_rev206.gd` 提交 `9fd3b3f`：在原13个可采源GLB资源节点、原720小时自繁殖、原206存档格式及补充生长的基础上，新增每120世界小时按固定世界种子+区域约束**随机生成新野生灵草节点**，每240世界小时新生**灵石原矿节点**；每个新资源独立ID `CL-WILD-LINGCAO-R208-...` / `CL-WILD-LINGSHI-R208-...`、种类、坐标、剩余值、再生冷却及实际世界库存守恒，原本收获与背包转移仍需实体采集，既有原13个ID不变。存档载入兼容旧 `SCHEMA=206`，而不是重写整个游戏世界。对本地92m原主场景临时设64药草/16矿点密度上限；这仅限制该小场景同时存在的**资源点数量**而非整个50,000km²世界永久物种刷新数量，世界上的节点现有时钟也会自然生长补充。
+- **真实3D场景接线**：`apk176_living_resource_world_rev187.gd` 提交 `d849130`，新世界资源在出生前检查原Terrain3D的实际河水、道路、挖掘层、已付费及预定房址、其他真实灵药占地与野生生态允许区；出现后使用已有授权的真实木/火/水花茎或矿物3D GLB显示和原世界账本交互，不是直接在玩家背包加药/灵石。
+- **严格原Godot技术QA作为必过门槛**：`logic-qa/apk176-export-fixture/verify_original_main_quality_rev187.gd`（`3c6e10c`、`48dbfeb`）直接在原APK176 Main模拟240小时要求至少2个新灵草+1个新灵石矿点、合法GLB真实场景节点与ID、原村库存零免费加账、保存/重新加载不丢唯一节点、总量账本守恒、测试结束完整回滚；公开Actions工作流 `28592cb`必须 grep 原引擎真实 `PASS_REV208_NATURALLY_BORN_RANDOM_HERB_AND_ORE_RESOURCES_WORLD_HOURS_PHYSICAL_GLBS_SAVED_IDS_NO_INVENTORY_MINTING`。截至本条提交，**新QA最终结果还未核验，不得称成功**；初始世界树和石料本来就是现有 `_seed_resources()` 真实生成，但目前旧生态树木种子数和矿石地下库存仍存在有限上限，世界更广域的树石动态新生/持久化需继续开发，不能谎称全类别已无限刷新。
+- **正式发行仍锁定**：`rev208` 为Draft PR #14，未经国风P0美术、Godot完整回归和安卓30分钟实机验收，不合并、不签名、不改变官方 `rev207`。
+
+
 ## 2026-10-18 / CAC-REV208-HQ023-REAL-THREE-MEDICINAL-3D-GROWTH-PHENOLOGY / 原三类真3D独立灵植世界时间生长状态（代码提交，候选待审）
 - **当前前一次绿色基线**：原APK176 Godot4.4.1 + QA图片 `39081592059` **SUCCESS**，内部引擎仍确认真实厂商glTF MultiMesh源变换矩阵异常，临时以最多42个真GLB物理模型近景可见/其他逻辑体分区维护，不宣称GPU本体BUG已通过；正式用户画质及Android30分钟仍FAIL。
 - **本轮已经提交游戏实质代码而不只是规划**：`apk176_living_resource_world_rev187.gd` `35ed882` 在已存在、作者/许可有源SHA的3款**分别独立**木/火/水GLB灵草的**原13个资源ID**上实现四种可目测的真实3D生物状态：已采尽的**休眠(dormant)**、**萌芽(sprout)**、**孕蕾(budding)**、**盛放(bloom)**；以原存档`remaining/max/hours_since_growth`和**真实世界小时更新**驱动原GLB完整纹理与PBR真几何缩放/地表重新贴合，不生成平面贴片、免费采集物、虚构等级、新实体ID、凭空刷新资源，也不改变原药材采摘冷却/最大库存/存档Schema。药材枯萎后根茎仍留在3D土上等自然生长，并保留世界账本、修士死亡、5000人口不变。
