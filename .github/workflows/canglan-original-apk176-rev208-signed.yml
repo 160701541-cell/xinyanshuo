@@ -93,7 +93,7 @@ jobs:
             test -s "qa-stage/ota177/canglan_rev187/hq_ecology_groundcover/${slug}/${slug}.bin" \
               || { echo "BLOCKED: missing staged groundcover bin $slug"; exit 1; }
           done
-          python3 tools/asset_factory/rev208_ecology_polyhaven_intake.mjs --verify
+          node tools/asset_factory/rev208_ecology_polyhaven_intake.mjs --verify
           echo 'PASS_REV208_HQ_ECOLOGY_REAL_CC0_PBR_STAGED_WITH_SHA_INTO_ORIGINAL_PCK_TREE'
       - name: Recover exact-matching Terrain3D Linux QA plugin from trusted upstream releases
         shell: bash
