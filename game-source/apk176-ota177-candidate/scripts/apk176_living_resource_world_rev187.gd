@@ -976,6 +976,22 @@ func _spawn_licensed_living_understory() -> void:
     model.set_meta("never_free_inventory",true)
     model.set_meta("source_prefab","tree_oak.glb")
     world.add_child(model)
+    # REV208-P0 forest art: remove the 200 old toy-sized Kenney oak
+    # crowns FROM THE FOREGROUND ONLY. The original vegetation remains
+    # source-licensed and visible as a distant LOD, keeping its terrain
+    # excavation state, source model, physical position and saved IDs.
+    # Near-camera flora is instead true authored PBR fern/grass meshes
+    # managed in the REV208 32m cell fallback renderer.
+    for leaf_part in model.find_children("*","MeshInstance3D",true,false):
+      var low_lod_mesh: MeshInstance3D=leaf_part as MeshInstance3D
+      low_lod_mesh.visibility_range_begin=24.0
+      low_lod_mesh.visibility_range_begin_margin=4.0
+      low_lod_mesh.visibility_range_end=92.0
+      low_lod_mesh.visibility_range_end_margin=12.0
+      low_lod_mesh.visibility_range_fade_mode=(
+        GeometryInstance3D.VISIBILITY_RANGE_FADE_SELF)
+      low_lod_mesh.set_meta("rev208_distance_only_old_kenney_lod",true)
+    model.set_meta("rev208_forest_near_view_uses_author_pbr",true)
     licensed_understory_locations.append(Vector3(x,y,z))
     licensed_understory_instances.append(model)
     licensed_understory_count+=1
@@ -1024,7 +1040,12 @@ func _spawn_rev208_hq_botanical_ecology() -> void:
   var groves: Array=[
     ["pine",Vector2(-35.0,-24.0)],["cypress",Vector2(-38.0,-9.0)],
     ["conifer",Vector2(-32.0,25.0)],["pine",Vector2(-15.5,-34.0)],
-    ["cypress",Vector2(-38.0,29.0)],["conifer",Vector2(-15.0,31.0)]]
+    ["cypress",Vector2(-38.0,29.0)],["conifer",Vector2(-15.0,31.0)],
+    # Interwoven evergreen forest instead of six lone showcase trees.
+    # The additional mature trees are distinct vendor meshes, not scaled
+    # polygonal toy oaks, and use the original PBR/UVs/real trunk solids.
+    ["pine",Vector2(-35.2,-34.4)],["cypress",Vector2(-29.5,-2.2)],
+    ["conifer",Vector2(-35.1,14.6)],["pine",Vector2(-16.4,38.3)]]
   var rng:=RandomNumberGenerator.new()
   rng.seed=208518
   var placements: Array=groves.duplicate(true)
@@ -2297,6 +2318,8 @@ func stats() -> Dictionary:
     "rev208_hq_botanical_placement_failures":hq_botanical_placement_failures.duplicate(),
     "rev208_hq_true_mature_tree_sources":hq_mature_tree_sources.size(),
     "rev208_hq_genuine_species":HQ_MATURE_TREES.keys(),
+    "rev208_kenney_small_3d_trees_distance_lod_min_m":24.0,
+    "rev208_near_forest_author_pbr_species_count":hq_botanical_sources.size(),
     "rev207_real_cc0_shrub_understory":licensed_understory_count,
     "rev207_real_cc0_shrub_draw_nodes":licensed_understory_draw_parts,
     "rev207_real_cc0_shrub_triangles":licensed_understory_triangle_budget,
