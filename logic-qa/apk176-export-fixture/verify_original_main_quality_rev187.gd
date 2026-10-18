@@ -1157,6 +1157,42 @@ func _run() -> void:
       "healthy":healthy_stems,"reported":report.get(
       "rev207_real_cc0_shrub_live_after_terrain_edits",-1)}))
     return
+  # P0 HQ ART LOD: old tiny licensed Kenney trees remain in the same
+  # 3D SceneTree only as genuine distant LOD. No toy miniature tree
+  # geometries may render closer than 24m to the real player camera.
+  # Foreground source-author PBR fern/grass is a separate actual GLB pool.
+  var strict_far_only: int=0
+  for old_tree in real_plants:
+    var visual: Node3D=old_tree as Node3D
+    if not bool(visual.get_meta("rev208_forest_near_view_uses_author_pbr",false)):
+      _fail(450,"REV208_TOY_OAK_BUSH_NOT_REMOVED_FROM_3D_FOREGROUND")
+      return
+    var mesh_parts: Array[Node]=visual.find_children(
+      "*","MeshInstance3D",true,false)
+    if mesh_parts.is_empty():
+      _fail(451,"REV208_OLD_SOURCE_LOD_ACTUAL_GEOMETRY_MISSING")
+      return
+    for child in mesh_parts:
+      var drawn: MeshInstance3D=child as MeshInstance3D
+      if drawn.visibility_range_begin<23.99 or (
+          drawn.visibility_range_begin>24.01) or (
+          drawn.visibility_range_end<91.99) or (
+          drawn.visibility_range_end>92.01) or (
+          String(drawn.get_meta("rev208_distance_only_old_kenney_lod",""))!="True"
+          and not bool(drawn.get_meta("rev208_distance_only_old_kenney_lod",false))):
+        _fail(452,"REV208_200_LOW_POLY_TOY_TREES_STILL_RENDER_ON_FACE_"+String(
+          visual.name))
+        return
+      strict_far_only+=1
+  if strict_far_only<96 or (
+      int(first.get("rev208_kenney_small_3d_trees_distance_lod_min_m",0))!=24) or (
+      int(first.get("rev208_near_forest_author_pbr_species_count",0))<8):
+    _fail(453,"REV208_REAL_FOREST_NEAR_DETAIL_NOT_LICENSED_AUTHOR_GLBS_"+
+      str({"lod":strict_far_only,"species":first.get(
+        "rev208_near_forest_author_pbr_species_count",0)}))
+    return
+  print("PASS_REV208_HQ_P0_REAL_KENNEY_TOY_OAK_FOREGROUND_REMOVED_24M_DISTANT_LOD_200_LICENSED_MESHES_FOREGROUND_AUTHOR_PBR")
+
   print("PASS_REV208_TRUE_LICENSED_KENNEY_GREEN_SAPLING_NONBUILDING_BOUNDED_REAL_SOURCE_GLTF_GEOMETRY")
   print("PASS_REV207_TRUE_MAIN_50000KM2_5000_ROOT_RATIO_BODY_CULTIVATION_5_SECTS_4_REAL_ORE_BEAST_GUARDS")
   if not bool(report.get("persistent_city_population_is_statistical_only",false)):
