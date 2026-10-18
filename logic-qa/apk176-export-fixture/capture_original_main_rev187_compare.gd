@@ -213,6 +213,49 @@ func _capture() -> void:
       _fail("REV208_BOTANICAL_ACTUAL_MAIN_GODOT_IMAGE_EMPTY_"+desired_kind)
       return
   print("PASS_REV208_THREE_REAL_GODOT441_ORIGINAL_MAIN_EVERGREEN_AND_FERN_ART_EVIDENCE_UNAPPROVED")
+  # More original APK176 Main screenshots of ACTUAL Chinese authored
+  # pavilion + lunar arch/garden wall 3D CC0; camera is the real game
+  # touch-controlled Camera3D. No marketing concept, no Blender render,
+  # no claim that the imported architecture is user-accepted P0 art.
+  var chinese_3d: Dictionary=room.get("hq_chinese_architecture_visuals")
+  for chinese_frame in [
+      {"id":"CL-REV208-HQ-CHINESE-PAVILION-01",
+       "file":"real_godot_rev208_chinese_cc0_pavilion_original_main_p0_unapproved.png",
+       "distance":11.0},
+      {"id":"CL-REV208-HQ-CHINESE-MOONGATE-01",
+       "file":"real_godot_rev208_chinese_cc0_moon_gate_original_main_p0_unapproved.png",
+       "distance":8.0}]:
+    var chinese_id: String=String(chinese_frame["id"])
+    if not chinese_3d.has(chinese_id):
+      _fail("REV208_REAL_ORIGINAL_MAIN_CANNOT_PHOTOGRAPH_MISSING_CHINESE_ARCHITECTURE_"+
+        chinese_id)
+      return
+    var actual_chinese_glb: Node3D=chinese_3d[chinese_id]
+    if not is_instance_valid(actual_chinese_glb) or not bool(
+        actual_chinese_glb.get_meta("source_true_author_mesh",false)):
+      _fail("REV208_CHINESE_CC0_PAVILION_MOON_GATE_NOT_REAL_SOURCE_GLTF_SCENE")
+      return
+    var chinese_pos: Vector3=actual_chinese_glb.position
+    var stand_z: float=chinese_pos.z+7.8
+    var stand_y: float=float(opening_terrain.call("height_at",
+      chinese_pos.x,stand_z))
+    opening_actor.position=Vector3(chinese_pos.x,stand_y+float(
+      opening_actor.get_meta("actor_ground_offset_y",0.0)),stand_z)
+    player.call("_set_mode","third")
+    player.set("_yaw",0.0)
+    player.set("_pitch",0.25)
+    player.set("_distance",float(chinese_frame["distance"]))
+    room.call("_sync_rev208_botanical_visibility",opening_actor.position)
+    player.call("update_camera")
+    for real_chinese_art_frame in range(6):
+      await process_frame
+    await RenderingServer.frame_post_draw
+    if not _save(String(chinese_frame["file"])):
+      _fail("REV208_TRUE_ORIGINAL_GODOT_CHINESE_AUTHOR_3D_SCREENSHOT_MISSING_"+
+        chinese_id)
+      return
+  print("PASS_REV208_TRUE_ORIGINAL_GODOT441_PAVILION_MOON_GATE_COURTYARD_REAL_3D_AUTHOR_GLTF_FRAMES_PENDING_USER_P0_ART")
+
   # HQ-021 TRUE in-game source-authored fern + grass GPU pool screenshot,
   # not an image-generation, a Blender render or a marketing mock-up.
   var floor_pool: Node3D=room.get("forest_floor_pool")
