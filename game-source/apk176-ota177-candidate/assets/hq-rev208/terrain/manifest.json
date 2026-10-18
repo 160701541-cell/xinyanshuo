@@ -1,0 +1,626 @@
+{
+  "schema": 1,
+  "release_policy": "QUARANTINED_CANDIDATE_NOT_OTA_NOT_PHONE_PASSED",
+  "art_approval": "PENDING_REAL_GODOT_FRAME_AND_USER",
+  "revision": 208,
+  "checklist_items": [
+    "REV208-HQ-003",
+    "REV208-HQ-020",
+    "REV208-HQ-022"
+  ],
+  "provider": "Poly Haven (https://polyhaven.com) — every asset is CC0, per-asset page verified",
+  "provider_license_url": "https://polyhaven.com/license",
+  "generator": "tools/asset_factory/rev208_ecology_polyhaven_intake.mjs",
+  "generated_at_utc": "2026-10-18T06:27:05.672Z",
+  "android_policy": {
+    "texture_resolution_in_pck": "1024x1024 (1K)",
+    "source_max_resolution_never_shipped": "Poly Haven 源可达 4K/8K，按报告要求不在安卓 PCK 内直接使用",
+    "alpha_mode_for_foliage": "Alpha Scissor/Hash only; no large Alpha Blend"
+  },
+  "texture_scale_policy": {
+    "macro": "2–8 m per tile (林地/草地/泥土/岩石)",
+    "detail": "2–8 cm per tile (细枝落叶微细节)",
+    "note": "两级都由真实 CC0 扫描 PBR 驱动，不使用全局 saturation 修补"
+  },
+  "counts": {
+    "textures": 8,
+    "models": 4,
+    "texture_maps": 24
+  },
+  "textures": [
+    {
+      "slug": "forest_floor",
+      "zh": "林地腐殖落叶地面（主要地表）",
+      "role": "macro_primary",
+      "kind": "pbr_texture",
+      "source_name": "forrest_ground_01 (Forest Ground 01)",
+      "source_author": "Rob Tuytel",
+      "source_authors_detail": {
+        "Rob Tuytel": "All"
+      },
+      "source_page": "https://polyhaven.com/a/forrest_ground_01",
+      "source_url_or_asset_id": "https://api.polyhaven.com/info/forrest_ground_01",
+      "license": "CC0",
+      "license_url": "https://polyhaven.com/license",
+      "license_verified_by": "Poly Haven API /info/forrest_ground_01 at intake; site-wide CC0 per https://polyhaven.com/license",
+      "source_category": "terrain/outdoor/natural",
+      "source_max_resolution": "8192x8192",
+      "source_pixel_dimensions": "2000x2000",
+      "asset_resolution_used": "1K",
+      "android_pck_resolution": "1024x1024",
+      "macro_metres": 6,
+      "detail_metres": 0.06,
+      "material_channels": "albedo:sRGB | normal:linear:OpenGL+Y | orm:linear:R=AO,G=Roughness,B=Metallic",
+      "maps": [
+        {
+          "kind": "albedo",
+          "file": "forest_floor_albedo_1k.jpg",
+          "bytes": 833711,
+          "sha256": "3dd6875cb3908e022a3c45ebbffa5e84c670ff2691fbbb6dc9ea4bff88523800",
+          "source_md5": "236e7d928f5e357a194fd92de189cbe4",
+          "source_url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/forrest_ground_01/forrest_ground_01_diff_1k.jpg",
+          "resolution": "1024x1024",
+          "format": "jpeg",
+          "channels": 3,
+          "colour_space": "srgb"
+        },
+        {
+          "kind": "normal",
+          "file": "forest_floor_normal_1k.jpg",
+          "bytes": 1428763,
+          "sha256": "32528a7cdee962cc0b248ee4023a74d0df175737ea90e1eb425122351e0bdab4",
+          "source_md5": "ba4265df25aea293913d004b69ef9ab0",
+          "source_url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/forrest_ground_01/forrest_ground_01_nor_gl_1k.jpg",
+          "resolution": "1024x1024",
+          "format": "jpeg",
+          "channels": 3,
+          "colour_space": "linear",
+          "normal_convention": "OpenGL (+Y)"
+        },
+        {
+          "kind": "orm",
+          "file": "forest_floor_orm_1k.jpg",
+          "bytes": 296969,
+          "sha256": "22eb09a2ed951377f339c08be9f1665f0db7391ed9ba0b0e91e55aea2dbef315",
+          "source_md5": "0bca8bef07d3c48faea4aae3fac9a757",
+          "source_url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/forrest_ground_01/forrest_ground_01_arm_1k.jpg",
+          "resolution": "1024x1024",
+          "format": "jpeg",
+          "channels": 3,
+          "colour_space": "linear",
+          "channel_packing": {
+            "R": "ambient_occlusion",
+            "G": "roughness",
+            "B": "metallic"
+          }
+        }
+      ],
+      "triangles_lod0": "N/A (texture)",
+      "texture_resolution": "1024x1024",
+      "collision_type": "N/A (texture)",
+      "godot_import_notes": "Godot 4.4.1 直接导入 jpg；albedo 用 sRGB，normal 用线性 + texture_normal(OpenGL) 约定，arm 作为 ORM 贴图（ao/roughness/metallic 同通道布局）。Mipmap 开，Filter 线性 + 各向异性。",
+      "game_asset_approved": false,
+      "art_approval": "PENDING_REAL_GODOT_FRAME_AND_USER"
+    },
+    {
+      "slug": "leafy_grass",
+      "zh": "林缘草甸",
+      "role": "macro_grass",
+      "kind": "pbr_texture",
+      "source_name": "leafy_grass (Leafy Grass)",
+      "source_author": "Charlotte Baglioni",
+      "source_authors_detail": {
+        "Charlotte Baglioni": "All"
+      },
+      "source_page": "https://polyhaven.com/a/leafy_grass",
+      "source_url_or_asset_id": "https://api.polyhaven.com/info/leafy_grass",
+      "license": "CC0",
+      "license_url": "https://polyhaven.com/license",
+      "license_verified_by": "Poly Haven API /info/leafy_grass at intake; site-wide CC0 per https://polyhaven.com/license",
+      "source_category": "outdoor/floor",
+      "source_max_resolution": "8192x8192",
+      "source_pixel_dimensions": "2000x2000",
+      "asset_resolution_used": "1K",
+      "android_pck_resolution": "1024x1024",
+      "macro_metres": 5,
+      "detail_metres": 0.05,
+      "material_channels": "albedo:sRGB | normal:linear:OpenGL+Y | orm:linear:R=AO,G=Roughness,B=Metallic",
+      "maps": [
+        {
+          "kind": "albedo",
+          "file": "leafy_grass_albedo_1k.jpg",
+          "bytes": 1195394,
+          "sha256": "cfa40bc9d9417d1852db8753a8d5917f110c40101179f63543c382e39bc05e4a",
+          "source_md5": "0dbc071e91d6905edfcfbe8eb785a1ab",
+          "source_url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/leafy_grass/leafy_grass_diff_1k.jpg",
+          "resolution": "1024x1024",
+          "format": "jpeg",
+          "channels": 3,
+          "colour_space": "srgb"
+        },
+        {
+          "kind": "normal",
+          "file": "leafy_grass_normal_1k.jpg",
+          "bytes": 1466049,
+          "sha256": "832328216adc0a7e1f70a31d5ee48c9ab7f2152d83816122736cf42ac4b2ebd6",
+          "source_md5": "8279e096e204ea326d57a318869f99df",
+          "source_url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/leafy_grass/leafy_grass_nor_gl_1k.jpg",
+          "resolution": "1024x1024",
+          "format": "jpeg",
+          "channels": 3,
+          "colour_space": "linear",
+          "normal_convention": "OpenGL (+Y)"
+        },
+        {
+          "kind": "orm",
+          "file": "leafy_grass_orm_1k.jpg",
+          "bytes": 1010081,
+          "sha256": "95432451cb2693794459fe7ea339ea9ffdb5959c40373740f80a4aa1703f089d",
+          "source_md5": "44fb4e40ef0f3425a7d1a14bc328e4d8",
+          "source_url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/leafy_grass/leafy_grass_arm_1k.jpg",
+          "resolution": "1024x1024",
+          "format": "jpeg",
+          "channels": 3,
+          "colour_space": "linear",
+          "channel_packing": {
+            "R": "ambient_occlusion",
+            "G": "roughness",
+            "B": "metallic"
+          }
+        }
+      ],
+      "triangles_lod0": "N/A (texture)",
+      "texture_resolution": "1024x1024",
+      "collision_type": "N/A (texture)",
+      "godot_import_notes": "Godot 4.4.1 直接导入 jpg；albedo 用 sRGB，normal 用线性 + texture_normal(OpenGL) 约定，arm 作为 ORM 贴图（ao/roughness/metallic 同通道布局）。Mipmap 开，Filter 线性 + 各向异性。",
+      "game_asset_approved": false,
+      "art_approval": "PENDING_REAL_GODOT_FRAME_AND_USER"
+    },
+    {
+      "slug": "wet_leaf_soil",
+      "zh": "湿润落叶泥土",
+      "role": "macro_wet_soil",
+      "kind": "pbr_texture",
+      "source_name": "brown_mud_leaves_01 (Brown Mud Leaves 01)",
+      "source_author": "Rob Tuytel",
+      "source_authors_detail": {
+        "Rob Tuytel": "All"
+      },
+      "source_page": "https://polyhaven.com/a/brown_mud_leaves_01",
+      "source_url_or_asset_id": "https://api.polyhaven.com/info/brown_mud_leaves_01",
+      "license": "CC0",
+      "license_url": "https://polyhaven.com/license",
+      "license_verified_by": "Poly Haven API /info/brown_mud_leaves_01 at intake; site-wide CC0 per https://polyhaven.com/license",
+      "source_category": "terrain/natural/outdoor",
+      "source_max_resolution": "8192x8192",
+      "source_pixel_dimensions": "1299.9998331069946x1299.9998331069946",
+      "asset_resolution_used": "1K",
+      "android_pck_resolution": "1024x1024",
+      "macro_metres": 4,
+      "detail_metres": 0.05,
+      "material_channels": "albedo:sRGB | normal:linear:OpenGL+Y | orm:linear:R=AO,G=Roughness,B=Metallic",
+      "maps": [
+        {
+          "kind": "albedo",
+          "file": "wet_leaf_soil_albedo_1k.jpg",
+          "bytes": 1206953,
+          "sha256": "c598c555f13cd5328409fd5e2a45496a26e319e52299e3959042f1449c2f1b06",
+          "source_md5": "5340848384f9bb19bfa6e7ac459683d7",
+          "source_url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/brown_mud_leaves_01/brown_mud_leaves_01_diff_1k.jpg",
+          "resolution": "1024x1024",
+          "format": "jpeg",
+          "channels": 3,
+          "colour_space": "srgb"
+        },
+        {
+          "kind": "normal",
+          "file": "wet_leaf_soil_normal_1k.jpg",
+          "bytes": 1486072,
+          "sha256": "8dd5166ddcc293cefd331d491ce6b9162bc9202ddd999ac1e4141697560d38e0",
+          "source_md5": "3698df51ef8262ddf2248ffca1e73196",
+          "source_url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/brown_mud_leaves_01/brown_mud_leaves_01_nor_gl_1k.jpg",
+          "resolution": "1024x1024",
+          "format": "jpeg",
+          "channels": 3,
+          "colour_space": "linear",
+          "normal_convention": "OpenGL (+Y)"
+        },
+        {
+          "kind": "orm",
+          "file": "wet_leaf_soil_orm_1k.jpg",
+          "bytes": 953367,
+          "sha256": "136cbc6870e1d4d818f739af077b0c0700536b7eb4663c3b68bdb112d1940c82",
+          "source_md5": "9d2a6f3c244c177503c5e441fad91a6e",
+          "source_url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/brown_mud_leaves_01/brown_mud_leaves_01_arm_1k.jpg",
+          "resolution": "1024x1024",
+          "format": "jpeg",
+          "channels": 3,
+          "colour_space": "linear",
+          "channel_packing": {
+            "R": "ambient_occlusion",
+            "G": "roughness",
+            "B": "metallic"
+          }
+        }
+      ],
+      "triangles_lod0": "N/A (texture)",
+      "texture_resolution": "1024x1024",
+      "collision_type": "N/A (texture)",
+      "godot_import_notes": "Godot 4.4.1 直接导入 jpg；albedo 用 sRGB，normal 用线性 + texture_normal(OpenGL) 约定，arm 作为 ORM 贴图（ao/roughness/metallic 同通道布局）。Mipmap 开，Filter 线性 + 各向异性。",
+      "game_asset_approved": false,
+      "art_approval": "PENDING_REAL_GODOT_FRAME_AND_USER"
+    },
+    {
+      "slug": "sparse_grass",
+      "zh": "稀疏草地（林间空地）",
+      "role": "macro_sparse_grass",
+      "kind": "pbr_texture",
+      "source_name": "sparse_grass (Sparse Grass)",
+      "source_author": "Amal Kumar",
+      "source_authors_detail": {
+        "Amal Kumar": "All"
+      },
+      "source_page": "https://polyhaven.com/a/sparse_grass",
+      "source_url_or_asset_id": "https://api.polyhaven.com/info/sparse_grass",
+      "license": "CC0",
+      "license_url": "https://polyhaven.com/license",
+      "license_verified_by": "Poly Haven API /info/sparse_grass at intake; site-wide CC0 per https://polyhaven.com/license",
+      "source_category": "floor/natural",
+      "source_max_resolution": "8192x8192",
+      "source_pixel_dimensions": "2000x2000",
+      "asset_resolution_used": "1K",
+      "android_pck_resolution": "1024x1024",
+      "macro_metres": 5,
+      "detail_metres": 0.05,
+      "material_channels": "albedo:sRGB | normal:linear:OpenGL+Y | orm:linear:R=AO,G=Roughness,B=Metallic",
+      "maps": [
+        {
+          "kind": "albedo",
+          "file": "sparse_grass_albedo_1k.jpg",
+          "bytes": 955945,
+          "sha256": "ae94f2b34597b9108eefd88217f55eccaec6d6b382e858a478ee92df90e66617",
+          "source_md5": "5d0aba796e1b5882555161c16b10ee9d",
+          "source_url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/sparse_grass/sparse_grass_diff_1k.jpg",
+          "resolution": "1024x1024",
+          "format": "jpeg",
+          "channels": 3,
+          "colour_space": "srgb"
+        },
+        {
+          "kind": "normal",
+          "file": "sparse_grass_normal_1k.jpg",
+          "bytes": 1440314,
+          "sha256": "1c840a24807346ddaaf94a5057aee4078fcec3a4cd84bfe45da7d3b480ef460b",
+          "source_md5": "3307e6ce47413c6b4e85885d4b8ae932",
+          "source_url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/sparse_grass/sparse_grass_nor_gl_1k.jpg",
+          "resolution": "1024x1024",
+          "format": "jpeg",
+          "channels": 3,
+          "colour_space": "linear",
+          "normal_convention": "OpenGL (+Y)"
+        },
+        {
+          "kind": "orm",
+          "file": "sparse_grass_orm_1k.jpg",
+          "bytes": 978007,
+          "sha256": "209f6793060a176272ace42cabab21fdf21fe963f79267988320614b374414a8",
+          "source_md5": "e14c82e03d13fb472315d74a28196c89",
+          "source_url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/sparse_grass/sparse_grass_arm_1k.jpg",
+          "resolution": "1024x1024",
+          "format": "jpeg",
+          "channels": 3,
+          "colour_space": "linear",
+          "channel_packing": {
+            "R": "ambient_occlusion",
+            "G": "roughness",
+            "B": "metallic"
+          }
+        }
+      ],
+      "triangles_lod0": "N/A (texture)",
+      "texture_resolution": "1024x1024",
+      "collision_type": "N/A (texture)",
+      "godot_import_notes": "Godot 4.4.1 直接导入 jpg；albedo 用 sRGB，normal 用线性 + texture_normal(OpenGL) 约定，arm 作为 ORM 贴图（ao/roughness/metallic 同通道布局）。Mipmap 开，Filter 线性 + 各向异性。",
+      "game_asset_approved": false,
+      "art_approval": "PENDING_REAL_GODOT_FRAME_AND_USER"
+    },
+    {
+      "slug": "leaf_litter_detail",
+      "zh": "细枝落叶细节层",
+      "role": "detail_primary",
+      "kind": "pbr_texture",
+      "source_name": "forest_leaves_02 (Forest Leaves 02)",
+      "source_author": "Rob Tuytel",
+      "source_authors_detail": {
+        "Rob Tuytel": "All"
+      },
+      "source_page": "https://polyhaven.com/a/forest_leaves_02",
+      "source_url_or_asset_id": "https://api.polyhaven.com/info/forest_leaves_02",
+      "license": "CC0",
+      "license_url": "https://polyhaven.com/license",
+      "license_verified_by": "Poly Haven API /info/forest_leaves_02 at intake; site-wide CC0 per https://polyhaven.com/license",
+      "source_category": "outdoor/terrain/natural",
+      "source_max_resolution": "8192x8192",
+      "source_pixel_dimensions": "3000.9725093841553x3000.9801387786865",
+      "asset_resolution_used": "1K",
+      "android_pck_resolution": "1024x1024",
+      "macro_metres": 3,
+      "detail_metres": 0.04,
+      "material_channels": "albedo:sRGB | normal:linear:OpenGL+Y | orm:linear:R=AO,G=Roughness,B=Metallic",
+      "maps": [
+        {
+          "kind": "albedo",
+          "file": "leaf_litter_detail_albedo_1k.jpg",
+          "bytes": 437891,
+          "sha256": "2bac85cdc76927fa7dc311037bbbc4dfa2633ea56eb0a24c9cabe163a68c9aa5",
+          "source_md5": "13e9bfac07cb72ca143e153cc2f589a8",
+          "source_url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/forest_leaves_02/forest_leaves_02_diffuse_1k.jpg",
+          "resolution": "1024x1024",
+          "format": "jpeg",
+          "channels": 3,
+          "colour_space": "srgb"
+        },
+        {
+          "kind": "normal",
+          "file": "leaf_litter_detail_normal_1k.jpg",
+          "bytes": 577163,
+          "sha256": "cf6a40ab24f44d3e891a92a1c252416ed1192af54ac92a5704bdfbda0805e290",
+          "source_md5": "72002432222467c74cd9980cbddb25a4",
+          "source_url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/forest_leaves_02/forest_leaves_02_nor_gl_1k.jpg",
+          "resolution": "1024x1024",
+          "format": "jpeg",
+          "channels": 3,
+          "colour_space": "linear",
+          "normal_convention": "OpenGL (+Y)"
+        },
+        {
+          "kind": "orm",
+          "file": "leaf_litter_detail_orm_1k.jpg",
+          "bytes": 313980,
+          "sha256": "af70dcaa5f6c8770504132b5a3c25e9b9b5b431148c8796226492c8fff2bd6eb",
+          "source_md5": "876b7f364943f65c104c7b3127097596",
+          "source_url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/forest_leaves_02/forest_leaves_02_arm_1k.jpg",
+          "resolution": "1024x1024",
+          "format": "jpeg",
+          "channels": 3,
+          "colour_space": "linear",
+          "channel_packing": {
+            "R": "ambient_occlusion",
+            "G": "roughness",
+            "B": "metallic"
+          }
+        }
+      ],
+      "triangles_lod0": "N/A (texture)",
+      "texture_resolution": "1024x1024",
+      "collision_type": "N/A (texture)",
+      "godot_import_notes": "Godot 4.4.1 直接导入 jpg；albedo 用 sRGB，normal 用线性 + texture_normal(OpenGL) 约定，arm 作为 ORM 贴图（ao/roughness/metallic 同通道布局）。Mipmap 开，Filter 线性 + 各向异性。",
+      "game_asset_approved": false,
+      "art_approval": "PENDING_REAL_GODOT_FRAME_AND_USER"
+    },
+    {
+      "slug": "mossy_rock",
+      "zh": "苔藓山石表面",
+      "role": "macro_rock",
+      "kind": "pbr_texture",
+      "source_name": "mossy_rock (Mossy Rock)",
+      "source_author": "Rob Tuytel",
+      "source_authors_detail": {
+        "Rob Tuytel": "All"
+      },
+      "source_page": "https://polyhaven.com/a/mossy_rock",
+      "source_url_or_asset_id": "https://api.polyhaven.com/info/mossy_rock",
+      "license": "CC0",
+      "license_url": "https://polyhaven.com/license",
+      "license_verified_by": "Poly Haven API /info/mossy_rock at intake; site-wide CC0 per https://polyhaven.com/license",
+      "source_category": "rock/natural/outdoor/terrain",
+      "source_max_resolution": "8192x8192",
+      "source_pixel_dimensions": "3000x3000",
+      "asset_resolution_used": "1K",
+      "android_pck_resolution": "1024x1024",
+      "macro_metres": 4,
+      "detail_metres": 0.05,
+      "material_channels": "albedo:sRGB | normal:linear:OpenGL+Y | orm:linear:R=AO,G=Roughness,B=Metallic",
+      "maps": [
+        {
+          "kind": "albedo",
+          "file": "mossy_rock_albedo_1k.jpg",
+          "bytes": 1124438,
+          "sha256": "4dbf37f1b0465c9c8914213163923be159716f5b97fb6946437b6c5e143ef540",
+          "source_md5": "a57fbbf55269eb64f8d40708fe3af26c",
+          "source_url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/mossy_rock/mossy_rock_diff_1k.jpg",
+          "resolution": "1024x1024",
+          "format": "jpeg",
+          "channels": 3,
+          "colour_space": "srgb"
+        },
+        {
+          "kind": "normal",
+          "file": "mossy_rock_normal_1k.jpg",
+          "bytes": 995727,
+          "sha256": "232cdd6a9fdfd01bb8bb1f8f604c53dbca79fa0d3d7995edf85c9945757aa8df",
+          "source_md5": "59370f9b3d068271c2bccfb414dc325b",
+          "source_url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/mossy_rock/mossy_rock_nor_gl_1k.jpg",
+          "resolution": "1024x1024",
+          "format": "jpeg",
+          "channels": 3,
+          "colour_space": "linear",
+          "normal_convention": "OpenGL (+Y)"
+        },
+        {
+          "kind": "orm",
+          "file": "mossy_rock_orm_1k.jpg",
+          "bytes": 926941,
+          "sha256": "1c1b8da603c93e863ccb68a8f4fcc6ff02774b83d9a6e9422c7d4aa77397b6a3",
+          "source_md5": "aa606bf7dda9c12bfea7702ea0507d7b",
+          "source_url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/mossy_rock/mossy_rock_arm_1k.jpg",
+          "resolution": "1024x1024",
+          "format": "jpeg",
+          "channels": 3,
+          "colour_space": "linear",
+          "channel_packing": {
+            "R": "ambient_occlusion",
+            "G": "roughness",
+            "B": "metallic"
+          }
+        }
+      ],
+      "triangles_lod0": "N/A (texture)",
+      "texture_resolution": "1024x1024",
+      "collision_type": "N/A (texture)",
+      "godot_import_notes": "Godot 4.4.1 直接导入 jpg；albedo 用 sRGB，normal 用线性 + texture_normal(OpenGL) 约定，arm 作为 ORM 贴图（ao/roughness/metallic 同通道布局）。Mipmap 开，Filter 线性 + 各向异性。",
+      "game_asset_approved": false,
+      "art_approval": "PENDING_REAL_GODOT_FRAME_AND_USER"
+    },
+    {
+      "slug": "bark_chinese_cedar",
+      "zh": "中国雪松/古柏树皮（古柏用）",
+      "role": "bark_cypress",
+      "kind": "pbr_texture",
+      "source_name": "chinese_cedar_bark (Chinese Cedar Bark)",
+      "source_author": "Charlotte Baglioni",
+      "source_authors_detail": {
+        "Charlotte Baglioni": "All"
+      },
+      "source_page": "https://polyhaven.com/a/chinese_cedar_bark",
+      "source_url_or_asset_id": "https://api.polyhaven.com/info/chinese_cedar_bark",
+      "license": "CC0",
+      "license_url": "https://polyhaven.com/license",
+      "license_verified_by": "Poly Haven API /info/chinese_cedar_bark at intake; site-wide CC0 per https://polyhaven.com/license",
+      "source_category": "natural/bark",
+      "source_max_resolution": "8192x8192",
+      "source_pixel_dimensions": "2269.9999809265137x2269.9999809265137",
+      "asset_resolution_used": "1K",
+      "android_pck_resolution": "1024x1024",
+      "macro_metres": 2,
+      "detail_metres": 0.03,
+      "material_channels": "albedo:sRGB | normal:linear:OpenGL+Y | orm:linear:R=AO,G=Roughness,B=Metallic",
+      "maps": [
+        {
+          "kind": "albedo",
+          "file": "bark_chinese_cedar_albedo_1k.jpg",
+          "bytes": 735610,
+          "sha256": "53e388eda1394bcb322d5c36f4fceeee23fd6888245a59bbd229d0319f4646cd",
+          "source_md5": "ad3d7d486f77b8d625ac74fc7d0ec04e",
+          "source_url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/chinese_cedar_bark/chinese_cedar_bark_diff_1k.jpg",
+          "resolution": "1024x1024",
+          "format": "jpeg",
+          "channels": 3,
+          "colour_space": "srgb"
+        },
+        {
+          "kind": "normal",
+          "file": "bark_chinese_cedar_normal_1k.jpg",
+          "bytes": 994079,
+          "sha256": "38cac49c9d03b6eed86464a02ae36e0d42f526b8ff585814de0251a298d27d7b",
+          "source_md5": "a91ed96087ef1ac90a6b6f55da5ae0aa",
+          "source_url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/chinese_cedar_bark/chinese_cedar_bark_nor_gl_1k.jpg",
+          "resolution": "1024x1024",
+          "format": "jpeg",
+          "channels": 3,
+          "colour_space": "linear",
+          "normal_convention": "OpenGL (+Y)"
+        },
+        {
+          "kind": "orm",
+          "file": "bark_chinese_cedar_orm_1k.jpg",
+          "bytes": 677917,
+          "sha256": "8289a40736cba2a7010ebdc0b2eb86d8f9ca38a01c1d2c9f496616da6feebe13",
+          "source_md5": "f745994f024fd84db0fc6588601fba21",
+          "source_url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/chinese_cedar_bark/chinese_cedar_bark_arm_1k.jpg",
+          "resolution": "1024x1024",
+          "format": "jpeg",
+          "channels": 3,
+          "colour_space": "linear",
+          "channel_packing": {
+            "R": "ambient_occlusion",
+            "G": "roughness",
+            "B": "metallic"
+          }
+        }
+      ],
+      "triangles_lod0": "N/A (texture)",
+      "texture_resolution": "1024x1024",
+      "collision_type": "N/A (texture)",
+      "godot_import_notes": "Godot 4.4.1 直接导入 jpg；albedo 用 sRGB，normal 用线性 + texture_normal(OpenGL) 约定，arm 作为 ORM 贴图（ao/roughness/metallic 同通道布局）。Mipmap 开，Filter 线性 + 各向异性。",
+      "game_asset_approved": false,
+      "art_approval": "PENDING_REAL_GODOT_FRAME_AND_USER"
+    },
+    {
+      "slug": "bark_knotted_pine",
+      "zh": "疙瘩松树皮（苍松用）",
+      "role": "bark_pine",
+      "kind": "pbr_texture",
+      "source_name": "knotted_pine_bark (Knotted Pine Bark)",
+      "source_author": "Dimitrios Savva",
+      "source_authors_detail": {
+        "Dimitrios Savva": "All"
+      },
+      "source_page": "https://polyhaven.com/a/knotted_pine_bark",
+      "source_url_or_asset_id": "https://api.polyhaven.com/info/knotted_pine_bark",
+      "license": "CC0",
+      "license_url": "https://polyhaven.com/license",
+      "license_verified_by": "Poly Haven API /info/knotted_pine_bark at intake; site-wide CC0 per https://polyhaven.com/license",
+      "source_category": "bark/natural",
+      "source_max_resolution": "8192x8192",
+      "source_pixel_dimensions": "1700.0000476837158x1700.0000476837158",
+      "asset_resolution_used": "1K",
+      "android_pck_resolution": "1024x1024",
+      "macro_metres": 2,
+      "detail_metres": 0.03,
+      "material_channels": "albedo:sRGB | normal:linear:OpenGL+Y | orm:linear:R=AO,G=Roughness,B=Metallic",
+      "maps": [
+        {
+          "kind": "albedo",
+          "file": "bark_knotted_pine_albedo_1k.jpg",
+          "bytes": 835164,
+          "sha256": "e90289609b11ddb4741c8879e2eed96bb31889e238412ba0053ca3b8935be377",
+          "source_md5": "17c1ed021dd1363b0dd0f9dbc0655063",
+          "source_url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/knotted_pine_bark/knotted_pine_bark_diff_1k.jpg",
+          "resolution": "1024x1024",
+          "format": "jpeg",
+          "channels": 3,
+          "colour_space": "srgb"
+        },
+        {
+          "kind": "normal",
+          "file": "bark_knotted_pine_normal_1k.jpg",
+          "bytes": 1374619,
+          "sha256": "f1689951fc97fe3f7aee781d6692c5aa81084cc851655450782ea34991887608",
+          "source_md5": "3ef7e8efda7ff66a50224d9ef0f86649",
+          "source_url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/knotted_pine_bark/knotted_pine_bark_nor_gl_1k.jpg",
+          "resolution": "1024x1024",
+          "format": "jpeg",
+          "channels": 3,
+          "colour_space": "linear",
+          "normal_convention": "OpenGL (+Y)"
+        },
+        {
+          "kind": "orm",
+          "file": "bark_knotted_pine_orm_1k.jpg",
+          "bytes": 863553,
+          "sha256": "fb43f5d83869fc24bdde49ea623fead064693b07e090e360558b825c8cdbdac2",
+          "source_md5": "ef190a79d81dd9c823ef496d4d2d4d05",
+          "source_url": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/knotted_pine_bark/knotted_pine_bark_arm_1k.jpg",
+          "resolution": "1024x1024",
+          "format": "jpeg",
+          "channels": 3,
+          "colour_space": "linear",
+          "channel_packing": {
+            "R": "ambient_occlusion",
+            "G": "roughness",
+            "B": "metallic"
+          }
+        }
+      ],
+      "triangles_lod0": "N/A (texture)",
+      "texture_resolution": "1024x1024",
+      "collision_type": "N/A (texture)",
+      "godot_import_notes": "Godot 4.4.1 直接导入 jpg；albedo 用 sRGB，normal 用线性 + texture_normal(OpenGL) 约定，arm 作为 ORM 贴图（ao/roughness/metallic 同通道布局）。Mipmap 开，Filter 线性 + 各向异性。",
+      "game_asset_approved": false,
+      "art_approval": "PENDING_REAL_GODOT_FRAME_AND_USER"
+    }
+  ],
+  "models": [],
+  "total_bytes": 28735060
+}

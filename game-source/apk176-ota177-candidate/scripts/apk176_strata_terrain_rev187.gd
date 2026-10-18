@@ -19,8 +19,8 @@ const SOIL_KEYS := ["topsoil", "topsoil", "clay", "clay", "gravel", "gravel", "w
 # Surface treatments do not limit the number of colors; natural variation
 # is driven by deterministic world position and layer depth.
 const STONE_COLORS := {
-  "grass":Color("#347e48"),"grass_deep":Color("#1f5736"),
-  "grass_light":Color("#70ad4c"),"grass_warm":Color("#728a37"),
+  "grass":Color("#285e39"),"grass_deep":Color("#173f2c"),
+  "grass_light":Color("#4d8c48"),"grass_warm":Color("#657b35"),
   "soil":Color("#98633d"),"soil_dark":Color("#583822"),
   "soil_sand":Color("#be9052"),"clay":Color("#8a4d37"),
   "gravel":Color("#626e71"),"weathered_rock":Color("#4f5f65")
@@ -489,9 +489,14 @@ func _mat_for_depth(depth: float) -> String:
 func ground_color_at(x: float,z: float) -> Color:
   var low: float=0.5+0.5*sin(x*0.075+0.7*sin(z*0.11))*cos(z*0.092)
   var high: float=0.5+0.5*sin(x*0.39+z*0.28)*cos(z*0.43-x*0.19)
-  var grass_a:=Color("#245e36")
-  var grass_b:=Color("#539844")
-  var grass:=grass_a.lerp(grass_b,clampf(0.23+0.54*low+0.23*high,0.0,1.0))
+  # REV208 P0: actual original Godot noon capture was mint/chalk green:
+  # mean screen-green 220/255 over the walkable soil, not rich forest.
+  # Preserve continuous 2m-vertex biome and fine original 64px/m grain;
+  # darken ONLY the real ground vertex colors, with three-dimensional
+  # leaf/pine/vendor PBR material tints left entirely untouched.
+  var grass_a:=Color("#133c29")
+  var grass_b:=Color("#306b42")
+  var grass:=grass_a.lerp(grass_b,clampf(0.15+0.41*low+0.19*high,0.0,1.0))
   # Narrow natural cart-road shoulders; no one-cell ochre checkerboard.
   var road_weight: float=0.0
   if z>=-20.0 and z<=23.0:
@@ -669,7 +674,7 @@ func _construct_far_land() -> void:
   far_parent.name="FarGroundAndMountainFoothills_AllCameraDirections_600m"
   add_child(far_parent)
   var far_material: ShaderMaterial=vivid_material_style.call(
-    "material_for_real_terrain","far_mountain",Color("#3b7049"),false)
+    "material_for_real_terrain","far_mountain",Color("#2d5c40"),false)
   var far_size: int=106
   var tile_step: int=18
   var tile_index: int=0

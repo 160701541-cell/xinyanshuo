@@ -1,0 +1,411 @@
+{
+  "schema": 1,
+  "release_policy": "QUARANTINED_CANDIDATE_NOT_OTA_NOT_PHONE_PASSED",
+  "art_approval": "PENDING_REAL_GODOT_FRAME_AND_USER",
+  "revision": 208,
+  "checklist_items": [
+    "REV208-HQ-003",
+    "REV208-HQ-020",
+    "REV208-HQ-022"
+  ],
+  "provider": "Poly Haven (https://polyhaven.com) — every asset is CC0, per-asset page verified",
+  "provider_license_url": "https://polyhaven.com/license",
+  "generator": "tools/asset_factory/rev208_ecology_polyhaven_intake.mjs",
+  "generated_at_utc": "2026-10-18T06:27:05.672Z",
+  "android_policy": {
+    "texture_resolution_in_pck": "1024x1024 (1K)",
+    "source_max_resolution_never_shipped": "Poly Haven 源可达 4K/8K，按报告要求不在安卓 PCK 内直接使用",
+    "alpha_mode_for_foliage": "Alpha Scissor/Hash only; no large Alpha Blend"
+  },
+  "texture_scale_policy": {
+    "macro": "2–8 m per tile (林地/草地/泥土/岩石)",
+    "detail": "2–8 cm per tile (细枝落叶微细节)",
+    "note": "两级都由真实 CC0 扫描 PBR 驱动，不使用全局 saturation 修补"
+  },
+  "counts": {
+    "textures": 8,
+    "models": 4,
+    "texture_maps": 24
+  },
+  "textures": [],
+  "models": [
+    {
+      "slug": "fern_clump",
+      "zh": "蕨类丛",
+      "role": "fern",
+      "kind": "pbr_model",
+      "source_name": "fern_02 (Fern 02)",
+      "source_author": "Rob Tuytel / Rico Cilliers",
+      "source_authors_detail": {
+        "Rob Tuytel": "scanning",
+        "Rico Cilliers": "modeling"
+      },
+      "source_page": "https://polyhaven.com/a/fern_02",
+      "source_url_or_asset_id": "https://api.polyhaven.com/info/fern_02",
+      "source_gltf_url": "https://dl.polyhaven.org/file/ph-assets/Models/gltf/1k/fern_02/fern_02_1k.gltf",
+      "license": "CC0",
+      "license_url": "https://polyhaven.com/license",
+      "license_verified_by": "Poly Haven API /info/fern_02 at intake; site-wide CC0 per https://polyhaven.com/license",
+      "source_category": "plants/nature/collection: smugglers_cove/collection: pine_forest",
+      "original_sha256_of_gltf": "33974295ee19670af4877705fc7d91f33f42d6302f0d44a625e072271223031f",
+      "converted_sha256": "bd529946a7e67689187863134423e71140c96ac2dfc3b6533756b2f95cc34d87",
+      "triangle_lod0": 6232,
+      "triangle_note": "真实源扫描/建模面数，未做任何加面伪装",
+      "triangle_lod1": "NOT_PRODUCED",
+      "triangle_lod2": "NOT_PRODUCED",
+      "render_surfaces": 4,
+      "render_meshes": 4,
+      "has_normal_map": true,
+      "all_primitives_have_uv0": true,
+      "texture_resolution": "1024x1024",
+      "material_channels": "material#0(fern_02): baseColor+metallicRoughness+normal",
+      "alpha_mode": "MASK",
+      "collision_type": "none in source; Godot runtime generates trunk/rock collider separately",
+      "godot_import_notes": "Godot 4.4.1 导入 .gltf（外置 .bin + /textures）。叶子用 Alpha Scissor/Hash，禁止大面积 Alpha Blend。原生 UV/法线/材质不改写。",
+      "files": [
+        {
+          "file": "fern_clump_1k.gltf",
+          "bytes": 5790,
+          "sha256": "bd529946a7e67689187863134423e71140c96ac2dfc3b6533756b2f95cc34d87"
+        },
+        {
+          "file": "fern_clump.bin",
+          "bytes": 176176,
+          "sha256": "fe1abb762bcbbc7ad9e86925c8080437a62add257d9280e9142fdc85c226e64c"
+        },
+        {
+          "file": "textures/fern_clump_fern_02_nor_gl_1k.jpg",
+          "bytes": 367222,
+          "sha256": "45bce132c6e96a0864bc89ab5da51361ab3f4afa83a6669ae499ab5ca811f621",
+          "resolution": "1024x1024"
+        },
+        {
+          "file": "textures/fern_clump_fern_02_diff_1k.jpg",
+          "bytes": 315705,
+          "sha256": "a828a6e7b4c01c826911e2eac4b3afc7457dab7b3b392a31c681ed88b7d50029",
+          "resolution": "1024x1024"
+        },
+        {
+          "file": "textures/fern_clump_fern_02_arm_1k.jpg",
+          "bytes": 280359,
+          "sha256": "ebfb5d76ce9cbdaec20bcd22dce9b755f0b1b8650ef29ca13555e3e6961025d7",
+          "resolution": "1024x1024"
+        }
+      ],
+      "images": [
+        {
+          "name": "fern_02_nor_gl",
+          "file": "textures/fern_clump_fern_02_nor_gl_1k.jpg",
+          "bytes": 367222,
+          "sha256": "45bce132c6e96a0864bc89ab5da51361ab3f4afa83a6669ae499ab5ca811f621",
+          "resolution": "1024x1024",
+          "format": "jpeg",
+          "source_url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/fern_02/fern_02_nor_gl_1k.jpg"
+        },
+        {
+          "name": "fern_02_diff-fern_02_alpha",
+          "file": "textures/fern_clump_fern_02_diff_1k.jpg",
+          "bytes": 315705,
+          "sha256": "a828a6e7b4c01c826911e2eac4b3afc7457dab7b3b392a31c681ed88b7d50029",
+          "resolution": "1024x1024",
+          "format": "jpeg",
+          "source_url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/fern_02/fern_02_diff_1k.jpg"
+        },
+        {
+          "name": "fern_02_rough",
+          "file": "textures/fern_clump_fern_02_arm_1k.jpg",
+          "bytes": 280359,
+          "sha256": "ebfb5d76ce9cbdaec20bcd22dce9b755f0b1b8650ef29ca13555e3e6961025d7",
+          "resolution": "1024x1024",
+          "format": "jpeg",
+          "source_url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/fern_02/fern_02_arm_1k.jpg"
+        }
+      ],
+      "game_asset_approved": false,
+      "art_approval": "PENDING_REAL_GODOT_FRAME_AND_USER"
+    },
+    {
+      "slug": "shrub_low",
+      "zh": "低矮灌木",
+      "role": "shrub",
+      "kind": "pbr_model",
+      "source_name": "shrub_03 (Shrub 03)",
+      "source_author": "Rico Cilliers",
+      "source_authors_detail": {
+        "Rico Cilliers": "All"
+      },
+      "source_page": "https://polyhaven.com/a/shrub_03",
+      "source_url_or_asset_id": "https://api.polyhaven.com/info/shrub_03",
+      "source_gltf_url": "https://dl.polyhaven.org/file/ph-assets/Models/gltf/1k/shrub_03/shrub_03_1k.gltf",
+      "license": "CC0",
+      "license_url": "https://polyhaven.com/license",
+      "license_verified_by": "Poly Haven API /info/shrub_03 at intake; site-wide CC0 per https://polyhaven.com/license",
+      "source_category": "nature/plants/ground cover/collection: verdant_trail",
+      "original_sha256_of_gltf": "b76d7c14bc027e834e82d3f984c32b5d060e62908aa90ff9420a637ca253a8ea",
+      "converted_sha256": "4d3536ccd6569a9131fd9ad3601142dcace3ab16500c352a92cc41b351019ed1",
+      "triangle_lod0": 8287,
+      "triangle_note": "真实源扫描/建模面数，未做任何加面伪装",
+      "triangle_lod1": "NOT_PRODUCED",
+      "triangle_lod2": "NOT_PRODUCED",
+      "render_surfaces": 4,
+      "render_meshes": 4,
+      "has_normal_map": true,
+      "all_primitives_have_uv0": true,
+      "texture_resolution": "1024x1024",
+      "material_channels": "material#0(shrub_03): baseColor+metallicRoughness+normal",
+      "alpha_mode": "MASK",
+      "collision_type": "none in source; Godot runtime generates trunk/rock collider separately",
+      "godot_import_notes": "Godot 4.4.1 导入 .gltf（外置 .bin + /textures）。叶子用 Alpha Scissor/Hash，禁止大面积 Alpha Blend。原生 UV/法线/材质不改写。",
+      "files": [
+        {
+          "file": "shrub_low_1k.gltf",
+          "bytes": 6134,
+          "sha256": "4d3536ccd6569a9131fd9ad3601142dcace3ab16500c352a92cc41b351019ed1"
+        },
+        {
+          "file": "shrub_low.bin",
+          "bytes": 238684,
+          "sha256": "bf4df21e6d2a2bc5f00b4c9142f776171fe7da00cf960001825748067af542b6"
+        },
+        {
+          "file": "textures/shrub_low_shrub_03_nor_gl_1k.jpg",
+          "bytes": 504734,
+          "sha256": "ff856bacfce859b8a7555dd9a3b92fbd36b2e775d486be71df485afb4235d6c9",
+          "resolution": "1024x1024"
+        },
+        {
+          "file": "textures/shrub_low_shrub_03_diff_1k.jpg",
+          "bytes": 481841,
+          "sha256": "3cadc7aba46d3aabbd7d6d2b1d04aa32e2a7da0bc87c2d38ef3cb1ee42cb03ec",
+          "resolution": "1024x1024"
+        },
+        {
+          "file": "textures/shrub_low_shrub_03_arm_1k.jpg",
+          "bytes": 396238,
+          "sha256": "3e2b16812a623037138eedace958210c5f3443a827bbe69663045bba5612f815",
+          "resolution": "1024x1024"
+        }
+      ],
+      "images": [
+        {
+          "name": "shrub_03_nor_gl",
+          "file": "textures/shrub_low_shrub_03_nor_gl_1k.jpg",
+          "bytes": 504734,
+          "sha256": "ff856bacfce859b8a7555dd9a3b92fbd36b2e775d486be71df485afb4235d6c9",
+          "resolution": "1024x1024",
+          "format": "jpeg",
+          "source_url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/shrub_03/shrub_03_nor_gl_1k.jpg"
+        },
+        {
+          "name": "shrub_03_diff",
+          "file": "textures/shrub_low_shrub_03_diff_1k.jpg",
+          "bytes": 481841,
+          "sha256": "3cadc7aba46d3aabbd7d6d2b1d04aa32e2a7da0bc87c2d38ef3cb1ee42cb03ec",
+          "resolution": "1024x1024",
+          "format": "jpeg",
+          "source_url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/shrub_03/shrub_03_diff_1k.jpg"
+        },
+        {
+          "name": "shrub_03_rough",
+          "file": "textures/shrub_low_shrub_03_arm_1k.jpg",
+          "bytes": 396238,
+          "sha256": "3e2b16812a623037138eedace958210c5f3443a827bbe69663045bba5612f815",
+          "resolution": "1024x1024",
+          "format": "jpeg",
+          "source_url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/shrub_03/shrub_03_arm_1k.jpg"
+        }
+      ],
+      "game_asset_approved": false,
+      "art_approval": "PENDING_REAL_GODOT_FRAME_AND_USER"
+    },
+    {
+      "slug": "moss_patch",
+      "zh": "苔藓块",
+      "role": "moss",
+      "kind": "pbr_model",
+      "source_name": "moss_01 (Moss 01)",
+      "source_author": "Rob Tuytel",
+      "source_authors_detail": {
+        "Rob Tuytel": "All"
+      },
+      "source_page": "https://polyhaven.com/a/moss_01",
+      "source_url_or_asset_id": "https://api.polyhaven.com/info/moss_01",
+      "source_gltf_url": "https://dl.polyhaven.org/file/ph-assets/Models/gltf/1k/moss_01/moss_01_1k.gltf",
+      "license": "CC0",
+      "license_url": "https://polyhaven.com/license",
+      "license_verified_by": "Poly Haven API /info/moss_01 at intake; site-wide CC0 per https://polyhaven.com/license",
+      "source_category": "nature/plants/ground cover/collection: pine_forest",
+      "original_sha256_of_gltf": "36fe6cb9889abb33f4dbee402928e260a3e7dfaec043d39b80b1e3afff684f65",
+      "converted_sha256": "e2ebebdfb6adb8eb1838a0a75ce22d23ea06616533da9b00f663c4893d268751",
+      "triangle_lod0": 204,
+      "triangle_note": "低于1000面：真实源就是贴地细节片，只能做地表覆盖细节，不得当作独立高模植被",
+      "triangle_lod1": "NOT_PRODUCED",
+      "triangle_lod2": "NOT_PRODUCED",
+      "render_surfaces": 12,
+      "render_meshes": 12,
+      "has_normal_map": true,
+      "all_primitives_have_uv0": true,
+      "texture_resolution": "1024x1024",
+      "material_channels": "material#0(moss_01): baseColor+metallicRoughness+normal",
+      "alpha_mode": "BLEND",
+      "collision_type": "none in source; Godot runtime generates trunk/rock collider separately",
+      "godot_import_notes": "Godot 4.4.1 导入 .gltf（外置 .bin + /textures）。叶子用 Alpha Scissor/Hash，禁止大面积 Alpha Blend。原生 UV/法线/材质不改写。",
+      "files": [
+        {
+          "file": "moss_patch_1k.gltf",
+          "bytes": 15387,
+          "sha256": "e2ebebdfb6adb8eb1838a0a75ce22d23ea06616533da9b00f663c4893d268751"
+        },
+        {
+          "file": "moss_patch.bin",
+          "bytes": 7260,
+          "sha256": "440e3cadbd93ad383cdbb9b4c17c3236774924c33ff62ac409ab00b8ed622861"
+        },
+        {
+          "file": "textures/moss_patch_moss_01_nor_gl_1k.jpg",
+          "bytes": 388925,
+          "sha256": "531d6bea634ac956d87b176a89740f229ec7e8137a6413e290bab640c6a8b0ec",
+          "resolution": "1024x1024"
+        },
+        {
+          "file": "textures/moss_patch_moss_01_diff_1k.jpg",
+          "bytes": 170297,
+          "sha256": "7c8d0794dd9db0a82f668a276896818d195c644cfed35f0fbf984a3260e70e50",
+          "resolution": "1024x1024"
+        },
+        {
+          "file": "textures/moss_patch_moss_01_arm_1k.jpg",
+          "bytes": 336140,
+          "sha256": "0cf0aabfc370a51e7d330ae01e63ca380f88a9bb0fcfa94730374476183a12cf",
+          "resolution": "1024x1024"
+        }
+      ],
+      "images": [
+        {
+          "name": "moss_01_nor_gl",
+          "file": "textures/moss_patch_moss_01_nor_gl_1k.jpg",
+          "bytes": 388925,
+          "sha256": "531d6bea634ac956d87b176a89740f229ec7e8137a6413e290bab640c6a8b0ec",
+          "resolution": "1024x1024",
+          "format": "jpeg",
+          "source_url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/moss_01/moss_01_nor_gl_1k.jpg"
+        },
+        {
+          "name": "moss_01_diff-moss_01_alpha",
+          "file": "textures/moss_patch_moss_01_diff_1k.jpg",
+          "bytes": 170297,
+          "sha256": "7c8d0794dd9db0a82f668a276896818d195c644cfed35f0fbf984a3260e70e50",
+          "resolution": "1024x1024",
+          "format": "jpeg",
+          "source_url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/moss_01/moss_01_diff_1k.jpg"
+        },
+        {
+          "name": "moss_01_rough",
+          "file": "textures/moss_patch_moss_01_arm_1k.jpg",
+          "bytes": 336140,
+          "sha256": "0cf0aabfc370a51e7d330ae01e63ca380f88a9bb0fcfa94730374476183a12cf",
+          "resolution": "1024x1024",
+          "format": "jpeg",
+          "source_url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/moss_01/moss_01_arm_1k.jpg"
+        }
+      ],
+      "game_asset_approved": false,
+      "art_approval": "PENDING_REAL_GODOT_FRAME_AND_USER"
+    },
+    {
+      "slug": "rock_moss_set",
+      "zh": "苔藓山石组",
+      "role": "rock",
+      "kind": "pbr_model",
+      "source_name": "rock_moss_set_01 (Rock Moss Set 01)",
+      "source_author": "Kless Gyzen",
+      "source_authors_detail": {
+        "Kless Gyzen": "All"
+      },
+      "source_page": "https://polyhaven.com/a/rock_moss_set_01",
+      "source_url_or_asset_id": "https://api.polyhaven.com/info/rock_moss_set_01",
+      "source_gltf_url": "https://dl.polyhaven.org/file/ph-assets/Models/gltf/1k/rock_moss_set_01/rock_moss_set_01_1k.gltf",
+      "license": "CC0",
+      "license_url": "https://polyhaven.com/license",
+      "license_verified_by": "Poly Haven API /info/rock_moss_set_01 at intake; site-wide CC0 per https://polyhaven.com/license",
+      "source_category": "rocks/nature/collection: pine_forest",
+      "original_sha256_of_gltf": "c36675aca9c6b2be7785c2534cf413b03ec82a5a2a5407a2b1c0cdb0346c9727",
+      "converted_sha256": "89afc1e782371895496cf1f5038b29b13f15597184756698d67838a555976e04",
+      "triangle_lod0": 63127,
+      "triangle_note": "真实源扫描/建模面数，未做任何加面伪装",
+      "triangle_lod1": "NOT_PRODUCED",
+      "triangle_lod2": "NOT_PRODUCED",
+      "render_surfaces": 6,
+      "render_meshes": 6,
+      "has_normal_map": true,
+      "all_primitives_have_uv0": true,
+      "texture_resolution": "1024x1024",
+      "material_channels": "material#0(rock_moss_set_01): baseColor+metallicRoughness+normal",
+      "alpha_mode": "OPAQUE",
+      "collision_type": "none in source; Godot runtime generates trunk/rock collider separately",
+      "godot_import_notes": "Godot 4.4.1 导入 .gltf（外置 .bin + /textures）。叶子用 Alpha Scissor/Hash，禁止大面积 Alpha Blend。原生 UV/法线/材质不改写。",
+      "files": [
+        {
+          "file": "rock_moss_set_1k.gltf",
+          "bytes": 8383,
+          "sha256": "89afc1e782371895496cf1f5038b29b13f15597184756698d67838a555976e04"
+        },
+        {
+          "file": "rock_moss_set.bin",
+          "bytes": 1466380,
+          "sha256": "de8360e6175879aaf02c171911069cf5f1852547f9ca7f10e440085dbcc3315e"
+        },
+        {
+          "file": "textures/rock_moss_set_rock_moss_set_01_nor_gl_1k.jpg",
+          "bytes": 209975,
+          "sha256": "eb4aad3f207f1dc5b624d74ae240372171626a66912bd71adf7bd3e518181d6e",
+          "resolution": "1024x1024"
+        },
+        {
+          "file": "textures/rock_moss_set_rock_moss_set_01_diff_1k.jpg",
+          "bytes": 168099,
+          "sha256": "40cea65d8aa4ee73a93b04af19963834d061eee9779c3fc2c1cba76eef812ccc",
+          "resolution": "1024x1024"
+        },
+        {
+          "file": "textures/rock_moss_set_rock_moss_set_01_rough_1k.jpg",
+          "bytes": 82624,
+          "sha256": "4d6ec46623abd8e2cdb855f59c7ce31873ad61b36b60e4de579e9e776a497c6b",
+          "resolution": "1024x1024"
+        }
+      ],
+      "images": [
+        {
+          "name": "rock_moss_set_01_nor_gl",
+          "file": "textures/rock_moss_set_rock_moss_set_01_nor_gl_1k.jpg",
+          "bytes": 209975,
+          "sha256": "eb4aad3f207f1dc5b624d74ae240372171626a66912bd71adf7bd3e518181d6e",
+          "resolution": "1024x1024",
+          "format": "jpeg",
+          "source_url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/rock_moss_set_01/rock_moss_set_01_nor_gl_1k.jpg"
+        },
+        {
+          "name": "rock_moss_set_01_diff",
+          "file": "textures/rock_moss_set_rock_moss_set_01_diff_1k.jpg",
+          "bytes": 168099,
+          "sha256": "40cea65d8aa4ee73a93b04af19963834d061eee9779c3fc2c1cba76eef812ccc",
+          "resolution": "1024x1024",
+          "format": "jpeg",
+          "source_url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/rock_moss_set_01/rock_moss_set_01_diff_1k.jpg"
+        },
+        {
+          "name": "rock_moss_set_01_rough",
+          "file": "textures/rock_moss_set_rock_moss_set_01_rough_1k.jpg",
+          "bytes": 82624,
+          "sha256": "4d6ec46623abd8e2cdb855f59c7ce31873ad61b36b60e4de579e9e776a497c6b",
+          "resolution": "1024x1024",
+          "format": "jpeg",
+          "source_url": "https://dl.polyhaven.org/file/ph-assets/Models/jpg/1k/rock_moss_set_01/rock_moss_set_01_rough_1k.jpg"
+        }
+      ],
+      "game_asset_approved": false,
+      "art_approval": "PENDING_REAL_GODOT_FRAME_AND_USER"
+    }
+  ],
+  "total_bytes": 28735060
+}

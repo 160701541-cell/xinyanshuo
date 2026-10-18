@@ -30,6 +30,10 @@ var fallback_triplanar_surfaces: int=0
 var model_material_roles: Dictionary={}
 var _microtexture: Texture2D
 var _shared_shader: Shader
+# rev208 P0-HQ-ECOLOGY：真实 CC0 扫描 PBR 两级地表（REV208-HQ-022）。
+# 资源缺失时保持 null，地面继续用旧的 micron 方案，绝不假装高精。
+var hq_ecology: RefCounted = null
+var hq_ecology_status: String = "NOT_LOADED"
 
 func initialize() -> void:
   for family in TEXTURES:
@@ -39,6 +43,23 @@ func initialize() -> void:
       _load_png(String(TEXTURES[family][kind]))
   _microtexture=_make_detail_grain()
   _shared_shader=_make_world_texel_shader()
+  hq_ecology=null
+  hq_ecology_status="RESOURCE_ABSENT"
+  var hq_path: String="res://canglan_rev187/hq_terrain_pbr.gd"
+  if ResourceLoader.exists(hq_path):
+    var script: Resource=ResourceLoader.load(hq_path)
+    if script is GDScript:
+      var instance: RefCounted=(script as GDScript).new()
+      if instance!=null and instance.has_method("build_ground_material"):
+        instance.call("initialize")
+        hq_ecology=instance
+        hq_ecology_status="LOADED"
+      else:
+        hq_ecology_status="SCRIPT_WITHOUT_API"
+    else:
+      hq_ecology_status="NOT_A_GDSCRIPT"
+  else:
+    hq_ecology_status="RESOURCE_ABSENT"
 
 func _load_png(name: String) -> Texture2D:
   if image_cache.has(name):
@@ -109,6 +130,14 @@ func material_for_real_terrain(role: String,base_color: Color,
     vertex_biome: bool) -> ShaderMaterial:
   if _microtexture==null or _shared_shader==null:
     initialize()
+  # REV208-HQ-022：真实自然地面优先使用 Poly Haven CC0 扫描的两级 PBR。
+  # 只替换 natural_ground；石壁/土层等分层地表仍走原有 Vivid 逻辑。
+  if role=="natural_ground" and hq_ecology!=null:
+    var hq_ground: ShaderMaterial=hq_ecology.call(
+      "build_ground_material",vertex_biome) as ShaderMaterial
+    if hq_ground!=null:
+      return hq_ground
+    hq_ecology_status="GROUND_BUILD_FAILED_KEPT_VIVID_FALLBACK"
   var material:=ShaderMaterial.new()
   material.resource_name="RealSoilWorldSpace64TexelsPerMetre_"+role
   material.shader=_shared_shader
@@ -244,5 +273,8 @@ func summary() -> Dictionary:
     "normal_mapped_surfaces":normal_mapped_surfaces,
     "optimized_vendor_surfaces":optimized_original_surfaces,
     "triplanar_no_uv_surfaces":fallback_triplanar_surfaces,
+    "rev208_hq_ecology_module":hq_ecology_status,
+    "rev208_hq_ecology_summary":(
+      hq_ecology.call("summary") if hq_ecology!=null else {}),
     "model_material_roles":model_material_roles.duplicate(true)
   }

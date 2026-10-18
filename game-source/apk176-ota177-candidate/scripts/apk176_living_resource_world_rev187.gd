@@ -7,6 +7,8 @@ const Economy = preload("res://canglan_rev187/worldbox_life_sim.gd")
 const Ecology = preload("res://canglan_rev187/ecology_growth.gd")
 const NaturalPalette = preload("res://canglan_rev187/visual_palette.gd")
 const KenneyMultiMesh = preload("res://canglan_rev187/kenney_multimesh.gd")
+const HQForestFloorPool = preload("res://canglan_rev187/hq_forest_floor_pool_rev208.gd")
+const Rev208NaturalBirth = preload("res://canglan_rev187/wild_tree_stone_birth_rev208.gd")
 const RealSoilTerrain = preload("res://canglan_rev187/strata_terrain.gd")
 const PlayerControl = preload("res://canglan_rev187/player_controller.gd")
 const ManualQuality = preload("res://canglan_rev187/quality_profiles.gd")
@@ -42,6 +44,27 @@ const READY_MADE_CC0: Dictionary={
   "cow":"res://canglan_rev187/cc0_rev206/animal/cow.glb",
   "dragon":"res://canglan_rev187/cc0_rev206/monster/dragon.glb",
   "goleling":"res://canglan_rev187/cc0_rev206/monster/goleling.glb"}
+# Rev208 REAL adult-tree species must be actual CC0 vendor high-detail meshes.
+# These contain 8-9m measured natural geometry, NOT scaled Kenney saplings.
+const HQ_MATURE_TREES: Dictionary={
+  "oak":"res://canglan_rev187/hq_rev208/mature_oak_hq_lod0.glb",
+  "maple":"res://canglan_rev187/hq_rev208/mature_maple_hq_lod0.glb",
+  "linden":"res://canglan_rev187/hq_rev208/mature_linden_hq_lod0.glb"}
+# Additional source-authored actual 3D botanical forms, never WorldX 2D cutouts.
+# Intake manifest and GLB SHA verified by the QA-only staging pipeline.
+const HQ_REV208_MEDICINAL: Dictionary={
+  "herb_wood":"res://canglan_rev187/hq_rev208/hq_medicinal_wood_cc0_drawmerged.glb",
+  "herb_fire":"res://canglan_rev187/hq_rev208/hq_medicinal_fire_cc0_drawmerged.glb",
+  "herb_water":"res://canglan_rev187/hq_rev208/hq_medicinal_water_cc0_drawmerged.glb"}
+const HQ_REV208_BOTANICAL: Dictionary={
+  "pine":"res://canglan_rev187/hq_rev208/hq_pine_cc0_drawmerged.glb",
+  "cypress":"res://canglan_rev187/hq_rev208/hq_cypress_cc0_drawmerged.glb",
+  "conifer":"res://canglan_rev187/hq_rev208/hq_conifer_cc0_drawmerged.glb",
+  "fern":"res://canglan_rev187/hq_rev208/hq_fern_cc0_drawmerged.glb",
+  "hydrangea":"res://canglan_rev187/hq_rev208/hq_hydrangea_cc0_drawmerged.glb",
+  "rose":"res://canglan_rev187/hq_rev208/hq_rose_cc0_drawmerged.glb",
+  "lavender":"res://canglan_rev187/hq_rev208/hq_lavender_cc0_drawmerged.glb",
+  "grass":"res://canglan_rev187/hq_rev208/hq_grass_cc0_drawmerged.glb"}
 const TOWN := "CL-REV186-HX-VILLAGE"
 const DEPOT := Vector3(0.0, 0.0, 10.0)
 const SITE := Vector3(0.0, 0.0, -3.0)
@@ -87,6 +110,20 @@ var status: Label
 var animation_report: Dictionary = {}
 var asset_errors: Array[String] = []
 var asset_sources: Dictionary = {}
+var hq_mature_tree_sources: Dictionary={}
+var hq_mature_tree_visuals: Dictionary={}
+var hq_medicinal_source_templates: Dictionary={}
+var forest_floor_pool: Node3D
+var natural_world_births: RefCounted
+var hq_botanical_sources: Dictionary={}
+var hq_botanical_visuals: Dictionary={}
+var hq_botanical_terrain_sites: Dictionary={}
+# rev208 P0-HQ-ECOLOGY：真实扫描地被（蕨/灌木/苔藓/苔石）布置报告。
+# 资源不在包里时保持空报告并记录原因，不影响原世界启动。
+var rev208_groundcover_report: Dictionary={}
+var hq_botanical_colliders: Dictionary={}
+var hq_botanical_placement_failures: Array[String]=[]
+var _hq_botanical_clock: float=0.0
 # rev199 genuinely licensed CC0 hair and real sword are separate scene
 # sources; they MUST NOT inflate 7 original economy/batch material sources.
 var licensed_long_hair_source: Node3D
@@ -215,15 +252,54 @@ func _ready() -> void:
     asset_errors.append("REV207_WORLD_50000KM2_MORTAL_ECOLOGY_SAVE_LOAD_FAILED")
   else:
     _sync_mine_guardian_realms()
+    # Reconcile a world-census death that persisted before the separate
+    # actor-save write, avoiding phantom resurrection after Android crashes.
+    cultivation.call("reconcile_named_deaths_with_regions")
   _create_quality_hud()
   _hide_old_render_world()
   _hide_original_debug_labels()
   quality = ManualQuality.new()
   quality.call("initialize",self)
+  # Born world nodes can appear naturally at any world-hour interval.
+  # Check REAL original-game terrain/building reservations before making
+  # a fresh unique CC0 herb/ore visible; no tap, NPC or stored seed needed.
+  spirit_resources.call("set_habitat_check",
+    Callable(self,"_rev208_natural_spawn_habitat"))
+  # Every original tree and stone remains in place; separate additive
+  # world-birth save restores NATURALLY created resources with same IDs,
+  # never free player/NPC resources or warehouse inventory.
+  natural_world_births=Rev208NaturalBirth.new()
+  # Use this saved cultivation world's actual persistent seed, not the
+  # developer's fixed example seed, for region-specific natural births.
+  natural_world_births.set("world_seed",int(cultivation.get("world_seed")))
+  if not bool(natural_world_births.call("initialize",sim,eco,
+      terrain_world,quality,housing_blueprints,spirit_resources)):
+    asset_errors.append("REV208_NATURAL_WILD_TREE_STONE_SAVE_INIT_FAILURE_"+
+      String(natural_world_births.get("last_error")))
+  else:
+    for world_born_id in natural_world_births.get("records"):
+      _materialize_wild_tree_stone(String(world_born_id))
   # Its real terrain _natural_plantable() mask becomes available ONLY once
   # the physical quality/vegetation controller is initialized. The earlier
   # call ran before quality existed and rejected all genuine bush sources.
   _spawn_licensed_living_understory()
+  _spawn_rev208_hq_botanical_ecology()
+  _spawn_rev208_real_scanned_groundcover()
+  # Actual CC0 fern + original PBR grass GLB meshes are physically instanced
+  # in compact per-species/per-habitat-cell GPU pools (not colored quads).
+  forest_floor_pool=HQForestFloorPool.new()
+  if not bool(forest_floor_pool.call("initialize",
+      world,terrain_world,quality,hq_botanical_sources,
+      housing_blueprints,spirit_resource_visuals)):
+    asset_errors.append("REV208_HQ021_ACTUAL_VENDOR_FERN_GRASS_GPU_POOL_FAILED")
+    forest_floor_pool.free()
+    forest_floor_pool=null
+  elif controls!=null and controls.get("actor")!=null:
+    # Real GLTF MultiMesh identity matrices on Godot 4.4.1 must fail
+    # closed into actual source-PBR MeshInstance3D cellular visuals.
+    var real_player: Node3D=controls.get("actor")
+    forest_floor_pool.call("sync_visibility",real_player.position,
+      String(quality.get("selected")))
   terrain_world.connect("terrain_cell_changed",
     Callable(self,"_on_understory_terrain_changed"))
   _set_dev_ui_visible(false)
@@ -615,6 +691,37 @@ func _load_assets() -> void:
     vivid_materials.call("upgrade_completed_cc0_model",art,
       String(role),"character_clothing_rig" if role=="worker" else "natural_source")
     asset_sources[role] = art
+  for tree_kind in HQ_MATURE_TREES:
+    var source: Node3D=_parse_existing_cc0(String(HQ_MATURE_TREES[tree_kind]))
+    if source==null:
+      asset_errors.append("REV208_P0_GENUINE_MATURE_TREE_MISSING_"+String(tree_kind))
+      continue
+    var meshes: Array[Node]=source.find_children("*","MeshInstance3D",true,false)
+    if meshes.size()!=4:
+      asset_errors.append("REV208_P0_HQ_VENDOR_PBR_NOT_FOUR_SURFACES_"+String(tree_kind))
+      continue
+    hq_mature_tree_sources[tree_kind]=source
+  for plant_kind in HQ_REV208_BOTANICAL:
+    var botanical: Node3D=_parse_existing_cc0(String(HQ_REV208_BOTANICAL[plant_kind]))
+    if botanical==null:
+      asset_errors.append("REV208_HQ_BOTANICAL_SOURCE_MISSING_"+String(plant_kind))
+      continue
+    var surface_meshes: Array[Node]=botanical.find_children("*","MeshInstance3D",true,false)
+    if surface_meshes.is_empty():
+      asset_errors.append("REV208_HQ_BOTANICAL_MESH_EMPTY_"+String(plant_kind))
+      continue
+    hq_botanical_sources[plant_kind]=botanical
+  for medicine_kind in HQ_REV208_MEDICINAL:
+    var source3d: Node3D=_parse_existing_cc0(String(
+      HQ_REV208_MEDICINAL[medicine_kind]))
+    if source3d==null or source3d.find_children(
+        "*","MeshInstance3D",true,false).is_empty():
+      asset_errors.append("REV208_INDEPENDENT_HERB_REAL_GLTF_MISSING_"+
+        String(medicine_kind))
+      if source3d!=null:
+        source3d.free()
+      continue
+    hq_medicinal_source_templates[medicine_kind]=source3d
   licensed_long_hair_source=_parse_existing_cc0(
     "res://canglan_rev187/quaternius_hair_long_static.glb")
   licensed_flying_sword_source=_parse_existing_cc0(
@@ -804,10 +911,14 @@ func quote_and_fund_near_house(point: Vector3) -> Dictionary:
 # bushes and retains exact textured UV/normal maps. We cap the mobile draw
 # budget rather than claiming one batch when no legitimate batch exists.
 func _spawn_licensed_living_understory() -> void:
-  if not spirit_resource_sources.has("bush") or quality==null:
-    asset_errors.append("REV207_UNDERSTORY_CC0_BUSH_NOT_IMPORTED")
+  if not asset_sources.has("tree") or quality==null:
+    asset_errors.append("REV208_UNDERSTORY_CC0_GREEN_OAK_NOT_IMPORTED")
     return
-  var original: Node3D=spirit_resource_sources["bush"]
+  # Screenshot QA of rev207 showed red-and-white fungal mushroom props
+  # (vendor file named bush.glb), NOT actual green leafy shrubs. The
+  # already-verified Kenney oak source has real green leaf geometry, so
+  # reuse its authoring meshes and materials at natural young-tree scale.
+  var original: Node3D=asset_sources["tree"]
   var part_nodes: Array[Node]=original.find_children("*","MeshInstance3D",true,false)
   var source_triangles: int=0
   var surface_count: int=0
@@ -835,6 +946,13 @@ func _spawn_licensed_living_understory() -> void:
     attempts+=1
     var x: float=rng.randf_range(-42.0,42.0)
     var z: float=rng.randf_range(-42.0,42.0)
+    # QA 39064557498 real Vulkan image proved young oak leaf canopies
+    # occluded the existing third-person player face/head at default start,
+    # although every model/source was otherwise valid. Keep a playable
+    # arrival clearing and the spirit-root altar visible/approachable.
+    if Vector2(x-1.5,z-7.0).length()<8.0 or (
+        Vector2(x-12.0,z-7.0).length()<5.0):
+      continue
     if not bool(quality.call("_natural_plantable",x,z)):
       continue
     var excluded: bool=false
@@ -853,15 +971,31 @@ func _spawn_licensed_living_understory() -> void:
     if excluded:
       continue
     var model: Node3D=original.duplicate()
-    model.name="RealQuaterniusLicensedUnderstory_%03d" % licensed_understory_count
+    model.name="RealKenneyLicensedGreenUnderstory_%03d" % licensed_understory_count
     var y: float=float(terrain_world.call("height_at",x,z))
     model.position=Vector3(x,y,z)
     model.rotation.y=rng.randf_range(-PI,PI)
-    model.scale=Vector3.ONE*rng.randf_range(0.38,0.72)
-    model.set_meta("source_license","Quaternius-CC0")
+    model.scale=Vector3.ONE*rng.randf_range(0.26,0.47)
+    model.set_meta("source_license","Kenney-CC0")
     model.set_meta("never_free_inventory",true)
-    model.set_meta("source_prefab","bush.glb")
+    model.set_meta("source_prefab","tree_oak.glb")
     world.add_child(model)
+    # REV208-P0 forest art: remove the 200 old toy-sized Kenney oak
+    # crowns FROM THE FOREGROUND ONLY. The original vegetation remains
+    # source-licensed and visible as a distant LOD, keeping its terrain
+    # excavation state, source model, physical position and saved IDs.
+    # Near-camera flora is instead true authored PBR fern/grass meshes
+    # managed in the REV208 32m cell fallback renderer.
+    for leaf_part in model.find_children("*","MeshInstance3D",true,false):
+      var low_lod_mesh: MeshInstance3D=leaf_part as MeshInstance3D
+      low_lod_mesh.visibility_range_begin=24.0
+      low_lod_mesh.visibility_range_begin_margin=4.0
+      low_lod_mesh.visibility_range_end=92.0
+      low_lod_mesh.visibility_range_end_margin=12.0
+      low_lod_mesh.visibility_range_fade_mode=(
+        GeometryInstance3D.VISIBILITY_RANGE_FADE_SELF)
+      low_lod_mesh.set_meta("rev208_distance_only_old_kenney_lod",true)
+    model.set_meta("rev208_forest_near_view_uses_author_pbr",true)
     licensed_understory_locations.append(Vector3(x,y,z))
     licensed_understory_instances.append(model)
     licensed_understory_count+=1
@@ -877,6 +1011,9 @@ func _spawn_licensed_living_understory() -> void:
 func _on_understory_terrain_changed(at: Vector3,radius: float) -> void:
   if quality==null:
     return
+  _sync_rev208_botanical_terrain(at,radius)
+  if forest_floor_pool!=null:
+    forest_floor_pool.call("on_terrain_changed",at,radius)
   for index in range(licensed_understory_instances.size()):
     var pos: Vector3=licensed_understory_locations[index]
     if Vector2(pos.x-at.x,pos.z-at.z).length()>radius+1.5:
@@ -895,6 +1032,208 @@ func _living_shrub_count() -> int:
       visible+=1
   return visible
 
+
+# Non-inventory natural flora for visual ecology: these never produce free ore,
+# herbs, timber or duplicate the saved 52 natural resource IDs. A living tree
+# carries a deterministic ecological identity and real trunk collision.
+func _spawn_rev208_real_scanned_groundcover() -> void:
+  # REV208-HQ-020：4 类真实扫描地被（Poly Haven CC0）。
+  # 只有在 staging 真的把 res://canglan_rev187/hq_ecology_groundcover 装进
+  # PCK 时才会生成；否则明确记录 SKIPPED，不伪造一株植物。
+  rev208_groundcover_report={"spawned":0,"skipped":["MODULE_ABSENT"],
+    "by_species":{},"installed":[]}
+  if vivid_materials==null or world==null or terrain_world==null:
+    return
+  var module: Variant=vivid_materials.get("hq_ecology")
+  if module==null:
+    rev208_groundcover_report["skipped"]=["HQ_ECOLOGY_MODULE_NOT_LOADED"]
+    return
+  if not (module as RefCounted).has_method("spawn_groundcover"):
+    rev208_groundcover_report["skipped"]=["SPAWN_API_MISSING"]
+    return
+  rev208_groundcover_report=module.call("spawn_groundcover",
+    world,terrain_world,quality,208311)
+  var spawned: int=int(rev208_groundcover_report.get("spawned",0))
+  if spawned>0:
+    _add_event("rev208候选：真实扫描地被 %d 株（蕨/灌木/苔藓/苔石），美术验收待完成" % spawned)
+
+## 把真源 CC0 树皮 PBR 应用到近景针叶树干：苍松用 knotted pine bark、
+## 古柏用 Chinese cedar bark。只覆盖“原本没有任何贴图”的材质，
+## 不改写第三方已有的 UV/PBR。
+func _apply_rev208_real_bark() -> void:
+  if vivid_materials==null:
+    return
+  var module: Variant=vivid_materials.get("hq_ecology")
+  if module==null or not (module as RefCounted).has_method("apply_bark_to_tree"):
+    return
+  var kinds: Dictionary={"pine":"pine","cypress":"cypress","conifer":"pine"}
+  var covered: int=0
+  for kind in kinds:
+    if not hq_botanical_sources.has(kind):
+      continue
+    var source: Node3D=hq_botanical_sources[kind]
+    if not is_instance_valid(source):
+      continue
+    covered+=int(module.call("apply_bark_to_tree",source,String(kinds[kind])))
+  if covered>0:
+    _add_event("rev208候选：%d 个近景针叶树干使用真源 CC0 树皮 PBR" % covered)
+
+func _spawn_rev208_hq_botanical_ecology() -> void:
+  if terrain_world==null or quality==null:
+    return
+  # Large evergreen groves frame the existing left-side resource forest but
+  # never occupy the spawn clearing, spirit-root altar or NPC building sites.
+  var groves: Array=[
+    ["pine",Vector2(-35.0,-24.0)],["cypress",Vector2(-38.0,-9.0)],
+    ["conifer",Vector2(-32.0,25.0)],["pine",Vector2(-15.5,-34.0)],
+    ["cypress",Vector2(-38.0,29.0)],["conifer",Vector2(-15.0,31.0)],
+    # Interwoven evergreen forest instead of six lone showcase trees.
+    # The additional mature trees are distinct vendor meshes, not scaled
+    # polygonal toy oaks, and use the original PBR/UVs/real trunk solids.
+    ["pine",Vector2(-35.2,-34.4)],["cypress",Vector2(-29.5,-2.2)],
+    ["conifer",Vector2(-35.1,14.6)],["pine",Vector2(-16.4,38.3)]]
+  var rng:=RandomNumberGenerator.new()
+  rng.seed=208518
+  var placements: Array=groves.duplicate(true)
+  # Real CC0 ferns / shrubs / flowering understory: NOT shrunken oak trunks.
+  for plant_kind in ["fern","hydrangea","rose","lavender","grass"]:
+    for j in range(8):
+      var cx: float=-31.0 if j%2==0 else -19.0
+      var cz: float=-22.0 if j<4 else 23.0
+      placements.append([plant_kind,Vector2(
+        clampf(cx+rng.randf_range(-10.0,7.0),-43.0,-12.0),
+        clampf(cz+rng.randf_range(-8.0,8.0),-42.0,42.0))])
+  var ordinal: int=0
+  for placement in placements:
+    var kind: String=String(placement[0])
+    var horizontal: Vector2=placement[1]
+    if not hq_botanical_sources.has(kind):
+      hq_botanical_placement_failures.append("SOURCE_UNAVAILABLE_"+kind)
+      continue
+    var x: float=horizontal.x
+    var z: float=horizontal.y
+    if not bool(quality.call("_natural_plantable",x,z)):
+      continue
+    if Vector2(x-1.5,z-7.0).length()<9.0 or (
+        Vector2(x-12.0,z-7.0).length()<6.0):
+      continue
+    var housing_blocked: bool=false
+    for site in housing_blueprints.values():
+      var home: Vector3=site["at"]
+      if Vector2(x-home.x,z-home.z).length()<7.2:
+        housing_blocked=true
+        break
+    if housing_blocked:
+      continue
+    var actor: Node3D=(hq_botanical_sources[kind] as Node3D).duplicate()
+    var identity: String="CL-BOTANICAL-208-%s-%03d" % [kind,ordinal]
+    ordinal+=1
+    actor.name=identity
+    actor.position=Vector3(x,0.0,z)
+    actor.rotation.y=rng.randf_range(-PI,PI)
+    # Scales ONLY for minor natural variation, not fake 8m mature trees.
+    actor.scale=Vector3.ONE*(
+      rng.randf_range(0.94,1.06) if kind in ["pine","cypress","conifer"]
+      else rng.randf_range(0.82,1.12))
+    actor.set_meta("world_entity_id",identity)
+    actor.set_meta("hq_rev208_vendor_cc0_botanical",kind)
+    actor.set_meta("source_license","CC0 exact Innerscene source page")
+    actor.set_meta("never_free_inventory",true)
+    world.add_child(actor)
+    var bounds: Vector2=_visible_bounds(actor)
+    if bounds.y-bounds.x<0.15 or (
+        kind in ["pine","cypress","conifer"] and bounds.y-bounds.x<7.0):
+      hq_botanical_placement_failures.append("BAD_REAL_ASSET_METRES_"+identity)
+      actor.queue_free()
+      continue
+    var ground: float=float(terrain_world.call("height_at",x,z))
+    actor.position.y+=ground-bounds.x
+    var installed: Vector3=Vector3(x,ground,z)
+    hq_botanical_visuals[identity]=actor
+    hq_botanical_terrain_sites[identity]=installed
+    if kind in ["pine","cypress","conifer"]:
+      var collider:=StaticBody3D.new()
+      collider.name="ActualEvergreenTrunk_"+identity
+      collider.collision_layer=2
+      collider.collision_mask=0
+      collider.position=Vector3(x,ground+1.20,z)
+      var stem:=CollisionShape3D.new()
+      var cylinder:=CylinderShape3D.new()
+      cylinder.radius=0.36
+      cylinder.height=2.4
+      stem.shape=cylinder
+      collider.add_child(stem)
+      world.add_child(collider)
+      hq_botanical_colliders[identity]=collider
+  _apply_rev208_real_bark()
+  if hq_botanical_sources.size()!=HQ_REV208_BOTANICAL.size():
+    asset_errors.append("REV208_HQ_EIGHT_VENDOR_BOTANICAL_SOURCES_INCOMPLETE")
+  _add_event("rev208候选：真实CC0松柏蕨草生态 %d 株，手机美术验收待完成" % [
+    hq_botanical_visuals.size()])
+
+func _sync_rev208_botanical_terrain(at: Vector3,radius: float) -> void:
+  # Excavation never leaves hovering ferns/trunks. No plant grants materials.
+  for id in hq_botanical_terrain_sites:
+    var old_site: Vector3=hq_botanical_terrain_sites[id]
+    if Vector2(old_site.x-at.x,old_site.z-at.z).length()>radius+3.0:
+      continue
+    var plant: Node3D=hq_botanical_visuals[id]
+    if not is_instance_valid(plant):
+      continue
+    var ground: float=float(terrain_world.call(
+      "height_at",old_site.x,old_site.z))
+    var bounds: Vector2=_visible_bounds(plant)
+    plant.position.y+=ground-bounds.x
+    hq_botanical_terrain_sites[id]=Vector3(old_site.x,ground,old_site.z)
+    if hq_botanical_colliders.has(id):
+      var trunk: StaticBody3D=hq_botanical_colliders[id]
+      trunk.position.y=ground+1.20
+
+func _sync_rev208_botanical_visibility(player_at: Vector3) -> void:
+  # Distance culling is a safety limit UNTIL real LOD1/2, FPS and
+  # thermal acceptance. The selected quality is still user-controlled.
+  var mode: String=String(quality.get("selected"))
+  var far: float=72.0 if mode=="极致" else (
+    56.0 if mode=="高档" else 34.0)
+  for id in hq_botanical_visuals:
+    var plant: Node3D=hq_botanical_visuals[id]
+    if not is_instance_valid(plant):
+      continue
+    var site: Vector3=hq_botanical_terrain_sites[id]
+    var dx: float=player_at.x-site.x
+    var dz: float=player_at.z-site.z
+    var within: bool=dx*dx+dz*dz<=far*far
+    var planted: bool=bool(quality.call("_natural_plantable",site.x,site.z))
+    plant.visible=within and planted
+    if hq_botanical_colliders.has(id):
+      var trunk: StaticBody3D=hq_botanical_colliders[id]
+      trunk.collision_layer=2 if planted else 0
+
+func _rev208_natural_spawn_habitat(kind: String,x: float,z: float) -> bool:
+  if terrain_world==null or quality==null or (
+      absf(x)>42.0 or absf(z)>42.0):
+    return false
+  if bool(terrain_world.call("_is_road",x,z)) or bool(
+      terrain_world.call("is_water",x,z)):
+    return false
+  var cell: Vector2i=terrain_world.call("_indices",x,z)
+  if int(terrain_world.call("_load_cell",cell.x,cell.y)["cuts"])>0:
+    return false
+  for site in housing_blueprints.values():
+    var location: Vector3=site["at"]
+    if Vector2(x-location.x,z-location.z).length()<7.7:
+      return false
+  for existing in spirit_resource_visuals.values():
+    var plant: Node3D=existing["model"]
+    if is_instance_valid(plant) and Vector2(
+        x-plant.position.x,z-plant.position.z).length()<3.5:
+      return false
+  if kind=="spirit_stone":
+    # Ore is naturally generated along outer hill bands, not in the
+    # village plaza or a timber/log pile, and no inventory is minted.
+    return x>=16.0
+  return bool(quality.call("_natural_plantable",x,z))
+
 func _spawn_spirit_resource_nodes() -> void:
   if spirit_resources==null or not bool(spirit_resources.get("_loaded")):
     return
@@ -909,7 +1248,13 @@ func _spawn_spirit_resource_nodes() -> void:
     if not spirit_resource_sources.has(prefab):
       asset_errors.append("REV206_SPIRIT_RESOURCE_NO_CC0_"+prefab)
       continue
-    var original: Node3D=spirit_resource_sources[prefab]
+    # Real authored CC0 GLB source for both original 13 physical nodes and
+    # NEW naturally generated world nodes. Unique saved IDs and world units
+    # are born into the ecosystem; no backpack or warehouse is auto-credited.
+    var high_detail: bool=hq_medicinal_source_templates.has(kind)
+    var original: Node3D=(
+      hq_medicinal_source_templates[kind] if high_detail
+      else spirit_resource_sources[prefab])
     var model: Node3D=original.duplicate()
     model.name=String(id)
     var x: float=float(data["x"])
@@ -917,7 +1262,9 @@ func _spawn_spirit_resource_nodes() -> void:
     model.position=Vector3(x,float(
       terrain_world.call("height_at",x,z)),z)
     model.set_meta("rev206_actual_world_ore_or_herb",kind)
-    model.set_meta("source_license","Quaternius-CC0")
+    model.set_meta("source_license",
+      "CC0-Innerscene-botanical" if high_detail else "Quaternius-CC0")
+    model.set_meta("rev208_authored_independent_herb_stem",high_detail)
     model.set_meta("world_entity_id",String(id))
     world.add_child(model)
     var b: Vector2=_visible_bounds(model)
@@ -962,9 +1309,80 @@ func _spawn_spirit_resource_nodes() -> void:
     # zero. Picking herbs never makes a species disappear from the land.
     model.visible=int(data["remaining"])>0 or kind!="spirit_stone"
     spirit_resource_visuals[id]={"model":model,"caption":tag,
-      "kind":kind,"display":String(recipes[kind]["display"])}
+      "kind":kind,"display":String(recipes[kind]["display"]),
+      "rev208_hq_full_bloom_author_scale":model.scale,
+      "rev208_hq_growth_stage":"bloom",
+      "rev208_hq_last_growth_factor":1.0,
+      "rev208_hq_last_real_3d_growth_hour":-1}
   _add_event("已生成%d株实体野生灵药/矿脉；全部由实际CC0花草岩石绘制" % [
     spirit_resource_visuals.size()])
+
+# HQ-023: independently-authored source CC0 wood/fire/water herb stems now
+# grow through real 3D life states on WORLD HOURS. This changes only
+# source-mesh transforms; the authoritative inventory, root species, saved
+# IDs, harvest stamina and renewable stock ledger are never rewritten here.
+# Never swap real authored PBR geometry for a tinted billboard or a tree.
+func _rev208_medicinal_growth_state(row: Dictionary) -> String:
+  var current: int=int(row.get("remaining",0))
+  var full: int=int(row.get("max",1))
+  if current<=0:
+    return "dormant"
+  if current==1 and full>2:
+    return "sprout"
+  if current<full:
+    return "budding"
+  return "bloom"
+
+func _sync_rev208_medicinal_growth_visual(id: String,visual: Dictionary,
+    row: Dictionary) -> void:
+  var herb: Node3D=visual["model"]
+  if not is_instance_valid(herb) or not bool(herb.get_meta(
+      "rev208_authored_independent_herb_stem",false)):
+    return
+  var kind: String=String(visual["kind"])
+  if not hq_medicinal_source_templates.has(kind):
+    asset_errors.append("REV208_HQ023_MISSING_SOURCE_OF_LIVING_HERB_"+id)
+    return
+  var state: String=_rev208_medicinal_growth_state(row)
+  var renew: int=maxi(1,int(SpiritResources.RESOURCE_DEFS[kind]["renew_hours"]))
+  var progress: float=clampf(float(row.get("hours_since_growth",0))/
+    float(renew),0.0,1.0)
+  var stage_factor: float=0.48 if state=="dormant" else (
+    0.67 if state=="sprout" else (
+      lerpf(0.80,0.92,progress) if state=="budding" else 1.0))
+  if absf(stage_factor-float(visual.get(
+      "rev208_hq_last_growth_factor",1.0)))<0.0001 and (
+      String(visual.get("rev208_hq_growth_stage",""))==state):
+    return
+  var original_scale: Vector3=visual["rev208_hq_full_bloom_author_scale"]
+  herb.scale=original_scale*stage_factor
+  var x: float=float(row["x"])
+  var z: float=float(row["z"])
+  # Root at measured natural soil after scaling true GLB mesh,
+  # including animated terraforming, not synthetic raised/hovering stems.
+  var floor_y: float=float(terrain_world.call("height_at",x,z))
+  var aabb_y: Vector2=_visible_bounds(herb)
+  herb.position=Vector3(x,herb.position.y+floor_y-aabb_y.x,z)
+  herb.set_meta("rev208_hq_true_3d_phenology_stage",state)
+  herb.set_meta("rev208_hq_true_3d_phenology_factor",stage_factor)
+  herb.set_meta("rev208_hq_phenology_author_glb_preserved",true)
+  herb.set_meta("world_entity_id",id)
+  visual["rev208_hq_growth_stage"]=state
+  visual["rev208_hq_last_growth_factor"]=stage_factor
+  visual["rev208_hq_last_real_3d_growth_hour"]=int(
+    spirit_resources.get("world_hours"))
+
+func _rev208_medicinal_stage_counts() -> Dictionary:
+  var result: Dictionary={"dormant":0,"sprout":0,"budding":0,"bloom":0,
+    "real_author_glb_stems":0,"extra_item_stock_created":0}
+  for id in spirit_resource_visuals:
+    var visual: Dictionary=spirit_resource_visuals[id]
+    if hq_medicinal_source_templates.has(String(visual["kind"])):
+      result["real_author_glb_stems"]+=1
+      var stage: String=String(visual.get("rev208_hq_growth_stage",""))
+      if result.has(stage):
+        result[stage]+=1
+  return result
 
 func _sync_spirit_resource_visuals(hero: Node3D=null) -> void:
   if spirit_resources==null:
@@ -976,6 +1394,7 @@ func _sync_spirit_resource_visuals(hero: Node3D=null) -> void:
     if not is_instance_valid(entity):
       continue
     var remaining: int=int(ledger[id]["remaining"])
+    _sync_rev208_medicinal_growth_visual(String(id),visual,ledger[id])
     entity.visible=remaining>0 or String(visual["kind"])!="spirit_stone"
     var tag: Label3D=visual["caption"]
     if entity.visible and hero!=null:
@@ -1404,6 +1823,37 @@ func _create_landscape() -> void:
     depot_marker.set_meta("decor_not_game_stock", true)
   _place_asset("steps", "LicensedWorksiteVisibleStoneApproach", SITE + Vector3(0,0,5), 1.6)
 
+func _place_hq_mature_resource_tree(tree_kind: String,id: String,
+    pos: Vector3) -> Node3D:
+  # This is a TRUE visual replacement, not a Kenney tree drawn underneath.
+  # The stable original tree ID, ecological age, harvest inventory and
+  # 3D collision remain identical to the existing saved world semantics.
+  if not hq_mature_tree_sources.has(tree_kind):
+    asset_errors.append("REV208_HQ_TREE_SOURCE_NOT_IMPORTED_"+tree_kind)
+    return null
+  var actor: Node3D=(hq_mature_tree_sources[tree_kind] as Node3D).duplicate()
+  actor.name="RealInnersceneCC0MatureTree_%s_%s" % [tree_kind,id]
+  actor.position=pos
+  actor.scale=Vector3.ONE
+  actor.set_meta("provider","Innerscene CC0 exact-source-sha")
+  actor.set_meta("source_license","CC0")
+  actor.set_meta("hq_rev208_mature_tree",true)
+  actor.set_meta("hq_rev208_tree_kind",tree_kind)
+  actor.set_meta("material_source","four-actual-vendor-PBR-materials")
+  actor.set_meta("resource_id",id)
+  world.add_child(actor)
+  var measured: Vector2=_visible_bounds(actor)
+  if measured.y-measured.x<7.5 or measured.y-measured.x>12.0:
+    asset_errors.append("REV208_HQ_MATURE_TREE_NOT_ACTUAL_8_TO_12_METERS_"+tree_kind)
+    actor.queue_free()
+    return null
+  var floor_y: float=float(terrain_world.call("height_at",pos.x,pos.z))
+  actor.position.y+=floor_y-measured.x
+  actor.set_meta("source_visual_height_m",measured.y-measured.x)
+  hq_mature_tree_visuals[id]=actor
+  _register_resource_collision(id,actor,"tree")
+  return actor
+
 func _seed_resources() -> void:
   var rng := RandomNumberGenerator.new()
   rng.seed = 1802026
@@ -1420,12 +1870,21 @@ func _seed_resources() -> void:
       z += 7.0
     var entity_id := "CL-TREE-0184-%03d" % index
     assert(sim.register_natural_node(entity_id, TOWN, "tree", 5))
+    # Original world-born trees can spontaneously regrow after felling;
+    # seed delivery is a SEPARATE, still finite player/NPC mechanic.
+    # 1 real wood unit per 72 world-hours after 96h dormancy, up to 5.
+    assert(sim.configure_resource_recovery(entity_id,5,1,72,96))
     assert(sim.register_resource_position(entity_id, Vector3(x,
       float(terrain_world.call("height_at",x,z)),z)))
     assert(eco.register_tree(entity_id))
-    var instance := _place_asset("tree", entity_id, Vector3(x,0,z), rng.randf_range(1.45,2.2))
+    var hq_kind: String=["oak","maple","linden"][index] if index<3 else ""
+    var instance: Node3D=(
+      _place_hq_mature_resource_tree(hq_kind,entity_id,Vector3(x,0,z))
+      if index<3 else _place_asset("tree",entity_id,
+        Vector3(x,0,z),rng.randf_range(1.45,2.2)))
     if instance != null:
       instance.set_meta("resource_id", entity_id)
+      instance.set_meta("natural_full_size_scale",instance.scale.x)
       natural_meshes[entity_id] = instance
   # Two mineral outcrops (right-hand side), all outside the main road.
   var quarry_groups := [Vector2(21.0,-15.0),Vector2(23.0,19.0)]
@@ -1445,6 +1904,34 @@ func _seed_resources() -> void:
     var instance := _place_asset("stone", entity_id, Vector3(x,0,z), rng.randf_range(1.0,1.55))
     if instance != null:
       natural_meshes[entity_id] = instance
+
+func _materialize_wild_tree_stone(id: String) -> bool:
+  # Materialize the existing economic node at its authoritative terrain
+  # position. This is NOT a decoration-only placeholder or free loot.
+  if natural_meshes.has(id):
+    return true
+  if not sim.natural_nodes.has(id) or (
+      not sim.resource_positions.has(id)):
+    return false
+  var node: Dictionary=sim.natural_nodes[id]
+  var kind: String=String(node["kind"])
+  if kind not in ["tree","stone"] or not (
+      (kind=="tree" and id.begins_with("CL-WILD-TREE-R208-")) or (
+      kind=="stone" and id.begins_with("CL-WILD-STONE-R208-"))):
+    return false
+  var point: Vector3=sim.resource_positions[id]
+  var scale_amount: float=1.48 if kind=="tree" else 1.17
+  var visual: Node3D=_place_asset(kind,id,point,scale_amount)
+  if visual==null:
+    asset_errors.append("REV208_NATURALLY_BORN_REAL_3D_SOURCE_MISSING_"+id)
+    return false
+  visual.set_meta("world_naturally_created",true)
+  visual.set_meta("source_license","Kenney CC0 verified original GLB")
+  visual.set_meta("source_entity_id",id)
+  visual.set_meta("natural_full_size_scale",visual.scale.x)
+  visual.set_meta("not_created_in_player_inventory",true)
+  natural_meshes[id]=visual
+  return true
 
 func _make_workers() -> void:
   var identities := [
@@ -1720,6 +2207,10 @@ func _process(delta: float) -> void:
     _economy_clock-=12.0
     sim.tick()
     eco.advance_ecology_hours(1)
+    if natural_world_births!=null and bool(natural_world_births.get("_loaded")):
+      for born_id in natural_world_births.call("advance_world_hour"):
+        if not _materialize_wild_tree_stone(String(born_id)):
+          asset_errors.append("REV208_NEW_NATURAL_SOURCE_HAS_NO_PHYSICAL_GLTF_"+String(born_id))
     if housing!=null:
       var paid_finished: Array=housing.call("advance_one_world_hour",1)
       for built_id in paid_finished:
@@ -1763,6 +2254,14 @@ func _process(delta: float) -> void:
     var following: Node3D = workers[_current_focus_id]["node"]
     _camera_focus = _camera_focus.lerp(following.position+Vector3(0,1.15,0),clampf(delta*3.5,0,1))
     _update_camera()
+  if hero!=null:
+    _hq_botanical_clock+=delta
+    if _hq_botanical_clock>=0.5:
+      _hq_botanical_clock=0.0
+      _sync_rev208_botanical_visibility(hero.position)
+      if forest_floor_pool!=null:
+        forest_floor_pool.call("sync_visibility",hero.position,
+          String(quality.get("selected")))
   _render_sync_counter += delta
   if _render_sync_counter >= 0.10:
     _render_sync_counter = 0.0
@@ -1772,6 +2271,12 @@ func _process(delta: float) -> void:
     _sync_resource_collisions()
   if _clock >= 0.5:
     _clock=0.0
+    # The authoritative resource counters change on harvesting, NOT when
+    # rendering. Immediately persist only changed wild node amounts.
+    if natural_world_births!=null and bool(natural_world_births.get("_loaded")):
+      if not bool(natural_world_births.call(
+          "save_if_authoritative_amount_changed")):
+        asset_errors.append("REV208_WILD_TREE_STONE_HARVEST_PERSISTENCE_FAILED")
     _sync_spirit_resource_visuals(hero)
     _update_status()
     _hide_original_debug_labels()
@@ -1839,12 +2344,30 @@ func stats() -> Dictionary:
     "rev208_true_yao_beast_real_hit_events":_beast_hit_events,
     "rev208_yao_beast_deaths":_beast_deaths,
     "rev206_real_spirit_herbs_ore":spirit_resources.call("stats") if spirit_resources!=null else {},
+    "rev208_tree_stone_naturally_appeared":natural_world_births.call("stats") if natural_world_births!=null else {},
+    "rev208_real_natural_birth_visual_count":natural_meshes.keys().filter(
+      func(id): return String(id).begins_with("CL-WILD-")).size(),
     "rev207_real_living_world":world_society.call("stats") if world_society!=null else {},
     "rev207_authoritative_mortal_population":int(world_society.call(
       "population")) if world_society!=null and bool(
       world_society.get("_loaded")) else 0,
     "rev207_mine_guardian_positions_linked":actual_wildlife.values().filter(
       func(v): return String(v.get("guarded_ore",""))!="").size(),
+    "rev208_hq_true_mature_tree_count":hq_mature_tree_visuals.size(),
+    "rev208_hq_botanical_genuine_source_species":hq_botanical_sources.keys(),
+    "rev208_hq_botanical_true_glb_count":hq_botanical_visuals.size(),
+    "rev208_real_scanned_groundcover":rev208_groundcover_report.duplicate(true),
+    "rev208_hq021_original_vendor_gpu_forest_floor":(
+      forest_floor_pool.call("stats") if forest_floor_pool!=null else {}),
+    "rev208_hq_independent_spirit_herb_source_count":hq_medicinal_source_templates.size(),
+    "rev208_hq_real_glb_medicinal_phenology":_rev208_medicinal_stage_counts(),
+    "rev208_hq_botanical_tree_trunk_colliders":hq_botanical_colliders.size(),
+    "rev208_hq_botanical_valid_ground_sites":hq_botanical_terrain_sites.size(),
+    "rev208_hq_botanical_placement_failures":hq_botanical_placement_failures.duplicate(),
+    "rev208_hq_true_mature_tree_sources":hq_mature_tree_sources.size(),
+    "rev208_hq_genuine_species":HQ_MATURE_TREES.keys(),
+    "rev208_kenney_small_3d_trees_distance_lod_min_m":24.0,
+    "rev208_near_forest_author_pbr_species_count":hq_botanical_sources.size(),
     "rev207_real_cc0_shrub_understory":licensed_understory_count,
     "rev207_real_cc0_shrub_draw_nodes":licensed_understory_draw_parts,
     "rev207_real_cc0_shrub_triangles":licensed_understory_triangle_budget,
@@ -1964,7 +2487,22 @@ func _refresh_ecology_meshes() -> void:
       art.scale = Vector3.ONE * growth_scale
       art.visible = life != "stump"
     else:
-      art.visible = int(sim.natural_nodes[id]["remaining"]) > 0
+      var existing_units: int=int(sim.natural_nodes[id]["remaining"])
+      art.visible = existing_units > 0
+      # A felled wild-born mature tree comes back as a real small sapling,
+      # gradually scaling into its original verified source mesh size.
+      # Original 3 HQ adult trees keep their exact 8–9m source silhouette
+      # at full health and their original resource/mesh IDs never change.
+      if String(state["stage"])=="natural_regrowth":
+        var natural_capacity: int=int(sim.natural_nodes[id]["capacity"])
+        var age_ratio: float=clampf(float(existing_units)/float(
+          maxi(1,natural_capacity)),0.0,1.0)
+        var full_scale: float=float(art.get_meta(
+          "natural_full_size_scale",art.scale.x))
+        art.scale=Vector3.ONE*full_scale*lerpf(0.20,1.0,age_ratio)
+      elif String(state["stage"])=="mature" and art.has_meta(
+          "natural_full_size_scale"):
+        art.scale=Vector3.ONE*float(art.get_meta("natural_full_size_scale"))
   for id in eco.stone:
     if not natural_meshes.has(id):
       continue
@@ -2014,6 +2552,10 @@ func _rebuild_geological_ridge() -> void:
   hill_zone.set_meta("preview_terrain_reduced_vertical_scale",true)
 
 func _exit_tree() -> void:
+  # World-born tree/stone deposit sizes are saved to an ADDITIVE file,
+  # without ever resetting the original 52/20 saved natural identities.
+  if natural_world_births!=null and bool(natural_world_births.get("_loaded")):
+    natural_world_births.call("save_state")
   # GLTFDocument.generate_scene produces freestanding Node3D templates.
   # They are NOT in the SceneTree, so main.queue_free() cannot clean them.
   # Release their Skeleton/Mesh/Animation resources before the renderer exits.
@@ -2023,6 +2565,30 @@ func _exit_tree() -> void:
     if is_instance_valid(source):
       source.free()
   asset_sources.clear()
+  # REV208 genuine tall PBR oak/maple/linden are three MORE independently
+  # allocated 4-mesh GLTFDocument templates. None is attached to the world.
+  # The precise 12 leaked DummyMesh+DummyMaterial RIDs in run 39069780173
+  # reveal they must be freed during ORIGINAL Main exit, not filtered in CI.
+  for source in hq_mature_tree_sources.values():
+    if source is Node3D and is_instance_valid(source):
+      (source as Node3D).free()
+  hq_mature_tree_sources.clear()
+  hq_mature_tree_visuals.clear()
+  # Exact Godot4.4.1 original-Main run 39078316397 detected 442 leaked
+  # source GLTF meshes (18+143+94+4+25+50+78+30). The eight vendor
+  # source templates are unparented, whereas their forest instances are
+  # parented to world; release templates explicitly before RenderServer.
+  for botanical in hq_botanical_sources.values():
+    if botanical is Node3D and is_instance_valid(botanical):
+      (botanical as Node3D).free()
+  hq_botanical_sources.clear()
+  for herb_template in hq_medicinal_source_templates.values():
+    if herb_template is Node3D and is_instance_valid(herb_template):
+      (herb_template as Node3D).free()
+  hq_medicinal_source_templates.clear()
+  hq_botanical_visuals.clear()
+  hq_botanical_terrain_sites.clear()
+  hq_botanical_colliders.clear()
   # rev199: two more GLTFDocument-generated meshes were created as
   # freestanding source templates (hair+sword), not children of world.
   # Without explicit release Godot aborts at exit with 2 DummyMesh

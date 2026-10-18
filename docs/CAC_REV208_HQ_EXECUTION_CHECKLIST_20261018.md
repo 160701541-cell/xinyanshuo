@@ -38,6 +38,15 @@
 - [ ] **REV208-HQ-042** 用户原安装APK176 versionCode1176真实手机，从rev207保留旧存档进候选：主角转身360°、飞/降/索敌、进入屋内、森林/灵草/灵矿/击杀修士/重载；**连续30分钟**测中高低画质性能、温度、触屏和碰撞；没有设备结果始终 `PENDING_PHONE`。
 - [ ] **REV208-HQ-043** 所有HQ高精P0视觉闸门真实PASS后才能准备PR #14从Draft转正式、合并main；原Main所有功能与截图+实机验收通过之后才签名rev208。RSA私钥只能在GitHub Secrets；新不可变 `canglan-content-rev-208.pck`，公网站点RSA/SHA256/整包下载/HTTP Range 206，`android-preview/latest.json`、官网、更新日志版本同步一致。rev207历史PCK不可覆盖。
 
+## 2026-10-18 实际代码增量进度（不改变以上未通过 P0 打勾状态）
+
+- **HQ-003 部分实现**：最新11种真实原始3D GLB（松、柏、16m云杉、蕨、绣球灌木、蔷薇、薰衣草、观赏草、木/火/水三种独立灵药）已逐来源保存作者、具体模型CC0网页、下载接口、原始SHA256、三角数、网格数、真实GLB与Godot 4.4.1独立源导入结果；工作流 `39078719793` SUCCESS，`game-source/apk176-ota177-candidate/assets/hq-rev208/vegetation/botanical/manifest.json`。LOD1/2、真实手机材质/尺寸/运行耗费还未验收，**HQ-003整体仍未通过**。
+- **HQ-020 部分实现**：原游戏 `apk176_living_resource_world_rev187.gd` 接入以上真实3D松、柏、云杉、林下蕨灌花草，真实分布实例、约束出生空地、保持地形接地与树干碰撞、渲染档位距离约束；最早8物种旧完整Main引擎验证42个实体、5个树干碰撞、0虚构库存，已生成3张真Godot截图但整次渲染因145秒超时FAIL；已延至285秒并补原 Main QA，2026-10-18需用本轮最新严格CI验证11物种后才认定新候选技术通过。局部植被≠密林达标，未做LOD，不得标HQ-020通过。
+- **HQ-023 部分实现**：原13个可采资源ID仍原样保留；原三种木/火/水灵草使用三个独立许可真3D花茎替换旧三份反复换色的Quaternius源；灵石与凝露灵芝当前仍旧真实来源，不会产生额外产出。**尚无5—8种真实多生长阶段的独立灵植；HQ-023继续P0 FAIL**，审美认可待见实帧。
+- **HQ-041 严格候选证据**：追加原APK176真实Vulkan的松林/柏林/蕨层3张1280×720原图片，与旧3成熟树、旧药材和修士真死亡相同Main工程；CI在成功后只把未经加工的PNG归档Draft分支 `art/actual-engine-capture/rev208-candidate/`。没有完整中国古装主角及修士近景、宗门、高精世界，不得发布。GPU运行还未验收。
+- **实际错误处理**：检出442个从GLTFDocument生成但未释放的Godot DummyMesh RID，源码 `a39cc3c`已逐个释放原始模板；11源发布前真实复测捕到原Main QA脚本重复变量 `origin` 导致GDScript预解析失败，`438311c`更正并新增昂贵QA前的脚本预解析。单步成功不能冒充整个QA SUCCESS。
+- **状态永久闸门**：Draft PR #14；正式 `android-preview/latest.json`仍**rev207**（Android versionCode1176），本轮没有RSA签名、未发布到手机；画质审批、WorldX国风全身、高品质国风宗门、30分钟 Android 真机全部未验收。
+
 ## 当前状态（2026-10-18）
 
 | 证据 | 状态 |

@@ -1,0 +1,86 @@
+name: Canglan P0-HQ-ECOLOGY 国风森林地表PBR+真实扫描地被 真Godot4.4.1 QA ONLY
+
+# 分支：agent/dsh-p0-xianxia-ecology
+# 只做 QA：不签名、不发布、不改 android-preview/latest.json、不产 APK。
+# 目标条目：REV208-HQ-003 / REV208-HQ-020 / REV208-HQ-022
+on:
+  push:
+    branches: [agent/dsh-p0-xianxia-ecology]
+    paths:
+      - '.github/workflows/canglan-agent-dsh-p0-xianxia-ecology-qa.yml'
+      - 'tools/asset_factory/rev208_ecology_polyhaven_intake.mjs'
+      - 'tools/stage_rev208_hq_ecology.py'
+      - 'game-source/apk176-ota177-candidate/assets/hq-rev208/terrain/**'
+      - 'game-source/apk176-ota177-candidate/assets/hq-rev208/vegetation/groundcover/**'
+      - 'game-source/apk176-ota177-candidate/assets/hq-rev208/ecology-intake-provenance.json'
+      - 'game-source/apk176-ota177-candidate/scripts/apk176_hq_terrain_pbr_rev208.gd'
+      - 'game-source/apk176-ota177-candidate/scripts/apk176_vivid_material_rev207.gd'
+      - 'game-source/apk176-ota177-candidate/scripts/apk176_living_resource_world_rev187.gd'
+      - 'logic-qa/hq-ecology-fixture/**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+concurrency:
+  group: canglan-dsh-p0-ecology-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  offline-sha-then-real-godot441-assertions:
+    if: github.repository == '160701541-cell/xinyanshuo'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Node toolchain
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: 1) 入库清单完全离线自校验（SHA256/尺寸/通道/面数，不联网）
+        shell: bash
+        run: |
+          set -euo pipefail
+          node tools/asset_factory/rev208_ecology_polyhaven_intake.mjs --verify
+
+      - name: 2) 按清单把资产装进 PCK 树（逐文件 SHA256 复算）
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 tools/stage_rev208_hq_ecology.py --dest logic-qa/hq-ecology-fixture
+
+      - name: 3) 下载官方 Godot 4.4.1 stable（x86_64）
+        shell: bash
+        run: |
+          set -euo pipefail
+          wget -q -O /tmp/godot.zip \
+            https://github.com/godotengine/godot/releases/download/4.4.1-stable/Godot_v4.4.1-stable_linux.x86_64.zip
+          unzip -oq /tmp/godot.zip -d /tmp
+          chmod +x /tmp/Godot_v4.4.1-stable_linux.x86_64
+          /tmp/Godot_v4.4.1-stable_linux.x86_64 --version
+
+      - name: 4) 真实引擎导入全部 jpg / gltf
+        shell: bash
+        run: |
+          set -euo pipefail
+          /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless --editor \
+            --path logic-qa/hq-ecology-fixture --import
+
+      - name: 5) 真实引擎断言（贴图可解码/面数一致/两级PBR材质真的输出/地被真的生成）
+        shell: bash
+        run: |
+          set -euo pipefail
+          /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless \
+            --path logic-qa/hq-ecology-fixture \
+            --script res://verify_rev208_hq_ecology_pbr.gd 2>&1 | tee /tmp/ecology-qa.log
+          grep -q 'PASS_REV208_HQ_ECOLOGY_REAL_GODOT441_TWO_SCALE_PBR_GROUND_AND_GROUNDCOVER' \
+            /tmp/ecology-qa.log
+
+      - name: 6) 存档 QA 日志（不签名、不发布）
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: rev208-hq-ecology-godot441-qa-${{ github.sha }}
+          path: /tmp/ecology-qa.log
+          if-no-files-found: warn

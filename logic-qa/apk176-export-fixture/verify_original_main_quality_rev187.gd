@@ -125,9 +125,9 @@ func _run() -> void:
   var used_slots: Dictionary=first.get("kenney_batch",{}).get("role_capacity_used",{})
   var available_slots: Dictionary=first.get("kenney_batch",{}).get("role_instance_capacity",{})
   var physical_nodes: Dictionary=room.get("natural_meshes")
-  if physical_batch==null or int(used_slots.get("tree",0))!=52 or (
+  if physical_batch==null or int(used_slots.get("tree",0))!=49 or (
       int(used_slots.get("stone",0))!=20) or (
-      int(available_slots.get("tree",0))<52) or (
+      int(available_slots.get("tree",0))<49) or (
       int(available_slots.get("stone",0))<20) or (
       physical_nodes.size()!=72):
     _fail(342,"REV206_NATURAL_NODE_COUNT_OR_MULTIMESH_CAPACITY_NOT_REAL_"+
@@ -135,7 +135,7 @@ func _run() -> void:
     return
   var real_group_parts: Dictionary=physical_batch.get("group_parts")
   for check in [
-      {"kind":"tree","id":"CL-TREE-0184-051","slot":51,"growth":70},
+      {"kind":"tree","id":"CL-TREE-0184-051","slot":48,"growth":70},
       {"kind":"stone","id":"CL-STONE-0184-019","slot":19,"growth":36}]:
     var kind: String=String(check["kind"])
     var entity_id: String=String(check["id"])
@@ -163,7 +163,163 @@ func _run() -> void:
         not gpu.get_instance_transform(expected_slot).is_equal_approx(previous_transform)):
       _fail(346,"REV206_GROWTH_ERASED_OLD_SOURCE_MESH_COLOR_OR_TRANSFORM_"+kind)
       return
-  print("PASS_REV206_ALL_52_TREES_20_STONES_REAL_DRAWABLE_BATCH_SLOTS_GROW_WITHOUT_LOSS")
+  var hq_visuals: Dictionary=room.get("hq_mature_tree_visuals")
+  var hq_sources: Dictionary=room.get("hq_mature_tree_sources")
+  if hq_visuals.size()!=3 or hq_sources.size()!=3 or (
+      int(first.get("rev208_hq_true_mature_tree_count",0))!=3):
+    _fail(401,"REV208_THREE_ACTUAL_HIGH_POLY_MATURE_TREES_NOT_LOADED_IN_ORIGINAL_MAIN")
+    return
+  for spec in [
+      {"index":0,"species":"oak"},{"index":1,"species":"maple"},
+      {"index":2,"species":"linden"}]:
+    var code: String="CL-TREE-0184-%03d" % int(spec["index"])
+    var species: String=String(spec["species"])
+    var actual: Node3D=hq_visuals.get(code,null)
+    if actual==null or actual!=physical_nodes.get(code,null) or (
+        not actual.is_inside_tree()) or not bool(
+        actual.get_meta("hq_rev208_mature_tree",false)) or (
+        String(actual.get_meta("hq_rev208_tree_kind",""))!=species):
+      _fail(402,"REV208_MATURE_TREE_STILL_KENNEY_LOW_POLY_OR_IS_GHOST_"+code)
+      return
+    var meshes: Array[Node]=actual.find_children(
+      "*","MeshInstance3D",true,false)
+    var bh: Vector2=room.call("_visible_bounds",actual)
+    if meshes.size()!=4 or bh.y-bh.x<7.0 or bh.y-bh.x>21.0:
+      _fail(403,"REV208_REAL_HQ_TREE_NOT_FOUR_VENDOR_PBR_PARTS_OR_WRONG_SCALE_"+code+
+        "_metres_"+str(bh)+"_meshes_"+str(meshes.size()))
+      return
+    if not room.get("natural_colliders").has(code):
+      _fail(404,"REV208_HQ_MATURE_TREE_HAS_NO_REAL_GAME_COLLIDER_"+code)
+      return
+  # The natural world must NEVER be permanently clearcut:
+  # all original 52 harvestable tree IDs, including the 3 true high-poly
+  # adult trees, have real world-time natural regrowth independent of
+  # free NPC stock/warehouse items or the carried tree_seed economy.
+  for original_tree_index in range(52):
+    var reusable_tree_id: String="CL-TREE-0184-%03d" % original_tree_index
+    if not econ.natural_nodes.has(reusable_tree_id):
+      _fail(440,"REV208_ORIGINAL_WORLD_TREE_ID_WAS_REPLACED_DURING_REPLENISHMENT")
+      return
+    var renewable_tree: Dictionary=econ.natural_nodes[reusable_tree_id]
+    if int(renewable_tree.get("regen_units",0))!=1 or (
+        int(renewable_tree.get("regen_hours",0))<72) or (
+        int(renewable_tree.get("recovery_hours",0))<48):
+      _fail(441,"REV208_ORIGINAL_TREE_STUMP_CAN_NEVER_NATURALLY_REGROW_"+reusable_tree_id)
+      return
+  print("PASS_REV208_ALL_52_REAL_ORIGINAL_TREE_IDS_NATURALLY_RENEW_AFTER_CUT_WITHOUT_FREE_INVENTORY")
+  print("PASS_REV208_3_ACTUAL_8M_MATURE_VENDOR_PBR_TREES_REPLACE_THREE_NATURAL_IDS")
+  # Extra source-authored conifers and understory live INSIDE original Main.
+  # They cannot fabricate the authoritative 52-tree resource ledger.
+  var botanicals: Dictionary=room.get("hq_botanical_visuals")
+  var bot_sources: Dictionary=room.get("hq_botanical_sources")
+  var bot_sites: Dictionary=room.get("hq_botanical_terrain_sites")
+  var bot_trunks: Dictionary=room.get("hq_botanical_colliders")
+  if bot_sources.size()!=8 or botanicals.size()<12 or (
+      botanicals.size()!=bot_sites.size()) or bot_trunks.size()<3:
+    _fail(407,"REV208_REAL_PINE_CYPRESS_FERN_UNDERSTORY_NOT_IN_ORIGINAL_MAIN_"+
+      str({"sources":bot_sources.size(),"actual":botanicals.size(),
+        "sites":bot_sites.size(),"trunks":bot_trunks.size()}))
+    return
+  var natural_kinds: Dictionary={}
+  var rev208_real_hq_botanical_mesh_surfaces: int=0
+  for bot_id in botanicals:
+    var botanical: Node3D=botanicals[bot_id]
+    if not is_instance_valid(botanical) or not botanical.is_inside_tree() or (
+        botanical.get_parent()!=world) or (
+        String(botanical.get_meta("world_entity_id",""))!=String(bot_id)) or (
+        not String(botanical.get_meta("source_license","")).begins_with("CC0")):
+      _fail(408,"REV208_UNLICENSED_OR_GHOST_BOTANICAL_NODE_"+String(bot_id))
+      return
+    var species: String=String(botanical.get_meta("hq_rev208_vendor_cc0_botanical",""))
+    natural_kinds[species]=int(natural_kinds.get(species,0))+1
+    # Strictly count REAL Godot drawable Mesh surfaces in the original
+    # PCK, not source JSON estimates or a duplicated decorative scene.
+    var real_mesh_nodes: Array[Node]=botanical.find_children(
+      "*","MeshInstance3D",true,false)
+    for real_mesh_node in real_mesh_nodes:
+      var real_mesh_instance: MeshInstance3D=real_mesh_node as MeshInstance3D
+      if real_mesh_instance!=null and real_mesh_instance.mesh!=null:
+        rev208_real_hq_botanical_mesh_surfaces+=real_mesh_instance.mesh.get_surface_count()
+    var bounds: Vector2=room.call("_visible_bounds",botanical)
+    if species in ["pine","cypress","conifer"] and bounds.y-bounds.x<7.0:
+      _fail(409,"REV208_PINE_CYPRESS_MODEL_NOT_REAL_MATURE_SIZE_"+String(bot_id))
+      return
+  for required in ["pine","cypress","conifer","fern","hydrangea","rose",
+      "lavender","grass"]:
+    if int(natural_kinds.get(required,0))<1:
+      _fail(410,"REV208_VENDOR_PLANT_LAYER_NOT_PHYSICALLY_PLACED_"+required)
+      return
+  if int(first.get("resource_node_count",0))!=72 or (
+      int(first.get("rev208_hq_botanical_true_glb_count",-1))!=botanicals.size()):
+    _fail(411,"REV208_FOREST_DECORATION_MINTED_FAKE_RESOURCES_OR_NOT_REPORTED")
+    return
+  if rev208_real_hq_botanical_mesh_surfaces>150 or (
+      rev208_real_hq_botanical_mesh_surfaces<20):
+    _fail(414,"REV208_BOTANICAL_REAL_GODOT_ANDROID_TOO_MANY_DRAW_PARTS_"+
+      str(rev208_real_hq_botanical_mesh_surfaces))
+    return
+  var forest_pool: Node3D=room.get("forest_floor_pool")
+  if forest_pool==null or not is_instance_valid(forest_pool):
+    _fail(415,"REV208_REAL_VENDOR_FERN_GRASS_32M_HABITAT_BATCH_NOT_CREATED")
+    return
+  var forest_status: Dictionary=forest_pool.call("stats")
+  var floor_positions: Dictionary=forest_pool.get("position_by_id")
+  var live_ids: Array=floor_positions.keys()
+  var honest_glb_fallback: bool=bool(forest_status.get("gpu_matrix_unsupported",false))
+  if int(forest_status.get("actual_32m_cells",0))!=32 or (
+      int(forest_status.get("active_real_cc0_plants",0))<25) or (
+      int(forest_status.get("gpu_real_pbr_parts",0))<32) or (
+      int(forest_status.get("protected_site_count",0))<19) or (
+      not bool(forest_status.get("all_visible_slots_contiguous",false))) or (
+      not bool(forest_status.get("never_free_inventory",false))) or (
+      not forest_status.get("errors",[]).is_empty()) or live_ids.is_empty() or (
+      honest_glb_fallback and int(forest_status.get(
+        "actual_glb_pbr_fallback_nodes",0))<8) or (
+      not honest_glb_fallback and int(forest_status.get(
+        "verified_live_gpu_slots",0))<25):
+    _fail(415,"REV208_LIVE_AUTHOR_LICENSED_FERN_GRASS_NATIVE_GPU_POOL_BAD_"+
+      str(forest_status))
+    return
+  # All 6 paid-only future houses and all 13 finite live spirit herbs
+  # must remain free of these non-inventory decorative plant instances.
+  for floor_id in live_ids:
+    var ground_at: Vector3=floor_positions[floor_id]["xz"]
+    for blueprint in (room.get("housing_blueprints") as Dictionary).values():
+      var reserved: Vector3=blueprint["at"]
+      if Vector2(ground_at.x-reserved.x,
+          ground_at.z-reserved.z).length()<7.0:
+        _fail(418,"REV208_AUTHORED_FERN_GRASS_COVER_CLIPPED_PAID_HOUSE_"+String(floor_id))
+        return
+  var original_pool_count: int=int(forest_status["active_real_cc0_plants"])
+  if not bool(forest_pool.call("verify_swap_remove",String(live_ids[0]))):
+    _fail(416,"REV208_REAL_GPU_FLOOR_SWAPPED_SLOT_NOT_RESTORED")
+    return
+  var after_swap: Dictionary=forest_pool.call("stats")
+  if int(after_swap.get("active_real_cc0_plants",-1))!=original_pool_count or (
+      not bool(after_swap.get("all_visible_slots_contiguous",false))):
+    _fail(417,"REV208_REAL_FERN_GRASS_GPU_SLOT_IDENTITY_CORRUPTION_ON_REMOVE_INSERT")
+    return
+  if honest_glb_fallback:
+    if bool(forest_pool.get("gpu_matrix_unsupported")) and (
+        String(forest_status.get("gpu_matrix_issue",""))==
+          "BLOCKED_IMPORTED_GLTF_MULTIMESH_IDENTITY_REAL_GODOT_441"):
+      print("BLOCKED_REV208_HQ021_GODOT441_REAL_IMPORTED_GLTF_MULTIMESH_GPU_TRANSFORM_NO_FALSE_GREEN")
+    else:
+      _fail(419,"REV208_HQ021_REAL_GODOT_FALSE_POSITIVE_GPU_FALLBACK_STATUS")
+      return
+  else:
+    print("PASS_REV208_HQ021_GENUINE_GLTF_MULTIMESH_TRANSFORMS_CONTIGUOUS_GPU_SLOTS")
+  print("PASS_REV208_HQ021_REAL_VENDOR_CC0_32M_CELLS_NONINVENTORY_ACTUAL_PBR_VISUAL_FALLBACK_NO_ORIGIN_GHOSTS_SWAP_REMOVE "+
+    str({"active":original_pool_count,
+      "actual_physical_mesh_nodes":forest_status.get("actual_glb_pbr_fallback_nodes",0),
+      "cell_groups":forest_status["actual_32m_cells"],
+      "gpu_mesh_matrix_unsupported":honest_glb_fallback}))
+  print("PASS_REV208_ORIGINAL_MAIN_11_CC0_PBR_GODOT_DRAWABLE_STATIC_BOTANICAL_SURFACES_UNDER_150 "+
+    str(rev208_real_hq_botanical_mesh_surfaces))
+  print("PASS_REV208_ACTUAL_ORIGINAL_MAIN_REAL_PINE_CYPRESS_FERN_AND_FIVE_GREEN_PLANT_SOURCES_NO_FAKE_INVENTORY")
+  print("REV208_HQ_ART_STATUS_PENDING_CHARACTER_PBR_SPIRIT_HERBS_ANDROID_USER_REVIEW")
+
+  print("PASS_REV208_REMAINING_49_KENNEY_LOD_TREES_20_STONES_GPU_BUFFERS_RETAINED")
   if int(first.get("visible_actor_labels",0)) != 3:
     _fail(27, "MISSING_VISIBLE_NPC_WORKER_JOB_LABELS")
     return
@@ -942,7 +1098,7 @@ func _run() -> void:
         int(living.get("region_built_bp",-1))!=0):
       _fail(364,"REV207_UNPAID_HOUSE_CANNOT_CLEAR_WILDERNESS_AND_GRASS")
       return
-  # Source-hashed Quaternius source GLBs do not admit a valid instancing
+  # Source-hashed Quaternius red-fungal source GLBs do not admit a valid instancing
   # transform in this Godot build (even bulk GPU writes return IDENTITY).
   # Require ACTUAL physically positioned vendor mesh scene instances:
   # all original UVs/materials, 200 genuine visual bushes (no fake labels).
@@ -965,8 +1121,8 @@ func _run() -> void:
     var site_pos: Vector3=soil_sites[plant_index]
     if not is_instance_valid(plant) or not plant.is_inside_tree() or (
         plant.get_parent()!=world) or (
-        String(plant.get_meta("source_license",""))!="Quaternius-CC0") or (
-        String(plant.get_meta("source_prefab",""))!="bush.glb") or (
+        String(plant.get_meta("source_license",""))!="Kenney-CC0") or (
+        String(plant.get_meta("source_prefab",""))!="tree_oak.glb") or (
         plant.find_children("*","MeshInstance3D",true,false).is_empty()):
       _fail(371,"REV207_VEGETATION_NOT_REAL_LICENSED_GLTF_3D_MESH_"+str(
         plant_index))
@@ -1001,7 +1157,43 @@ func _run() -> void:
       "healthy":healthy_stems,"reported":report.get(
       "rev207_real_cc0_shrub_live_after_terrain_edits",-1)}))
     return
-  print("PASS_REV207_TRUE_LICENSED_QUATERNIUS_SHRUB_UNDERSTORY_NONBUILDING_BOUNDED_REAL_SOURCE_GLTF_GEOMETRY")
+  # P0 HQ ART LOD: old tiny licensed Kenney trees remain in the same
+  # 3D SceneTree only as genuine distant LOD. No toy miniature tree
+  # geometries may render closer than 24m to the real player camera.
+  # Foreground source-author PBR fern/grass is a separate actual GLB pool.
+  var strict_far_only: int=0
+  for old_tree in real_plants:
+    var visual: Node3D=old_tree as Node3D
+    if not bool(visual.get_meta("rev208_forest_near_view_uses_author_pbr",false)):
+      _fail(450,"REV208_TOY_OAK_BUSH_NOT_REMOVED_FROM_3D_FOREGROUND")
+      return
+    var mesh_parts: Array[Node]=visual.find_children(
+      "*","MeshInstance3D",true,false)
+    if mesh_parts.is_empty():
+      _fail(451,"REV208_OLD_SOURCE_LOD_ACTUAL_GEOMETRY_MISSING")
+      return
+    for child in mesh_parts:
+      var drawn: MeshInstance3D=child as MeshInstance3D
+      if drawn.visibility_range_begin<23.99 or (
+          drawn.visibility_range_begin>24.01) or (
+          drawn.visibility_range_end<91.99) or (
+          drawn.visibility_range_end>92.01) or (
+          not bool(drawn.get_meta(
+            "rev208_distance_only_old_kenney_lod",false))):
+        _fail(452,"REV208_200_LOW_POLY_TOY_TREES_STILL_RENDER_ON_FACE_"+String(
+          visual.name))
+        return
+      strict_far_only+=1
+  if strict_far_only<96 or (
+      int(first.get("rev208_kenney_small_3d_trees_distance_lod_min_m",0))!=24) or (
+      int(first.get("rev208_near_forest_author_pbr_species_count",0))<8):
+    _fail(453,"REV208_REAL_FOREST_NEAR_DETAIL_NOT_LICENSED_AUTHOR_GLBS_"+
+      str({"lod":strict_far_only,"species":first.get(
+        "rev208_near_forest_author_pbr_species_count",0)}))
+    return
+  print("PASS_REV208_HQ_P0_REAL_KENNEY_TOY_OAK_FOREGROUND_REMOVED_24M_DISTANT_LOD_200_LICENSED_MESHES_FOREGROUND_AUTHOR_PBR")
+
+  print("PASS_REV208_TRUE_LICENSED_KENNEY_GREEN_SAPLING_NONBUILDING_BOUNDED_REAL_SOURCE_GLTF_GEOMETRY")
   print("PASS_REV207_TRUE_MAIN_50000KM2_5000_ROOT_RATIO_BODY_CULTIVATION_5_SECTS_4_REAL_ORE_BEAST_GUARDS")
   if not bool(report.get("persistent_city_population_is_statistical_only",false)):
     _fail(331,"REV207_5000_MORTALS_MUST_BE_STATISTICAL_NOT_5000_GODOT_NODES")
@@ -2084,13 +2276,45 @@ func _run() -> void:
       wild.call("stats").get("live_spirit_stone_units",0))!=12:
     _fail(346,"REV206_REAL_PHYSICAL_MEDICINAL_RESOURCE_NODES_NOT_CONSERVED")
     return
+  var independent_herb_sources: Dictionary=room.get("hq_medicinal_source_templates")
+  if independent_herb_sources.size()!=3:
+    _fail(412,"REV208_THREE_GENUINE_INDEPENDENT_AUTHORED_HERB_GLTF_SOURCES_MISSING")
+    return
+  var medicinal_kinds: Dictionary={}
   for id in plants:
     var mesh: Node3D=plants[id]["model"]
+    var kind: String=String(plants[id]["kind"])
+    var upgraded: bool=kind in ["herb_wood","herb_fire","herb_water"]
+    var herb_source_license: String=(
+      "CC0-Innerscene-botanical" if upgraded else "Quaternius-CC0")
     if mesh==null or not is_instance_valid(mesh) or (
         mesh.find_children("*","MeshInstance3D",true,false).is_empty()) or (
-        mesh.get_meta("source_license","")!="Quaternius-CC0"):
-      _fail(347,"REV206_MEDICINE_ORE_MISSING_REAL_QUATERNIUS_MESH_AND_LICENSE")
+        String(mesh.get_meta("source_license",""))!=herb_source_license) or (
+        bool(mesh.get_meta("rev208_authored_independent_herb_stem",false))!=upgraded):
+      _fail(347,"REV208_MEDICINE_ORE_NOT_REAL_DISTINCT_LICENSED_GLTF_"+String(id))
       return
+    if upgraded:
+      medicinal_kinds[kind]=int(medicinal_kinds.get(kind,0))+1
+  if medicinal_kinds.size()!=3 or (
+      int(report.get("rev208_hq_independent_spirit_herb_source_count",-1))!=3):
+    _fail(413,"REV208_WOOD_FIRE_WATER_NOT_THREE_REAL_DISTINCT_STEMS")
+    return
+  print("PASS_REV208_REAL_INDEPENDENT_MEDICINAL_HERB_STEMS_CC0_PERSISTED_IDS")
+  # Test all four physical plant life stages WITHOUT mutating a saved
+  # inventory row or inventing one herb unit. This is a visual-only FSM.
+  for spec in [
+      {"count":0,"stage":"dormant"},
+      {"count":1,"stage":"sprout"},
+      {"count":2,"stage":"budding"},
+      {"count":4,"stage":"bloom"}]:
+    var synthetic: Dictionary={"remaining":int(spec["count"]),"max":4}
+    if String(room.call("_rev208_medicinal_growth_state",synthetic))!=String(
+        spec["stage"]):
+      _fail(420,"REV208_REAL_HERBAL_PHENOLOGY_MISSING_TRUE_3D_LIFE_STAGE_"+
+        String(spec["stage"]))
+      return
+  print("PASS_REV208_HQ023_TRUE_3D_CC0_INDEPENDENT_HERBS_FOUR_VISUAL_LIFE_STATES_NO_INVENTORY_CHANGE")
+
   actor.position=Vector3(-11.4,float(terrain.call(
     "height_at",-11.4,-12.2)),-12.2)
   econ.citizens["CL-PLAYER-0184-0001"]["energy"]=100
@@ -2105,6 +2329,20 @@ func _run() -> void:
   if not bool(wild.call("conservation_ok")):
     _fail(349,"REV206_REAL_SPIRIT_ORE_HERB_FINITE_MATERIAL_DEBIT_FAILED")
     return
+  var touched_herb: Dictionary=plants["CL-LINGCAO-W-01"]
+  var real_wood: Node3D=touched_herb["model"]
+  var grounded_bounds: Vector2=room.call("_visible_bounds",real_wood)
+  var resource_ground: float=float(terrain.call("height_at",-11.4,-12.2))
+  if String(touched_herb.get("rev208_hq_growth_stage",""))!="budding" or (
+      not bool(real_wood.get_meta("rev208_hq_phenology_author_glb_preserved",false))) or (
+      not is_equal_approx(float(real_wood.get_meta(
+        "rev208_hq_true_3d_phenology_factor",1.0)),0.80)) or (
+      absf(grounded_bounds.x-resource_ground)>0.10) or (
+      String(real_wood.get_meta("world_entity_id",""))!="CL-LINGCAO-W-01") or (
+      not bool(wild.call("conservation_ok"))):
+    _fail(421,"REV208_GENUINE_WOOD_HERB_HARVEST_FAILS_BUDDING_3D_GROUNDED_AUTHOR_PBR_OR_ECONOMY_LEDGER")
+    return
+  print("PASS_REV208_REAL_SPIRIT_HERB_HARVEST_PHYSICAL_BUDDING_STAGE_PBR_MESH_ON_SOIL_AND_ZERO_FREE_STOCK")
   player.call("_open_game_menu","inventory")
   var sheet_scroll: ScrollContainer=game_hud.get_node_or_null(
     "Rev188CharacterInventoryCultivationMenu/Rev206RealScrollableCharacterSheet")
@@ -2120,6 +2358,329 @@ func _run() -> void:
   actor.position=restored_loc
   print("PASS_REV206_REAL_MAIN_HAS_PERSISTENT_LICENCED_MEDICINAL_PLANTS_ORE_AND_TOUCH_MINING")
   print("PASS_REV205_TRUE_ORIGINAL_TOUCH_CAMERA_FLIGHT_RESTART_LOCK_ON_BAG_AND_ICONS")
+  # REV208 mandatory real Godot original Main lethal NPC test. The existing
+  # training NPC remains nonlethal: this test targets an independent living
+  # cultivator with canonical persisted ID, real collision and true sword LOS.
+  var killed_id: String="CL-XIUXIAN-001"
+  var named_region_world: RefCounted=room.get("world_society")
+  var region_saved_rows: Dictionary=named_region_world.get("regions").duplicate(true)
+  var region_saved_named: Dictionary=named_region_world.get("named_deaths").duplicate(true)
+  var region_before_pop: int=int(named_region_world.call("population"))
+  var region_before_deaths: int=int(named_region_world.get("died_total"))
+  var cult_state: Dictionary=spir.get("npc_data")[killed_id]
+  var saved_cult_state: Dictionary=cult_state.duplicate(true)
+  var cult_actor: Node3D=spir.get("npc_visuals")[killed_id]["actor"]
+  var cult_collider: StaticBody3D=spir.get("npc_colliders")[killed_id]
+  # Real mobile world foliage, beasts and other walking cultivators can
+  # temporarily block EVERY reachable direction around a wandering NPC.
+  # That's a valid LOS combat denial, not an attack-system regression.
+  # Keep the SAME actual humanoid ID/GLB/StaticBody3D but temporarily
+  # stage it in the physically verified open 29m sparring patch for a
+  # deterministic integration hit. Preserve/restore real game anchors.
+  var original_cult_pos: Vector3=cult_actor.position
+  var original_collider_pos: Vector3=cult_collider.position
+  var original_cult_anchor: Vector3=spir.get("npc_visuals")[killed_id]["anchor"]
+  var open_duel_position: Vector3=Vector3(29.0,float(
+    room.get("terrain_world").call("height_at",29.0,29.0))+float(
+    cult_actor.get_meta("actor_ground_offset_y",0.0)),29.0)
+  cult_actor.position=open_duel_position
+  cult_collider.position=open_duel_position+Vector3.UP*0.84
+  spir.get("npc_visuals")[killed_id]["anchor"]=Vector3(29.0,0.0,29.0)
+  # StaticBody3D updates its PhysicsServer transform synchronously here.
+  # Extra await physics_frame/process_frame caused four destroyed Lambda
+  # capture callbacks at SceneTree teardown in real Godot run 39072491086.
+  # Keep this regression fully synchronous, just like the earlier passing
+  # original Main tests; do not suppress the leak/error log.
+  var hero_saved_position: Vector3=actor.position
+  var hero_saved_yaw: float=float(player.get("_yaw"))
+  var hero_saved_stamina: int=int(econ.citizens["CL-PLAYER-0184-0001"]["energy"])
+  econ.citizens["CL-PLAYER-0184-0001"]["energy"]=100
+  var sword_hit: bool=false
+  for approach in range(12):
+    var radians: float=TAU*float(approach)/12.0
+    var place: Vector3=cult_actor.position+Vector3(
+      sin(radians)*2.12,0.0,cos(radians)*2.12)
+    actor.position=place
+    player.set("_yaw",atan2(sin(radians),cos(radians)))
+    player.set("_locked_target_id",killed_id)
+    player.set("_sword_cd",0.0)
+    if bool(player.call("sword_attack")):
+      sword_hit=true
+      break
+  if not sword_hit or int(cult_state["health"])>=int(saved_cult_state["health"]) or (
+      int(cult_state["hostility"])<100) or (
+      int(econ.citizens["CL-PLAYER-0184-0001"]["energy"])!=94):
+    _fail(380,"REV208_REAL_CULTIVATOR_SWORD_HIT_NOT_LEGAL_STAMINA_PAID_COLLISION_CHECKED")
+    return
+  var mortality: Dictionary=spir.call(
+    "apply_npc_damage",killed_id,999,"CL-PLAYER-0184-0001:lethal")
+  if not bool(mortality.get("ok",false)) or not bool(mortality.get("dead",false)) or (
+      not bool(mortality.get("persisted",false))) or (
+      int(cult_state["health"])!=0) or (
+      String(cult_state["schedule"])!="陨落") or cult_collider.collision_layer!=0 or (
+      cult_actor.get_meta("actually_dead",false)!=true):
+    _fail(381,"REV208_REAL_NPC_DEATH_NOT_PERSISTED_PRONE_WITH_COLLISION_DISABLED_"+str(mortality))
+    return
+  if int(named_region_world.call("population"))!=region_before_pop-1 or (
+      int(named_region_world.get("died_total"))!=region_before_deaths+1) or (
+      not named_region_world.get("named_deaths").has(killed_id)) or (
+      not bool(named_region_world.call("conservation_ok"))):
+    _fail(384,"REV208_VISIBLE_NPC_FATAL_DEATH_MUST_DEBIT_ONE_REAL_5000_PERSON_REGION_CENSUS")
+    return
+  var repeat_census: Dictionary=named_region_world.call(
+    "record_named_cultivator_death",killed_id,true,false,"fake_second_kill")
+  if not bool(repeat_census.get("already_recorded",false)) or (
+      int(named_region_world.call("population"))!=region_before_pop-1):
+    _fail(385,"REV208_REPEAT_DEATH_MUST_NOT_DOUBLE_DEBIT_POPULATION")
+    return
+  var LivingScript: GDScript=named_region_world.get_script() as GDScript
+  var restored_region: RefCounted=LivingScript.new()
+  if not bool(restored_region.call("initialize",
+      int(named_region_world.get("seed")))) or int(
+      restored_region.call("population"))!=region_before_pop-1 or (
+      not restored_region.get("named_deaths").has(killed_id)):
+    _fail(386,"REV208_REAL_REGION_DEATH_LEDGER_NOT_RELOADABLE")
+    return
+  var postmortem: Dictionary=spir.call(
+    "apply_npc_damage",killed_id,100,"repeat_after_death")
+  if bool(postmortem.get("ok",true)):
+    _fail(382,"REV208_DEAD_CULTIVATOR_COULD_BE_ATTACKED_OR_REVIVED")
+    return
+  var CultivationSaved: GDScript=spir.get_script() as GDScript
+  var newborn_clone: RefCounted=CultivationSaved.new()
+  newborn_clone.call("_load_or_initialize")
+  var saved_dead: Dictionary=newborn_clone.get("npc_data").get(killed_id,{})
+  if int(saved_dead.get("health",-1))!=0 or String(
+      saved_dead.get("death_by",""))!="CL-PLAYER-0184-0001:lethal":
+    _fail(383,"REV208_NPC_TRUE_DEATH_NOT_RELOADED_WITH_CANONICAL_ID")
+    return
+  # QA is isolated: do not permanently kill a test citizen or overwrite a
+  # local playtest save. No test-only enemy is inserted into the real world.
+  spir.get("npc_data")[killed_id]=saved_cult_state
+  named_region_world.set("regions",region_saved_rows)
+  named_region_world.set("named_deaths",region_saved_named)
+  named_region_world.set("died_total",region_before_deaths)
+  if not bool(named_region_world.call("force_save")):
+    _fail(387,"REV208_ISOLATED_QA_MUST_ROLLBACK_NAMED_MORTALITY_WORLD_FILE")
+    return
+  cult_actor.rotation.x=0.0
+  cult_actor.position=original_cult_pos
+  cult_collider.position=original_collider_pos
+  spir.get("npc_visuals")[killed_id]["anchor"]=original_cult_anchor
+  cult_actor.set_meta("actually_dead",false)
+  cult_collider.collision_layer=2
+  (spir.get("npc_labels")[killed_id] as Label3D).modulate=Color.WHITE
+  spir.call("update_visible_npcs",0.02)
+  spir.call("save_state")
+  player.call("_clear_target_lock")
+  player.set("_sword_cd",0.0)
+  actor.position=hero_saved_position
+  player.set("_yaw",hero_saved_yaw)
+  econ.citizens["CL-PLAYER-0184-0001"]["energy"]=hero_saved_stamina
+  print("PASS_REV208_REAL_LETHAL_CULTIVATOR_SWORD_COLLISION_DEATH_PERSISTENCE_AND_CORPSE")
+  print("PASS_REV208_EXACTLY_ONCE_NAMED_NPC_CENSUS_POPULATION_DEBIT_SAVE_RELOAD_NO_REVIVAL")
+  # User clarification: resources legitimately materialize at world creation
+  # and randomly replenish as NEW world resource nodes without any player or
+  # NPC action. The stored bag and village ledger cannot be auto-credited.
+  var wild_original_rows: Dictionary=wild.get("nodes").duplicate(true)
+  var wild_original_hour: int=int(wild.get("world_hours"))
+  var wild_original_grown: int=int(wild.get("grown_total"))
+  var wild_original_harvested: int=int(wild.get("harvested_total"))
+  var wild_original_herb_events: int=int(wild.get("wild_random_herb_births"))
+  var wild_original_ore_events: int=int(wild.get("wild_random_ore_births"))
+  var wild_initial_mesh_ids: Array=plants.keys()
+  var original_stock: Dictionary=econ.villages["CL-REV186-HX-VILLAGE"]["stock"].duplicate(true)
+  if wild_initial_mesh_ids.size()!=13 or wild_original_rows.size()!=13:
+    _fail(420,"REV208_RESOURCE_RANDOM_SPAWN_TEST_MUST_START_WITH_13_REAL_INITIAL_WORLD_NODES")
+    return
+  wild.set("world_hours",0)
+  for random_world_hour in range(240):
+    wild.call("advance_world_hour")
+  var wild_generated_ids: Array[String]=[]
+  var herb_appearance: int=0
+  var ore_appearance: int=0
+  for world_node_id in (wild.get("nodes") as Dictionary):
+    if not wild_original_rows.has(world_node_id):
+      var id_text: String=String(world_node_id)
+      wild_generated_ids.append(id_text)
+      var actual_node: Dictionary=wild.get("nodes")[world_node_id]
+      if id_text.begins_with("CL-WILD-LINGCAO-R208-"):
+        herb_appearance+=1
+      elif id_text.begins_with("CL-WILD-LINGSHI-R208-") and (
+          String(actual_node["kind"])=="spirit_stone"):
+        ore_appearance+=1
+      else:
+        _fail(421,"REV208_WILD_RESOURCE_ID_OR_KIND_UNRECOGNIZED_"+id_text)
+        return
+  if herb_appearance<2 or ore_appearance<1 or (
+      not bool(wild.call("conservation_ok"))) or (
+      original_stock!=econ.villages["CL-REV186-HX-VILLAGE"]["stock"]):
+    _fail(422,"REV208_RANDOM_WILD_WORLD_RESOURCE_BIRTH_OR_ECONOMY_CONSERVATION_FAILED_"+
+      str({"new_herb":herb_appearance,"new_ore":ore_appearance,
+      "ledger_ok":wild.call("conservation_ok")}))
+    return
+  room.call("_spawn_spirit_resource_nodes")
+  for spawned_id in wild_generated_ids:
+    if not plants.has(spawned_id):
+      _fail(423,"REV208_RANDOM_SOURCE_RESOURCE_NOT_ACTUAL_3D_IN_ORIGINAL_APK176_MAIN_"+spawned_id)
+      return
+    var born_glb: Node3D=plants[spawned_id]["model"]
+    if not is_instance_valid(born_glb) or (
+        String(born_glb.get_meta("world_entity_id",""))!=spawned_id) or (
+        born_glb.find_children("*","MeshInstance3D",true,false).is_empty()) or (
+        born_glb.get_parent()!=world):
+      _fail(424,"REV208_WILD_RANDOM_RESOURCE_IS_FAKE_NOT_REAL_LICENSED_GLTF_"+spawned_id)
+      return
+  # Load same saved schema 206 into fresh independent ledger. Initial 13
+  # IDs survive unchanged; new wild herb/ore IDs cannot vanish/reappear as
+  # duplicate inventories after reboot.
+  var original_wild_script: GDScript=wild.get_script() as GDScript
+  var revived_wild: RefCounted=original_wild_script.new()
+  if not bool(revived_wild.call("initialize")) or (
+      not bool(revived_wild.call("conservation_ok"))) or (
+      revived_wild.get("nodes").size()!=wild.get("nodes").size()):
+    _fail(425,"REV208_WILD_NODE_RANDOM_WORLD_GENERATION_NOT_RELOADABLE_SCHEMA206")
+    return
+  for persisted_id in wild_generated_ids:
+    if not revived_wild.get("nodes").has(persisted_id):
+      _fail(426,"REV208_RANDOM_NATURE_BORN_ID_DID_NOT_SURVIVE_SAVE_RELOAD_"+persisted_id)
+      return
+  # Restore the actual 13 source nodes and rollback all test-side world
+  # birth events; CI must not alter original user test save or world state.
+  for spawned_id in wild_generated_ids:
+    var created: Node3D=plants[spawned_id]["model"]
+    created.queue_free()
+    plants.erase(spawned_id)
+  wild.set("nodes",wild_original_rows)
+  wild.set("world_hours",wild_original_hour)
+  wild.set("grown_total",wild_original_grown)
+  wild.set("harvested_total",wild_original_harvested)
+  wild.set("wild_random_herb_births",wild_original_herb_events)
+  wild.set("wild_random_ore_births",wild_original_ore_events)
+  if not bool(wild.call("_save")) or not bool(wild.call("conservation_ok")) or (
+      plants.size()!=wild_initial_mesh_ids.size()):
+    _fail(427,"REV208_RANDOM_WORLD_RESOURCE_QA_ISOLATION_ROLLBACK_FAILED")
+    return
+  print("PASS_REV208_NATURALLY_BORN_RANDOM_HERB_AND_ORE_RESOURCES_WORLD_HOURS_PHYSICAL_GLBS_SAVED_IDS_NO_INVENTORY_MINTING")
+  # REV208 actual new spontaneous FOREST WOOD and QUARRY STONE sources.
+  # Exercise real authoritative Economy+Ecology scripts against the same
+  # original Main terrain and building reservations, in an isolated saved
+  # simulation. CI may NEVER deposit test resources into the user's world.
+  var production_natural: RefCounted=room.get("natural_world_births")
+  if production_natural==null or not bool(production_natural.get("_loaded")) or (
+      not room.has_method("_materialize_wild_tree_stone")):
+    _fail(428,"REV208_ACTUAL_MAIN_MISSING_NATURAL_TREE_STONE_WORLD_SPAWNER")
+    return
+  var birth_script: GDScript=production_natural.get_script() as GDScript
+  var economic_script: GDScript=econ.get_script() as GDScript
+  var ecological_script: GDScript=room.get("eco").get_script() as GDScript
+  var test_file: String="user://canglan_rev208_qa_tree_stone_natural_births.json"
+  var global_test_file: String=ProjectSettings.globalize_path(test_file)
+  if FileAccess.file_exists(test_file):
+    DirAccess.remove_absolute(global_test_file)
+  var trial_economy: RefCounted=economic_script.new()
+  trial_economy.call("start",20261018)
+  if not bool(trial_economy.call("create_village",
+      "CL-REV186-HX-VILLAGE",{"homes":1,"food":24,"water":24})):
+    _fail(429,"REV208_NATURAL_WORLD_BIRTH_TEST_CANNOT_MAKE_VILLAGE")
+    return
+  var trial_ecology: RefCounted=ecological_script.new()
+  trial_ecology.call("setup",trial_economy,"CL-REV186-HX-VILLAGE",
+    Vector3(0,0,-3),Vector3(0,0,10))
+  var trial: RefCounted=birth_script.new()
+  trial.set("save_path",test_file)
+  if not bool(trial.call("initialize",trial_economy,trial_ecology,
+      room.get("terrain_world"),room.get("quality"),
+      room.get("housing_blueprints"),wild)):
+    _fail(429,"REV208_AUTHENTIC_NATURAL_TREE_STONE_SPAWNER_INIT_FAILED_"+
+      String(trial.get("last_error")))
+    return
+  for wild_hour in range(240):
+    trial.call("advance_world_hour")
+  var natural_events: Dictionary=trial.call("stats")
+  if int(natural_events.get("source_generated_trees",0))<2 or (
+      int(natural_events.get("source_generated_stones",0))<1) or (
+      int(natural_events.get("wild_nodes",0))<3) or (
+      trial_economy.get("natural_nodes").size()!=3) or (
+      trial_economy.get("resource_positions").size()!=3):
+    _fail(430,"REV208_WILD_TREE_AND_QUARRY_RANDOM_BIRTH_FAILED_"+
+      str(natural_events))
+    return
+  var fresh_natural: Dictionary=trial.get("records")
+  var test_tree_id: String=""
+  var all_local_positions: Array[Vector2]=[]
+  for natural_id in fresh_natural:
+    var record: Dictionary=fresh_natural[natural_id]
+    var real_source_kind: String=String(record["kind"])
+    if (real_source_kind=="tree" and not String(natural_id).begins_with(
+        "CL-WILD-TREE-R208-")) or (real_source_kind=="stone" and not (
+        String(natural_id).begins_with("CL-WILD-STONE-R208-"))) or (
+        not trial_economy.get("natural_nodes").has(natural_id)) or (
+        not trial_economy.get("resource_positions").has(natural_id)):
+      _fail(431,"REV208_RANDOM_TREE_STONE_NODE_NOT_REAL_ECONOMY_RESOURCE_"+String(natural_id))
+      return
+    if real_source_kind=="tree":
+      test_tree_id=String(natural_id)
+    var real_ground: Vector3=trial_economy.get("resource_positions")[natural_id]
+    if absf(real_ground.y-float(room.get("terrain_world").call(
+        "height_at",real_ground.x,real_ground.z)))>0.02 or (
+        not bool(room.get("quality").call("_natural_plantable",
+          real_ground.x,real_ground.z))):
+      _fail(432,"REV208_NEW_NATURAL_RESOURCE_NOT_PLANTED_IN_TRUE_TERRAIN")
+      return
+    var horizontal: Vector2=Vector2(real_ground.x,real_ground.z)
+    for old_place in all_local_positions:
+      if horizontal.distance_to(old_place)<3.0:
+        _fail(433,"REV208_SPAWNER_CREATED_RESOURCE_OVERLAP_IN_SAME_WORLD")
+        return
+    all_local_positions.append(horizontal)
+  var main_stock_before_birth: Dictionary=econ.villages[
+    "CL-REV186-HX-VILLAGE"]["stock"].duplicate(true)
+  if main_stock_before_birth!=econ.villages[
+      "CL-REV186-HX-VILLAGE"]["stock"] or test_tree_id.is_empty():
+    _fail(434,"REV208_SPAWN_TEST_INVENTORY_OR_MISSING_TREE_ID")
+    return
+  if not bool(trial_economy.call("add_citizen",
+      "CL-REV208-GATHERER-QA","CL-REV186-HX-VILLAGE","woodcutter",26)) or (
+      not bool(trial_economy.call("gather_to_actor",
+      "CL-REV208-GATHERER-QA",test_tree_id))):
+    _fail(435,"REV208_RANDOM_WILD_TREE_CANNOT_BE_PHYSICALLY_GATHERED")
+    return
+  var tree_remaining_after_gather: int=int(trial_economy.get(
+    "natural_nodes")[test_tree_id]["remaining"])
+  if tree_remaining_after_gather>=int(fresh_natural[
+      test_tree_id]["capacity"]) or not bool(trial.call("save_state")):
+    _fail(436,"REV208_NATURAL_TREE_HARVEST_NOT_AUTHORITY_SAVED")
+    return
+  var reload_economy: RefCounted=economic_script.new()
+  reload_economy.call("start",20261018)
+  if not bool(reload_economy.call("create_village",
+      "CL-REV186-HX-VILLAGE",{"homes":1,"food":24,"water":24})):
+    _fail(437,"REV208_WILD_SAVE_LOAD_SIM_START_FAILED")
+    return
+  var reload_ecology: RefCounted=ecological_script.new()
+  reload_ecology.call("setup",reload_economy,"CL-REV186-HX-VILLAGE",
+    Vector3(0,0,-3),Vector3(0,0,10))
+  var reloaded: RefCounted=birth_script.new()
+  reloaded.set("save_path",test_file)
+  if not bool(reloaded.call("initialize",reload_economy,reload_ecology,
+      room.get("terrain_world"),room.get("quality"),
+      room.get("housing_blueprints"),wild)) or (
+      int(reloaded.get("world_hours"))!=240) or (
+      reload_economy.get("natural_nodes").size()!=3) or (
+      int(reload_economy.get("natural_nodes")[test_tree_id][
+      "remaining"])!=tree_remaining_after_gather) or (
+      not reloaded.get("records").has(test_tree_id)):
+    _fail(438,"REV208_RNG_NATURAL_WOOD_MINE_PERSISTENCE_OR_CONSERVATION_FAILED_"+
+      str(reloaded.call("stats")))
+    return
+  DirAccess.remove_absolute(global_test_file)
+  if econ.villages["CL-REV186-HX-VILLAGE"]["stock"]!=main_stock_before_birth or (
+      int(production_natural.get("records").size())!=0):
+    _fail(439,"REV208_NATURAL_RESOURCE_QA_MUTATED_PLAYER_REAL_WORLD")
+    return
+  print("PASS_REV208_NATURAL_SPONTANEOUS_TREE_AND_STONE_WORLD_BIRTH_240H_UNIQUE_3D_TERRAIN_ECONOMY_IDS_HARVEST_SAVE_RELOAD_NO_FREE_STOCK")
+
   room.call("_focus_builder")
   if not bool(room.get("_follow_builder")) or float(room.get("_camera_distance")) > 14.0:
     _fail(42,"BUTTON_MUST_ACTUALLY_FOCUS_VISIBLE_NPC")

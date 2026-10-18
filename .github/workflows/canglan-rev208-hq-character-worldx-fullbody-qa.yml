@@ -1,0 +1,87 @@
+name: Canglan REV208 P0 WorldX HQ3D v2 FULL BODY 3:4 candidate #002 (QA ONLY)
+on:
+  push:
+    branches: [feat/rev208-green-kenney-saplings-vegetation]
+    paths:
+      - '.github/workflows/canglan-rev208-hq-character-worldx-fullbody-qa.yml'
+      - 'tools/asset_factory/worldx_rev208_hq_character_fullbody_v2.mjs'
+      - 'tools/asset_factory/test_worldx_rev208_hq_fullbody_v2.mjs'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: canglan-rev208-worldx-hq-char-one-fullbody-002-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  one-real-worldx-hq-cultivator-visual-reference:
+    if: github.repository == '160701541-cell/xinyanshuo'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    env:
+      RESULT_DIR: qa-results/worldx-rev208-hq3d-fullbody-v2
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: No-cost checks verify Chinese HQ3D single-source art request and no false GLB claim
+        run: |
+          set -euo pipefail
+          node --test tools/asset_factory/test_worldx_rev208_hq_fullbody_v2.mjs
+          grep -q 'HQ3D' tools/asset_factory/CANGLAN_WORLDX_STYLE_LOCK_V2_HQ3D.md
+          grep -q 'REV208-HQ-010' docs/CAC_REV208_HQ_EXECUTION_CHECKLIST_20261018.md
+      - uses: actions/checkout@v4
+        with:
+          repository: YGYOOO/WorldX
+          ref: edb4976de5963457dfbf5d2171355270a4ca1e79
+          path: worldx-upstream
+          persist-credentials: false
+      - name: Check pinned actual WorldX upstream loader exists before spending
+        run: |
+          set -euo pipefail
+          test -f worldx-upstream/generators/map/src/utils/prompt-loader.mjs
+          test -f tools/asset_factory/worldx_rev208_hq_character_fullbody_v2.mjs
+      - name: Generate exactly ONE authentic WorldX 768×1024 China-style player FRONT candidate (not 3D and not approved)
+        env:
+          SILICONFLOW_API_KEY: ${{ secrets.SILICONFLOW_API_KEY }}
+          RUN_URL: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          set -euo pipefail
+          node tools/asset_factory/worldx_rev208_hq_character_fullbody_v2.mjs worldx-upstream "$RESULT_DIR"
+      - name: Verify image pixels, real SHA256, provider and UNAPPROVED status without hallucinating visual QA
+        run: |
+          set -euo pipefail
+          python3 -m pip -q install pillow
+          python3 - <<'PY'
+          from pathlib import Path
+          import json,hashlib,os
+          from PIL import Image
+          root=Path(os.environ['RESULT_DIR'])
+          meta=json.loads((root/'player_full_body_002.json').read_text(encoding='utf8'))
+          assert meta['id']=='player_full_body_002'
+          assert meta['model']=='Kwai-Kolors/Kolors'
+          assert meta['status']=='GENERATED_UNAPPROVED'
+          assert meta['art_review']=='PENDING_HUMAN'
+          assert meta['actual_3d_glb'] is False
+          assert meta['applied_to_game'] is False
+          assert meta['release_revision'] is None
+          path=root/meta['file']
+          b=path.read_bytes()
+          assert hashlib.sha256(b).hexdigest()==meta['sha256']
+          assert len(b)==meta['bytes']
+          with Image.open(path) as img:
+            img.load()
+            assert img.size==(768,1024),img.size
+          print('PASS_AUTHENTIC_WORLDX_HQ_PLAYER_FULLBODY_002_3_BY_4_BYTES_SHA_ONLY_ART_PENDING')
+          PY
+      - name: Preserve actual generated pixels and source prompt even on failure; NO PCK publish
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: CANGLAN-REV208-WORLDX-HQ3D-PLAYER-FULLBODY-002-UNAPPROVED-${{ github.run_id }}
+          path: ${{ env.RESULT_DIR }}/
+          retention-days: 30
+          if-no-files-found: warn
+          compression-level: 0

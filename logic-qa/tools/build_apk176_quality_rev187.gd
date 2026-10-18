@@ -13,8 +13,15 @@ const FILES := {
 	"res://canglan_rev187/ecology_growth.gd": "canglan_rev187/ecology_growth.gd",
 	"res://canglan_rev187/visual_palette.gd": "canglan_rev187/visual_palette.gd",
 	"res://canglan_rev187/kenney_multimesh.gd": "canglan_rev187/kenney_multimesh.gd",
+	"res://canglan_rev187/hq_forest_floor_pool_rev208.gd": "canglan_rev187/hq_forest_floor_pool_rev208.gd",
+	"res://canglan_rev187/wild_tree_stone_birth_rev208.gd": "canglan_rev187/wild_tree_stone_birth_rev208.gd",
 	"res://canglan_rev187/strata_terrain.gd": "canglan_rev187/strata_terrain.gd",
 	"res://canglan_rev187/vivid_material.gd": "canglan_rev187/vivid_material.gd",
+	# rev208 P0-HQ-ECOLOGY：真实 CC0 扫描两级地表 PBR + 4 类真扫描地被。
+	# 全部是原始文件（jpg/gltf/bin），运行时由原项目的 GLTFDocument /
+	# Image 解析，和既有 CC0 资产走同一条装载路径。
+	"res://canglan_rev187/hq_terrain_pbr.gd": "canglan_rev187/hq_terrain_pbr.gd",
+	"res://canglan_rev187/hq_ecology_terrain/ecology-intake-provenance.json": "canglan_rev187/hq_ecology_terrain/ecology-intake-provenance.json",
 	"res://canglan_rev187/player_controller.gd": "canglan_rev187/player_controller.gd",
 	"res://canglan_rev187/backpack.gd": "canglan_rev187/backpack.gd",
 	"res://canglan_rev187/spirit_resources.gd": "canglan_rev187/spirit_resources.gd",
@@ -26,6 +33,20 @@ const FILES := {
 	"res://canglan_rev187/quality_profiles.gd": "canglan_rev187/quality_profiles.gd",
 	"res://canglan_rev187/worldbox_life_sim.gd": "canglan_rev187/worldbox_life_sim.gd",
 	"res://canglan_rev187/tree_oak.glb": "canglan_rev187/tree_oak.glb",
+  "res://canglan_rev187/hq_rev208/mature_oak_hq_lod0.glb": "canglan_rev187/hq_rev208/mature_oak_hq_lod0.glb",
+  "res://canglan_rev187/hq_rev208/mature_maple_hq_lod0.glb": "canglan_rev187/hq_rev208/mature_maple_hq_lod0.glb",
+  "res://canglan_rev187/hq_rev208/mature_linden_hq_lod0.glb": "canglan_rev187/hq_rev208/mature_linden_hq_lod0.glb",
+  "res://canglan_rev187/hq_rev208/hq_pine_cc0_drawmerged.glb": "canglan_rev187/hq_rev208/hq_pine_cc0_drawmerged.glb",
+  "res://canglan_rev187/hq_rev208/hq_cypress_cc0_drawmerged.glb": "canglan_rev187/hq_rev208/hq_cypress_cc0_drawmerged.glb",
+  "res://canglan_rev187/hq_rev208/hq_conifer_cc0_drawmerged.glb": "canglan_rev187/hq_rev208/hq_conifer_cc0_drawmerged.glb",
+  "res://canglan_rev187/hq_rev208/hq_fern_cc0_drawmerged.glb": "canglan_rev187/hq_rev208/hq_fern_cc0_drawmerged.glb",
+  "res://canglan_rev187/hq_rev208/hq_hydrangea_cc0_drawmerged.glb": "canglan_rev187/hq_rev208/hq_hydrangea_cc0_drawmerged.glb",
+  "res://canglan_rev187/hq_rev208/hq_rose_cc0_drawmerged.glb": "canglan_rev187/hq_rev208/hq_rose_cc0_drawmerged.glb",
+  "res://canglan_rev187/hq_rev208/hq_lavender_cc0_drawmerged.glb": "canglan_rev187/hq_rev208/hq_lavender_cc0_drawmerged.glb",
+  "res://canglan_rev187/hq_rev208/hq_grass_cc0_drawmerged.glb": "canglan_rev187/hq_rev208/hq_grass_cc0_drawmerged.glb",
+  "res://canglan_rev187/hq_rev208/hq_medicinal_wood_cc0_drawmerged.glb": "canglan_rev187/hq_rev208/hq_medicinal_wood_cc0_drawmerged.glb",
+  "res://canglan_rev187/hq_rev208/hq_medicinal_fire_cc0_drawmerged.glb": "canglan_rev187/hq_rev208/hq_medicinal_fire_cc0_drawmerged.glb",
+  "res://canglan_rev187/hq_rev208/hq_medicinal_water_cc0_drawmerged.glb": "canglan_rev187/hq_rev208/hq_medicinal_water_cc0_drawmerged.glb",
 	"res://canglan_rev187/rocks_small.glb": "canglan_rev187/rocks_small.glb",
 	"res://canglan_rev187/tree_log.glb": "canglan_rev187/tree_log.glb",
 	"res://canglan_rev187/wood_fence.glb": "canglan_rev187/wood_fence.glb",
@@ -107,6 +128,34 @@ func _initialize() -> void:
 			var rel: String = "hd2d/worldx/npcs/npc_%02d.png" % i
 			if FileAccess.file_exists(source_dir.path_join(rel)):
 				files["res://" + rel] = rel
+	# rev208 P0-HQ-ECOLOGY 真实地表 PBR：8 组 slug × albedo/normal/orm。
+	# 列表写死，缺失任意一张就 BLOCKED，不允许静默跳过。
+	var surface_sets := {
+		"forest_floor": ["albedo", "normal", "orm"],
+		"leafy_grass": ["albedo", "normal", "orm"],
+		"wet_leaf_soil": ["albedo", "normal", "orm"],
+		"sparse_grass": ["albedo", "normal", "orm"],
+		"leaf_litter_detail": ["albedo", "normal", "orm"],
+		"mossy_rock": ["albedo", "normal", "orm"],
+		"bark_chinese_cedar": ["albedo", "normal", "orm"],
+		"bark_knotted_pine": ["albedo", "normal", "orm"]}
+	for slug in surface_sets:
+		for kind in surface_sets[slug]:
+			var rel: String = "canglan_rev187/hq_ecology_terrain/%s/%s_%s_1k.jpg" % [slug, slug, kind]
+			files["res://" + rel] = rel
+	# rev208 P0-HQ-ECOLOGY 真实扫描地被：gltf + bin + textures 全部入包。
+	var groundcover := {
+		"fern_clump": ["fern_clump_fern_02_arm_1k.jpg", "fern_clump_fern_02_diff_1k.jpg", "fern_clump_fern_02_nor_gl_1k.jpg"],
+		"shrub_low": ["shrub_low_shrub_03_arm_1k.jpg", "shrub_low_shrub_03_diff_1k.jpg", "shrub_low_shrub_03_nor_gl_1k.jpg"],
+		"moss_patch": ["moss_patch_moss_01_arm_1k.jpg", "moss_patch_moss_01_diff_1k.jpg", "moss_patch_moss_01_nor_gl_1k.jpg"],
+		"rock_moss_set": ["rock_moss_set_rock_moss_set_01_diff_1k.jpg", "rock_moss_set_rock_moss_set_01_nor_gl_1k.jpg", "rock_moss_set_rock_moss_set_01_rough_1k.jpg"]}
+	for slug in groundcover:
+		for base in ["%s_1k.gltf" % slug, "%s.bin" % slug]:
+			var rel: String = "canglan_rev187/hq_ecology_groundcover/%s/%s" % [slug, base]
+			files["res://" + rel] = rel
+		for tex in groundcover[slug]:
+			var rel: String = "canglan_rev187/hq_ecology_groundcover/%s/textures/%s" % [slug, tex]
+			files["res://" + rel] = rel
 	var writer := PCKPacker.new()
 	if writer.pck_start(destination) != OK:
 		printerr("BLOCKED_REV187_CANNOT_OPEN_PACK")

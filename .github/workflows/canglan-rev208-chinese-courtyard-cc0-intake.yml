@@ -1,0 +1,115 @@
+name: Canglan rev208 HQ Chinese CC0 Courtyard Pavilion Intake QA ONLY
+on:
+  workflow_dispatch:
+  push:
+    branches: [feat/rev208-green-kenney-saplings-vegetation]
+    paths:
+      - '.github/workflows/canglan-rev208-chinese-courtyard-cc0-intake.yml'
+permissions:
+  contents: read
+jobs:
+  check-genuine-chinese-architecture-source:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify authentic Chinese geometry and page CC0 before downloading any model
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p qa-artifacts/rev208-chinese-courtyard
+          python3 - <<'PY'
+          import hashlib,json,re,ssl,time,urllib.request,urllib.error,zipfile
+          from pathlib import Path
+          base='https://store.godotengine.org'
+          artifacts=Path('qa-artifacts/rev208-chinese-courtyard')
+          models=[
+            {'name':'chinese_four_corner_pavilion',
+             'page':base+'/asset/vvaytoyek/chinese-four-corner-pavilion-free/',
+             'download':base+'/asset/vvaytoyek/chinese-four-corner-pavilion-free/download/1144/',
+             'author':'VVaytoyek','original_version':'v1.0.0','declared_license':'CC0-1.0'},
+            {'name':'chinese_classical_garden_wall',
+             'page':base+'/asset/vvaytoyek/chinese-classical-garden-wall/',
+             'download':base+'/asset/vvaytoyek/chinese-classical-garden-wall/download/1167/',
+             'author':'VVaytoyek','original_version':'v1.0.0','declared_license':'CC0-1.0'}
+          ]
+          context=ssl.create_default_context()
+          opener=urllib.request.build_opener()
+          def fetch(url,limit):
+            req=urllib.request.Request(url,headers={
+              'User-Agent':'Canglan-CC0-Provenance-Checker/1.0 (Godot4.4.1; no commercial sharing)'})
+            with opener.open(req,timeout=80) as resp:
+              if resp.status!=200:
+                raise RuntimeError('SOURCE_HTTP_NOT_200_'+str(resp.status))
+              data=resp.read(limit+1)
+              if len(data)>limit:
+                raise RuntimeError('SOURCE_EXCEEDS_SAFE_SIZE_BYTES_'+str(limit))
+              return data
+          report={'schema':208,'purpose':'QA_ONLY_NO_PHONE_OTA_NO_RAW_REPACKAGING',
+            'license_required':'CC0-1.0','vendor':'Godot Asset Store (Godot Foundation)',
+            'models':[],'game_asset_approved':False,
+            'release_policy':'QUARANTINED_NO_SIGNING_NO_OTA'}
+          try:
+            for spec in models:
+              name=spec['name']
+              print('VERIFY_PAGE',name,spec['page'],flush=True)
+              page=fetch(spec['page'],2_000_000).decode('utf-8','replace')
+              normalized=re.sub(r'<[^>]+>',' ',page)
+              if 'VVaytoyek' not in normalized or not re.search(
+                  r'CC0\s*1\.0',normalized,re.I):
+                raise RuntimeError(name+'_OFFICIAL_SOURCE_CC0_PAGE_NOT_VERIFIED')
+              raw=fetch(spec['download'],80_000_000)
+              if not zipfile.is_zipfile(__import__('io').BytesIO(raw)):
+                raise RuntimeError(name+'_NOT_ACTUAL_ZIP_ASSET')
+              target=artifacts/(name+'.zip')
+              target.write_bytes(raw)
+              items=[]; source_files=0; image_files=0; project_files=0
+              with zipfile.ZipFile(target) as z:
+                if z.testzip():
+                  raise RuntimeError(name+'_ZIP_CHECKSUM_CORRUPT')
+                total=sum(i.file_size for i in z.infolist())
+                if total>240_000_000 or len(z.infolist())>2500:
+                  raise RuntimeError(name+'_ARCHIVE_BOMB_OR_TOO_MANY_FILES')
+                for file in z.infolist():
+                  path=__import__('pathlib').PurePosixPath(file.filename)
+                  if path.is_absolute() or '..' in path.parts or file.file_size>90_000_000:
+                    raise RuntimeError(name+'_UNSAFE_VENDOR_ZIP_ENTRY')
+                  extension=path.suffix.lower()
+                  if extension in ('.glb','.gltf','.blend','.obj','.fbx',
+                                   '.tscn','.scn','.mesh','.escn'):
+                    source_files+=1
+                  if extension in ('.png','.jpg','.jpeg','.webp','.ktx'):
+                    image_files+=1
+                  if extension in ('.tscn','.godot'):
+                    project_files+=1
+                  if file.file_size>=300 or extension in (
+                      '.glb','.blend','.obj','.fbx','.gltf','.tscn'):
+                    items.append({'path':file.filename,'bytes':file.file_size,
+                                  'file_format':extension})
+              if source_files<1:
+                raise RuntimeError(name+'_NO_ACTUAL_3D_FILE_IN_VENDOR_ARCHIVE')
+              row={**spec,'license_verified_at_author_page':True,
+                'source_sha256':hashlib.sha256(raw).hexdigest(),
+                'archive_bytes':len(raw),'3d_model_files':source_files,
+                'image_texture_files':image_files,'godot_project_files':project_files,
+                'archive_members_sample':items[:140],
+                'pbr_texture_verified':False,'lod0_verified':False,
+                'lod1_verified':False,'lod2_verified':False,
+                'engine_original_main_qa':'NOT_TESTED'}
+              report['models'].append(row)
+              print('PASS_REV208_OFFICIAL_GODOT_STORE_CC0_ARCHITECTURE_ZIP',name,
+                    'size',len(raw),'3d_count',source_files,
+                    'images',image_files,'SHA256',row['source_sha256'],flush=True)
+            print('PASS_REV208_AUTHENTIC_LICENSED_CHINESE_PAVILION_AND_GARDEN_WALL_ASSETS_QUARANTINED_NO_OTA',flush=True)
+          finally:
+            (artifacts/'intake_manifest.json').write_text(
+              json.dumps(report,ensure_ascii=False,indent=2))
+          PY
+      - name: Preserve original architecture archives and CC0 evidence for review only
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: Canglan-rev208-CHINESE-ARCHITECTURE-CC0-SOURCE-QUARANTINE-NO-OTA
+          path: qa-artifacts/rev208-chinese-courtyard/
+          if-no-files-found: warn
+          retention-days: 7

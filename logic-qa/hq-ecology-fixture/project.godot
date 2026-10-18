@@ -1,0 +1,22 @@
+; 《苍岚·人生世界》rev208 P0-HQ-ECOLOGY 真实 Godot 4.4.1 验证工程
+; 只放 HQ 地表 PBR / 地被资产，用来在真实引擎里做导入+着色+面数+SHA 断言。
+; 这不是独立游戏工程，也不产出 APK；资产由 tools/stage_rev208_hq_ecology.py 装入。
+config_version=5
+
+[application]
+
+config/name="Canglan rev208 HQ Ecology PBR QA"
+config/features=PackedStringArray("4.4", "Mobile")
+run/main_scene=""
+
+[display]
+
+window/size/viewport_width=1280
+window/size/viewport_height=720
+
+[rendering]
+
+renderer/rendering_method="mobile"
+renderer/rendering_method.mobile="mobile"
+textures/default_filters/anisotropic_filtering_level=3
+textures/default_filters/use_nearest_mipmap_filter=false

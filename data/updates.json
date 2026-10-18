@@ -1,30 +1,10 @@
 {
   "schema": 1,
   "channel": "signed-releases",
-  "updated_at": "2026-10-17T19:57:22Z",
+  "updated_at": "2026-10-17T18:27:45Z",
   "source": "android-preview/latest.json; RSA original APK key + official HTTPS PCK",
   "verification": "Signed RSA/SHA256 original APK176 rev206 officially live on GitHub Pages and complete download / HTTP 206 Range verified in successful official Pages deployment run 39058075233 (2026-10-17T18:27:42Z). Actual Android phone touch/visual/FPS/heat QA pending.",
   "entries": [
-    {
-      "revision": 207,
-      "first_seen_utc": "2026-10-17T19:53:44Z",
-      "notes": "苍岚原APK176 rev207：开局真实世界账本改为五万平方公里、五千凡人，保留玩家灵根但普通凡人只有少量灵根，其他可炼体；500个百平方公里生态块按世界时辰生育死亡、草木种子扩散永不全球断种；五个修行宗门与十四门专业基础；四只真实3D妖兽分别巡守四个灵矿，妖兽群受资源制约自然繁衍、修炼突破；野生灵草可采量为零时活植株仍可见，每三十世界日自然扩散新真实GLB灵草；保留rev206有限背包采矿炼丹战斗索敌飞剑、原存档。大世界真实3D旅行、御兽符箓UI与Android实机验收未完成。",
-      "sha256": "db64972a0615abbe0600919220398d11853b83cbd4c57121b125f12b10262812",
-      "size_bytes": 35815712,
-      "status": "signed_release",
-      "android_version_code": 1176,
-      "protocol": "RSA-3072 PKCS1-v1_5 / SHA-256",
-      "remote_https_verified": true,
-      "remote_range_206_verified": true,
-      "ci_run": 39064174356,
-      "android_real_device_qa": "pending",
-      "engine_visual_proof": "art/actual-engine-capture/canglan-rev207-living-herbs-godot-linux.png",
-      "remote_proof_run": 39064640688,
-      "http_range_status": 206,
-      "public_full_pck_sha256_verified": true,
-      "online_signature_verified": true,
-      "public_pck_bytes": 35815712
-    },
     {
       "revision": 206,
       "first_seen_utc": "2026-10-17T18:25:59Z",

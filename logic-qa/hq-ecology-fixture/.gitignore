@@ -1,0 +1,5 @@
+# 由 tools/stage_rev208_hq_ecology.py 现场生成，不入库（资产本体在
+# game-source/apk176-ota177-candidate/assets/hq-rev208/ 下且有 SHA 清单）
+canglan_rev187/
+.godot/
+*.import

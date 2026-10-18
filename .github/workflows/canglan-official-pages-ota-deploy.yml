@@ -63,12 +63,7 @@ jobs:
           release=json.loads((pathlib.Path('/tmp/canglan-pages/data/updates.json')).read_text())
           assert release['entries'][0]['revision']==rev
           assert release['entries'][0]['sha256']==m['sha256']
-          # First upload must precede HTTP verification: requiring
-          # remote_https_verified=True here creates a deadlock in which the
-          # signed PCK can never go live, so CDN proof can never pass.
-          # Production HTTP and RSA/SHA256/Range proof is a separate strict
-          # workflow; the release feed flag stays FALSE until actually proved.
-          assert isinstance(release['entries'][0]['remote_https_verified'],bool)
+          assert release['entries'][0]['remote_https_verified'] is True
           print('PASS_PAGES_SITE_CONTAINS_SIGNED_ORIGINAL_OTA',rev,m['sha256'])
           print('PASS_PAGES_REAL_LATEST_CAC_DEVELOPMENT_AND_RSA_VERIFIED_REVISION_VISIBLE',rev)
           PY
