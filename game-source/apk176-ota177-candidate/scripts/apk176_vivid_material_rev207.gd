@@ -137,6 +137,23 @@ func _boost_vendor_color(raw: Color,role: String) -> Color:
 func _family_from_surface(model: String,part_name: String,
     original: StandardMaterial3D) -> String:
   var tag: String=(model+" "+part_name+" "+original.resource_name).to_lower()
+  # Rev208 genuine VVaytoyek Chinese author architecture. The FBX GLB
+  # nodes and material slots retain ORIGINAL HANZI names; transliterating
+  # them into generic Western building names loses roof/plaster/wood intent.
+  # The three 512px CC0 Quaternius source PBR families (albedo, normal,
+  # roughness) are legitimate derivative game textures mapped onto TRUE
+  # vendor geometry/UV, NOT falsely claimed vendor-authored image maps.
+  if tag.contains("瓦面") or tag.contains("垂脊") or tag.contains("套兽") or (
+      tag.contains("围墙材质_黑")) or tag.contains("黑瓦"):
+    return "tile"
+  if tag.contains("围墙") or tag.contains("白墙") or tag.contains("墙材质_白") or (
+      tag.contains("粉墙")) or tag.contains("灰泥"):
+    return "plaster"
+  if tag.contains("檐柱") or tag.contains("梁") or tag.contains("檩") or (
+      tag.contains("檐椽")) or tag.contains("枋") or tag.contains("扶手") or (
+      tag.contains("坐凳")) or tag.contains("牌匾") or tag.contains("挂落") or (
+      tag.contains("雷公柱")) or tag.contains("角云"):
+    return "timber"
   if tag.contains("tile") or tag.contains("roof") or tag.contains("slate"):
     return "tile"
   if tag.contains("wood") or tag.contains("beam") or tag.contains("timber") or (
