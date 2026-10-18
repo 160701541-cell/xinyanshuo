@@ -266,6 +266,9 @@ func _ready() -> void:
   # world-birth save restores NATURALLY created resources with same IDs,
   # never free player/NPC resources or warehouse inventory.
   natural_world_births=Rev208NaturalBirth.new()
+  # Use this saved cultivation world's actual persistent seed, not the
+  # developer's fixed example seed, for region-specific natural births.
+  natural_world_births.set("world_seed",int(cultivation.get("world_seed")))
   if not bool(natural_world_births.call("initialize",sim,eco,
       terrain_world,quality,housing_blueprints,spirit_resources)):
     asset_errors.append("REV208_NATURAL_WILD_TREE_STONE_SAVE_INIT_FAILURE_"+
