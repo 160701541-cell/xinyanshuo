@@ -445,7 +445,10 @@ func _load_gltf_runtime(path: String) -> Node3D:
     return null
   var doc: GLTFDocument = GLTFDocument.new()
   var state: GLTFState = GLTFState.new()
-  if doc.append_from_buffer(binary, path.get_base_dir(), state) != OK:
+  # append_from_buffer 的第二个参数是【gltf 文件本身】的路径；Godot 4.4.1 内部
+  # 自己取 get_base_dir() 去解析 .bin/贴图的相对 uri。实测传目录会再上跳一级，
+  # 散文件和 PCK 都会报 Binary file not found（run 39119309572 的 4 个 ERROR）。
+  if doc.append_from_buffer(binary, path, state) != OK:
     return null
   var scene: Node3D = doc.generate_scene(state)
   return scene
