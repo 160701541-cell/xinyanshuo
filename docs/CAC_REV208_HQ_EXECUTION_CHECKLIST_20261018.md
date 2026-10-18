@@ -38,6 +38,12 @@
 - [ ] **REV208-HQ-042** 用户原安装APK176 versionCode1176真实手机，从rev207保留旧存档进候选：主角转身360°、飞/降/索敌、进入屋内、森林/灵草/灵矿/击杀修士/重载；**连续30分钟**测中高低画质性能、温度、触屏和碰撞；没有设备结果始终 `PENDING_PHONE`。
 - [ ] **REV208-HQ-043** 所有HQ高精P0视觉闸门真实PASS后才能准备PR #14从Draft转正式、合并main；原Main所有功能与截图+实机验收通过之后才签名rev208。RSA私钥只能在GitHub Secrets；新不可变 `canglan-content-rev-208.pck`，公网站点RSA/SHA256/整包下载/HTTP Range 206，`android-preview/latest.json`、官网、更新日志版本同步一致。rev207历史PCK不可覆盖。
 
+## 2026-10-18 追加实测：高精真正中国亭廊与月洞门（候选原Main已通过；禁止勾选整条P0）
+
+- [ ] **HQ-003 / HQ-025：真实中国古典建筑子资产技术进度**。官方Godot Asset Store VVaytoyek CC0双源ZIP+SHA复验（run `39102085971 SUCCESS`），原作者FBX真正含70块中式亭台梁柱/瓦顶76,926三角；正式只选作者真实月洞门单个18,412三角、独立围墙1,188三角，未把39MB/83.9万三角展厅塞进手机。Blender→glTF2 + Godot4.4.1 GLTFDocument导入run `39103162566 SUCCESS`；原始发布来源与逐件SHA在`assets/hq-rev208/architecture-chinese-cc0/manifest.json`，3个真实GLB在同目录，提交`080d6f0`；原作者只提供UV模型/UV布局线稿，不伪称源自带照片PBR贴图。场景按源真实UV映射另经许可核实的Quaternius CC0 512 PBR色/法线/粗糙度。
+- [ ] **HQ-020 / HQ-025 / HQ-041：原APK176 Godot原生真实场景局部技术验收**。原场景已摆放可走近的**7.8m中国四角亭、4.2m月洞门、4.1m园林白墙**，4棵真实成熟新松柏云杉和近景CC0草蕨地被；矮Kenney橡木仅留在24m以外远景LOD，真实3D位置/门洞无封死碰撞且不伪造免费完成住宅。完整原Main Godot4.4.1 + 未签名兼容PCK + Main NPC资源/修士真死亡回归 + 真Vulkan实帧run **`39103865723 completed/success`**。两张未经人工修图的1280×720原Main截图：`art/actual-engine-capture/rev208-candidate/real_godot_rev208_chinese_cc0_pavilion_original_main_p0_unapproved.png`及`real_godot_rev208_chinese_cc0_moon_gate_original_main_p0_unapproved.png`；原图在Draft本分支。**美术P0仍FAIL**：月洞门被针叶枝遮住、人物仍旧西式Knight、天地景深山峰与水面纹理极差，仍未成为完整修仙宗门/园林群，不是可运营宗门建筑；源仅LOD0，手机性能未测。
+- [ ] **HQ-022 / HQ-040：真实森林地面与性能状态**。原Main截图绿通道均值从约220降到174/255（从实际原Godot framebuffer采样，run `39102862797 SUCCESS`），解决部分荧光浅绿，仍无大型山谷高精分层。中国月洞门原截图HUD显示**Draw≈1376/200、Tri≈4,405,897/150,000**；软件Mesa渲染2FPS不是Android真实FPS，三角数及材质需LOD/网格合批降成本。**绝不把技术源加载/QA绿灯升格为P0画质和真实Android发布合格**。rev208仍 Draft / 官方rev207 不变。
+
 ## 2026-10-18 实际代码增量进度（不改变以上未通过 P0 打勾状态）
 
 - **HQ-003 部分实现**：最新11种真实原始3D GLB（松、柏、16m云杉、蕨、绣球灌木、蔷薇、薰衣草、观赏草、木/火/水三种独立灵药）已逐来源保存作者、具体模型CC0网页、下载接口、原始SHA256、三角数、网格数、真实GLB与Godot 4.4.1独立源导入结果；工作流 `39078719793` SUCCESS，`game-source/apk176-ota177-candidate/assets/hq-rev208/vegetation/botanical/manifest.json`。LOD1/2、真实手机材质/尺寸/运行耗费还未验收，**HQ-003整体仍未通过**。
