@@ -320,6 +320,47 @@ jobs:
           print('PASS_REV208_11_REAL_CC0_PBR_SHA_IMAGES_MATERIALS_SAME_SOURCE_MESH_JOIN_769_TO_33_STAGED_ORIGINAL_APK176_MAIN_NOT_APPROVED')
           print('PASS_REV208_REAL_INDIVIDUALLY_LICENSED_ELEVEN_BOTANICAL_MEDICINAL_GLBS_STAGED_IN_ORIGINAL_APK176_MAIN_UNAPPROVED')
           PY
+          # Exactly THREE true Chinese author CC0 GLB 2.0 geometries:
+          # 1 original four-corner tiled pavilion, 1 circular moon gate,
+          # 1 segment of genuine Chinese garden wall. NEVER 839k catalog.
+          # Their 3D source is VVaytoyek/official Godot Asset Store; original
+          # author FBX SHA and Blender conversion results are in manifest.
+          python3 - <<'PY'
+          from pathlib import Path
+          import hashlib,json,struct
+          root=Path('game-source/apk176-ota177-candidate/assets/hq-rev208/architecture-chinese-cc0')
+          proof=json.loads((root/'manifest.json').read_text(encoding='utf-8'))
+          assert proof['schema']==208 and proof['copyright_holder']=='VVaytoyek'
+          assert proof['license']=='CC0-1.0'
+          assert proof['source_page_verified_run']==39102085971
+          assert proof['native_godot_441_verified'] is True
+          assert proof['release_policy']=='QA_ONLY_NOT_SIGNED_NOT_PUBLISHED'
+          assert proof['P0_art_approved'] is False
+          assert proof['original_world_main_scene_qa']=='NOT_TESTED'
+          models=proof['assets']
+          assert set(models)=={'chinese_four_corner_pavilion',
+            'chinese_moongate_medium','chinese_garden_wall_medium_section'}
+          destination=Path('qa-stage/ota177/canglan_rev187/hq_rev208')
+          limits={'chinese_four_corner_pavilion':125000,
+            'chinese_moongate_medium':100000,
+            'chinese_garden_wall_medium_section':100000}
+          for role,entry in models.items():
+            raw=(root/(role+'.glb')).read_bytes()
+            assert raw[:4]==b'glTF' and struct.unpack_from('<I',raw,4)[0]==2
+            assert struct.unpack_from('<I',raw,8)[0]==len(raw)
+            assert hashlib.sha256(raw).hexdigest()==entry['converted_glb_sha256']
+            assert entry['source_license']=='CC0-1.0'
+            assert entry['source_uv_mesh_objects']>0
+            assert 100<entry['source_polygon_triangles']<=limits[role]
+            assert entry['game_asset_approved'] is False
+            assert entry['geometry_status']=='NATIVE_GODOT441_GLTF_SOURCE_QA_PASS'
+            assert entry['source_website_claims_cc0_verified_separately'] is True
+            assert entry['actual_authored_pbr_textures']=='NOT_CLAIMED_SOURCE_UV_LAYOUT_ONLY'
+            (destination/(role+'.glb')).write_bytes(raw)
+            print('PASS_REV208_CHINESE_AUTHOR_GLTF_SHA_IN_ORIGINAL_PCK',
+              role,entry['source_polygon_triangles'],len(raw))
+          print('PASS_REV208_ALL_3_CC0_REAL_CHINESE_PAVILION_MOONGATE_GARDEN_WALL_SHA_NATIVE_GODOT_PACKED_NOT_ART_P0_APPROVED')
+          PY
           cp game-source/godot3d/assets/free_cc0/kenney/3d/castle/rocks-small.glb qa-stage/ota177/canglan_rev187/rocks_small.glb
           cp game-source/godot3d/assets/free_cc0/kenney/3d/castle/tree-log.glb qa-stage/ota177/canglan_rev187/tree_log.glb
           cp game-source/godot3d/assets/free_cc0/kenney/3d/castle/wall-narrow-wood-fence.glb qa-stage/ota177/canglan_rev187/wood_fence.glb
