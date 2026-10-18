@@ -10,27 +10,27 @@ const NEG = '不要像素风，不要低模3D渲染截图，不要卡通描边�
 export const jobs = [
   {
     "id": "plate08_market_street_day",
-    "subject": "\u574a\u5e02\u767d\u65e5\u957f\u8857\uff1a\u955c\u5934\u7ad9\u5728\u8857\u4e2d\u592e\u5411\u8857\u9053\u6df1\u5904\u770b\uff0c\u4e24\u4fa7\u662f\u8fde\u7ef5\u7684\u6728\u6784\u5e97\u94fa\u4e0e\u6311\u6a90\u3001\u5e03\u62db\u5e4c\u5b50\uff08\u65e0\u5b57\uff09\uff0c\u8857\u8fb9\u6446\u7740\u4e03\u516b\u4e2a\u8d27\u644a\u4e0e\u7af9\u7b50\uff0c\u9752\u77f3\u677f\u8def\u9762\u6e7f\u6da6\u53cd\u5149\u5e76\u5728\u7eb5\u6df1\u65b9\u5411\u6536\u62e2\uff0c\u8857\u53e3\u4e00\u68f5\u5927\u69d0\u6811\uff0c\u8fdc\u5904\u5c71\u5f71\u4e0e\u8584\u96fe"
+    "subject": "坊市白日长街：镜头站在街中央向街道深处看，两侧是连绵的木构店铺与挑檐、布招幌子（无字），街边摆着七八个货摊与竹筐，青石板路面湿润反光并在纵深方向收拢，街口一棵大槐树，远处山影与薄雾"
   },
   {
     "id": "plate09_sect_courtyard_day",
-    "subject": "\u5b97\u95e8\u6b63\u6bbf\u524d\u5ead\u9662\uff1a\u955c\u5934\u7ad9\u5728\u9662\u4e2d\u6b63\u5bf9\u5927\u6bbf\uff0c\u4e00\u6bb5\u4e5d\u7ea7\u77f3\u9636\u901a\u5411\u6bbf\u95e8\uff0c\u6bbf\u524d\u4e24\u6839\u6731\u7ea2\u7acb\u67f1\u4e0e\u533e\u989d\uff08\u7a7a\u767d\u77f3\u533e\uff09\uff0c\u4e24\u4fa7\u9752\u74e6\u56f4\u5899\u4e0e\u77f3\u706f\uff0c\u5730\u9762\u6ee1\u662f\u6591\u9a73\u5149\u5f71\u4e0e\u843d\u53f6\uff0c\u8fdc\u5904\u6bbf\u89d2\u5c42\u53e0"
+    "subject": "宗门正殿前庭院：镜头站在院中正对大殿，一段九级石阶通向殿门，殿前两根朱红立柱与一块空白石匾，两侧青瓦围墙与石灯，地面满是斑驳光影与落叶，远处殿角层叠"
   },
   {
     "id": "plate10_inn_interior",
-    "subject": "\u5ba2\u6808\u5927\u5802\u5185\u90e8\uff1a\u955c\u5934\u7ad9\u5728\u5802\u4e2d\uff0c\u6b63\u5bf9\u957f\u6761\u6728\u67dc\u53f0\u4e0e\u9152\u575b\u67b6\uff0c\u5de6\u53f3\u5404\u6446\u56db\u5f20\u65b9\u684c\u6761\u51f3\uff0c\u623f\u6881\u6728\u6784\u3001\u7eb8\u7a97\u900f\u8fdb\u6696\u5149\u4e0e\u5149\u67f1\u6d6e\u5c18\uff0c\u5730\u9762\u662f\u9752\u7816"
+    "subject": "客栈大堂内部：镜头站在堂中，正对长条木柜台与酒坛架，左右各摆四张方桌条凳，房梁木构、纸窗透进暖光与光柱浮尘，地面是青砖"
   },
   {
     "id": "plate11_night_street_low",
-    "subject": "\u96e8\u591c\u5b97\u95e8\u77f3\u8857\uff1a\u955c\u5934\u7ad9\u5728\u8857\u5fc3\uff0c\u4e24\u4fa7\u6df1\u8272\u6728\u6784\u5eca\u67f1\u6311\u6a90\uff0c\u6a90\u4e0b\u6302\u4e00\u6392\u6696\u9ec4\u706f\u7b3c\uff0c\u6e7f\u77f3\u677f\u53cd\u5c04\u6a59\u7ea2\u706f\u5149\u4e0e\u96e8\u4e1d\uff0c\u8fdc\u5904\u96fe\u91cc\u4e00\u76cf\u5b64\u706f"
+    "subject": "雨夜宗门石街：镜头站在街心，两侧深色木构廊柱挑檐，檐下挂一排暖黄灯笼，湿石板反射橙红灯光与雨丝，远处雾里一盏孤灯"
   },
   {
     "id": "prop03_flag_pole",
-    "subject": "\u4e00\u4ef6\u5b64\u7acb\u7684\u4e2d\u56fd\u53e4\u4ee3\u6728\u65d7\u6746\u9053\u5177\uff0c\u6df1\u68d5\u6728\u67f1\u3001\u77f3\u8d28\u5939\u6746\u5ea7\u3001\u9876\u7aef\u60ac\u4e00\u9762\u892a\u8272\u5e03\u5e61\uff08\u65e0\u5b57\uff09\uff0c\u5e61\u5e03\u8fb9\u7f18\u78e8\u635f"
+    "subject": "一件孤立的中国古代木旗杆道具，深棕木柱、石质夹杆座、顶端悬一面褪色布幡（无字），幡布边缘磨损"
   },
   {
     "id": "prop04_clay_jar_stack",
-    "subject": "\u4e00\u4ef6\u5b64\u7acb\u7684\u4e2d\u56fd\u53e4\u4ee3\u9676\u7f38\u5806\u9053\u5177\uff0c\u4e09\u53ea\u7c97\u9676\u5927\u7f38\u53e0\u653e\u5728\u6728\u6258\u76d8\u4e0a\uff0c\u7f38\u53e3\u76d6\u7af9\u7f16\u76d6\uff0c\u9676\u9762\u6709\u91c9\u75d5\u4e0e\u88c2\u7eb9"
+    "subject": "一件孤立的中国古代陶缸堆道具，三只粗陶大缸叠放在木托盘上，缸口盖竹编盖，陶面有釉痕与裂纹"
   }
 ];
 
@@ -43,4 +43,34 @@ export function makePrompt(job) {
   return STYLE + '。' + job.subject + '。' + CAMERA + '。画面中绝不出现人和角色。' + NEG + '。不要俯视，不要鸟瞰，不要航拍，不要高角度俯拍，不要屋顶俯视地图视角。';
 }
 
+async function main() {
+  const dest = resolve(process.argv[2] || 'game-source/apk176-ota177-candidate/hd2d/artgen-batch03');
+  mkdirSync(dest, {recursive: true});
+  if (!process.env.SILICONFLOW_API_KEY) throw Error('Missing SILICONFLOW_API_KEY; zero generation calls');
+  for (const job of jobs) {
+    const out = resolve(dest, job.id);
+    if (existsSync(out + '.json') && (existsSync(out + '.png') || existsSync(out + '.jpg'))) { console.log('SKIP_EXISTING', job.id); continue; }
+    const prompt = makePrompt(job);
+    writeFileSync(out + '.prompt.txt', prompt);
+    writeFileSync(out + '.request.json', JSON.stringify({id: job.id, status: 'REQUEST_STARTED', at: new Date().toISOString()}));
+    const response = await fetch('https://api.siliconflow.cn/v1/images/generations', {
+      method: 'POST',
+      headers: {Authorization: 'Bearer ' + process.env.SILICONFLOW_API_KEY, 'Content-Type': 'application/json'},
+      body: JSON.stringify({model: 'Kwai-Kolors/Kolors', prompt, image_size: '1024x1024', batch_size: 1}),
+      signal: AbortSignal.timeout(180000),
+    });
+    if (!response.ok) throw Error('Generation ' + job.id + ': HTTP ' + response.status + '; no retry');
+    const body = await response.json();
+    const url = body.images?.[0]?.url;
+    if (!url?.startsWith('https://')) throw Error('Missing HTTPS result for ' + job.id);
+    const image = await fetch(url, {signal: AbortSignal.timeout(90000)});
+    if (!image.ok) throw Error('Image download failed; no generation retry');
+    const bytes = Buffer.from(await image.arrayBuffer());
+    const ext = bytes.subarray(0, 8).toString('hex') === '89504e470d0a1a0a' ? 'png' : bytes.subarray(0, 3).toString('hex') === 'ffd8ff' ? 'jpg' : null;
+    if (!ext || bytes.length < 30000) throw Error('Invalid image payload for ' + job.id);
+    writeFileSync(out + '.' + ext, bytes);
+    writeFileSync(out + '.json', JSON.stringify({id: job.id, batch: 'hd2d-artgen-batch03', model: 'Kwai-Kolors/Kolors', file: job.id + '.' + ext, bytes: bytes.length, sha256: createHash('sha256').update(bytes).digest('hex'), status: 'GENERATED_UNAPPROVED', run_url: process.env.RUN_URL || null}, null, 2) + '\n');
+    console.log('GENERATED', job.id, bytes.length);
+  }
+}
 if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1])).href) main().catch(e => { console.error(e.message); process.exitCode = 1; });

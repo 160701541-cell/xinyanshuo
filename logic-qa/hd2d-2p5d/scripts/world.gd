@@ -82,9 +82,9 @@ func _add_plate() -> void:
 	sh.code = """
 shader_type canvas_item;
 uniform float focus_y = 0.60;
-uniform float focus_half = 0.20;
-uniform float near_band = 0.34;
-uniform float max_lod = 3.0;
+uniform float focus_half = 0.30;
+uniform float near_band = 0.56;
+uniform float max_lod = 1.5;
 void fragment() {
 	vec2 uv = UV;
 	if (uv.x < 0.0 || uv.y < 0.0 || uv.x > 1.0 || uv.y > 1.0) {
@@ -93,7 +93,7 @@ void fragment() {
 		float d = abs(uv.y - focus_y);
 		float far_blur = smoothstep(focus_half, focus_half + 0.26, d) ;
 		float near = 1.0 - smoothstep(near_band, 1.0, uv.y);
-		float blur = clamp(max(far_blur * 1.6, near * 1.9), 0.0, max_lod);
+		float blur = clamp(max(far_blur * 0.9, near * 0.75), 0.0, max_lod);
 		vec4 c = texture(TEXTURE, uv, blur);
 		COLOR = c;
 	}
@@ -144,9 +144,9 @@ func _radial_tex(inner: Color, outer: Color) -> Texture2D:
 
 func _glow_at(pos: Vector2, radius: float, col: Color) -> void:
 	var s := Sprite2D.new()
-	s.texture = _radial_tex(Color(col.r, col.g, col.b, 0.30), Color(col.r, col.g, col.b, 0.0))
+	s.texture = _radial_tex(Color(col.r, col.g, col.b, 0.13), Color(col.r, col.g, col.b, 0.0))
 	s.position = pos
-	s.scale = Vector2(radius / 128.0, radius / 128.0)
+	s.scale = Vector2(radius / 200.0, radius / 200.0)
 	var m := CanvasItemMaterial.new()
 	m.blend_mode = CanvasItemMaterial.BLEND_MODE_ADD
 	s.material = m
@@ -277,7 +277,7 @@ func _add_actors(mode: String) -> void:
 func _add_fx(mode: String) -> void:
 	var leaves := CPUParticles2D.new()
 	leaves.name = "Leaves"
-	leaves.amount = 26
+	leaves.amount = 12
 	leaves.lifetime = 7.0
 	leaves.preprocess = 4.0
 	leaves.emission_shape = CPUParticles2D.EMISSION_SHAPE_RECTANGLE
@@ -290,9 +290,9 @@ func _add_fx(mode: String) -> void:
 	leaves.initial_velocity_max = 42.0
 	leaves.angular_velocity_min = -90.0
 	leaves.angular_velocity_max = 90.0
-	leaves.scale_amount_min = 0.035
-	leaves.scale_amount_max = 0.075
-	leaves.color = Color(0.96, 0.72, 0.26, 0.92) if mode != "night" else Color(0.85, 0.55, 0.25, 0.7)
+	leaves.scale_amount_min = 0.022
+	leaves.scale_amount_max = 0.05
+	leaves.color = Color(0.94, 0.66, 0.24, 0.85) if mode != "night" else Color(0.80, 0.52, 0.26, 0.6)
 	var leaf_tex := _radial_tex(Color(1, 1, 1, 1), Color(1, 1, 1, 0.0))
 	leaves.texture = leaf_tex
 	leaves.z_index = 9
@@ -300,7 +300,7 @@ func _add_fx(mode: String) -> void:
 
 	var dust := CPUParticles2D.new()
 	dust.name = "Dust"
-	dust.amount = 70
+	dust.amount = 24
 	dust.lifetime = 9.0
 	dust.preprocess = 6.0
 	dust.emission_shape = CPUParticles2D.EMISSION_SHAPE_RECTANGLE
@@ -313,7 +313,7 @@ func _add_fx(mode: String) -> void:
 	dust.initial_velocity_max = 12.0
 	dust.scale_amount_min = 0.012
 	dust.scale_amount_max = 0.03
-	dust.color = Color(1.0, 0.94, 0.78, 0.35)
+	dust.color = Color(0.90, 0.95, 1.0, 0.13)
 	dust.texture = _radial_tex(Color(1, 1, 1, 1), Color(1, 1, 1, 0.0))
 	dust.z_index = 10
 	var dm := CanvasItemMaterial.new()

@@ -16,6 +16,7 @@ func _ready() -> void:
 	world.build(mode)
 
 	_add_env()
+	_add_grade(mode)
 
 	var ui := Control.new()
 	ui.name = "Hud"
@@ -32,15 +33,38 @@ func _add_env() -> void:
 	var env := Environment.new()
 	env.background_mode = Environment.BG_CANVAS
 	env.glow_enabled = true
-	env.glow_intensity = 0.55
+	env.glow_intensity = 0.20
 	env.glow_strength = 1.0
-	env.glow_bloom = 0.12
-	env.glow_hdr_threshold = 0.92
+	env.glow_bloom = 0.03
+	env.glow_hdr_threshold = 1.10
 	env.glow_blend_mode = Environment.GLOW_BLEND_MODE_ADDITIVE
 	env.adjustment_enabled = true
-	env.adjustment_brightness = 1.02
-	env.adjustment_contrast = 1.06
-	env.adjustment_saturation = 1.16
+	env.adjustment_brightness = 1.0
+	env.adjustment_contrast = 1.02
+	env.adjustment_saturation = 1.0
 	var we := WorldEnvironment.new()
 	we.environment = env
 	add_child(we)
+
+func _add_grade(mode: String) -> void:
+	var sh: Shader = load("res://assets/shaders/grade.gdshader")
+	if sh == null:
+		return
+	var rect := ColorRect.new()
+	rect.set_anchors_preset(Control.PRESET_FULL_RECT)
+	rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var mat := ShaderMaterial.new()
+	mat.shader = sh
+	if mode == "night":
+		mat.set_shader_parameter("shadow_cool", 0.55)
+		mat.set_shader_parameter("light_warm", 0.10)
+		mat.set_shader_parameter("sat", 0.96)
+	else:
+		mat.set_shader_parameter("shadow_cool", 0.34)
+		mat.set_shader_parameter("light_warm", 0.14)
+		mat.set_shader_parameter("sat", 1.02)
+	rect.material = mat
+	var layer := CanvasLayer.new()
+	layer.layer = 1
+	add_child(layer)
+	layer.add_child(rect)
