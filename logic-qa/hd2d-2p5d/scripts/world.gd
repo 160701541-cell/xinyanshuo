@@ -34,6 +34,10 @@ func _plate_file(mode: String) -> String:
 		return PLATE_DIR + "plate03_night_lantern_street.png"
 	if mode == "bamboo":
 		return PLATE_DIR + "plate02_bamboo_dusk.png"
+	if mode == "market":
+		return PLATE_DIR + "plate04_market_day.png"
+	if mode == "alchemy":
+		return PLATE_DIR + "plate07_alchemy_room.png"
 	return PLATE_DIR + "plate01_shanmen_day.png"
 
 func _load_tex(path: String) -> Texture2D:
@@ -183,13 +187,20 @@ func _frames_for(npc: int) -> SpriteFrames:
 	var sf := SpriteFrames.new()
 	if sf.has_animation("default"):
 		sf.remove_animation("default")
-	sf.add_animation("idle")
-	sf.set_animation_speed("idle", 8.0)
-	sf.set_animation_loop("idle", true)
+	for dir in ["walk_down", "walk_up", "walk_side"]:
+		sf.add_animation(dir)
+		sf.set_animation_speed(dir, 10.0)
+		sf.set_animation_loop(dir, true)
 	for i in range(6):
-		var p := SPRITE_DIR + "npc%d_canvas_c%d.png" % [npc, i]
+		var p := SPRITE_DIR + "n%d_down_c%d_o.png" % [npc, i]
 		if ResourceLoader.exists(p):
-			sf.add_frame("idle", load(p))
+			sf.add_frame("walk_down", load(p))
+		var p2 := SPRITE_DIR + "n%d_up_c%d_o.png" % [npc, i]
+		if ResourceLoader.exists(p2):
+			sf.add_frame("walk_up", load(p2))
+		var p3 := SPRITE_DIR + "n%d_side_c%d_o.png" % [npc, i]
+		if ResourceLoader.exists(p3):
+			sf.add_frame("walk_side", load(p3))
 	return sf
 
 var _shadow_tex: Texture2D
@@ -210,8 +221,36 @@ func _add_shadows() -> void:
 		sh.z_index = 2
 		add_child(sh)
 
+func _cast_for(mode: String) -> Array:
+	if mode == "market":
+		return [
+			{"npc": 0, "feet": Vector2(968, 492), "scale": 0.17},
+			{"npc": 1, "feet": Vector2(404, 566), "scale": 0.30},
+			{"npc": 3, "feet": Vector2(772, 604), "scale": 0.34},
+			{"npc": 4, "feet": Vector2(612, 668), "scale": 0.44},
+		]
+	if mode == "alchemy":
+		return [
+			{"npc": 5, "feet": Vector2(318, 556), "scale": 0.26},
+			{"npc": 2, "feet": Vector2(858, 528), "scale": 0.24},
+			{"npc": 4, "feet": Vector2(566, 664), "scale": 0.46},
+		]
+	if mode == "bamboo":
+		return [
+			{"npc": 1, "feet": Vector2(890, 470), "scale": 0.18},
+			{"npc": 3, "feet": Vector2(508, 560), "scale": 0.30},
+			{"npc": 4, "feet": Vector2(646, 646), "scale": 0.42},
+		]
+	return [
+		{"npc": 0, "feet": Vector2(1000, 462), "scale": 0.19},
+		{"npc": 1, "feet": Vector2(846, 500), "scale": 0.24},
+		{"npc": 3, "feet": Vector2(520, 596), "scale": 0.36},
+		{"npc": 4, "feet": Vector2(646, 640), "scale": 0.42},
+	]
+
 func _add_actors(mode: String) -> void:
-	var cast := [
+	var cast := _cast_for(mode)
+	var _unused := [
 		{"npc": 0, "feet": Vector2(1000, 462), "scale": 0.19},
 		{"npc": 1, "feet": Vector2(846, 500), "scale": 0.24},
 		{"npc": 3, "feet": Vector2(520, 596), "scale": 0.36},
@@ -224,14 +263,15 @@ func _add_actors(mode: String) -> void:
 	for c in cast:
 		var a := AnimatedSprite2D.new()
 		a.sprite_frames = _frames_for(int(c["npc"]))
-		a.animation = "idle"
+		a.animation = "walk_down"
 		var sc: float = c["scale"]
 		a.scale = Vector2(sc, sc)
 		var feet: Vector2 = c["feet"]
 		a.position = Vector2(feet.x, feet.y - (CANVAS_H * 0.5 - (CANVAS_H - FEET_IN_CANVAS)) * sc)
-		a.play("idle")
+		a.play("walk_down")
 		a.z_index = 6
-		a.modulate = Color(1.14, 1.06, 0.96)
+		a.modulate = Color(1.06, 1.00, 0.92)
+		a.frame = int(c["npc"]) % 4
 		sort_root.add_child(a)
 
 func _add_fx(mode: String) -> void:
