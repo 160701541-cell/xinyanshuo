@@ -241,18 +241,20 @@ func advance_world_hour() -> Array[String]:
 func save_state() -> bool:
   if not _loaded:
     return false
-  # Every on-map natural node amount comes from the authoritative economy,
-  # never from an independent duplicate inventory.
-  for id in records:
+  # Prepare a separate snapshot: failed writes MUST NOT acknowledge a
+  # harvested quantity as durable. Otherwise save_if_authoritative_amount_changed
+  # would stop retrying and Android force-close could duplicate harvested loot.
+  var candidate_records: Dictionary=records.duplicate(true)
+  for id in candidate_records:
     if not _economy.natural_nodes.has(id):
       last_error="REV208_NATURAL_BIRTH_AUTHORITATIVE_ID_LOST_"+String(id)
       return false
-    var row: Dictionary=records[id]
+    var row: Dictionary=candidate_records[id]
     var economy_row: Dictionary=_economy.natural_nodes[id]
     row["remaining"]=int(economy_row["remaining"])
     row["next_regen_hour"]=int(economy_row.get("next_regen_hour",-1))
   var save: Dictionary={"schema":SCHEMA,"world_seed":world_seed,
-    "world_hours":world_hours,"records":records}
+    "world_hours":world_hours,"records":candidate_records}
   var output:=FileAccess.open(save_path+".tmp",FileAccess.WRITE)
   if output==null:
     last_error="REV208_NATURAL_BIRTH_CANNOT_WRITE_FILE"
@@ -263,6 +265,8 @@ func save_state() -> bool:
   if DirAccess.rename_absolute(save_path+".tmp",save_path)!=OK:
     last_error="REV208_NATURAL_BIRTH_CANNOT_ATOMICALLY_COMMIT"
     return false
+  # Commit the in-memory saved baseline only AFTER the atomic rename.
+  records=candidate_records
   last_error=""
   return true
 
