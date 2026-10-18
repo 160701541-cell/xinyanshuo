@@ -269,6 +269,12 @@ func _ready() -> void:
     asset_errors.append("REV208_HQ021_ACTUAL_VENDOR_FERN_GRASS_GPU_POOL_FAILED")
     forest_floor_pool.free()
     forest_floor_pool=null
+  elif controls!=null and controls.get("actor")!=null:
+    # Real GLTF MultiMesh identity matrices on Godot 4.4.1 must fail
+    # closed into actual source-PBR MeshInstance3D cellular visuals.
+    var real_player: Node3D=controls.get("actor")
+    forest_floor_pool.call("sync_visibility",real_player.position,
+      String(quality.get("selected")))
   terrain_world.connect("terrain_cell_changed",
     Callable(self,"_on_understory_terrain_changed"))
   _set_dev_ui_visible(false)
