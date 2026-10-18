@@ -1,5 +1,12 @@
 # CAC 工序变更与开发日志
 
+## 2026-10-18 / CAC-REV208-HQ023-REAL-THREE-MEDICINAL-3D-GROWTH-PHENOLOGY / 原三类真3D独立灵植世界时间生长状态（代码提交，候选待审）
+- **当前前一次绿色基线**：原APK176 Godot4.4.1 + QA图片 `39081592059` **SUCCESS**，内部引擎仍确认真实厂商glTF MultiMesh源变换矩阵异常，临时以最多42个真GLB物理模型近景可见/其他逻辑体分区维护，不宣称GPU本体BUG已通过；正式用户画质及Android30分钟仍FAIL。
+- **本轮已经提交游戏实质代码而不只是规划**：`apk176_living_resource_world_rev187.gd` `35ed882` 在已存在、作者/许可有源SHA的3款**分别独立**木/火/水GLB灵草的**原13个资源ID**上实现四种可目测的真实3D生物状态：已采尽的**休眠(dormant)**、**萌芽(sprout)**、**孕蕾(budding)**、**盛放(bloom)**；以原存档`remaining/max/hours_since_growth`和**真实世界小时更新**驱动原GLB完整纹理与PBR真几何缩放/地表重新贴合，不生成平面贴片、免费采集物、虚构等级、新实体ID、凭空刷新资源，也不改变原药材采摘冷却/最大库存/存档Schema。药材枯萎后根茎仍留在3D土上等自然生长，并保留世界账本、修士死亡、5000人口不变。
+- **严格QA同步提交**：`verify_original_main_quality_rev187.gd` `6748a04` 直接在原可运行Main检验四类生长映射，不写修改药材存档；原玩家真正采摘世界`CL-LINGCAO-W-01`一株后，要求独立真实GLB木灵花显示`budding`并缩小到合法0.80原厂PBR身形、模型根仍贴在原Terrain3D土地上(≤0.10m误差)、实体ID不变、原世界库存守恒；`.github/workflows/canglan-rev208-green-saplings-qa-only.yml` `634c20b`新增2条必须由真实原版APK176 Main写出的PASS日志验证，**不能仅凭静态代码声称QA成功**。新CI运行 `39082459052`最后一次查询尚为pending；以实际结果为准，失败不吞错误。
+- **发布闸门原样锁死**：旧 `main/android-preview/latest.json` 仍**revision 207**（真查）；PR #14 Draft。`WorldXAI`国产高精角色完整四视美术、4名修士、仙侠宗门和灵植至少5—8独立物种及阶段、原APK176仙境截图美术审查、Android真机30分钟全部未交付，**HQ-023视觉整体验收FAIL，rev208不签名/不发布**。
+
+
 ## 2026-10-18 / CAC-REV208-P0-HQ021-NATIVE-CC0-FOREST-FLOOR-32M-POOL / 32米真实GLB林下植被GPU池、持久原场景打包及原生验收（候选，禁正式热更新）
 - **实际代码，非文档计划**：新增 `game-source/apk176-ota177-candidate/scripts/apk176_hq_forest_floor_pool_rev208.gd`（提交 `087a171`），真实引用原始来源与SHA可追溯的CC0已合并 fern/grass GLB 网格、UV和源PBR材质；按**32m生态cell ×种类×源GLB网格**设置16个32米生境Cell、2个真实来源物种、总计最多272个候选生态点；原GLB蕨1个网格加草3个网格，理论64个GPU MultiMesh Draw节点（活株数以原Godot QA为准），每个有效植物ID对应真实土壤XZ/连续GPU slot和3D位置，挖掘时按物理地块清退或恢复、swap-remove O(1)置换，空slot离开世界原点、不发明任何物资。**注意这仍是高精素材批量复用候选，不等于用户认为的茂密仙侠林地审美通过**。
 - **原项目集成**：原APK176主场景 `apk176_living_resource_world_rev187.gd`（`607db3b`）在原NPC、经济库存、真灵草、已通过的三个8—9米大树以及松柏林系统之外接入实体林下GPU池；新增地形变动同步/按手动画质分档的cell距离可见性与独立GPU诊断字段。原 PCK 打包字典 `logic-qa/tools/build_apk176_quality_rev187.gd`（`932750a`）添加新源码，原公开Actions只构建**未签名候选原版Main测试PCK**（`61e3b42`），原Main真实运行QA `verify_original_main_quality_rev187.gd`（`5e3beb8`）新增强制检查原资产许可、有效32m cell、真实活跃GPU transform、连续可见slot、没有IDENTITY原点幽灵、swap-remove恢复及经济资源不变。
