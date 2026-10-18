@@ -250,6 +250,44 @@ func _capture() -> void:
     _fail("REV208_MISSING_ACTUAL_MAIN_VENDOR_GREEN_FOREST_FLOOR_FRAME")
     return
   print("PASS_REV208_REAL_GODOT441_ORIGINAL_APK176_HQ021_FERN_GRASS_PHYSICAL_3D_ECOLOGY_FRAME_PENDING_ART_QA")
+  # HQ-020: second true game screenshot in the mature-pine forest with
+  # the formerly foreground-cluttering 200 Kenney toy-oak saplings now
+  # geometrically culled under 24m and actual author PBR understory.
+  var classic_toy_lods: Array=room.get("licensed_understory_instances")
+  var verified_distant_lod_geometry: int=0
+  for old_toy in classic_toy_lods:
+    if not is_instance_valid(old_toy):
+      continue
+    for low_detail_part in old_toy.find_children(
+        "*","MeshInstance3D",true,false):
+      var lod_part: MeshInstance3D=low_detail_part as MeshInstance3D
+      if lod_part.visibility_range_begin>=23.9:
+        verified_distant_lod_geometry+=1
+  if verified_distant_lod_geometry<96:
+    _fail("REV208_REAL_GODOT_ORIGINAL_FOREST_TOY_FOREGROUND_NOT_HIDDEN")
+    return
+  var grove_target: Vector2=Vector2(-35.0,-24.0)
+  var grove_camera_x: float=grove_target.x
+  var grove_camera_z: float=grove_target.y+9.2
+  opening_actor.position=Vector3(grove_camera_x,float(
+    opening_terrain.call("height_at",grove_camera_x,grove_camera_z))+
+    float(opening_actor.get_meta("actor_ground_offset_y",0.0)),
+    grove_camera_z)
+  player.call("_set_mode","third")
+  player.set("_yaw",0.0)
+  player.set("_pitch",0.30)
+  player.set("_distance",11.0)
+  floor_pool.call("sync_visibility",opening_actor.position,
+    String(room.get("quality").get("selected")))
+  room.call("_sync_rev208_botanical_visibility",opening_actor.position)
+  player.call("update_camera")
+  for real_hq_grove_frame in range(5):
+    await process_frame
+  await RenderingServer.frame_post_draw
+  if not _save("real_godot_rev208_p0_actual_mature_pine_no_toy_foreground_pbr_understory.png"):
+    _fail("REV208_HQ_MAIN_FOREGROUND_PBR_FOREST_NEW_TRUE_GODOT_SCREENSHOT_ABSENT")
+    return
+  print("PASS_REV208_HQ_P0_REAL_ORIGINAL_GODOT_FOREST_AUTHOR_PBR_MATURE_PINE_NO_24M_TOY_SAPLING_SCREENSHOT_UNAPPROVED_ART")
   opening_actor.position=opening_actor_pos
   room.get("sim").hour=qa_old_hour
   room.call("_sync_living_daylight")
