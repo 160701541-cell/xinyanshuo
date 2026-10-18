@@ -1799,6 +1799,10 @@ func _seed_resources() -> void:
       z += 7.0
     var entity_id := "CL-TREE-0184-%03d" % index
     assert(sim.register_natural_node(entity_id, TOWN, "tree", 5))
+    # Original world-born trees can spontaneously regrow after felling;
+    # seed delivery is a SEPARATE, still finite player/NPC mechanic.
+    # 1 real wood unit per 72 world-hours after 96h dormancy, up to 5.
+    assert(sim.configure_resource_recovery(entity_id,5,1,72,96))
     assert(sim.register_resource_position(entity_id, Vector3(x,
       float(terrain_world.call("height_at",x,z)),z)))
     assert(eco.register_tree(entity_id))
@@ -1809,6 +1813,7 @@ func _seed_resources() -> void:
         Vector3(x,0,z),rng.randf_range(1.45,2.2)))
     if instance != null:
       instance.set_meta("resource_id", entity_id)
+      instance.set_meta("natural_full_size_scale",instance.scale.x)
       natural_meshes[entity_id] = instance
   # Two mineral outcrops (right-hand side), all outside the main road.
   var quarry_groups := [Vector2(21.0,-15.0),Vector2(23.0,19.0)]
@@ -1852,6 +1857,7 @@ func _materialize_wild_tree_stone(id: String) -> bool:
   visual.set_meta("world_naturally_created",true)
   visual.set_meta("source_license","Kenney CC0 verified original GLB")
   visual.set_meta("source_entity_id",id)
+  visual.set_meta("natural_full_size_scale",visual.scale.x)
   visual.set_meta("not_created_in_player_inventory",true)
   natural_meshes[id]=visual
   return true
@@ -2401,7 +2407,22 @@ func _refresh_ecology_meshes() -> void:
       art.scale = Vector3.ONE * growth_scale
       art.visible = life != "stump"
     else:
-      art.visible = int(sim.natural_nodes[id]["remaining"]) > 0
+      var existing_units: int=int(sim.natural_nodes[id]["remaining"])
+      art.visible = existing_units > 0
+      # A felled wild-born mature tree comes back as a real small sapling,
+      # gradually scaling into its original verified source mesh size.
+      # Original 3 HQ adult trees keep their exact 8–9m source silhouette
+      # at full health and their original resource/mesh IDs never change.
+      if String(state["stage"])=="natural_regrowth":
+        var natural_capacity: int=int(sim.natural_nodes[id]["capacity"])
+        var age_ratio: float=clampf(float(existing_units)/float(
+          maxi(1,natural_capacity)),0.0,1.0)
+        var full_scale: float=float(art.get_meta(
+          "natural_full_size_scale",art.scale.x))
+        art.scale=Vector3.ONE*full_scale*lerpf(0.20,1.0,age_ratio)
+      elif String(state["stage"])=="mature" and art.has_meta(
+          "natural_full_size_scale"):
+        art.scale=Vector3.ONE*float(art.get_meta("natural_full_size_scale"))
   for id in eco.stone:
     if not natural_meshes.has(id):
       continue
