@@ -73,22 +73,29 @@ jobs:
           python3 - <<'PY'
           from pathlib import Path
           import subprocess
-          for n in ('chinese_four_corner_pavilion','chinese_classical_garden_wall'):
-            root=Path('qa-architecture/pinned')/n
+          conversions=(
+            ('chinese_four_corner_pavilion','chinese_four_corner_pavilion',''),
+            ('chinese_classical_garden_wall','chinese_moongate_medium','月洞门1_中'),
+            ('chinese_classical_garden_wall','chinese_garden_wall_medium_section','围墙_中_1段'),
+          )
+          for input_pack,output_name,only_object in conversions:
+            root=Path('qa-architecture/pinned')/input_pack
             sources=list(root.rglob('*.fbx'))
-            assert len(sources)==1,(n,sources)
-            destination=Path('qa-architecture/actual-glb')/(n+'.glb')
-            report=Path('qa-architecture/proof')/(n+'.json')
-            result=subprocess.run(['blender','-b','-noaudio',
+            assert len(sources)==1,(input_pack,sources)
+            destination=Path('qa-architecture/actual-glb')/(output_name+'.glb')
+            report=Path('qa-architecture/proof')/(output_name+'.json')
+            cmd=['blender','-b','-noaudio',
               '--python','tools/asset_factory/rev208_convert_cc0_chinese_fbx_to_glb.py',
               '--','--input='+str(sources[0].resolve()),
               '--output='+str(destination.resolve()),
-              '--manifest='+str(report.resolve())],check=False,
-              timeout=540)
-            assert result.returncode==0,(n,result.returncode)
+              '--manifest='+str(report.resolve())]
+            if only_object:
+              cmd.append('--only-object='+only_object)
+            result=subprocess.run(cmd,check=False,timeout=540)
+            assert result.returncode==0,(input_pack,output_name,result.returncode)
             assert destination.is_file() and report.is_file()
-            print('PASS_REV208_REAL_CHINESE_FBX_GLTF_CONVERTED_AUTHOR_MATERIALS',n,
-                  destination.stat().st_size,flush=True)
+            print('PASS_REV208_REAL_CHINESE_FBX_GLTF_CONVERTED_AUTHOR_MATERIALS',
+                  output_name,destination.stat().st_size,flush=True)
           PY
       - name: Validate native Godot 4.4.1 GLTFDocument real mesh UV PBR import
         shell: bash
@@ -106,7 +113,7 @@ jobs:
             --path qa-architecture/godot-project \
             -s "$GITHUB_WORKSPACE/tools/asset_factory/rev208_verify_chinese_gltf_godot441.gd" \
             2>&1 | tee qa-architecture/proof/godot441_import.log
-          grep -Fq 'PASS_REV208_CHINESE_PAVILION_AND_MOONGATE_REAL_3D_GODOT_SOURCE_IMPORT_QUARANTINED_NOT_GAME_ART_ACCEPTED' qa-architecture/proof/godot441_import.log
+          grep -Fq 'PASS_REV208_CHINESE_PAVILION_MOONGATE_AND_SINGLE_WALL_REAL_3D_GODOT_SOURCE_IMPORT_QUARANTINED_NOT_GAME_ART_ACCEPTED' qa-architecture/proof/godot441_import.log
           if grep -Eq 'SCRIPT ERROR:|Parse Error:|ERROR:|FAIL_REV208' qa-architecture/proof/godot441_import.log; then
             cat qa-architecture/proof/godot441_import.log; exit 1
           fi
