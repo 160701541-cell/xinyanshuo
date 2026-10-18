@@ -1,4 +1,4 @@
-name: Canglan HD2D artgen batch03 (plates 8-11 + props (eye-level camera lock))
+name: Canglan HD2D artgen batch03 (retry main-fix) (plates 8-11 + props (eye-level camera lock))
 on:
   push:
     branches: [agent/dsh-p0-xianxia-ecology]
