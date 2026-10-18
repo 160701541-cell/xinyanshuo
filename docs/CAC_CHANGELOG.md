@@ -1,5 +1,10 @@
 # CAC 工序变更与开发日志
 
+## 2026-10-18 / CAC-REV208-QA-GROUNDCOVER-GLTF-BASE-PATH / 扫描地被 glTF 解析基路径修正（分支 agent/dsh-p0-xianxia-ecology，未签名未发布）
+- 失败事实：run 39119309572 里原版 Main 场景其实跑到了结尾、统计打印完整，但日志闸门命中 4 个引擎 ERROR：ERROR: glTF: Binary file not found: res://canglan_rev187/hq_ecology_groundcover/fern_clump.bin（shrub_low / moss_patch / rock_moss_set 同），导致 rev208_real_scanned_groundcover.spawned=0。
+- 根因（本机 Godot 4.4.1 arm64 复现，不是猜）：GLTFDocument.append_from_buffer(bytes, base_path, state) 的 base_path 要传 gltf 文件本身，引擎内部会再取 get_base_dir() 解析 .bin 与贴图相对 uri；apk176_hq_terrain_pbr_rev208.gd 传的是 path.get_base_dir()，等于上跳一级。散文件与 PCK 两种布局都能复现同一错误；改成传 path 后 4 个 .gltf 全部 err=0，三角面 6232/8287/204/63127 与 manifest 完全一致（PCK 内亦同）。
+- 提交：75fb1a8，仅动 game-source/apk176-ota177-candidate/scripts/apk176_hq_terrain_pbr_rev208.gd 一行 + 注释。新 QA run 39119677171 已派发，结论未出，不得当成已绿。
+
 ## 2026-10-18 / CAC-REV208-P0-COMBAT-LIFE-LIFE-TABLET / 命牌确认死亡、失踪判定与宗门文献（分支 `agent/dsh-p0-xianxia-ecology`，严格未签名未发布）
 - **用户最新口径（本轮依据）**：「死后被人发现就会传播，没人发现就最多会被人认为是失踪了」「宗门有命牌死了会知道的」「死了保留ID」。本轮只做 rev208 能承受的一层：命牌确认 + 目击确认 + 失踪 + 宗门文献；轮回/地府/鬼修/尸魁/尸体搜刮明确留作 DLC 钩子，不在本轮。
 - **代码（3 个文件）**：`apk176_living_regions_rev207.gd` 的 `record_named_cultivator_death(id,is_spirit_rooted,is_body_cultivator,source,sect_id="",witnessed=true)` 现在区分 confirmed/missing：有宗门 = 命牌确认（confirmed_by=`life_tablet`），无宗门靠目击（`witness`），两者都没有只记 `missing`；`people/adults` 一律 -1，确认死亡才 `region.deaths+1`/`confirmed_deaths+1` 并写入 `sect_obituaries[sect_id]`（每宗门上限 200 条），否则 `region.missing+1`/`missing_total+1`；`died_total` 继续做人口守恒（=确认死亡+失踪），存档新字段 `sect_obituaries/confirmed_deaths/missing_total` 原子写入，旧档 `died_total>0` 且无新计数时按确认死亡迁移。`apk176_cultivation_world_rev201.gd` 的 `apply_npc_damage` 传入 `state.rev207_sect_id` 与 witnessed=true，并在返回里带 `death_status/confirmed_by/death_outside_sect/notice`；`apk176_player_controller_rev187.gd` 击杀提示改为按 `notice` 播报（命牌已碎 / 被你所见宗门尚不知情 / 失踪）。**宗门记仇**：确认死亡且死者有宗门时 `sects[sect_id].player_hostility=true` 持久化，该宗门活着的门人在 8m 视野内即被置 `hostility=100`（沿用既有 2.8m 反击与 HUD「敌对」），不扩散全城传闻；存档失败回滚时一并恢复记仇位。
