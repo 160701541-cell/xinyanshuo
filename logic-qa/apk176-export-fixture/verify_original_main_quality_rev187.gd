@@ -2427,6 +2427,89 @@ func _run() -> void:
   econ.citizens["CL-PLAYER-0184-0001"]["energy"]=hero_saved_stamina
   print("PASS_REV208_REAL_LETHAL_CULTIVATOR_SWORD_COLLISION_DEATH_PERSISTENCE_AND_CORPSE")
   print("PASS_REV208_EXACTLY_ONCE_NAMED_NPC_CENSUS_POPULATION_DEBIT_SAVE_RELOAD_NO_REVIVAL")
+  # User clarification: resources legitimately materialize at world creation
+  # and randomly replenish as NEW world resource nodes without any player or
+  # NPC action. The stored bag and village ledger cannot be auto-credited.
+  var wild_original_rows: Dictionary=wild.get("nodes").duplicate(true)
+  var wild_original_hour: int=int(wild.get("world_hours"))
+  var wild_original_grown: int=int(wild.get("grown_total"))
+  var wild_original_harvested: int=int(wild.get("harvested_total"))
+  var wild_original_herb_events: int=int(wild.get("wild_random_herb_births"))
+  var wild_original_ore_events: int=int(wild.get("wild_random_ore_births"))
+  var wild_initial_mesh_ids: Array=plants.keys()
+  var original_stock: Dictionary=econ.villages[room.TOWN]["stock"].duplicate(true)
+  if wild_initial_mesh_ids.size()!=13 or wild_original_rows.size()!=13:
+    _fail(420,"REV208_RESOURCE_RANDOM_SPAWN_TEST_MUST_START_WITH_13_REAL_INITIAL_WORLD_NODES")
+    return
+  wild.set("world_hours",0)
+  for random_world_hour in range(240):
+    wild.call("advance_world_hour")
+  var wild_generated_ids: Array[String]=[]
+  var herb_appearance: int=0
+  var ore_appearance: int=0
+  for world_node_id in (wild.get("nodes") as Dictionary):
+    if not wild_original_rows.has(world_node_id):
+      var id_text: String=String(world_node_id)
+      wild_generated_ids.append(id_text)
+      var actual_node: Dictionary=wild.get("nodes")[world_node_id]
+      if id_text.begins_with("CL-WILD-LINGCAO-R208-"):
+        herb_appearance+=1
+      elif id_text.begins_with("CL-WILD-LINGSHI-R208-") and (
+          String(actual_node["kind"])=="spirit_stone"):
+        ore_appearance+=1
+      else:
+        _fail(421,"REV208_WILD_RESOURCE_ID_OR_KIND_UNRECOGNIZED_"+id_text)
+        return
+  if herb_appearance<2 or ore_appearance<1 or (
+      not bool(wild.call("conservation_ok"))) or (
+      original_stock!=econ.villages[room.TOWN]["stock"]):
+    _fail(422,"REV208_RANDOM_WILD_WORLD_RESOURCE_BIRTH_OR_ECONOMY_CONSERVATION_FAILED_"+
+      str({"new_herb":herb_appearance,"new_ore":ore_appearance,
+      "ledger_ok":wild.call("conservation_ok")}))
+    return
+  room.call("_spawn_spirit_resource_nodes")
+  for spawned_id in wild_generated_ids:
+    if not plants.has(spawned_id):
+      _fail(423,"REV208_RANDOM_SOURCE_RESOURCE_NOT_ACTUAL_3D_IN_ORIGINAL_APK176_MAIN_"+spawned_id)
+      return
+    var born_glb: Node3D=plants[spawned_id]["model"]
+    if not is_instance_valid(born_glb) or (
+        String(born_glb.get_meta("world_entity_id",""))!=spawned_id) or (
+        born_glb.find_children("*","MeshInstance3D",true,false).is_empty()) or (
+        born_glb.get_parent()!=world):
+      _fail(424,"REV208_WILD_RANDOM_RESOURCE_IS_FAKE_NOT_REAL_LICENSED_GLTF_"+spawned_id)
+      return
+  # Load same saved schema 206 into fresh independent ledger. Initial 13
+  # IDs survive unchanged; new wild herb/ore IDs cannot vanish/reappear as
+  # duplicate inventories after reboot.
+  var original_wild_script: GDScript=wild.get_script() as GDScript
+  var revived_wild: RefCounted=original_wild_script.new()
+  if not bool(revived_wild.call("initialize")) or (
+      not bool(revived_wild.call("conservation_ok"))) or (
+      revived_wild.get("nodes").size()!=wild.get("nodes").size()):
+    _fail(425,"REV208_WILD_NODE_RANDOM_WORLD_GENERATION_NOT_RELOADABLE_SCHEMA206")
+    return
+  for persisted_id in wild_generated_ids:
+    if not revived_wild.get("nodes").has(persisted_id):
+      _fail(426,"REV208_RANDOM_NATURE_BORN_ID_DID_NOT_SURVIVE_SAVE_RELOAD_"+persisted_id)
+      return
+  # Restore the actual 13 source nodes and rollback all test-side world
+  # birth events; CI must not alter original user test save or world state.
+  for spawned_id in wild_generated_ids:
+    var created: Node3D=plants[spawned_id]["model"]
+    created.queue_free()
+    plants.erase(spawned_id)
+  wild.set("nodes",wild_original_rows)
+  wild.set("world_hours",wild_original_hour)
+  wild.set("grown_total",wild_original_grown)
+  wild.set("harvested_total",wild_original_harvested)
+  wild.set("wild_random_herb_births",wild_original_herb_events)
+  wild.set("wild_random_ore_births",wild_original_ore_events)
+  if not bool(wild.call("_save")) or not bool(wild.call("conservation_ok")) or (
+      plants.size()!=wild_initial_mesh_ids.size()):
+    _fail(427,"REV208_RANDOM_WORLD_RESOURCE_QA_ISOLATION_ROLLBACK_FAILED")
+    return
+  print("PASS_REV208_NATURALLY_BORN_RANDOM_HERB_AND_ORE_RESOURCES_WORLD_HOURS_PHYSICAL_GLBS_SAVED_IDS_NO_INVENTORY_MINTING")
   room.call("_focus_builder")
   if not bool(room.get("_follow_builder")) or float(room.get("_camera_distance")) > 14.0:
     _fail(42,"BUTTON_MUST_ACTUALLY_FOCUS_VISIBLE_NPC")
