@@ -95,6 +95,26 @@ func _valid_record(id: String,row: Dictionary) -> bool:
     (x<=-11.0 and kind=="tree") or (x>=12.0 and kind=="stone")) and (
     max_units>=2 and max_units<=16 and remaining>=0 and remaining<=max_units)
 
+# Only rollback resources created by THIS rev208 world spawner. Never erase
+# one of the 52 historic trees, 20 stone veins, village inventory or a
+# separate agent's content. Called before public birth notification/render.
+func _rollback_uncommitted_wild_node(id: String,kind: String) -> void:
+  if kind=="tree" and not id.begins_with(TREE_ID_PREFIX):
+    return
+  if kind=="stone" and not id.begins_with(STONE_ID_PREFIX):
+    return
+  if kind not in ["tree","stone"]:
+    return
+  records.erase(id)
+  if _ecology!=null:
+    if kind=="tree":
+      _ecology.trees.erase(id)
+    else:
+      _ecology.stone.erase(id)
+  if _economy!=null:
+    _economy.resource_positions.erase(id)
+    _economy.natural_nodes.erase(id)
+
 func _register_saved_record(id: String,row: Dictionary) -> bool:
   if _economy.natural_nodes.has(id):
     return false
@@ -123,6 +143,11 @@ func _register_saved_record(id: String,row: Dictionary) -> bool:
   var interval: int=72 if kind=="tree" else 240
   if not bool(_economy.configure_resource_recovery(
       id,int(row["capacity"]),1,interval,48 if kind=="tree" else 120)):
+    # The economy node and ecology tree/stone had already been registered.
+    # Previous code returned false without undoing either, creating an
+    # invisible but harvestable ghost ID on a rejected recovery profile.
+    _rollback_uncommitted_wild_node(id,kind)
+    last_error="REV208_WILD_RECOVERY_REJECTED_AND_ROLLED_BACK_"+id
     return false
   original["next_regen_hour"]=int(row.get("next_regen_hour",-1))
   return true
@@ -180,7 +205,19 @@ func _birth(kind: String) -> String:
     else:
       spawn_stone_events+=1
     if not save_state():
-      last_error="REV208_NATURAL_BIRTH_APPEARED_BUT_SAVE_FAILED_"+id
+      # Atomicity invariant: no ecological or gatherable node may become
+      # player-visible until its unique ID and starting quantity survive
+      # a real disk write. Without rollback, Android force-close after
+      # gathering could reappear as new stock or orphaned harvest state.
+      var previous_save_error: String=last_error
+      _rollback_uncommitted_wild_node(id,kind)
+      if kind=="tree":
+        spawn_tree_events=maxi(0,spawn_tree_events-1)
+      else:
+        spawn_stone_events=maxi(0,spawn_stone_events-1)
+      last_error="REV208_NATURAL_BIRTH_NOT_PERSISTED_ROLLED_BACK_"+id+(
+        "_"+previous_save_error)
+      return ""
     return id
   return ""
 
