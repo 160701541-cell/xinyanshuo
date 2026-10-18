@@ -2248,6 +2248,21 @@ func _run() -> void:
     _fail(413,"REV208_WOOD_FIRE_WATER_NOT_THREE_REAL_DISTINCT_STEMS")
     return
   print("PASS_REV208_REAL_INDEPENDENT_MEDICINAL_HERB_STEMS_CC0_PERSISTED_IDS")
+  # Test all four physical plant life stages WITHOUT mutating a saved
+  # inventory row or inventing one herb unit. This is a visual-only FSM.
+  for spec in [
+      {"count":0,"stage":"dormant"},
+      {"count":1,"stage":"sprout"},
+      {"count":2,"stage":"budding"},
+      {"count":4,"stage":"bloom"}]:
+    var synthetic: Dictionary={"remaining":int(spec["count"]),"max":4}
+    if String(room.call("_rev208_medicinal_growth_state",synthetic))!=String(
+        spec["stage"]):
+      _fail(420,"REV208_REAL_HERBAL_PHENOLOGY_MISSING_TRUE_3D_LIFE_STAGE_"+
+        String(spec["stage"]))
+      return
+  print("PASS_REV208_HQ023_TRUE_3D_CC0_INDEPENDENT_HERBS_FOUR_VISUAL_LIFE_STATES_NO_INVENTORY_CHANGE")
+
   actor.position=Vector3(-11.4,float(terrain.call(
     "height_at",-11.4,-12.2)),-12.2)
   econ.citizens["CL-PLAYER-0184-0001"]["energy"]=100
@@ -2262,6 +2277,20 @@ func _run() -> void:
   if not bool(wild.call("conservation_ok")):
     _fail(349,"REV206_REAL_SPIRIT_ORE_HERB_FINITE_MATERIAL_DEBIT_FAILED")
     return
+  var touched_herb: Dictionary=plants["CL-LINGCAO-W-01"]
+  var real_wood: Node3D=touched_herb["model"]
+  var grounded_bounds: Vector2=room.call("_visible_bounds",real_wood)
+  var resource_ground: float=float(terrain.call("height_at",-11.4,-12.2))
+  if String(touched_herb.get("rev208_hq_growth_stage",""))!="budding" or (
+      not bool(real_wood.get_meta("rev208_hq_phenology_author_glb_preserved",false))) or (
+      not is_equal_approx(float(real_wood.get_meta(
+        "rev208_hq_true_3d_phenology_factor",1.0)),0.80)) or (
+      absf(grounded_bounds.x-resource_ground)>0.10) or (
+      String(real_wood.get_meta("world_entity_id",""))!="CL-LINGCAO-W-01") or (
+      not bool(wild.call("conservation_ok"))):
+    _fail(421,"REV208_GENUINE_WOOD_HERB_HARVEST_FAILS_BUDDING_3D_GROUNDED_AUTHOR_PBR_OR_ECONOMY_LEDGER")
+    return
+  print("PASS_REV208_REAL_SPIRIT_HERB_HARVEST_PHYSICAL_BUDDING_STAGE_PBR_MESH_ON_SOIL_AND_ZERO_FREE_STOCK")
   player.call("_open_game_menu","inventory")
   var sheet_scroll: ScrollContainer=game_hud.get_node_or_null(
     "Rev188CharacterInventoryCultivationMenu/Rev206RealScrollableCharacterSheet")
