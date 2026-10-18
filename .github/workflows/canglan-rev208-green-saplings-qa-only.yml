@@ -462,6 +462,7 @@ jobs:
           grep -Fq 'PASS_REV207_TRUE_MAIN_50000KM2_5000_ROOT_RATIO_BODY_CULTIVATION_5_SECTS_4_REAL_ORE_BEAST_GUARDS' qa-results/rev187-original-main-3d.log
           grep -Fq 'PASS_REV208_EXACTLY_ONCE_NAMED_NPC_CENSUS_POPULATION_DEBIT_SAVE_RELOAD_NO_REVIVAL' qa-results/rev187-original-main-3d.log
           grep -Fq 'PASS_REV208_TRUE_LICENSED_KENNEY_GREEN_SAPLING_NONBUILDING_BOUNDED_REAL_SOURCE_GLTF_GEOMETRY' qa-results/rev187-original-main-3d.log
+          grep -Fq 'PASS_REV208_HQ_P0_REAL_KENNEY_TOY_OAK_FOREGROUND_REMOVED_24M_DISTANT_LOD_200_LICENSED_MESHES_FOREGROUND_AUTHOR_PBR' qa-results/rev187-original-main-3d.log
           grep -Fq 'PASS_REV207_ACTUAL_12_LICENSED_3D_CULTIVATORS_HAVE_NAMED_SECTS_14_DISCIPLINES_AND_ROOTLESS_WORKER_BODY_PATH' qa-results/rev187-original-main-3d.log
           grep -Fq 'PASS_REV207_MOBILE_UNBLEACHED_SATURATED_PBR_NORMAL_MAPS_WORLDSPACE_64PIX_PER_METRE' qa-results/rev187-original-main-3d.log
           grep -Fq 'PASS_REV206_REAL_MAIN_HAS_PERSISTENT_LICENCED_MEDICINAL_PLANTS_ORE_AND_TOUCH_MINING' qa-results/rev187-original-main-3d.log
@@ -545,6 +546,7 @@ jobs:
           grep -Fq 'PASS_REV208_REAL_GODOT_CAMERA_CORPSE_FRAME_TRUE_MORTALITY_POPULATION_MINUS_ONE' qa-results/rev187-real-worksite/render.log
           grep -Fq 'PASS_REV208_THREE_REAL_GODOT441_ORIGINAL_MAIN_EVERGREEN_AND_FERN_ART_EVIDENCE_UNAPPROVED' qa-results/rev187-real-worksite/render.log
           grep -Fq 'PASS_REV208_REAL_GODOT441_ORIGINAL_APK176_HQ021_FERN_GRASS_PHYSICAL_3D_ECOLOGY_FRAME_PENDING_ART_QA' qa-results/rev187-real-worksite/render.log
+          grep -Fq 'PASS_REV208_HQ_P0_REAL_ORIGINAL_GODOT_FOREST_AUTHOR_PBR_MATURE_PINE_NO_24M_TOY_SAPLING_SCREENSHOT_UNAPPROVED_ART' qa-results/rev187-real-worksite/render.log
           for f in real_godot_rev208_mature_oak_8m_vs_avatar.png \
               real_godot_rev208_mature_maple_9m_vs_avatar.png \
               real_godot_rev208_mature_linden_8m_vs_avatar.png \
@@ -552,6 +554,7 @@ jobs:
               real_godot_rev208_hq_cypress_grove_actual_main.png \
               real_godot_rev208_hq_fern_understory_actual_main.png \
               real_godot_rev208_32m_vendor_fern_grass_actual_3d_floor_main.png \
+              real_godot_rev208_p0_actual_mature_pine_no_toy_foreground_pbr_understory.png \
               real_godot_rev208_npc_death_state.png; do
             test -s "qa-results/rev187-real-worksite/$f"
           done
@@ -605,6 +608,7 @@ jobs:
                       real_godot_rev208_hq_cypress_grove_actual_main.png \
                       real_godot_rev208_hq_fern_understory_actual_main.png \
               real_godot_rev208_32m_vendor_fern_grass_actual_3d_floor_main.png \
+              real_godot_rev208_p0_actual_mature_pine_no_toy_foreground_pbr_understory.png \
                       real_godot_rev208_npc_death_state.png \
                       real_apk176_rev206_spirit_herbs_original_quaternius.png \
                       real_apk176_rev207_vivid_cc0_texture_forest_wide.png; do
