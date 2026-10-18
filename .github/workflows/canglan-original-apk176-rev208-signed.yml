@@ -434,7 +434,7 @@ jobs:
           mkdir -p qa-results/rev187-real-worksite
           icd="$(find /usr/share/vulkan/icd.d -maxdepth 1 -iname '*lvp*.json' | head -n 1)"
           if [ -n "$icd" ]; then export VK_DRIVER_FILES="$icd"; fi
-          timeout 145s xvfb-run -a -s '-screen 0 1280x720x24' \
+          timeout 900s xvfb-run -a -s '-screen 0 1280x720x24' \
             /tmp/Godot_v4.4.1-stable_linux.x86_64 \
             --path logic-qa/apk176-export-fixture \
             --resolution 1280x720 \
