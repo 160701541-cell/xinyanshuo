@@ -287,6 +287,33 @@ func _capture() -> void:
   if not _save("real_godot_rev208_p0_actual_mature_pine_no_toy_foreground_pbr_understory.png"):
     _fail("REV208_HQ_MAIN_FOREGROUND_PBR_FOREST_NEW_TRUE_GODOT_SCREENSHOT_ABSENT")
     return
+  # Screenshot-metrics from actual original APK176 Godot4.4.1 framebuffer:
+  # the former P0 image measured mean green 220/255 across true walking
+  # soil, an obvious pastel/luminous artifact even with authored meshes.
+  # Require deeper credible emerald daylight, but reject black fake fixes.
+  var actual_terrain_frame: Image=get_root().get_texture().get_image()
+  var actual_green_samples: int=0
+  var actual_green_sum: float=0.0
+  for terrain_yy in range(330,540,12):
+    for terrain_xx in range(320,790,12):
+      var terrain_pixel: Color=actual_terrain_frame.get_pixel(
+        terrain_xx,terrain_yy)
+      if terrain_pixel.g>terrain_pixel.r*1.20 and (
+          terrain_pixel.g>terrain_pixel.b*1.05) and (
+          terrain_pixel.r>0.10):
+        actual_green_samples+=1
+        actual_green_sum+=terrain_pixel.g
+  var mean_ground_green: float=actual_green_sum/maxf(
+    1.0,float(actual_green_samples))
+  print("REV208_REAL_GODOT_MAIN_EMERALD_FOREST_GROUND_GREEN_MEAN_255=",
+    mean_ground_green*255.0,"_green_samples=",actual_green_samples)
+  if actual_green_samples<80 or (
+      mean_ground_green>0.80 or mean_ground_green<0.28):
+    _fail("REV208_REAL_GODOT_P0_SOIL_REMAINS_WASHED_NEON_OR_TOO_DARK_"+
+      str({"mean_g":mean_ground_green*255.0,
+      "green_pixels":actual_green_samples}))
+    return
+  print("PASS_REV208_REAL_ORIGINAL_GODOT441_NATURAL_FOREST_GROUND_EMERALD_NONWASHOUT_RGB_FRAME_PENDING_FULL_P0")
   print("PASS_REV208_HQ_P0_REAL_ORIGINAL_GODOT_FOREST_AUTHOR_PBR_MATURE_PINE_NO_24M_TOY_SAPLING_SCREENSHOT_UNAPPROVED_ART")
   opening_actor.position=opening_actor_pos
   room.get("sim").hour=qa_old_hour
