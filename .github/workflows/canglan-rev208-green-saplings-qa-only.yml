@@ -607,8 +607,8 @@ jobs:
                       real_godot_rev208_hq_pine_forest_actual_main.png \
                       real_godot_rev208_hq_cypress_grove_actual_main.png \
                       real_godot_rev208_hq_fern_understory_actual_main.png \
-              real_godot_rev208_32m_vendor_fern_grass_actual_3d_floor_main.png \
-              real_godot_rev208_p0_actual_mature_pine_no_toy_foreground_pbr_understory.png \
+                      real_godot_rev208_32m_vendor_fern_grass_actual_3d_floor_main.png \
+                      real_godot_rev208_p0_actual_mature_pine_no_toy_foreground_pbr_understory.png \
                       real_godot_rev208_npc_death_state.png \
                       real_apk176_rev206_spirit_herbs_original_quaternius.png \
                       real_apk176_rev207_vivid_cc0_texture_forest_wide.png; do
