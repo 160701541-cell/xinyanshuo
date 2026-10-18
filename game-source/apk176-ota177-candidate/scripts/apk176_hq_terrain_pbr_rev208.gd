@@ -445,7 +445,10 @@ func _load_gltf_runtime(path: String) -> Node3D:
     return null
   var doc: GLTFDocument = GLTFDocument.new()
   var state: GLTFState = GLTFState.new()
-  if doc.append_from_buffer(binary, path.get_base_dir(), state) != OK:
+  # 注意：GLTFDocument 自己会对 base_path 再取一次目录，所以这里必须传
+  # “gltf 文件本身”的路径；传 get_base_dir() 会把外部 .bin 解析到上一级，
+  # 真实 Godot 4.4.1 实测报 "Binary file not found"。
+  if doc.append_from_buffer(binary, path, state) != OK:
     return null
   var scene: Node3D = doc.generate_scene(state)
   return scene
