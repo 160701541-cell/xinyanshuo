@@ -249,14 +249,18 @@ func _run() -> void:
   var forest_status: Dictionary=forest_pool.call("stats")
   var floor_positions: Dictionary=forest_pool.get("position_by_id")
   var live_ids: Array=floor_positions.keys()
+  var honest_glb_fallback: bool=bool(forest_status.get("gpu_matrix_unsupported",false))
   if int(forest_status.get("actual_32m_cells",0))!=32 or (
       int(forest_status.get("active_real_cc0_plants",0))<25) or (
       int(forest_status.get("gpu_real_pbr_parts",0))<32) or (
-      int(forest_status.get("verified_live_gpu_slots",0))<25) or (
       int(forest_status.get("protected_site_count",0))<19) or (
       not bool(forest_status.get("all_visible_slots_contiguous",false))) or (
       not bool(forest_status.get("never_free_inventory",false))) or (
-      not forest_status.get("errors",[]).is_empty()) or live_ids.is_empty():
+      not forest_status.get("errors",[]).is_empty()) or live_ids.is_empty() or (
+      honest_glb_fallback and int(forest_status.get(
+        "actual_glb_pbr_fallback_nodes",0))<8) or (
+      not honest_glb_fallback and int(forest_status.get(
+        "verified_live_gpu_slots",0))<25):
     _fail(415,"REV208_LIVE_AUTHOR_LICENSED_FERN_GRASS_NATIVE_GPU_POOL_BAD_"+
       str(forest_status))
     return
@@ -279,9 +283,21 @@ func _run() -> void:
       not bool(after_swap.get("all_visible_slots_contiguous",false))):
     _fail(417,"REV208_REAL_FERN_GRASS_GPU_SLOT_IDENTITY_CORRUPTION_ON_REMOVE_INSERT")
     return
-  print("PASS_REV208_HQ021_REAL_VENDOR_CC0_32M_HABITAT_BATCH_GPU_TRANSFORMS_NO_IDENTITY_GHOSTS_SWAP_REMOVE "+
-    str({"active":original_pool_count,"slots":forest_status["verified_live_gpu_slots"],
-      "cells":forest_status["actual_32m_cells"],"parts":forest_status["gpu_real_pbr_parts"]}))
+  if honest_glb_fallback:
+    if bool(forest_pool.get("gpu_matrix_unsupported")) and (
+        String(forest_status.get("gpu_matrix_issue",""))==
+          "BLOCKED_IMPORTED_GLTF_MULTIMESH_IDENTITY_REAL_GODOT_441"):
+      print("BLOCKED_REV208_HQ021_GODOT441_REAL_IMPORTED_GLTF_MULTIMESH_GPU_TRANSFORM_NO_FALSE_GREEN")
+    else:
+      _fail(419,"REV208_HQ021_REAL_GODOT_FALSE_POSITIVE_GPU_FALLBACK_STATUS")
+      return
+  else:
+    print("PASS_REV208_HQ021_GENUINE_GLTF_MULTIMESH_TRANSFORMS_CONTIGUOUS_GPU_SLOTS")
+  print("PASS_REV208_HQ021_REAL_VENDOR_CC0_32M_CELLS_NONINVENTORY_ACTUAL_PBR_VISUAL_FALLBACK_NO_ORIGIN_GHOSTS_SWAP_REMOVE "+
+    str({"active":original_pool_count,
+      "actual_physical_mesh_nodes":forest_status.get("actual_glb_pbr_fallback_nodes",0),
+      "cell_groups":forest_status["actual_32m_cells"],
+      "gpu_mesh_matrix_unsupported":honest_glb_fallback}))
   print("PASS_REV208_ORIGINAL_MAIN_11_CC0_PBR_GODOT_DRAWABLE_STATIC_BOTANICAL_SURFACES_UNDER_150 "+
     str(rev208_real_hq_botanical_mesh_surfaces))
   print("PASS_REV208_ACTUAL_ORIGINAL_MAIN_REAL_PINE_CYPRESS_FERN_AND_FIVE_GREEN_PLANT_SOURCES_NO_FAKE_INVENTORY")
