@@ -1178,8 +1178,8 @@ func _run() -> void:
           drawn.visibility_range_begin>24.01) or (
           drawn.visibility_range_end<91.99) or (
           drawn.visibility_range_end>92.01) or (
-          String(drawn.get_meta("rev208_distance_only_old_kenney_lod",""))!="True"
-          and not bool(drawn.get_meta("rev208_distance_only_old_kenney_lod",false))):
+          not bool(drawn.get_meta(
+            "rev208_distance_only_old_kenney_lod",false))):
         _fail(452,"REV208_200_LOW_POLY_TOY_TREES_STILL_RENDER_ON_FACE_"+String(
           visual.name))
         return
