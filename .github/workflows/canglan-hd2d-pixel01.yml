@@ -1,0 +1,26 @@
+name: Canglan HD2D pixel artgen 01
+on:
+  push:
+    branches: [agent/dsh-p0-xianxia-ecology]
+    paths:
+      - '.github/workflows/canglan-hd2d-pixel01.yml'
+      - 'tools/asset_factory/hd2d_pixel01.mjs'
+  workflow_dispatch:
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Generate
+        env:
+          SILICONFLOW_API_KEY: ${{ secrets.SILICONFLOW_API_KEY }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: node tools/asset_factory/hd2d_pixel01.mjs game-source/apk176-ota177-candidate/hd2d/artgen-pixel01
+      - uses: actions/upload-artifact@v4
+        with:
+          name: hd2d-artgen-pixel01
+          path: game-source/apk176-ota177-candidate/hd2d/artgen-pixel01
+          if-no-files-found: error
