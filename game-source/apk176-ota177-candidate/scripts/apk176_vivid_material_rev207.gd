@@ -141,7 +141,10 @@ func material_for_real_terrain(role: String,base_color: Color,
   # 自定义两级 shader 在真实 Vulkan 帧里把地形画成均匀青色（run 39109440674），
   # 在能本地出图前保持关闭；改用引擎原生 StandardMaterial3D 三平面方案。
   const HQ_GROUND_SHADER_ENABLED: bool = false
-  if role=="natural_ground" and hq_ecology!=null:
+  # 原生三平面也先关：CI run 39111379602 里地面仍是大片青色（REV191 审计
+  # ratio 0.771），必须先证明“换不换材质都不影响青色”才能判断根因。
+  const HQ_GROUND_NATIVE_ENABLED: bool = false
+  if role=="natural_ground" and hq_ecology!=null and HQ_GROUND_NATIVE_ENABLED:
     var native_ground: StandardMaterial3D=hq_ecology.call(
       "build_ground_standard_material",vertex_biome) as StandardMaterial3D
     if native_ground!=null:
