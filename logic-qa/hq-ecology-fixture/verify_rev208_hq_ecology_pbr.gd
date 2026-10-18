@@ -321,17 +321,30 @@ func _initialize() -> void:
     vivid.call("initialize")
     _ok(String(vivid.get("hq_ecology_status")) == "LOADED",
       "vivid_material did not load HQ ecology module (status=%s)" % String(vivid.get("hq_ecology_status")))
-    var real_ground: ShaderMaterial = vivid.call("material_for_real_terrain",
+    var real_ground: Material = vivid.call("material_for_real_terrain",
       "natural_ground", Color(0.3, 0.55, 0.32), true)
     _ok(real_ground != null, "material_for_real_terrain(natural_ground) returned null")
     if real_ground != null:
-      # 两级 PBR 地表 shader 在真实渲染里输出青色（CI run 39109440674 的
-      # real_godot_rev208_* 帧 + REV191 地面审计 ratio 0.777），因此默认关闭。
-      # 这里必须断言“默认没启用”，防止把坏材质悄悄放回游戏。
-      _ok(not String(real_ground.resource_name).contains("HQ_TwoScale"),
-        "HQ terrain shader must stay disabled until it renders correctly: "
-        + String(real_ground.resource_name))
-      print("  ground material is the safe vivid fallback: ", real_ground.resource_name)
+      # 自定义两级 shader 在真实 Vulkan 帧里把地形画成青色，保持关闭；
+      # 现在交给引擎原生 StandardMaterial3D 世界空间三平面。
+      _ok(not (real_ground is ShaderMaterial) or
+          not String(real_ground.resource_name).contains("HQ_TwoScale"),
+        "broken HQ custom terrain shader must stay disabled")
+      _ok(real_ground is StandardMaterial3D,
+        "natural_ground should be the native triplanar material, got " + String(real_ground.resource_name))
+      if real_ground is StandardMaterial3D:
+        var std: StandardMaterial3D = real_ground as StandardMaterial3D
+        _ok(std.albedo_texture != null, "native ground missing real albedo texture")
+        _ok(std.normal_enabled and std.normal_texture != null, "native ground missing normal map")
+        _ok(std.uv1_triplanar and std.uv1_world_triplanar, "native ground must be world triplanar (terrain has no UV)")
+        _ok(std.roughness_texture != null and
+            std.roughness_texture_channel == BaseMaterial3D.TEXTURE_CHANNEL_GREEN,
+          "native ground roughness must read ORM green")
+        _ok(std.ao_texture != null and std.ao_texture_channel == BaseMaterial3D.TEXTURE_CHANNEL_RED,
+          "native ground AO must read ORM red")
+        _ok(std.albedo_texture.get_width() == 1024, "ground albedo is not the 1K scanned source")
+        print("  native triplanar ground OK: ", std.resource_name,
+          " tiles/m=", std.uv1_scale.x)
     # 非自然地面角色必须保持旧 Vivid 方案，不能被误替换。
     var soil: ShaderMaterial = vivid.call("material_for_real_terrain",
       "soil", Color(0.4, 0.3, 0.2), false)

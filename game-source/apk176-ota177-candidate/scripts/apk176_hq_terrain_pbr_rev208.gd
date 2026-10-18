@@ -452,3 +452,53 @@ func _load_gltf_runtime(path: String) -> Node3D:
     return null
   var scene: Node3D = doc.generate_scene(state)
   return scene
+
+## 稳健版两级地表：用 Godot 原生 StandardMaterial3D + 世界空间三平面贴图。
+## 为什么不用自定义 shader：CI run 39109440674 的真实帧里，自定义 shader 把
+## 整片地形画成均匀青色（既有 REV191 地面审计 ratio 0.777 FAIL），而同一帧里
+## 建筑/树/岩石用 StandardMaterial3D 全部正常。所以先用**引擎原生管线**落地
+## 真实 CC0 扫描材质，等能本地出图再谈自定义两级混合。
+func build_ground_standard_material(vertex_biome: bool = true) -> StandardMaterial3D:
+  if loaded_sets < 1:
+    initialize()
+  var slug: String = "forest_floor"
+  if not textures.has(slug):
+    missing_files.append(DIRECTORY + "/" + slug)
+    return null
+  var set: Dictionary = textures[slug]
+  if set["albedo"] == null or set["normal"] == null or set["orm"] == null:
+    return null
+  var material := StandardMaterial3D.new()
+  material.resource_name = "HQ_RealCC0_Triplanar_ForestFloor_REV208"
+  material.albedo_texture = set["albedo"]
+  material.albedo_color = Color(1.0, 1.0, 1.0, 1.0)
+  # 世界空间三平面：地形没有可用 UV，也不需要为了贴图重建 UV。
+  material.uv1_triplanar = true
+  material.uv1_world_triplanar = true
+  var tiles: float = 1.0 / float(MACRO_METRES["forest_floor"])  # 6m 一张
+  material.uv1_scale = Vector3(tiles, tiles, tiles)
+  material.normal_enabled = true
+  material.normal_texture = set["normal"]
+  material.normal_scale = 1.0
+  # Poly Haven arm：R=AO / G=Roughness / B=Metallic —— 逐通道显式指定
+  material.roughness_texture = set["orm"]
+  material.roughness_texture_channel = BaseMaterial3D.TEXTURE_CHANNEL_GREEN
+  material.ao_enabled = true
+  material.ao_texture = set["orm"]
+  material.ao_texture_channel = BaseMaterial3D.TEXTURE_CHANNEL_RED
+  material.roughness = 0.92
+  # 顶点 biome 色保留世界分区，但只作为颜色调制，不替代真实纹理。
+  material.vertex_color_use_as_albedo = vertex_biome
+  material.texture_filter = BaseMaterial3D.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS_ANISOTROPIC
+  material.texture_repeat = true
+  last_build_report = {
+    "material": material.resource_name,
+    "pipeline": "engine_native_StandardMaterial3D_triplanar",
+    "albedo": "forest_floor_1k.jpg",
+    "normal": "forest_floor_normal_1k.jpg",
+    "orm_channel_R": "ambient_occlusion",
+    "orm_channel_G": "roughness",
+    "triplanar_world": true,
+    "tiles_per_metre": tiles,
+    "real_cc0_pbr_sets_loaded": loaded_sets}
+  return material

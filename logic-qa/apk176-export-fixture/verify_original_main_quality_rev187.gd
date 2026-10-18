@@ -800,7 +800,19 @@ func _run() -> void:
       "albedo":source_materials,"normals":normal_mapped,"small_pixel_sampling":texture_sampling}))
     return
   var live_mat: Material=(terrain.get("world_materials") as Dictionary).get("natural_ground",null)
-  if not (live_mat is ShaderMaterial) or (terrain.get("collision") as CollisionShape3D).shape==null:
+  # 地球表面材质只有两种合法形态：
+  #  A) rev207 的 WorldSpace ShaderMaterial（程序微纹理 64 texel/m）；
+  #  B) rev208 的真实 CC0 扫描 PBR：StandardMaterial3D + 1024² albedo/normal/
+  #     ORM 三平面。后者不是降级，要求更严（必须是真图，不是程序噪点）。
+  var ground_is_vivid_shader: bool=(live_mat is ShaderMaterial)
+  var ground_is_real_cc0_pbr: bool=false
+  if live_mat is StandardMaterial3D:
+    var gm: StandardMaterial3D=live_mat as StandardMaterial3D
+    ground_is_real_cc0_pbr=(gm.albedo_texture!=null and gm.albedo_texture.get_width()>=512
+      and gm.normal_enabled and gm.normal_texture!=null
+      and gm.roughness_texture!=null and gm.uv1_triplanar)
+  if not (ground_is_vivid_shader or ground_is_real_cc0_pbr) or (
+      terrain.get("collision") as CollisionShape3D).shape==null:
     _fail(337,"REV207_MICRO_TEXELS_MUST_STAY_ON_PHYSICAL_DIGGABLE_TERRAIN_WITH_COLLISION")
     return
   print("PASS_REV207_MOBILE_UNBLEACHED_SATURATED_PBR_NORMAL_MAPS_WORLDSPACE_64PIX_PER_METRE")
