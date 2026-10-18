@@ -86,6 +86,98 @@ func _assert_rendered_character_pixels(label: String) -> bool:
     return false
   return true
 
+func _diag_region_mean(img: Image) -> Array:
+  var acc:=Vector3.ZERO
+  var total:=0
+  if img==null or img.is_empty() or img.get_width()<900:
+    return [0.0,0.0,0.0,0]
+  var w:=float(img.get_width())/1280.0
+  var h:=float(img.get_height())/720.0
+  for yi in range(500,700,10):
+    for xi in range(200,1000,10):
+      var c: Color=img.get_pixel(roundi(float(xi)*w),roundi(float(yi)*h))
+      acc+=Vector3(c.r,c.g,c.b)
+      total+=1
+  if total<=0:
+    return [0.0,0.0,0.0,0]
+  return [acc.x/total,acc.y/total,acc.z/total,total]
+
+## REV208 根因探针：地表整片变天空色。这里不猜材质，直接问引擎。
+## A) 强制品红无光照，看几何是否真的能画出来；
+## B) 把 HQ 地面 MeshInstance3D 整体隐藏，看这一帧到底变不变。
+func _diagnose_ground_once() -> void:
+  var out: String=OS.get_environment(OUT_ENV)
+  if out.is_empty():
+    return
+  var img: Image=get_root().get_texture().get_image()
+  if img!=null and not img.is_empty():
+    img.save_png(out.path_join("diag_rev208_worksite_as_is.png"))
+    print("DIAG_AS_IS_REGION_MEAN ",_diag_region_mean(img))
+  var targets: Array=[]
+  for node in room.find_children("*","MeshInstance3D",true,false):
+    var mi: MeshInstance3D=node as MeshInstance3D
+    if mi.mesh==null:
+      continue
+    var found:=false
+    for s in range(mi.mesh.get_surface_count()):
+      var mat: Material=mi.get_active_material(s)
+      var label: String=""
+      if mat!=null:
+        label=String(mat.resource_name)
+        if label.is_empty():
+          label=str(mat)
+      if label.contains("HQ_TwoScale"):
+        found=true
+        print("DIAG_HQ_SURFACE mesh=",String(mi.get_path())," surface=",s,
+          " surfaces=",mi.mesh.get_surface_count()," visible=",mi.visible,
+          " in_tree=",mi.is_visible_in_tree()," layers=",mi.layers,
+          " aabb=",mi.mesh.get_aabb()," origin=",mi.global_transform.origin,
+          " mat=",label)
+        break
+    if found:
+      targets.append(mi)
+  print("DIAG_HQ_MESH_COUNT ",targets.size())
+  var space: PhysicsDirectSpaceState3D=room.get_world_3d().direct_space_state
+  for probe in [Vector2(640,620),Vector2(640,560),Vector2(480,600)]:
+    var o: Vector3=camera.project_ray_origin(probe)
+    var dir: Vector3=camera.project_ray_normal(probe)
+    var q: PhysicsRayQueryParameters3D=PhysicsRayQueryParameters3D.create(o,o+dir*80.0)
+    var res: Dictionary=space.intersect_ray(q)
+    if res.is_empty():
+      print("DIAG_RAY ",probe," hit=false")
+    else:
+      var col: Node=res.get("collider") as Node
+      print("DIAG_RAY ",probe," hit=true collider=",String(col.get_path()),
+        " point=",res.get("position")," normal=",res.get("normal"))
+  var pink:=StandardMaterial3D.new()
+  pink.albedo_color=Color(1.0,0.0,1.0)
+  pink.shading_mode=BaseMaterial3D.SHADING_MODE_UNSHADED
+  pink.cull_mode=BaseMaterial3D.CULL_DISABLED
+  for mi in targets:
+    (mi as MeshInstance3D).material_override=pink
+  for i in range(5):
+    await process_frame
+  await RenderingServer.frame_post_draw
+  var pink_img: Image=get_root().get_texture().get_image()
+  if pink_img!=null and not pink_img.is_empty():
+    pink_img.save_png(out.path_join("diag_rev208_worksite_pink.png"))
+    print("DIAG_PINK_REGION_MEAN ",_diag_region_mean(pink_img))
+  for mi in targets:
+    (mi as MeshInstance3D).material_override=null
+    (mi as MeshInstance3D).visible=false
+  for i in range(5):
+    await process_frame
+  await RenderingServer.frame_post_draw
+  var hidden_img: Image=get_root().get_texture().get_image()
+  if hidden_img!=null and not hidden_img.is_empty():
+    hidden_img.save_png(out.path_join("diag_rev208_worksite_hidden.png"))
+    print("DIAG_HIDDEN_REGION_MEAN ",_diag_region_mean(hidden_img))
+  for mi in targets:
+    (mi as MeshInstance3D).visible=true
+  for i in range(5):
+    await process_frame
+  await RenderingServer.frame_post_draw
+
 func _capture() -> void:
   var out: String=OS.get_environment(OUT_ENV)
   var pack: String=OS.get_environment(PACK_ENV)
@@ -333,6 +425,7 @@ func _capture() -> void:
   for i in range(6):
     await process_frame
   await RenderingServer.frame_post_draw
+  await _diagnose_ground_once()
   if not _audit_visible_ground():
     _fail("REV191_REAL_PHYSICAL_SOIL_IS_INVISIBLE_OR_BLUE_SKY_VOID")
     return
