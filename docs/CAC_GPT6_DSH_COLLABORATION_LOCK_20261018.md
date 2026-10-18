@@ -20,3 +20,11 @@
 ## GPT-6 本轮独立小项目
 - **QA-RESOURCE-001**：`game-source/apk176-ota177-candidate/scripts/apk176_wild_tree_stone_birth_rev208.gd` 中自然生成后的原子保存一旦失败，当前 `_birth` 仍把未持久化的新树/石节点返回为“成功出生”，并留下经济/生态注册，造成手机重启后世界资源ID缺失及潜在反复采集；修复为**失败时完整事务回滚**。只动这一个非美术/非UI底层文件，辅以隔离QA；不接触DeepSeek的模型/UI项目。
 - 改动暂存在 `gpt6/fix-rev208-world-resource-save-20261018`，如无实际Godot QA日志只标待验收，不能直接合并。
+
+## 2026-10-18 15:48 独立BUG增量与QA实况
+- 先核实最新 PR #14 HEAD `4c4c8c9f0b0b`、DSH `agent/dsh-p0-xianxia-ecology` HEAD `f5e41268e29e`，DSH 的CC0地表PBR与植物素材、UI文件不修改；仅在本分支写入自然资源存档模块及隔离测试。
+- `6271098e541a`：野生树/石创建或生态恢复配置失败时清理临时经济ID、坐标、生态记录，不把未成功保存的资源节点当成已生成。
+- `caefb471a1cc`：新增 **QA-RESOURCE-002**：采集后`save_state()`在磁盘提交失败时，旧代码已提前改写`records[*].remaining`，下次`save_if_authoritative_amount_changed()`会误认为已落盘而跳过重试。现以独立快照写入，只有原子重命名成功才更新内存已保存基线，防止重启后旧资源量恢复。
+- `566e5231a346`与`4af0b384ade0`：隔离Godot测试增加未落盘新生资源回滚、配置失败清理、240世界小时两树一石生成、采集保存/重启读回、仓库不免费增加、**采集写盘失败后再次重试**等断言。
+- **QA实际状态：未通过/待运行**。本次环境没有Godot 4.4.1可执行文件；尝试创建独立Actions QA工作流被工具安全检查拒绝，独立Draft PR创建也被拒绝。不能以源码或原PR旧绿灯冒充新QA通过。此前原APK176 Main CI `39103865723` SUCCESS只验证了旧候选HEAD `1b003d4621`，**不包含这两个修复**。
+- 未合并、未RSA签名、未修改main/正式OTA；后续必须实际执行Godot4.4.1独立测试与原Main/PCK QA，审计日志和完整Android真机验收前禁止发布。
