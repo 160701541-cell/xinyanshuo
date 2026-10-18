@@ -22,6 +22,12 @@ var rejected_sites: int=0
 var initialized: bool=false
 var _missing_source: Array[String]=[]
 var protected_world_sites: Array[Dictionary]=[]
+var real_source_templates: Dictionary={}
+var physical_fallback_visuals: Dictionary={}
+var gpu_matrix_unsupported: bool=false
+var last_camera_player: Vector3=Vector3.ZERO
+var last_quality: String="高档"
+var fallback_gpu_probe_result: String=""
 
 func _local_from_source(original: Node3D,child: Node3D) -> Transform3D:
   var result:=Transform3D.IDENTITY
@@ -95,12 +101,26 @@ func initialize(original_world: Node3D,terrain: Node3D,
     for part in real_parts:
       source_faces_per_instance[kind]+=int(part["surfaces"])
     definitions[kind]={"parts":real_parts,"ground_offset":_low_y(real_parts)}
+    real_source_templates[kind]=original
   _world.add_child(self)
   for cx in range(CELL_GRID_MIN,CELL_GRID_MAX+1):
     for cz in range(CELL_GRID_MIN,CELL_GRID_MAX+1):
       for kind in SOURCE_SPECIES:
         _create_cell(cx,cz,kind,definitions[kind])
   initialized=true
+  # Godot4.4.1 original APK176 QA 39080924183 / 39081138496:
+  # imported glTF MultiMesh readback was IDENTITY for all physical slots,
+  # including hidden slots. Never show phantom plants at world (0,0,0).
+  gpu_matrix_unsupported=not _gpu_transform_probe()
+  if gpu_matrix_unsupported:
+    fallback_gpu_probe_result="BLOCKED_IMPORTED_GLTF_MULTIMESH_IDENTITY_REAL_GODOT_441"
+    for habitat in cells.values():
+      for part in habitat["parts"]:
+        var batch: MultiMeshInstance3D=part["draw"]
+        batch.visible=false
+        batch.multimesh.visible_instance_count=0
+    set_meta("hq021_gpu_source_transform_status",fallback_gpu_probe_result)
+    print("REV208_HQ021_GPU_SOURCE_TRANSFORM_BLOCKED_CPU_REAL_GLTF_VISUAL_FALLBACK")
   return true
 
 func _create_cell(cx: int,cz: int,kind: String,definition: Dictionary) -> void:
@@ -209,7 +229,7 @@ func _add_slot(cell: Dictionary,id: String) -> void:
   _write_slot(cell,id,slot)
   for part in cell["parts"]:
     var mm: MultiMesh=(part["draw"] as MultiMeshInstance3D).multimesh
-    mm.visible_instance_count=slots.size()
+    mm.visible_instance_count=0 if gpu_matrix_unsupported else slots.size()
 
 func _remove_slot(cell: Dictionary,id: String) -> void:
   if not cell["slot_by_id"].has(id):
@@ -227,7 +247,7 @@ func _remove_slot(cell: Dictionary,id: String) -> void:
   for part in cell["parts"]:
     var mm: MultiMesh=(part["draw"] as MultiMeshInstance3D).multimesh
     mm.set_instance_transform(last_slot,NO_SLOT)
-    mm.visible_instance_count=slots.size()
+    mm.visible_instance_count=0 if gpu_matrix_unsupported else slots.size()
 
 func on_terrain_changed(at: Vector3,radius: float) -> void:
   if not initialized:
@@ -244,8 +264,15 @@ func on_terrain_changed(at: Vector3,radius: float) -> void:
           _add_slot(cell,id)
       else:
         _remove_slot(cell,id)
+  if gpu_matrix_unsupported:
+    _sync_fallback_physical_glbs(last_camera_player,last_quality)
 
 func sync_visibility(player: Vector3,quality_name: String) -> void:
+  last_camera_player=player
+  last_quality=quality_name
+  if gpu_matrix_unsupported:
+    _sync_fallback_physical_glbs(player,quality_name)
+    return
   var distance: float=65.0 if quality_name=="极致画质" else (
     45.0 if quality_name=="高档" else 31.0)
   for cell in cells.values():
@@ -255,12 +282,78 @@ func sync_visibility(player: Vector3,quality_name: String) -> void:
     for part in cell["parts"]:
       (part["draw"] as MultiMeshInstance3D).visible=near
 
+func _gpu_transform_probe() -> bool:
+  var samples: int=0
+  for cell in cells.values():
+    if (cell["active_ids"] as Array).is_empty():
+      continue
+    var first: String=String(cell["active_ids"][0])
+    var expect: Transform3D=_placement(first)
+    for part in cell["parts"]:
+      var batch: MultiMeshInstance3D=part["draw"]
+      var actual: Transform3D=batch.multimesh.get_instance_transform(0)
+      var wanted: Transform3D=expect*part["relative"]
+      if not actual.origin.is_finite() or (
+          actual.origin.distance_to(wanted.origin)>0.035) or (
+          absf(actual.basis.determinant())<0.0001):
+        return false
+      samples+=1
+      if samples>=4:
+        return true
+  return samples>=2
+
+func _sync_fallback_physical_glbs(player: Vector3,quality_name: String) -> void:
+  # Fallback is genuinely authored source GLB PBR with exact physical
+  # world transform. Never render the invalid MultiMesh IDENTITY buffer.
+  # Source models are imported once and shared as duplicated Mesh resources.
+  var view_radius: float=56.0 if quality_name=="极致画质" else (
+    38.0 if quality_name=="高档" else 25.0)
+  var cap: int=72 if quality_name=="极致画质" else (
+    42 if quality_name=="高档" else 23)
+  var candidates: Array[Dictionary]=[]
+  for cell in cells.values():
+    for id in cell["active_ids"]:
+      var spec: Dictionary=position_by_id[id]
+      var p: Vector3=spec["xz"]
+      var distance: float=Vector2(p.x-player.x,p.z-player.z).length()
+      if distance<=view_radius:
+        candidates.append({"id":String(id),"distance":distance})
+  candidates.sort_custom(func(a: Dictionary,b: Dictionary) -> bool:
+    return float(a["distance"])<float(b["distance"]))
+  var chosen: Dictionary={}
+  for i in range(mini(cap,candidates.size())):
+    var id: String=candidates[i]["id"]
+    chosen[id]=true
+    var transform: Transform3D=_placement(id)
+    if physical_fallback_visuals.has(id) and is_instance_valid(
+        physical_fallback_visuals[id]):
+      (physical_fallback_visuals[id] as Node3D).transform=transform
+      continue
+    var kind: String=String(species_by_id[id])
+    if not real_source_templates.has(kind):
+      continue
+    var actor: Node3D=(real_source_templates[kind] as Node3D).duplicate()
+    actor.name=id
+    actor.set_meta("source_license",LICENSE)
+    actor.set_meta("true_vendor_glb_3d_cell",String(position_by_id[id]["cell"]))
+    actor.set_meta("never_free_inventory",true)
+    actor.transform=transform
+    add_child(actor)
+    physical_fallback_visuals[id]=actor
+  for id in physical_fallback_visuals.keys():
+    if chosen.has(id):
+      continue
+    var unused: Node3D=physical_fallback_visuals[id]
+    if is_instance_valid(unused):
+      unused.queue_free()
+    physical_fallback_visuals.erase(id)
+
 func stats() -> Dictionary:
   var count: int=0
   var drawing: int=0
   var checked: int=0
   var real_surfaces: int=0
-  var error: Array[String]=[]
+  var errors: Array[String]=[]
   for key in cells:
     var cell: Dictionary=cells[key]
     var active: Array=cell["active_ids"]
@@ -270,31 +363,56 @@ func stats() -> Dictionary:
       var mm: MultiMesh=draw.multimesh
       drawing+=1
       real_surfaces+=mm.mesh.get_surface_count()
+      if gpu_matrix_unsupported:
+        # Fail closed: unsupported source Mesh->MultiMesh transforms may
+        # remain allocated but MUST NEVER DRAW at (0,0,0), even transiently.
+        if draw.visible or mm.visible_instance_count!=0:
+          errors.append("BROKEN_GLTF_GPU_BUFFER_WAS_RENDERED_"+String(key))
+        continue
       if mm.visible_instance_count!=active.size():
-        error.append("NOT_CONTIGUOUS_GPU_SLOT_COUNT_"+String(key))
+        errors.append("NOT_CONTIGUOUS_GPU_SLOT_COUNT_"+String(key))
       for index in range(active.size()):
         var id: String=String(active[index])
         if int(cell["slot_by_id"].get(id,-1))!=index:
-          error.append("WRONG_SWAP_REMOVE_SLOT_"+id)
+          errors.append("WRONG_SWAP_REMOVE_SLOT_"+id)
           continue
         var t: Transform3D=mm.get_instance_transform(index)
         var expected: Transform3D=_placement(id)*part["relative"]
         if not t.origin.is_finite() or (
             t.origin.distance_to(expected.origin)>0.035) or (
             absf(t.basis.determinant())<0.0001):
-          error.append("GHOST_GPU_TRANSFORM_OR_FLOATING_SOURCE_3D_"+id)
+          errors.append("GHOST_GPU_TRANSFORM_OR_FLOATING_SOURCE_3D_"+id)
         checked+=1
       for index in range(active.size(),int(cell["capacity"])):
         var dormant: Transform3D=mm.get_instance_transform(index)
         if dormant.origin.length()<1000.0:
-          error.append("INVISIBLE_GPU_SLOT_AT_WORLD_ORIGIN_"+String(key))
+          errors.append("INVISIBLE_GPU_SLOT_AT_WORLD_ORIGIN_"+String(key))
+  var genuine_fallback_mesh_count: int=0
+  if gpu_matrix_unsupported:
+    for id in physical_fallback_visuals:
+      var actor: Node3D=physical_fallback_visuals[id]
+      if not is_instance_valid(actor) or not actor.is_inside_tree() or (
+          actor.get_parent()!=self) or (
+          String(actor.get_meta("source_license",""))!=LICENSE) or (
+          String(actor.get_meta("true_vendor_glb_3d_cell",""))!=String(
+            position_by_id[id]["cell"])) or (
+          actor.position.distance_to(_placement(id).origin)>0.035) or (
+          actor.find_children("*","MeshInstance3D",true,false).is_empty()):
+        errors.append("FALLBACK_AUTHOR_REAL_PBR_MESH_NOT_PHYSICALLY_PLANTED_"+String(id))
+        continue
+      genuine_fallback_mesh_count+=1
   return {"actual_32m_cells":cells.size(),"active_real_cc0_plants":count,
     "gpu_real_pbr_parts":drawing,"source_mesh_surface_parts":real_surfaces,
     "verified_live_gpu_slots":checked,"rejected_sites":rejected_sites,
     "never_free_inventory":true,"source_license":LICENSE,
     "protected_site_count":protected_world_sites.size(),
-    "errors":error,"species":SOURCE_SPECIES.duplicate(),
-    "uses_swap_remove":true,"all_visible_slots_contiguous":error.is_empty()}
+    "errors":errors,"species":SOURCE_SPECIES.duplicate(),
+    "uses_swap_remove":true,"all_visible_slots_contiguous":errors.is_empty(),
+    "gpu_matrix_unsupported":gpu_matrix_unsupported,
+    "gpu_matrix_issue":fallback_gpu_probe_result,
+    "actual_glb_pbr_fallback_nodes":genuine_fallback_mesh_count,
+    "visually_draws_fake_gpu_instances":false if gpu_matrix_unsupported else null,
+    "pending_actual_android_30min_qa":true}
 
 func verify_swap_remove(actual_id: String) -> bool:
   # Test only: caller must restore identical ecological cover after audit.
