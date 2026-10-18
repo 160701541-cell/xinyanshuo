@@ -93,6 +93,39 @@ jobs:
             test -s "qa-stage/ota177/canglan_rev187/hq_ecology_groundcover/${slug}/${slug}.bin" \
               || { echo "BLOCKED: missing staged groundcover bin $slug"; exit 1; }
           done
+          # rev208 候选分支带来的真实高乔木/松柏/灵草被与生态脚本，
+          # 原 rev207 正式链没有这些 staging，必须一并装进原版 PCK 树，
+          # 否则 build_apk176_quality_rev187.gd 会 BLOCKED 而不是静默少资源。
+          mkdir -p qa-stage/ota177/canglan_rev187/hq_rev208
+          cp game-source/apk176-ota177-candidate/assets/hq-rev208/vegetation/trees/mature_*_hq_lod0.glb \
+            qa-stage/ota177/canglan_rev187/hq_rev208/
+          cp game-source/apk176-ota177-candidate/assets/hq-rev208/vegetation/botanical-optimized/hq_*_cc0_drawmerged.glb \
+            qa-stage/ota177/canglan_rev187/hq_rev208/
+          cp game-source/apk176-ota177-candidate/scripts/apk176_hq_forest_floor_pool_rev208.gd \
+            qa-stage/ota177/canglan_rev187/hq_forest_floor_pool_rev208.gd
+          cp game-source/apk176-ota177-candidate/scripts/apk176_wild_tree_stone_birth_rev208.gd \
+            qa-stage/ota177/canglan_rev187/wild_tree_stone_birth_rev208.gd
+          python3 - <<'PY'
+          from pathlib import Path
+          import json,hashlib
+          root=Path('game-source/apk176-ota177-candidate/assets/hq-rev208/vegetation')
+          dest=Path('qa-stage/ota177/canglan_rev187/hq_rev208')
+          trees=json.loads((root/'trees/manifest.json').read_text(encoding='utf-8'))
+          assert set(trees['items'])=={'oak','maple','linden'}
+          for kind,entry in trees['items'].items():
+            data=(root/'trees'/entry['file']).read_bytes()
+            staged=(dest/entry['file']).read_bytes()
+            assert data==staged and hashlib.sha256(data).hexdigest()==entry['converted_sha256']
+          rendered=json.loads((root/'botanical-optimized/manifest.json').read_text(encoding='utf-8'))
+          assert len(rendered['items'])==11
+          for kind,entry in rendered['items'].items():
+            merged=(root/'botanical-optimized'/entry['file']).read_bytes()
+            staged=(dest/entry['file']).read_bytes()
+            assert merged==staged and hashlib.sha256(merged).hexdigest()==entry['sha256']
+          print('PASS_REV208_THREE_MATURE_TREES_AND_11_BOTANICAL_SHA_STAGED_INTO_ORIGINAL_PCK')
+          PY
+          test -s qa-stage/ota177/canglan_rev187/hq_forest_floor_pool_rev208.gd
+          test -s qa-stage/ota177/canglan_rev187/wild_tree_stone_birth_rev208.gd
           node tools/asset_factory/rev208_ecology_polyhaven_intake.mjs --verify
           echo 'PASS_REV208_HQ_ECOLOGY_REAL_CC0_PBR_STAGED_WITH_SHA_INTO_ORIGINAL_PCK_TREE'
       - name: Recover exact-matching Terrain3D Linux QA plugin from trusted upstream releases
