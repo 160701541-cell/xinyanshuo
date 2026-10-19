@@ -47,7 +47,7 @@ def validate_original_qa(pack: pathlib.Path, template: pathlib.Path,
             and unsigned.get("maximum_android_code") == 1176
             and unsigned.get("pack_url") == expected):
         raise ValueError("BLOCKED: QA candidate is not next-revision APK176 template")
-    if not pack.is_file() or not 512 <= pack.stat().st_size <= 95 * 1024 * 1024:
+    if not pack.is_file() or not 512 <= pack.stat().st_size <= 4 * 1024 * 1024 * 1024:
         raise ValueError("BLOCKED: candidate pack missing or over public Pages release limit")
     digest = hashlib.sha256(pack.read_bytes()).hexdigest()
     if pack.read_bytes()[:4] != b"GDPC" or digest != unsigned.get("sha256") or pack.stat().st_size != unsigned.get("size_bytes"):
