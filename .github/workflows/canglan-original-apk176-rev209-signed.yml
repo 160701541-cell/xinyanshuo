@@ -388,7 +388,7 @@ jobs:
           need PASS_REV187_ANDROID_VERTICAL_DRAG_NOT_INVERTED_GOD_VIEW_AND_FREE_FLIGHT_RESET
           echo '--- LOG SIZE ---'; wc -l qa-results/rev187-original-main-3d.log || true
           echo '--- LOG ERRORS ---'; grep -nE 'ERROR|SCRIPT|Failed' qa-results/rev187-original-main-3d.log | head -12 || true
-          echo '--- LOG HEAD ---'; head -30 qa-results/rev187-original-main-3d.log || true
+          echo '--- FULL LOG ---'; cat qa-results/rev187-original-main-3d.log || true
           echo '--- PASS MARKERS PRESENT ---'
           grep -oE 'PASS_[A-Z0-9_]+' qa-results/rev187-original-main-3d.log | sort -u || true
           if [ -s /tmp/missing.txt ]; then cat /tmp/missing.txt; exit 1; fi
