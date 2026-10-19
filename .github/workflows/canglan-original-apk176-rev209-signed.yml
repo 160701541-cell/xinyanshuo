@@ -105,7 +105,6 @@ jobs:
             qa-stage/ota177/canglan_rev187/hq_forest_floor_pool_rev208.gd
           cp game-source/apk176-ota177-candidate/scripts/apk176_wild_tree_stone_birth_rev208.gd \
             qa-stage/ota177/canglan_rev187/wild_tree_stone_birth_rev208.gd
-          cp game-source/apk176-ota177-candidate/scripts/apk176_pine_forest_rev209.gd qa-stage/ota177/canglan_rev187/pine_forest.gd
           python3 - <<'PY'
           from pathlib import Path
           import json,hashlib
