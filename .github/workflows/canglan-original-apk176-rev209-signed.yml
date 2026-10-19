@@ -162,10 +162,10 @@ jobs:
           cp game-source/apk176-ota177-candidate/scripts/apk176_kenney_visual_palette_rev187.gd qa-stage/ota177/canglan_rev187/visual_palette.gd
           cp game-source/apk176-ota177-candidate/scripts/apk176_kenney_multimesh_rev187.gd qa-stage/ota177/canglan_rev187/kenney_multimesh.gd
           cp game-source/apk176-ota177-candidate/scripts/apk176_strata_terrain_rev187.gd qa-stage/ota177/canglan_rev187/strata_terrain.gd
-          cp game-source/apk176-ota177-candidate/scripts/apk176_vivid_material_rev209.gd qa-stage/ota177/canglan_rev187/vivid_material.gd
+          cp game-source/apk176-ota177-candidate/scripts/apk176_vivid_material_rev207.gd qa-stage/ota177/canglan_rev187/vivid_material.gd
           mkdir -p qa-stage/ota177/canglan_rev187/materials_rev209
-          cp game-source/apk176-ota177-candidate/materials/rev209/*.png qa-stage/ota177/canglan_rev187/materials_rev209/
-          cp game-source/apk176-ota177-candidate/materials/rev209/manifest.json qa-stage/ota177/canglan_rev187/materials_rev209/
+          cp game-source/apk176-ota177-candidate/materials/rev207/*.png qa-stage/ota177/canglan_rev187/materials_rev209/
+          cp game-source/apk176-ota177-candidate/materials/rev207/manifest.json qa-stage/ota177/canglan_rev187/materials_rev209/
           python3 - <<'PY'
           import hashlib,json
           from pathlib import Path
@@ -179,7 +179,7 @@ jobs:
           cp game-source/apk176-ota177-candidate/scripts/apk176_player_controller_rev187.gd qa-stage/ota177/canglan_rev187/player_controller.gd
           cp game-source/apk176-ota177-candidate/scripts/apk176_backpack_rev205.gd qa-stage/ota177/canglan_rev187/backpack.gd
           cp game-source/apk176-ota177-candidate/scripts/apk176_spirit_resources_rev206.gd qa-stage/ota177/canglan_rev187/spirit_resources.gd
-          cp game-source/apk176-ota177-candidate/scripts/apk176_living_regions_rev209.gd qa-stage/ota177/canglan_rev187/living_regions.gd
+          cp game-source/apk176-ota177-candidate/scripts/apk176_living_regions_rev207.gd qa-stage/ota177/canglan_rev187/living_regions.gd
           # ---- rev209：一次性并入 rev208 + rev209 全部内容 ----
           mkdir -p qa-stage/ota177/canglan_rev187/hq_ecology_terrain qa-stage/ota177/canglan_rev187/hq_rev208
           cp -r game-source/apk176-ota177-candidate/assets/hq-rev208/. qa-stage/ota177/canglan_rev187/hq_ecology_terrain/
