@@ -386,6 +386,8 @@ jobs:
           need PASS_REV187_LEFT_AND_RIGHT_WORLD_TOUCH_TO_ENTITY_INTERACTION_NO_JOYSTICK_CONFLICT
           need PASS_REV187_5_FPS_CAPS_3_GRAPHICS_FOLDING_PERF_NO_WARNING_OVERLAP_WARM_BLUE_SKY_CLOUDS_BLUISH_FOG_FAR_LAND_FIVE_LEAF_GRASS
           need PASS_REV187_ANDROID_VERTICAL_DRAG_NOT_INVERTED_GOD_VIEW_AND_FREE_FLIGHT_RESET
+          echo '--- PASS MARKERS PRESENT ---'
+          grep -oE 'PASS_[A-Z0-9_]+' qa-results/rev187-original-main-3d.log | sort -u || true
           if [ -s /tmp/missing.txt ]; then cat /tmp/missing.txt; exit 1; fi
           if grep -Eq 'SCRIPT ERROR:|Parse Error:|ERROR:|FAIL_APK176|Failed loading resource' qa-results/rev187-original-main-3d.log; then
             cat qa-results/rev187-original-main-3d.log; exit 1
