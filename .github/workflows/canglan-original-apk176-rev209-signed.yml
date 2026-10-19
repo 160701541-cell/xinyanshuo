@@ -198,6 +198,35 @@ jobs:
             https://github.com/godotengine/godot/releases/download/4.4.1-stable/Godot_v4.4.1-stable_linux.x86_64.zip -o /tmp/godot.zip
           unzip -q /tmp/godot.zip -d /tmp
           chmod +x /tmp/Godot_v4.4.1-stable_linux.x86_64
+      - name: Diet oversized CC0 textures so the signed pack fits the Pages limit
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m pip install --quiet --disable-pip-version-check pillow
+          python3 - <<'PYEOF'
+          import pathlib
+          from PIL import Image
+          root = pathlib.Path('game-source/apk176-ota177-candidate/assets/hq-rev208')
+          budget = 512 * 1024
+          saved = 0
+          for f in sorted(root.rglob('*')):
+              if f.suffix.lower() not in {'.png', '.jpg', '.jpeg'} or not f.is_file():
+                  continue
+              size = f.stat().st_size
+              if size <= budget:
+                  continue
+              im = Image.open(f)
+              w, h = im.size
+              if max(w, h) > 1024:
+                  im = im.resize((max(1, w // 2), max(1, h // 2)), Image.LANCZOS)
+              out = f.with_suffix('.jpg')
+              im.convert('RGB').save(out, 'JPEG', quality=88, optimize=True)
+              if out != f:
+                  f.unlink()
+              saved += size - out.stat().st_size
+              print('DIET', out.name, size, '->', out.stat().st_size)
+          print('DIET_TOTAL_SAVED_BYTES', saved)
+          PYEOF
       - name: Build original APK176 living world with real material economy and seven licensed GLBs
         env:
           CANGLAN_OTA_STAGE_DIR: ${{ github.workspace }}/qa-stage/ota177
