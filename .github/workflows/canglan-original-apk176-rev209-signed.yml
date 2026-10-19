@@ -183,7 +183,7 @@ jobs:
           # ---- rev209：一次性并入 rev208 + rev209 全部内容 ----
           mkdir -p qa-stage/ota177/canglan_rev187/hq_ecology_terrain qa-stage/ota177/canglan_rev187/hq_rev208
           cp -r game-source/apk176-ota177-candidate/assets/hq-rev208/. qa-stage/ota177/canglan_rev187/hq_ecology_terrain/
-          cp game-source/apk176-ota177-candidate/assets/hq-rev208/vegetation/botanical-optimized/*.glb qa-stage/ota177/canglan_rev187/hq_rev208/
+          find game-source/apk176-ota177-candidate/assets/hq-rev208/vegetation -name '*.glb' -exec cp {} qa-stage/ota177/canglan_rev187/hq_rev208/ \;
           cp game-source/apk176-ota177-candidate/scripts/apk176_hq_terrain_pbr_rev208.gd qa-stage/ota177/canglan_rev187/hq_terrain_pbr.gd
           cp game-source/apk176-ota177-candidate/scripts/apk176_hq_forest_floor_pool_rev208.gd qa-stage/ota177/canglan_rev187/hq_forest_floor_pool_rev208.gd
           cp game-source/apk176-ota177-candidate/scripts/apk176_wild_tree_stone_birth_rev208.gd qa-stage/ota177/canglan_rev187/wild_tree_stone_birth_rev208.gd
