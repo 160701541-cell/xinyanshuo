@@ -163,16 +163,16 @@ jobs:
           cp game-source/apk176-ota177-candidate/scripts/apk176_kenney_multimesh_rev187.gd qa-stage/ota177/canglan_rev187/kenney_multimesh.gd
           cp game-source/apk176-ota177-candidate/scripts/apk176_strata_terrain_rev187.gd qa-stage/ota177/canglan_rev187/strata_terrain.gd
           cp game-source/apk176-ota177-candidate/scripts/apk176_vivid_material_rev207.gd qa-stage/ota177/canglan_rev187/vivid_material.gd
-          mkdir -p qa-stage/ota177/canglan_rev187/materials_rev209
-          cp game-source/apk176-ota177-candidate/materials/rev207/*.png qa-stage/ota177/canglan_rev187/materials_rev209/
-          cp game-source/apk176-ota177-candidate/materials/rev207/manifest.json qa-stage/ota177/canglan_rev187/materials_rev209/
+          mkdir -p qa-stage/ota177/canglan_rev187/materials_rev207
+          cp game-source/apk176-ota177-candidate/materials/rev207/*.png qa-stage/ota177/canglan_rev187/materials_rev207/
+          cp game-source/apk176-ota177-candidate/materials/rev207/manifest.json qa-stage/ota177/canglan_rev187/materials_rev207/
           python3 - <<'PY'
           import hashlib,json
           from pathlib import Path
-          m=json.loads(Path('qa-stage/ota177/canglan_rev187/materials_rev209/manifest.json').read_text())
+          m=json.loads(Path('qa-stage/ota177/canglan_rev187/materials_rev207/manifest.json').read_text())
           assert m['schema']==207 and m['count']==9 and m['size']==512
           for item in m['maps']:
-            raw=(Path('qa-stage/ota177/canglan_rev187/materials_rev209')/item['file']).read_bytes()
+            raw=(Path('qa-stage/ota177/canglan_rev187/materials_rev207')/item['file']).read_bytes()
             assert hashlib.sha256(raw).hexdigest()==item['output_sha256']
           print('PASS_REV209_REAL_QUATERNIUS_NINE_FINE_PBR_MAPS_SOURCE_SHA256_IN_ORIGINAL_APK_STAGE')
           PY
