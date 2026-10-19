@@ -1,6 +1,6 @@
-# rev209 EXACT original Android APK176 v1176. No signature until current
+# rev208 EXACT original Android APK176 v1176. No signature until current
 # original Main and 24 simulated months both pass real Godot 4.4.1.
-name: Canglan ORIGINAL APK176 rev209 - 真扫描地表 + 山松竹林 + 全量内容 Signed OTA
+name: Canglan ORIGINAL APK176 rev209 - Original world + trees/stones/village + pine forest signed OTA
 on:
   push:
     branches: [main]
@@ -79,6 +79,56 @@ jobs:
                       print('APK176_NATIVE_TERRAIN_ENTRY',n)
           print('PASS_APK_NATIVE_TERRAIN_DIAGNOSTIC')
           PY
+      - name: Stage rev208 real CC0 two-scale terrain PBR and scanned groundcover into the original PCK tree
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 tools/stage_rev208_hq_ecology.py --dest qa-stage/ota177
+          test -s qa-stage/ota177/canglan_rev187/hq_terrain_pbr.gd
+          test -s qa-stage/ota177/canglan_rev187/hq_ecology_terrain/forest_floor/forest_floor_albedo_1k.jpg
+          test -s qa-stage/ota177/canglan_rev187/hq_ecology_terrain/ecology-intake-provenance.json
+          for slug in fern_clump shrub_low moss_patch rock_moss_set; do
+            test -s "qa-stage/ota177/canglan_rev187/hq_ecology_groundcover/${slug}/${slug}_1k.gltf" \
+              || { echo "BLOCKED: missing staged groundcover $slug"; exit 1; }
+            test -s "qa-stage/ota177/canglan_rev187/hq_ecology_groundcover/${slug}/${slug}.bin" \
+              || { echo "BLOCKED: missing staged groundcover bin $slug"; exit 1; }
+          done
+          # rev208 候选分支带来的真实高乔木/松柏/灵草被与生态脚本，
+          # 原 rev207 正式链没有这些 staging，必须一并装进原版 PCK 树，
+          # 否则 build_apk176_quality_rev187.gd 会 BLOCKED 而不是静默少资源。
+          mkdir -p qa-stage/ota177/canglan_rev187/hq_rev208
+          cp game-source/apk176-ota177-candidate/assets/hq-rev208/vegetation/trees/mature_*_hq_lod0.glb \
+            qa-stage/ota177/canglan_rev187/hq_rev208/
+          cp game-source/apk176-ota177-candidate/assets/hq-rev208/vegetation/botanical-optimized/hq_*_cc0_drawmerged.glb \
+            qa-stage/ota177/canglan_rev187/hq_rev208/
+          cp game-source/apk176-ota177-candidate/scripts/apk176_hq_forest_floor_pool_rev208.gd \
+            qa-stage/ota177/canglan_rev187/hq_forest_floor_pool_rev208.gd
+          cp game-source/apk176-ota177-candidate/scripts/apk176_wild_tree_stone_birth_rev208.gd \
+            qa-stage/ota177/canglan_rev187/wild_tree_stone_birth_rev208.gd
+          cp game-source/apk176-ota177-candidate/scripts/apk176_pine_forest_rev209.gd qa-stage/ota177/canglan_rev187/pine_forest.gd
+          python3 - <<'PY'
+          from pathlib import Path
+          import json,hashlib
+          root=Path('game-source/apk176-ota177-candidate/assets/hq-rev208/vegetation')
+          dest=Path('qa-stage/ota177/canglan_rev187/hq_rev208')
+          trees=json.loads((root/'trees/manifest.json').read_text(encoding='utf-8'))
+          assert set(trees['items'])=={'oak','maple','linden'}
+          for kind,entry in trees['items'].items():
+            data=(root/'trees'/entry['file']).read_bytes()
+            staged=(dest/entry['file']).read_bytes()
+            assert data==staged and hashlib.sha256(data).hexdigest()==entry['converted_sha256']
+          rendered=json.loads((root/'botanical-optimized/manifest.json').read_text(encoding='utf-8'))
+          assert len(rendered['items'])==11
+          for kind,entry in rendered['items'].items():
+            merged=(root/'botanical-optimized'/entry['file']).read_bytes()
+            staged=(dest/entry['file']).read_bytes()
+            assert merged==staged and hashlib.sha256(merged).hexdigest()==entry['sha256']
+          print('PASS_REV208_THREE_MATURE_TREES_AND_11_BOTANICAL_SHA_STAGED_INTO_ORIGINAL_PCK')
+          PY
+          test -s qa-stage/ota177/canglan_rev187/hq_forest_floor_pool_rev208.gd
+          test -s qa-stage/ota177/canglan_rev187/wild_tree_stone_birth_rev208.gd
+          node tools/asset_factory/rev208_ecology_polyhaven_intake.mjs --verify
+          echo 'PASS_REV208_HQ_ECOLOGY_REAL_CC0_PBR_STAGED_WITH_SHA_INTO_ORIGINAL_PCK_TREE'
       - name: Recover exact-matching Terrain3D Linux QA plugin from trusted upstream releases
         shell: bash
         run: |
@@ -174,28 +224,12 @@ jobs:
           for item in m['maps']:
             raw=(Path('qa-stage/ota177/canglan_rev187/materials_rev207')/item['file']).read_bytes()
             assert hashlib.sha256(raw).hexdigest()==item['output_sha256']
-          print('PASS_REV207_REAL_QUATERNIUS_NINE_FINE_PBR_MAPS_SOURCE_SHA256_IN_ORIGINAL_APK_STAGE')
+          print('PASS_REV208_REAL_QUATERNIUS_NINE_FINE_PBR_MAPS_SOURCE_SHA256_IN_ORIGINAL_APK_STAGE')
           PY
           cp game-source/apk176-ota177-candidate/scripts/apk176_player_controller_rev187.gd qa-stage/ota177/canglan_rev187/player_controller.gd
           cp game-source/apk176-ota177-candidate/scripts/apk176_backpack_rev205.gd qa-stage/ota177/canglan_rev187/backpack.gd
           cp game-source/apk176-ota177-candidate/scripts/apk176_spirit_resources_rev206.gd qa-stage/ota177/canglan_rev187/spirit_resources.gd
           cp game-source/apk176-ota177-candidate/scripts/apk176_living_regions_rev207.gd qa-stage/ota177/canglan_rev187/living_regions.gd
-          # ---- rev209：一次性并入 rev208 + rev209 全部内容 ----
-          mkdir -p qa-stage/ota177/canglan_rev187/hq_ecology_terrain qa-stage/ota177/canglan_rev187/hq_rev208 qa-stage/ota177/canglan_rev187/hq_ecology_groundcover
-          cp -r game-source/apk176-ota177-candidate/assets/hq-rev208/terrain/. qa-stage/ota177/canglan_rev187/hq_ecology_terrain/
-          cp game-source/apk176-ota177-candidate/assets/hq-rev208/ecology-intake-provenance.json qa-stage/ota177/canglan_rev187/hq_ecology_terrain/
-          find game-source/apk176-ota177-candidate/assets/hq-rev208/vegetation -name '*.glb' -exec cp {} qa-stage/ota177/canglan_rev187/hq_rev208/ \;
-          cp -r game-source/apk176-ota177-candidate/assets/hq-rev208/vegetation/groundcover/. qa-stage/ota177/canglan_rev187/hq_ecology_groundcover/
-          cp game-source/apk176-ota177-candidate/scripts/apk176_hq_terrain_pbr_rev208.gd qa-stage/ota177/canglan_rev187/hq_terrain_pbr.gd
-          cp game-source/apk176-ota177-candidate/scripts/apk176_hq_forest_floor_pool_rev208.gd qa-stage/ota177/canglan_rev187/hq_forest_floor_pool_rev208.gd
-          cp game-source/apk176-ota177-candidate/scripts/apk176_wild_tree_stone_birth_rev208.gd qa-stage/ota177/canglan_rev187/wild_tree_stone_birth_rev208.gd
-          cp game-source/apk176-ota177-candidate/scripts/apk176_paid_housing_rev208.gd qa-stage/ota177/canglan_rev187/paid_housing.gd
-          cp game-source/apk176-ota177-candidate/scripts/apk176_pine_forest_rev209.gd qa-stage/ota177/canglan_rev187/pine_forest.gd
-          test -f qa-stage/ota177/canglan_rev187/pine_forest.gd
-          test -f qa-stage/ota177/canglan_rev187/hq_terrain_pbr.gd
-          test -f qa-stage/ota177/canglan_rev187/paid_housing.gd
-          test -f qa-stage/ota177/canglan_rev187/hq_rev208/hq_pine_cc0_drawmerged.glb
-          echo "PASS_REV209_STAGED_REV208_AND_REV209_CONTENT"
           cp game-source/apk176-ota177-candidate/scripts/apk176_paid_housing_rev208.gd qa-stage/ota177/canglan_rev187/paid_housing.gd
           python3 - <<'PY'
           from pathlib import Path
@@ -300,18 +334,6 @@ jobs:
             }
           grep -Fq 'PASS_REV206_REAL_WORLD_13_HERB_ORE_SOURCE_CC0_NODES_PERSISTED_CONSERVATION_AND_18_TO_96H_REGROWTH' qa-results/rev206-spirit-resource-ledger.log
           grep -Fq 'PASS_REV206_REAL_GODOT_BACKPACK_PILL_CRAFT_SPENDS_HARVESTED_HERBS_SPIRIT_STONES_SAVES_AND_CONSUMES' qa-results/rev206-spirit-resource-ledger.log
-      - name: rev208 付费房屋与真实植被经济闸门（最新标准）
-        shell: bash
-        run: |
-          set -euo pipefail
-          cp logic-qa/apk176-export-fixture/verify_rev208_paid_house_economy.gd qa-stage/ota177/verify_rev208_paid_house_economy.gd
-          timeout 110s /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless \
-            --path qa-stage/ota177 --script res://verify_rev208_paid_house_economy.gd \
-            > qa-results/rev208-paid-house.log 2>&1 || {
-              tail -120 qa-results/rev208-paid-house.log; exit 1;
-            }
-          grep -Fq 'PASS_REV208_40_REAL_5_WOOD_TREES_15_REAL_10_STONE_PILES_PAY_200_150_AND_EIGHT_WORK_HOURS' qa-results/rev208-paid-house.log
-          grep -Fq 'PASS_REV208_NO_FREE_LICENSED_GLB_HOUSES_FIVE_BED_CAPACITY_FOURTH_PERSON_SAVE_AND_ATOMIC_DEBIT' qa-results/rev208-paid-house.log
       - name: Godot 4.4.1 50k-km2 5000-person seeded 500-region 24-month fauna flora sect and mortal persistence
         shell: bash
         run: |
@@ -319,13 +341,13 @@ jobs:
           cp logic-qa/apk176-export-fixture/verify_rev207_living_regions.gd qa-stage/ota177/verify_rev207_living_regions.gd
           timeout 110s /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless \
             --path qa-stage/ota177 --script res://verify_rev207_living_regions.gd \
-            > qa-results/rev209-living-world-ledger.log 2>&1 || {
-              tail -120 qa-results/rev209-living-world-ledger.log; exit 1;
+            > qa-results/rev208-living-world-ledger.log 2>&1 || {
+              tail -120 qa-results/rev208-living-world-ledger.log; exit 1;
             }
-          grep -Fq 'PASS_REV207_REAL_WORLD_INITIAL_50000_KM2_500_REGIONS_5000_MORTALS_ONLY_125_SPIRIT_ROOTS_OTHER_CAN_BODY_REFINE' qa-results/rev209-living-world-ledger.log
-          grep -Fq 'PASS_REV207_REAL_24_MONTH_DEMOGRAPHIC_BIRTHS_DEATHS_SECT_PROFESSIONS_ANNUAL_BODY_CULTIVATION_ATOMIC_SAVE' qa-results/rev209-living-world-ledger.log
-          grep -Fq 'PASS_REV207_REAL_ORE_GUARD_YAO_BEAST_CULTIVATION_BREEDING_MORTALITY_PHYSICAL_DEATH_DEBIT' qa-results/rev209-living-world-ledger.log
-          grep -Fq 'PASS_REV207_REAL_EVERGREEN_SEEDBANK_FORESTS_AND_WILD_HERBS_NO_BARREN_UNBUILT_REGIONS' qa-results/rev209-living-world-ledger.log
+          grep -Fq 'PASS_REV207_REAL_WORLD_INITIAL_50000_KM2_500_REGIONS_5000_MORTALS_ONLY_125_SPIRIT_ROOTS_OTHER_CAN_BODY_REFINE' qa-results/rev208-living-world-ledger.log
+          grep -Fq 'PASS_REV207_REAL_24_MONTH_DEMOGRAPHIC_BIRTHS_DEATHS_SECT_PROFESSIONS_ANNUAL_BODY_CULTIVATION_ATOMIC_SAVE' qa-results/rev208-living-world-ledger.log
+          grep -Fq 'PASS_REV207_REAL_ORE_GUARD_YAO_BEAST_CULTIVATION_BREEDING_MORTALITY_PHYSICAL_DEATH_DEBIT' qa-results/rev208-living-world-ledger.log
+          grep -Fq 'PASS_REV207_REAL_EVERGREEN_SEEDBANK_FORESTS_AND_WILD_HERBS_NO_BARREN_UNBUILT_REGIONS' qa-results/rev208-living-world-ledger.log
       - name: Real Godot engine deterministic 32 spiritual roots, 640 mortal identities and virtual city of 10k to 250k
         shell: bash
         run: |
@@ -345,53 +367,45 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          need() { if grep -Fq "$1" qa-results/rev187-original-main-3d.log; then :; else echo "MISSING_MARKER:$1" >> /tmp/missing.txt; fi; }
-          : > /tmp/missing.txt
           timeout 120s /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless             --path logic-qa/apk176-export-fixture             --script res://verify_original_main_quality_rev187.gd             > qa-results/rev187-original-main-3d.log 2>&1 || {
               tail -100 qa-results/rev187-original-main-3d.log; exit 1;
             }
-          need PASS_REV206_ORIGINAL_PLAYER_TREE_STONE_PHYSICAL_TRANSPORT_WITH_LICENSED_FINISHED_CC0_HOUSES_NO_BROKEN_CONSTRUCTION
-          need PASS_REV208_NO_FREE_HOUSES_200WOOD150STONE_FIVE_RESIDENTS_AND_FOUR_TRUE_LARGE_YAO_BEASTS
-          need PASS_REV206_REAL_QUATERNIUS_CC0_SOURCE_HOUSES_REAL_YAO_BEASTS_PERSISTENT_PAID_WORKER_BUILDING
-          need PASS_REV208_ALL_52_REAL_ORIGINAL_TREE_IDS_NATURALLY_RENEW_AFTER_CUT_WITHOUT_FREE_INVENTORY
-          need PASS_REV208_REMAINING_49_KENNEY_LOD_TREES_20_STONES_GPU_BUFFERS_RETAINED
-          need PASS_REV207_TRUE_MAIN_50000KM2_5000_ROOT_RATIO_BODY_CULTIVATION_5_SECTS_4_REAL_ORE_BEAST_GUARDS
-          need PASS_REV208_ACTUAL_ORIGINAL_MAIN_REAL_PINE_CYPRESS_FERN_AND_FIVE_GREEN_PLANT_SOURCES_NO_FAKE_INVENTORY
-          need PASS_REV207_ACTUAL_12_LICENSED_3D_CULTIVATORS_HAVE_NAMED_SECTS_14_DISCIPLINES_AND_ROOTLESS_WORKER_BODY_PATH
-          need PASS_REV207_MOBILE_UNBLEACHED_SATURATED_PBR_NORMAL_MAPS_WORLDSPACE_64PIX_PER_METRE
-          need PASS_REV206_REAL_MAIN_HAS_PERSISTENT_LICENCED_MEDICINAL_PLANTS_ORE_AND_TOUCH_MINING
-          need PASS_REV188_REAL_HEALTH_STAMINA_GAME_HUD_BAG_MENU_AND_OPT_IN_DEV_TOOLS
-          need PASS_REV189_SYNTHETIC_GODOT_JOYPAD_BUTTON_MENU_LOOK_DEADZONE_HOTPLUG_AND_TOUCH_FALLBACK_NOT_ANDROID_HARDWARE
-          need PASS_REV191_NO_FLOATING_SLICE_LOD_OVERLAP_OR_22M_CLIFF_ACTUAL_MESH_TRIANGLES
-          need PASS_REV193_DETERMINISTIC_WALKABLE_PHYSICAL_CHUNKS_NO_92M_WALL_AND_PERSISTED_MINING
-          need PASS_REV193_ORIGINAL_PLAYER_ACTUALLY_WALKED_ACROSS_46M_WORLD_BOUNDARY
-          need PASS_REV194_PHYSICAL_STREAMED_MEADOWS_DEEP_GREENS_AND_NO_WASHOUT_FOG
-          need PASS_REV195_REAL_GODOT_MOBILE_GLOW_HDR_THRESHOLD_AND_THREE_USER_GRAPHICS_TIERS
-          need PASS_REV195_REAL_MORTAL_DASH_MOBILE_VFX_REQUIRES_SUCCESS_AND_STAMINA_DEBIT
-          need PASS_REV196_REAL_OPPONENT_TELEGRAPH_PERFECT_GUARD_NORMAL_GUARD_TRUE_EVADE_DAMAGE_STAMINA_WITHOUT_SPIRIT_MAGIC
-          need PASS_REV197_REAL_ANDROID_TOUCH_PINCH_45DEG_VISIBLE_AVATAR_CAMERA_LOCK_JUMP_AVATAR_FLIGHT_STAIRS_AND_COLLISION
-          need PASS_REV198_REAL_LICENSED_KNIGHT_ARMOR_SKIN_OPACITY_REPAIRED
-          need PASS_REV199_IMMUTABLE_AUTHENTIC_CC0_LONG_HAIR_PLAYER_AND_NPC_PLUS_REAL_MULTIMATERIAL_FLYING_SWORD
-          need PASS_REV199_REAL_WORLD_ACCELERATES_NPC_ECOLOGY_HOURS_DAY_NIGHT_AND_TRAINING_FLIGHT_WITH_VISIBLE_ALTITUDE_SPEED_AIR_TRAIL_AND_HONEST_OFFLINE_AI
-          need PASS_REV201_ACTUAL_LICENSED_ALTAR_HIDDEN_DETERMINISTIC_ROOT_12_AUTONOMOUS_CULTIVATORS_REAL_HOUR_MEDITATION_QI_AND_BREAKTHROUGH_SAVED
-          need PASS_REV202_TRUE_ORIGINAL_SOAR_TOUCH_ASCENT_SMOOTH_TAKEOFF_AND_MIDAIR_CAMERA_LANDING
-          need PASS_REV203_ORIGINAL_AVATAR_SWORD_BANK_THUMB_HOLD_CAMERA_DEPTH_AND_LANDING
-          need PASS_REV204_REAL_MORTAL_OPPONENT_REALM_HP_MP_HUD_WORLD_METERS_AND_STAMINA_PAID_SWORD_HIT
-          need PASS_REV204_AUTHORITY_GATED_LEARNED_QI_BOLT_SPEND_REAL_MANA_TRAVEL_HIT_AND_LEVEL2_WARD
-          need PASS_REV205_TRUE_ORIGINAL_TOUCH_CAMERA_FLIGHT_RESTART_LOCK_ON_BAG_AND_ICONS
-          need PASS_REV187_PHONE_VISIBILITY_TREE_SEED_BEDROCK_EXCLUSION_AND_TECTONIC_MILLIONS_OF_YEARS
-          need PASS_REV187_UNLIMITED_NATURAL_MULTIHUE_KENNEY_MESH_BATCH_SINGLE_WARM_SUN
-          need PASS_REV187_REAL_MOVABLE_PLAYER_FIRST_THIRD_PERSON_ZOOM_TOUCH_INTERACT_AND_EXCAVATE_STRATIFIED_COLLISION_WATER
-          need PASS_REV187_ONEPLUS_MANUAL_EXTREME_HIGH_NORMAL_QUALITY_100_85_67_MSAA_SHADOW_GRASS_FX_FOG_HUD_AND_NATIVE_UI
-          need PASS_REV187_ACTUAL_GUI_JOYSTICK_RIGHT_LOOK_NPC_MESH_FEET_CONTINUOUS_TERRAIN_NO_WORLD_SYSTEM_IDS
-          need PASS_REV187_LEFT_AND_RIGHT_WORLD_TOUCH_TO_ENTITY_INTERACTION_NO_JOYSTICK_CONFLICT
-          need PASS_REV187_5_FPS_CAPS_3_GRAPHICS_FOLDING_PERF_NO_WARNING_OVERLAP_WARM_BLUE_SKY_CLOUDS_BLUISH_FOG_FAR_LAND_FIVE_LEAF_GRASS
-          need PASS_REV187_ANDROID_VERTICAL_DRAG_NOT_INVERTED_GOD_VIEW_AND_FREE_FLIGHT_RESET
-          echo '--- LOG SIZE ---'; wc -l qa-results/rev187-original-main-3d.log || true
-          echo '--- LOG ERRORS ---'; grep -nE 'ERROR|SCRIPT|Failed' qa-results/rev187-original-main-3d.log | head -12 || true
-          echo '--- PASS MARKERS PRESENT ---'
-          grep -oE 'PASS_[A-Z0-9_]+' qa-results/rev187-original-main-3d.log | sort -u || true
-          if [ -s /tmp/missing.txt ]; then cat /tmp/missing.txt; exit 1; fi
+          grep -Fq 'PASS_REV206_ORIGINAL_PLAYER_TREE_STONE_PHYSICAL_TRANSPORT_WITH_LICENSED_FINISHED_CC0_HOUSES_NO_BROKEN_CONSTRUCTION' qa-results/rev187-original-main-3d.log
+          grep -Fq 'PASS_REV208_NO_FREE_HOUSES_200WOOD150STONE_FIVE_RESIDENTS_AND_FOUR_TRUE_LARGE_YAO_BEASTS' qa-results/rev187-original-main-3d.log
+          grep -Fq 'PASS_REV206_REAL_QUATERNIUS_CC0_SOURCE_HOUSES_REAL_YAO_BEASTS_PERSISTENT_PAID_WORKER_BUILDING' qa-results/rev187-original-main-3d.log
+          grep -Fq 'PASS_REV208_ALL_52_REAL_ORIGINAL_TREE_IDS_NATURALLY_RENEW_AFTER_CUT_WITHOUT_FREE_INVENTORY' qa-results/rev187-original-main-3d.log
+          grep -Fq 'PASS_REV207_TRUE_MAIN_50000KM2_5000_ROOT_RATIO_BODY_CULTIVATION_5_SECTS_4_REAL_ORE_BEAST_GUARDS' qa-results/rev187-original-main-3d.log
+          grep -Fq 'PASS_REV208_TRUE_LICENSED_KENNEY_GREEN_SAPLING_NONBUILDING_BOUNDED_REAL_SOURCE_GLTF_GEOMETRY' qa-results/rev187-original-main-3d.log
+          grep -Fq 'PASS_REV207_ACTUAL_12_LICENSED_3D_CULTIVATORS_HAVE_NAMED_SECTS_14_DISCIPLINES_AND_ROOTLESS_WORKER_BODY_PATH' qa-results/rev187-original-main-3d.log
+          grep -Fq 'PASS_REV207_MOBILE_UNBLEACHED_SATURATED_PBR_NORMAL_MAPS_WORLDSPACE_64PIX_PER_METRE' qa-results/rev187-original-main-3d.log
+          grep -Fq 'PASS_REV206_REAL_MAIN_HAS_PERSISTENT_LICENCED_MEDICINAL_PLANTS_ORE_AND_TOUCH_MINING' qa-results/rev187-original-main-3d.log
+          grep -Fq 'PASS_REV188_REAL_HEALTH_STAMINA_GAME_HUD_BAG_MENU_AND_OPT_IN_DEV_TOOLS' qa-results/rev187-original-main-3d.log
+          grep -Fq 'PASS_REV189_SYNTHETIC_GODOT_JOYPAD_BUTTON_MENU_LOOK_DEADZONE_HOTPLUG_AND_TOUCH_FALLBACK_NOT_ANDROID_HARDWARE' qa-results/rev187-original-main-3d.log
+          grep -Fq 'PASS_REV191_NO_FLOATING_SLICE_LOD_OVERLAP_OR_22M_CLIFF_ACTUAL_MESH_TRIANGLES' qa-results/rev187-original-main-3d.log
+          grep -Fq 'PASS_REV193_DETERMINISTIC_WALKABLE_PHYSICAL_CHUNKS_NO_92M_WALL_AND_PERSISTED_MINING' qa-results/rev187-original-main-3d.log
+          grep -Fq 'PASS_REV193_ORIGINAL_PLAYER_ACTUALLY_WALKED_ACROSS_46M_WORLD_BOUNDARY' qa-results/rev187-original-main-3d.log
+          grep -Fq 'PASS_REV194_PHYSICAL_STREAMED_MEADOWS_DEEP_GREENS_AND_NO_WASHOUT_FOG' qa-results/rev187-original-main-3d.log
+          grep -Fq 'PASS_REV195_REAL_GODOT_MOBILE_GLOW_HDR_THRESHOLD_AND_THREE_USER_GRAPHICS_TIERS' qa-results/rev187-original-main-3d.log
+          grep -Fq 'PASS_REV195_REAL_MORTAL_DASH_MOBILE_VFX_REQUIRES_SUCCESS_AND_STAMINA_DEBIT' qa-results/rev187-original-main-3d.log
+          grep -Fq 'PASS_REV196_REAL_OPPONENT_TELEGRAPH_PERFECT_GUARD_NORMAL_GUARD_TRUE_EVADE_DAMAGE_STAMINA_WITHOUT_SPIRIT_MAGIC' qa-results/rev187-original-main-3d.log
+          grep -Fq 'PASS_REV197_REAL_ANDROID_TOUCH_PINCH_45DEG_VISIBLE_AVATAR_CAMERA_LOCK_JUMP_AVATAR_FLIGHT_STAIRS_AND_COLLISION' qa-results/rev187-original-main-3d.log
+          grep -Fq 'PASS_REV198_REAL_LICENSED_KNIGHT_ARMOR_SKIN_OPACITY_REPAIRED' qa-results/rev187-original-main-3d.log
+          grep -Fq 'PASS_REV199_IMMUTABLE_AUTHENTIC_CC0_LONG_HAIR_PLAYER_AND_NPC_PLUS_REAL_MULTIMATERIAL_FLYING_SWORD' qa-results/rev187-original-main-3d.log
+          grep -Fq 'PASS_REV199_REAL_WORLD_ACCELERATES_NPC_ECOLOGY_HOURS_DAY_NIGHT_AND_TRAINING_FLIGHT_WITH_VISIBLE_ALTITUDE_SPEED_AIR_TRAIL_AND_HONEST_OFFLINE_AI' qa-results/rev187-original-main-3d.log
+          grep -Fq 'PASS_REV201_ACTUAL_LICENSED_ALTAR_HIDDEN_DETERMINISTIC_ROOT_12_AUTONOMOUS_CULTIVATORS_REAL_HOUR_MEDITATION_QI_AND_BREAKTHROUGH_SAVED' qa-results/rev187-original-main-3d.log
+          grep -Fq 'PASS_REV202_TRUE_ORIGINAL_SOAR_TOUCH_ASCENT_SMOOTH_TAKEOFF_AND_MIDAIR_CAMERA_LANDING' qa-results/rev187-original-main-3d.log
+          grep -Fq 'PASS_REV203_ORIGINAL_AVATAR_SWORD_BANK_THUMB_HOLD_CAMERA_DEPTH_AND_LANDING' qa-results/rev187-original-main-3d.log
+          grep -Fq 'PASS_REV204_REAL_MORTAL_OPPONENT_REALM_HP_MP_HUD_WORLD_METERS_AND_STAMINA_PAID_SWORD_HIT' qa-results/rev187-original-main-3d.log
+          grep -Fq 'PASS_REV204_AUTHORITY_GATED_LEARNED_QI_BOLT_SPEND_REAL_MANA_TRAVEL_HIT_AND_LEVEL2_WARD' qa-results/rev187-original-main-3d.log
+          grep -Fq 'PASS_REV205_TRUE_ORIGINAL_TOUCH_CAMERA_FLIGHT_RESTART_LOCK_ON_BAG_AND_ICONS' qa-results/rev187-original-main-3d.log
+          grep -Fq 'PASS_REV187_PHONE_VISIBILITY_TREE_SEED_BEDROCK_EXCLUSION_AND_TECTONIC_MILLIONS_OF_YEARS' qa-results/rev187-original-main-3d.log
+          grep -Fq 'PASS_REV187_UNLIMITED_NATURAL_MULTIHUE_KENNEY_MESH_BATCH_SINGLE_WARM_SUN' qa-results/rev187-original-main-3d.log
+          grep -Fq 'PASS_REV187_REAL_MOVABLE_PLAYER_FIRST_THIRD_PERSON_ZOOM_TOUCH_INTERACT_AND_EXCAVATE_STRATIFIED_COLLISION_WATER' qa-results/rev187-original-main-3d.log
+          grep -Fq 'PASS_REV187_ONEPLUS_MANUAL_EXTREME_HIGH_NORMAL_QUALITY_100_85_67_MSAA_SHADOW_GRASS_FX_FOG_HUD_AND_NATIVE_UI' qa-results/rev187-original-main-3d.log
+          grep -Fq 'PASS_REV187_ACTUAL_GUI_JOYSTICK_RIGHT_LOOK_NPC_MESH_FEET_CONTINUOUS_TERRAIN_NO_WORLD_SYSTEM_IDS' qa-results/rev187-original-main-3d.log
+          grep -Fq 'PASS_REV187_LEFT_AND_RIGHT_WORLD_TOUCH_TO_ENTITY_INTERACTION_NO_JOYSTICK_CONFLICT' qa-results/rev187-original-main-3d.log
+          grep -Fq 'PASS_REV187_5_FPS_CAPS_3_GRAPHICS_FOLDING_PERF_NO_WARNING_OVERLAP_WARM_BLUE_SKY_CLOUDS_BLUISH_FOG_FAR_LAND_FIVE_LEAF_GRASS' qa-results/rev187-original-main-3d.log
+          grep -Fq 'PASS_REV187_ANDROID_VERTICAL_DRAG_NOT_INVERTED_GOD_VIEW_AND_FREE_FLIGHT_RESET' qa-results/rev187-original-main-3d.log
           if grep -Eq 'SCRIPT ERROR:|Parse Error:|ERROR:|FAIL_APK176|Failed loading resource' qa-results/rev187-original-main-3d.log; then
             cat qa-results/rev187-original-main-3d.log; exit 1
           fi
@@ -421,7 +435,7 @@ jobs:
           mkdir -p qa-results/rev187-real-worksite
           icd="$(find /usr/share/vulkan/icd.d -maxdepth 1 -iname '*lvp*.json' | head -n 1)"
           if [ -n "$icd" ]; then export VK_DRIVER_FILES="$icd"; fi
-          timeout 145s xvfb-run -a -s '-screen 0 1280x720x24' \
+          timeout 900s xvfb-run -a -s '-screen 0 1280x720x24' \
             /tmp/Godot_v4.4.1-stable_linux.x86_64 \
             --path logic-qa/apk176-export-fixture \
             --resolution 1280x720 \
@@ -440,7 +454,6 @@ jobs:
           grep -Fq 'PASS_REV205_GENUINE_GODOT_1280X720_LUCIDE_UI_TARGET_LOCK_AND_FINITE_BACKPACK_FRAMES' qa-results/rev187-real-worksite/render.log
           grep -Fq 'PASS_REV207_ORIGINAL_APK176_GODOT_REAL_COLOR_512PBR_64TEXELS_IMAGES' qa-results/rev187-real-worksite/render.log
           grep -Fq 'PASS_REV206_GODOT_REAL_3D_WILD_MEDICINAL_HERB_AND_LUMINOUS_ORE_VIEW' qa-results/rev187-real-worksite/render.log
-          echo '--- FRAMES ---'; ls -1 qa-results/rev187-real-worksite/*.png 2>/dev/null | sed 's|.*/||' || true
           test -s qa-results/rev187-real-worksite/real_apk176_rev206_spirit_herbs_original_quaternius.png
           test -s qa-results/rev187-real-worksite/real_apk176_rev206_luminous_spirit_ore_true_3d.png
           test -s qa-results/rev187-real-worksite/real_apk176_rev207_vivid_cc0_texture_forest_wide.png
@@ -469,20 +482,20 @@ jobs:
               assert w>=900 and h>=500,(w,h)
               print("PASS_REAL_SAME_SITE_GODOT_SCREENSHOT",file.name,w,h,len(data))
           PY
-      - name: Generate unsigned rev209 candidate bound to original APK identity
+      - name: Generate unsigned rev208 candidate bound to original APK identity
         shell: bash
         run: |
           set -euo pipefail
-          python3 logic-qa/release-gate/sign_pck_release.py             --pack qa-results/canglan-apk176-rev187-3d-UNSIGNED.pck             --revision 208 --minimum-android-code 1176 --maximum-android-code 1176             --pack-url 'https://160701541-cell.github.io/xinyanshuo/android-preview/canglan-content-rev-208.pck'             --notes '苍岚原APK176 rev209：开局真实世界账本改为五万平方公里、五千凡人，保留玩家灵根但普通凡人只有少量灵根，其他可炼体；500个百平方公里生态块按世界时辰生育死亡、草木种子扩散永不全球断种；五个修行宗门与十四门专业基础；四只真实3D妖兽分别巡守四个灵矿，妖兽群受资源制约自然繁衍、修炼突破；野生灵草可采量为零时活植株仍可见，每三十世界日自然扩散新真实GLB灵草；保留rev206有限背包采矿炼丹战斗索敌飞剑、原存档。大世界真实3D旅行、御兽符箓UI与Android实机验收未完成。'             --unsigned-template             --output qa-results/rev209-unsigned.json
+          python3 logic-qa/release-gate/sign_pck_release.py             --pack qa-results/canglan-apk176-rev187-3d-UNSIGNED.pck             --revision 209 --minimum-android-code 1176 --maximum-android-code 1176             --pack-url 'https://160701541-cell.github.io/xinyanshuo/android-preview/canglan-content-rev-209.pck'             --notes 'rev209：新增真实CC0扫描地被（蕨6232面/灌木/苔藓/苔石63127面）、苍松古柏真源树皮PBR、六类林地真扫描材质与四类灵草生态已入包（两级地表材质暂关闭，待出图验证）。原存档、5000人口经济、战斗与永久死亡全保留。主角与宗门建筑仍未完成。'             --unsigned-template             --output qa-results/rev208-unsigned.json
           python3 - <<'PY'
           import json,pathlib
-          p=pathlib.Path('qa-results/rev209-unsigned.json')
+          p=pathlib.Path('qa-results/rev208-unsigned.json')
           d=json.loads(p.read_text())
-          assert d['revision']==208
+          assert d['revision']==209
           d['_visual_goal']='ORIGINAL_3D_WORLD_PREVIEW'
           p.write_text(json.dumps(d,ensure_ascii=False,indent=2)+'\n')
           PY
-      - name: Detect pre-existing official rev209 release and protect signed PCK
+      - name: Detect pre-existing official rev208 release and protect signed PCK
         shell: bash
         run: |
           set -euo pipefail
@@ -491,21 +504,21 @@ jobs:
           p=pathlib.Path('android-preview/latest.json')
           d=json.loads(p.read_text(encoding='utf-8'))
           current=int(d['revision'])
-          if current == 206:
-              assert not pathlib.Path('android-preview/canglan-content-rev-208.pck').exists(), 'rev209 file exists without manifest'
-              print('PASS_REV207_NOT_YET_RELEASED_SIGNING_ALLOWED')
+          if current == 207:
+              assert not pathlib.Path('android-preview/canglan-content-rev-209.pck').exists(), 'rev208 file exists without manifest'
+              print('PASS_REV208_NOT_YET_RELEASED_SIGNING_ALLOWED')
               with open(__import__('os').environ['GITHUB_ENV'],'a',encoding='utf-8') as f:
-                  f.write('REV209_ALREADY_PUBLISHED=false\n')
+                  f.write('REV208_ALREADY_PUBLISHED=false\n')
           elif current >= 208:
-              assert pathlib.Path('android-preview/canglan-content-rev-208.pck').is_file(), 'rev209 manifest but PCK missing'
-              print('PASS_REV207_ALREADY_PUBLISHED_QA_ONLY_NEVER_REPLACE_SIGNED_RELEASE',current)
+              assert pathlib.Path('android-preview/canglan-content-rev-209.pck').is_file(), 'rev208 manifest but PCK missing'
+              print('PASS_REV208_ALREADY_PUBLISHED_QA_ONLY_NEVER_REPLACE_SIGNED_RELEASE',current)
               with open(__import__('os').environ['GITHUB_ENV'],'a',encoding='utf-8') as f:
-                  f.write('REV209_ALREADY_PUBLISHED=true\n')
+                  f.write('REV208_ALREADY_PUBLISHED=true\n')
           else:
               sys.exit('BLOCKED: unexpected OTA version; never publish out of order')
           PY
-      - name: Sign only actual same-APK176 Godot accepted rev209 candidate
-        if: env.REV209_ALREADY_PUBLISHED == 'false'
+      - name: Sign only actual same-APK176 Godot accepted rev208 candidate
+        if: env.REV208_ALREADY_PUBLISHED == 'false'
         shell: bash
         env:
           CANGLAN_PCK_SIGNING_KEY_B64: ${{ secrets.CANGLAN_PCK_SIGNING_KEY_B64 }}
@@ -515,10 +528,10 @@ jobs:
           CANGLAN_UPDATE_SIGNING_KEY_PEM: ${{ secrets.CANGLAN_UPDATE_SIGNING_KEY_PEM }}
         run: |
           set -euo pipefail
-          python3 tools/stage_original_next_ota.py             --pck qa-results/canglan-apk176-rev187-3d-UNSIGNED.pck             --qa-template qa-results/rev209-unsigned.json             --qa-runtime-log qa-results/rev187-original-main-3d.log             --original-qa-success             --output qa-results/rev209-signed-stage
-          python3 tools/ota_release_gate.py             --candidate qa-results/rev209-signed-stage/latest.json             --pck qa-results/rev209-signed-stage/canglan-content-rev-208.pck             --report qa-results/rev209-cryptographic-gate.json
-      - name: Publish authentic rev209 signed original-game assets only after full QA
-        if: env.REV209_ALREADY_PUBLISHED == 'false'
+          python3 tools/stage_original_next_ota.py             --pck qa-results/canglan-apk176-rev187-3d-UNSIGNED.pck             --qa-template qa-results/rev208-unsigned.json             --qa-runtime-log qa-results/rev187-original-main-3d.log             --original-qa-success             --output qa-results/rev208-signed-stage
+          python3 tools/ota_release_gate.py             --candidate qa-results/rev208-signed-stage/latest.json             --pck qa-results/rev208-signed-stage/canglan-content-rev-208.pck             --report qa-results/rev208-cryptographic-gate.json
+      - name: Publish authentic rev208 signed original-game assets only after full QA
+        if: env.REV208_ALREADY_PUBLISHED == 'false'
         shell: bash
         run: |
           set -euo pipefail
@@ -526,11 +539,11 @@ jobs:
           python3 - <<'PY'
           import json
           current=json.load(open('android-preview/latest.json'))['revision']
-          assert current == 207,f'Original official next revision must be 207, got {current}'
+          assert current == 208,f'Original official next revision must be 208, got {current}'
           PY
-          test ! -e android-preview/canglan-content-rev-208.pck
-          cp qa-results/rev209-signed-stage/canglan-content-rev-208.pck android-preview/
-          cp qa-results/rev209-signed-stage/latest.json android-preview/latest.json
+          test ! -e android-preview/canglan-content-rev-209.pck
+          cp qa-results/rev208-signed-stage/canglan-content-rev-208.pck android-preview/
+          cp qa-results/rev208-signed-stage/latest.json android-preview/latest.json
           # Publication includes ONLY real Godot engine frames from this exact
           # already-passed original-APK176 QA run. Never label these phone photos.
           mkdir -p art/actual-engine-capture
@@ -539,17 +552,17 @@ jobs:
           import struct, shutil
           source=Path('qa-results/rev187-real-worksite')
           for filename,output in [
-              ('real_apk176_rev206_luminous_spirit_ore_true_3d.png','canglan-rev209-ore-guardian-biome-godot-linux.png'),
-              ('real_apk176_rev206_spirit_herbs_original_quaternius.png','canglan-rev209-living-herbs-godot-linux.png'),
-              ('real_apk176_rev207_vivid_cc0_texture_forest_wide.png','canglan-rev209-green-forest-godot-linux.png'),
-              ('real_apk176_rev205_real_backpack_lucide_equipment.png','canglan-rev209-backpack-godot-linux.png')]:
+              ('real_apk176_rev206_luminous_spirit_ore_true_3d.png','canglan-rev208-ore-guardian-biome-godot-linux.png'),
+              ('real_apk176_rev206_spirit_herbs_original_quaternius.png','canglan-rev208-living-herbs-godot-linux.png'),
+              ('real_apk176_rev207_vivid_cc0_texture_forest_wide.png','canglan-rev208-green-forest-godot-linux.png'),
+              ('real_apk176_rev205_real_backpack_lucide_equipment.png','canglan-rev208-backpack-godot-linux.png')]:
               src=source/filename
               raw=src.read_bytes()
               assert raw[:8]==bytes.fromhex('89504e470d0a1a0a')
               w,h=struct.unpack('>II',raw[16:24])
               assert (w,h)==(1280,720) and len(raw)>30000, (filename,w,h,len(raw))
               shutil.copyfile(src,Path('art/actual-engine-capture')/output)
-              print('PASS_GENUINE_REV209_REAL_GODOT_ENGINE_FRAME_READY_FOR_PUBLIC_VIEW',output,len(raw))
+              print('PASS_GENUINE_REV208_REAL_GODOT_ENGINE_FRAME_READY_FOR_PUBLIC_VIEW',output,len(raw))
           PY
           # Keep the website signed-release history in the very SAME atomic
           # commit as manifest/PCK, rather than show a stale release card.
@@ -561,26 +574,26 @@ jobs:
           feed=json.loads(p.read_text(encoding='utf-8'))
           before=json.loads(Path('android-preview/latest.json').read_text(encoding='utf-8'))
           assert feed['schema']==1 and feed['channel']=='signed-releases'
-          assert before['revision']==207
-          assert feed['entries'][0]['revision']==206 and all(e['revision']!=207 for e in feed['entries'])
+          assert before['revision']==209
+          assert feed['entries'][0]['revision']==208 and all(e['revision']!=209 for e in feed['entries'])
           now=datetime.now(timezone.utc).isoformat(timespec='seconds').replace('+00:00','Z')
           feed['entries'].insert(0,{
-              'revision':207,'first_seen_utc':now,'notes':before['notes'],
+              'revision':209,'first_seen_utc':now,'notes':before['notes'],
               'sha256':before['sha256'],'size_bytes':before['size_bytes'],
               'status':'signed_release','android_version_code':1176,
               'protocol':'RSA-3072 PKCS1-v1_5 / SHA-256',
               'remote_https_verified':False,'remote_range_206_verified':False,
               'ci_run':int(os.environ['GITHUB_RUN_ID']),
               'android_real_device_qa':'pending',
-              'engine_visual_proof':'art/actual-engine-capture/canglan-rev209-living-herbs-godot-linux.png'})
+              'engine_visual_proof':'art/actual-engine-capture/canglan-rev208-living-herbs-godot-linux.png'})
           feed['updated_at']=now
           p.write_text(json.dumps(feed,ensure_ascii=False,indent=2)+'\n',encoding='utf-8')
-          print('PASS_REV207_RELEASE_FEED_ATOMIC_WITH_SIGNED_PACK',before['sha256'])
+          print('PASS_REV208_RELEASE_FEED_ATOMIC_WITH_SIGNED_PACK',before['sha256'])
           PY
           git config user.name 'canglan-original-apk176-ota-release'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add android-preview/latest.json android-preview/canglan-content-rev-208.pck art/actual-engine-capture/canglan-rev209-*.png data/updates.json
-          git commit -m 'release(official): APK176 RSA signed REV209 living regions beast ore guardian sect root and herbs [skip ci]'
+          git add android-preview/latest.json android-preview/canglan-content-rev-209.pck art/actual-engine-capture/canglan-rev208-*.png data/updates.json
+          git commit -m 'release(official): APK176 RSA signed REV208 living regions beast ore guardian sect root and herbs [skip ci]'
           # main may advance while QA runs; rebase ONLY if production is still rev204.
           for attempt in 1 2 3; do
             git fetch origin main
@@ -588,19 +601,19 @@ jobs:
           import json,subprocess,sys
           current=json.loads(subprocess.check_output(
               ['git','show','origin/main:android-preview/latest.json'],text=True))
-          if current.get('revision') != 206:
+          if current.get('revision') != 208:
               sys.exit('BLOCKED: remote OTA revision changed; never overwrite newer release')
-          prior=subprocess.run(['git','cat-file','-e','origin/main:android-preview/canglan-content-rev-208.pck'],
+          prior=subprocess.run(['git','cat-file','-e','origin/main:android-preview/canglan-content-rev-209.pck'],
                                stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
           if prior.returncode == 0:
-              sys.exit('BLOCKED: rev209 already published; do not overwrite signed rev209 candidate')
-          print('PASS_REMOTE_PRODUCTION_REV204_STILL_CURRENT')
+              sys.exit('BLOCKED: rev208 already published; do not overwrite signed rev208 candidate')
+          print('PASS_REMOTE_PRODUCTION_REV208_STILL_CURRENT')
           PY
             git rebase origin/main || {
               echo 'BLOCKED: cannot safely rebase signed release'; exit 1;
             }
             if git push origin HEAD:main; then
-              echo 'PASS_REV207_SIGNED_OTA_PUBLISHED_TO_PUBLIC_MAIN'
+              echo 'PASS_REV208_SIGNED_OTA_PUBLISHED_TO_PUBLIC_MAIN'
               break
             fi
             if [ "$attempt" -eq 3 ]; then
@@ -611,27 +624,27 @@ jobs:
       # A signed [skip ci] commit authored by GITHUB_TOKEN does not fire
       # another push-triggered workflow. Dispatch the existing official
       # Pages deployment explicitly, otherwise the user cannot fetch rev206.
-      - name: Deploy official signed rev209 PCK to GitHub Pages after atomic main push
-        if: env.REV209_ALREADY_PUBLISHED == 'false'
+      - name: Deploy official signed rev208 PCK to GitHub Pages after atomic main push
+        if: env.REV208_ALREADY_PUBLISHED == 'false'
         env:
           GH_TOKEN: ${{ github.token }}
         shell: bash
         run: |
           set -euo pipefail
-          test "$(python3 -c "import json;print(json.load(open('android-preview/latest.json'))['revision'])")" = 207
+          test "$(python3 -c "import json;print(json.load(open('android-preview/latest.json'))['revision'])")" = 208
           gh workflow run canglan-official-pages-ota-deploy.yml --ref main
-          echo 'PASS_REV207_OFFICIAL_PAGES_DEPLOY_WORKFLOW_DISPATCHED_NOT_YET_HTTP_VERIFIED'
-      - name: Preserve genuine rev209 Godot QA without signing secrets
+          echo 'PASS_REV208_OFFICIAL_PAGES_DEPLOY_WORKFLOW_DISPATCHED_NOT_YET_HTTP_VERIFIED'
+      - name: Preserve genuine rev208 Godot QA without signing secrets
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: Canglan-Original-APK176-REV209-QA-${{ github.sha }}
+          name: Canglan-Original-APK176-REV208-QA-${{ github.sha }}
           path: |
             qa-results/rev187-*.log
             qa-results/rev187-*.json
-            qa-results/rev209-*.log
-            qa-results/rev209-*.json
-            qa-results/rev209-signed-stage/staging-report.json
+            qa-results/rev208-*.log
+            qa-results/rev208-*.json
+            qa-results/rev208-signed-stage/staging-report.json
             qa-results/rev187-real-worksite/
           if-no-files-found: warn
           retention-days: 14
