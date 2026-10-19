@@ -442,8 +442,8 @@ jobs:
           grep -Fq 'PASS_REV206_GODOT_REAL_3D_WILD_MEDICINAL_HERB_AND_LUMINOUS_ORE_VIEW' qa-results/rev187-real-worksite/render.log
           test -s qa-results/rev187-real-worksite/real_apk176_rev206_spirit_herbs_original_quaternius.png
           test -s qa-results/rev187-real-worksite/real_apk176_rev206_luminous_spirit_ore_true_3d.png
-          test -s qa-results/rev187-real-worksite/real_apk176_rev209_vivid_cc0_texture_forest_wide.png
-          test -s qa-results/rev187-real-worksite/real_apk176_rev209_dense_tiny_pixel_cc0_pbr_house_close.png
+          test -s qa-results/rev187-real-worksite/real_apk176_rev207_vivid_cc0_texture_forest_wide.png
+          test -s qa-results/rev187-real-worksite/real_apk176_rev207_dense_tiny_pixel_cc0_pbr_house_close.png
           test -s qa-results/rev187-real-worksite/real_apk176_rev205_genuine_open_source_hud_target_lock.png
           test -s qa-results/rev187-real-worksite/real_apk176_rev205_real_backpack_lucide_equipment.png
           test -s qa-results/rev187-real-worksite/real_apk176_rev204_qi_bolt_real_impact_damage.png
@@ -540,7 +540,7 @@ jobs:
           for filename,output in [
               ('real_apk176_rev206_luminous_spirit_ore_true_3d.png','canglan-rev209-ore-guardian-biome-godot-linux.png'),
               ('real_apk176_rev206_spirit_herbs_original_quaternius.png','canglan-rev209-living-herbs-godot-linux.png'),
-              ('real_apk176_rev209_vivid_cc0_texture_forest_wide.png','canglan-rev209-green-forest-godot-linux.png'),
+              ('real_apk176_rev207_vivid_cc0_texture_forest_wide.png','canglan-rev209-green-forest-godot-linux.png'),
               ('real_apk176_rev205_real_backpack_lucide_equipment.png','canglan-rev209-backpack-godot-linux.png')]:
               src=source/filename
               raw=src.read_bytes()
