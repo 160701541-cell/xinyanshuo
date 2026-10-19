@@ -1,6 +1,6 @@
 # rev208 EXACT original Android APK176 v1176. No signature until current
 # original Main and 24 simulated months both pass real Godot 4.4.1.
-name: Canglan ORIGINAL APK176 rev209 - Original world + trees/stones/village + pine forest signed OTA
+name: Canglan ORIGINAL APK176 rev209 - HQ trees/stones/village signed OTA
 on:
   push:
     branches: [main]
@@ -485,12 +485,12 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          python3 logic-qa/release-gate/sign_pck_release.py             --pack qa-results/canglan-apk176-rev187-3d-UNSIGNED.pck             --revision 209 --minimum-android-code 1176 --maximum-android-code 1176             --pack-url 'https://160701541-cell.github.io/xinyanshuo/android-preview/canglan-content-rev-209.pck'             --notes 'rev209：新增真实CC0扫描地被（蕨6232面/灌木/苔藓/苔石63127面）、苍松古柏真源树皮PBR、六类林地真扫描材质与四类灵草生态已入包（两级地表材质暂关闭，待出图验证）。原存档、5000人口经济、战斗与永久死亡全保留。主角与宗门建筑仍未完成。'             --unsigned-template             --output qa-results/rev208-unsigned.json
+          python3 logic-qa/release-gate/sign_pck_release.py             --pack qa-results/canglan-apk176-rev187-3d-UNSIGNED.pck             --revision 208 --minimum-android-code 1176 --maximum-android-code 1176             --pack-url 'https://160701541-cell.github.io/xinyanshuo/android-preview/canglan-content-rev-208.pck'             --notes 'rev208：新增真实CC0扫描地被（蕨6232面/灌木/苔藓/苔石63127面）、苍松古柏真源树皮PBR、六类林地真扫描材质与四类灵草生态已入包（两级地表材质暂关闭，待出图验证）。原存档、5000人口经济、战斗与永久死亡全保留。主角与宗门建筑仍未完成。'             --unsigned-template             --output qa-results/rev208-unsigned.json
           python3 - <<'PY'
           import json,pathlib
           p=pathlib.Path('qa-results/rev208-unsigned.json')
           d=json.loads(p.read_text())
-          assert d['revision']==209
+          assert d['revision']==208
           d['_visual_goal']='ORIGINAL_3D_WORLD_PREVIEW'
           p.write_text(json.dumps(d,ensure_ascii=False,indent=2)+'\n')
           PY
@@ -504,12 +504,12 @@ jobs:
           d=json.loads(p.read_text(encoding='utf-8'))
           current=int(d['revision'])
           if current == 207:
-              assert not pathlib.Path('android-preview/canglan-content-rev-209.pck').exists(), 'rev208 file exists without manifest'
+              assert not pathlib.Path('android-preview/canglan-content-rev-208.pck').exists(), 'rev208 file exists without manifest'
               print('PASS_REV208_NOT_YET_RELEASED_SIGNING_ALLOWED')
               with open(__import__('os').environ['GITHUB_ENV'],'a',encoding='utf-8') as f:
                   f.write('REV208_ALREADY_PUBLISHED=false\n')
           elif current >= 208:
-              assert pathlib.Path('android-preview/canglan-content-rev-209.pck').is_file(), 'rev208 manifest but PCK missing'
+              assert pathlib.Path('android-preview/canglan-content-rev-208.pck').is_file(), 'rev208 manifest but PCK missing'
               print('PASS_REV208_ALREADY_PUBLISHED_QA_ONLY_NEVER_REPLACE_SIGNED_RELEASE',current)
               with open(__import__('os').environ['GITHUB_ENV'],'a',encoding='utf-8') as f:
                   f.write('REV208_ALREADY_PUBLISHED=true\n')
@@ -538,9 +538,9 @@ jobs:
           python3 - <<'PY'
           import json
           current=json.load(open('android-preview/latest.json'))['revision']
-          assert current == 208,f'Original official next revision must be 208, got {current}'
+          assert current == 207,f'Original official next revision must be 207, got {current}'
           PY
-          test ! -e android-preview/canglan-content-rev-209.pck
+          test ! -e android-preview/canglan-content-rev-208.pck
           cp qa-results/rev208-signed-stage/canglan-content-rev-208.pck android-preview/
           cp qa-results/rev208-signed-stage/latest.json android-preview/latest.json
           # Publication includes ONLY real Godot engine frames from this exact
@@ -573,11 +573,11 @@ jobs:
           feed=json.loads(p.read_text(encoding='utf-8'))
           before=json.loads(Path('android-preview/latest.json').read_text(encoding='utf-8'))
           assert feed['schema']==1 and feed['channel']=='signed-releases'
-          assert before['revision']==209
-          assert feed['entries'][0]['revision']==208 and all(e['revision']!=209 for e in feed['entries'])
+          assert before['revision']==208
+          assert feed['entries'][0]['revision']==207 and all(e['revision']!=208 for e in feed['entries'])
           now=datetime.now(timezone.utc).isoformat(timespec='seconds').replace('+00:00','Z')
           feed['entries'].insert(0,{
-              'revision':209,'first_seen_utc':now,'notes':before['notes'],
+              'revision':208,'first_seen_utc':now,'notes':before['notes'],
               'sha256':before['sha256'],'size_bytes':before['size_bytes'],
               'status':'signed_release','android_version_code':1176,
               'protocol':'RSA-3072 PKCS1-v1_5 / SHA-256',
@@ -591,7 +591,7 @@ jobs:
           PY
           git config user.name 'canglan-original-apk176-ota-release'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add android-preview/latest.json android-preview/canglan-content-rev-209.pck art/actual-engine-capture/canglan-rev208-*.png data/updates.json
+          git add android-preview/latest.json android-preview/canglan-content-rev-208.pck art/actual-engine-capture/canglan-rev208-*.png data/updates.json
           git commit -m 'release(official): APK176 RSA signed REV208 living regions beast ore guardian sect root and herbs [skip ci]'
           # main may advance while QA runs; rebase ONLY if production is still rev204.
           for attempt in 1 2 3; do
@@ -600,9 +600,9 @@ jobs:
           import json,subprocess,sys
           current=json.loads(subprocess.check_output(
               ['git','show','origin/main:android-preview/latest.json'],text=True))
-          if current.get('revision') != 208:
+          if current.get('revision') != 207:
               sys.exit('BLOCKED: remote OTA revision changed; never overwrite newer release')
-          prior=subprocess.run(['git','cat-file','-e','origin/main:android-preview/canglan-content-rev-209.pck'],
+          prior=subprocess.run(['git','cat-file','-e','origin/main:android-preview/canglan-content-rev-208.pck'],
                                stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
           if prior.returncode == 0:
               sys.exit('BLOCKED: rev208 already published; do not overwrite signed rev208 candidate')
@@ -630,7 +630,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          test "$(python3 -c "import json;print(json.load(open('android-preview/latest.json'))['revision'])")" = 208
+          test "$(python3 -c "import json;print(json.load(open('android-preview/latest.json'))['revision'])")" = 207
           gh workflow run canglan-official-pages-ota-deploy.yml --ref main
           echo 'PASS_REV208_OFFICIAL_PAGES_DEPLOY_WORKFLOW_DISPATCHED_NOT_YET_HTTP_VERIFIED'
       - name: Preserve genuine rev208 Godot QA without signing secrets
