@@ -1,12 +1,12 @@
 {
   "schema": 1,
   "channel": "android-preview",
-  "revision": 207,
+  "revision": 208,
   "minimum_android_code": 1176,
   "maximum_android_code": 1176,
-  "sha256": "db64972a0615abbe0600919220398d11853b83cbd4c57121b125f12b10262812",
-  "size_bytes": 35815712,
-  "pack_url": "https://160701541-cell.github.io/xinyanshuo/android-preview/canglan-content-rev-207.pck",
-  "notes": "苍岚原APK176 rev207：开局真实世界账本改为五万平方公里、五千凡人，保留玩家灵根但普通凡人只有少量灵根，其他可炼体；500个百平方公里生态块按世界时辰生育死亡、草木种子扩散永不全球断种；五个修行宗门与十四门专业基础；四只真实3D妖兽分别巡守四个灵矿，妖兽群受资源制约自然繁衍、修炼突破；野生灵草可采量为零时活植株仍可见，每三十世界日自然扩散新真实GLB灵草；保留rev206有限背包采矿炼丹战斗索敌飞剑、原存档。大世界真实3D旅行、御兽符箓UI与Android实机验收未完成。",
-  "signature": "W9fmfwU3Fr3mWa2WmDmHH0VzaENC2Hy58hrugszzdLLFIFd5btaG+Kd+8Pq2mv41Sr4MF5FhwpGW5ZyDIG7QKCNArqROP/bV4XkVLD5yEbnqb8kVhVYQeKXqboMb1Vn/wVG5zK+HEc0B4XqZ7/rA5510spG5vd7Qih1DhsxmTwugnp7Tciq93wZmMA/mKqvx371SPZwmInmlsD9XWVH7NCDr+TN3YQmZ9xaJ8zLFuwuf4ze6/YgXxujbgPJ+VgRJDT8L6Gfu7Kwm2bVoiwzdtkIZIiXFzzlv3xouxAT4GamxjfDGOxDka1sz/JBi+4rub/008cBn+KSdf/+QyTHATr1NOz8DFUUoNngbA0potkqhx/qk/DjotYMfet3IEfQjyH01Emy0dnKRo6ZtwBJ8mtB/CLroTgAKnU68daYDbq01IoKR7WzKIKv5ZKLaNgPCTEOU0Dw9tMinrqizd5uaxhZMr4bUYaop/jqA6GCdh0yDt+l1F7zit8Bi24Fy6WFz"
+  "sha256": "d1feda6b468ab483ef84e26a78e0c1745ec373df00106e665115be325a3e091c",
+  "size_bytes": 100985824,
+  "pack_url": "https://160701541-cell.github.io/xinyanshuo/android-preview/canglan-content-rev-208.pck",
+  "notes": "rev208：新增真实CC0扫描地被（蕨6232面/灌木/苔藓/苔石63127面）、苍松古柏真源树皮PBR、六类林地真扫描材质与四类灵草生态已入包（两级地表材质暂关闭，待出图验证）。原存档、5000人口经济、战斗与永久死亡全保留。主角与宗门建筑仍未完成。",
+  "signature": "WVOZQfhrR/cvS58l25ywlPM1PVHpDuVJd5WNzBnoRejqiuEASIIUZc2X/3jfqWNDfoZn6xfXracPeVpsl2VlF4iyopQp9v3EYozEo88dOSdTGtkY5pmiYmrqv2uegJEzYgyk9g0WlArxfdxvsznetstRrQp9tAUDQui9/ubBSiel34l0lkckr2gxAcUOI+yn8ShAzX71lmL1GygRooEp1+bTvIs6fZpg3dx7uo2zou5hKNSde+ADfvU4E5KaKMD0paUYLavGfH9SsHKWSXw9xmDNNGWF8Q94oOWVjYgnjCXG0RLTs+ZraUCAZ8WIwXCSuYOVbe46RtxRgGqzjpVdVnELaGSxHDf9fGpQKYBpPdO8J3L3CKoPHOBepCh79yTEMEtEPwDOO6JSvCFGiKnktpQYM4w+Ye99cD17VGfDOKcPMHlUiS7ZJc2pIwcsfw2p22cpZwzWtypXt40Bd48XSj63SEILQrC5PudST3o0Mnb+FnEz2YNqqUTz6C2RpNGi"
 }

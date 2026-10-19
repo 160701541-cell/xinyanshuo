@@ -1,10 +1,25 @@
 {
   "schema": 1,
   "channel": "signed-releases",
-  "updated_at": "2026-10-17T19:57:22Z",
+  "updated_at": "2026-10-19T12:32:31Z",
   "source": "android-preview/latest.json; RSA original APK key + official HTTPS PCK",
   "verification": "Signed RSA/SHA256 original APK176 rev206 officially live on GitHub Pages and complete download / HTTP 206 Range verified in successful official Pages deployment run 39058075233 (2026-10-17T18:27:42Z). Actual Android phone touch/visual/FPS/heat QA pending.",
   "entries": [
+    {
+      "revision": 208,
+      "first_seen_utc": "2026-10-19T12:32:31Z",
+      "notes": "rev208：新增真实CC0扫描地被（蕨6232面/灌木/苔藓/苔石63127面）、苍松古柏真源树皮PBR、六类林地真扫描材质与四类灵草生态已入包（两级地表材质暂关闭，待出图验证）。原存档、5000人口经济、战斗与永久死亡全保留。主角与宗门建筑仍未完成。",
+      "sha256": "d1feda6b468ab483ef84e26a78e0c1745ec373df00106e665115be325a3e091c",
+      "size_bytes": 100985824,
+      "status": "signed_release",
+      "android_version_code": 1176,
+      "protocol": "RSA-3072 PKCS1-v1_5 / SHA-256",
+      "remote_https_verified": false,
+      "remote_range_206_verified": false,
+      "ci_run": 39252223691,
+      "android_real_device_qa": "pending",
+      "engine_visual_proof": "art/actual-engine-capture/canglan-rev208-living-herbs-godot-linux.png"
+    },
     {
       "revision": 207,
       "first_seen_utc": "2026-10-17T19:53:44Z",
