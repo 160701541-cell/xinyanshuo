@@ -181,10 +181,11 @@ jobs:
           cp game-source/apk176-ota177-candidate/scripts/apk176_spirit_resources_rev206.gd qa-stage/ota177/canglan_rev187/spirit_resources.gd
           cp game-source/apk176-ota177-candidate/scripts/apk176_living_regions_rev207.gd qa-stage/ota177/canglan_rev187/living_regions.gd
           # ---- rev209：一次性并入 rev208 + rev209 全部内容 ----
-          mkdir -p qa-stage/ota177/canglan_rev187/hq_ecology_terrain qa-stage/ota177/canglan_rev187/hq_rev208
+          mkdir -p qa-stage/ota177/canglan_rev187/hq_ecology_terrain qa-stage/ota177/canglan_rev187/hq_rev208 qa-stage/ota177/canglan_rev187/hq_ecology_groundcover
           cp -r game-source/apk176-ota177-candidate/assets/hq-rev208/terrain/. qa-stage/ota177/canglan_rev187/hq_ecology_terrain/
           cp game-source/apk176-ota177-candidate/assets/hq-rev208/ecology-intake-provenance.json qa-stage/ota177/canglan_rev187/hq_ecology_terrain/
           find game-source/apk176-ota177-candidate/assets/hq-rev208/vegetation -name '*.glb' -exec cp {} qa-stage/ota177/canglan_rev187/hq_rev208/ \;
+          cp -r game-source/apk176-ota177-candidate/assets/hq-rev208/vegetation/groundcover/. qa-stage/ota177/canglan_rev187/hq_ecology_groundcover/
           cp game-source/apk176-ota177-candidate/scripts/apk176_hq_terrain_pbr_rev208.gd qa-stage/ota177/canglan_rev187/hq_terrain_pbr.gd
           cp game-source/apk176-ota177-candidate/scripts/apk176_hq_forest_floor_pool_rev208.gd qa-stage/ota177/canglan_rev187/hq_forest_floor_pool_rev208.gd
           cp game-source/apk176-ota177-candidate/scripts/apk176_wild_tree_stone_birth_rev208.gd qa-stage/ota177/canglan_rev187/wild_tree_stone_birth_rev208.gd
