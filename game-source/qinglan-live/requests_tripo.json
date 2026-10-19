@@ -1,0 +1,86 @@
+[
+ {
+  "id": "gate",
+  "cn": "山门",
+  "endpoint": "https://api.tripo3d.ai/v2/openapi/task",
+  "body": {
+   "type": "text_to_model",
+   "prompt": "a Chinese cultivation sect mountain gate, three-bay stone archway with red lacquered columns, white jade platform, three tiers of dark blue glazed tile eaves with upturned corners, gold plaque, weathered grey stone, lantern warm glow, standing on a rock ledge, front three-quarter view, isolated on transparent background. Style: Chinese xianxia, stylized voxel-adjacent low-poly, hand-painted texture, strong silhouette, readable at 40m. Bake top-left key, cool bounce from below, ambient occlusion in crevices. Output texture resolution 4096px, PBR: albedo/normal/roughness/metalness. Avoid: photorealistic skin pores, gore, text watermark, blurry, low contrast, western medieval, neon cyberpunk.",
+   "model_version": "v2.5-20250123",
+   "texture": true,
+   "pbr": true,
+   "texture_quality": "detailed",
+   "face_limit": 20000
+  }
+ },
+ {
+  "id": "pavilion",
+  "cn": "藏经阁",
+  "endpoint": "https://api.tripo3d.ai/v2/openapi/task",
+  "body": {
+   "type": "text_to_model",
+   "prompt": "a three-storey Chinese scripture pavilion, dark timber frame, blue tile hip roof with flying eaves, lattice windows glowing warm from inside, red columns, stone base, vertical composition, isolated on transparent background. Style: Chinese xianxia, stylized voxel-adjacent low-poly, hand-painted texture, strong silhouette, readable at 40m. Bake top-left key, cool bounce from below, ambient occlusion in crevices. Output texture resolution 4096px, PBR: albedo/normal/roughness/metalness. Avoid: photorealistic skin pores, gore, text watermark, blurry, low contrast, western medieval, neon cyberpunk.",
+   "model_version": "v2.5-20250123",
+   "texture": true,
+   "pbr": true,
+   "texture_quality": "detailed",
+   "face_limit": 20000
+  }
+ },
+ {
+  "id": "sword",
+  "cn": "青锋剑",
+  "endpoint": "https://api.tripo3d.ai/v2/openapi/task",
+  "body": {
+   "type": "text_to_model",
+   "prompt": "a straight Chinese jian sword, pale blue steel blade with subtle wave pattern, brass guard and pommel, dark wrapped hilt, thin frost mist around the edge, floating diagonally, isolated on transparent background. Style: Chinese xianxia, stylized voxel-adjacent low-poly, hand-painted texture, strong silhouette, readable at 40m. Bake top-left key, cool bounce from below, ambient occlusion in crevices. Output texture resolution 4096px, PBR: albedo/normal/roughness/metalness. Avoid: photorealistic skin pores, gore, text watermark, blurry, low contrast, western medieval, neon cyberpunk.",
+   "model_version": "v2.5-20250123",
+   "texture": true,
+   "pbr": true,
+   "texture_quality": "detailed",
+   "face_limit": 20000
+  }
+ },
+ {
+  "id": "pill",
+  "cn": "筑基丹",
+  "endpoint": "https://api.tripo3d.ai/v2/openapi/task",
+  "body": {
+   "type": "text_to_model",
+   "prompt": "a round crimson cultivation pill, glossy surface with faint gold veins, gentle inner glow, resting on a small celadon dish, macro shot, isolated on transparent background. Style: Chinese xianxia, stylized voxel-adjacent low-poly, hand-painted texture, strong silhouette, readable at 40m. Bake top-left key, cool bounce from below, ambient occlusion in crevices. Output texture resolution 4096px, PBR: albedo/normal/roughness/metalness. Avoid: photorealistic skin pores, gore, text watermark, blurry, low contrast, western medieval, neon cyberpunk.",
+   "model_version": "v2.5-20250123",
+   "texture": true,
+   "pbr": true,
+   "texture_quality": "detailed",
+   "face_limit": 20000
+  }
+ },
+ {
+  "id": "tree",
+  "cn": "老槐",
+  "endpoint": "https://api.tripo3d.ai/v2/openapi/task",
+  "body": {
+   "type": "text_to_model",
+   "prompt": "a hundred-year-old Chinese locust tree, thick gnarled trunk with deep bark fissures, broad layered canopy of small green leaves, a few hanging seed pods, roots gripping rock, isolated on transparent background. Style: Chinese xianxia, stylized voxel-adjacent low-poly, hand-painted texture, strong silhouette, readable at 40m. Bake top-left key, cool bounce from below, ambient occlusion in crevices. Output texture resolution 4096px, PBR: albedo/normal/roughness/metalness. Avoid: photorealistic skin pores, gore, text watermark, blurry, low contrast, western medieval, neon cyberpunk.",
+   "model_version": "v2.5-20250123",
+   "texture": true,
+   "pbr": true,
+   "texture_quality": "detailed",
+   "face_limit": 20000
+  }
+ },
+ {
+  "id": "robe",
+  "cn": "云纹布衣",
+  "endpoint": "https://api.tripo3d.ai/v2/openapi/task",
+  "body": {
+   "type": "text_to_model",
+   "prompt": "a plain off-white Chinese cultivator robe, crossed collar, wide sleeves, subtle cloud embroidery at the hem in pale blue thread, cloth folds with soft AO, laid flat front view, isolated on transparent background. Style: Chinese xianxia, stylized voxel-adjacent low-poly, hand-painted texture, strong silhouette, readable at 40m. Bake top-left key, cool bounce from below, ambient occlusion in crevices. Output texture resolution 4096px, PBR: albedo/normal/roughness/metalness. Avoid: photorealistic skin pores, gore, text watermark, blurry, low contrast, western medieval, neon cyberpunk.",
+   "model_version": "v2.5-20250123",
+   "texture": true,
+   "pbr": true,
+   "texture_quality": "detailed",
+   "face_limit": 20000
+  }
+ }
+]

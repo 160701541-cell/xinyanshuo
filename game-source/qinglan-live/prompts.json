@@ -1,0 +1,30 @@
+{
+  "note": "母版提示词库：每条可直接贴进 Tripo / Rodin / Meshy / Hunyuan3D 做 3D，也可作为本地 4K 贴图生成的参数源。",
+  "common": {
+    "resolution": 4096,
+    "engine_hint": "image-to-3d / text-to-3d，输出 glb，法线+粗糙度+金属度三张 4K",
+    "style": "Chinese xianxia, stylized voxel-adjacent low-poly, hand-painted texture, strong silhouette, readable at 40m",
+    "negative": "photorealistic skin pores, gore, text watermark, blurry, low contrast, western medieval, neon cyberpunk",
+    "lighting_bake": "top-left key, cool bounce from below, ambient occlusion in crevices"
+  },
+  "assets": [
+    {"id": "gate", "cn": "山门", "en": "mountain gate", "category": "building",
+     "prompt": "a Chinese cultivation sect mountain gate, three-bay stone archway with red lacquered columns, white jade platform, three tiers of dark blue glazed tile eaves with upturned corners, gold plaque, weathered grey stone, lantern warm glow, standing on a rock ledge, front three-quarter view, isolated on transparent background",
+     "palette": ["#8f8b84", "#b3372f", "#2b3a55", "#d8b464"], "materials": ["weathered stone", "red lacquer", "glazed tile", "gold leaf"]},
+    {"id": "pavilion", "cn": "藏经阁", "en": "scripture pavilion", "category": "building",
+     "prompt": "a three-storey Chinese scripture pavilion, dark timber frame, blue tile hip roof with flying eaves, lattice windows glowing warm from inside, red columns, stone base, vertical composition, isolated on transparent background",
+     "palette": ["#4a3324", "#2b3a55", "#c8452f", "#e8c777"], "materials": ["dark timber", "blue tile", "paper window", "stone"]},
+    {"id": "sword", "cn": "青锋剑", "en": "azure sword", "category": "weapon",
+     "prompt": "a straight Chinese jian sword, pale blue steel blade with subtle wave pattern, brass guard and pommel, dark wrapped hilt, thin frost mist around the edge, floating diagonally, isolated on transparent background",
+     "palette": ["#a8c0d8", "#c9a24a", "#2d2723"], "materials": ["folded steel", "brass", "silk cord"]},
+    {"id": "pill", "cn": "筑基丹", "en": "foundation pill", "category": "item",
+     "prompt": "a round crimson cultivation pill, glossy surface with faint gold veins, gentle inner glow, resting on a small celadon dish, macro shot, isolated on transparent background",
+     "palette": ["#b3352c", "#e2a94a", "#7fae9a"], "materials": ["herbal paste", "gold vein", "celadon"]},
+    {"id": "tree", "cn": "老槐", "en": "old locust tree", "category": "plant",
+     "prompt": "a hundred-year-old Chinese locust tree, thick gnarled trunk with deep bark fissures, broad layered canopy of small green leaves, a few hanging seed pods, roots gripping rock, isolated on transparent background",
+     "palette": ["#5a4632", "#3f6b33", "#7a9a4a"], "materials": ["bark", "leaf", "moss"]},
+    {"id": "robe", "cn": "云纹布衣", "en": "cloud-pattern robe", "category": "clothing",
+     "prompt": "a plain off-white Chinese cultivator robe, crossed collar, wide sleeves, subtle cloud embroidery at the hem in pale blue thread, cloth folds with soft AO, laid flat front view, isolated on transparent background",
+     "palette": ["#ded6c4", "#8fa9c9", "#b8a377"], "materials": ["coarse linen", "silk thread"]}
+  ]
+}

@@ -1,0 +1,11 @@
+[
+  {"id":"村民·站","kind":"human","scale":0.175,"params":{"robe":[0.62,0.60,0.54],"hair":[0.14,0.12,0.12],"hat":"cloth","pose":"idle"}},
+  {"id":"村民·走","kind":"human","scale":0.175,"params":{"robe":[0.55,0.48,0.38],"hair":[0.16,0.13,0.12],"hat":"cloth","pose":"walk"}},
+  {"id":"锄地","kind":"human","scale":0.175,"params":{"robe":[0.58,0.52,0.42],"hair":[0.15,0.12,0.11],"hat":"cloth","pose":"hoe"}},
+  {"id":"陆青崖","kind":"human","scale":0.175,"params":{"robe":[0.30,0.42,0.60],"hair":[0.12,0.11,0.14],"hat":"bun","pose":"idle"}},
+  {"id":"女修","kind":"human","scale":0.175,"params":{"robe":[0.40,0.58,0.82],"hair":[0.10,0.10,0.13],"hat":"pin","pose":"idle"}},
+  {"id":"家鸡","kind":"chicken","scale":0.175,"params":{}},
+  {"id":"山狼","kind":"wolf","scale":0.30,"params":{}},
+  {"id":"藤妖","kind":"vine","scale":0.26,"params":{}},
+  {"id":"树妖","kind":"tree_spirit","scale":0.42,"params":{}}
+]

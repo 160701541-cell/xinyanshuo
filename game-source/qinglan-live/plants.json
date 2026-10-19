@@ -1,0 +1,44 @@
+[
+ {
+  "id": "① 幼苗 · 0 年 · 两片子叶",
+  "kind": "tree_stage",
+  "scale": 0.175,
+  "params": {
+   "stage": 0
+  }
+ },
+ {
+  "id": "② 幼树 · 1 年 · 单干三枝小冠",
+  "kind": "tree_stage",
+  "scale": 0.175,
+  "params": {
+   "stage": 1
+  }
+ },
+ {
+  "id": "③ 成树 · 20 年 · 粗干分叉六团冠",
+  "kind": "tree_stage",
+  "scale": 0.175,
+  "params": {
+   "stage": 2,
+   "leaf": [
+    0.26,
+    0.42,
+    0.21
+   ]
+  }
+ },
+ {
+  "id": "④ 参天 · 百年 · 两人合抱 / 垂枝花果",
+  "kind": "tree_stage",
+  "scale": 0.175,
+  "params": {
+   "stage": 3,
+   "leaf": [
+    0.24,
+    0.4,
+    0.22
+   ]
+  }
+ }
+]

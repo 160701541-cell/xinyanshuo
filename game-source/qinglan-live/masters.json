@@ -1,0 +1,16 @@
+[
+  {"id":"外门弟子","kind":"person","params":{"robe":[0.86,0.84,0.78],"hair":[0.14,0.13,0.16],"hat":"none"}},
+  {"id":"内门女修","kind":"person","params":{"robe":[0.42,0.60,0.86],"hair":[0.10,0.10,0.14],"hat":"hairpin"}},
+  {"id":"长老","kind":"person","params":{"robe":[0.72,0.28,0.26],"hair":[0.88,0.88,0.90],"hat":"crown"}},
+  {"id":"松","kind":"pine","params":{"h":14,"leaf":[0.16,0.28,0.15]}},
+  {"id":"枫","kind":"broadleaf","params":{"h":11,"leaf":[0.62,0.28,0.20]}},
+  {"id":"灵茶树","kind":"broadleaf","params":{"h":8,"leaf":[0.30,0.56,0.34],"glow":true}},
+  {"id":"山门","kind":"gate","params":{"w":14,"h":9}},
+  {"id":"丹房","kind":"house","params":{"w":10,"d":8,"h":5,"roof":[0.16,0.20,0.28]}},
+  {"id":"剑阁","kind":"pagoda","params":{"tiers":4,"r":6}},
+  {"id":"青锋剑","kind":"sword","params":{"len":18,"gem":[0.35,0.80,0.75]}},
+  {"id":"筑基丹","kind":"pill","params":{"color":[0.92,0.72,0.32]}},
+  {"id":"灵鹿","kind":"beast","params":{"size":9,"color":[0.78,0.70,0.55]}},
+  {"id":"灵田","kind":"field","params":{"w":10,"d":7,"crop":[0.42,0.66,0.30]}},
+  {"id":"坊市","kind":"city","params":{"r":9}}
+]

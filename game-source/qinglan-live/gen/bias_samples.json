@@ -1,0 +1,47 @@
+[
+ {
+  "grade": "玄品",
+  "g": 2,
+  "tier": 2,
+  "bias": true,
+  "n": 1,
+  "affixes": [
+   {
+    "kind": "gen",
+    "text": "灵力 +71",
+    "v": 71
+   }
+  ],
+  "worth": 96.3
+ },
+ {
+  "grade": "地品",
+  "g": 3,
+  "tier": 3,
+  "bias": true,
+  "n": 1,
+  "affixes": [
+   {
+    "kind": "elem",
+    "text": "攻击属性 +4.3%",
+    "v": 4.3
+   }
+  ],
+  "worth": 200.3
+ },
+ {
+  "grade": "仙品",
+  "g": 5,
+  "tier": 3,
+  "bias": true,
+  "n": 1,
+  "affixes": [
+   {
+    "kind": "gen",
+    "text": "身法 +34",
+    "v": 34
+   }
+  ],
+  "worth": 866.6
+ }
+]

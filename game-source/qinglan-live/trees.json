@@ -1,0 +1,9 @@
+[
+  {"id":"松（塔松）","kind":"pine","params":{"h":16}},
+  {"id":"柏（侧柏）","kind":"cypress","params":{"h":15}},
+  {"id":"阔叶（槐）","kind":"broadleaf","params":{"h":15}},
+  {"id":"垂柳","kind":"willow","params":{"h":13}},
+  {"id":"竹","kind":"bamboo","params":{"h":14}},
+  {"id":"桃（春）","kind":"peach","params":{"h":10}},
+  {"id":"枯木","kind":"dead","params":{"h":9}}
+]
