@@ -27,6 +27,8 @@ func _ready() -> void:
 	pivot = Node3D.new()
 	add_child(pivot)
 	_grab(root)
+	if float(_neck_params()["orig_face"]) > 0.5:
+		_orig_face(root)
 	_build()
 	if "--measure" in OS.get_cmdline_user_args():
 		_measure_dump()
@@ -59,6 +61,49 @@ func _grab(root: Node3D) -> void:
 			bones = arr[Mesh.ARRAY_BONES] if arr[Mesh.ARRAY_BONES] != null else PackedInt32Array()
 			weights = arr[Mesh.ARRAY_WEIGHTS] if arr[Mesh.ARRAY_WEIGHTS] != null else PackedFloat32Array()
 	print("PICK ", mi.name if mi else "none", " verts=", verts.size(), " tris=", idx.size() / 3)
+
+func _orig_face(root: Node3D) -> void:
+	# 试验开关（neck_params.orig_face=1）：原始 GLB 里有 3 个网格 —— 身体（7281 顶点）、
+	# Eyebrows（650，y1.695-1.725）、Eyes（556=两只 278 顶点的球，y1.684-1.714）；
+	# 流水线只取最大的身体网格并把 root 整体 visible=false，所以眼/眉被藏起来、
+	# 改用平面 decal。这里把两个原始网格按绑定姿态坐标直接摆出来，用来实测
+	# 「被藏起来的真眼球/真眉毛能不能直接露出来」（取决于身体网格有没有眼眶开口、
+	# 以及面壳是否比眼球更靠前）。只读数不改几何，纯试验。
+	var want := ["eyebrow", "eye"]
+	for n in root.find_children("*", "MeshInstance3D", true, false):
+		var m := n as MeshInstance3D
+		if m.mesh == null:
+			continue
+		var nm := String(m.name).to_lower()
+		var hit := false
+		for w in want:
+			if nm.contains(w):
+				hit = true
+		if not hit:
+			continue
+		var arr: Array = (m.mesh as ArrayMesh).surface_get_arrays(0)
+		var vv: PackedVector3Array = arr[Mesh.ARRAY_VERTEX]
+		var nn: PackedVector3Array = arr[Mesh.ARRAY_NORMAL] if arr[Mesh.ARRAY_NORMAL] != null else PackedVector3Array()
+		var cc: PackedColorArray = arr[Mesh.ARRAY_COLOR] if arr[Mesh.ARRAY_COLOR] != null else PackedColorArray()
+		var ii: PackedInt32Array = arr[Mesh.ARRAY_INDEX] if arr[Mesh.ARRAY_INDEX] != null else PackedInt32Array()
+		var st := SurfaceTool.new()
+		st.begin(Mesh.PRIMITIVE_TRIANGLES)
+		for k in range(vv.size()):
+			st.set_normal(nn[k] if nn.size() > k else Vector3.UP)
+			st.set_color(cc[k] if cc.size() > k else Color.WHITE)
+			st.add_vertex(vv[k])
+		for k in ii:
+			st.add_index(k)
+		var mi := MeshInstance3D.new()
+		mi.name = "ORIG_" + String(m.name)
+		mi.mesh = st.commit()
+		var mat := StandardMaterial3D.new()
+		mat.vertex_color_use_as_albedo = true
+		mat.roughness = 0.45
+		mat.cull_mode = BaseMaterial3D.CULL_DISABLED
+		mi.material_override = mat
+		pivot.add_child(mi)
+		print("ORIG_FACE added %s verts=%d tris=%d" % [String(m.name), vv.size(), ii.size() / 3])
 
 func _group_of_tri(t: int) -> int:
 	var best := 0
@@ -762,6 +807,7 @@ func _neck_params() -> Dictionary:
 		"ring2_rz": 0.130, "ring3_rz": 0.132, "ring4_rz": 0.125, "ring5_rz": 0.110,
 		"mid_y": 0.0, "mid_rx": 0.0, "mid_rz": 0.0,
 		"fit_enable": 0.0, "fit_rings": 5.0, "fit_margin": 1.08,
+		"orig_face": 0.0,
 	}
 	var f := FileAccess.open("res://rig/neck_params.json", FileAccess.READ)
 	if f != null:
