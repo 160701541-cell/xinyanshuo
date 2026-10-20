@@ -1,3 +1,11 @@
+### v0.7 最终CI候选构建确认（更新2026-10-21）
+- GitHub Actions run **39456619579**，提交 **0a7c810b**；Gradle assembleDebug 成功，Android APK v2签名校验成功，`aapt`检查包名/版本通过。
+- APK包名 `com.xinyanshuo.zhiyin.companion`，versionCode=7，versionName=0.7.0。证书指纹：`0df240c639c5988480fc333f3ce985b386508e932879e59a9d3ccd2da4d9ad90`，与v0.4–v0.6当前公开实验签名相同。
+- APK SHA256：`649c36be9f0f0ad6942d2235344d015bff7b819070873c6b9c993cccf4845aa6`，大小13,973,370字节，已在本地对下载的GitHub artifact重新验算一致。
+- 包内检查9张 Kenney CC0 等轴测家具PNG均真实存在，`lib/arm64-v8a/libzhiyin_llm.so`存在，非只提交脚本。Kenney原版ZIP SHA256：`68afa4e6dc8a53942379fb47f1e84ec735d46b77bb1c1ceb968e245693dde067`。
+- **证据级别仅到 CI 编译/签名/资源打包 QA；未跑安卓16真机断网续传、性能、音频、室内视觉截图、模型实际中文生成。** 不得以“全部修复通过”标注实机效果。
+- 已完成代码整改的用户缺陷：下载中断后不应销毁.partial、安卓前台服务续传、进度通知、显式暂停继续、固定模型SHA、程序化家具替换成正式许可贴图、主界面全屏和可折叠状态栏。
+- 持续未达标项：2.5D人物为临时画法，动作/脸/衣物、深度光影、UI系统、其他NPC实体生活、模型稳定推理都需要下一轮专门QA与美术研发，不能以9张Kenney家具覆盖视觉P0。
 ## 2026-10-21 · v0.7 P0整改：下载失败重头开始 / UI过于原型 / 美术低质
 
 ### 用户实测缺陷（按原意记录）
