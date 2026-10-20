@@ -23,7 +23,7 @@ NOTICE = ("世界盒子 WorldBox 安卓传统Mono NeoModLoader **源码型** MOD
           "这里的代码会尝试由已装载的传统NeoModLoader在手机内编译，如报错，请保留完整错误日志。\n"
           "真实Android0.51.4兼容性：DEVICE_PENDING。\n")
 
-def create(source, original_manifest, output, extra_sources=()):
+def create(source, original_manifest, output, extra_sources=(), locales_dir=None):
     code=Path(source).read_text(encoding="utf8")
     if "BasicMod<" not in code or "OnModLoad()" not in code or "World.world.GetTile" not in code:
         raise ValueError("incompatible observer source")
@@ -48,6 +48,18 @@ def create(source, original_manifest, output, extra_sources=()):
         if "HarmonyPatch" in extra_code or "File.Write" in extra_code:
             raise ValueError("unsafe game save modification in source")
         files[ROOT+"/Code/"+extra_path.name]=extra_code.encode("utf8")
+    if locales_dir is not None:
+        base=Path(locales_dir)
+        for lang in ("cz","en"):
+            raw=(base/(lang+".json")).read_bytes()
+            if len(raw)>64_000:raise ValueError("oversized own locale")
+            strings=json.loads(raw.decode("utf-8-sig"))
+            if (not isinstance(strings,dict) or not strings or len(strings)>128 or
+                    any(not isinstance(k,str) or not k.startswith("xinyanshuo.wb.")
+                        or len(k)>100 or not isinstance(v,str)
+                        or len(v)==0 or len(v)>256 for k,v in strings.items())):
+                raise ValueError("invalid own locale dictionary")
+            files[ROOT+"/Locales/"+lang+".json"]=raw
     checks="\n".join(hashlib.sha256(v).hexdigest()+"  "+k for k,v in sorted(files.items()))+"\n"
     files["SHA256SUMS.txt"]=checks.encode("utf8")
     output=Path(output);output.parent.mkdir(parents=True,exist_ok=True)
@@ -60,8 +72,9 @@ def main():
     p.add_argument("--source",type=Path,required=True)
     p.add_argument("--manifest",type=Path,required=True)
     p.add_argument("--out",type=Path,required=True)
+    p.add_argument("--locales",type=Path)
     p.add_argument("--extra-source",type=Path,action="append",default=[])
     a=p.parse_args()
-    print(json.dumps(create(a.source,a.manifest,a.out,a.extra_source),ensure_ascii=False,indent=2))
+    print(json.dumps(create(a.source,a.manifest,a.out,a.extra_source,a.locales),ensure_ascii=False,indent=2))
 
 if __name__=="__main__":main()
