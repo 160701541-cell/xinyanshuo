@@ -66,7 +66,32 @@ def main():
             blob = r.read(6 * 1024 * 1024)
         data = read_gltf_metadata(blob)
         destination.write_bytes(blob)
-        item = {"path":source, "sha256":hashlib.sha256(blob).hexdigest(), "bytes":len(blob), **data}
+        # Some Kenney GLBs reference external albedo maps instead of embedding
+        # texture bytes. Resolve and bundle them at the original relative URI.
+        # Merely importing a mesh without its original texture is NOT a pass.
+        json_size = struct.unpack_from("<I", blob, 12)[0]
+        embedded = json.loads(blob[20:20+json_size])
+        external_textures = []
+        for image in embedded.get("images", []):
+            uri = image.get("uri", "")
+            if not uri or uri.startswith("data:"):
+                continue
+            relative = Path(uri)
+            if relative.is_absolute() or ".." in relative.parts or relative.suffix.lower() != ".png":
+                raise ValueError("Unsafe/out-of-scope GLB texture URI: " + uri)
+            original_png = Path(source).parent / relative
+            texture_url = f"https://raw.githubusercontent.com/{OWNER_REPO}/{COMMIT}/{original_png.as_posix()}"
+            with urllib.request.urlopen(texture_url,timeout=40) as response:
+                img_data = response.read(8*1024*1024)
+            if not img_data.startswith(b"\\x89PNG\\r\\n\\x1a\\n".replace(b"\\x89",bytes([137])).replace(b"\\r",bytes([13])).replace(b"\\n",bytes([10]))):
+                raise ValueError("External material image was not PNG: " + uri)
+            output = destination.parent / relative
+            output.parent.mkdir(parents=True,exist_ok=True)
+            output.write_bytes(img_data)
+            external_textures.append({"uri":uri,"sha256":hashlib.sha256(img_data).hexdigest()})
+            print("EXTERNAL GLB COLOR MAP",uri,len(img_data),flush=True)
+        item = {"path":source, "sha256":hashlib.sha256(blob).hexdigest(),
+                "bytes":len(blob), "external_textures":external_textures, **data}
         manifest["models"][short] = item
         print(short, item, flush=True)
     (ROOT / "ASSET_MANIFEST.json").write_text(json.dumps(manifest,indent=2,ensure_ascii=False)+"\n",encoding="utf-8")
