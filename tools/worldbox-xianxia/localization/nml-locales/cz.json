@@ -36,5 +36,11 @@
   "xinyanshuo.wb.mod_font_off": "其他MOD字体：关",
   "xinyanshuo.wb.mod_install_pending": "模组管理器：只读预览；暂存文件尚未安装或启用；手机批量选择与安装尚未接入。",
   "xinyanshuo.wb.vanilla_heading": "原版菜单中文说明 / 原生语言键登记（实验版）",
-  "xinyanshuo.wb.lang_missing": "未知英文保留原文；真机尚待检验。"
+  "xinyanshuo.wb.lang_missing": "未知英文保留原文；真机尚待检验。",
+  "wbx_economy_nature": "资源物产",
+  "wbx_economy_nature Description": "农林矿藏、灵草灵石与生态资源",
+  "wbx_economy_creation": "工坊与商品",
+  "wbx_economy_creation Description": "原材料加工、冶炼、纺织与物品生产",
+  "wbx_economy_noosphere": "钱粮国库",
+  "wbx_economy_noosphere Description": "铜钱白银黄金、国库税收、村县州郡国"
 }
