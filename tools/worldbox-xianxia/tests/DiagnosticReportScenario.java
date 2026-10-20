@@ -14,7 +14,13 @@ public final class DiagnosticReportScenario {
             StringBuilder raw=new StringBuilder("FIRST_LOG_BYTE\nException EARLY_OBSERVER_COMPILE_FAILED\n");
             raw.append("  at XianxiaObserverV07.OnModLoad\n");
             for(int i=0;i<12000;i++)raw.append("LocalizedTextManager: missing text: sakuga_title_测试_"+i+"\n");
-            raw.append("MOD_STATE XINYANSHUO_WORLD_BOX_OBSERVER_V07=FAILED\nLAST_LOG_BYTE\n");
+            raw.append("Warning System.DllNotFoundException: libsteam_api\n");
+            raw.append("Log System.Exception: Steam is not available\n");
+            raw.append("NML_STAGE initialized_successfully=True\n");
+            raw.append("MOD_STATE XINYANSHUO_WORLD_BOX_OBSERVER_V07=FAILED reason=\n");
+            raw.append("USER_MOD_IMPORT_BEGIN name=中文名模组.zip\n");
+            raw.append("USER_MOD_IMPORT_FAILED name=中文名模组.zip java.util.zip.ZipException: zip END header not found\n");
+            raw.append("LAST_LOG_BYTE\n");
             byte[] bytes=raw.toString().getBytes(StandardCharsets.UTF_8);
             Files.write(session.toPath(),bytes);
             Files.write(boot.toPath(),"MOD_DEPLOY_CACHED v28-zh-TEST\n".getBytes(StandardCharsets.UTF_8));
@@ -25,6 +31,12 @@ public final class DiagnosticReportScenario {
             check(summary.length()<=DiagnosticReport.COPY_LIMIT,"clipboard bounded");
             check(summary.contains("EARLY_OBSERVER_COMPILE_FAILED"),"first failure must survive noise");
             check(summary.contains("=FAILED"),"latest failure retained");
+            check(summary.contains("万界观察MOD最近状态"),"observer FAILED visible even without reason");
+            check(summary.contains("NML加载器最近状态"),"NML initialized separately from failed observer");
+            check(summary.contains("最后ZIP导入记录"),"filename and failing ZIP shown");
+            check(summary.contains("zip END header not found"),"corrupt archive diagnosis retained");
+            check(summary.contains("已折叠安卓Steam缺库警告"),"desktop Steam warning not top fatal");
+            check(!summary.contains("Steam is not available"),"Steam warning must not hide relevant loader error");
             check(summary.contains("12000"),"missing text count retained");
             check(!summary.contains("sakuga_title_测试_"),"noise is aggregated");
             check(summary.contains("v28-zh-TEST"),"deployment build visible");
