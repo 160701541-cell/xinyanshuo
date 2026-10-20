@@ -52,7 +52,7 @@ func _ready() -> void:
     _import_character()
     _setup_camera()
     _setup_ui()
-    _status("实装：GLB模型、PBR木纹与法线、3D灯光、家具碰撞体。点击物件查看。")
+    _status("17项GLB  ·  PBR木纹/法线  ·  3D物理交互")
     set_process(true)
     set_process_unhandled_input(true)
 
@@ -61,10 +61,10 @@ func _setup_world() -> void:
     env.name="真实3D环境光"
     var setting := Environment.new()
     setting.background_mode = Environment.BG_COLOR
-    setting.background_color = Color(0.47,0.64,0.73)
+    setting.background_color = Color(0.34,0.47,0.52)
     setting.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
-    setting.ambient_light_color = Color(0.76,0.83,0.89)
-    setting.ambient_light_energy = 0.62
+    setting.ambient_light_color = Color(0.67,0.75,0.82)
+    setting.ambient_light_energy = 0.36
     setting.tonemap_mode = Environment.TONE_MAPPER_FILMIC
     env.environment=setting
     add_child(env)
@@ -73,7 +73,7 @@ func _setup_world() -> void:
     sunlight.name="自然阳光"
     sunlight.rotation_degrees=Vector3(-44,-31,0)
     sunlight.light_color=Color(1.0,0.91,0.76)
-    sunlight.light_energy=1.30
+    sunlight.light_energy=0.63
     sunlight.shadow_enabled=true
     add_child(sunlight)
 
@@ -81,7 +81,7 @@ func _setup_world() -> void:
     room_light.name="室内暖光"
     room_light.position=Vector3(0.30,2.13,-0.15)
     room_light.light_color=Color(1.0,0.78,0.57)
-    room_light.light_energy=1.05
+    room_light.light_energy=0.27
     room_light.omni_range=4.15
     room_light.shadow_enabled=true
     add_child(room_light)
@@ -201,6 +201,10 @@ func _instantiate_model(model_id:String, world_pos:Vector2,
     var resize: float = minf(wanted.x/maxf(0.01,b.size.x),
         minf(wanted.y/maxf(0.01,b.size.y),wanted.z/maxf(0.01,b.size.z)))
     # We use a single uniform scale: no anatomical stretching of humanoids.
+    if model_id=="prototype_character":
+        # Humanoid height drives scale. X/Z restriction made the full 3D
+        # model shrink to an unusable 50-pixel silhouette.
+        resize=wanted.y/maxf(0.01,b.size.y)
     root.scale=Vector3.ONE*resize
     root.position=Vector3(world_pos.x,-b.position.y*resize,world_pos.y)
     root.rotation.y=rotation
@@ -291,6 +295,12 @@ func _setup_ui() -> void:
     var canvas:=CanvasLayer.new()
     add_child(canvas)
     var root:=Control.new()
+    # Android/Linux device-local Chinese font instead of missing-glyph tofu.
+    var font:=SystemFont.new()
+    font.font_names=PackedStringArray(["Noto Sans CJK SC","Noto Sans SC","Noto Sans","Microsoft YaHei","SimHei"])
+    var theme:=Theme.new()
+    theme.default_font=font
+    root.theme=theme
     root.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
     root.mouse_filter=Control.MOUSE_FILTER_IGNORE
     canvas.add_child(root)
@@ -335,7 +345,7 @@ func _setup_ui() -> void:
     _button(row,"照料植物",func():_go_to("plant","她准备浇花。"))
     var foot:=Label.new()
     foot.name="3D-only QA / no AI bridge"
-    foot.text="真3D渲染技术验证：原生AI/长期记忆尚未迁移"
+    foot.text="3D渲染验收版 · AI/存档待桥接"
     foot.add_theme_color_override("font_color",Color(1,.88,.76))
     foot.set_anchors_preset(Control.PRESET_TOP_RIGHT)
     foot.offset_left=-355;foot.offset_right=-12
