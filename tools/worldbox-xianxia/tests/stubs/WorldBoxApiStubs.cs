@@ -2,12 +2,14 @@
 // These validate C# syntax and our assumed signatures, not Android API linkage.
 using System;
 using System.Collections.Generic;
+#if !REAL_MOBILE_NML
 namespace NeoModLoader.api {
     public class BasicMod<T> {
         protected virtual void OnModLoad() {}
         protected static void Destroy(object o) {}
     }
 }
+#endif
 namespace UnityEngine {
     public enum TextureFormat { RGBA32 }
     public enum FilterMode { Point }
