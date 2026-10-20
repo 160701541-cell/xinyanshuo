@@ -67,7 +67,7 @@ def preflight_mod(mod_zip):
         raise ValueError("only tested v0.27 candidate accepted")
     return data
 
-def stage(base_apk, mono_zip, output):
+def stage(base_apk, mono_zip, output, replace_own_module=False):
     base_apk,mono_zip,output=map(Path,(base_apk,mono_zip,output))
     if output.resolve() in (base_apk.resolve(),mono_zip.resolve()):
         raise ValueError("never overwrite original")
@@ -75,13 +75,27 @@ def stage(base_apk, mono_zip, output):
         files=preflight_mod(mod)
     with zipfile.ZipFile(base_apk) as apk:
         old=preflight_base(apk)
-        if any(ROOT+name in apk.namelist() for name in files):
+        existing={entry["target"] for entry in old["files"] if entry["target"].startswith(MOD)}
+        archived={name[len(ROOT):] for name in apk.namelist() if name.startswith(ROOT+MOD)}
+        if existing!=archived:
+            raise ValueError("own module assets differ from deployment manifest")
+        if existing and not replace_own_module:
             raise ValueError("already contains this mod; no silent replacement")
+        # Replacement is limited to this module's deployment assets. Never
+        # rewrite foreign MODs, Managed.zip, DEX, package identity or user saves.
+        for entry in old["files"]:
+            target=entry["target"]
+            digest=entry.get("sha256")
+            if not isinstance(digest,str) or not re.fullmatch(r"[0-9a-f]{64}",digest):
+                raise ValueError("missing valid base asset checksum: "+target)
+            if sha(apk.read(ROOT+target))!=digest:
+                raise ValueError("base deployment checksum mismatch: "+target)
+        retained=[entry for entry in old["files"] if entry["target"] not in existing]
         manifest=dict(old)
         manifest["build_token"]="v28-zh-"+sha(mono_zip.read_bytes())[:18]
         manifest["device_test"]="DEVICE_PENDING"
         manifest["mods"]=list(dict.fromkeys([*old.get("mods",[]),"WorldBoxXianxiaObserver 0.27"]))
-        manifest["files"]=[*old["files"],*(
+        manifest["files"]=[*retained,*(
             {"target":name,"size":len(blob),"sha256":sha(blob)}
             for name,blob in sorted(files.items())
         )]
@@ -92,6 +106,8 @@ def stage(base_apk, mono_zip, output):
             with zipfile.ZipFile(partial,"w",allowZip64=True) as out:
                 out.comment=apk.comment
                 for entry in apk.infolist():
+                    if entry.filename.startswith(ROOT) and entry.filename[len(ROOT):] in existing:
+                        continue
                     if entry.filename.startswith("META-INF/") and entry.filename.upper().endswith(
                         (".RSA",".DSA",".EC",".SF","MANIFEST.MF")):
                         continue  # original signature invalidated by private modification
@@ -103,8 +119,12 @@ def stage(base_apk, mono_zip, output):
                 if out.testzip()!=None:raise ValueError("staged ZIP CRC failed")
                 actual=json.loads(out.read(MANIFEST))
                 if actual["build_token"]==old["build_token"]:raise ValueError("cache not invalidated")
-                for name,blob in files.items():
-                    if sha(out.read(ROOT+name))!=sha(blob):raise ValueError("payload corrupted")
+                names=out.namelist()
+                if len(names)!=len(set(names)):raise ValueError("duplicate archive entry")
+                for record in actual["files"]:
+                    blob=out.read(ROOT+record["target"])
+                    if len(blob)!=record["size"] or sha(blob)!=record["sha256"]:
+                        raise ValueError("payload corrupted: "+record["target"])
             os.replace(partial,output)
         finally:
             if partial.exists():partial.unlink()
@@ -112,6 +132,8 @@ def stage(base_apk, mono_zip, output):
             "original_apk_untouched":True,
             "existing_mono_bridge_reused":True,
             "source_files_added":len(files),
+            "own_module_files_replaced":len(existing),
+            "foreign_deployment_files_retained":len(retained),
             "deployment_records":len(manifest["files"]),
             "build_token":manifest["build_token"],
             "worldbox_device_loaded":False,
@@ -123,5 +145,7 @@ if __name__=="__main__":
     p.add_argument("--base-apk",type=Path,required=True)
     p.add_argument("--mono-zip",type=Path,required=True)
     p.add_argument("--out",type=Path,required=True)
+    p.add_argument("--replace-own-module",action="store_true",
+                   help="Explicitly replace only existing WorldBoxXianxiaObserver deployment assets")
     args=p.parse_args()
-    print(json.dumps(stage(args.base_apk,args.mono_zip,args.out),ensure_ascii=False,indent=2))
+    print(json.dumps(stage(args.base_apk,args.mono_zip,args.out,args.replace_own_module),ensure_ascii=False,indent=2))
