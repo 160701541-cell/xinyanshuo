@@ -27,14 +27,23 @@ jobs:
         run: |
           echo "y" | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses >/dev/null || true
           "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --install "platforms;android-35" "build-tools;35.0.0"
+      - name: Create repeatable LAB test signing key
+        run: |
+          python3 -m pip install --quiet 'cryptography>=42,<47'
+          python3 ci/make_lab_signer.py
+          echo "ZHIYIN_SIGNING_FILE=$RUNNER_TEMP/zhiyin-test-signing.p12" >> "$GITHUB_ENV"
+          echo "ZHIYIN_SIGNING_PASSWORD=PublicLabOnly2026" >> "$GITHUB_ENV"
       - name: Build native Android APK
         run: gradle --no-daemon --stacktrace assembleDebug
+      - name: Verify test APK signing
+        run: |
+          "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --verbose --print-certs app/build/outputs/apk/debug/app-debug.apk
       - name: Print APK SHA256
         run: sha256sum app/build/outputs/apk/debug/app-debug.apk
       - name: Upload installable APK
         uses: actions/upload-artifact@v4
         with:
-          name: zhiyin-native-android-v0.3
+          name: zhiyin-native-android-v0.4
           path: zhiyin-native/app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
           retention-days: 30
