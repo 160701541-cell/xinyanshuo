@@ -20,7 +20,9 @@ public final class ModelDownloadService extends Service {
   public static final String PAUSE="com.xinyanshuo.zhiyin.MODEL_DOWNLOAD_PAUSE";
   public static final String RESTART="com.xinyanshuo.zhiyin.MODEL_DOWNLOAD_RESET";
   public static final String CHANNEL="zhiyin_model_downloads";
-  public static final String SOURCE="https://huggingface.co/QuantFactory/Qwen3-0.6B-GGUF/resolve/main/Qwen3-0.6B.Q4_K_M.gguf";
+  // Immutable revision + upstream Xet SHA256. Never trust a changing 'main' pointer.
+  public static final String SOURCE="https://huggingface.co/QuantFactory/Qwen3-0.6B-GGUF/resolve/4b9fb1416e9cb96d63913c70cfa93482a714a39d/Qwen3-0.6B.Q4_K_M.gguf";
+  private static final String EXPECTED_SHA256="7af3fdf842f87b24672f8a7f1dd50404043f0bfb71093ff91c31d2b49df4631d";
   public static final String PREF="zhiyin_download_v2";
   private static final int NOTIF=4207;
   private static final long MAX_BYTES=4L*1024L*1024L*1024L;
@@ -194,8 +196,9 @@ public final class ModelDownloadService extends Service {
              maybeSha.matches("(?i)[a-f0-9]{64}")&&!oldSha.equalsIgnoreCase(maybeSha)){
             throw new IOException("模型源SHA256改变，保留旧缓存，拒绝拼接");
           }
-          if(maybeSha.matches("(?i)[a-f0-9]{64}"))
-            prefs.edit().putString("sha256",maybeSha.toLowerCase(Locale.ROOT)).apply();
+          if(maybeSha.matches("(?i)[a-f0-9]{64}")&&!EXPECTED_SHA256.equalsIgnoreCase(maybeSha))
+            throw new IOException("远程模型校验值与固定版本不一致，拒绝继续");
+          prefs.edit().putString("sha256",EXPECTED_SHA256).apply();
           if(bytes==0&&responseEtag!=null)etag=responseEtag;
           if(remoteSize>0)total=remoteSize;
           prefs.edit().putString("etag",etag).putLong("total",total).apply();
@@ -257,7 +260,7 @@ public final class ModelDownloadService extends Service {
     setState("下载完成，正在校验模型");
     if(part.length()<10000000L||!validMagic(part))throw new IOException("GGUF头部或文件长度异常");
     if(total>0&&part.length()!=total)throw new IOException("总长度校验失败");
-    String expected=prefs.getString("sha256","");
+    String expected=EXPECTED_SHA256;
     // Hugging Face LFS linked ETag is SHA256 of the exact blob; verify when provided.
     if(expected.matches("(?i)[a-f0-9]{64}")){
       MessageDigest digest=MessageDigest.getInstance("SHA-256");
