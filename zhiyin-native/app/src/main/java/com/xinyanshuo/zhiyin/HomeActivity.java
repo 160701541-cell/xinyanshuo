@@ -172,6 +172,10 @@ public final class HomeActivity extends Activity {
   private void onSceneTap(String thing){
     switch(thing){
       case "character":talk();break;
+      case "lamp":
+        boolean on=world.toggleLamp();
+        try{memory.addEvent("玩家",on?"打开出租屋吊灯":"关掉出租屋吊灯","shared","","room");}catch(Exception ignored){}
+        toast(on?"她把灯打开了。":"灯熄灭了，房间安静下来。");break;
       case "bed":interact("SLEEP","让她去床边休息一会儿？");break;
       case "wardrobe":interact("DRESS","整理衣柜和换装");break;
       case "books":interact("READ","从书架选本书");break;
