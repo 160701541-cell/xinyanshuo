@@ -16,6 +16,8 @@
     <Compile Include="../gameplay/CultivationV18.cs" />
     <Compile Include="../ui/ChineseModManagerV21.cs" />
     <Compile Include="../localization/ChineseLocalizationV22.cs" />
+    <Compile Include="../localization/RuntimeChineseOverlayV22.cs" />
+    <Compile Include="../localization/OriginalMenuGuideV22.cs" />
     
     <Reference Include="NeoModLoader_mobile"><HintPath>$(AndroidSdkPath)/NeoModLoader_mobile.dll</HintPath><Private>false</Private></Reference>
     <Reference Include="UnityEngine.CoreModule"><HintPath>$(AndroidSdkPath)/UnityEngine.CoreModule.dll</HintPath><Private>false</Private></Reference>
