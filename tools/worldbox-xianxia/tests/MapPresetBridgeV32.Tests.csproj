@@ -5,5 +5,5 @@
     <LangVersion>latest</LangVersion>
     <Nullable>disable</Nullable>
   </PropertyGroup>
-  <ItemGroup><ProjectReference Include="../../private-apk-lab/MapPresetBridgeV32/WorldBoxXianxiaMapPreset.csproj" /></ItemGroup>
+  <ItemGroup><ProjectReference Include="../private-apk-lab/MapPresetBridgeV32/WorldBoxXianxiaMapPreset.csproj" /></ItemGroup>
 </Project>
