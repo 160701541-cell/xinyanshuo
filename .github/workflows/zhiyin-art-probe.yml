@@ -1,0 +1,19 @@
+name: ZhiYin Open Asset Probe
+on:
+  push:
+    branches:
+      - 'zhiyin/native-android-prototype'
+    paths:
+      - '.github/workflows/zhiyin-art-probe.yml'
+  workflow_dispatch:
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - name: Kenney CC0 furniture kit availability and isometric art index
+        run: |
+          curl --fail --location --retry 2 --connect-timeout 15 --max-time 100             -o /tmp/kenney.zip "https://opengameart.org/sites/default/files/kenney_furniturePack.zip"
+          unzip -Z1 /tmp/kenney.zip | grep -Ei '(isometric|iso|\.png$)' | head -100
+          printf '\nCandidates:\n'
+          unzip -Z1 /tmp/kenney.zip | grep -Ei '(bedSingle|kitchenStove|bookcase|lamp|sofa|plant|cabinet|wardrobe)' | head -60
