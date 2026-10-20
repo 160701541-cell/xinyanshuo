@@ -162,7 +162,10 @@ namespace XianxiaWorldBox
             if(GUI.Button(new Rect(panel.x+12,firstY,172*ui,45*ui),
                  GiantMapOptionsV11.Armed?"再次确认大地图":"大地图实验",button))
                 mapStatus=GiantMapOptionsV11.OnTap();
-            GUI.Label(new Rect(panel.x+192*ui,firstY+3*ui,pw-207*ui,45*ui),mapStatus,label);
+            if(GUI.Button(new Rect(panel.x+192*ui,firstY,210*ui,45*ui),
+                 GiantMapOptionsV11.ExtremeArmed?"确认2048×2048":"2048×2048实验",button))
+                mapStatus=GiantMapOptionsV11.OnExtremeTap();
+            GUI.Label(new Rect(panel.x+414*ui,firstY+3*ui,pw-427*ui,45*ui),mapStatus,label);
             float secondY=panel.y+142*ui;
             if(GUI.Button(new Rect(panel.x+12,secondY,180*ui,46*ui),
                           "字体 "+Mathf.RoundToInt(ModTextAccessibilityV13.Scale*100f)+"%",button))
