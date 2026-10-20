@@ -13,6 +13,7 @@
     <Compile Include="../huge-map-mod/GiantMapOptionsV11.cs" />
     <Compile Include="../huge-map-mod/ObserverFrameGuardV12.cs" />
     <Compile Include="../ui/ModTextAccessibilityV13.cs" />
+    <Compile Include="../gameplay/CultivationV18.cs" />
     
     <Reference Include="NeoModLoader_mobile"><HintPath>$(AndroidSdkPath)/NeoModLoader_mobile.dll</HintPath><Private>false</Private></Reference>
     <Reference Include="UnityEngine.CoreModule"><HintPath>$(AndroidSdkPath)/UnityEngine.CoreModule.dll</HintPath><Private>false</Private></Reference>
