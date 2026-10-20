@@ -169,8 +169,42 @@ def main():
               for i in animation_meta["skins"][0].get("joints",[])[:65]],
     }
     print("TRUE_CC0_ANIMATION_LIBRARY",manifest["animation_library"],flush=True)
+    # CC0 Quaternius Modular Character Outfits Fantasy -- clothed female
+    # body instead of nude/blocky placeholder. Pinned community mirror
+    # carries original FREE asset and its License_Standard.txt.
+    outfit_repo="ecbarish/generations"
+    outfit_ref="main"
+    outfit_file="shared/assets/characters/quaternius/Female_Peasant.glb"
+    outfit_license="shared/assets/characters/quaternius/LICENSE-outfits.txt"
+    model_url=f"https://raw.githubusercontent.com/{outfit_repo}/{outfit_ref}/{outfit_file}"
+    with urllib.request.urlopen(model_url,timeout=65) as result:
+        cloth_body=result.read(10*1024*1024)
+    cloth_meta=read_gltf_metadata(cloth_body)
+    gltf=json.loads(cloth_body[20:20+struct.unpack_from("<I",cloth_body,12)[0]])
+    cloth_joint_names=[gltf["nodes"][i].get("name","") for i in gltf.get("skins",[{}])[0].get("joints",[])] if gltf.get("skins") else []
+    if cloth_meta["skins"]<1 or len(cloth_joint_names)<50:
+        raise ValueError("Clothed CC0 female rig has no compatible skin")
+    reference_bones=[female["nodes"][i].get("name","") for i in female["skins"][0]["joints"]]
+    if set(cloth_joint_names)!=set(reference_bones):
+        raise ValueError("Clothed female skeleton incompatible with 65-joint animation library")
+    with urllib.request.urlopen(
+        f"https://raw.githubusercontent.com/{outfit_repo}/{outfit_ref}/{outfit_license}",timeout=30
+    ) as result:
+        license_content=result.read(4000).decode("utf-8")
+    if "CC0 1.0" not in license_content:
+        raise ValueError("Missing confirmed Quaternius CC0 clothing license")
+    (targets/"hero_clothed_female.glb").write_bytes(cloth_body)
+    manifest["models"]["hero_clothed_female"]={
+        "path":outfit_file,"source":f"https://github.com/{outfit_repo}",
+        "license_path":outfit_license,"license":"Quaternius Modular Character Outfits Fantasy Standard FREE - CC0 1.0",
+        "sha256":hashlib.sha256(cloth_body).hexdigest(),
+        "bytes":len(cloth_body),"joints":len(cloth_joint_names),
+        "bones":cloth_joint_names,
+        **cloth_meta
+    }
+    print("TRUE_CLOTHED_FEMALE",manifest["models"]["hero_clothed_female"],flush=True)
     (ROOT / "ASSET_MANIFEST.json").write_text(json.dumps(manifest,indent=2,ensure_ascii=False)+"\n",encoding="utf-8")
-    assert len(manifest["models"]) == len(ASSETS)+1
+    assert len(manifest["models"]) == len(ASSETS)+2
 
 if __name__=="__main__":
     main()
