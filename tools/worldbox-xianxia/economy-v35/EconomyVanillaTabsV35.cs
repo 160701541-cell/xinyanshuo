@@ -137,8 +137,14 @@ namespace XianxiaWorldBox {
    }
    var familyIndex=Array.IndexOf(Families,opened);
    string title=familyIndex>=0?Names[familyIndex]:"万界资源";
-   GUI.Label(new Rect(rect.x+124*scale,rect.y+10,w-140*scale,43*scale),
-     "万界·"+title+" | 当前仅资源索引，不代表NPC经济已上线",label);
+   GUI.Label(new Rect(rect.x+124*scale,rect.y+10,w-400*scale,43*scale),
+     "万界·"+title+"（171图标分类索引）",label);
+   if(GUI.Button(new Rect(rect.x+w-265*scale,rect.y+8*scale,120*scale,46*scale),"上类",btn)){
+     opened=Families[(Math.Max(0,familyIndex)+Families.Length-1)%Families.Length];page=0;
+   }
+   if(GUI.Button(new Rect(rect.x+w-139*scale,rect.y+8*scale,123*scale,46*scale),"下类",btn)){
+     opened=Families[(Math.Max(0,familyIndex)+1)%Families.Length];page=0;
+   }
    if(!Contents.TryGetValue(opened,out var goods))return;
    int perPage=20;
    int pages=(goods.Count+perPage-1)/perPage;
