@@ -94,6 +94,29 @@ def main():
                 "bytes":len(blob), "external_textures":external_textures, **data}
         manifest["models"][short] = item
         print(short, item, flush=True)
+    # Quaternius Universal Base Characters [Standard] female, CC0.
+    # Binary repack from BeefTV keeps 65-joint humanoid skin but omits source textures.
+    # This is an actual bone-rigged character, not a Kenney block animation surrogate.
+    female_source="glanderness/BeefTV"
+    female_commit="62d19db13bbe6f287fa769afd391866747a01033"
+    female_rel="web/public/canvas/models/quaternius-standard-female.glb"
+    female_url=f"https://raw.githubusercontent.com/{female_source}/{female_commit}/{female_rel}"
+    with urllib.request.urlopen(female_url,timeout=60) as resp:
+        data=resp.read(6*1024*1024)
+    meta=read_gltf_metadata(data)
+    if meta["skins"]<1 or meta["meshes"]<1:
+        raise ValueError("Rejected female model: no actual skeleton/skin")
+    gltf=json.loads(data[20:20+struct.unpack_from("<I",data,12)[0]])
+    if len(gltf.get("skins",[{}])[0].get("joints",[]))<50:
+        raise ValueError("Rejected female model: missing humanoid joints")
+    (targets/"hero_female.glb").write_bytes(data)
+    manifest["models"]["hero_female"]={
+        "path":female_rel,"source":f"https://github.com/{female_source}",
+        "commit":female_commit,"license":"Quaternius Universal Base Characters Standard, CC0-1.0",
+        "sha256":hashlib.sha256(data).hexdigest(),"bytes":len(data),
+        "joints":len(gltf["skins"][0]["joints"]),**meta
+    }
+    print("TRUE_RIGGED_HERO",manifest["models"]["hero_female"],flush=True)
     (ROOT / "ASSET_MANIFEST.json").write_text(json.dumps(manifest,indent=2,ensure_ascii=False)+"\n",encoding="utf-8")
     assert len(manifest["models"]) == len(ASSETS)
 
