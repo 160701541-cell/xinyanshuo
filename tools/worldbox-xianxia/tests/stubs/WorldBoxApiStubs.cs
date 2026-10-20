@@ -11,7 +11,7 @@ namespace NeoModLoader.api {
 }
 #endif
 namespace UnityEngine {
-    public class Object {}
+    public class Object { public static void Destroy(Object x){} }
     public enum TextureFormat { RGBA32 }
     public enum FilterMode { Point }
     public enum TextureWrapMode { Clamp }
@@ -32,6 +32,22 @@ namespace UnityEngine {
     }
     public class Transform { public Vector3 position; }
     public class Camera { public Transform transform=new Transform(); }
+    public class Font : Object {
+        public static Font CreateDynamicFontFromOSFont(string[] names, int fontSize) => new Font();
+    }
+    public class GUIStyle {
+        public int fontSize = 14;
+        public bool wordWrap;
+        public Font font;
+        public GUIStyle() {}
+        public GUIStyle(GUIStyle other) { fontSize=other.fontSize;wordWrap=other.wordWrap;font=other.font; }
+    }
+    public class GUISkin {
+        public GUIStyle button = new GUIStyle(), label=new GUIStyle(), box=new GUIStyle();
+    }
+    public static class Resources {
+        public static object[] FindObjectsOfTypeAll(Type t) => Array.Empty<object>();
+    }
     public class Texture2D : Object {
         public FilterMode filterMode;
         public TextureWrapMode wrapMode;
@@ -55,9 +71,13 @@ namespace UnityEngine {
     }
     public static class GUI {
         public static Color color;
+        public static GUISkin skin=new GUISkin();
         public static bool Button(Rect r,string text){return false;}
+        public static bool Button(Rect r,string text, GUIStyle s){return false;}
         public static void Box(Rect r,string title){}
+        public static void Box(Rect r,string title,GUIStyle s){}
         public static void Label(Rect r,string text){}
+        public static void Label(Rect r,string text,GUIStyle s){}
         public static void DrawTexture(Rect r,Texture2D texture){}
     }
     public static class Mathf {
