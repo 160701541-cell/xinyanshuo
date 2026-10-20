@@ -24,6 +24,8 @@
     <Compile Include="../localization/ChineseLocalizationV22.cs" />
     <Compile Include="../localization/RuntimeChineseOverlayV22.cs" />
     <Compile Include="../localization/OriginalMenuGuideV22.cs" />
+    <Compile Include="../localization/ChineseMenuGlossaryV23.cs" />
+    <Compile Include="../localization/NativeLocaleBridgeV23.cs" />
     
     <Compile Include="stubs/WorldBoxApiStubs.cs" />
   </ItemGroup>
