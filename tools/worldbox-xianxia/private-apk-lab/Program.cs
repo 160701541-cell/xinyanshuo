@@ -92,7 +92,8 @@ class Program {
     if(entry?.Methods.FirstOrDefault(x=>x.Name=="Install"&&x.IsPublic&&x.IsStatic)==null)
         throw new InvalidOperationException("Missing public original Mono overlay bootstrap");
     var reference=new dnlib.DotNet.AssemblyRefUser(addon.Assembly);
-    mod.AssemblyRefs.Add(reference);
+    // dnlib emits the assembly reference through the reachable TypeRef below.
+    // ModuleDefMD exposes GetAssemblyRefs(), not a mutable AssemblyRefs list.
     var typeRef=new dnlib.DotNet.TypeRefUser(mod,"XianxiaMonoBridge","Entry",reference);
     var methodRef=new dnlib.DotNet.MemberRefUser(mod,"Install",
         dnlib.DotNet.MethodSig.CreateStatic(mod.CorLibTypes.Void),typeRef);
@@ -112,13 +113,43 @@ class Program {
        bb[0].OpCode!=dnlib.DotNet.Emit.OpCodes.Call ||
        !bb[0].Operand.ToString().Contains("XianxiaMonoBridge.Entry::Install"))
        throw new InvalidOperationException("Bootstrap IL not isolated at MapBox.Start prologue");
-    for(int i=0;i<aa.Count;i++)
-        if(aa[i].OpCode!=bb[i+1].OpCode || aa[i].Operand?.ToString()!=bb[i+1].Operand?.ToString())
-            throw new InvalidOperationException("Original MapBox.Start IL diverged at instruction "+i);
-    if(a.Types.Count!=b.Types.Count)throw new InvalidOperationException("Original classes changed");
+    // Branch operands print byte offsets, which shift after inserting the call.
+    // Compare branch targets by instruction index and audit every original body.
+    var at=a.GetTypes().ToArray(); var bt=b.GetTypes().ToArray();
+    if(at.Length!=bt.Length)throw new InvalidOperationException("Original classes changed");
+    int checkedMethods=0;
+    for(int ti=0;ti<at.Length;ti++){
+      if(at[ti].FullName!=bt[ti].FullName || at[ti].Methods.Count!=bt[ti].Methods.Count)
+        throw new InvalidOperationException("Original type/method set changed");
+      for(int mi=0;mi<at[ti].Methods.Count;mi++){
+        var am=at[ti].Methods[mi];var bm=bt[ti].Methods[mi];
+        if(am.FullName!=bm.FullName || am.HasBody!=bm.HasBody)
+          throw new InvalidOperationException("Original method signature changed");
+        if(!am.HasBody)continue;
+        int skip=am.DeclaringType.Name=="MapBox"&&am.Name=="Start"&&am.MethodSig.Params.Count==0?1:0;
+        if(!CanonicalBody(am,0).SequenceEqual(CanonicalBody(bm,skip)))
+          throw new InvalidOperationException("Original IL or exception regions diverged: "+am.FullName);
+        checkedMethods++;
+      }
+    }
     if(!b.GetAssemblyRefs().Any(x=>x.Name==p.Assembly.Name))
         throw new InvalidOperationException("Companion Mono assembly ref missing");
-    Console.WriteLine("PASS_MODIFIED_ENTRYPOINT_ONLY originalMethodsPreserved="+aa.Count);
+    Console.WriteLine("PASS_MODIFIED_ENTRYPOINT_ONLY auditedMethodBodies="+checkedMethods+" startupInstructions="+aa.Count);
+ }
+ static IEnumerable<string> CanonicalBody(dnlib.DotNet.MethodDef method,int skip){
+    var body=method.Body;var ins=body.Instructions;
+    int Index(dnlib.DotNet.Emit.Instruction i)=>i==null?-1:ins.IndexOf(i)-skip;
+    string Operand(object o)=>o switch {
+      dnlib.DotNet.Emit.Instruction i=>"target:"+Index(i),
+      IList<dnlib.DotNet.Emit.Instruction> targets=>"targets:"+string.Join(",",targets.Select(Index)),
+      _=>o?.ToString()??""
+    };
+    yield return "initLocals:"+body.InitLocals;
+    foreach(var local in body.Variables)yield return "local:"+local.Type.FullName;
+    foreach(var i in ins.Skip(skip))yield return i.OpCode+" "+Operand(i.Operand);
+    foreach(var eh in body.ExceptionHandlers)
+      yield return "handler:"+eh.HandlerType+":"+Index(eh.TryStart)+":"+Index(eh.TryEnd)+":"+
+        Index(eh.HandlerStart)+":"+Index(eh.HandlerEnd)+":"+Index(eh.FilterStart)+":"+eh.CatchType?.FullName;
  }
  static void CecilPatch(string original,string plugin,string output) {
    using var game=AssemblyDefinition.ReadAssembly(original,Resolved(original));

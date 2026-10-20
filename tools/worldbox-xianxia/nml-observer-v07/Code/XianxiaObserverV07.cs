@@ -39,7 +39,7 @@ namespace XianxiaWorldBox
         {
             if(obj==null)return null;
             Type t=obj.GetType();
-            const BindingFlags flags=BindingFlags.Public|BindingFlags.NonPublic|BindingFlags.Instance;
+            const BindingFlags flags=BindingFlags.Public|BindingFlags.NonPublic|BindingFlags.Instance|BindingFlags.Static;
             FieldInfo f=t.GetField(key,flags);
             if(f!=null)return f.GetValue(obj);
             PropertyInfo p=t.GetProperty(key,flags);
@@ -97,10 +97,11 @@ namespace XianxiaWorldBox
         }
         void Sample()
         {
-            if(World.world==null||World.world.camera==null){summary="请先打开一个世界";return;}
+            Camera camera=Field(World.world,"camera") as Camera;
+            if(World.world==null||camera==null){summary="请先打开一个世界";return;}
             if(target!=null&&!target.isAlive()){target=null;follow=false;actorName="人物已死亡";}
             Vector2 p=follow&&target!=null?target.current_position:
-                new Vector2(World.world.camera.transform.position.x,World.world.camera.transform.position.y);
+                new Vector2(camera.transform.position.x,camera.transform.position.y);
             centerX=Mathf.Clamp(Mathf.RoundToInt(p.x),0,Math.Max(0,MapBox.width-1));
             centerY=Mathf.Clamp(Mathf.RoundToInt(p.y),0,Math.Max(0,MapBox.height-1));
             for(int dy=-radius;dy<=radius;dy++)

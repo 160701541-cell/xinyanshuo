@@ -165,10 +165,16 @@ jobs:
             if [ -f "$d/lib/apksigner.jar" ] && [ -x "$d/zipalign" ]; then
               cp "$d/lib/apksigner.jar" /tmp/worldbox-user-private-helper/apksigner.jar
               cp "$d/zipalign" /tmp/worldbox-user-private-helper/zipalign
+              if [ -f "$d/lib64/libc++.so" ]; then
+                cp "$d/lib64/libc++.so" /tmp/worldbox-user-private-helper/libc++.so
+              fi
             fi
           done
           if [ -f /tmp/worldbox-user-private-helper/apksigner.jar ]; then
             java -jar /tmp/worldbox-user-private-helper/apksigner.jar version
+          fi
+          if [ -x /tmp/worldbox-user-private-helper/zipalign ]; then
+            LD_LIBRARY_PATH=/tmp/worldbox-user-private-helper /tmp/worldbox-user-private-helper/zipalign -h || test "$?" -eq 2
           fi
           echo 'NO user-owned APK or commercial game binaries uploaded to public GitHub.'
       - uses: actions/upload-artifact@v4

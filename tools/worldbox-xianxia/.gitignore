@@ -1,0 +1,11 @@
+__pycache__/
+**/__pycache__/
+**/bin/
+**/obj/
+*.apk
+*.aab
+*.dll
+*.pdb
+*.p12
+*.jks
+*.keystore

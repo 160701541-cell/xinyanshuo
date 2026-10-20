@@ -21,7 +21,8 @@
   ],
   "merge_main_allowed": false,
   "third_party_binary_publication_allowed": false,
-  "app_patch_allowed": false,
+  "app_patch_allowed": true,
+  "app_patch_scope": "User-authorized private local MOD integration only; no entitlement changes or public third-party binary upload",
   "device_test": "PENDING",
   "ai": "offline first / external API optional"
 }
