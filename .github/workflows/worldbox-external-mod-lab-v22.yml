@@ -277,7 +277,21 @@ jobs:
                           '-cp',jar,'-d','/tmp/worldbox-diagnostics-classes',
                           root+'DiagnosticReport.java',root+'DiagnosticsActivity.java',
                           root+'ModDeployment.java'],check=True)
-          print('PASS_ANDROID_DIAGNOSTICS_COMPILE; no DEX or signed APK generated')
+          from pathlib import Path
+          import hashlib
+          dexers=glob.glob(sdk+'/build-tools/*/d8')
+          assert dexers,'Android d8 missing; no launcher DEX generated'
+          d8=max(dexers,key=lambda p:tuple(map(int,re.findall(r'\d+',Path(p).parent.name))))
+          output=Path('/tmp/worldbox-diagnostics-dex')
+          output.mkdir(parents=True,exist_ok=True)
+          classes=[str(p) for p in Path('/tmp/worldbox-diagnostics-classes').rglob('*.class')]
+          subprocess.run([d8,'--lib',jar,'--min-api','23','--output',str(output)]+classes,check=True)
+          dex=(output/'classes.dex').read_bytes()
+          assert dex.startswith(b'dex\\n'),'invalid DEX header'
+          target=Path('/tmp/worldbox-user-private-helper/WorldBoxDiagnostics_classes5.dex')
+          target.write_bytes(dex)
+          target.with_suffix('.sha256').write_text(hashlib.sha256(dex).hexdigest()+'  '+target.name+'\\n')
+          print('PASS_ANDROID_DIAGNOSTICS_DEX; original launcher only, private APK still required')
           PY
           cp tools/worldbox-xianxia/private-apk-lab/DiagnosticReport.java /tmp/worldbox-user-private-helper/
           cp tools/worldbox-xianxia/private-apk-lab/DiagnosticsActivity.java /tmp/worldbox-user-private-helper/
