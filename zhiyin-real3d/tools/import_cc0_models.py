@@ -128,6 +128,16 @@ def main():
             raise ValueError("Referenced character texture is not a PNG: "+name)
         (female_assets/rel).write_bytes(blob)
         files[name]={"sha256":hashlib.sha256(blob).hexdigest(),"bytes":len(blob)}
+    # The source glTF defaults to DARK skin. Keep the original lighter
+    # Quaternius skin-map available for the dressed NPC face, not gray placeholders.
+    face_color_uri="T_Superhero_Female_Light_BaseColor.png"
+    face_light_data=from_female_upstream(face_color_uri)
+    if not face_light_data.startswith(bytes.fromhex("89504e470d0a1a0a")):
+        raise ValueError("Quaternius face albedo file is not PNG")
+    (female_assets/face_color_uri).write_bytes(face_light_data)
+    files[face_color_uri]={
+        "sha256":hashlib.sha256(face_light_data).hexdigest(),"bytes":len(face_light_data)
+    }
     if not any("Roughness" in x for x in files) or not any("Normal" in x for x in files):
         raise ValueError("Character normal and roughness texture absent")
     manifest["models"]["hero_female"]={
