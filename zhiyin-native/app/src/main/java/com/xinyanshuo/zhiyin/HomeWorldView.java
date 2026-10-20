@@ -17,6 +17,7 @@ public final class HomeWorldView extends View {
   private final Paint p=new Paint(Paint.ANTI_ALIAS_FLAG);
   private float zoom=1.05f,panX=0,panY=0,centerX,centerY;
   private boolean userCamera=false;
+  private boolean lampOn=true;
   private float avatarX=4,avatarY=4,lookLeft=-1;
   private float downX,downY,lastX,lastY;private boolean dragged=false,scaleActive=false;
   private long lastFrame=0;private final ScaleGestureDetector scale;
@@ -31,6 +32,9 @@ public final class HomeWorldView extends View {
   }
   public HomeWorldView(Context ctx,LifeEngine engine,Listener callback){
     super(ctx);life=engine;listener=callback;setLayerType(View.LAYER_TYPE_HARDWARE,null);
+    lampOn=ctx.getSharedPreferences("zhiyin_room_visual_v1",Context.MODE_PRIVATE).getBoolean("lamp",true);
+    objects.add(new Thing("window","窗景",1.3f,.05f,1.9f,.10f,0));
+    objects.add(new Thing("lamp","吊灯",4.8f,1.6f,.5f,.5f,0));
     objects.add(new Thing("wardrobe","衣柜",.30f,.35f,1.2f,1.0f,0));
     objects.add(new Thing("bed","单人床",.8f,1.4f,1.9f,2.1f,0));
     objects.add(new Thing("books","书架",2.1f,.30f,1.2f,.75f,0));
@@ -57,6 +61,12 @@ public final class HomeWorldView extends View {
     if(!userCamera){zoom=Math.max(.8f,Math.min(3.3f,w/(8*2*T)*1.28f));panX=0;panY=0;}
   }
   public void setLife(LifeEngine newLife){life=newLife;invalidate();}
+  public boolean toggleLamp(){
+    lampOn=!lampOn;
+    getContext().getSharedPreferences("zhiyin_room_visual_v1",Context.MODE_PRIVATE)
+      .edit().putBoolean("lamp",lampOn).apply();
+    invalidate();return lampOn;
+  }
   private int shade(int color,float factor){
     return Color.rgb(Math.max(0,Math.min(255,(int)(Color.red(color)*factor))),
       Math.max(0,Math.min(255,(int)(Color.green(color)*factor))),
@@ -122,7 +132,8 @@ public final class HomeWorldView extends View {
   private void drawWalls(Canvas c){
     int hour=Calendar.getInstance().get(Calendar.HOUR_OF_DAY);
     boolean dark=hour<6||hour>=19;
-    int back=dark?0xFF45445C:0xFFE8D5CB,left=dark?0xFF515266:0xFFF1DFD1;
+    int back=dark?(lampOn?0xFF8F7776:0xFF45445C):0xFFE8D5CB;
+    int left=dark?(lampOn?0xFFA38A82:0xFF515266):0xFFF1DFD1;
     // 2.5D dollhouse: y=0 and x=0 walls extend vertically from the floor.
     polygon(c,back,iso(0,0,0),iso(8,0,0),iso(8,0,228),iso(0,0,228));
     polygon(c,left,iso(0,0,0),iso(0,8,0),iso(0,8,228),iso(0,0,228));
@@ -162,7 +173,7 @@ public final class HomeWorldView extends View {
     oval(c,l.x,l.y+42,24,10,0xFFF6D7AC);
     polygon(c,0xFFE2B789,new Point(l.x-25,l.y+39),new Point(l.x+25,l.y+39),
       new Point(l.x+14,l.y+64),new Point(l.x-14,l.y+64));
-    if(dark)oval(c,l.x,l.y+60,19,4,0x88FFDE9C);
+    if(dark&&lampOn)oval(c,l.x,l.y+60,19,4,0x88FFDE9C);
   }
   private void wallRect(Canvas c,float x,float y,float length,float high,float low,int clr){
     if(y==0)polygon(c,clr,iso(x,0,low),iso(x+length,0,low),iso(x+length,0,high),iso(x,0,high));
@@ -298,7 +309,8 @@ public final class HomeWorldView extends View {
   private void drawFurnitureTags(Canvas c){
     for(Thing obj:objects){
       if(obj.id.equals("wardrobe")||obj.id.equals("sofa")||obj.id.equals("books"))continue;
-      Point pt=iso(obj.x+obj.wide/2,obj.y+obj.deep/2,obj.id.equals("plant")?85:104);
+      Point pt=iso(obj.x+obj.wide/2,obj.y+obj.deep/2,
+        obj.id.equals("plant")?85:obj.id.equals("lamp")?216:obj.id.equals("window")?112:104);
       String label=obj.name;
       float ww=Math.max(36, label.length()*12+13);
       round(c,pt.x-ww/2,pt.y-20,pt.x+ww/2,pt.y+1,7,0xDB293044);
@@ -476,7 +488,9 @@ public final class HomeWorldView extends View {
           float px=(e.getX()-centerX-panX)/zoom,py=(e.getY()-centerY-panY)/zoom;
           String chosen="floor";double best=Double.MAX_VALUE;
           for(Thing o:objects){
-            float maxH=o.id.equals("wardrobe")||o.id.equals("books")?147:
+            float maxH=o.id.equals("lamp")?260:
+              o.id.equals("window")?175:
+              o.id.equals("wardrobe")||o.id.equals("books")?147:
               o.id.equals("door")?162: o.id.equals("plant")?94:75;
             for(float z=0;z<=maxH;z+=20){
               Point q=iso(o.x+o.wide/2,o.y+o.deep/2,z);
