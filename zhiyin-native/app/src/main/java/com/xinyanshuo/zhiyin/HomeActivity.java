@@ -28,6 +28,8 @@ public final class HomeActivity extends Activity {
   private Neighborhood neighborhood;
   private AiGateway ai;
   private volatile boolean waitingForAI=false;
+  private volatile boolean aiPlanPending=false;
+  private long lastPlannerRequest=0;
   private HomeWorldView world;
   private TextView activity,banner,stat,tip,inventory,chatReply;
   private EditText chatInput;
@@ -62,6 +64,7 @@ public final class HomeActivity extends Activity {
     getWindow().setStatusBarColor(0xFF282A3D);getWindow().setNavigationBarColor(0xFF3C3C50);
     getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
     life=new LifeEngine(this);memory=new MemoryStore(this);neighborhood=new Neighborhood(this);ai=new AiGateway(this);
+    lastPlannerRequest=getSharedPreferences("zhiyin_ai_settings",MODE_PRIVATE).getLong("last_planner_request",0);
     voice=new TextToSpeech(this,s->{if(s==TextToSpeech.SUCCESS){voiceReady=true;voice.setLanguage(Locale.SIMPLIFIED_CHINESE);}});
     FrameLayout screen=new FrameLayout(this);stageRoot=screen;
     world=new HomeWorldView(this,life,this::onSceneTap);
@@ -144,11 +147,46 @@ public final class HomeActivity extends Activity {
     inventory.setText("存款 ¥"+life.money+"  ·  周租 ¥"+LifeEngine.WEEKLY_RENT+
       "  ·  "+life.daysUntilRent(now)+"天后交租  ·  "+life.employment);
     phaseBar.setProgress((int)life.phaseProgress(now));
+    maybePlanDay(now);
     ArrayList<String> updates=life.drainEvents();
     // LifeEngine itself bounds offline simulation; no additional event loss here.
     try{memory.appendLifeEvents(updates);}
     catch(Exception ex){toast("生活记录保存失败："+ex.getMessage());}
     lastAction=life.action;lastSequence=life.sequence;
+  }
+  private void maybePlanDay(long now){
+    if(paused||waitingForAI||aiPlanPending||!ai.plannerEnabled()||!ai.ready())return;
+    if(now<lastPlannerRequest || now-lastPlannerRequest<15L*60000L)return;
+    if(life.energy<28 || life.hunger<45 || life.hygiene<25)return;
+    if("WORK".equals(life.action)||"SLEEP".equals(life.action)||"COOK".equals(life.action)
+      ||"EAT".equals(life.action)||"SHOP".equals(life.action)||"CHAT".equals(life.action))return;
+    aiPlanPending=true;lastPlannerRequest=now;
+    getSharedPreferences("zhiyin_ai_settings",MODE_PRIVATE).edit().putLong("last_planner_request",now).apply();
+    String situation=life.summary()+"；当前正在："+life.phaseName()+
+      "；本地时间："+new java.text.SimpleDateFormat("HH:mm",java.util.Locale.CHINA).format(new java.util.Date(now));
+    ai.proposeAction(situation,(response,error)->runOnUiThread(()->{
+      aiPlanPending=false;
+      if(isFinishing()||isDestroyed())return;
+      if(error!=null){
+        try{memory.addEvent("系统","AI生活计划无法生成："+error,"shared","","ai_plan_status");}
+        catch(Exception ignored){}
+        return;
+      }
+      try{
+        String clean=response.trim();
+        // The model is untrusted: only a standalone JSON object may be parsed.
+        int left=clean.indexOf('{'),right=clean.lastIndexOf('}');
+        if(left<0||right<=left||right-left>1000)throw new IllegalArgumentException("未返回有效JSON");
+        JSONObject plan=new JSONObject(clean.substring(left,right+1));
+        String choice=plan.optString("action","");
+        String reason=plan.optString("reason","");
+        if(!life.scheduleAiHobby(choice,reason))throw new IllegalArgumentException("动作不在安全白名单："+choice);
+        refresh();toast("AI给知音安排了业余活动："+choice);
+      }catch(Exception ex){
+        try{memory.addEvent("系统","AI生活计划未通过校验："+ex.getMessage(),"shared","","ai_plan_status");}
+        catch(Exception ignored){}
+      }
+    }));
   }
   private final Runnable ticker=new Runnable(){
     @Override public void run(){
