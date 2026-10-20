@@ -78,6 +78,34 @@ namespace XianxiaWorldBox
             return StaticMethod(lmType,"Add",typeof(string),typeof(string),typeof(string))!=null;
         }
 
+        static IEnumerable<object> WalkPairs(object dictionary)
+        {
+            if(dictionary is IEnumerable)
+            {
+                foreach(object pair in (IEnumerable)dictionary)yield return pair;
+                yield break;
+            }
+            // Android IL2CPP projected generic dictionaries may implement
+            // Il2CppSystem.IEnumerable instead of System.Collections.IEnumerable.
+            var method=dictionary.GetType().GetMethod("GetEnumerator",Type.EmptyTypes);
+            if(method==null)yield break;
+            object iterator=method.Invoke(dictionary,null);
+            if(iterator==null)yield break;
+            var next=iterator.GetType().GetMethod("MoveNext",Type.EmptyTypes);
+            if(next==null)yield break;
+            int count=0;
+            try
+            {
+                while(count++<MaxDictionaryRead && Convert.ToBoolean(next.Invoke(iterator,null)))
+                    yield return Member(iterator,"Current");
+            }
+            finally
+            {
+                var d=iterator as IDisposable;
+                if(d!=null)d.Dispose();
+            }
+        }
+
         static bool IsEnglishLike(string text)
         {
             if(string.IsNullOrEmpty(text)||text.Length>180)return false;
@@ -103,8 +131,7 @@ namespace XianxiaWorldBox
                     Status="原版语言字典暂未加载；进入世界后重新尝试。";
                     return Status;
                 }
-                IEnumerable entries=dictionary as IEnumerable;
-                if(entries==null)
+                if(!(dictionary is IEnumerable)&&dictionary.GetType().GetMethod("GetEnumerator",Type.EmptyTypes)==null)
                 {
                     Status="当前安卓本地化字典无法安全枚举；未做修改。";
                     return Status;
@@ -112,7 +139,7 @@ namespace XianxiaWorldBox
                 MethodInfo add=StaticMethod(lmType,"Add",typeof(string),typeof(string),typeof(string));
                 MethodInfo has=StaticMethod(lmType,"Has",typeof(string),typeof(string));
                 int considered=0;
-                foreach(object item in entries)
+                foreach(object item in WalkPairs(dictionary))
                 {
                     if(item==null||++considered>MaxDictionaryRead)break;
                     // Mono IDictionary and IL2CPP KeyValuePair projection are both handled.
@@ -125,8 +152,9 @@ namespace XianxiaWorldBox
                     }
                     else
                     {
-                        key=Member(item,"Key") as string;
-                        original=Member(item,"Value") as string;
+                        object k=Member(item,"Key"),v=Member(item,"Value");
+                        key=k==null?null:Convert.ToString(k);
+                        original=v==null?null:Convert.ToString(v);
                     }
                     if(string.IsNullOrEmpty(key)||key.Length>150||!IsEnglishLike(original))
                         continue;
