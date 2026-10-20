@@ -52,5 +52,17 @@ func _verify() -> void:
         push_error("VRM lost all its face, clothing and hair materials")
         quit(5)
         return
+    var Driver=load("res://scenes/vrm_expression_driver.gd")
+    var face=Driver.new() as Node
+    root_avatar.add_child(face)
+    var bound=face.attach_avatar(root_avatar)
+    print("VRM_FACE_DRIVER bound=",bound," control_names=",face.available_controls())
+    if bound<2:
+        push_error("Imported anime face does not expose enough usable morph controls")
+        quit(6)
+        return
+    face.set_emotion("joy",0.75)
+    face.set_viseme("aa",0.90)
+    face.set_silent()
     print("PASS REAL VRM ANIME MODEL IMPORT + SKELETON + FACIAL MORPHS + MATERIALS")
     quit(0)
