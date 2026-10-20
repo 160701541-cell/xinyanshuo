@@ -294,6 +294,13 @@ public final class HomeWorldView extends View {
         for(int i=0;i<3;i++){line(c,-23,-72+i*5,-9,-77+i*5,.75f,0xFFAEA3A0);
           line(c,11,-78+i*5,24,-73+i*5,.75f,0xFFAEA3A0);}
         break;
+      case "WORK":
+        rounded(c,-34,-77,31,-58,3,0xFFF5EAD6);
+        for(int i=0;i<4;i++)line(c,-25,-71+i*3,20,-71+i*3,1,0xFF7F869B);
+        title(c,"♫",1,-82,16,0xFF7F8EAB);
+        ellipse(c,40,-101+(float)Math.sin(t/310.0)*3,10,10,0xFFE5BD76);
+        title(c,"¥",36,-96+(float)Math.sin(t/310.0)*3,12,0xFF856044);
+        break;
       case "WRITE":
         rounded(c,-32,-77,25,-63,3,0xFFF4E8D7);
         line(c,7,-91,15+pulse*2,-66,3,0xFF93788F);
