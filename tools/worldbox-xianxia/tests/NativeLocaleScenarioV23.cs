@@ -83,7 +83,7 @@ class Program
         string folder=Path.Combine(UnityEngine.Application.persistentDataPath,"XianxiaModStaging");
         Directory.CreateDirectory(folder);
         string pack=Path.Combine(folder,"zh_cn_keymap_v24.txt");
-        File.WriteAllText(pack,"new_mod_tab=仙途菜单\\nmod_menu=不应覆盖已有汉化\\n");
+        File.WriteAllText(pack,"new_mod_tab=仙途菜单"+Environment.NewLine+"mod_menu=不应覆盖已有汉化"+Environment.NewLine);
         string imported=ChineseKeyPackV24.ImportPrivatePack();
         Console.WriteLine("PRIVATE_PACK_DIAG "+imported+" count="+ChineseKeyPackV24.KeyCount);
         Assert(ChineseKeyPackV24.KeyCount==2,"load direct locale-key pack");
@@ -92,7 +92,7 @@ class Program
         Assert(NeoModLoader.General.LM.locales["cz"]["mod_menu"]=="模组管理器","existing NML translation never overwritten");
 
         // Entire invalid pack must be rejected before any NML writes.
-        File.WriteAllText(pack,"safe_entry=好\\nunsafe$key=非法\\n");
+        File.WriteAllText(pack,"safe_entry=好"+Environment.NewLine+"unsafe$key=非法"+Environment.NewLine);
         string rejected=ChineseKeyPackV24.ImportPrivatePack();
         Assert(rejected.Contains("非法键"),"invalid direct key pack rejected");
         Assert(!NeoModLoader.General.LM.locales["cz"].ContainsKey("safe_entry"),"invalid pack atomic validation");
