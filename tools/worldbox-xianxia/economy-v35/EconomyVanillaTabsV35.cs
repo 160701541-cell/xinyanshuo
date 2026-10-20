@@ -113,7 +113,7 @@ namespace XianxiaWorldBox {
      if(sprite==null){Status="本地像素图标缺失 "+families[i];continue;}
      MethodInfo method=typeof(EconomyVanillaTabsV35).GetMethod(code[i],F);
      var callback=Delegate.CreateDelegate(delegateType,method);
-     object button=creator.Invoke(null,new object[]{"wbx_economy_"+keys[i],callback,
+     object button=creator.Invoke(null,new object[]{"xinyanshuo.wb.economy_"+keys[i],callback,
        sprite,null,Activator.CreateInstance(vector)});
      if(button==null)continue;
      add.Invoke(null,new object[]{button,tab,null});

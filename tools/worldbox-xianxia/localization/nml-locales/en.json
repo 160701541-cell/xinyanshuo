@@ -37,10 +37,10 @@
   "xinyanshuo.wb.mod_install_pending": "MOD manager: staging-only preview; Android import/install is not ready.",
   "xinyanshuo.wb.vanilla_heading": "WorldBox Menu Guide / Native Locale Registration",
   "xinyanshuo.wb.lang_missing": "Unknown labels remain as-is; Android runtime unverified.",
-  "wbx_economy_nature": "Resources",
-  "wbx_economy_nature Description": "Natural resources and spirit cultivation materials",
-  "wbx_economy_creation": "Production",
-  "wbx_economy_creation Description": "Materials, crafts and manufactured goods",
-  "wbx_economy_noosphere": "Treasury",
-  "wbx_economy_noosphere Description": "Currencies, taxation and kingdom administration"
+  "xinyanshuo.wb.economy_nature": "Resources",
+  "xinyanshuo.wb.economy_nature Description": "Natural resources and spirit cultivation materials",
+  "xinyanshuo.wb.economy_creation": "Production",
+  "xinyanshuo.wb.economy_creation Description": "Materials, crafts and manufactured goods",
+  "xinyanshuo.wb.economy_noosphere": "Treasury",
+  "xinyanshuo.wb.economy_noosphere Description": "Currencies, taxation and kingdom administration"
 }
