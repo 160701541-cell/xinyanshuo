@@ -37,7 +37,7 @@ public final class ModelDownloadService extends Service {
 
   public static void command(Context ctx,String action) {
     Intent intent=new Intent(ctx,ModelDownloadService.class).setAction(action);
-    if(PAUSE.equals(action))ctx.startService(intent);
+    if(PAUSE.equals(action)||RESTART.equals(action))ctx.startService(intent);
     else ctx.startForegroundService(intent);
   }
   public static File partial(Context ctx){return new File(new File(ctx.getFilesDir(),"models"),"active.gguf.part");}
@@ -81,6 +81,9 @@ public final class ModelDownloadService extends Service {
       File p=partial(this);
       if(p.exists()&&!p.delete()){setState("无法清理下载缓存");return START_NOT_STICKY;}
       prefs.edit().remove("etag").remove("total").remove("sha256").apply();
+      bytes=0;total=-1;setState("旧缓存已按用户确认清理");
+      stopForegroundAndSelf();
+      return START_NOT_STICKY;
     }
     if(worker!=null&&worker.isAlive()){showNotification();return START_STICKY;}
     pause.set(false);
