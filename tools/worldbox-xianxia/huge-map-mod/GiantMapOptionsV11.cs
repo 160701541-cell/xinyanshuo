@@ -59,6 +59,35 @@ namespace XianxiaWorldBox
             try { return Report = TryRegister(); }
             catch (Exception ex) { return Report = "未注入，原因：" + ex.GetType().Name + "，请保留NML日志。"; }
         }
+        // Read-only runtime diagnostics used by Work to confirm real Android 0.51.4
+        // map size API before declaring the 2048-square preset playable.
+        public static string DiagnoseMapApi()
+        {
+            try
+            {
+                var asm=typeof(World).Assembly;
+                var mapType=asm.GetType("MapSizeAsset");
+                var manager=asm.GetType("AssetManager");
+                var libraryType=asm.GetType("MapSizeLibrary");
+                if(mapType==null||manager==null||libraryType==null)
+                    return "MAP_API_FAIL missing type MapSizeAsset/AssetManager/MapSizeLibrary";
+                var lib=Member(manager,"map_sizes");
+                if(lib==null) return "MAP_API_FAIL AssetManager.map_sizes null";
+                var titanic=Member(lib,"titanic");
+                if(titanic==null) return "MAP_API_FAIL titanic missing";
+                object presetSize=Member(titanic,"size");
+                var add=lib.GetType().GetMethods(F)
+                    .FirstOrDefault(m=>m.Name=="add"&&m.GetParameters().Length==1);
+                if(add==null) return "MAP_API_FAIL no add(MapSizeAsset)";
+                string message="MAP_API_READY titanic.size="+
+                    (presetSize==null?"null":presetSize.ToString())+
+                    " addParam="+add.GetParameters()[0].ParameterType.Name+
+                    " candidate32=2048² (not generated)";
+                return message;
+            }
+            catch(Exception e){return "MAP_API_FAIL "+e.GetType().Name;}
+        }
+
         // Separate, explicit 32x32 test mode. Does NOT affect the standard 10/12/16 choices.
         // It only attempts registration of a NEW-world preset, never generation or save writes.
         public static string OnExtremeTap()
