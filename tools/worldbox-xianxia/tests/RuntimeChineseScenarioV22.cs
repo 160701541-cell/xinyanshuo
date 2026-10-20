@@ -32,24 +32,27 @@ class Program
         var kingdoms=new UnityEngine.UI.Text{text="Kingdoms"};
         var war=new TMPro.TMP_Text{text="War"};
         var mod=new TMPro.TMP_Text{text="Mod Manager"};
+        var numeric=new TMPro.TMP_Text{text="Population: 1,200"};
         var name=new UnityEngine.UI.Text{text="Northridge"};
         var hidden=new UnityEngine.UI.Text{text="Settings"};
         hidden.gameObject.activeInHierarchy=false;
-        UnityEngine.Resources.Items.AddRange(new object[]{kingdoms,war,mod,name,hidden});
+        UnityEngine.Resources.Items.AddRange(new object[]{kingdoms,war,mod,numeric,name,hidden});
         UnityEngine.Time.unscaledTime=10f;
         RuntimeChineseOverlayV22.Tick();
         Assert(kingdoms.text=="王国列表","vanilla UI text translation");
         Assert(war.text=="战争","TMPro game label");
         Assert(mod.text=="模组管理器","other-MOD text");
+        Assert(numeric.text=="人口：1,200","dynamic numeric kingdom population status");
+        Assert(ChineseLocalizationV22.Translate("Kingdom: Arthen")=="Kingdom: Arthen","generated kingdom name unchanged");
         Assert(name.text=="Northridge","unknown dynamic name must not be mangled");
         Assert(hidden.text=="Settings","inactive labels must remain");
-        Assert(RuntimeChineseOverlayV22.LiveTranslatedCount==3,"tracked count");
+        Assert(RuntimeChineseOverlayV22.LiveTranslatedCount==4,"tracked count");
         war.text="World";
         UnityEngine.Time.unscaledTime=20f;
         RuntimeChineseOverlayV22.Tick();
         Assert(war.text=="世界","react to game-created dynamic labels");
         RuntimeChineseOverlayV22.SetEnabled(false);
-        Assert(kingdoms.text=="Kingdoms"&&war.text=="World"&&mod.text=="Mod Manager",
+        Assert(kingdoms.text=="Kingdoms"&&war.text=="World"&&mod.text=="Mod Manager"&&numeric.text=="Population: 1,200",
           "disable must restore only MOD-owned overlays without reversing game updates");
         string folder=Path.Combine(UnityEngine.Application.persistentDataPath,"XianxiaModStaging");
         Directory.CreateDirectory(folder);
