@@ -80,7 +80,7 @@ namespace XianxiaWorldBox
             int installed = 0;
             foreach (int chunks in CandidateChunks)
             {
-                if (chunks > MaxExperimentalChunks) continue;
+                if (chunks > MaxExperimentalChunks || !ObserverFrameGuardV12.AcceptLargeMapCandidate(chunks)) continue;
                 string uid = "xianxia_map" + chunks;
                 try
                 {
@@ -99,7 +99,7 @@ namespace XianxiaWorldBox
             // Some WorldBox builds cache preset names on initialization. We do NOT
             // blindly write private static caches because that could corrupt saves.
             Enabled = true;
-            return "已向尺寸库申请注册" + installed + "档候选（10/12/16/20）；" +
+            return "已向尺寸库申请注册" + installed + "档（10/12优先，16需要足够FPS，20暂禁）；" +
                    "但创建界面能否显示仍未设备验证，不能认为地图成功扩大。";
         }
     }
