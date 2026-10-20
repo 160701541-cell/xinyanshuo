@@ -44,9 +44,11 @@ namespace XianxiaWorldBox {
    try {
     var lines=File.ReadAllLines(path);
     if(lines.Length<40||lines.Length>3000)return false;
-    foreach(string line in lines.Skip(1)) {
+    for(int n=1;n<lines.Length;n++) {
+     string line=lines[n];
      var cols=line.Split('\t');
-     if(cols.Length!=5||cols.Any(x=>x.IndexOf('\n')>=0))return false;
+     if(cols.Length!=5)return false;
+     foreach(string col in cols)if(col.IndexOf('\n')>=0)return false;
      if(!map.TryGetValue(cols[2],out var list))map.Add(cols[2],list=new List<Entry>());
      list.Add(new Entry{id=cols[0],name=cols[1],family=cols[2],tab=cols[3],icon=cols[4]});
     }
