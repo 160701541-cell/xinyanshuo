@@ -83,7 +83,7 @@ def main():
             texture_url = f"https://raw.githubusercontent.com/{OWNER_REPO}/{COMMIT}/{original_png.as_posix()}"
             with urllib.request.urlopen(texture_url,timeout=40) as response:
                 img_data = response.read(8*1024*1024)
-            if not img_data.startswith(b"\\x89PNG\\r\\n\\x1a\\n".replace(b"\\x89",bytes([137])).replace(b"\\r",bytes([13])).replace(b"\\n",bytes([10]))):
+            if not img_data.startswith(bytes.fromhex("89504e470d0a1a0a")):
                 raise ValueError("External material image was not PNG: " + uri)
             output = destination.parent / relative
             output.parent.mkdir(parents=True,exist_ok=True)
