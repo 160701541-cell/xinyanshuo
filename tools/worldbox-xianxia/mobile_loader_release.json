@@ -1,0 +1,24 @@
+{
+  "project": "WORLDBOX_THIRD_PARTY_MOD_DERIVATIVE_TEST",
+  "name": "Official open-source NeoModLoader Android release (external; not redistributed)",
+  "source_repository": "WorldBoxOpenMods/AndroidModLoader",
+  "source_release": "https://github.com/WorldBoxOpenMods/AndroidModLoader/releases/tag/latest",
+  "release_published_at": "2026-05-26T15:22:05Z",
+  "version_label": "2.1",
+  "assets": [
+    {
+      "name": "NeoModLoader_mobile.dll",
+      "size_bytes": 20135424,
+      "sha256": "9ed209cdc783ed26998d31e461d1bbd317c83aff7ed8eefe844ddb0878a19c6a",
+      "url": "https://github.com/WorldBoxOpenMods/AndroidModLoader/releases/download/latest/NeoModLoader_mobile.dll"
+    },
+    {
+      "name": "NeoModLoader_mobile.pdb",
+      "size_bytes": 222364,
+      "sha256": "961330c6794d7e009c3babcb2b1a305d9d1f75ab011da4b7dc9dc04ed66b1100",
+      "url": "https://github.com/WorldBoxOpenMods/AndroidModLoader/releases/download/latest/NeoModLoader_mobile.pdb"
+    }
+  ],
+  "caution": "Public Android DLL and APK runtime dependencies can differ. Use only as a QA candidate; never assume 0.51.4 Android game has bootstrap or NML initialized.",
+  "device_verified": false
+}
