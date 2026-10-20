@@ -207,6 +207,13 @@ public final class AiSettingsActivity extends Activity {
   }
   @Override protected void onResume(){
     super.onResume();ticker.removeCallbacks(progressUpdate);ticker.post(progressUpdate);
+    // Continue an interrupted transfer automatically when the user returns,
+    // but never undo an explicit user pause or explicit cache reset.
+    android.content.SharedPreferences p=getSharedPreferences(ModelDownloadService.PREF,MODE_PRIVATE);
+    if(p.getBoolean("auto_resume",false)&&!ai.installed()&&ModelDownloadService.partial(this).isFile()){
+      try{ModelDownloadService.command(this,ModelDownloadService.START);}
+      catch(Exception ex){report("自动接续失败，请点击「继续下载」："+ex.getMessage());}
+    }
   }
   @Override protected void onPause(){ticker.removeCallbacks(progressUpdate);super.onPause();}
   @Override protected void onDestroy(){ticker.removeCallbacksAndMessages(null);io.shutdownNow();if(ai!=null)ai.close();super.onDestroy();}
