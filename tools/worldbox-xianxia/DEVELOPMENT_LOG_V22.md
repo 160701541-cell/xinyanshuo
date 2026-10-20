@@ -94,3 +94,34 @@ Work仍负责私有APK整合、签名、安卓16真机验收。不得上传商�
 - 在旧工作流 `39431893667` 发现两个新的P0打包阻塞：① 新增本地化元数据检查器后，旧 `inspector/MapTypes.csproj` 默认通配编译了两套顶层C#程序，导致`CS8802`；② `package_android_mono_source.py` 严格拒绝新漏译导出源文件中的`File.Write...` 字符串。已分别将原MapTypes.csproj限制为只编译`Program.cs`，并将明确授权的MOD私有词条报告改用`StreamWriter`输出，**没有修改/关闭原Mono源码包安全门禁**。
 - 整体回归 `39432212199`，对应提交 **`f251ddaf`**：**三项工作均成功**（离线源码QA含Python与C#可执行场景、公开Android NML SDK编译及双格式候选包核验、私有用户APK通用检查器编译）。本结果可称**源码构建/安全测试通过**，**绝不等同Android 16手机可用/完整汉化/已生成交付签名APK**。
 - 该成功回归后仅更新WORK交接说明和本日志；没有改动已通过的C#、Python功能源码、SDK编译项目或独立工作流。后续任务必须继续以本文件记录的P0/P1清单推进，不可把长远皇城、可升级建筑、天道放置、天空浮岛、地府误标为已实现。
+
+
+---
+
+## 2026-10-20 v0.24 同分支实际进度：用户一键简体中文、第三方MOD键值包、动态数值翻译、用户APK实查
+
+**时间/分支**：与前轮完全相同的 `worldbox/external-mod-lab-v22-zh-localization`，绝不合并到main，也绝不修改《苍岚·人生世界》源码、官网、安卓APK176或PCK补丁。依据用户“先完整汉化、模组也要中文”和连续“继续”执行，未挪用游戏开发任务先写抽象文档。
+
+### 真实代码增量（不是未执行的计划）
+1. `localization/NativeLocaleBridgeV23.cs` 增加 **`SwitchToChineseByUserTap()`**：玩家在游戏内主动点击「一键选择简中」时先验证原版 `LocalizedTextManager.setLanguage(string)` 的公开反射签名，再请求切换到NeoModLoader所用简中代码`cz`；**不会在后台强制改语言**。还新增`RegisterExplicitKeys()`，按玩家/第三方MOD提供的真实本地化键注册翻译，检查NML已注册键，并在原版当前语言为简中且已有中文时避免覆盖，保留作者自己的译文。
+2. 新增 `localization/ChineseKeyPackV24.cs`：实现按**真实key**导入 `Application.persistentDataPath/XianxiaModStaging/zh_cn_keymap_v24.txt` 中的 `key=中文` 翻译包（最大512KiB/4000条），先完整验证格式、重复键和非法控制字符，再注册NML `cz` 键；不修改原版程序集和存档。该程序只是**游戏内私有目录文件导入器，非安卓SAF批量选ZIP文件器**；不谎称已实现游戏内文件选取。
+3. 新增 `localization/ChineseTextTemplatesV24.cs`：改善原版和其他MOD动态数值文本，例如 `Population: 1,200`→「人口：1,200」、`Level: 12`→「等级：12」、`Health: 30/40`→「生命：30/40」，只处理白名单字段加安全的数字后缀，避免误翻王国名/人物名/未知其他MOD消息。`ChineseLocalizationV22.Translate` 已实际调用该匹配器。
+4. `localization/OriginalMenuGuideV22.cs` 已做真正的手机触屏汉化控制台：新增「一键选择简中」「导入中文键值包」，保留旧的中文开关、登记原版语言键、刷新简中、漏译采集/导出/清空、分章节原版菜单说明；调整按钮和状态区域布局。
+5. Android真实公开SDK/语法三套工程及三个C#行为测试工程都已纳入这些汉化实现，独立 `.github/workflows/worldbox-external-mod-lab-v22.yml` 已同步更新NML预编译候选与Legacy Mono源码候选的实际包文件及断言。
+6. `NativeLocaleScenarioV23.cs` 可执行测试新增：含第三方MOD键值导入、原有MOD汉化不覆盖、非法包整包拒绝、手动简中切换；`RuntimeChineseScenarioV22.cs` 新增数值菜单自动汉化、未知王朝名字保护、关中文后还原英文。
+7. 增加独立 `localization/REAL_APK_AND_TRANSLATIONS_V24.md`，记录**对真实用户上传的原版WorldBox0.51.4 APK和中文名1.5.1 ZIP的本机只读检查**、哈希、插件来源、授权及Android适配障碍。
+
+### 实际用户APK与中文名文件（本机只读，不公开商业二进制）
+- 用户APK SHA256 `c39817efa21e539fe61f318dc1ad4050b424c6120ab8ed384d94148f869c4bdc`，包含ARM64 libunity、libil2cpp、libmonosgen，`assets/Mono/Managed.zip`内有`Assembly-CSharp.dll`，但内层顶级目录没有`NeoModLoader.dll`。**因此尚不能确认对应Android0.51.4加载链真的有NML**，更不能说已将其他MOD装进APK。
+- 用户中文名MOD `0.51.+中文名模组ChineseName_1.5.1.zip` SHA256 `094b856262a93f24f639774ae235058d2e5c035a8bf8e465264406e397094470`，源包里有MIT LICENSE、`mod.json`，含王国/城市/单位/家族/装备/宗教等动态中文名源码和配置。**只适合做用户私有构建的可选依赖**，需验证0.51.4安卓加载及和其他命名补丁的冲突；不盲目复制版权资产到公开GitHub。
+- Worldbox-OWL索引还列出0.51.x「简单汉化模组修正1.0.8」（原版文字）、「上帝模式翻译1.2.2」（调试/上帝模式部分中文和提示）、「中文名模组1.5.1」（中文名称）三类现成候选。**不等于已测试Android兼容**，其他两份授权未审查所以只记录出处及交给Work核验。
+
+### 自动化真实验收
+- 曾有v24中间提交CI红灯：`NativeLocaleScenarioV23.cs`测试输入文件的换行被写成文字反斜杠+n，使两条key读成一行。已改成C# `Environment.NewLine` 实际按行写入，测试后续通过。
+- **绿灯 `39440588704`（提交`ff504ae7`）**：安卓公开SDK编译、Legacy Mono源码包与NML预编译MOD候选打包校验、离线Python及C#行为测试、项目隔离规则、私有APK通用工具编译全部通过。绿灯只是编译/模拟测试，不代表真机已通过。
+- 后续仅增加本日志/候选MOD授权调研，不改变上述核心游戏运行代码；未来Work必须实际运行用户APK、检查显示/存档与批量MOD安装，收集带设备时间戳的截图日志，才能确认“完整汉化已交付”。
+
+### 下一步P0（原有长清单继续有效）
+1. Work用用户APK确认**真实Mono/NML/IL2CPP加载链**并整合原版可授权中文包、中文名、上帝模式翻译及本项目汉化候选；无设备证据不报APK完成。
+2. 在原版「创造世界、天道工具、王国、外交、城市、人物、建筑、世界法则、设置、MOD管理器」逐页记录**已汉化/仍英文**，提交真实缺口，修复实际词条与渲染重叠；原版100%和任意第三方MOD100%尚**未**实现。
+3. 保留后续天道原版放置能力扩展、世俗王朝多城行政、都城皇城、升级外观、灵兽妖兽、宗门大阵、多空间云海浮岛/九天/地下/地府/跨层交通、每境界12层+特殊十三层天劫机制；本轮**均尚未实现**，不能抢占汉化优先级，也不能遗忘。
