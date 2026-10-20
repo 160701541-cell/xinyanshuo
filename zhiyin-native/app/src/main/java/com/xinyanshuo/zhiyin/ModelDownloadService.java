@@ -136,6 +136,7 @@ public final class ModelDownloadService extends Service {
       if(bytes>MAX_BYTES)throw new IOException("缓存超过4GB限制");
       String etag=prefs.getString("etag","");
       int attempt=0;
+      boolean retryWithoutIfRange=false;
       while(!pause.get()&&attempt<12){
         attempt++;
         HttpURLConnection con=null;
@@ -149,7 +150,7 @@ public final class ModelDownloadService extends Service {
           con.setRequestProperty("Accept-Encoding","identity");
           if(bytes>0) {
             con.setRequestProperty("Range","bytes="+bytes+"-");
-            if(!etag.isEmpty())con.setRequestProperty("If-Range",etag);
+            if(!etag.isEmpty()&&!retryWithoutIfRange)con.setRequestProperty("If-Range",etag);
           }
           int code=con.getResponseCode();
           long remoteSize=-1;
@@ -161,9 +162,15 @@ public final class ModelDownloadService extends Service {
             }
             throw new IOException("服务器认为本地已超出文件长度，保留缓存等待处理");
           }
+          if(bytes>0&&code==200&&!etag.isEmpty()&&!retryWithoutIfRange){
+            // Some CDN redirects change ETag but still support Range. Try once
+            // without If-Range; never append a full 200 response.
+            retryWithoutIfRange=true;
+            setState("服务器改变了续传标识，重新协商断点");
+            continue;
+          }
           if(bytes>0&&code!=206){
-            // CRITICAL: If-Range may return 200 because source changed.
-            // Never append an HTTP 200 body to an existing .part.
+            // CRITICAL: never append a 200 response to a partial file.
             throw new IOException("服务器未返回206断点数据（实际HTTP "+code+"）。已保存"+
               (bytes/1048576)+"MB，请勿重复点击清理；稍后继续尝试。");
           }
@@ -185,8 +192,13 @@ public final class ModelDownloadService extends Service {
           if(maybeSha.matches("(?i)[a-f0-9]{64}"))
             prefs.edit().putString("sha256",maybeSha.toLowerCase(Locale.ROOT)).apply();
           if(bytes==0&&responseEtag!=null)etag=responseEtag;
-          if(bytes>0&&!etag.isEmpty()&&responseEtag!=null&&!etag.equals(responseEtag)){
-            throw new IOException("续传的模型版本不一致，缓存已保护");
+          // CDN ETag can differ after a redirect. The actual source blob
+          // is verified via X-Linked-Etag SHA256 when supplied, not URL ETag.
+          String pinned=prefs.getString("sha256","");
+          if(bytes>0&&pinned.matches("(?i)[a-f0-9]{64}")&&
+            hfLinked!=null&&hfLinked.replace("\"","").matches("(?i)[a-f0-9]{64}")&&
+            !pinned.equalsIgnoreCase(hfLinked.replace("\"",""))){
+            throw new IOException("模型源SHA256改变，保留旧缓存，拒绝拼接");
           }
           if(remoteSize>0)total=remoteSize;
           prefs.edit().putString("etag",etag).putLong("total",total).apply();
