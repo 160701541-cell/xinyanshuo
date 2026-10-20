@@ -271,7 +271,7 @@ jobs:
           sdk=os.environ.get('ANDROID_HOME') or os.environ.get('ANDROID_SDK_ROOT','/usr/local/lib/android/sdk')
           jars=glob.glob(sdk+'/platforms/android-*/android.jar')
           assert jars,'Android SDK platform jar missing; launcher not validated'
-          jar=max(jars,key=lambda p:int(re.search(r'android-(\d+)/',p).group(1)))
+          jar=max(jars,key=lambda p:tuple(map(int,re.findall(r'\d+',p.split('/')[-2]))))
           root='tools/worldbox-xianxia/private-apk-lab/'
           subprocess.run(['javac','-encoding','UTF-8','-source','8','-target','8',
                           '-cp',jar,'-d','/tmp/worldbox-diagnostics-classes',
