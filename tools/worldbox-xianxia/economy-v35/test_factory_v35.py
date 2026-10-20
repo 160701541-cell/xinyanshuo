@@ -21,6 +21,10 @@ def main():
    assert set(recipe["inputs"])<=names,recipe
    assert set(recipe["outputs"])<=names,recipe
    assert all(v>0 for v in recipe["inputs"].values())
+  index=(out/"resource_index.tsv").read_text(encoding="utf8").splitlines()
+  assert len(index)==len(items)+1,(len(index),len(items))
+  assert index[0].split("\t")==["id","name","family","tab","icon"]
+  assert len(index[1].split("\t"))==5
   for row in items:
    img=Image.open(out/row["icon"])
    assert img.size==(32,32) and img.mode=="RGBA",(row,img.size,img.mode)
