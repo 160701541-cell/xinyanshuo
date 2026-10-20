@@ -55,7 +55,7 @@ def icon(variant,family,stage):
     y=8+j*4
     for side in (-1,1):
      d.ellipse((16+side*8-3,y,16+side*8+3,y+5),
-               fill=(*light if j%2 else c,255),outline=(*rim,255))
+               fill=(*(light if j%2 else c),255),outline=(*rim,255))
   else:
    for j in range(4):
     y=8+j*5
