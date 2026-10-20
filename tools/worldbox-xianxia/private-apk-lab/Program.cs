@@ -92,7 +92,9 @@ class Program {
     if(entry?.Methods.FirstOrDefault(x=>x.Name=="Install"&&x.IsPublic&&x.IsStatic)==null)
         throw new InvalidOperationException("Missing public original Mono overlay bootstrap");
     var reference=new dnlib.DotNet.AssemblyRefUser(addon.Assembly);
-    mod.AssemblyRefs.Add(reference);
+    // dnlib writes newly referenced assemblies when a TypeRefUser points at them.
+    // ModuleDefMD does not expose a writable AssemblyRefs collection.
+
     var typeRef=new dnlib.DotNet.TypeRefUser(mod,"XianxiaMonoBridge","Entry",reference);
     var methodRef=new dnlib.DotNet.MemberRefUser(mod,"Install",
         dnlib.DotNet.MethodSig.CreateStatic(mod.CorLibTypes.Void),typeRef);
