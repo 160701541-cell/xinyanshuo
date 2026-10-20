@@ -81,7 +81,8 @@ namespace XianxiaWorldBox
                 text.AppendLine("# WorldBox疑似漏译菜单——本机生成，不是完整原版键表");
                 text.AppendLine("# 可能含游戏生成的名字；人工检查后再分享。");
                 foreach(string line in Missing)text.AppendLine(line);
-                File.WriteAllText(temp,text.ToString(),new UTF8Encoding(false));
+                using(var writer=new StreamWriter(temp,false,new UTF8Encoding(false)))
+                    writer.Write(text.ToString());
                 if(File.Exists(dest))File.Delete(dest);
                 File.Move(temp,dest);
                 Status="已将 "+Missing.Count+" 条疑似漏译写入本机私有目录，不会自动上传。";
