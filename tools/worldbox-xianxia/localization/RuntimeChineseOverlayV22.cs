@@ -150,7 +150,11 @@ namespace XianxiaWorldBox
                     }
                     if(Patched.Count>=MaxTracked)continue;
                     string chinese=ChineseLocalizationV22.Translate(current);
-                    if(chinese==current||string.IsNullOrEmpty(chinese))continue;
+                    if(chinese==current||string.IsNullOrEmpty(chinese))
+                    {
+                        UntranslatedMenuAuditV23.Observe(current);
+                        continue;
+                    }
                     text.SetValue(component,chinese,null);
                     Patched[key]=new Entry {
                         Component=component,TextProperty=text,
