@@ -136,13 +136,13 @@ class Program {
      ("XianxiaMonoBridge.CultivationBridgeV18","OnGUI")})
    {
      var type=mod.Types.FirstOrDefault(x=>x.FullName==item.Item1);
-     var method=type?.Methods.FirstOrDefault(x=>x.Name==item.Item2&&!x.IsStatic&&x.HasBody&&x.Parameters.Count==0);
+     var method=type?.Methods.FirstOrDefault(x=>x.Name==item.Item2&&!x.IsStatic&&x.HasBody&&x.MethodSig.Params.Count==0);
      if(method!=null)return method;
    }
    var own=mod.Types.Where(t=>t.Namespace.StartsWith("XianxiaMonoBridge",StringComparison.Ordinal)||
       t.FullName.Contains("Xianxia")).ToArray();
    var candidates=own.SelectMany(t=>t.Methods.Select(m=>(t,m)))
-      .Where(e=>e.m.HasBody&&!e.m.IsStatic&&e.m.Parameters.Count==0&&
+      .Where(e=>e.m.HasBody&&!e.m.IsStatic&&e.m.MethodSig.Params.Count==0&&
          (e.m.Name=="OnGUI"||e.m.Name=="Update"||e.m.Name=="LateUpdate"))
       .ToArray();
    if(candidates.Length>0) {
