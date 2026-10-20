@@ -189,6 +189,58 @@ namespace XianxiaWorldBox
             }
         }
 
+
+        /// <summary>
+        /// Explicit, bounded, read-only audit of the *active* game string table.
+        /// This never logs/persists personal names, game text or locale keys.
+        /// The counts are not a percentage of complete menu localization.
+        /// </summary>
+        public static string VerifyCurrentLocale()
+        {
+            try
+            {
+                Type native=FindType("LocalizedTextManager");
+                object live=StaticMember(native,"instance");
+                if(live==null)return "原版语言管理器尚未就绪；未做修改。";
+                string code=Convert.ToString(Member(live,"language"))??"未知";
+                object table=Member(live,"_localized_text");
+                if(table==null)return "原版语言码 "+code+"；语言字典尚未载入。";
+                if(!(table is IEnumerable)&&table.GetType().GetMethod("GetEnumerator",Type.EmptyTypes)==null)
+                    return "原版语言码 "+code+"；本机无法枚举字典，不报完成。";
+                int seen=0,han=0,latin=0,other=0;
+                long start=DateTime.UtcNow.Ticks;
+                bool capped=false;
+                foreach(object entry in WalkPairs(table))
+                {
+                    if(seen>=2000 || DateTime.UtcNow.Ticks-start>150*TimeSpan.TicksPerMillisecond)
+                    {
+                        capped=true;break;
+                    }
+                    if(entry==null)continue;
+                    object value=entry is DictionaryEntry?((DictionaryEntry)entry).Value:Member(entry,"Value");
+                    string text=value==null?null:Convert.ToString(value);
+                    if(string.IsNullOrEmpty(text))continue;
+                    seen++;
+                    if(ContainsChinese(text)){han++;continue;}
+                    bool eng=false;
+                    for(int i=0;i<text.Length&&i<512;i++)
+                    {
+                        char c=text[i];
+                        if(c>='a'&&c<='z'||c>='A'&&c<='Z'){eng=true;break;}
+                    }
+                    if(eng)latin++;else other++;
+                }
+                return "原版语言码 "+code+"；实际文本抽样 "+seen+
+                    "项（含汉字"+han+"／拉丁字母"+latin+"／其他"+other+"）"+
+                    (capped?"，已限额截断":"")+
+                    "。仅运行时诊断，非全量汉化完成率。";
+            }
+            catch(Exception e)
+            {
+                return "实际简中核验失败："+e.GetType().Name+"；不代表汉化完成。";
+            }
+        }
+
         public static bool LastPackOk {get;private set;}
 
         /// <summary>
@@ -271,7 +323,11 @@ namespace XianxiaWorldBox
                 change.Invoke(manager,new object[]{"cz"});
                 // Original game is responsible for remembering this explicit choice.
                 // NML setLanguagePostfix should apply previously registered locales.
-                return "已请求切换原版简体中文；请检查各个菜单实际显示。";
+                // An invoked method is not evidence of a completed locale switch.
+                string active=Convert.ToString(Member(manager,"language"))??"未知";
+                if(active!="cz")
+                    return "已请求切换简中，但原版语言码仍为 "+active+"，结果未确认。";
+                return "已请求切换，原版语言码已显示cz；还需逐页实机汉化验收。";
             }
             catch(Exception e)
             {

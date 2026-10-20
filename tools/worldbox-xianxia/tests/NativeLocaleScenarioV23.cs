@@ -13,7 +13,8 @@ public class LocalizedTextManager
     public static LocalizedTextManager instance=new LocalizedTextManager();
     public string language="en";
     public Dictionary<string,string> _localized_text=new Dictionary<string,string>();
-    public void setLanguage(string id){language=id;}
+    public bool simulateIgnoredSwitch;
+    public void setLanguage(string id){if(!simulateIgnoredSwitch)language=id;}
 }
 namespace NeoModLoader.General
 {
@@ -66,6 +67,11 @@ class Program
         data._localized_text["royal_person"]="Northridge";
         data._localized_text["city_original_zh"]="王国";
         NeoModLoader.General.LM.Add("cz","wars_tab","战事（其他MOD）");
+        string measured=NativeLocaleBridgeV23.VerifyCurrentLocale();
+        Assert(measured.Contains("原版语言码 en"),"must report live original language");
+        Assert(measured.Contains("实际文本抽样 6项"),"read actual game strings");
+        Assert(measured.Contains("含汉字1／拉丁字母5"),"no fake locale completion rate");
+        Assert(measured.Contains("非全量汉化完成率"),"must not label sample as coverage");
         string info=NativeLocaleBridgeV23.RegisterActualKeys();
         Assert(NativeLocaleBridgeV23.Ready,"real instance and LM API detected");
         Assert(NativeLocaleBridgeV23.Seen==5,"5 English values scanned, existing native Chinese skipped");
@@ -105,6 +111,11 @@ class Program
         Assert(rejected.Contains("非法键"),"invalid direct key pack rejected");
         Assert(!NeoModLoader.General.LM.locales["cz"].ContainsKey("safe_entry"),"invalid pack atomic validation");
         data.language="en";
+        data.simulateIgnoredSwitch=true;
+        string failedSwitch=NativeLocaleBridgeV23.SwitchToChineseByUserTap();
+        Assert(failedSwitch.Contains("未确认")&&data.language=="en",
+            "native method returning without switching must NOT count as successful Chinese");
+        data.simulateIgnoredSwitch=false;
         string switchResult=NativeLocaleBridgeV23.SwitchToChineseByUserTap();
         Assert(switchResult.Contains("已请求切换")&&data.language=="cz","user-tap switch to vanilla Chinese");
         OwnLocaleLabelsV25.Reset();

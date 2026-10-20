@@ -167,3 +167,16 @@ Work仍负责私有APK整合、签名、安卓16真机验收。不得上传商�
 - 对应Actions实际生成并下载的两个文件已经作ZIP CRC/语言包路径检查：`WorldBox_万界仙侠_v0.25_中文_NML预编译MOD_待实机.zip`（41,915 B，SHA256 `379e28dcec2db44492ac1774a1017855cb990f0858dab33499b1ec3fdeb88e0b`）；`WorldBox_万界仙侠_v0.25_中文_传统Mono源码MOD_待实机.zip`（46,946 B，SHA256 `9a2ec2e3795ca08c2afbf5f35d44e97bdbaeb459efc69e616e21985cc4da39c4`）。前者包含NMLMods下单个真实SDK构建DLL和`Locales/cz.json`、`en.json`；后者仅是旧式NeoModLoader源码候选。**这两个是MOD候选ZIP，均非完整游戏APK；原版游戏可能还不支持现有加载链，安卓16手机未运行验收。**
 - 用户侧额外本机只读审计JSON：`WorldBox_0.51.4_原版简体中文资源_只读审计.json`，证实用户APK内已有`cz`原生中文分类路径70个。工程现在应优先尝试原版设置切换简中，证据不足时不另造并声称完整原版中文。
 - **后续最高阻塞（红）**：用户真实WorldBox 0.51.4 APK能否运行哪种NML加载器；只有验证后才可私有整合并产生实际已签名可安装APK，必须实机菜单截图/覆盖率/存档/性能QA。**下轮不要继续无限增加相似翻译词典，优先验证真实中文切换及安装路径。** 与《苍岚》隔离仍是最高规范。
+
+
+---
+
+## 2026-10-20 v0.26 同分支P0汉化真机诊断与误报修复（代码已提交，安卓待验）
+
+- 基线：2026-10-20 GitHub Actions `39445362153` 的v0.25三项离线作业成功，但只有两个MOD候选ZIP（41,915 B/46,946 B），**并没有交付签名Android APK**。
+- 修改 `localization/NativeLocaleBridgeV23.cs`：增加 **`VerifyCurrentLocale()` 真正运行时只读核验**，读取实际 `LocalizedTextManager.instance.language` 与当前 `_localized_text`，最多2000条且150毫秒预算，统计含汉字/拉丁字母/其他文字的样本量。没有导出任何原文、专有游戏资源、人物名字、玩家存档；取样并非汉化完成率。
+- 修复 `SwitchToChineseByUserTap()` 之前「setLanguage反射调用没有抛异常即回报请求成功」的验收误报：现在调用后**读取真实语言码**，若仍不是 `cz` 必须显示「结果未确认」；若为cz也必须逐页真机检验原版+第三方MOD界面。
+- 修改 `localization/OriginalMenuGuideV22.cs` 第二排为五个触屏按钮，新增「核验简中」用于现场查看实际语言码与当前活动字典，原来的导入包、漏译采集、导出、清空均保留。
+- 修改 `tests/NativeLocaleScenarioV23.cs`：执行模拟管理器的真实词条计数测试、语言切换被忽略的误报拦截测试，并保留旧中文键/第三方MOD不覆盖/离线导入测试。上述都是**实际代码和可执行回归测试**，不是新造一个翻译词库。
+- 已经查到用户本人上传的 APK 与两份MOD候选被安全保留在用户文件库；原APK静态证据只说明存在Mono/IL2CPP及原生 `cz` 资源，不能据此推断加载器确实运行。**本轮未做Android设备连接、签名、安装，不宣称完整中文或APK成功。** 后续仍按完整汉化→私有APK整合及真机验收→天道放置→多城皇城→建筑等级→浮岛地府的既定次序推进。
+- 仅WorldBox隔离分支 `worldbox/external-mod-lab-v22-zh-localization`，不修改《苍岚》main、官网、游戏发行代码/安装包或开发日志。本提交触发的CI要查当前新运行号后才能评价。

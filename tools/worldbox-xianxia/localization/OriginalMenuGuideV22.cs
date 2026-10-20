@@ -65,20 +65,25 @@ namespace XianxiaWorldBox
             if(GUI.Button(new Rect(x,top,quarter,43f*scale),OwnLocaleLabelsV25.Get("refresh_chinese","刷新简体中文"),button))
                 oneTapStatus=NativeLocaleBridgeV23.ActivateChinese();
 
+            // Five buttons on the second row; original controls retained.
             x=r.x+margin;
             float second=r.y+107f*scale;
-            if(GUI.Button(new Rect(x,second,quarter,43f*scale),OwnLocaleLabelsV25.Get("import_keypack","导入中文键值包"),button))
+            float fifth=(w-2f*margin-4f*gap)/5f;
+            if(GUI.Button(new Rect(x,second,fifth,43f*scale),OwnLocaleLabelsV25.Get("import_keypack","导入中文键值包"),button))
                 oneTapStatus=ChineseKeyPackV24.ImportPrivatePack();
-            x+=quarter+gap;
-            if(GUI.Button(new Rect(x,second,quarter,43f*scale),
+            x+=fifth+gap;
+            if(GUI.Button(new Rect(x,second,fifth,43f*scale),
                 UntranslatedMenuAuditV23.Enabled?OwnLocaleLabelsV25.Get("stop_missing_scan","停止漏译采集"):OwnLocaleLabelsV25.Get("start_missing_scan","开启漏译采集"),button))
                 UntranslatedMenuAuditV23.SetEnabled(!UntranslatedMenuAuditV23.Enabled);
-            x+=quarter+gap;
-            if(GUI.Button(new Rect(x,second,quarter,43f*scale),OwnLocaleLabelsV25.Get("export_missing","导出漏译清单"),button))
+            x+=fifth+gap;
+            if(GUI.Button(new Rect(x,second,fifth,43f*scale),OwnLocaleLabelsV25.Get("export_missing","导出漏译清单"),button))
                 UntranslatedMenuAuditV23.ExportLocalReport();
-            x+=quarter+gap;
-            if(GUI.Button(new Rect(x,second,quarter,43f*scale),OwnLocaleLabelsV25.Get("clear_missing","清空漏译记录"),button))
+            x+=fifth+gap;
+            if(GUI.Button(new Rect(x,second,fifth,43f*scale),OwnLocaleLabelsV25.Get("clear_missing","清空漏译记录"),button))
                 UntranslatedMenuAuditV23.Clear();
+            x+=fifth+gap;
+            if(GUI.Button(new Rect(x,second,fifth,43f*scale),"核验简中",button))
+                oneTapStatus=NativeLocaleBridgeV23.VerifyCurrentLocale();
 
             GUI.Label(new Rect(r.x+margin,r.y+155f*scale,w-2f*margin,47f*scale),
                 oneTapStatus,label);
