@@ -47,11 +47,16 @@ public static class Program{
     Assert(result.Contains("WORLD_SIZE_PRESET_READY"),result);
     Assert(AssetManager.map_sizes.get("xianxia_extreme_32")?.size==32,"actual game library entry 32 chunks");
     Assert(Array.Exists(MapSizeLibrary.getSizes(),x=>x=="xianxia_extreme_32"),"visible new world sizes actual cache");
-    Assert(MapSizeLibrary.getSizes().Length==9,"8 vanilla sizes plus 2048 custom size must be visible");
+    Assert(AssetManager.map_sizes.get("xianxia_extreme_50")?.size==50,"new 50x50 chunk entry");
+    Assert(Array.Exists(MapSizeLibrary.getSizes(),x=>x=="xianxia_extreme_50"),
+        "new 50x50 preset visible in native world list");
+    Assert(MapSizeLibrary.getSizes().Length==10,"8 vanilla + 32x32 + 50x50");
     string again=MapPresetBridgeV32.TryRegister(asm);
-    Assert(again.Contains("READY")&&MapSizeLibrary.getSizes().Length==9,"repeat has no duplicate");
+    Assert(again.Contains("READY")&&MapSizeLibrary.getSizes().Length==10,"repeat has no duplicate");
     Assert(MapSizeLibrary.getSizes()[6]=="titanic","vanilla map size still exists");
-    Assert(MapPresetBridgeV32.Tiles==2048,"2048x2048 grid candidate");
-    Console.WriteLine("PASS_REALISTIC_0514_MAP_UI_REBUILD 8 -> 9; original list preserved; device pending");
+    Assert(MapPresetBridgeV32.Tiles==2048,"keep previously confirmed preset");
+    Assert(MapPresetBridgeV32.FiftyChunks==50,"50 chunks");
+    Assert(MapPresetBridgeV32.FiftyTiles==3200,"50 chunks x 64 = 3200 tiles");
+    Console.WriteLine("PASS_REALISTIC_0514_MAP_UI_REBUILD 8 -> 10; 50x50 chunks; original list preserved; device pending");
   }
 }

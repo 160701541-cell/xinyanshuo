@@ -13,6 +13,9 @@ namespace XianxiaWorldBox
         public const string Id="xianxia_extreme_32";
         public const int Chunks=32;
         public const int Tiles=2048;
+        public const string FiftyId="xianxia_extreme_50";
+        public const int FiftyChunks=50;
+        public const int FiftyTiles=3200;
         static readonly BindingFlags F=BindingFlags.Public|BindingFlags.NonPublic|
             BindingFlags.Static|BindingFlags.Instance;
         static DateTime retryAt=DateTime.MinValue;
@@ -52,6 +55,19 @@ namespace XianxiaWorldBox
         }
         public static string TryRegister(Assembly game)
         {
+            // Keep the 2048-square preset, add a 50x50 CHUNK preset.
+            string first=RegisterOne(game,Id,Chunks);
+            if(!first.StartsWith("WORLD_SIZE_PRESET_READY",StringComparison.Ordinal))
+                return Status=first;
+            string second=RegisterOne(game,FiftyId,FiftyChunks);
+            if(!second.StartsWith("WORLD_SIZE_PRESET_READY",StringComparison.Ordinal))
+                return Status=second;
+            Ready=true;
+            return Status="WORLD_SIZE_PRESET_READY 32x32 and 50x50 chunks; "+
+                "2048x2048 and 3200x3200 grid; real generation untested";
+        }
+        static string RegisterOne(Assembly game,string presetId,int chunks)
+        {
             if(game==null)return Status="WORLD_SIZE_NOT_READY missing Assembly-CSharp";
             Type manager=game.GetType("AssetManager"), size=game.GetType("MapSizeAsset");
             Type library=game.GetType("MapSizeLibrary");
@@ -68,11 +84,11 @@ namespace XianxiaWorldBox
             if(lookup==null)return Status="WORLD_SIZE_INCOMPATIBLE AssetLibrary.get(string) absent";
             object vanilla=lookup.Invoke(lib,new object[]{"titanic"});
             if(vanilla==null)return Status="WORLD_SIZE_NOT_READY vanilla Titanic asset absent";
-            object preset=lookup.Invoke(lib,new object[]{Id});
+            object preset=lookup.Invoke(lib,new object[]{presetId});
             if(preset==null)
             {
                 preset=Activator.CreateInstance(size);
-                if(preset==null||!Set(preset,"id",Id)||!Set(preset,"size",Chunks))
+                if(preset==null||!Set(preset,"id",presetId)||!Set(preset,"size",chunks))
                     return Status="WORLD_SIZE_INCOMPATIBLE preset fields";
                 object icon=Member(vanilla,"path_icon");
                 if(icon!=null)Set(preset,"path_icon",icon);
@@ -83,16 +99,16 @@ namespace XianxiaWorldBox
                 add.Invoke(lib,new[]{preset});
                 if(lookup!=null)
                 {
-                    var registered=lookup.Invoke(lib,new object[]{Id});
+                    var registered=lookup.Invoke(lib,new object[]{presetId});
                     if(registered==null)return Status="WORLD_SIZE_UNCONFIRMED size registration";
                 }
             }
             object stored=Member(preset,"size");
-            if(stored==null||Convert.ToInt32(stored)!=Chunks)
+            if(stored==null||Convert.ToInt32(stored)!=chunks)
                 return Status="WORLD_SIZE_CONFLICT preset exists with another chunk count";
             string[] visible=Sizes(library);
             if(visible==null)return Status="WORLD_SIZE_NOT_READY getSizes() is not string[]";
-            if(!visible.Contains(Id))
+            if(!visible.Contains(presetId))
             {
                 // Real 0.51.4 MapSizeLibrary.linkAssets initializes its UI
                 // list by convertToOldFormat() -> _mapSizes from 'list'.
@@ -105,13 +121,13 @@ namespace XianxiaWorldBox
                 {
                     rebuild.Invoke(rebuild.IsStatic?null:lib,null);
                     string[] built=Sizes(library);
-                    if(built!=null&&built.Contains(Id))
+                    if(built!=null&&built.Contains(presetId))
                     {
                         visible=built;
                     }
                 }
             }
-            if(!visible.Contains(Id))
+            if(!visible.Contains(presetId))
             {
                 FieldInfo cache=library.GetField("_mapSizes",F);
                 object owner=cache!=null&&cache.IsStatic?null:lib;
@@ -125,20 +141,18 @@ namespace XianxiaWorldBox
                     return Status="WORLD_SIZE_NOT_READY UI list mismatch";
                 string[] next=new string[old.Length+1];
                 Array.Copy(old,next,old.Length);
-                next[old.Length]=Id;
+                next[old.Length]=presetId;
                 bool confirmed=false;
                 try{
                     cache.SetValue(owner,next);
                     string[] live=Sizes(library);
-                    confirmed=live!=null&&live.Contains(Id);
+                    confirmed=live!=null&&live.Contains(presetId);
                 }finally{
                     if(!confirmed)cache.SetValue(owner,old);
                 }
                 if(!confirmed)return Status="WORLD_SIZE_UNCONFIRMED UI cache reverted";
             }
-            Ready=true;
-            return Status="WORLD_SIZE_PRESET_READY 2048x2048 new world list="+
-                Sizes(library).Length+"; real generation/save still untested";
+            return "WORLD_SIZE_PRESET_READY "+presetId+" "+chunks+" chunks";
         }
         static void Log(string message)
         {
