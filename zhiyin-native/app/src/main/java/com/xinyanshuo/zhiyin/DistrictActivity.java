@@ -3,6 +3,7 @@ package com.xinyanshuo.zhiyin;
 import android.app.*;
 import android.os.Bundle;
 import android.graphics.*;
+import android.graphics.drawable.GradientDrawable;
 import android.view.*;
 import android.widget.*;
 import java.util.*;
