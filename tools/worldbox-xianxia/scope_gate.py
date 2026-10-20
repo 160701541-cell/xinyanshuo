@@ -2,10 +2,10 @@
 """Strictly separate WorldBox external MOD lab from Canglan original game."""
 import argparse,json,subprocess
 from pathlib import Path
-BASE_SHA="a033d82e154dffedd874e29c26a6f4ec641c922a"
+BASE_SHA="3022d9214c126ef995d5861a2a25095349d00ae9"
 SOURCE="tools/worldbox-xianxia/"
-WORKFLOW=".github/workflows/worldbox-external-mod-lab-v09.yml"
-OLD_WORKFLOW=".github/workflows/worldbox-external-mod-lab-v08.yml"
+WORKFLOW=".github/workflows/worldbox-external-mod-lab-v10.yml"
+OLD_WORKFLOW=".github/workflows/worldbox-external-mod-lab-v09.yml"
 FORBIDDEN=(".apk",".pck",".dll",".pdb",".exe",".rar",".7z",".aab")
 
 def validate_paths(paths):
@@ -59,7 +59,7 @@ def main():
         paths=subprocess.check_output(
             ["git","diff","--no-renames","--name-status","--diff-filter=ACMRTD",BASE_SHA+"..HEAD"],text=True).splitlines()
     errors=evaluate_policy(scope)+validate_change_entries(paths)
-    if not paths: errors.append("No changed files in v0.9 test scope")
+    if not paths: errors.append("No changed files in v0.10 test scope")
     for x in paths:print("SCOPED "+x)
     for x in errors:print("BLOCKED "+x)
     if errors:raise SystemExit(1)
