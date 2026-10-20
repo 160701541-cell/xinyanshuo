@@ -10,7 +10,7 @@ namespace XianxiaWorldBox.Economy {
   static readonly BindingFlags F=BindingFlags.Public|BindingFlags.NonPublic|BindingFlags.Static;
   static Type gui,rect,scr,pixel;
   static MethodInfo btn,box,label,pixelDraw;
-  static PropertyInfo width,height;
+  static PropertyInfo width,height,depth;
   static bool searched;
   static object MakeRect(float x,float y,float w,float h) {
    if(rect==null)return null;
@@ -29,6 +29,7 @@ namespace XianxiaWorldBox.Economy {
    label=gui.GetMethod("Label",F,null,new[]{rect,typeof(string)},null);
    box=gui.GetMethod("Box",F,null,new[]{rect,typeof(string)},null);
    width=scr.GetProperty("width",F);height=scr.GetProperty("height",F);
+   depth=gui.GetProperty("depth",F);
    pixelDraw=pixel?.GetMethod("Draw",F,null,new[]{rect},null);
   }
   static bool Button(float x,float y,float w,float h,string text){
@@ -52,6 +53,11 @@ namespace XianxiaWorldBox.Economy {
     float w=Convert.ToSingle(width.GetValue(null,null));
     float h=Convert.ToSingle(height.GetValue(null,null));
     float u=Math.Min(1.65f,Math.Max(.92f,h/720f));
+    // IMGUI depth is global. Draw this panel above existing "万界" content,
+    // even though our verified injection runs at the start of Overlay.OnGUI.
+    object oldDepth=null;
+    try {if(depth!=null&&depth.CanWrite){oldDepth=depth.GetValue(null,null);depth.SetValue(null,-80,null);}}catch{}
+    try {
     if(active=="menu") {
      float mw=Math.Min(w-32*u,600*u);
      float mx=(w-mw)/2f,my=Math.Max(90*u,(h-450*u)/2f);
@@ -82,6 +88,9 @@ namespace XianxiaWorldBox.Economy {
     }
     if(Button(px+20*u,py+ph-70*u,pw-40*u,56*u,"返回万界")){
       AppDomain.CurrentDomain.SetData(PanelKey,"menu");
+    }
+    } finally {
+      try {if(oldDepth!=null&&depth!=null)depth.SetValue(null,oldDepth,null);}catch{}
     }
    }catch(Exception){} // no repeated popup/crash if Unity game API shifts
   }
