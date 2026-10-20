@@ -15,6 +15,7 @@ public final class HomeWorldView extends View {
   private static final float T=42f, K=21f;
   private LifeEngine life; private final Listener listener;
   private final Paint p=new Paint(Paint.ANTI_ALIAS_FLAG);
+  private final java.util.Map<String,Bitmap> furnitureSprites=new java.util.HashMap<>();
   private float zoom=1.05f,panX=0,panY=0,centerX,centerY;
   private boolean userCamera=false;
   private boolean lampOn=true;
@@ -33,6 +34,14 @@ public final class HomeWorldView extends View {
   public HomeWorldView(Context ctx,LifeEngine engine,Listener callback){
     super(ctx);life=engine;listener=callback;setLayerType(View.LAYER_TYPE_HARDWARE,null);
     lampOn=ctx.getSharedPreferences("zhiyin_room_visual_v1",Context.MODE_PRIVATE).getBoolean("lamp",true);
+    // The packaged art is Kenney Furniture Kit CC0. Keep the old procedural
+    // drawing as a last-resort fallback, never as the preferred asset.
+    for(String item:new String[]{"wardrobe","bed","books","kitchen","wash","desk","plant","sofa","lamp"}){
+      try(java.io.InputStream input=ctx.getAssets().open("kenney/"+item+".png")){
+        Bitmap bitmap=BitmapFactory.decodeStream(input);
+        if(bitmap!=null)furnitureSprites.put(item,bitmap);
+      }catch(java.io.IOException ignored){}
+    }
     objects.add(new Thing("window","窗景",1.3f,.05f,1.9f,.10f,0));
     objects.add(new Thing("lamp","吊灯",4.8f,1.6f,.5f,.5f,0));
     objects.add(new Thing("wardrobe","衣柜",.30f,.35f,1.2f,1.0f,0));
@@ -210,7 +219,30 @@ public final class HomeWorldView extends View {
       oval(c,dust.x,dust.y,.5f,.5f,0x55FFF2CD);
     }
   }
+  private boolean drawArt(Canvas c,Thing o){
+    Bitmap bitmap=furnitureSprites.get(o.id);
+    if(bitmap==null||bitmap.isRecycled())return false;
+    Point base=iso(o.x+o.wide*.5f,o.y+o.deep*.5f,0);
+    float span=(o.wide+o.deep)*T*.92f;
+    // Preserve sprite aspect, place furniture feet on its actual floor anchor.
+    float ratio=(float)bitmap.getHeight()/Math.max(1,bitmap.getWidth());
+    float visibleW=Math.max(44,span),visibleH=visibleW*ratio;
+    switch(o.id){
+      case "wardrobe":case "books":visibleW*=1.08f;break;
+      case "lamp":visibleW*=.68f;break;
+      case "wash":visibleW*=1.12f;break;
+      case "bed":visibleW*=1.04f;break;
+    }
+    visibleH=visibleW*ratio;
+    oval(c,base.x,base.y+2,visibleW*.37f,Math.max(4,visibleW*.12f),0x407B5E60);
+    brush(0xFFFFFFFF);p.setFilterBitmap(true);
+    c.drawBitmap(bitmap,null,new RectF(base.x-visibleW*.5f,base.y-visibleH*.88f,
+      base.x+visibleW*.5f,base.y+visibleH*.12f),p);
+    p.setFilterBitmap(false);
+    return true;
+  }
   private void drawThing(Canvas c,Thing o,long now){
+    if(drawArt(c,o))return;
     switch(o.id){
       case "wardrobe":
         block(c,o.x,o.y,o.wide,o.deep,132,0xFF8B7069,0xFF755F61);
