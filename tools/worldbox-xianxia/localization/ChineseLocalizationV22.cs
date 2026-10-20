@@ -57,13 +57,14 @@ namespace XianxiaWorldBox
         };
         static readonly Dictionary<string,string> UserTerms=new Dictionary<string,string>(StringComparer.OrdinalIgnoreCase);
         public static bool Enabled = true;
-        public static int DictionarySize { get {return Terms.Count+UserTerms.Count;} }
+        public static int DictionarySize { get {return Terms.Count+ChineseMenuGlossaryV23.Count+UserTerms.Count;} }
         public static string Translate(string original)
         {
             if(!Enabled||string.IsNullOrEmpty(original))return original;
             string translated;
             if(UserTerms.TryGetValue(original,out translated))return translated;
-            return Terms.TryGetValue(original,out translated)?translated:original;
+            if(Terms.TryGetValue(original,out translated))return translated;
+            return ChineseMenuGlossaryV23.Translate(original);
         }
         public static string LoadUserTranslations()
         {
