@@ -38,3 +38,7 @@ python tools/worldbox-xianxia/export_nml_sprites.py \
 ## 关联设计
 
 旧独立四界原型 v0.3 有33类建筑×6状态×8帧像素动画，但之前没有按 NML `GameResources` 拆分。本导出器补充了这一环节。四界、宗门、王朝和 AI 仍与《苍岚》原版 Godot 更新通道完全隔离。
+
+## 2026-10-20 新增实际 Godot 渲染流水线
+
+`.github/workflows/worldbox-xianxia-godot-render.yml` 在隔离分支自动运行真实 Godot 4.4.1（Xvfb/OpenGL），把现有 `character-pipeline/src/item3d.gd` 和 `icon_light.gdshader` 装入小型独立 Godot 场景，尝试导出 8 种角色/生物 × 4 角度，以及 5 品阶 × 5 属性的物品图。然后调用本导出器生成 Sprite/JSON 并上传 Action Artifacts。**新增 workflow 并不等于真实运行成功**，必须查对应运行日志和产物；仍未进入 WorldBox 安卓游戏。无付费模型/API 调用，不触碰《苍岚》OTA。
