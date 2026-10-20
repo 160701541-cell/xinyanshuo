@@ -238,6 +238,7 @@ namespace XianxiaWorldBox
         }
         void OnGUI()
         {
+            EconomyVanillaTabsV35.Draw();
             if(NativeWorldBoxUiV32.Ready)return;
             if(!versionOK||diamond==null) {
                 GUI.Box(new Rect(12,80,Mathf.Min(Screen.width-24,650),90),
