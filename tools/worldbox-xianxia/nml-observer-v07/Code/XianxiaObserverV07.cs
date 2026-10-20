@@ -113,7 +113,7 @@ namespace XianxiaWorldBox
                 if(peopleCount>=peopleX.Length)break;
                 peopleX[peopleCount]=dx;peopleY[peopleCount]=dy;peopleCount++;
             }
-            summary="地图 "+centerX+","+centerY+" / 人物 "+peopleCount;
+            summary="世界 "+MapBox.width+"x"+MapBox.height+" / 地图 "+centerX+","+centerY+" / NPC "+peopleCount;
             if(!sampled){sampled=true;Debug.Log("[XIANXIA-V07] REAL_MAP_SAMPLE "+centerX+","+centerY);}
         }
         Vector2 Rot(int x,int y)
@@ -148,7 +148,10 @@ namespace XianxiaWorldBox
             GUI.Box(panel,"第三方 WorldBox MOD 实验 · 微观伪3D（只读）");
             GUI.Label(new Rect(panel.x+12,panel.y+26*ui,pw-24,54*ui),
                 "人物: "+actorName+"  "+summary+"\n角度:"+angle*90+"°   最近邻渲染（不改变原版画质）");
-            Rect map=new Rect(panel.x+10,panel.y+89*ui,pw-20,Mathf.Max(110,ph-188*ui));
+            if(GUI.Button(new Rect(panel.x+12,panel.y+73*ui,143*ui,30*ui),
+                GiantMapOptionsV11.Armed ? "再次确认大地图" : "实验大地图 10-20"))
+                summary=GiantMapOptionsV11.OnTap();
+            Rect map=new Rect(panel.x+10,panel.y+109*ui,pw-20,Mathf.Max(110,ph-208*ui));
             GUI.Box(map,"");
             float tw=Mathf.Min((map.width-16)/(2f*radius+1),(map.height-20)/(radius+1));
             tw=Mathf.Max(7f,tw);
@@ -185,7 +188,9 @@ namespace XianxiaWorldBox
                 angle=(angle+1)%4;nextSample=0;
             }
             GUI.Label(new Rect(panel.x+12,by+39*ui,pw-24,40*ui),
-                "只读，不修改任何世界/存档。非可行走3D。Android NML加载待验收。");
+                "试验尺寸默认关闭；请先备份存档。FPS "+
+                Mathf.RoundToInt(1f/Mathf.Max(.0001f,Time.smoothDeltaTime))+
+                "  | Android实机仍待验收。");
         }
         void OnDestroy(){if(diamond!=null)Destroy(diamond);target=null;}
     }
