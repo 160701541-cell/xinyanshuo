@@ -12,7 +12,7 @@ import java.util.zip.*;
 
 /** User-triggered Android SAF ZIP import. DOES NOT prove NML runtime compatibility. */
 final class ExternalModImporterV32 {
-    private static final long MAX_ZIP=48L*1024*1024,MAX_EXPANDED=128L*1024*1024;
+    private static final long MAX_ZIP=128L*1024*1024,MAX_EXPANDED=384L*1024*1024;
     private static final int MAX_FILES=1200,MAX_MODS_PER_ZIP=12;
     static final class Result {
         final String id,layout,target;
@@ -39,6 +39,39 @@ final class ExternalModImporterV32 {
         StringBuilder out=new StringBuilder();
         for(byte b:hash)out.append(String.format(Locale.US,"%02x",b&255));
         return out.toString();
+    }
+    /** Many real WorldBox/NML mods omit ModType in mod.json. Determine
+      * the layout by the actual files, never invent a format solely from a
+      * translated display name. Explicit ModType stays authoritative. */
+    static int inferType(JSONObject json,String prefix,Map<String,ZipEntry> files)throws IOException {
+        if(json.has("ModType")) {
+            int mode=json.optInt("ModType",-1);
+            if(mode==0||mode==1)return mode;
+            throw new IOException("模组声明的ModType不受支持："+json.optString("ModType"));
+        }
+        String dir=prefix.toLowerCase(Locale.ROOT);
+        if(dir.startsWith("nmlmods/")||dir.contains("/nmlmods/"))return 1;
+        if(dir.startsWith("mods/")||dir.contains("/mods/"))return 0;
+        boolean source=false,compiled=false;
+        for(String file:files.keySet()){
+            if(!file.startsWith(prefix))continue;
+            String n=file.substring(prefix.length()).toLowerCase(Locale.ROOT);
+            if(n.startsWith("code/")&&n.endsWith(".cs"))source=true;
+            if(n.endsWith(".dll")&&n.indexOf('/')<0)compiled=true;
+        }
+        if(source)return 0; // Traditional NML source MOD without ModType, e.g. ChineseName 1.5.1
+        if(compiled)return 1; // compiled NML candidate; still runtime-unverified
+        throw new IOException("无法识别模组加载类型：缺少ModType、Code/*.cs或根目录DLL");
+    }
+    static String safeModId(String original)throws Exception {
+        if(original!=null&&original.matches("[A-Za-z0-9_.-]{1,80}")&&
+             !original.equals(".")&&!original.equals(".."))return original;
+        String friendly=original==null?"":original.replaceAll("[^A-Za-z0-9_.-]","_")
+            .replaceAll("_+","_");
+        if(friendly.length()>43)friendly=friendly.substring(0,43);
+        if(friendly.isEmpty()||friendly.equals(".")||friendly.equals(".."))friendly="import";
+        String hash=digest((original==null?"unnamed":original).getBytes(StandardCharsets.UTF_8));
+        return segment(friendly+"-"+hash.substring(0,10));
     }
     private static void copyLimited(InputStream in,File out,long limit)throws Exception {
         try(FileOutputStream dst=new FileOutputStream(out)){
@@ -78,7 +111,7 @@ final class ExternalModImporterV32 {
                     if(entry.getSize()<0 || entry.getSize()>MAX_EXPANDED)
                         throw new IOException("MOD条目大小不明或异常："+name);
                     expanded+=entry.getSize();
-                    if(expanded>MAX_EXPANDED)throw new IOException("MOD解压后总体积超过128MB");
+                    if(expanded>MAX_EXPANDED)throw new IOException("MOD解压后总体积超过384MB");
                     if(name.endsWith(".apk")||name.endsWith(".dex")||name.endsWith(".so"))
                         throw new IOException("拒绝安装携带安卓原生可执行文件的MOD："+name);
                 }
@@ -88,8 +121,20 @@ final class ExternalModImporterV32 {
                       (name.equals("mod.json")||name.endsWith("/mod.json")))
                         manifests.add(name);
                 }
-                if(manifests.size()==0||manifests.size()>MAX_MODS_PER_ZIP)
-                    throw new IOException("未找到有效mod.json，或单包超过12个MOD");
+                if(manifests.isEmpty()) {
+                    int dlls=0,nested=0;
+                    for(String key:all.keySet()) {
+                        if(key.toLowerCase(Locale.ROOT).endsWith(".zip"))nested++;
+                        if(key.toLowerCase(Locale.ROOT).endsWith(".dll"))dlls++;
+                    }
+                    if(nested>0)throw new IOException("这是外层整合ZIP，含"+nested+
+                        "个内层压缩包；需要先自动识别内层包，不能直接当单个MOD部署");
+                    if(dlls>0)throw new IOException("发现"+dlls+
+                        "个DLL，但没有mod.json：旧版散装DLL/桌面BepInEx包不能直接当安卓NML安装");
+                    throw new IOException("未找到mod.json：所选ZIP不是可直接部署的NML/Mono模组，请检查是不是旧桌面整合包");
+                }
+                if(manifests.size()>MAX_MODS_PER_ZIP)
+                    throw new IOException("单个ZIP包含超过12个MOD，拒绝批量混装");
                 // Reject ambiguous nested module prefixes; never install half of an archive.
                 for(String a:manifests)for(String b:manifests)
                     if(!a.equals(b)&&b.startsWith(a.substring(0,a.length()-8)))
@@ -108,14 +153,13 @@ final class ExternalModImporterV32 {
                                 throw new IOException("描述文件体积不正常");}
                         }
                         JSONObject desc=new JSONObject(buf.toString("UTF-8"));
-                        int type=desc.optInt("ModType",-1);
-                        if(type!=0&&type!=1)throw new IOException("仅支持ModType 0/1，实际："+type);
+                        int type=inferType(desc,prefix,all);
                         String candidate=prefix.replaceAll("/+$","");
                         int slash=candidate.lastIndexOf('/');
                         if(slash>=0)candidate=candidate.substring(slash+1);
                         if(candidate.isEmpty())candidate=desc.optString("GUID",desc.optString("name",""));
                         // Stable sanitized name: never trust ZIP entry as a filesystem target.
-                        String modId=segment(candidate);
+                        String modId=safeModId(candidate);
                         File appRoot=context.getExternalFilesDir(null);
                         if(appRoot==null)throw new IOException("外部应用专用目录不存在");
                         File parent=type==0?new File(appRoot.getParentFile(),"Mods"):
