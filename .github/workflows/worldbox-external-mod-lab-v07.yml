@@ -24,6 +24,11 @@ jobs:
         run: |
           python -m compileall -q tools/worldbox-xianxia
           python -m unittest discover -s tools/worldbox-xianxia -p 'test_v07.py' -v
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Compile real observer C# against SOURCE-ONLY stubs (NOT Android compatibility)
+        run: dotnet build tools/worldbox-xianxia/tests/WorldBoxObserver.SourceSyntax.csproj --configuration Release --verbosity quiet
       - name: Hard project separation: changes ONLY in WorldBox test folder
         run: python tools/worldbox-xianxia/scope_gate.py
       - name: Guard third-party game binaries and APK176 OTA
