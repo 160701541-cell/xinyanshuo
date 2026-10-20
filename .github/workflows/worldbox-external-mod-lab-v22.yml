@@ -26,6 +26,8 @@ jobs:
         with: { dotnet-version: '8.0.x' }
       - name: 'Compile observer syntax against non-shipping contract stubs'
         run: dotnet build tools/worldbox-xianxia/tests/WorldBoxObserver.SourceSyntax.csproj -c Release --verbosity quiet
+      - name: 'Execute Chinese entity names and mutually exclusive panels'
+        run: dotnet run --project tools/worldbox-xianxia/tests/WorldNamingScenarioV30.csproj -c Release
       - name: 'Execute original C# observer frame budget safety regression'
         run: dotnet run --project tools/worldbox-xianxia/tests/FrameGuardScenarioV12.csproj -c Release
       - name: 'Execute font-size and localized UI C# regression'
@@ -102,6 +104,9 @@ jobs:
         run: |
           python tools/worldbox-xianxia/package_android_mono_source.py \
             --source tools/worldbox-xianxia/nml-observer-v07/Code/XianxiaObserverV07.cs \
+            --extra-source tools/worldbox-xianxia/ui/SharedPanelsV30.cs \
+            --extra-source tools/worldbox-xianxia/ui/PixelFrameV30.cs \
+            --extra-source tools/worldbox-xianxia/localization/ChineseWorldNamesV30.cs \
             --extra-source tools/worldbox-xianxia/huge-map-mod/GiantMapOptionsV11.cs \
             --extra-source tools/worldbox-xianxia/huge-map-mod/ObserverFrameGuardV12.cs \
             --extra-source tools/worldbox-xianxia/ui/ModTextAccessibilityV13.cs \
@@ -250,6 +255,10 @@ jobs:
             -p:PublishSingleFile=true -p:PublishTrimmed=false -o /tmp/worldbox-user-private-helper
           test -f /tmp/worldbox-user-private-helper/GameAssemblyToolkit
           cp tools/worldbox-xianxia/private-apk-lab/XianxiaMonoBridge.cs /tmp/worldbox-user-private-helper/
+          mkdir -p /tmp/worldbox-user-private-helper/NativeBridgeSources
+          cp tools/worldbox-xianxia/private-apk-lab/XianxiaMonoBridge.cs tools/worldbox-xianxia/private-apk-lab/DiagnosticLog.cs tools/worldbox-xianxia/private-apk-lab/IntegratedModBootstrap.cs /tmp/worldbox-user-private-helper/NativeBridgeSources/
+          cp tools/worldbox-xianxia/cultivation/CultivationBridgeV18.cs tools/worldbox-xianxia/cultivation/CultivationRulesV18.cs /tmp/worldbox-user-private-helper/NativeBridgeSources/
+          cp tools/worldbox-xianxia/ui/SharedPanelsV30.cs tools/worldbox-xianxia/ui/PixelFrameV30.cs tools/worldbox-xianxia/localization/ChineseWorldNamesV30.cs /tmp/worldbox-user-private-helper/NativeBridgeSources/
           find /usr/share/dotnet/shared/Microsoft.NETCore.App -name netstandard.dll | sort -V | tail -1 | xargs -r -I '{}' cp '{}' /tmp/worldbox-user-private-helper/netstandard.dll
           find /usr/share/dotnet/shared/Microsoft.NETCore.App -name System.Runtime.dll | sort -V | tail -1 | xargs -r -I '{}' cp '{}' /tmp/worldbox-user-private-helper/System.Runtime.dll
           test -s /tmp/worldbox-user-private-helper/netstandard.dll

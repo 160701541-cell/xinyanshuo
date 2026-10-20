@@ -9,6 +9,9 @@
     <AssemblyName>XianxiaObserverMobileSDKProbe</AssemblyName>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="../ui/SharedPanelsV30.cs" />
+    <Compile Include="../ui/PixelFrameV30.cs" />
+    <Compile Include="../localization/ChineseWorldNamesV30.cs" />
     <Compile Include="../nml-observer-v07/Code/XianxiaObserverV07.cs" />
     <Compile Include="../huge-map-mod/GiantMapOptionsV11.cs" />
     <Compile Include="../huge-map-mod/ObserverFrameGuardV12.cs" />

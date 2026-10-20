@@ -23,6 +23,7 @@ namespace XianxiaWorldBox
 
         protected override void OnModLoad()
         {
+            ChineseWorldNamesV30.Report=message=>Debug.LogWarning(message);
             Debug.Log("[XIANXIA-V07] INIT_BEGIN version="+Application.version);
             try {
             versionOK = !string.IsNullOrEmpty(Application.version) &&
@@ -162,6 +163,7 @@ namespace XianxiaWorldBox
         void Update()
         {
             if(!versionOK)return;
+            ChineseWorldNamesV30.Tick(World.world,Time.unscaledTime);
             RepairOwnTraitGroups();
             ModTextAccessibilityV13.Tick();
             RuntimeChineseOverlayV22.Tick();
@@ -238,35 +240,47 @@ namespace XianxiaWorldBox
             GUIStyle label = ModTextAccessibilityV13.LabelStyle();
             GUIStyle box = ModTextAccessibilityV13.BoxStyle();
             if (button==null || label==null || box==null) return;
+            open=SharedPanelsV30.Active=="observer";
+            ChineseModManagerV21.Open=SharedPanelsV30.Active=="mods";
+            OriginalMenuGuideV22.Open=SharedPanelsV30.Active=="guide";
             float ui=Mathf.Clamp(Screen.width/900f,.8f,1.35f);
             float x=Screen.width-230*ui;
+            if(!SharedPanelsV30.NativeMenu) {
             if(GUI.Button(new Rect(x,9,220*ui,52*ui),open?OwnLocaleLabelsV25.Get("observer_open","收起万界观察"):OwnLocaleLabelsV25.Get("observer_closed","万界观察 · 大字"),button)){
-                open=!open;nextSample=0;
+                SharedPanelsV30.Toggle("observer");open=SharedPanelsV30.Active=="observer";nextSample=0;
                 Debug.Log("[XIANXIA-V13] VIEW_"+(open?"OPEN":"CLOSE"));
             }
             if(GUI.Button(new Rect(Mathf.Max(8,x-200*ui),9,190*ui,52*ui),OwnLocaleLabelsV25.Get("mod_manager","中文模组管理器"),button)){
-                ChineseModManagerV21.Open=!ChineseModManagerV21.Open;
+                SharedPanelsV30.Toggle("mods");
+                ChineseModManagerV21.Open=SharedPanelsV30.Active=="mods";
                 if(ChineseModManagerV21.Open){
                     OriginalMenuGuideV22.Open=false;
                     ChineseModManagerV21.Refresh();
                 }
             }
             if(GUI.Button(new Rect(Mathf.Max(8,x-405*ui),9,195*ui,52*ui),OwnLocaleLabelsV25.Get("vanilla_help","原版菜单中文说明"),button)){
-                OriginalMenuGuideV22.Open=!OriginalMenuGuideV22.Open;
+                SharedPanelsV30.Toggle("guide");
+                OriginalMenuGuideV22.Open=SharedPanelsV30.Active=="guide";
                 if(OriginalMenuGuideV22.Open)ChineseModManagerV21.Open=false;
+            }
             }
             if(OriginalMenuGuideV22.Open){
                 OriginalMenuGuideV22.Draw(ui,button,label,box);
+                if(!OriginalMenuGuideV22.Open)SharedPanelsV30.Close();
                 return;
             }
             if(ChineseModManagerV21.Open){
                 ChineseModManagerV21.Draw(ui,button,label,box);
+                if(!ChineseModManagerV21.Open)SharedPanelsV30.Close();
                 return;
             }
             if(!open)return;
             float pw=Mathf.Min(Screen.width-16,755*ui),ph=Mathf.Min(Screen.height-16,645*ui);
             Rect panel=new Rect((Screen.width-pw)/2,(Screen.height-ph)/2,pw,ph);
-            GUI.Box(panel,"WorldBox 万界观察 / 非官方 MOD 实验",box);
+            PixelFrameV30.Draw(panel);
+            GUI.Label(new Rect(panel.x+12,panel.y+6*ui,pw-130*ui,30*ui),"万界 · 世界观察",label);
+            if(GUI.Button(new Rect(panel.x+pw-110*ui,panel.y+6*ui,96*ui,36*ui),"返回",button))
+                SharedPanelsV30.Show(SharedPanelsV30.NativeMenu?"menu":"");
             GUI.Label(new Rect(panel.x+12,panel.y+33*ui,pw-24,60*ui),
                 "人物："+actorName+" / "+summary+"\n方向："+angle*90+"° | 观察层FPS "+Mathf.RoundToInt(ObserverFrameGuardV12.SmoothedFps),label);
             float firstY=panel.y+94*ui;

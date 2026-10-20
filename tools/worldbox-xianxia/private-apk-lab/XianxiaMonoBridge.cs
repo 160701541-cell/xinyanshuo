@@ -5,16 +5,28 @@ using System;
 using System.Collections.Generic;
 using System.Reflection;
 using UnityEngine;
+using XianxiaWorldBox;
 namespace XianxiaMonoBridge {
 public static class Entry {
     static bool installed;
+    public static bool SkipDesktopDiscord(){
+        if(Application.platform!=RuntimePlatform.Android)return false;
+        DiagnosticLog.Write("ANDROID_DESKTOP_DISCORD_SKIPPED; no native desktop SDK requested");
+        return true;
+    }
     public static void Install() {
         if(installed)return;
+        DiagnosticLog.Install();
+        DiagnosticLog.Write("ENTRY_INSTALL_BEGIN");
+        IntegratedModBootstrap.ConfigureMobileConsole();
         try {
             installed=true;
+            SharedPanelsV30.RegisterNativeMenu();
+            SharedPanelsV30.Close();
             var obj=new GameObject("WorldBoxXianxiaReadabilityBridge");
             UnityEngine.Object.DontDestroyOnLoad(obj);
             obj.AddComponent(typeof(Overlay));
+            obj.AddComponent(typeof(IntegratedModBootstrap));
             Debug.Log("[XIANXIA-MONO-V13] LOAD_BRIDGE_OK");
         } catch(Exception e) {
             installed=false;
@@ -39,6 +51,7 @@ public sealed class Overlay : MonoBehaviour {
     }
     static readonly float[] Scales={1f,1.25f,1.5f,1.75f};
     void Start(){
+        ChineseWorldNamesV30.Report=DiagnosticLog.Write;
         Debug.Log("[XIANXIA-MONO-V13] COMPONENT_STARTED");
         try{font=Font.CreateDynamicFontFromOSFont(
             new[]{"Noto Sans CJK SC","Droid Sans Fallback","sans-serif"},30);
@@ -69,6 +82,7 @@ public sealed class Overlay : MonoBehaviour {
         }catch(Exception e){worldInfo="地图读取待兼容："+e.GetType().Name;}
     }
     void Update(){
+        ChineseWorldNamesV30.Tick(World.world,Time.unscaledTime);
         if(Time.unscaledTime<nextCheck)return;
         nextCheck=Time.unscaledTime+5f;
         ReadWorld();
@@ -78,6 +92,7 @@ public sealed class Overlay : MonoBehaviour {
     GUIStyle Styled(GUIStyle originalStyle,ref GUIStyle cached,int minSize) {
         if(cached==null){
             cached=new GUIStyle(originalStyle);
+            if(minSize==19)PixelFrameV30.Button(cached);
             cached.fontSize=Mathf.Max(minSize,Mathf.RoundToInt(minSize*Scales[scaleIndex]));
             if(font!=null)cached.font=font;
             cached.wordWrap=true;
@@ -91,12 +106,25 @@ public sealed class Overlay : MonoBehaviour {
         var box=Styled(GUI.skin.box,ref boxStyle,18);
         float buttonW=242*u,buttonH=61*u;
         if(GUI.Button(new Rect(Screen.width-buttonW-14*u,14*u,buttonW,buttonH),
-           visible?"关闭万界设置":"万界 · 清晰大字",btn))
-           visible=!visible;
-        if(!visible)return;
+           SharedPanelsV30.Active==""?"万界":"收起万界",btn)) {
+            if(SharedPanelsV30.Active=="")SharedPanelsV30.Show("menu");
+            else SharedPanelsV30.Close();
+        }
+        if(SharedPanelsV30.Active=="menu"){
+            float mw=Mathf.Min(Screen.width-32*u,600*u);
+            float mx=(Screen.width-mw)/2f,my=Mathf.Max(90*u,(Screen.height-340*u)/2f);
+            PixelFrameV30.Draw(new Rect(mx,my,mw,310*u));
+            GUI.Label(new Rect(mx+18*u,my+18*u,mw-36*u,44*u),"万界仙侠",label);
+            if(GUI.Button(new Rect(mx+18*u,my+76*u,mw-36*u,60*u),"人物修行",btn))SharedPanelsV30.Show("cultivation");
+            if(GUI.Button(new Rect(mx+18*u,my+148*u,mw-36*u,60*u),"世界观察",btn))SharedPanelsV30.Show("observer");
+            if(GUI.Button(new Rect(mx+18*u,my+220*u,mw-36*u,60*u),"字体设置",btn))SharedPanelsV30.Show("settings");
+            return;
+        }
+        if(SharedPanelsV30.Active!="settings")return;
         float pw=Mathf.Min(Screen.width-32*u,780*u),ph=Mathf.Min(Screen.height-32*u,490*u);
         float px=(Screen.width-pw)/2f,py=(Screen.height-ph)/2f;
-        GUI.Box(new Rect(px,py,pw,ph),"WorldBox / 万界仙侠 MOD 可读性设置",box);
+        PixelFrameV30.Draw(new Rect(px,py,pw,ph));
+        GUI.Label(new Rect(px+20*u,py+16*u,pw-40*u,44*u),"万界 · 字体设置",label);
         GUI.Label(new Rect(px+25*u,py+66*u,pw-50*u,73*u),
             worldInfo+"\n字体放大通过动态字体渲染；不会提高原版低分辨率贴图精度。",label);
         float col=(pw-58*u)/2f;
@@ -111,12 +139,10 @@ public sealed class Overlay : MonoBehaviour {
             if(!fontsEnabled)RestoreFonts();
             nextCheck=0;
         }
-        GUI.Label(new Rect(px+25*u,py+241*u,pw-50*u,134*u),
-          "字太小的第三方MOD：可尝试放大原有Unity UI文字。\n"+
-          "已调整："+applied+"处；可关闭并恢复原字体大小。\n"+
-          "更大的世界和战斗等功能需要继续验证兼容；此版为只读桥接实验。",label);
-        GUI.Label(new Rect(px+25*u,py+ph-84*u,pw-50*u,66*u),
-          "【实验版本】未经过用户手机启动与存档测试。与《苍岚》原创游戏无关。",label);
+        GUI.Label(new Rect(px+25*u,py+241*u,pw-50*u,100*u),
+          "已调整文字："+applied+"处。\n可关闭放大并恢复原字号。",label);
+        if(GUI.Button(new Rect(px+25*u,py+ph-74*u,pw-50*u,56*u),"返回万界",btn))
+            SharedPanelsV30.Show("menu");
     }
     void TryApplySmallFonts(){
         try{
@@ -158,5 +184,8 @@ public sealed class Overlay : MonoBehaviour {
         if(font!=null)UnityEngine.Object.Destroy(font);
         Debug.Log("[XIANXIA-MONO-V13] COMPONENT_DESTROYED");
     }
+    void OnApplicationPause(bool paused){DiagnosticLog.Write("APP_PAUSE "+paused);}
+    void OnApplicationFocus(bool focused){DiagnosticLog.Write("APP_FOCUS "+focused);}
+    void OnApplicationQuit(){DiagnosticLog.Write("APP_QUIT");}
 }
 }

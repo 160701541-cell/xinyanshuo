@@ -8,6 +8,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="../ui/ModTextAccessibilityV13.cs" />
+    <Compile Include="../ui/PixelFrameV30.cs" />
     <Compile Include="stubs/WorldBoxApiStubs.cs" />
     <Compile Include="FontAccessibilityScenarioV13.cs" />
   </ItemGroup>

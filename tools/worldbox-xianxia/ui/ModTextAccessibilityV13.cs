@@ -116,6 +116,7 @@ namespace XianxiaWorldBox
                 Debug.LogWarning("[XIANXIA-FONT] STYLE_COPY_UNAVAILABLE " + e.ToString());
                 return;
             }
+            PixelFrameV30.Button(nextButton);
             accessibleButton = nextButton;
             accessibleLabel = nextLabel;
             accessibleBox = nextBox;

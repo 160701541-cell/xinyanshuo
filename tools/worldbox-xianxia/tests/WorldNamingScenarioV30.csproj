@@ -1,0 +1,8 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup><TargetFramework>net8.0</TargetFramework><OutputType>Exe</OutputType><EnableDefaultCompileItems>false</EnableDefaultCompileItems><Nullable>disable</Nullable></PropertyGroup>
+  <ItemGroup>
+    <Compile Include="../localization/ChineseWorldNamesV30.cs" />
+    <Compile Include="../ui/SharedPanelsV30.cs" />
+    <Compile Include="WorldNamingScenarioV30.cs" />
+  </ItemGroup>
+</Project>
