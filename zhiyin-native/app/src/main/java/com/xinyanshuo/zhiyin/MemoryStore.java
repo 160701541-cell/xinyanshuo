@@ -133,6 +133,7 @@ public final class MemoryStore extends SQLiteOpenHelper {
     }
     // v0.3: export real companion life state along with dialogue/history.
     root.put("life",new JSONObject(app.getSharedPreferences("zhiyin_life_engine_v1",Context.MODE_PRIVATE).getString("state","{}")));
+    root.put("neighborhood",new JSONObject(new Neighborhood(app).archive()));
     return root;
   }
   public void restore(JSONObject root)throws JSONException{
@@ -167,6 +168,8 @@ public final class MemoryStore extends SQLiteOpenHelper {
     // App's HomeActivity reloads this state when returning to the main scene.
     JSONObject life=root.optJSONObject("life");
     if(life!=null){app.getSharedPreferences("zhiyin_life_engine_v1",Context.MODE_PRIVATE).edit().putString("state",life.toString()).commit();}
+    JSONObject neighborhood=root.optJSONObject("neighborhood");
+    if(neighborhood!=null)new Neighborhood(app).restore(neighborhood);
   }
   private boolean allowed(String table,String k){
     switch(table){
