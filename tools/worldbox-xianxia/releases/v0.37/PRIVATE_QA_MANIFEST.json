@@ -1,0 +1,21 @@
+{
+  "version": "v0.37",
+  "feature": "11th map preset, 100x100 chunks (estimated 6400x6400 tiles)",
+  "apk_filename": "WorldBox_万界仙侠_v037_11档100x100区块地图_待实机.apk",
+  "bytes": 188038877,
+  "sha256": "9c865d2e531e729403caf91ec975404ea6eaa62bc26e7249096472565dff5bc7",
+  "package": "com.xinyanshuo.worldbox.lab31",
+  "apk_signatures_verified": [
+    "v1",
+    "v2",
+    "v3"
+  ],
+  "zip_entries_crc_pass": 13605,
+  "ci_run": 39503609451,
+  "ci_three_jobs_pass": true,
+  "device_installed": false,
+  "large_world_generated": false,
+  "save_tested": false,
+  "known_risk": "41 million map cells may exhaust phone RAM",
+  "private_work_folder": "/WorldBox-万界仙侠/Work交接/"
+}
