@@ -76,6 +76,31 @@ jobs:
           if grep -Eq 'SCRIPT ERROR:|Parse Error:|Parser Error:|Invalid call|Failed to load script' godot-scene-qa.log; then
             exit 1
           fi
+      - name: Render first REAL 3D screenshot via Mesa and Xvfb
+        continue-on-error: true
+        run: |
+          set -euo pipefail
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq xvfb libgl1-mesa-dri mesa-utils >/dev/null
+          LIBGL_ALWAYS_SOFTWARE=1 timeout 90s xvfb-run -a -s "-screen 0 1280x720x24" \
+            /tmp/Godot_v4.4.1-stable_linux.x86_64 --path . \
+            --rendering-method gl_compatibility --script res://tests/capture_frame.gd \
+            >room-render.log 2>&1 || { cat room-render.log; exit 1; }
+          cat room-render.log
+          test -s room-qa-render.png
+          grep -Fq 'PASS ACTUAL GODOT 3D FRAME' room-render.log
+      - name: Package imported REAL 3D project files
+        run: |
+          set -euo pipefail
+          zip -q -r /tmp/zhiyin-real3d-project.zip project.godot scenes assets ASSET_MANIFEST.json tools tests
+          test -s /tmp/zhiyin-real3d-project.zip
+          cp /tmp/zhiyin-real3d-project.zip ./zhiyin-real3d-project.zip
+      - name: Upload portable Godot project with actual GLB and PBR texture files
+        uses: actions/upload-artifact@v4
+        with:
+          name: zhiyin-real3d-project-assets
+          path: zhiyin-real3d/zhiyin-real3d-project.zip
+          if-no-files-found: error
       - name: Upload genuine model/material manifest and engine QA
         if: always()
         uses: actions/upload-artifact@v4
@@ -85,4 +110,6 @@ jobs:
             zhiyin-real3d/ASSET_MANIFEST.json
             zhiyin-real3d/godot-import.log
             zhiyin-real3d/godot-scene-qa.log
+            zhiyin-real3d/room-render.log
+            zhiyin-real3d/room-qa-render.png
           if-no-files-found: warn
