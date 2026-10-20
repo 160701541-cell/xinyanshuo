@@ -95,7 +95,7 @@ def icon(variant,family,stage):
  for i in range(5):
   x=rng.randrange(7,26);y=rng.randrange(8,24)
   if im.getpixel((x,y))[3]>0 and rng.random()<.65:
-   d.point((x,y),fill=(*light if i%2 else dark,255))
+   d.point((x,y),fill=(*(light if i%2 else dark),255))
  if stage!="raw":
   # Stage badge actually differentiates semi-products and grown-up offices.
   d.rectangle((20,21,30,30),fill=(*rim,255),outline=(*light,255))
