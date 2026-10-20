@@ -23,6 +23,7 @@
     <Compile Include="../localization/UntranslatedMenuAuditV23.cs" />
     <Compile Include="../localization/ChineseKeyPackV24.cs" />
     <Compile Include="../localization/NativeLocaleBridgeV23.cs" />
+    <Compile Include="../localization/OwnLocaleLabelsV25.cs" />
     
     <Reference Include="NeoModLoader_mobile"><HintPath>$(AndroidSdkPath)/NeoModLoader_mobile.dll</HintPath><Private>false</Private></Reference>
     <Reference Include="UnityEngine.CoreModule"><HintPath>$(AndroidSdkPath)/UnityEngine.CoreModule.dll</HintPath><Private>false</Private></Reference>
