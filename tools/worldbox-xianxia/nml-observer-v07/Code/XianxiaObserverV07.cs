@@ -15,7 +15,7 @@ namespace XianxiaWorldBox
         int peopleCount, centerX, centerY, radius = 4, angle;
         Actor target;
         bool open, follow = true, sampled, versionOK;
-        float nextSample;
+        float nextSample, nextCultivationCleanup;
         Texture2D diamond;
         string summary = "尚未读取游戏地图", actorName = "未选中";
         string mapStatus = "实验地图默认关闭。大世界选项仅影响新建世界，需实机验证。";
@@ -86,7 +86,10 @@ namespace XianxiaWorldBox
         {
             if(!versionOK)return;
             ModTextAccessibilityV13.Tick();
-            CultivationV18.Cleanup();
+            if(Time.unscaledTime>=nextCultivationCleanup){
+                nextCultivationCleanup=Time.unscaledTime+15f;
+                CultivationV18.Cleanup();
+            }
             if(!open)return;
             ObserverFrameGuardV12.Tick();
             if(ObserverFrameGuardV12.Paused||Time.unscaledTime<nextSample)return;
