@@ -45,6 +45,11 @@ jobs:
           curl --fail --location --retry 3 --connect-timeout 15 --max-time 180 https://codeload.github.com/ggml-org/llama.cpp/tar.gz/1ba568c5ad5c6c718984bd2bf4e7c71485b706f9 \
             | tar -xz --strip-components=1 -C app/src/main/cpp/llama.cpp
           test -f app/src/main/cpp/llama.cpp/CMakeLists.txt
+      - name: Import licensed Kenney isometric interior assets
+        run: |
+          curl --fail --location --retry 3 --connect-timeout 15 --max-time 120 -o /tmp/kenney-furniture.zip \
+            "https://opengameart.org/sites/default/files/kenney_furniturePack.zip"
+          python3 ci/prepare_kenney_iso.py /tmp/kenney-furniture.zip
       - name: Build native Android APK
         run: gradle --no-daemon --stacktrace assembleDebug
       - name: Verify test APK signing
