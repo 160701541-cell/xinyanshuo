@@ -3,142 +3,300 @@ package com.xinyanshuo.zhiyin;
 import android.content.Context;
 import android.content.SharedPreferences;
 import org.json.JSONObject;
+import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.Locale;
 
 /**
- * Offline-first, deterministic needs + goal-driven scheduling.
- * Independent of any LLM: do not label these behaviours "AI reasoning".
+ * Scene-first companion life simulator v0.3.
+ *
+ * Purely deterministic behaviour planner, NOT an LLM and NOT a claim of sentience.
+ * A task has real stages, travel, inventory use, need changes and completion,
+ * with persistent state and bounded elapsed-time simulation.
  */
 public final class LifeEngine {
-  public static final String[] LABELS={"休息","睡觉","做饭","吃饭","洗漱","阅读","练习唱歌","弹琴","写日记","打扫房间","浇花","看风景","伸展运动","聊天"};
-  public static final String[] ACTIONS={"REST","SLEEP","COOK","EAT","WASH","READ","PRACTICE","PIANO","WRITE","CLEAN","WATER","WINDOW","STRETCH","CHAT"};
+  public static final String[] ACTIONS={"REST","SLEEP","SHOP","COOK","EAT","WASH","READ",
+    "PRACTICE","PIANO","WRITE","CLEAN","WATER","WINDOW","STRETCH","CHAT"};
+  public static final String[] LABELS={"休息","睡觉","补充食材","做饭","吃饭","洗漱","阅读",
+    "练习唱歌","弹琴","写日记","打扫房间","浇花","看风景","伸展运动","聊天"};
+
+  private static final long MAX_OFFLINE_MS=2L*60L*60L*1000L;
+  private static final int MAX_STEPS=720;
   private final SharedPreferences pref;
-  public float hunger=73,energy=83,hygiene=82,mood=77,social=68,skill=8;
-  public long lastTick,lastDecision,until; public int sequence=0;
-  public String action="REST", note="今天也想把生活过得认真一点。",goal="适应新家";
-  public boolean mealReady=false;
-  private boolean dirty=false;
+  private final ArrayList<String> queuedEvents=new ArrayList<>();
+
+  // 'hunger' is satiety (0 means very hungry).
+  public float hunger=50,energy=79,hygiene=78,mood=73,social=68,skill=8;
+  public int pantry=5,meals=0,dirtyDishes=0,money=180,readPages=0,completedSongs=0;
+  public int sequence=0,phase=0, completedTasks=0;
+  public String action="REST",note="正在认识这间新房子。",goal="照顾自己，慢慢练好唱歌";
+  public long lastTick=0,phaseStarted=0,phaseEnds=0;
+  public boolean mealReady=false,wasOffline=false;
+  private String suspended="", suspendedActionNote="";
 
   public LifeEngine(Context ctx){
     pref=ctx.getSharedPreferences("zhiyin_life_engine_v1",Context.MODE_PRIVATE);
     long now=System.currentTimeMillis();
     try{
       JSONObject j=new JSONObject(pref.getString("state","{}"));
-      hunger=(float)j.optDouble("hunger",73);energy=(float)j.optDouble("energy",83);hygiene=(float)j.optDouble("hygiene",82);
-      mood=(float)j.optDouble("mood",77);social=(float)j.optDouble("social",68);skill=(float)j.optDouble("skill",8);
-      lastTick=j.optLong("lastTick",now);lastDecision=j.optLong("lastDecision",0);until=j.optLong("until",0);
-      sequence=j.optInt("sequence",0);action=j.optString("action","REST");note=j.optString("note",note);
-      goal=j.optString("goal",goal);mealReady=j.optBoolean("mealReady",false);
+      hunger=clamp(j.optDouble("hunger",50));energy=clamp(j.optDouble("energy",79));
+      hygiene=clamp(j.optDouble("hygiene",78));mood=clamp(j.optDouble("mood",73));
+      social=clamp(j.optDouble("social",68));skill=clamp(j.optDouble("skill",8));
+      pantry=Math.max(0,j.optInt("pantry",5));meals=Math.max(0,j.optInt("meals",0));
+      dirtyDishes=Math.max(0,j.optInt("dirtyDishes",0));money=Math.max(0,j.optInt("money",180));
+      readPages=Math.max(0,j.optInt("readPages",0));completedSongs=Math.max(0,j.optInt("completedSongs",0));
+      action=j.optString("action","REST");if(index(action)<0)action="REST";
+      phase=Math.max(0,j.optInt("phase",0));sequence=Math.max(0,j.optInt("sequence",0));
+      completedTasks=Math.max(0,j.optInt("completedTasks",0));
+      lastTick=j.optLong("lastTick",now);phaseStarted=j.optLong("phaseStarted",0);phaseEnds=j.optLong("phaseEnds",0);
+      note=j.optString("note",note);goal=j.optString("goal",goal);
+      suspended=j.optString("suspended","");suspendedActionNote=j.optString("suspendedActionNote","");
+      // Migrate from v0.2 (old state had "until" but no phaseEnds).
+      if(phaseEnds<=0){phaseEnds=j.optLong("until",0);}
+      if(!"{}".equals(pref.getString("state","{}")) && j.has("mealReady") && !j.has("meals")){
+        meals=j.optBoolean("mealReady",false)?1:0;
+      }
     }catch(Exception ignored){}
-    if(lastTick>now){lastTick=now;}update(now);
+    if(lastTick<=0||lastTick>now)lastTick=now;
+    if(phaseEnds<=0){startTask("REST",now,"她正在熟悉新房间。");}
+    update(now);
   }
-  public static float clamp(double v){return (float)Math.max(0,Math.min(100,v));}
-  public String label(){for(int i=0;i<ACTIONS.length;i++)if(ACTIONS[i].equals(action))return LABELS[i];return "活动";}
+  public static float clamp(double n){return (float)Math.max(0,Math.min(100,n));}
+  private int index(String a){for(int i=0;i<ACTIONS.length;i++)if(ACTIONS[i].equals(a))return i;return -1;}
+  public String label(){int i=index(action);return i>=0?LABELS[i]:"活动";}
+  public String phaseName(){
+    String[] phases=phases(action);
+    return phases[Math.min(phase,phases.length-1)];
+  }
+  public float phaseProgress(long now){
+    long span=Math.max(1,phaseEnds-phaseStarted);
+    return clamp(100d*(now-phaseStarted)/span);
+  }
   public float targetX(){
-    switch(action){case "SLEEP":return .16f;case "COOK":case "EAT":return .82f;case "WASH":return .90f;
-      case "READ":case "WRITE":return .69f;case "PIANO":case "PRACTICE":return .49f;
-      case "WINDOW":return .27f;case "CLEAN":return .56f;case "WATER":return .93f;
-      case "STRETCH":return .43f;case "CHAT":return .48f;default:return .53f;}
+    switch(action){
+      case "SLEEP":return .17f;
+      case "SHOP":return .92f;
+      case "COOK":case "EAT":return phase==0&&"COOK".equals(action)?.94f:.83f;
+      case "WASH":return .95f;
+      case "READ":case "WRITE":return .70f;
+      case "PIANO":case "PRACTICE":return .50f;
+      case "WINDOW":return .26f;
+      case "CLEAN":return phase%2==0?.42f:.65f;
+      case "WATER":return .93f;
+      case "STRETCH":return .43f;
+      case "CHAT":return .51f;
+      default:return .54f;
+    }
   }
   public float targetY(){
-    switch(action){case "SLEEP":return .72f;case "COOK":case "EAT":return .64f;case "WASH":return .52f;
-      case "READ":case "WRITE":return .63f;case "PIANO":case "PRACTICE":return .69f;
-      case "WINDOW":return .47f;case "WATER":return .78f;default:return .73f;}
-  }
-  public void update(long now){
-    if(now<=lastTick)return;
-    double minutes=Math.min(24*60,(now-lastTick)/60000.0);
-    if(minutes>0){
-      hunger=clamp(hunger-minutes*0.18);
-      hygiene=clamp(hygiene-minutes*0.13);
-      social=clamp(social-minutes*0.08);
-      energy=clamp(energy-minutes*("SLEEP".equals(action)?-0.70:0.17));
-      mood=clamp(mood-minutes*0.045);
-      switch(action){
-        case "EAT":hunger=clamp(hunger+minutes*.9);break;
-        case "WASH":hygiene=clamp(hygiene+minutes*1.2);break;
-        case "REST":energy=clamp(energy+minutes*.35);break;
-        case "PRACTICE":case "PIANO":skill=clamp(skill+minutes*.06);mood=clamp(mood+minutes*.15);break;
-        case "READ":skill=clamp(skill+minutes*.024);break;
-        case "CHAT":social=clamp(social+minutes*1);break;
-        case "WATER":case "CLEAN":mood=clamp(mood+minutes*.1);break;
-      }
-    }
-    lastTick=now;
-    if(now>=until)decide(now);
-    if(now-lastDecision>=20000L){save();lastDecision=now;}
-  }
-  private int hour(long t){Calendar c=Calendar.getInstance();c.setTimeInMillis(t);return c.get(Calendar.HOUR_OF_DAY);}
-  private void decide(long now){
-    String next;
-    int h=hour(now);
-    if(((h>=23||h<7)&&energy<97)||energy<19)next="SLEEP";
-    else if(hunger<42)next=mealReady?"EAT":"COOK";
-    else if(hygiene<32)next="WASH";
-    else if(energy<38)next="REST";
-    else {
-      String[] morning={"WASH","STRETCH","WATER","READ","COOK","EAT"};
-      String[] day={"READ","PRACTICE","PIANO","WRITE","WATER","CLEAN","WINDOW","STRETCH"};
-      String[] night={"PIANO","PRACTICE","READ","WRITE","WINDOW","REST"};
-      String[] possibilities=h<10?morning:(h<18?day:night);
-      next=possibilities[sequence%possibilities.length];
-      if("EAT".equals(next)&&!mealReady)next="COOK";
-    }
-    enter(next,now,false);
-  }
-  private void enter(String next,long now,boolean requested){
-    if("COOK".equals(next))mealReady=true;
-    if("EAT".equals(next)){hunger=clamp(hunger+36);mealReady=false;}
-    if("WASH".equals(next))hygiene=clamp(hygiene+35);
-    if("SLEEP".equals(next))energy=clamp(energy+8);
-    if("PIANO".equals(next)||"PRACTICE".equals(next))skill=clamp(skill+.15);
-    if("WATER".equals(next)||"WINDOW".equals(next))mood=clamp(mood+3);
-    if("CHAT".equals(next)){social=clamp(social+8);mood=clamp(mood+1);}
-    sequence++;action=next;lastDecision=now;
-    long duration;
-    if("SLEEP".equals(next))duration=90000L;
-    else if("CHAT".equals(next))duration=48000L;
-    else duration=36000L+(sequence%4)*17000L;
-    until=now+duration;
-    note=description(next,requested);save();
-  }
-  public String request(String next){
-    boolean ok=false;for(String a:ACTIONS)if(a.equals(next))ok=true;
-    if(!ok)throw new IllegalArgumentException("未知生活行为");
-    enter(next,System.currentTimeMillis(),true);return note;
-  }
-  private String description(String a,boolean requested){
-    String prefix=requested?"你邀请我一起":"我想";
-    switch(a){
-      case "SLEEP":return "有点困了，我去休息一会儿。";
-      case "COOK":return prefix+"做点热乎的饭，待会儿再聊。";
-      case "EAT":return "饭做好啦，先好好吃饭。";
-      case "WASH":return "去洗漱整理一下，回来会更精神。";
-      case "READ":return prefix+"读几页书，或许会遇见好故事。";
-      case "PRACTICE":return prefix+"练练今天的音准，慢慢进步。";
-      case "PIANO":return prefix+"弹一小段琴，听听心情。";
-      case "WRITE":return "我要把今天重要的事记进日记。";
-      case "CLEAN":return "房间整洁一点，住着才舒服。";
-      case "WATER":return "窗边的植物该浇水了。";
-      case "WINDOW":return "窗外的光很好看，我想看一会儿。";
-      case "STRETCH":return "坐太久了，站起来伸伸懒腰。";
-      case "CHAT":return "我在呢。你想聊今天的事，还是听一段故事？";
-      default:return "先休息一下，等会儿继续生活。";
+    switch(action){
+      case "SLEEP":return .75f;
+      case "SHOP":return .52f;
+      case "COOK":case "EAT":return .64f;
+      case "WASH":return .52f;
+      case "READ":case "WRITE":return .68f;
+      case "PIANO":case "PRACTICE":return .73f;
+      case "WINDOW":return .48f;
+      case "WATER":return .81f;
+      case "CLEAN":return .77f;
+      case "STRETCH":return .78f;
+      default:return .76f;
     }
   }
   public String summary(){
-    return "正在"+label()+" · 饱腹 "+Math.round(hunger)+" · 精力 "+Math.round(energy)
-      +" · 清洁 "+Math.round(hygiene)+" · 心情 "+Math.round(mood)
-      +" · 社交 "+Math.round(social)+" · 音乐 "+Math.round(skill);
+    return "正在"+phaseName()+" | 饱腹"+Math.round(hunger)+" 精力"+Math.round(energy)+
+      " 清洁"+Math.round(hygiene)+" 心情"+Math.round(mood)+" 社交"+Math.round(social)+
+      " 音乐"+Math.round(skill)+" | 食材"+pantry+" 便当"+meals+" 碗碟"+dirtyDishes+" 金币"+money;
   }
-  public void save(){
+  private static String[] phases(String a){
+    switch(a){
+      case "SLEEP":return new String[]{"走到床边","整理被褥","安静入睡","醒来整理"};
+      case "SHOP":return new String[]{"检查食材","前往收货柜","取回新鲜食材","整理储物"};
+      case "COOK":return new String[]{"取出食材","清洗食材","切菜备料","点火烹饪","盛菜装盘"};
+      case "EAT":return new String[]{"摆放餐具","慢慢吃饭","收拾桌面"};
+      case "WASH":return new String[]{"走到洗漱台","整理头发","洗净双手","擦干收拾"};
+      case "READ":return new String[]{"选一本书","专心阅读","记下心得"};
+      case "PRACTICE":return new String[]{"调整呼吸","练习音阶","完整唱一段","记录练习"};
+      case "PIANO":return new String[]{"打开琴谱","缓缓弹奏","练习难点","合上琴谱"};
+      case "WRITE":return new String[]{"整理今天的思绪","写下心情","收好日记"};
+      case "CLEAN":return new String[]{"整理床铺","清扫地面","擦拭桌面","收拾工具"};
+      case "WATER":return new String[]{"取水壶","给植物浇水","查看叶片","放回水壶"};
+      case "WINDOW":return new String[]{"走近窗边","看云与树影","放松心情"};
+      case "STRETCH":return new String[]{"舒展双臂","活动腰背","深呼吸"};
+      case "CHAT":return new String[]{"走到你身边","认真听你说话","陪伴聊天"};
+      default:return new String[]{"坐下休息","整理计划","静静放松"};
+    }
+  }
+  private static int[] durations(String a){
+    switch(a){
+      case "SLEEP":return new int[]{5,7,68,5};
+      case "SHOP":return new int[]{5,7,9,7};
+      case "COOK":return new int[]{8,9,11,23,7};
+      case "EAT":return new int[]{5,21,6};
+      case "WASH":return new int[]{5,8,9,5};
+      case "READ":return new int[]{6,26,7};
+      case "PRACTICE":return new int[]{7,15,20,8};
+      case "PIANO":return new int[]{7,22,12,6};
+      case "WRITE":return new int[]{7,23,7};
+      case "CLEAN":return new int[]{10,12,11,7};
+      case "WATER":return new int[]{6,9,6,4};
+      case "WINDOW":return new int[]{6,24,5};
+      case "STRETCH":return new int[]{7,9,7};
+      case "CHAT":return new int[]{3,13,20};
+      default:return new int[]{5,12,9};
+    }
+  }
+  public void update(long now){
+    if(now<=lastTick)return;
+    long elapsed=now-lastTick;
+    wasOffline=elapsed>MAX_OFFLINE_MS;
+    // Avoid unbounded loops and unrealistic simulated years after a long absence.
+    long from=wasOffline?now-MAX_OFFLINE_MS:lastTick;
+    long cursor=from;
+    int count=0;
+    while(cursor<now && count<MAX_STEPS){
+      if(phaseEnds<=cursor){
+        advance(cursor);
+        count++;continue;
+      }
+      long limit=Math.min(now,phaseEnds);
+      double minutes=(limit-cursor)/60000d;
+      decay(minutes);
+      cursor=limit;
+      if(cursor>=phaseEnds){advance(cursor);count++;}
+    }
+    if(count>=MAX_STEPS){
+      queuedEvents.add("生活记录：离线时间很长，已按上限模拟，未虚构未计算的生活经历。");
+    }
+    if(wasOffline)queuedEvents.add("离线续接：超过两小时的区间已限制补算，避免错误生成大量虚构事件。");
+    lastTick=now;
+    save();
+  }
+  private void decay(double min){
+    if(min<=0)return;
+    hunger=clamp(hunger-min*.28);
+    energy=clamp(energy-min*("SLEEP".equals(action)?-1.15:.22));
+    hygiene=clamp(hygiene-min*.12);social=clamp(social-min*.12);
+    mood=clamp(mood-min*.08);
+  }
+  private void advance(long when){
+    if(phaseEnds<=0){startTask("REST",when,"先休息一下");return;}
+    if(phase<phases(action).length-1){
+      phase++;beginPhase(when);return;
+    }
+    String finished=action;
+    complete(finished);
+    completedTasks++;
+    queuedEvents.add("完成"+name(finished)+"；"+resultOf(finished));
+    if(!suspended.isEmpty() && !"CHAT".equals(finished)){
+      suspended="";
+    }
+    if("CHAT".equals(finished)&&!suspended.isEmpty()&&
+      hunger>=24&&energy>=20){
+      String returning=suspended;suspended="";startTask(returning,when,"聊天结束，继续之前的"+name(returning));
+      return;
+    }
+    suspended="";
+    choose(when);
+  }
+  private void complete(String a){
+    switch(a){
+      case "COOK":
+        if(pantry>0){pantry--;meals=Math.min(40,meals+1);mood=clamp(mood+2);}break;
+      case "SHOP":
+        int count=Math.min(8,Math.max(0,money/4));
+        pantry=Math.min(45,pantry+count);money-=4*count;break;
+      case "EAT":
+        if(meals>0){meals--;dirtyDishes++;hunger=clamp(hunger+48);mood=clamp(mood+4);}break;
+      case "WASH":hygiene=clamp(hygiene+43);break;
+      case "SLEEP":energy=clamp(energy+58);mood=clamp(mood+8);break;
+      case "REST":energy=clamp(energy+14);break;
+      case "READ":readPages+=9;skill=clamp(skill+0.6);mood=clamp(mood+3);break;
+      case "PIANO":skill=clamp(skill+1.6);mood=clamp(mood+5);break;
+      case "PRACTICE":completedSongs++;skill=clamp(skill+1.8);energy=clamp(energy-3);mood=clamp(mood+3);break;
+      case "WRITE":mood=clamp(mood+5);social=clamp(social+2);break;
+      case "CLEAN":dirtyDishes=Math.max(0,dirtyDishes-2);hygiene=clamp(hygiene+7);break;
+      case "WATER":mood=clamp(mood+7);break;
+      case "WINDOW":mood=clamp(mood+6);break;
+      case "STRETCH":energy=clamp(energy+7);mood=clamp(mood+3);break;
+      case "CHAT":social=clamp(social+19);mood=clamp(mood+6);break;
+    }
+  }
+  private String resultOf(String a){
+    switch(a){
+      case "COOK":return "餐食+"+(meals>0?1:0)+"，库存食材"+pantry;
+      case "SHOP":return "食材"+pantry+"，金币"+money;
+      case "EAT":return "饱腹"+Math.round(hunger);
+      case "SLEEP":return "体力"+Math.round(energy);
+      case "PRACTICE":return "已练习"+completedSongs+"次";
+      case "PIANO":return "音乐熟练度"+Math.round(skill);
+      case "READ":return "累计阅读"+readPages+"页";
+      default:return "心情"+Math.round(mood);
+    }
+  }
+  private String name(String a){int i=index(a);return i>=0?LABELS[i]:a;}
+  private int clockHour(long when){
+    Calendar c=Calendar.getInstance();c.setTimeInMillis(when);return c.get(Calendar.HOUR_OF_DAY);
+  }
+  private void choose(long when){
+    int hour=clockHour(when);String selected;
+    if((hour>=23||hour<7)&&energy<90)selected="SLEEP";
+    else if(energy<19)selected="SLEEP";
+    else if(hunger<54 && meals>0)selected="EAT";
+    else if(hunger<54 && pantry>0)selected="COOK";
+    else if(hunger<54 && money>=4)selected="SHOP";
+    else if(hygiene<43)selected="WASH";
+    else if(dirtyDishes>3)selected="CLEAN";
+    else if(energy<39)selected="REST";
+    else if(social<34)selected="CHAT";
+    else if(pantry==0&&money>=4)selected="SHOP";
+    else if(hour>=22&&energy<85)selected="SLEEP";
+    else {
+      String[] morning={"WASH","WATER","STRETCH","READ","WRITE","PIANO"};
+      String[] daytime={"PRACTICE","READ","PIANO","CLEAN","WRITE","STRETCH","WATER","WINDOW"};
+      String[] evening={"PIANO","PRACTICE","WRITE","READ","WINDOW","REST"};
+      String[] pick=hour<10?morning:hour<18?daytime:evening;
+      selected=pick[(sequence/3+completedTasks*7)%pick.length];
+    }
+    startTask(selected,when,"我想先"+name(selected)+"，之后再看看今天还需要做什么。");
+  }
+  private void startTask(String next,long when,String reason){
+    if(index(next)<0)next="REST";
+    action=next;phase=0;note=reason;
+    beginPhase(when);
+  }
+  private void beginPhase(long when){
+    phase=Math.max(0,Math.min(phase,phases(action).length-1));
+    phaseStarted=when;
+    int[] ds=durations(action);
+    phaseEnds=when+ds[Math.min(phase,ds.length-1)]*1000L;
+    note=phaseName()+"。";
+    sequence++;
+    queuedEvents.add("她开始"+name(action)+"："+phaseName()+"。");
+  }
+  public String request(String next){
+    if(index(next)<0)throw new IllegalArgumentException("未知行为");
+    long now=System.currentTimeMillis();update(now);
+    if(!"CHAT".equals(action)&&"CHAT".equals(next))suspended=action;
+    else if(!"CHAT".equals(next))suspended="";
+    startTask(next,now,"你邀请她"+name(next));save();return note;
+  }
+  public ArrayList<String> drainEvents(){
+    ArrayList<String> a=new ArrayList<>(queuedEvents);queuedEvents.clear();return a;
+  }
+  public String toJson(){
     try{
-      JSONObject o=new JSONObject();
-      o.put("hunger",hunger);o.put("energy",energy);o.put("hygiene",hygiene);
-      o.put("mood",mood);o.put("social",social);o.put("skill",skill);
-      o.put("lastTick",lastTick);o.put("lastDecision",lastDecision);o.put("until",until);
-      o.put("sequence",sequence);o.put("action",action);o.put("note",note);o.put("goal",goal);o.put("mealReady",mealReady);
-      pref.edit().putString("state",o.toString()).apply();
-    }catch(Exception ignored){}
+      JSONObject j=new JSONObject();
+      j.put("hunger",hunger);j.put("energy",energy);j.put("hygiene",hygiene);
+      j.put("mood",mood);j.put("social",social);j.put("skill",skill);
+      j.put("pantry",pantry);j.put("meals",meals);j.put("dirtyDishes",dirtyDishes);
+      j.put("money",money);j.put("readPages",readPages);j.put("completedSongs",completedSongs);
+      j.put("sequence",sequence);j.put("phase",phase);j.put("completedTasks",completedTasks);
+      j.put("action",action);j.put("note",note);j.put("goal",goal);j.put("suspended",suspended);
+      j.put("suspendedActionNote",suspendedActionNote);
+      j.put("lastTick",lastTick);j.put("phaseStarted",phaseStarted);j.put("phaseEnds",phaseEnds);
+      return j.toString();
+    }catch(Exception ex){throw new IllegalStateException(ex);}
   }
+  public void save(){pref.edit().putString("state",toJson()).apply();}
 }
