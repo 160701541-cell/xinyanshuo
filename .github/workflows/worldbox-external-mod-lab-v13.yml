@@ -156,6 +156,7 @@ jobs:
             -r linux-x64 -c Release --self-contained true \
             -p:PublishSingleFile=true -p:PublishTrimmed=false -o /tmp/worldbox-user-private-helper
           test -f /tmp/worldbox-user-private-helper/GameAssemblyToolkit
+          cp tools/worldbox-xianxia/private-apk-lab/XianxiaMonoBridge.cs /tmp/worldbox-user-private-helper/
           echo 'NO user-owned APK or commercial game binaries uploaded to public GitHub.'
       - uses: actions/upload-artifact@v4
         with:
