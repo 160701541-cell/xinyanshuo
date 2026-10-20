@@ -25,7 +25,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Install original PBR texture tooling
-        run: python3 -m pip install --user 'Pillow>=10,<12'
+        run: python3 -m pip install --user 'Pillow>=10,<12' 'numpy>=1.26,<3'
       - name: Retrieve validated 3D glTF meshes and license manifest
         run: |
           set -euo pipefail
@@ -65,6 +65,7 @@ jobs:
         run: |
           set -euo pipefail
           python3 tools/fetch_cc0_anime_base.py
+          python3 tools/recolor_vrm_anime.py qa_samples/anime_cc0_lookdev.vrm qa_samples/blue_anime_lookdev.vrm
       - name: Import actual GLB, PNG and GDScript in Godot
         run: |
           set -euo pipefail
@@ -130,9 +131,12 @@ jobs:
           grep -Fq 'PASS VRM CC0 ANIME BASE ACTUAL GODOT' anime-base-render.log
           test -s anime-base-front.png
           test -s anime-base-angle.png
+          test -s anime-blue-front.png
+          test -s anime-blue-angle.png
       - name: Exclude generic anime asset from shipped apk
         run: |
           python3 -c 'from pathlib import Path; Path("qa_samples/anime_cc0_lookdev.vrm").unlink(missing_ok=True)'
+          python3 -c 'from pathlib import Path; Path("qa_samples/blue_anime_lookdev.vrm").unlink(missing_ok=True)'
       - name: Capture true 3D DeepSeek blue avatar close-up
         continue-on-error: true
         run: |
@@ -226,6 +230,8 @@ jobs:
             zhiyin-real3d/anime-base-render.log
             zhiyin-real3d/anime-base-front.png
             zhiyin-real3d/anime-base-angle.png
+            zhiyin-real3d/anime-blue-front.png
+            zhiyin-real3d/anime-blue-angle.png
             zhiyin-real3d/VRM_PLUGIN_PROVENANCE.txt
             zhiyin-real3d/godot-android-export.log
             zhiyin-real3d/quaternius-motion-inspect.log
