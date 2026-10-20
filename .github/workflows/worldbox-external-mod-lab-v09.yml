@@ -1,0 +1,59 @@
+name: 'WorldBox External MOD Lab v0.9 - NOT Canglan game'
+on:
+  push:
+    branches:
+      - 'worldbox/external-mod-lab-v09'
+    paths:
+      - 'tools/worldbox-xianxia/**'
+      - '.github/workflows/worldbox-external-mod-lab-v09.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  offline-source-qa:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
+      - uses: actions/setup-python@v5
+        with: { python-version: '3.11' }
+      - name: 'Source regression tests - NOT Android certification'
+        run: |
+          python -m compileall -q tools/worldbox-xianxia
+          python -m unittest discover -s tools/worldbox-xianxia -p 'test_v*.py' -v
+      - uses: actions/setup-dotnet@v4
+        with: { dotnet-version: '8.0.x' }
+      - name: 'Compile observer syntax against non-shipping contract stubs'
+        run: dotnet build tools/worldbox-xianxia/tests/WorldBoxObserver.SourceSyntax.csproj -c Release --verbosity quiet
+      - name: 'WorldBox external MOD only: prevent main-game edits'
+        run: python tools/worldbox-xianxia/scope_gate.py
+      - name: 'Ensure only source code is published in third-party test folder'
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import subprocess
+          paths=subprocess.check_output(['git','ls-files','--','tools/worldbox-xianxia'],text=True).splitlines()
+          forbidden={'.apk','.pck','.dll','.pdb','.rar','.7z','.aab'}
+          wrong=[p for p in paths if Path(p).suffix.lower() in forbidden]
+          assert not wrong,wrong
+          print('PASS source-only: ',len(paths),'files')
+          PY
+  official-mobile-loader-compat:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with: { dotnet-version: '8.0.x' }
+      - name: 'Download official NeoModLoader MOBILE 2.1 only to transient runner'
+        run: |
+          set -euo pipefail
+          curl -fLsS --retry 2 --connect-timeout 20 -o /tmp/NeoModLoader_mobile.dll https://github.com/WorldBoxOpenMods/AndroidModLoader/releases/download/latest/NeoModLoader_mobile.dll
+          echo "9ed209cdc783ed26998d31e461d1bbd317c83aff7ed8eefe844ddb0878a19c6a  /tmp/NeoModLoader_mobile.dll" | sha256sum --check --status
+          test "$(stat -c%s /tmp/NeoModLoader_mobile.dll)" = 20135424
+          echo 'PASS Official MOBILE NML release signature pinned, no binaries committed'
+      - name: 'Compile v07 observer source against REAL public NML_mobile DLL (WorldBox/Unity stubs still used)'
+        run: |
+          dotnet build tools/worldbox-xianxia/tests/WorldBoxObserver.MobileSdk.csproj -c Release --verbosity quiet -p:MobileNMLPath=/tmp/NeoModLoader_mobile.dll
+          echo 'THIS IS NOT A GAME DEVICE PASS; ONLY REAL PUBLIC NML ASSEMBLY REFERENCE'
