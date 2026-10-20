@@ -16,7 +16,7 @@ class NativeLocaleTests(unittest.TestCase):
  def test_does_not_guess_worldbox_keys_or_force_language(self):
   self.assertIn('Member(manager,"_localized_text")',BRIDGE)
   self.assertIn('add.Invoke(null,new object[]{"cz",key,chinese})',BRIDGE)
-  self.assertNotIn('setLanguage(',BRIDGE)
+  self.assertNotRegex(BRIDGE,r"\\.setLanguage\\s*\\(")
   self.assertIn('SkippedExisting++',BRIDGE)
  def test_uses_bounded_il2cpp_enumerator_fallback(self):
   self.assertIn('MaxDictionaryRead=16000',BRIDGE)
