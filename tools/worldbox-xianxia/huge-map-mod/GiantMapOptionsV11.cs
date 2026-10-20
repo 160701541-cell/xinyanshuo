@@ -101,7 +101,9 @@ namespace XianxiaWorldBox
                    string.IsNullOrEmpty(baseID)||!current.Contains(baseID)||
                    !original.SequenceEqual(current))
                     return ChoiceReport="尺寸已注册，新建地图列表缓存待适配";
-                var next=current.Concat(new[]{"xianxia_extreme_32"}).ToArray();
+                var next=new string[current.Length+1];
+                Array.Copy(current,next,current.Length);
+                next[current.Length]="xianxia_extreme_32";
                 cache.SetValue(owner,next);
                 bool verified=false;
                 try{
