@@ -14,6 +14,7 @@
 | `src/item3d.gd` | 物品引擎：旋转体/椭球/锥/倒角，品阶×属性矩阵，批量化出图 |
 | `src/icon_light.gdshader` | 图标专用光照（世界空间主光 + 天光 + 地面反弹 + 镜面） |
 | `src/head_deform.py` | Blender 脚本：压眉骨/收下颌/低鼻梁/整脸收窄，导出 `character_ea.glb` |
+| `src/npc_face_morph.gd`、`src/face_morph_core.py` | NPC 脸型变形：按 NPC id 稳定生成不同的脸（见 `docs/NPC_FACE_MORPH.md`，含已知问题） |
 | `docs/CHARACTER_SPEC.md` | **标准参数表**（7.5 头身、肩腰摆、袖长、交领角度、配色） |
 | `docs/GARMENT.md` | 服饰流水线：四类生成器 + 九件部件清单 |
 | `docs/RECOVERY.md` | 踩坑记录（脚本被写坏、绕序、软体撕裂、A-pose 爆炸） |
