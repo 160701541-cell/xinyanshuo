@@ -63,6 +63,13 @@ public final class AiSettingsActivity extends Activity {
     modes.setOnCheckedChangeListener((g,id)->{
       ai.setMode(remote.isChecked()?AiGateway.MODE_API:AiGateway.MODE_LOCAL);status();
     });
+    Switch planner=new Switch(this);
+    planner.setText("允许AI参与安排知音的业余活动（每15分钟最多一次建议）");
+    planner.setTextSize(13);planner.setTextColor(ink);planner.setPadding(0,d(10),0,d(10));
+    planner.setChecked(ai.plannerEnabled());
+    root.addView(planner);
+    root.addView(label("关闭时完全不产生后台AI调用。开启后仅当APP处于前台且已配置模型时尝试，API可能产生费用；AI只建议读书、练歌等兴趣活动，不能跳过打工、吃饭、睡眠与房租。",12));
+    planner.setOnCheckedChangeListener((v,checked)->{ai.setPlannerEnabled(checked);toast(checked?"AI生活计划已开启":"AI生活计划已关闭");});
 
     root.addView(label("① 手机端离线模型  ·  GGUF (arm64 CPU)",19));
     root.addView(label("推荐：Qwen3-0.6B-Q4_K_M，约484 MB，Apache-2.0。首次下载需要联网；安装后推理可断网。小模型中文效果有限。",13));
