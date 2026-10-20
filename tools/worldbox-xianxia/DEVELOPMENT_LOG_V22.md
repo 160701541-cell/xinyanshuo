@@ -125,3 +125,38 @@ Work仍负责私有APK整合、签名、安卓16真机验收。不得上传商�
 1. Work用用户APK确认**真实Mono/NML/IL2CPP加载链**并整合原版可授权中文包、中文名、上帝模式翻译及本项目汉化候选；无设备证据不报APK完成。
 2. 在原版「创造世界、天道工具、王国、外交、城市、人物、建筑、世界法则、设置、MOD管理器」逐页记录**已汉化/仍英文**，提交真实缺口，修复实际词条与渲染重叠；原版100%和任意第三方MOD100%尚**未**实现。
 3. 保留后续天道原版放置能力扩展、世俗王朝多城行政、都城皇城、升级外观、灵兽妖兽、宗门大阵、多空间云海浮岛/九天/地下/地府/跨层交通、每境界12层+特殊十三层天劫机制；本轮**均尚未实现**，不能抢占汉化优先级，也不能遗忘。
+
+
+---
+
+## 2026-10-20 v0.25 同分支实际开发：原版内置简体中文证据、NML自动加载语言包、中文优先切换
+
+**用户本轮指令：继续；继承此前“先完整汉化、原版菜单与所有MOD也要中文”、每次必须写入本分支开发日志。** 本轮并未创建新分支，沿用 `worldbox/external-mod-lab-v22-zh-localization`，禁用苍岚main跨项目改动。
+
+### P0发现——用户的WorldBox 0.51.4 APK实际上已索引简体中文资源！
+- 对 **用户本人上传的商业APK** `WorldBox_0.51.4_用户上传安装包_未整合仙侠MOD.apk` 进行了本机只读检查，SHA256仍为 `c39817efa21e539fe61f318dc1ad4050b424c6120ab8ed384d94148f869c4bdc`。
+- Unity资源索引 `assets/bin/Data/globalgamemanagers` 中，可辨认**38种语言**，原版**简体中文 `locales/cz/*` 共70个资源分组**，英文 `locales/en/*` 也为70个分组，两者分组名称全部对应。含：`kingdoms`、`powers`、`resources`、`debug`、`creatures`、`ui_new_world`、`ui_buttons`、`ui_options`、`ui_tabs`、`world_laws`、`statistics`、`traits_units` 等。
+- **重要严谨性**：这是Unity原始本地化**分类资源路径的存在证据**，不代表已经逐条解码与对比翻译的字句，不代表简中内容100%完备，更不代表任何第三方MOD自带中文。至少说明“APK完全没有原版简体中文”这个假设不成立；下一步应**优先真正选择原版自带`cz`语言，而不是重复发明与其冲突的原版文本替换**。
+- 本地仅向用户本人生成只读数据报告 `WorldBox_0.51.4_原版简体中文资源_只读审计.json`，内容只有资源类别、数量、差异和以上限制，不含商业游戏受版权保护的文本；没有将APK或资源文件上传GitHub。
+- 新增可复用 `localization/audit_apk_locales_v25.py` 与 `test_v25_apk_locale_index.py`：通过APK内`globalgamemanagers`长度前缀索引扫描语言名，不读取或复制实际TextAsset内容；可输出资源组覆盖报告；测试涵盖相同资源组、缺失组、异常APK与伪造非长度前缀，**不给虚假的100%汉化通过**。
+
+### 真正随MOD发布的自动中文包（已修改可安装的MOD候选ZIP结构）
+1. 新增 `localization/nml-locales/cz.json`、`en.json`：**38个具有唯一`xinyanshuo.wb.*`命名空间的真实NML本MOD菜单键**，包含中文模组管理器、原版菜单说明、一键选择简中、显示/恢复、缺译反馈、天道观察操作等。NML官方`BasicMod<T>`本身实现 `ILocalizable`，默认自动查找模组目录下的 `Locales/`，无需用户手动导入本MOD自己的中文文件。没有凭空伪造WorldBox商业本体的语言键，也不覆盖其他MOD所有权。
+2. 新增 `localization/OwnLocaleLabelsV25.cs`：从真实NML `NeoModLoader.General.LM.Get` 读取本MOD自有的键；老加载器或缺少接口时保留清楚可读的中文后备文本。已真正连接到 `OriginalMenuGuideV22.cs`、`ChineseModManagerV21.cs`、`XianxiaObserverV07.cs` 用户可见按钮。
+3. 改造 `package_android_compiled_mod.py` 及 `package_android_mono_source.py`：新增可选 `--locales`，对`cz/en`自有JSON词条数量/长度/命名空间进行安全检查，再把它们纳入**NML预编译模块ZIP**的 `NMLMods/WorldBoxXianxiaObserver/Locales/` 和**传统Mono源码候选ZIP**的 `Mods/WorldBoxXianxiaObserver/Locales/`，生成SHA256签名清单，未携带其他MOD的代码、商业APK或第三方DLL。旧pack函数默认行为保持兼容。
+4. 在 **专属GitHub Actions** `.github/workflows/worldbox-external-mod-lab-v22.yml` 中，真实打包时指定 `--locales`，检查两个语言文件包含所要求的本MOD菜单键、预编译候选ZIP条目总数由4增为6、Mono源码候选确实包含两份Local​​es和汉化源码，生成自检工件。
+5. 新增 `test_v25_nml_autoload.py`：以模拟PE结构做真实ZIP打包验证，检查`Locales/cz.json`和`en.json`的文件路径、翻译键一致性、拒绝伪造第三方命名空间、源码包不得带DLL、GUI实际调用本地化适配器；C#`NativeLocaleScenarioV23.cs`还新增模拟NML`LM.Get`真正从注册字典返回文本和中文兜底检查。三套公开SDK/语法构建都已引用新适配器。
+6. 更新 `nml-observer-v07/mod.json` 版本为 `0.25.0-chinese-test`，保留唯一MOD GUID和WorldBox构建号725，并**明确标注不是完整汉化、不是签名APK、真机尚待验证**。
+
+### 修复严重的汉化优先级缺陷
+- 之前「一键选择简中」会**先从当前英文翻译词典推导出一批中文并注册NML，再切换原版`cz`**。即使有原版自带完善的中文，也可能被我们猜出来的译文所遮盖，导致反而更差。
+- 已调整为 **优先只调用 `LocalizedTextManager.setLanguage("cz")` 请求启用原版内置中文**，再由NML常规自动加载本MOD`Locales/cz.json`。仅对真正发现的英文漏译使用可选中文覆盖，不再在一键切换时无条件预先登记大量词典。此行为有源码/合约测试，尚需真机检查原版切换按钮路径与中文显示。
+
+### 目前事实状态/CI
+- 自有中文词典与NML自动语言包、ZIP打包、单击切中文入口已提交该WorldBox分支，不是单独设计文档。
+- **测试绿灯示例**：`39443939799` 整体通过（自动加载本MOD中文JSON包和ZIP布局的源码），以及后续源代码/语言资源审计的流水线（以最新实际Actions运行结果为准）。
+- ***没发生的事情***：没有签名/发出新的商业WorldBox APK，没有用户手机NML引导链的真实日志，没有拿到原版完整TextAsset键与内容差异，没有对其他MOD动态英文都成功中文化的证据，没有手机创建/保存/重载世界的回归。严禁声称完整汉化、Android实机通过或全部MOD兼容。
+
+### Work/后续开发固定顺序与保留设计
+**P0**：先按用户APK真实语言入口将`cz`简中启用 → 验证原版全部创建/神力/城市/王国/外交/人物/建筑/设置菜单实际覆盖 → 可合法使用的中文名/上帝模式/其他MOD逐项兼容 → 漏译反馈与中文字体/字号/遮挡/性能验收。手游内MOD批量导入与兼容检测仍待Android文件系统授权与真实加载链适配。
+**P1不丢失**：天道真正可放置小人、灵石、灵植、妖兽、修士、宗门等新增实体；更大的王朝多城/行政州郡府县，皇城、宫殿群及真实可升级建筑，天空浮岛/九天/地下/地府的可运行独立空间层级、跨层飞行/飞舟/轮回；人类世俗王朝保持原版国政，筑基能飞、每境界12层与天赋超凡特殊13层天劫公告，所有用户既定开发规则仍有效。以上未完成的游戏能力须在后续汉化验收后以可玩代码实现，不能写成完成。
