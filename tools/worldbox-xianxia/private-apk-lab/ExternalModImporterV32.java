@@ -99,7 +99,11 @@ final class ExternalModImporterV32 {
                 if(stream==null)throw new IOException("无法读取所选ZIP");
                 copyLimited(stream,temp,MAX_ZIP);
             }
-            try(ZipFile archive=new ZipFile(temp)){
+            return importFile(context,temp,0);
+        }finally{temp.delete();}
+    }
+    private static List<Result> importFile(Context context,File input,int nesting)throws Exception{
+            try(ZipFile archive=new ZipFile(input)){
                 ArrayList<? extends ZipEntry> entries=Collections.list(archive.entries());
                 if(entries.isEmpty()||entries.size()>MAX_FILES)throw new IOException("MOD文件数量超限");
                 Map<String,ZipEntry> all=new LinkedHashMap<>();
@@ -127,8 +131,32 @@ final class ExternalModImporterV32 {
                         if(key.toLowerCase(Locale.ROOT).endsWith(".zip"))nested++;
                         if(key.toLowerCase(Locale.ROOT).endsWith(".dll"))dlls++;
                     }
-                    if(nested>0)throw new IOException("这是外层整合ZIP，含"+nested+
-                        "个内层压缩包；需要先自动识别内层包，不能直接当单个MOD部署");
+                    if(nested>0&&nesting<1) {
+                        List<Result> total=new ArrayList<>();
+                        StringBuilder rejected=new StringBuilder();
+                        int tested=0;
+                        for(Map.Entry<String,ZipEntry> kv:all.entrySet()) {
+                            if(!kv.getKey().toLowerCase(Locale.ROOT).endsWith(".zip")||
+                               kv.getValue().isDirectory())continue;
+                            if(++tested>MAX_MODS_PER_ZIP)throw new IOException("外层整合包超过12份ZIP，请分批导入");
+                            File inner=File.createTempFile("inner-", ".zip",context.getCacheDir());
+                            try {
+                                try(InputStream stream=archive.getInputStream(kv.getValue())) {
+                                    copyLimited(stream,inner,MAX_ZIP);
+                                }
+                                total.addAll(importFile(context,inner,nesting+1));
+                            }catch(Exception ex) {
+                                if(rejected.length()<220)rejected.append(kv.getKey())
+                                    .append("：").append(ex.getMessage()).append("; ");
+                            }finally{inner.delete();}
+                        }
+                        if(total.isEmpty())throw new IOException("外层ZIP的"+nested+
+                            "份内层包都未安装："+rejected);
+                        if(rejected.length()>0)
+                            total.add(new Result("跳过部分不兼容的内层包："+rejected,"未安装",""));
+                        return total;
+                    }
+                    if(nested>0)throw new IOException("嵌套ZIP过深，最多支持外层包＋1级子ZIP");
                     if(dlls>0)throw new IOException("发现"+dlls+
                         "个DLL，但没有mod.json：旧版散装DLL/桌面BepInEx包不能直接当安卓NML安装");
                     throw new IOException("未找到mod.json：所选ZIP不是可直接部署的NML/Mono模组，请检查是不是旧桌面整合包");
@@ -217,6 +245,5 @@ final class ExternalModImporterV32 {
                     return result;
                 }finally{for(File path:temporary)removeTree(path);}
             }
-        }finally{temp.delete();}
     }
 }
