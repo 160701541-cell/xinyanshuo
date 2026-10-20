@@ -78,6 +78,51 @@ namespace XianxiaWorldBox
             }
             return Camera.main;
         }
+        float nextOwnTraitAudit;
+        static object LibraryGet(object library,string id)
+        {
+            if(library==null||string.IsNullOrEmpty(id))return null;
+            foreach(var m in library.GetType().GetMethods(BindingFlags.Public|
+                    BindingFlags.NonPublic|BindingFlags.Instance)) {
+                var ps=m.GetParameters();
+                if(m.Name=="get"&&!m.IsGenericMethod&&ps.Length==1&&ps[0].ParameterType==typeof(string))
+                    return m.Invoke(library,new object[]{id});
+            }
+            return null;
+        }
+        void RepairOwnTraitGroups()
+        {
+            if(Time.unscaledTime<nextOwnTraitAudit)return;
+            nextOwnTraitAudit=Time.unscaledTime+10f;
+            try {
+                var manager=typeof(World).Assembly.GetType("AssetManager");
+                if(manager==null)return;
+                const BindingFlags flags=BindingFlags.Public|BindingFlags.NonPublic|BindingFlags.Static;
+                var traitsField=manager.GetField("traits",flags);
+                var groupsField=manager.GetField("trait_groups",flags);
+                if(traitsField==null||groupsField==null)return;
+                object traits=traitsField.GetValue(null),groups=groupsField.GetValue(null);
+                // Reuse a real, registered vanilla group; never invent a dictionary key.
+                var template=LibraryGet(traits,"blessed");
+                string group=Field(template,"group_id") as string;
+                if(string.IsNullOrEmpty(group)||LibraryGet(groups,group)==null)return;
+                for(int i=1;i<=13;i++) {
+                    string id="xys_wanjie_v18_qi_"+i;
+                    object trait=LibraryGet(traits,id);
+                    if(trait==null)continue;
+                    string current=Field(trait,"group_id") as string;
+                    if(!string.IsNullOrEmpty(current)&&LibraryGet(groups,current)!=null)continue;
+                    var field=trait.GetType().GetField("group_id",BindingFlags.Public|
+                        BindingFlags.NonPublic|BindingFlags.Instance);
+                    if(field==null||field.FieldType!=typeof(string)||field.IsInitOnly)continue;
+                    field.SetValue(trait,group);
+                    Debug.Log("[XIANXIA] OWN_TRAIT_GROUP_REPAIRED id="+id+" group="+group);
+                }
+            } catch(Exception e) {
+                nextOwnTraitAudit=Time.unscaledTime+60f;
+                Debug.LogError("[XIANXIA] OWN_TRAIT_GROUP_REPAIR_FAILED "+e.ToString());
+            }
+        }
         static Color Ground(WorldTile tile)
         {
             if(tile==null)return new Color(.06f,.09f,.15f,.3f);
@@ -117,6 +162,7 @@ namespace XianxiaWorldBox
         void Update()
         {
             if(!versionOK)return;
+            RepairOwnTraitGroups();
             ModTextAccessibilityV13.Tick();
             RuntimeChineseOverlayV22.Tick();
             if(Time.unscaledTime>=nextCultivationCleanup){
