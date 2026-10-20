@@ -8,7 +8,7 @@ from dataclasses import dataclass,asdict
 import argparse,json,math
 
 CHUNK=64
-TIERS=(8,10,12,16,20,24,30)
+TIERS=(8,10,12,16,20,24,30,32)
 @dataclass(frozen=True)
 class Size:
     chunks:int
