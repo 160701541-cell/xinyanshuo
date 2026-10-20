@@ -16,9 +16,9 @@ import java.util.Locale;
  */
 public final class LifeEngine {
   public static final String[] ACTIONS={"REST","SLEEP","SHOP","COOK","EAT","WASH","READ",
-    "PRACTICE","PIANO","WRITE","CLEAN","WATER","WINDOW","STRETCH","CHAT","WORK"};
+    "PRACTICE","PIANO","WRITE","CLEAN","WATER","WINDOW","STRETCH","CHAT","WORK","DRESS"};
   public static final String[] LABELS={"休息","睡觉","补充食材","做饭","吃饭","洗漱","阅读",
-    "练习唱歌","弹琴","写日记","打扫房间","浇花","看风景","伸展运动","聊天","咖啡馆打工"};
+    "练习唱歌","弹琴","写日记","打扫房间","浇花","看风景","伸展运动","聊天","咖啡馆打工","换装整理"};
 
   private static final long MAX_OFFLINE_MS=2L*60L*60L*1000L;
   private static final int MAX_STEPS=720;
@@ -86,6 +86,7 @@ public final class LifeEngine {
   public float targetX(){
     switch(action){
       case "SLEEP":return .17f;
+      case "DRESS":return .11f;
       case "SHOP":case "WORK":return .97f;
       case "COOK":case "EAT":return phase==0&&"COOK".equals(action)?.94f:.83f;
       case "WASH":return .95f;
@@ -102,6 +103,7 @@ public final class LifeEngine {
   public float targetY(){
     switch(action){
       case "SLEEP":return .75f;
+      case "DRESS":return .14f;
       case "SHOP":case "WORK":return .60f;
       case "COOK":case "EAT":return .64f;
       case "WASH":return .52f;
@@ -123,6 +125,7 @@ public final class LifeEngine {
   private static String[] phases(String a){
     switch(a){
       case "SLEEP":return new String[]{"走到床边","整理被褥","安静入睡","醒来整理"};
+      case "DRESS":return new String[]{"走到衣柜前","挑选衣服","整理衣领","收好换下的衣物"};
       case "SHOP":return new String[]{"检查食材","前往收货柜","取回新鲜食材","整理储物"};
       case "COOK":return new String[]{"取出食材","清洗食材","切菜备料","点火烹饪","盛菜装盘"};
       case "EAT":return new String[]{"摆放餐具","慢慢吃饭","收拾桌面"};
@@ -143,6 +146,7 @@ public final class LifeEngine {
   private static int[] durations(String a){
     switch(a){
       case "SLEEP":return new int[]{5,7,68,5};
+      case "DRESS":return new int[]{6,9,8,7};
       case "SHOP":return new int[]{5,7,9,7};
       case "COOK":return new int[]{8,9,11,23,7};
       case "EAT":return new int[]{5,21,6};
@@ -254,6 +258,7 @@ public final class LifeEngine {
       case "WASH":hygiene=clamp(hygiene+43);break;
       case "SLEEP":energy=clamp(energy+58);mood=clamp(mood+8);break;
       case "REST":energy=clamp(energy+14);break;
+      case "DRESS":hygiene=clamp(hygiene+6);mood=clamp(mood+2);break;
       case "READ":readPages+=9;skill=clamp(skill+0.6);mood=clamp(mood+3);break;
       case "PIANO":skill=clamp(skill+1.6);mood=clamp(mood+5);break;
       case "PRACTICE":completedSongs++;skill=clamp(skill+1.8);energy=clamp(energy-3);mood=clamp(mood+3);break;
