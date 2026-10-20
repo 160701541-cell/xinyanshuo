@@ -15,7 +15,7 @@ import java.util.Random;
 
 public final class HomeWorldView extends View {
   public interface Listener { void onObject(String object); }
-  private final LifeEngine life;
+  private LifeEngine life;
   private final Listener listener;
   private final Paint p=new Paint(Paint.ANTI_ALIAS_FLAG);
   private float w=420,h=850,x=202,y=590;
@@ -25,6 +25,7 @@ public final class HomeWorldView extends View {
     super(context);life=data;listener=callback;setLayerType(View.LAYER_TYPE_HARDWARE,null);
     x=life.targetX()*w;y=life.targetY()*h;
   }
+  public void setLife(LifeEngine replacement){this.life=replacement;invalidate();}
   private void color(int c){p.reset();p.setAntiAlias(true);p.setColor(c);p.setStyle(Paint.Style.FILL);}
   private int mix(int c1,int c2,float t){
     t=Math.max(0,Math.min(1,t));return Color.rgb((int)(Color.red(c1)*(1-t)+Color.red(c2)*t),
@@ -297,7 +298,37 @@ public final class HomeWorldView extends View {
         rounded(c,-32,-77,25,-63,3,0xFFF4E8D7);
         line(c,7,-91,15+pulse*2,-66,3,0xFF93788F);
         break;
+      case "SHOP":
+        rounded(c,-32,-74,33,-31,6,0xFFD3A67D);
+        rounded(c,-29,-67,30,-38,3,0xFFEED9B9);
+        line(c,-20,-76,20,-76,4,0xFF9A725F);
+        title(c,"♧",0,-40,18,0xFF578A63);
+        break;
       case "COOK":
+        if(life.phase==0){
+          rounded(c,-28,-70,27,-46,6,0xFFC8A17C);
+          ellipse(c,-13,-65,12,9,0xFF719F72);
+          ellipse(c,7,-62,12,9,0xFFB9A75F);
+          break;
+        }
+        if(life.phase==1){
+          rounded(c,-30,-68,28,-45,8,0xFFD1DDE4);
+          ellipse(c,0,-64,22,7,0xFF78B2B4);
+          ellipse(c,19,-74+Math.abs(pulse)*8,3,5,0xFF80C9DA);
+          break;
+        }
+        if(life.phase==2){
+          rounded(c,-36,-65,37,-51,4,0xFFD9B58D);
+          line(c,-5,-65,17,-94+Math.abs(pulse)*6,3,0xFF8D7460);
+          ellipse(c,0,-60,9,4,0xFF79A677);
+          break;
+        }
+        if(life.phase==4){
+          ellipse(c,0,-59,34,12,0xFFF3EBE0);
+          ellipse(c,0,-63,26,8,0xFFD6A988);
+          title(c,"✦",0,-76,14,0xFFFFE2A0);
+          break;
+        }
         rounded(c,-32,-67,35,-44,7,0xFF6B7181);
         ellipse(c,1,-64,29,8,0xFFD4B8A1);
         ellipse(c,1,-69,30,7,0xFF939AB0);
@@ -357,6 +388,7 @@ public final class HomeWorldView extends View {
     if(e.getAction()==MotionEvent.ACTION_UP){
       float px=e.getX()*420f/getWidth(),py=e.getY()*420f/getWidth();
       if(Math.abs(px-x)<67&&Math.abs(py-y+80)<116){listener.onObject("character");return true;}
+      if(px>348&&py>h*.78f&&py<h*.9f){listener.onObject("plant");return true;}
       if(px<143&&py>h*.57f){listener.onObject("bed");return true;}
       if(px>316&&py>h*.49f&&py<h*.78f){listener.onObject("kitchen");return true;}
       if(px>135&&px<285&&py>h*.58f&&py<h*.8f){listener.onObject("piano");return true;}
