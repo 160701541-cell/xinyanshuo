@@ -79,8 +79,8 @@ class Program {
    Console.WriteLine("PASS_MONO_ORIGINAL_REFERENCE_COMPILE "+output);
  }
  static void Patch(string original,string plugin,string output) {
-   using var game=AssemblyDefinition.ReadAssembly(original,Resolved(path));
-   using var addon=AssemblyDefinition.ReadAssembly(plugin,Resolved(path));
+   using var game=AssemblyDefinition.ReadAssembly(original,Resolved(original));
+   using var addon=AssemblyDefinition.ReadAssembly(plugin,Resolved(plugin));
    var entry=FindStartup(game);
    var addonEntry=addon.MainModule.Types.FirstOrDefault(t=>t.FullName=="XianxiaMonoBridge.Entry");
    var install=addonEntry?.Methods.FirstOrDefault(m=>m.Name=="Install"&&m.IsStatic&&m.Parameters.Count==0);
