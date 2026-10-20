@@ -6,8 +6,8 @@
 ## 文件
 | 文件 | 作用 | 状态 |
 |---|---|---|
-| `src/npc_face_morph.gd` | Godot 端：id → 11 个参数；位移场 `displace()`；对节点树里所有网格施加变形 | 本机无 Godot，**未实机运行** |
-| `tests/npc_face_morph_test.gd` | GDScript 无头测试（金标准、对称、颈部不动） | 同上，**未运行** |
+| `src/npc_face_morph.gd` | Godot 端：id → 11 个参数；位移场 `displace()`；对节点树里所有网格施加变形 | Godot 4.4.1 headless 已跑通（**未在真头模上看效果**） |
+| `tests/npc_face_morph_test.gd` | GDScript 无头测试（金标准、对称、颈部不动） | Godot 4.4.1 headless **ALL PASS** |
 | `tests/npc_face_params_ref.py` | `params_from_id` 的 Python 独立实现，给 GD 测试提供金标准 | 已运行 |
 | `src/face_morph_core.py` | 早一版的 Python/numpy 核心：8 参数 + 6 个身份原型（villager/merchant/…），可离线烘焙 | 已运行 |
 | `tests/test_face_morph_core.py` | 上一个文件的 19 个单元测试 | 全部通过 |
@@ -32,7 +32,7 @@ eye_socket_depth, nose_bridge, nose_tip, nose_width, forehead`，取值 [-1, 1]�
    `face_morph_core.py` 文件头注释里提到的 `face_morph.gd` 并不存在。
    建议以 `npc_face_morph.gd` 为准（它有配套的 Python 参考），再决定是否保留 `face_morph_core.py`
    里的身份原型（archetype）并移植过来。
-2. GDScript 部分与 GD 测试都没有在真实 Godot 里跑过；`_renormal()` 在 7k 顶点量级的网格上
-   用 Dictionary 焊接，速度未测。
+2. GD 测试已在 Godot 4.4.1 headless 通过，但只测了纯函数；`apply_to_tree()` 没在真实 `character_ea.glb`
+   上跑过，`_renormal()` 在 7k 顶点量级的网格上用 Dictionary 焊接，速度未测。
 3. 位移幅度（`SCALE`）是按数值标定的，**还没有对照截图验收**，需要用 `glbshot.gd`
    出一组极端参数的四视角图再调。
