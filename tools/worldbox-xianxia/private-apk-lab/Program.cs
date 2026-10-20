@@ -14,6 +14,12 @@ class Program {
   try {
    if(args.Length<2){Console.Error.WriteLine("usage: inspect game.dll | compile source.cs references-dir output.dll | patch game.dll plugin.dll output.dll | verify before.dll after.dll");return 2;}
    switch(args[0]){
+    case "patch-map-bridge":
+     if(args.Length<4)throw new ArgumentException("patch-map-bridge original-bridge.dll own-map-helper.dll output-bridge.dll");
+     PatchMapBridge(args[1],args[2],args[3]);return 0;
+    case "verify-map-bridge":
+     if(args.Length<4)throw new ArgumentException("verify-map-bridge original-bridge.dll patched-bridge.dll own-map-helper.dll");
+     VerifyMapBridge(args[1],args[2],args[3]);return 0;
     case "inspect": Inspect(args[1]);return 0;
     case "compile":
      if(args.Length<4)throw new ArgumentException("compile source.cs managed-reference-dir output.dll");
@@ -121,6 +127,46 @@ class Program {
     if(!b.GetAssemblyRefs().Any(x=>x.Name==p.Assembly.Name))
         throw new InvalidOperationException("Companion Mono assembly ref missing");
     Console.WriteLine("PASS_MODIFIED_ENTRYPOINT_ONLY originalMethodsPreserved="+aa.Count);
+ }
+ static void PatchMapBridge(string original,string helper,string output) {
+   var mod=dnlib.DotNet.ModuleDefMD.Load(original);
+   var addon=dnlib.DotNet.ModuleDefMD.Load(helper);
+   var overlay=mod.Types.FirstOrDefault(t=>t.FullName=="XianxiaMonoBridge.Overlay")
+     ?? throw new InvalidOperationException("expected legacy Mono UI Overlay absent");
+   var update=overlay.Methods.FirstOrDefault(m=>m.Name=="Update"&&!m.IsStatic&&m.HasBody&&m.Parameters.Count==0)
+     ?? throw new InvalidOperationException("legacy Mono Overlay.Update absent");
+   if(update.Body.Instructions.Any(i=>i.Operand?.ToString()?.Contains("MapPresetBridgeV32")==true))
+     throw new InvalidOperationException("2048 hook already inserted; do not duplicate");
+   var bridge=addon.Types.FirstOrDefault(t=>t.FullName=="XianxiaWorldBox.MapPresetBridgeV32")
+     ?? throw new InvalidOperationException("map helper missing required type");
+   var tick=bridge.Methods.FirstOrDefault(m=>m.Name=="Tick"&&m.IsPublic&&m.IsStatic&&m.Parameters.Count==0)
+     ?? throw new InvalidOperationException("map helper missing public Tick");
+   var name=new dnlib.DotNet.AssemblyRefUser(addon.Assembly);
+   var type=new dnlib.DotNet.TypeRefUser(mod,"XianxiaWorldBox","MapPresetBridgeV32",name);
+   var method=new dnlib.DotNet.MemberRefUser(mod,"Tick",dnlib.DotNet.MethodSig.CreateStatic(mod.CorLibTypes.Void),type);
+   update.Body.Instructions.Insert(0,dnlib.DotNet.Emit.Instruction.Create(dnlib.DotNet.Emit.OpCodes.Call,method));
+   mod.Write(output);
+   Console.WriteLine("MAP_BRIDGE_PATCHED_OVERLAY_UPDATE_ONLY "+output);
+ }
+ static void VerifyMapBridge(string original,string patched,string helper) {
+   var before=dnlib.DotNet.ModuleDefMD.Load(original);
+   var after=dnlib.DotNet.ModuleDefMD.Load(patched);
+   var addon=dnlib.DotNet.ModuleDefMD.Load(helper);
+   var oldType=before.Types.First(t=>t.FullName=="XianxiaMonoBridge.Overlay");
+   var newType=after.Types.First(t=>t.FullName=="XianxiaMonoBridge.Overlay");
+   var aa=oldType.Methods.First(m=>m.Name=="Update").Body.Instructions;
+   var bb=newType.Methods.First(m=>m.Name=="Update").Body.Instructions;
+   if(bb.Count!=aa.Count+1||bb[0].OpCode!=dnlib.DotNet.Emit.OpCodes.Call||
+      !(bb[0].Operand?.ToString()?.Contains("MapPresetBridgeV32.Tick")??false))
+      throw new InvalidOperationException("map bridge inserted IL differs from expected");
+   for(int i=0;i<aa.Count;i++)
+     if(aa[i].OpCode!=bb[i+1].OpCode||aa[i].Operand?.ToString()!=bb[i+1].Operand?.ToString())
+       throw new InvalidOperationException("original overlay update IL mutated");
+   if(!after.GetAssemblyRefs().Any(x=>x.Name==addon.Assembly.Name))
+      throw new InvalidOperationException("map bridge assembly reference is missing");
+   if(before.Types.Count!=after.Types.Count)
+      throw new InvalidOperationException("unrelated original types were altered");
+   Console.WriteLine("PASS_MAP_BRIDGE_APPEND_CALL_ONLY originalInstructions="+aa.Count);
  }
  static void CecilPatch(string original,string plugin,string output) {
    using var game=AssemblyDefinition.ReadAssembly(original,Resolved(original));
