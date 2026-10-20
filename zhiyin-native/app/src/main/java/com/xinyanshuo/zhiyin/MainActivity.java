@@ -44,7 +44,9 @@ public final class MainActivity extends Activity {
     getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
     store=new MemoryStore(this);
     tts=new TextToSpeech(this,status->{ if(status==TextToSpeech.SUCCESS){ttsReady=true;tts.setLanguage(Locale.SIMPLIFIED_CHINESE);} });
-    show("记忆");
+    String startTab=getIntent().getStringExtra("section");
+    if(startTab==null||(!startTab.equals("记忆")&&!startTab.equals("角色")&&!startTab.equals("剧场")&&!startTab.equals("音乐")))startTab="记忆";
+    show(startTab);
   }
   private int dp(float n){return (int)(getResources().getDisplayMetrics().density*n+0.5f);}
   private GradientDrawable background(int color,int radius){
@@ -91,7 +93,7 @@ public final class MainActivity extends Activity {
     root=col();root.setBackgroundColor(BG);setContentView(root);
     LinearLayout head=col();head.setPadding(dp(20),dp(16),dp(20),dp(10));root.addView(head);
     head.addView(text("知音  /  ZHIYIN",25,TEXT,true));
-    head.addView(text("原生 Android · 本地记忆实验版 0.1 · 无云端AI",12,MUTED,false));
+    head.addView(text("原生 Android v0.3 · 工具工作台 · AI模型尚未接入",12,MUTED,false));
     ScrollView scroll=new ScrollView(this);scroll.setFillViewport(false);root.addView(scroll,new LinearLayout.LayoutParams(-1,0,1));
     content=col();content.setPadding(dp(16),dp(14),dp(16),dp(28));scroll.addView(content);
     nav=row(root);nav.setPadding(dp(8),dp(5),dp(8),dp(12));nav.setBackgroundColor(PANEL);
