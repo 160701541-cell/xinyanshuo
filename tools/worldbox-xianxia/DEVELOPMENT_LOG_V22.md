@@ -49,3 +49,33 @@ Work仍负责私有APK整合、签名、安卓16真机验收。不得上传商�
 3. 原版天道工具菜单中加入可放置修仙单位/资源/建筑的真实WorldBox操作；确认可存档。
 4. 构建王朝城市群→首都皇城→建筑等级原型，并完成单位/物品ID、城市账本、远景聚合模拟。
 5. 云海浮岛、地下洞府、地府和跨层移动完成后再称“多层世界”。
+
+
+---
+
+## 2026-10-20 后续实作：原版真正的语言键登记 + 大规模菜单词库（同v0.22分支，没有新开遗失旧任务的分支）
+
+### 已读取的事实来源与研发取舍
+- 本轮先确认上一轮提交 `8b762441` 的GitHub Actions **39428356271全部成功**，但是只证明离线源码QA、公开SDK编译、候选包校验，并非用户的Android 16 WorldBox 0.51.4已成功启动。
+- 阅读开源 **WorldBoxOpenMods/AndroidModLoader** 的 `general/LM.cs` 与 `api/ILocalizable.cs`：原生NeoModLoader语言入口为 `NeoModLoader.General.LM.Add(language,key,value)`，简体中文使用 **`cz`** 语言代码， `LM.Has(key,lang)` 可避免覆盖已有注册的其他MOD词条；`LM.ApplyLocale(...)` 会应用本地化，原版核心为 `LocalizedTextManager.instance._localized_text`。文档《Documentation-en/BasicConcept/Multilingual.md》与Android源码相互验证。**该开源NML接口研究不等于用户旧改版APK已包含此加载器**。
+- 所有专有原版英文键名须从真正的 `LocalizedTextManager` 运行时字典读取，禁止凭空推断游戏内部资源键；对无法读取的Android IL2CPP字典提供反射枚举后备并明确显示不支持状态。
+
+### 本轮真实代码及文件
+1. **`localization/NativeLocaleBridgeV23.cs`**：新增可点击的“登记原版中文”。只读获取当前原版 `LocalizedTextManager.instance._localized_text` 中真实存在的键值，限定最多检查16000项、注册3000项；英文值或真实键名命中 `ChineseLocalizationV22.Translate` 才经NML `LM.Add("cz", key, chinese)` 注册；先通过 `LM.Has(key,"cz")` 避免覆盖其他MOD已经注册的汉化。C#的IEnumerator和IL2CPP反射GetEnumerator有后备路径。按钮 **不擅自强切用户语言**；若当前已是 `cz`，可点击“刷新简体中文”调用`LM.ApplyLocale("cz", true)`，否则提示到原版游戏设置手动选简中。原版本体的键、程序集、玩家存档不被修改。
+2. **`localization/ChineseMenuGlossaryV23.cs`**：新增**580组**人工校订的英语界面术语候选及简体中文。按“世界生成/存档、天道工具/地形、王朝/皇城/外交、人口单位属性、城建/经济/建筑等级、MOD管理、修仙”七类覆盖；这些是词典，不是逐条提取自0.51.4游戏文件的全量键，需真实UI命中测试。`ChineseLocalizationV22.cs` 同步使用新词典，用户本地覆盖词条优先级最高。
+3. **`localization/OriginalMenuGuideV22.cs`**：中文说明面板新增 `登记原版中文` 与 `刷新简体中文` 操作、报告扫描及登记计数，保留原版菜单解释和“实时中文”显示开关。
+4. **`inspector/LocaleTypes.cs` 与 .csproj**：独立元数据只读诊断器，在GitHub CI使用**公开Android NML/WorldBox SDK参考程序集**检查`LocalizedTextManager`与`NeoModLoader.General.LM`的真实方法和成员名称，并向Work测试候选包附上`WORLDBOX_PUBLIC_LOCALE_TYPES.json`；绝不抓取或公开用户商业游戏APK二进制。
+5. **`tests/NativeLocaleScenarioV23.cs` 与 .csproj**：可执行C#测试模拟原版真实`_localized_text`和NML公开LM接口，验证确实采用原版**真实key**、注册`cz`简体中文、已存在第三方MOD词条不覆盖、未知王国/人名不破坏、不强切用户语言、显式简中刷新成功；与v22旧文本组件翻译C#测试互相补充。
+6. **`test_v23_native_locale.py`**：增加脚本层结构回归验证与580个新增英汉词条重复检查。
+7. 三个安卓/语法项目已纳入2个新C#组件；`.github/workflows/worldbox-external-mod-lab-v22.yml` 已加入C#真实API契约测试、离线SDK本地化元数据校验、Legacy源候选和预编译NML候选的汉化源码完整性检查。仍旧只在当前独立WorldBox分支运行，不修改正式苍岚仓库main。
+
+### 仍未完成（请未来所有GPT/Work先看并保留）
+- **还不是完整原版或全第三方MOD汉化**：词典的准确覆盖率需由真实WorldBox 0.51.4菜单截图/语言资源键完整提取测定；部分原版专有本地化组件、Unity IMGUI、自绘、动态单位说明、未列入的英文文本不可由现有覆盖器/LM自动解决。
+- 用户的**原版国家、城市、人物动态中文名**尚待验证附带《中国名》MOD或者接入独立姓名生成器，不能只通过翻译'Kingdoms'声称中文王朝完成。
+- 原版放置按钮“天道创造”必须扩展真修仙单位、灵石矿、灵植、法宝与地形；当前还不能放置自定义新增实体。
+- 世俗国家一城太小：按王朝/州/郡/府/县/城/镇/村多城模拟，首都建完整**皇城宫殿群**（宫城+皇城+内城+外城+城郊），人口远近景分层；建筑 **等级/品质/损坏状态**四维及真实可见升级、升级消耗材料资金劳动力时间，绝不能降成简单数值。
+- 空间高度：人间、云海浮岛、地下、九天、地府作为多个真实层级，角色身份世界时间统一，御剑、飞舟、洞府、传送跨层，不能拿2D背景冒充真实浮岛。
+- 生灵妖兽生态、炼气/筑基每境界**12层**、筑基御空需灵力、御剑更快、飞舟灵石供能、山顶宗门/城郊修仙家族/大阵需供能阵眼等原定需求全部保留；本轮按照用户优先级未继续扩散玩法代码。
+- 下一执行优先顺序：① Work对用户持有安卓APK确认引导链及`LocalizedTextManager`/LM元数据 ② 全部原版菜单实际按页汉化覆盖统计和第三方MOD匹配测试 ③ 支持未翻译英文内容收集（隐私默认关闭）④ 真正天道放置 ⑤ 皇城和城市建筑等级 ⑥ 跨层世界。
+- 签名/安卓实机验证继续由Work负责：**没有APK实机成功证据不得声称验收通过**，所有源代码保留在WorldBox独立分支，永不改动《苍岚·人生世界》及其官网、APK、PCK和正式日志。
+
