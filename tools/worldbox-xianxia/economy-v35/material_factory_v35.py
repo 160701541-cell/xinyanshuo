@@ -168,9 +168,9 @@ def make(outdir,seedfile=BASE/"catalog_seed.json"):
  rows=["id\tname\tfamily\ttab\ticon"]
  for item in items:
   for field in ("id","name","family","target_tab","icon"):
-   assert "\\t" not in item[field] and "\\n" not in item[field]
-  rows.append("\\t".join(item[k] for k in ("id","name","family","target_tab","icon")))
- (outdir/"resource_index.tsv").write_text("\\n".join(rows)+"\\n",encoding="utf8")
+   assert "\t" not in item[field] and "\n" not in item[field]
+  rows.append("\t".join(item[k] for k in ("id","name","family","target_tab","icon")))
+ (outdir/"resource_index.tsv").write_text("\n".join(rows)+"\n",encoding="utf8")
  checks={"atlas_sha256":sha(outdir/"resource_atlas.png"),"files":len(items),"icons":[]}
  for item in items:checks["icons"].append({"id":item["id"],"sha256":sha(outdir/item["icon"])})
  (outdir/"SHA256SUMS.json").write_text(json.dumps(checks,indent=2)+"\n",encoding="utf8")
