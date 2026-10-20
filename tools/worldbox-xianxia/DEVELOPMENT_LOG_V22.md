@@ -368,3 +368,10 @@ Work仍负责私有APK整合、签名、安卓16真机验收。不得上传商�
 - ChineseWorldNamesV30按人物/城池/王朝分别生成稳定中文名字；扫描实际units/kingdoms/cities，分批每轮每类最多64个，每秒最多一轮。现有纯英文名通过实体setName写回真实数据，非仅中文覆盖层；只有实际数据支持原名string get/set备份并回读验证才改名，已有中文名保留，支持原名恢复；接口不支持时不猜字段写入。代码已分别接入原生桥Update及NML Update，并在修仙选人时优先处理所选对象。尚未证明实际0.51.4每类命名接口支持，不能宣称王国/人物已在手机全中文。
 - 为Work重编旧Mono桥，接续v13分支自己的完整桥源码依赖图到当前分支和NativeBridgeSources工件；CultivationRulesV18为原先实现，不将其普通十三层旧规则冒称用户要求的隐藏十三层已落实。原托管DLL重编+源码MOD升级均必要，只替换启动DEX不改变这些UI。
 - 添加纯C#行为场景：真实setter写名、原名保存/恢复、保留中文自定义名、缺持久化接口不改、稳定中文命名5000个ID、进程共享唯一面板切换；与公开SDK编译一起由CI验证。当前提交待CI，无新APK，无手机视觉/中文命名验收，不改苍岚main。
+
+## 2026-10-21 — 截图反馈修复的实际CI结果
+- 提交f96dc29a0372ae0129300f8579d1d303ccaaf42e，run 39465488094三个任务全部success。
+- 100项Python/Java回归、公开SDK和源码语法编译通过；新增PASS_WORLD_NAMES_PANELS_V30执行通过，覆盖真实对象setter改名、备份恢复、保留已有中文、拒绝无备份API对象、5000个ID生成及唯一窗口状态。字体隔离和既有C#场景均通过，范围检查通过；NML候选打包工件包含三个新模块。
+- 原生桥完整源码图已在NativeBridgeSources工件内。必须强调：CI没有用户APK的精确Mono Assembly-CSharp/Unity引用，因此没有实际编译改过的旧原生托管桥与CultivationBridgeV18，也未跑原版GUI/实体命名/Android手机；SDK与模拟实体测试不等于用户APK全兼容。
+- Work整合必须同时重编该源图到原有WorldBoxXianxiaMonoBridge.dll并更新Managed.zip/部署token，以及更新NML源码MOD；否则旧桥仍画独立入口/叠加窗口，单独更新NML不足以兑现截图修复。重编时沿实际原包保留原挂载/修仙入口钩子及依赖。
+- 无新完整APK/签名包；未生成实际新UI截图，不声称已风格统一或全量命名已在手机生效。最新源码候选已可审查，私有构建环境仍是实际交付阻塞；main/苍岚未动。
