@@ -85,6 +85,7 @@ class Program
         string pack=Path.Combine(folder,"zh_cn_keymap_v24.txt");
         File.WriteAllText(pack,"new_mod_tab=仙途菜单\\nmod_menu=不应覆盖已有汉化\\n");
         string imported=ChineseKeyPackV24.ImportPrivatePack();
+        Console.WriteLine("PRIVATE_PACK_DIAG "+imported+" count="+ChineseKeyPackV24.KeyCount);
         Assert(ChineseKeyPackV24.KeyCount==2,"load direct locale-key pack");
         Assert(NativeLocaleBridgeV23.LastPackOk,"accepted pack");
         Assert(NeoModLoader.General.LM.locales["cz"]["new_mod_tab"]=="仙途菜单","foreign MOD direct key registered");
