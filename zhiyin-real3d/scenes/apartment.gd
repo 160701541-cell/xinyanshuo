@@ -306,7 +306,11 @@ func _setup_camera() -> void:
     _set_camera()
 
 func _set_camera() -> void:
-    camera.position=camera_target+Vector3(5.5,5.3,7.1)
+    if camera_zoom<3.0:
+        # Portrait framing must show eyes, expression and costume, not top of scalp.
+        camera.position=camera_target+Vector3(2.7,1.7,5.8)
+    else:
+        camera.position=camera_target+Vector3(5.5,5.3,7.1)
     camera.look_at(camera_target,Vector3.UP)
     camera.size=camera_zoom
 
