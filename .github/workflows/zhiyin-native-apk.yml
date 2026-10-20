@@ -55,6 +55,14 @@ jobs:
       - name: Verify test APK signing
         run: |
           "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --verbose --print-certs app/build/outputs/apk/debug/app-debug.apk
+      - name: QA packaged native inference and Kenney sprites
+        run: |
+          apk=app/build/outputs/apk/debug/app-debug.apk
+          for part in bed wardrobe books kitchen wash desk plant sofa lamp; do
+            unzip -Z1 "$apk" | grep -Fx "assets/kenney/$part.png" >/dev/null || exit 1
+          done
+          unzip -Z1 "$apk" | grep -Fx "lib/arm64-v8a/libzhiyin_llm.so" >/dev/null
+          "$ANDROID_HOME/build-tools/35.0.0/aapt" dump badging "$apk" | grep -E 'package: name=|sdkVersion:'
       - name: Print APK SHA256
         run: sha256sum app/build/outputs/apk/debug/app-debug.apk
       - name: Upload installable APK
