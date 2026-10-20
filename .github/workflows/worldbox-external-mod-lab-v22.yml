@@ -288,7 +288,7 @@ jobs:
           subprocess.run(['javac','-encoding','UTF-8','-source','8','-target','8',
                           '-cp',jar,'-d','/tmp/worldbox-diagnostics-classes',
                           root+'DiagnosticReport.java',root+'DiagnosticsActivity.java',
-                          root+'ModDeployment.java'],check=True)
+                          root+'ModDeployment.java',root+'ExternalModImporterV32.java'],check=True)
           from pathlib import Path
           import hashlib
           dexers=glob.glob(sdk+'/build-tools/*/d8')
@@ -308,6 +308,7 @@ jobs:
           cp tools/worldbox-xianxia/private-apk-lab/DiagnosticReport.java /tmp/worldbox-user-private-helper/
           cp tools/worldbox-xianxia/private-apk-lab/DiagnosticsActivity.java /tmp/worldbox-user-private-helper/
           cp tools/worldbox-xianxia/private-apk-lab/ModDeployment.java /tmp/worldbox-user-private-helper/
+          cp tools/worldbox-xianxia/private-apk-lab/ExternalModImporterV32.java /tmp/worldbox-user-private-helper/
       - uses: actions/upload-artifact@v4
         with:
           name: 'worldbox-v22-generic-private-apk-assembly-toolkit-linux-x64'
