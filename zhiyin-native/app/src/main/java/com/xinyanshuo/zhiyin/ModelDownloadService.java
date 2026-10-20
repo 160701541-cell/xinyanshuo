@@ -195,15 +195,11 @@ public final class ModelDownloadService extends Service {
           if(remoteSize>MAX_BYTES)throw new IOException("模型超过4GB上限");
           String responseEtag=con.getHeaderField("ETag");
           String hfLinked=con.getHeaderField("X-Linked-Etag");
-          String newEtag=responseEtag!=null?responseEtag:etag;
-          String maybeSha=(hfLinked!=null?hfLinked:newEtag).replace("\"","");
-          String oldSha=prefs.getString("sha256","");
-          if(bytes>0&&oldSha.matches("(?i)[a-f0-9]{64}")&&
-             maybeSha.matches("(?i)[a-f0-9]{64}")&&!oldSha.equalsIgnoreCase(maybeSha)){
-            throw new IOException("模型源SHA256改变，保留旧缓存，拒绝拼接");
-          }
-          if(maybeSha.matches("(?i)[a-f0-9]{64}")&&!EXPECTED_SHA256.equalsIgnoreCase(maybeSha))
-            throw new IOException("远程模型校验值与固定版本不一致，拒绝继续");
+          // CDN ETag is NOT necessarily the SHA256 of the downloaded GGUF.
+          // Only trust the repo's linked digest when one is provided.
+          String linked=hfLinked==null?"":hfLinked.replace("\"","");
+          if(linked.matches("(?i)[a-f0-9]{64}")&&!EXPECTED_SHA256.equalsIgnoreCase(linked))
+            throw new IOException("原仓库文件SHA256与固定版本不一致，保留断点");
           prefs.edit().putString("sha256",EXPECTED_SHA256).apply();
           if(bytes==0&&responseEtag!=null)etag=responseEtag;
           if(remoteSize>0)total=remoteSize;
