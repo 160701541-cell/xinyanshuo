@@ -79,6 +79,48 @@ class Program {
    Console.WriteLine("PASS_MONO_ORIGINAL_REFERENCE_COMPILE "+output);
  }
  static void Patch(string original,string plugin,string output) {
+    var mod=dnlib.DotNet.ModuleDefMD.Load(original);
+    var addon=dnlib.DotNet.ModuleDefMD.Load(plugin);
+    var target=mod.Types.FirstOrDefault(x=>x.Name=="MapBox")??
+        throw new InvalidOperationException("No MapBox in original");
+    var start=target.Methods.FirstOrDefault(x=>x.Name=="Start" &&
+        x.MethodSig.Params.Count==0 && !x.IsStatic && x.HasBody) ??
+        throw new InvalidOperationException("No MapBox.Start()");
+    if(start.Body.Instructions.Any(x=>x.Operand?.ToString()?.Contains("XianxiaMonoBridge")==true))
+        throw new InvalidOperationException("Already injected");
+    var entry=addon.Types.FirstOrDefault(x=>x.FullName=="XianxiaMonoBridge.Entry");
+    if(entry?.Methods.FirstOrDefault(x=>x.Name=="Install"&&x.IsPublic&&x.IsStatic)==null)
+        throw new InvalidOperationException("Missing public original Mono overlay bootstrap");
+    var reference=new dnlib.DotNet.AssemblyRefUser(addon.Assembly);
+    mod.AssemblyRefs.Add(reference);
+    var typeRef=new dnlib.DotNet.TypeRefUser(mod,"XianxiaMonoBridge","Entry",reference);
+    var methodRef=new dnlib.DotNet.MemberRefUser(mod,"Install",
+        dnlib.DotNet.MethodSig.CreateStatic(mod.CorLibTypes.Void),typeRef);
+    start.Body.Instructions.Insert(0,
+        dnlib.DotNet.Emit.Instruction.Create(dnlib.DotNet.Emit.OpCodes.Call,methodRef));
+    // dnlib writes without Cecil resolving netstandard forwarded type constants.
+    mod.Write(output);
+    Console.WriteLine("PASS_MONO_ENTRYPOINT_PATCHED MapBox.Start only "+output);
+ }
+ static void Verify(string original,string patched,string plugin) {
+    var a=dnlib.DotNet.ModuleDefMD.Load(original);
+    var b=dnlib.DotNet.ModuleDefMD.Load(patched);
+    var p=dnlib.DotNet.ModuleDefMD.Load(plugin);
+    var aa=a.Types.First(x=>x.Name=="MapBox").Methods.First(x=>x.Name=="Start").Body.Instructions;
+    var bb=b.Types.First(x=>x.Name=="MapBox").Methods.First(x=>x.Name=="Start").Body.Instructions;
+    if(bb.Count!=aa.Count+1 ||
+       bb[0].OpCode!=dnlib.DotNet.Emit.OpCodes.Call ||
+       !bb[0].Operand.ToString().Contains("XianxiaMonoBridge.Entry::Install"))
+       throw new InvalidOperationException("Bootstrap IL not isolated at MapBox.Start prologue");
+    for(int i=0;i<aa.Count;i++)
+        if(aa[i].OpCode!=bb[i+1].OpCode || aa[i].Operand?.ToString()!=bb[i+1].Operand?.ToString())
+            throw new InvalidOperationException("Original MapBox.Start IL diverged at instruction "+i);
+    if(a.Types.Count!=b.Types.Count)throw new InvalidOperationException("Original classes changed");
+    if(!b.GetAssemblyRefs().Any(x=>x.Name==p.Assembly.Name))
+        throw new InvalidOperationException("Companion Mono assembly ref missing");
+    Console.WriteLine("PASS_MODIFIED_ENTRYPOINT_ONLY originalMethodsPreserved="+aa.Count);
+ }
+ static void CecilPatch(string original,string plugin,string output) {
    using var game=AssemblyDefinition.ReadAssembly(original,Resolved(original));
    using var addon=AssemblyDefinition.ReadAssembly(plugin,Resolved(plugin));
    var entry=FindStartup(game);
@@ -104,7 +146,7 @@ class Program {
    game.Write(output,new WriterParameters{WriteSymbols=false});
    Console.WriteLine("PATCHED_MAPBOX_START "+output+" game="+game.Name.Name+" plugin="+addon.Name.Name);
  }
- static void Verify(string original,string patched,string plugin) {
+ static void CecilVerify(string original,string patched,string plugin) {
   using var a=AssemblyDefinition.ReadAssembly(original,Resolved(original));
   using var b=AssemblyDefinition.ReadAssembly(patched,Resolved(patched));
   using var p=AssemblyDefinition.ReadAssembly(plugin,Resolved(plugin));
