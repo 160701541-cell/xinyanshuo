@@ -142,3 +142,24 @@ jobs:
           path: /tmp/worldbox-v13-artifacts/
           if-no-files-found: error
           retention-days: 14
+
+  private-user-file-apk-inspector:
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with: { dotnet-version: '8.0.x' }
+      - name: 'Build standalone generic Mono DLL IL inspector/patcher for locally owned APK files'
+        run: |
+          dotnet publish tools/worldbox-xianxia/private-apk-lab/GameAssemblyToolkit.csproj \
+            -r linux-x64 -c Release --self-contained true \
+            -p:PublishSingleFile=true -p:PublishTrimmed=false -o /tmp/worldbox-user-private-helper
+          test -f /tmp/worldbox-user-private-helper/GameAssemblyToolkit
+          echo 'NO user-owned APK or commercial game binaries uploaded to public GitHub.'
+      - uses: actions/upload-artifact@v4
+        with:
+          name: 'worldbox-v13-generic-private-apk-assembly-toolkit-linux-x64'
+          path: /tmp/worldbox-user-private-helper/
+          if-no-files-found: error
+          retention-days: 3
