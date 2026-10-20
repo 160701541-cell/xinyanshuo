@@ -410,3 +410,15 @@ Work仍负责私有APK整合、签名、安卓16真机验收。不得上传商�
 真正新增原创Python签名前四字节zip对齐器`private_zipalign_python_v30.py`及合成回归（不含商用文件），私有APK测试签名密钥和密码**仅保存私有Work文件库**，绝不进入公开GitHub。v0.30包仍为`SIGNED_PRIVATE_APK_DEVICE_PENDING`。
 
 Work下一步：在真实Android16手机运行这一准确SHA256包，收集`MOD_DEPLOY_BEGIN/OK`、`NML_ASSEMBLY_LOADED`和观察失败的完整压缩日志；根据真实Mono参考程序集修补独立原生桥编译，再处理窗口和命名问题。签名差异须先保全旧存档、不可强制卸载。
+
+
+---
+
+## 2026-10-21 P0真机安装报错：签名冲突已确诊；已制作隔离并行测试包（未实测）
+
+- 用户安装截图清楚显示：「安装失败／已安装了签名冲突的应用」。这属于同包名签名不匹配，**与APK自身签名验证成功不是一回事**，也不是修仙玩法错误。此前做v0.28/v0.30时反复生成新签名证书导致用户无法正常覆盖，必须承认流程缺陷。
+- 已按本分支日志追溯并在私有容器对实际四份APK调用Android `apksigner verify --print-certs`：旧v14/v18 SHA256 `a1fa2827668e11da772e9984f277623bb95fc7e0556622a755b7117b8c407104`；v0.28 `70d2cd47f69dc29d7126597b166521e68b4d7da3525ba44d070ad8e0137ea846`；v0.30 `20087dc8c210c7c6a35a4492500324f33f36f7c5eb3a77dc62040c21281c400e`。原APK的签名私钥未找到，**不能复用原证书签新同包名**。此前只检查签名有效、忽略升级签名连续性是P0流程遗漏。
+- 为不让用户卸载旧`com.xinyanshuo.worldbox.lab13`导致存档损失，实际制作一份**新包名并行测试v0.31** `com.xinyanshuo.worldbox.lab31`（原v0.30玩法候选不新增新玩法）：`WorldBox_v031_Isolated_Install_DEVICE_PENDING.apk`，187840198字节，SHA256 `37c271ad006df570496231b777547c7a5ab57b36a193b5e16ff0ecf8d1766c1f`。准确补丁11条AXML包名、1条资源包名、11条DEX类命名；重算DEX SHA1/Adler32、重新ZIP 4/16K对齐、用v0.30的私有测试证书签名。APK签名v1/v2/v3、ZIP CRC及包名二进制读回检查全通过；未经Android16安装/Unity运行，不能把静态签名合格等同真机可玩。
+- **私有文件已上传并回传成功**：`/WorldBox-万界仙侠/Work交接/WorldBox_v031_Isolated_Install_DEVICE_PENDING.apk`、`WorldBox_v031_signer_gate_report.json`、`private_side_by_side_v31.py`、`private_signing_gate_v31.py`；不向GitHub公开分发商业WorldBox。
+- 签名兼容门禁补进独立分支源代码及6项本地Python合成测试（均通过），离线还核验基线v18和最新v31签名证书，输出明确`SEPARATE_APP_ID`。旧应用/旧存档绝不卸载；`lab31`是单独新数据目录，不自动继承旧存档，可能被游戏SDK授权/包名关联限制，手机测试结果决定是否可继续使用。
+- **后续优先级**：真实Android16安装实验版→实际Unity/NML/日志与玩法→寻找原v18签名密钥（只有找到才能按旧包名签升级版）→修复原生桥编译失败、观察FAILED、UI叠层/人物名称和2048地图。不要再无故换签名，不要修改苍岚main。
