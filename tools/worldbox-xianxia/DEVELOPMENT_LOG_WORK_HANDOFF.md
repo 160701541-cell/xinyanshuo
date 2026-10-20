@@ -187,3 +187,61 @@ WorldBox. Phone save migration remains a separate unimplemented acceptance item.
 - Delivery integrity: host-upload initially truncated the APK central directory; caught by post-upload SHA/signature verification. Rebuilt signed bytes from aligned input and switched to exact-size prepared transfer; do not distribute the invalid intermediate.
 
 - Prepared transfer saved the full 167723254-byte APK; downloaded it back for SHA256/v1-v2-v3 signature and alignment verification before providing the user link. Final status: USER_DEVICE_TEST_CANDIDATE, no Android runtime pass claim.
+
+## 2026-10-20 — v15 fixes device-reported resource namespace crash
+
+### Real device failure (v14 acceptance FAIL)
+
+User installed v14 on OnePlus PKR110 / Android16 and returned the diagnostic
+report. Native launcher works and records START_UNITY_REQUEST, then Unity
+2022.3.62f3 crashes in `com.unity3d.player.i0.a(Context)` with
+`Resources$NotFoundException: String resource ID #0x0`. No Mono log yet.
+This is a pre-MOD startup failure, not evidence of MOD load success.
+
+Root cause: v14 manifest application ID was changed for side-by-side installation
+but the fixed package name field in resources.arsc remained
+`com.mkarpenko.worldbox`. Read the actual classes3.dex method: Unity calls
+getIdentifier("game_view_content_description", "string", context.getPackageName())
+then getString(id) without checking zero. The v14 parser confirms the string
+exists under the original resource package and is absent under the cloned one.
+The same mismatch also affected unitySurfaceView ID lookup. This was a packaging
+oversight in v14, not a user installation error.
+
+### Fix and checks
+
+- Added original `clone_resource_table.py`; changes only ResTable_package's
+  UTF16[128] package name field. Exactly **25 bytes** differ in the real
+  table; table length, package numeric ID, resource IDs, offsets, values,
+  translations and all configurations remain byte-for-byte intact.
+- Packaging now synchronizes both manifest and compiled resource identity.
+  Manifest/app remains `com.xinyanshuo.worldbox.lab13`, same test certificate
+  as v14. versionCode raised **725 → 726**; label and diagnostics now v15.
+  User can update v14 without uninstall/clear-data; no original app access.
+- Added native launcher preflight resolving both critical resources using
+  Android getResources/getIdentifier before requesting Unity. It logs the
+  IDs; missing IDs now yield a readable diagnostic rather than knowingly
+  calling into the same failing Unity path.
+- Recompiled Java diagnostics and original Mono bridge against exact APK
+  references; entry-hook verification again passes across 20597 method bodies.
+- Python regression: **41 tests passed**, including new synthetic fixed-field
+  preservation and missing/duplicate/oversized/truncated table rejection.
+- Final APK resource parser: package name matches cloned manifest;
+  game_view_content_description resolves to **0x7f0e0053** and unitySurfaceView
+  to **0x7f07017e**, exactly matching their original numeric IDs. This same
+  cloned-package lookup returns absent in v14, reproducing the static defect.
+- Original native libraries and classes.dex/classes2/3/4.dex remain unchanged.
+  Permission set matches v14. No billing/entitlement changes.
+- v1/v2/v3 verification succeeds. Dedicated test certificate unchanged;
+  build uses atomic publication from a fully signed temporary file to avoid
+  exposing partially-written large artifacts. ZIP alignment verified.
+
+### User test candidate
+
+- `WorldBox_Xianxia_v15_Android_Test.apk`: **167723254 bytes**.
+- SHA256: `162c2bcc2146b59cc65730bdf544de58cd0a486d9fb66a5ee4b66ea46258f87c`.
+- Android runtime status: **USER_PENDING**. The package defect is statically
+  corrected; a new phone launch is still required before marking startup passed.
+- Full third-party MOD integration, huge-map pressure tests, gameplay and
+  save-load QA remain open. No claim that v15 is the final integrated edition.
+- User flow: update the existing test app directly, tap Start Game. If it fails,
+  reopen diagnostics, Copy Error Log and return it; preserve old WorldBox.
