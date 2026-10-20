@@ -242,12 +242,37 @@ func _import_character() -> void:
     avatar.name="知音 · 65关节Humanoid骨骼角色"
     avatar_idle=avatar.position
     avatar_target=avatar.position
-    var candidates:=avatar.find_children("*","AnimationPlayer",true,false)
-    if not candidates.is_empty():
-        avatar_animation=candidates[0] as AnimationPlayer
-        var tracks:=avatar_animation.get_animation_list()
-        if tracks.has("idle"):
-            avatar_animation.play("idle")
+    # Official CC0 Universal Animation Library 1 / Standard:
+    # this actor and the motion library use EXACTLY the same 65 bone names.
+    # The original motions are actual 3D skeletal keyframes, NOT procedural
+    # arm/leg swaying, nor visual frames painted onto a 2D cutout.
+    var motion_scene := load("res://assets/animation/UAL1_Standard.glb") as PackedScene
+    if motion_scene==null:
+        push_error("原版Quaternius骨骼动画缺失")
+        return
+    var source := motion_scene.instantiate() as Node3D
+    var src_players := source.find_children("*","AnimationPlayer",true,false)
+    if src_players.is_empty():
+        push_error("标准Humanoid动画中没有AnimationPlayer")
+        source.free()
+        return
+    var src := src_players[0] as AnimationPlayer
+    var rig_root := avatar.get_child(0) as Node3D
+    avatar_animation=AnimationPlayer.new()
+    avatar_animation.name="知音骨骼动作播放器"
+    avatar_animation.root_node=NodePath("..")
+    rig_root.add_child(avatar_animation)
+    var clips := AnimationLibrary.new()
+    for clip_name in src.get_animation_list():
+        var clip := src.get_animation(clip_name)
+        var copied := clip.duplicate(true) as Animation
+        if copied!=null:
+            clips.add_animation(clip_name,copied)
+    avatar_animation.add_animation_library("",clips)
+    source.free()
+    if avatar_animation.has_animation("Idle"):
+        avatar_animation.play("Idle")
+        _status("真人形骨骼待机动作已接入")
 
 func _setup_camera() -> void:
     camera=Camera3D.new()
@@ -272,14 +297,14 @@ func _process(delta:float) -> void:
         var movement: Vector3 = to.normalized()*minf(to.length(),delta*.65)
         avatar.position+=movement
         avatar.rotation.y=lerp_angle(avatar.rotation.y,atan2(movement.x,movement.z),delta*8.0)
-        if avatar_animation!=null and avatar_animation.has_animation("walk"):
-            if avatar_animation.current_animation!="walk":
-                avatar_animation.play("walk")
+        if avatar_animation!=null and avatar_animation.has_animation("Walk"):
+            if avatar_animation.current_animation!="Walk":
+                avatar_animation.play("Walk",0.20)
     else:
         idle_seconds+=delta
-        if avatar_animation!=null and avatar_animation.has_animation("idle"):
-            if avatar_animation.current_animation!="idle":
-                avatar_animation.play("idle")
+        if avatar_animation!=null and avatar_animation.has_animation("Idle"):
+            if avatar_animation.current_animation!="Idle":
+                avatar_animation.play("Idle",0.25)
 
 func _make_style(color:Color)->StyleBoxFlat:
     var st:=StyleBoxFlat.new()
