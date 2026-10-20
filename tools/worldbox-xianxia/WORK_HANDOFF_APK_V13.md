@@ -42,3 +42,17 @@ One downloadable Android APK that installs and actually runs WorldBox with reada
 - Existing experimental map planner treats one chunk as 64 × 64 tiles. Thus 2000 / 64 = 31.25 chunks per side; a chunk-aligned **32 × 32 map is 2048 × 2048 tiles = 4,194,304 tiles**, 16 × the area of the 512 × 512 baseline. The exact 2000 × 2000 size is only appropriate if the actual WorldBox map APIs support non-chunk-aligned dimensions; validate before promising either.
 - This request specifically prioritizes a large map on Snapdragon 8 Elite. The Work integrator should attempt an **opt-in 2048 × 2048 stress-test preset**, without removing smaller defaults, and test world generation, memory, NPC simulation, save-load, battery/thermal behavior. Use conservative population/AI throttling and staged stress tests; do not pretend high-end SoC guarantees this can run.
 - Never change existing saves or silently auto-upscale pre-existing maps. Keep experimental selection off by default until Android device QA passes. If 2048² fails, report measurements and fall back to the largest proven stable preset; do not mislabel smaller sizes as 2000².
+
+
+## 2026-10-20 — 用户最终确认：十二层常规上限与逆天十三层
+
+以下规则覆盖 v18 中“常规十三层”的旧设计，适用于每个大境界：
+
+- 常规境界为一至十二层。十二层之后正常突破应进入下一大境界，十三层不是普通升级路线。
+- 十三层只有一种来源：天赋极高者在十二层冲击下一大境界，表面突破失败，实质发生异变进入当前境界的隐藏十三层。不得让普通天赋、普通突破失败或反复点击直接产生十三层。
+- 这一异变按相当于一次突破两层的异常跃升设计；在“一层修为一层天”的世界法则下，属于可轻松越阶杀敌的极罕见强者。具体战斗系数尚待实现与验证，不能把普通十三层加一点属性视作完成。
+- 异变引来真实天劫，世界全体收到消息；事件须关联真实人物、当前境界及渡劫结果。示例文案：“【天道异象】某某冲关未入下一境，却踏入逆天十三层，天劫将临！”
+- 天劫的触发、承受、存活和死亡应独立记录；天劫触发或世界消息出现本身不等于渡劫成功。玩家为天道观察与干预者。
+- 存档迁移必须区分旧版常规十三层与真正的隐藏十三层，不能误删合法异变人物。具体迁移方案须测试后交付。
+
+本轮实际检查：已读取交接规范、project_scope.json 和开发日志；远程 CelestialRulesV19.cs 返回404，当前工作目录无上一轮源码、私有APK或签名构建文件。上文是已确认设计要求，**不是 v19 已集成或已打包的证明**。v18既有结果维持原记录。v19编译、打包、签名、安卓玩法与存档验证均未在本轮完成，禁止声称已交付。
