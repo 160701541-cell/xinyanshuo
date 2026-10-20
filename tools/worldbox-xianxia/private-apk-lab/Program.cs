@@ -128,14 +128,25 @@ class Program {
         throw new InvalidOperationException("Companion Mono assembly ref missing");
     Console.WriteLine("PASS_MODIFIED_ENTRYPOINT_ONLY originalMethodsPreserved="+aa.Count);
  }
+ static dnlib.DotNet.MethodDef FindRuntimeTick(dnlib.DotNet.ModuleDefMD mod) {
+   foreach(var item in new[]{
+     ("XianxiaMonoBridge.Overlay","Update"),
+     ("XianxiaMonoBridge.Overlay","OnGUI"),
+     ("XianxiaMonoBridge.CultivationBridgeV18","Update"),
+     ("XianxiaMonoBridge.CultivationBridgeV18","OnGUI")})
+   {
+     var type=mod.Types.FirstOrDefault(x=>x.FullName==item.Item1);
+     var method=type?.Methods.FirstOrDefault(x=>x.Name==item.Item2&&!x.IsStatic&&x.HasBody&&x.Parameters.Count==0);
+     if(method!=null)return method;
+   }
+   throw new InvalidOperationException("no verified legacy Unity gameplay tick; stop private patch");
+ }
  static void PatchMapBridge(string original,string helper,string output) {
    var mod=dnlib.DotNet.ModuleDefMD.Load(original);
    var addon=dnlib.DotNet.ModuleDefMD.Load(helper);
    var overlay=mod.Types.FirstOrDefault(t=>t.FullName=="XianxiaMonoBridge.Overlay")
      ?? throw new InvalidOperationException("expected legacy Mono UI Overlay absent");
-   var update=overlay.Methods.FirstOrDefault(m=>m.Name=="Update"&&!m.IsStatic&&m.HasBody&&m.Parameters.Count==0)
-     ?? overlay.Methods.FirstOrDefault(m=>m.Name=="OnGUI"&&!m.IsStatic&&m.HasBody&&m.Parameters.Count==0)
-     ?? throw new InvalidOperationException("legacy Mono Overlay has neither Update nor OnGUI");
+   var update=FindRuntimeTick(mod);
    if(update.Body.Instructions.Any(i=>i.Operand?.ToString()?.Contains("MapPresetBridgeV32")==true))
      throw new InvalidOperationException("2048 hook already inserted; do not duplicate");
    var bridge=addon.Types.FirstOrDefault(t=>t.FullName=="XianxiaWorldBox.MapPresetBridgeV32")
@@ -153,12 +164,10 @@ class Program {
    var before=dnlib.DotNet.ModuleDefMD.Load(original);
    var after=dnlib.DotNet.ModuleDefMD.Load(patched);
    var addon=dnlib.DotNet.ModuleDefMD.Load(helper);
-   var oldType=before.Types.First(t=>t.FullName=="XianxiaMonoBridge.Overlay");
-   var newType=after.Types.First(t=>t.FullName=="XianxiaMonoBridge.Overlay");
-   var method=oldType.Methods.FirstOrDefault(m=>m.Name=="Update"&&!m.IsStatic&&m.HasBody&&m.Parameters.Count==0)
-     ?? oldType.Methods.First(m=>m.Name=="OnGUI"&&!m.IsStatic&&m.HasBody&&m.Parameters.Count==0);
+   var method=FindRuntimeTick(before);
+   var next=FindRuntimeTick(after);
    var aa=method.Body.Instructions;
-   var bb=newType.Methods.First(m=>m.Name==method.Name&&m.Parameters.Count==0).Body.Instructions;
+   var bb=next.Body.Instructions;
    if(bb.Count!=aa.Count+1||bb[0].OpCode!=dnlib.DotNet.Emit.OpCodes.Call||
       !(bb[0].Operand?.ToString()?.Contains("MapPresetBridgeV32::Tick")??false))
       throw new InvalidOperationException("map bridge inserted IL differs from expected");
