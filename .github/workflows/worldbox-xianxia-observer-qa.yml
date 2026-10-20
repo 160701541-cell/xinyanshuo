@@ -1,0 +1,35 @@
+name: WorldBox xianxia observer P0 source safety QA
+on:
+  push:
+    branches:
+      - worldbox/xianxia-observer-v06
+    paths:
+      - tools/worldbox-xianxia/nml-observer-v06/**
+      - .github/workflows/worldbox-xianxia-observer-qa.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  static-source-gate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate mod build, NML class, and read-only contract
+        run: |
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          p=Path('tools/worldbox-xianxia/nml-observer-v06/android-probe')
+          meta=json.loads((p/'mod.json').read_text())
+          code=(p/'Code/AndroidLoadProbe.cs').read_text()
+          assert meta['targetGameBuild']==725
+          assert meta['GUID']=='XINYANSHUO_XIANXIA_ANDROID_PROBE'
+          assert 'BasicMod<AndroidLoadProbe>' in code and 'OnModLoad()' in code
+          assert 'World.world.GetTile' in code and 'World.world.camera' in code
+          assert 'OnGUI()' in code and 'REAL_WORLD_TILE' in code
+          for unsafe in ('spawnNewUnit(', 'setTileDirty(', 'saveWorld(', 'HarmonyPatch','File.WriteAll'):
+              assert unsafe not in code,unsafe
+          assert not any(p.rglob('*.dll')) and not any(p.rglob('*.apk'))
+          print('PASS_SOURCE_CONTRACT. C# build + Android real device still PENDING.')
+          PY
