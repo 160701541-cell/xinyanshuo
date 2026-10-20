@@ -81,7 +81,7 @@ jobs:
         run: |
           set -euo pipefail
           sudo apt-get update -qq
-          sudo apt-get install -y -qq xvfb libgl1-mesa-dri mesa-utils >/dev/null
+          sudo apt-get install -y -qq xvfb libgl1-mesa-dri mesa-utils fonts-noto-cjk >/dev/null
           LIBGL_ALWAYS_SOFTWARE=1 timeout 90s xvfb-run -a -s "-screen 0 1280x720x24" \
             /tmp/Godot_v4.4.1-stable_linux.x86_64 --path . \
             --rendering-method gl_compatibility --script res://tests/capture_frame.gd \
