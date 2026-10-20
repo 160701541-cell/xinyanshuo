@@ -13,6 +13,11 @@ namespace XianxiaWorldBox
         public static bool Enabled { get; private set; }
         public static string Report { get; private set; } = "未开启。8x8是原版Titanic尺寸。";
         public static bool Armed { get; private set; }
+        public static bool ExtremeArmed { get; private set; }
+        public static bool ExtremeRegistered { get; private set; }
+        public const int ExtremeChunks = 32;
+        public const int ExtremeTiles = 2048;
+        public const long ExtremeTileCount = 4194304L;
         public const int MaxExperimentalChunks = 20;
         public static readonly int[] CandidateChunks = { 10, 12, 16, 20 };
         static readonly BindingFlags F = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.Instance;
@@ -54,6 +59,52 @@ namespace XianxiaWorldBox
             try { return Report = TryRegister(); }
             catch (Exception ex) { return Report = "未注入，原因：" + ex.GetType().Name + "，请保留NML日志。"; }
         }
+        // Separate, explicit 32x32 test mode. Does NOT affect the standard 10/12/16 choices.
+        // It only attempts registration of a NEW-world preset, never generation or save writes.
+        public static string OnExtremeTap()
+        {
+            if (ExtremeRegistered) return "32×32 (2048×2048) 实验档已申请注册；实际生成仍需Work和实机验证。";
+            if (!ExtremeArmed)
+            {
+                ExtremeArmed = true;
+                return "风险确认：2048×2048有4194304格，可能内存不足。仅新建世界，先备份存档；再按一次。";
+            }
+            ExtremeArmed = false;
+            try
+            {
+                return TryRegisterExtreme();
+            }
+            catch(Exception e)
+            {
+                return "2048实验地图未启用：" + e.GetType().Name + "；没有修改已有世界。";
+            }
+        }
+
+        private static string TryRegisterExtreme()
+        {
+            var asm = typeof(World).Assembly;
+            var manager = asm.GetType("AssetManager");
+            var sizeType = asm.GetType("MapSizeAsset");
+            if (manager == null || sizeType == null) return "游戏地图尺寸接口不匹配，停止实验。";
+            var lib = Member(manager,"map_sizes");
+            if (lib == null) return "地图尺寸库缺失，停止实验。";
+            var add = lib.GetType().GetMethods(F)
+                .FirstOrDefault(m=>m.Name=="add"&&m.GetParameters().Length==1);
+            if (add == null) return "地图尺寸库不支持注册，停止实验。";
+            var original=Member(lib,"titanic");
+            if(original==null) return "缺少原版地图库模板，停止实验。";
+            object asset=Activator.CreateInstance(sizeType);
+            if(asset==null||!Set(asset,"id","xianxia_extreme_32")||
+               !Set(asset,"size",ExtremeChunks))
+                return "地图尺寸属性不兼容，未改动。";
+            var icon=Member(original,"path_icon");
+            if(icon!=null)Set(asset,"path_icon",icon);
+            Set(asset,"show_warning",true);
+            add.Invoke(lib,new[]{asset});
+            ExtremeRegistered=true;
+            return "已提交32×32候选（2048×2048），不是地图生成通过。需要Work实机测试和保存读取。";
+        }
+
         private static string TryRegister()
         {
             // Do not call generateMap(), setMapSize() or any save/terrain mutations.
