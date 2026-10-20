@@ -165,6 +165,7 @@ namespace XianxiaWorldBox
         {
             if(!versionOK)return;
             NativeWorldBoxUiV32.Tick(Time.unscaledTime);
+            EconomyVanillaTabsV35.Tick();
             ChineseWorldNamesV30.Tick(World.world,Time.unscaledTime);
             RepairOwnTraitGroups();
             if((!GiantMapOptionsV11.ExtremeChoiceReady||!GiantMapOptionsV11.ExtremeLabelReady)&&Time.unscaledTime>=nextMapChoiceCheck){
