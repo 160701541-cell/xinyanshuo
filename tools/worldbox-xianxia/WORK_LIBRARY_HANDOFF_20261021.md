@@ -239,3 +239,13 @@ Work下一步：在真实Android16手机运行这一准确SHA256包，收集`MOD
 - **已真正用v0.37私有原APK增量制作`WorldBox_万界仙侠_v038_实机MOD故障诊断_待实机.apk`**，188042967字节，SHA256 `65dc2ec13f5c2d25c6c2fe94fb437b0b947c547477a95b410f680aaf5644ed73`，包名`com.xinyanshuo.worldbox.lab31`，沿用lab31原有测试签名指纹`20087dc8c210c7c6a35a4492500324f33f36f7c5eb3a77dc62040c21281c400e`。全APK ZIP CRC及Android v1/v2/v3验签通过，原WorldBox`assets/Mono/Managed.zip`、游戏主程序集、AndroidManifest不变。除签名metadata外只更新自有`classes5.dex`和部署`install.json`（build`v38-observer-zip-diagnostic-c6ce167f0bbffd91`）。与lab13不是同一个包名，不要覆盖或卸载旧lab13。
 - 此私有APK及JSON审计已经实际上传用户ChatGPT Library`/WorldBox-万界仙侠/Work交接/`。**没有Android16安装验收，observer具体修复仍为红灯**，必须等待用户通过新版入口【导出并分享完整日志ZIP】上传实际异常；不要声称v38修复了ZIP自身损坏或观察模块FAILED。
 - 公开GitHub只放自有代码、QA及本报告，**不上传商业WorldBox游戏APK、玩家存档或私钥**；苍岚main未修改。
+
+
+## 2026-10-21 v0.39 真机启动闪退P0：静态证据确认修复（待实机复核）
+- 用户称刚交付的v0.38直接闪退，未进入游戏。对照本人先前交付的v0.38和v0.37**实际APK**，确诊v0.38的AndroidManifest是 lab31，但被错误直接引入的classes5.dex包含18个诊断类全部声明于lab13（尤其 Lcom/xinyanshuo/worldbox/lab13/DiagnosticsActivity;），而Manifest需要 lab31.DiagnosticsActivity；这是Android找不到Launcher类而启动崩溃的直接静态根因，**此前“v38已签名通过”对功能可用无效**。
+- 已真正从v0.38原有私人实验安装包生成v0.39，修复全部18个Java类包名 lab13→lab31（等长原地替换，自带SHA1+Adler32修复），维护原AndroidManifest，使用**相同**lab31测试证书重新打包签名。除签名外仅有自有classes5.dex及部署install.json改变；真实WorldBox商业主程序集、MonoManaged、171原创图标、经济内核、地图预设均无改动。
+- 实际签名APK：WorldBox_万界仙侠_v039_安卓闪退修复_100x100地图保留_待实机.apk，188042967字节，SHA256 fbe9a980afdeb0a44aae0bffce110cd7f7902f5cf52609d2c63a426360900fc5，同lab31证书 SHA256 20087dc8c210c7c6a35a4492500324f33f36f7c5eb3a77dc62040c21281c400e；真实APK v1/v2/v3签名验证、13605项ZIP CRC、Manifest/DEX类名、原文件其他CRC不变验证均通过。
+- v0.39保留经Mono DLL实际检查的 100×100区块（xianxia_extreme_100，约6400×6400地图格）和50×50区块选项，**地图实际生成、内存/存档与兼容NML加载仍待安卓16验收**。原日志中观察MOD FAILED 也未因为修正安卓启动类而自动修复。
+- 将完整v0.39私有APK、真实签名/根因校验JSON、签名重建脚本成功上传用户Work Library /WorldBox-万界仙侠/Work交接/。不要上传商业APK/密钥到公开仓库。
+- 新增源代码硬门禁 private-apk-lab/verify_android_package_consistency_v39.py 和 test_v39_manifest_dex_gate.py，CI里加入合成包回归：Manifest是lab31而DEX是lab13必须明确失败，防止重犯。GitHub公有CI只用模拟文件，不包含商业APK或私钥。
+- **真实验收级别**：P0启动崩溃根因已静态确认并修复签名包，但v0.39尚未在用户PKR110上实机启动成功；优先安装v0.39尝试覆盖同证书lab31。如果依然闪退，需新版本导出android崩溃记录以定位其它根因；绝不继续宣称用户手机已正常运行。与苍岚main严格隔离。
