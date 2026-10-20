@@ -1,3 +1,22 @@
+## 2026-10-21 · 真实3D建模/材质引擎底座（代替Canvas的独立迁移模块，非安卓发布版）
+
+**用户指出的真实问题**：v0.7仍靠画布+PNG模拟2.5D，不具备真正三维模型、UV/PBR材质体系、模型可交互碰撞、骨骼动画及灯光。之前把技术占位场景称为2.5D游戏是不当验收；立即转向Godot 4.4.1真实3D场景技术。
+
+**当前真实提交**：`zhiyin-real3d/`，仍在《知音》的同一隔离分支，不触碰《苍岚》和WorldBox。
+- 真实GLB资产：从Kenney CC0指定commit导入17项二进制glTF模型，逐个验证mesh、material、textures、skins、animations和SHA256；场景中实际实例化12个模型（含一位低质临时角色），而非之前直接贴屏幕的等轴测PNG。
+- **物理材质**：三类材质共9张单独albedo/normal/roughness地图，Godot StandardMaterial3D真3D采样；木质地板墙面真实Mesh、两盏3D灯、阴影、家具Area3D/Physics物件和触摸射线。
+- Godot 4.4.1项目`project.godot`、`scenes/apartment.tscn`、`apartment.gd`、引入脚本`tools/import_cc0_models.py`、`tools/generate_materials.py`。独立QA工作流`.github/workflows/zhiyin-real3d.yml`。
+- **真正引擎QA证据**：GitHub Actions run `39464527497` 全部步骤成功。Godot 4.4.1执行资源导入+脚本解析+场景运行；输出`models=12 meshes=56 lights=2 pbr=28`。使用Linux Mesa/Xvfb真实Godot渲染出1280×720 PNG，不是AI概念图。产物有`zhiyin-real3d-project.zip`（实际GLB/9张PBR贴图+源代码+QA）和真实渲染截图。
+- QA截图确实能看见床、书柜、桌椅、窗、地毯、小家电、沙发、盆栽、临时角色与光照；然而截图仍暴露角色过度卡通、比例有偏差、家具轻微穿插和灯光硬、缺少装饰/技能细节与完整材质统一问题，**不能标高美术通过**。
+
+**明确的P0红项**：
+1. 现阶段角色Kenney `character-f.glb` 确认具27项动画但`skins=0`，属于轻量块状临时模型，不是具完整Humanoid骨骼和面部表情的合格角色，**必须换成经过许可核验与Godot实机验证的高质量绑定人物**，优先研究Quaternius Universal Base Characters CC0和Universal Animation Library。
+2. **Godot场景并未接入v0.7现有Android原生APK**，旧APK仍旧Canvas，不许把Godot工程、QA截图冒充已经交到用户手机里的升级版；模型/API/记忆/生活数据尚未完成Android-Godot双向桥接。
+3. 角色移动目前只有目标点插值，尚无NavMesh可靠寻路、骨骼动画状态机、坐卧/做饭/交互物件手部IK；不许以“已拥有完整自主生活”宣传。
+4. UI虽然在Godot能显示中文并可点击，但仍是极简技术界面，不属于正式高品质产品UI。
+5. **没有Godot Android实际APK导出/安卓实机截图/目标设备帧率温度验收**。此轮只可宣布真3D引擎资源导入与渲染QA通过。
+
+**下一步先完成**：高质量人物正式角色、骨骼动画及统一室内高质量材质+真实碰撞/导航；在真实Godot场景内通过QA后，以Android集成/桥接替换旧Canvas主场景并做手机测试。不再累加旧Canvas占位组件。
 ### v0.7 最终CI候选构建确认（更新2026-10-21）
 - GitHub Actions run **39456619579**，提交 **0a7c810b**；Gradle assembleDebug 成功，Android APK v2签名校验成功，`aapt`检查包名/版本通过。
 - APK包名 `com.xinyanshuo.zhiyin.companion`，versionCode=7，versionName=0.7.0。证书指纹：`0df240c639c5988480fc333f3ce985b386508e932879e59a9d3ccd2da4d9ad90`，与v0.4–v0.6当前公开实验签名相同。
