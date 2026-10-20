@@ -29,6 +29,7 @@
     <Compile Include="../localization/UntranslatedMenuAuditV23.cs" />
     <Compile Include="../localization/ChineseKeyPackV24.cs" />
     <Compile Include="../localization/NativeLocaleBridgeV23.cs" />
+    <Compile Include="../localization/OwnLocaleLabelsV25.cs" />
     
     <Compile Include="stubs/WorldBoxApiStubs.cs" />
   </ItemGroup>
