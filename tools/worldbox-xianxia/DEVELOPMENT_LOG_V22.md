@@ -228,3 +228,27 @@ Work仍负责私有APK整合、签名、安卓16真机验收。不得上传商�
 - 实际拉取Actions生成的嵌套ZIP，逐个运行ZIP CRC、解析包内`mod.json`确保版本确实为`0.27.0-chinese-device-pending`，其中传统Mono源文件核实包含原生简中非覆盖安全门禁；新版NML根目录仅一个SDK编译DLL并带`Locales/cz.json`和`en.json`。
 - 真实v0.27独立MOD ZIP（非APK）：`WorldBox_万界仙侠_v0.27_传统Mono源码MOD_待实机.zip` 48,547字节，SHA256 `f5ebde042db9edf373a1f78972a8faa54e732517e28a4e822b6cad02412fd2e6`；`WorldBox_万界仙侠_v0.27_安卓NML预编译MOD_待实机.zip` 42,943字节，SHA256 `75dfa8e734d70ce3350951332e0b3ab1e649059f31c7537c4e4eabc9574c0bda`。均已过ZIP CRC；两种安装路线不应混用。
 - **状态严格不变：**这是两份测试候选MOD，不是完整、签名、已安装或手机验收的WorldBox游戏APK。当前唯一P0阻塞是用户Android16真实MOD加载器引导链与后续私有构建/现场验收。Work按交接文档执行，不动苍岚main。
+
+
+---
+
+## 2026-10-20 v0.28 私有安卓整合候选：基于用户已上传 v18 引导实验APK真正嵌入 v0.27 Mono 汉化MOD
+
+### 本轮关键新事实（纠正只盯用户“原始0.51.4 APK”的旧阻塞）
+- 再次追踪用户文件库，发现用户**此前已经提供** `WorldBox_Xianxia_v14_Android_Test.apk` 与 `WorldBox_Xianxia_v18_Cultivation_Test.apk`；不是只能使用没有引导器的原始APK。
+- 实际对两个历史私有APK做字节级只读差异：v14已有新增 `classes5.dex`，且 `assets/Mono/Managed.zip` 相比原始APK多出 `WorldBoxXianxiaMonoBridge.dll`、改动 `Assembly-CSharp.dll`。**v18保留上述引导尝试**，并通过 `assets/worldbox-xianxia/v18/install.json` 列出714个可供部署的资源，内含 `files/mods/NeoModLoader.dll`、旧版NML依赖及CombatGods/Frontiers等资源。DEX字符串有 `MOD_DEPLOY_BEGIN` / `MOD_DEPLOY_OK`，Mono Bridge字符串有 `NML_BOOT_FAILED` / `NML_ASSEMBLY_LOADED`。
+- 这表明历史v18确实**已编写安卓侧Java文件部署尝试与Mono加载入口**，与“原始用户APK没有嵌入加载器”不矛盾；但**静态代码/标志符仍非设备上NML成功运行的证据**。这使得先用已有v18做私有汉化实验成为可操作的途径，无需向公开仓库上传游戏APK或再重新研究引导注入。
+
+### 本轮新增可复用源码（已提交GitHub本分支）
+- `private_stage_mono_v28.py`：**只操作用户自己提供的既有v18实验APK副本**。必须先看到 `classes5.dex`、`WorldBoxXianxiaMonoBridge.dll`、明确的 `install.json` 才继续；接收本仓库已通过CI打包的传统Mono源MOD候选ZIP，仅嵌入所需18份`Mods/WorldBoxXianxiaObserver/`原创源码/词库；给每份附SHA256/大小并写入新版install清单，把build_token从v18更新为v28防止已有部署缓存跳过；不碰已有WorldBox游戏程序集、DEX或Unity资源，并移除旧失效签名供私有重签；zip-slip、重复路径、尺寸和正确MOD GUID/格式均有阻断。**这个工具只准备APK，不自行保证签名/安装。**
+- `test_v28_private_stage.py`：仅用自己构建的合成虚拟APK与虚拟MOD文件，自动覆盖旧签名清除、新部署记录、修改token、保留既有bootstrap、无bootstrap严禁做“空壳整合”、zip路径穿越阻断；没有将第三方内容发布到GitHub。
+- 功能增量提交 `c61ecd5d0a0303dbb4f8c86369dc9b91b0a6288a`、测试提交 `f0564f0c8bb49dbdf298a086b17870e650cbd6aa`；其中 **Actions `39454679404` 的三项任务全部成功**（离线源测试、公开Android NML编译/候选包、私有APK工具编译）。**该CI不包含用户商业APK**。
+
+### 本机私有APK真实整合与签名证据（**候选可验证，不能冒充实机可玩**）
+- 输入：用户自己的 `WorldBox_Xianxia_v18_Cultivation_Test.apk`，187,773,264字节，SHA256 `b415bf01ccb17c4503cdb51f544127caa8afe28de99ade6d8580b57463b937c5`。
+- 增量源MOD：v0.27传统Mono包 `f5ebde042db9edf373a1f78972a8faa54e732517e28a4e822b6cad02412fd2e6`，新增18个实文件在旧v18 APK内部`assets/worldbox-xianxia/v18/Mods/WorldBoxXianxiaObserver/`，部署清单从714项增至732项，build token变为 `v28-zh-f5ebde042db9edf373`。
+- **真实生成并由Android apksigner测试证书签名**：`WorldBox_WanjieXianxia_v0.28_Private_Android16_DEVICE_PENDING.apk`，189,287,005字节，SHA256 `9efa49f98e92921f7ee8b9341f14b68b39d426323bc0a8cf25d8acc41e6cc822`。APK完整ZIP CRC通过，v1/v2/v3签名验证全通过。签名证书SHA256 `70d2cd47f69dc29d7126597b166521e68b4d7da3525ba44d070ad8e0137ea846`（本地测试密钥，不加入仓库或公开分享）；`classes5.dex`、`AndroidManifest.xml`、`assets/Mono/Managed.zip`及原版`globalgamemanagers`的CRC与v18输入完全相同。
+- 输出安装包保留v18实验包名 `com.xinyanshuo.worldbox.lab13`，与原始 `com.mkarpenko.worldbox` 不同；**测试签名与历史lab13签名可能不同，不能保证覆盖安装**。如已存在lab13，先备份所有存档，绝不直接强制卸载用户游戏。
+- 真实验收缺口：当前会话**无法访问用户PKR110 Android16手机和ADB日志**，没有实际执行安装、启动游戏、证明v18引导成功、对比全页面中文、触发MOD行为、存档/存读回归。此版本须准确称为“**已签名的私有整合APK测试候选**”，不是“实机已经可玩/汉化100%”，任何安装/加载结果由设备实际验收决定。
+- 私有完整报告：`WorldBox_v028_APK私有整合静态验收报告.json`；APK及测试证书存留当前私有工作空间，不向公开GitHub发商业APK、密钥或旧第三方MOD二进制。
+- 下轮优先从**这份真正含18份MOD代码的私有APK**取得真实设备启动/装载/汉化逐页证据后修复失败，不得退回无限只产源码ZIP。后续天道放置、王朝多城、皇城、建筑升级、仙岛、地府依既定顺序推进；与苍岚main严格隔离。

@@ -161,3 +161,13 @@ The public Worldbox-OWL index has 0.51.x packages **简单汉化模组修正 v1.
 - 最新本机私有审计JSON `WorldBox_v027_安卓加载器静态审计_私有.json`，SHA256见开发日志。不公开用户商业APK、不涉及任何付费解锁内容。
 - **Work私有集成阻塞：未有安卓16真实NML安装/加载证明、ADB日志与启动截图**。只有NML对应引导链验证后，才能选择`Mods/.../Code/*.cs`传统Mono路线或`NMLMods/.../*.dll`移动IL2CPP路线。若需要安卓安装器，请使用兼容0.51.4的可信移动端Loader及正确的授权原版；先备份原世界存档，不进行不明来源破解版APK重签替换，不把桌面 DLL 当安卓安装器。
 - 本分支v0.27打包仍为MOD候选ZIP，不是已安装可玩的APK。下一阶段先解决这一P0再扩玩法；不得修改《苍岚》main。
+
+
+## v0.28 最优先的Work设备交接——本轮已经有实际签名私有APK测试候选
+
+- 本轮最大突破不是增加词库，而是发现用户文件库里的历史v18测试APK已有真正的Java部署器 `classes5.dex`、Mono Bridge `WorldBoxXianxiaMonoBridge.dll`、变更过的`Assembly-CSharp.dll`与含714条资源的`install.json`，且旧APK内确有`NeoModLoader.dll`和NML依赖。此前原版0.51.4无加载器的静态结论仍成立，**但不能错误套用于这个独立v18用户测试APK**；旧桥是否成功运行还需Android16日志。
+- 新增隔离仓库脚本`private_stage_mono_v28.py`/合成回归`test_v28_private_stage.py`，严格只允许从已有旧安卓引导的用户APK进行追加，拒绝伪装无引导的普通APK。已经私有执行该脚本，将v0.27传统Mono源码/简中词库**18个真正文件**嵌入v18 APK的部署目录，更新install SHA/文件数及build token（防老缓存）。
+- 本地私有签名产物`WorldBox_WanjieXianxia_v0.28_Private_Android16_DEVICE_PENDING.apk`：189,287,005字节，SHA256 `9efa49f98e92921f7ee8b9341f14b68b39d426323bc0a8cf25d8acc41e6cc822`；ZIP CRC全绿，Android apksigner v1/v2/v3验证均成功。内置v0.27传统Mono源码，不是新移动NML编译版。产物只在用户私有对话中交付，不入GitHub。
+- **验收状态是SIGNED_PRIVATE_APK_DEVICE_PENDING，绝非INSTALLED/WORKING！** 安卓16 PKR110需实际记录安装后是否进入 v18 Java 诊断页、`MOD_DEPLOY_OK`/失败原因、原版Unity启动、Mono Bridge日志`NML_ASSEMBLY_LOADED`/失败、`WorldBoxXianxiaObserver`是否加载；之后逐页测试语言/字体/NPC与存档。启动成功**不等于**MOD编译加载成功。
+- APK使用包名`com.xinyanshuo.worldbox.lab13`，本次测试签名非历史lab13签名：不能直接保证覆盖旧安装，先备份存档，禁止建议不经备份强卸载。签名密钥不公开，支付/游戏内购逻辑未修改。
+- 《苍岚》main/官网/正式APK176/PCK仍完全不动；WorldBox GitHub只维护合法源码、隔离工作流、版本日志。后续优先修实机引导，再针对漏译增量修复，之后实现真实天道放置。
