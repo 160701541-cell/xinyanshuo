@@ -1,0 +1,43 @@
+name: 'WorldBox External MOD Lab v0.8 | NOT Canglan game'
+on:
+  push:
+    branches:
+      - 'worldbox/external-mod-lab-v08'
+    paths:
+      - 'tools/worldbox-xianxia/**'
+      - '.github/workflows/worldbox-external-mod-lab-v08.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  offline-source-qa:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: 'Compile all WorldBox-only Python sources'
+        run: python -m compileall -q tools/worldbox-xianxia
+      - name: 'Source regression tests; NOT Android certification'
+        run: python -m unittest discover -s tools/worldbox-xianxia -p 'test_v*.py' -v
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: 'Build C# source with explicit non-shipping API stubs'
+        run: dotnet build tools/worldbox-xianxia/tests/WorldBoxObserver.SourceSyntax.csproj --configuration Release --verbosity quiet
+      - name: 'Hard boundary: forbid game-source, APK176 OTA, and main-game modification'
+        run: python tools/worldbox-xianxia/scope_gate.py
+      - name: 'No proprietary game APK, DLL or altered install package is included'
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          base=Path('tools/worldbox-xianxia')
+          forbidden={'.apk','.pck','.dll','.pdb','.rar','.7z','.aab'}
+          wrong=[str(p) for p in base.rglob('*') if p.is_file() and p.suffix.lower() in forbidden]
+          assert not wrong,wrong
+          print('PASS: no third-party binary files committed')
+          PY
