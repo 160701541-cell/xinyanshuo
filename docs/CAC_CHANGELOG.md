@@ -1,5 +1,14 @@
 # CAC 工序变更与开发日志
 
+## 2026-10-20 / CAC-SELF-ITERATION-OPTIMIZATION-PROTOCOL-V1 / 把"自判分闭环"固化成可执行协议 + 机器校验器
+- **用户原话（2026-10-19/20）**：「严格按这些执行，然后还需要自我迭代优化」「任何东西你都要自己写提示词然后严格执行迭代优化」「把你那套自我迭代优化方案写上去并且严格执行，先思考再行动」。本条目就是"写上去"这一步。
+- **要解决的病**：那套自判分闭环此前只活在单个会话里（2026-10-19 角色迭代把美术判断从"我觉得好看"换成固定机位出图 + 量化门槛，例如主体/背景明度差 ΔL* 实测 49.3 / 门槛 ≥25），会话一结束就蒸发；用户要拿仓库去别处跑迭代，所以必须入库、可校验、可移植。
+- **新增 `docs/SELF_ITERATION_OPTIMIZATION_PROTOCOL_V1.md`**（执行约束，非通过证据）：八步闭环 R1 锁目标 → R2 参数化生成 → R3 固定机位四视图 → R4 自动量测 → R5 自判分 → R6 归因 → R7 最小改动回炉 → R8 入库或记录失败；门槛表（ΔL* ≥25、点缀色面积 3–8%、ΔE00 ≤6、描边 1.5–2.5px、可辨部件 ≥5、颈缝 =0）；每轮台账固定 JSON 字段；停损规则（同一门槛连续 3 轮无改善即判定路线失败、必须换工具层，禁止原地磨 5 轮）；**审美自批禁令**（沿用 `ENGINEERING_QA_RELEASE_POLICY.md`：A 项只能人工判，AI 只能给 technical 与指标）；跨环境接续条款（产物全入库、一条命令可复现、缺依赖写 BLOCKED 而不得用文字描述冒充出图）。
+- **新增 `tools/self_iteration/check_round.py`**（纯标准库）：把门槛表变成机器判定 —— 指标在门槛内 PASS / 阈值外 FAIL / 缺失或 null BLOCKED（不许填估计值）；并硬性拦截三类违规：四视图不足 4 张、`aesthetic=PASS` 自批审美、`changes` 超过一个变量族群（违反 R7）。exit 0/1/2 = 通过/未过/违规。
+- **本机可执行环境已核实**：Godot `4.4.1-stable linux.arm64`（`/root/godot/`）+ Blender `4.0.2`（`/usr/bin/blender`）都在，所以"没跑就说 BLOCKED"这条能被真正执行。
+- **诚实边界**：本条目只交协议与校验器，**没有任何人物美术被本轮验收**；协议第 8 节的活跃目标（主角四视图达标）在写条目时仍是待执行状态，`aesthetic` 一律 PENDING 等用户判定。未合并 `main`、未改 `android-preview/latest.json`、未签名、未发布。
+- **下一步**：按协议第 8 节从 R1 起跑第 1 轮，唯一变量 = 颈部/头部衔接比例（用户点名的"脖子也有问题"），产出 `tools/self_iteration/rounds/round-1.json` + 四视图。
+
 ## 2026-10-18 / CAC-REV208-GROUND-PBR-A-B-ISOLATED-AND-RELEASE-GATE-REPAIR / 用 A/B 实验定位"青色地面"真因（是我的材质），并修通到捕获阶段
 - **A/B 隔离实验（可复现）**：把两级地表材质**全部关闭**后重跑正式链（run `39112007473`），`REV191_REAL_RENDER_SOIL_VS_SKY_BLUE_VOID_PIXEL_RATIO` 从 **0.771→0.0**，`PASS_REV187_TWO_GENUINE_ENGINE_RENDERED_WORKSITE_FRAMES_NOT_PHONE_TESTS` 通过。**结论：把它画成一片青色的就是我的地表材质（自定义 shader 与原生三平面都一样），不是场景/水面。** 两个实现都已在 `apk176_vivid_material_rev207.gd` 用 `HQ_GROUND_SHADER_ENABLED=false` / `HQ_GROUND_NATIVE_ENABLED=false` 默认关闭，资源与解析器保留，等能本地出图再开。
 - **同时保留的合法改动**：`material_for_real_terrain` 返回类型改为 `Material`（地表可以是 ShaderMaterial 或 StandardMaterial3D）；主 QA 的地表门禁 `code 337` 现在接受两种合法形态，其中"真 CC0 PBR"分支要求 albedo≥512² + 真 normal + roughness + triplanar，比原来更严而不是放宽。

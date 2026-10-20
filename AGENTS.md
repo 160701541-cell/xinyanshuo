@@ -96,3 +96,17 @@
 **“这次玩家是不是只需要打开手机里原来的《苍岚》，就能从游戏内自动得到更新？”**
 - 答案为**是**，且经过原版OTA证据验证，才可称“已更新进游戏”；
 - 答案为**否/尚不确定**，只能称“源码/QA进度，尚未完成原版热更新”，应集中解决阻碍。
+
+## Agent skills
+
+### Issue tracker
+
+本仓库的 issue 只放在 GitHub Issues（`160701541-cell/xinyanshuo`，公开仓库），优先用 `deck_*` 工具、也可用 `gh`。See `docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+保留默认五角色，标签串与角色同名：`needs-triage`、`needs-info`、`ready-for-agent`、`ready-for-human`、`wontfix`。See `docs/agents/triage-labels.md`.
+
+### Domain docs
+
+single-context：一个仓库共用一套用语，根目录一份 `GLOSSARY.md`，架构决定放 `docs/adr/`。See `docs/agents/domain.md`.
