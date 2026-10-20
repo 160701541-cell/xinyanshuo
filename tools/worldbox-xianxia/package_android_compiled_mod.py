@@ -16,7 +16,7 @@ UID = "XINYANSHUO_WORLD_BOX_OBSERVER_V07"
 REQUIRED_MODTYPE = 1
 MAX_BYTES = 5_000_000
 NOTICE = ("非官方WorldBox安卓MOD衍生实验；与《苍岚·人生世界》的游戏开发、发布和热更新完全无关。\n"
-          "本包不是APK；必须已有兼容的Android NeoModLoader启动链。未在用户0.51.4手机实机验收。\n"
+          "本包不是APK；必须已有兼容的Android NeoModLoader启动链。DEVICE_PENDING：未在用户0.51.4手机实机验收。\n"
           "将NMLMods中的WorldBoxXianxiaObserver整个文件夹放到NeoModLoader实际读取的NMLMods目录；"
           "先备份世界存档，不要覆盖原APK，不要混用PC NML DLL。\n"
           "预编译模块自动被NML识别为COMPILED_NEOMOD，真正Android载入和UI/存档/性能仍待测试。\n")
