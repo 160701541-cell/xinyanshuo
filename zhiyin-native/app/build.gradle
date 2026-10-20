@@ -9,5 +9,24 @@ android {
         versionCode 3
         versionName '0.3.0'
     }
+    // CI lab signing is intentionally public/insecure; never use in a release build.
+    signingConfigs {
+        zhiyinLab {
+            def signingPath = System.getenv("ZHIYIN_SIGNING_FILE")
+            storeFile file(signingPath ?: "missing-local-lab-signer.p12")
+            storePassword System.getenv("ZHIYIN_SIGNING_PASSWORD") ?: "PublicLabOnly2026"
+            keyAlias "zhiyin-lab"
+            keyPassword System.getenv("ZHIYIN_SIGNING_PASSWORD") ?: "PublicLabOnly2026"
+            storeType "pkcs12"
+        }
+    }
+    buildTypes {
+        debug {
+            def signingPath = System.getenv("ZHIYIN_SIGNING_FILE")
+            if (signingPath != null && signingPath.trim().length() > 0) {
+                signingConfig signingConfigs.zhiyinLab
+            }
+        }
+    }
     compileOptions { sourceCompatibility JavaVersion.VERSION_17; targetCompatibility JavaVersion.VERSION_17 }
 }
