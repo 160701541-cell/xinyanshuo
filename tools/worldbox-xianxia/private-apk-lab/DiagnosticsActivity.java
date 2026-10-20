@@ -173,7 +173,7 @@ public final class DiagnosticsActivity extends Activity {
                     final View launchButton=v;
                     new Thread(new Runnable(){public void run(){
                         try{
-                            stage("MOD_DEPLOY_BEGIN v18");stage(ModDeployment.install(DiagnosticsActivity.this));
+                            stage("MOD_DEPLOY_BEGIN v35 source");stage(ModDeployment.install(DiagnosticsActivity.this));
                             runOnUiThread(new Runnable(){public void run(){
                                 launchButton.setEnabled(true);stage("START_UNITY_REQUEST");
                                 Intent i=new Intent();i.setClassName(DiagnosticsActivity.this,"com.unity3d.player.UnityPlayerActivity");
