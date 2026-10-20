@@ -74,6 +74,13 @@ jobs:
           if grep -Eq 'SCRIPT ERROR:|Parse Error:|Parser Error:|Failed to load script|ERROR:.*glb' godot-import.log; then
             cat godot-import.log; exit 1
           fi
+      - name: Preserve temporary licensed anime base for internal texture QA
+        uses: actions/upload-artifact@v4
+        with:
+          name: zhiyin-internal-vrm-lookdev-source
+          path: zhiyin-real3d/qa_samples/anime_cc0_lookdev.vrm
+          if-no-files-found: error
+          retention-days: 1
       - name: Prove genuine VRM anime rig face morph and materials import
         run: |
           set -euo pipefail
