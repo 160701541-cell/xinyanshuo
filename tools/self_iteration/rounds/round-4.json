@@ -3,7 +3,7 @@
   "date": "2026-10-20",
   "target": "颈部/头部衔接（收口）：颈–肩–领三环半径来源改为按身体顶点椭圆柱包络数据求解，把领口带的 body_breach_verts 从 42 压到 0",
   "branch": "art/self-iteration-rounds",
-  "commit": "PENDING",
+  "commit": "344ad69",
   "changes": [
     "颈–肩–领环带半径来源统一为数据求解（唯一变量族群）：cloth.gd 新增 _body_env(y)——按 |x|<=0.135 躯干中轴带内、距 y 不超过 ±0.012 的身体顶点求椭圆柱包络半轴（ax=max|x|、az=max|z|、m=max sqrt((x/ax)^2+(z/az)^2)，返回 (ax*m, az*m)，可证带内全部顶点落在椭圆内）；_robe_rings() 在 fit_enable=1 时按 fit_rings 个环（collar_y→shoulder_y 均分）取包络半径 ×fit_margin 余量，缺文件=基线手调值；同步把挂在领口环上的金边环带 _collar_trim() 改为跟随实际袍环 _robe_rings()（此前读 legacy 的 collar_rx/mid_rx，环带一改数据求解金边就落进袍面里、accent 5.45%→0.46%）。本轮参数 rig/neck_params.json：fit_enable=1、fit_rings=5、fit_margin=1.08。"
   ],
