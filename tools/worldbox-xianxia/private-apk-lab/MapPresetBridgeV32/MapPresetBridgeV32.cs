@@ -48,7 +48,7 @@ namespace XianxiaWorldBox
         {
             MethodInfo method=sizeLibrary.GetMethod("getSizes",F,null,Type.EmptyTypes,null);
             if(method==null)return null;
-            return method.Invoke(method.IsStatic?null:null,null) as string[];
+            return method.Invoke(null,null) as string[];
         }
         public static string TryRegister(Assembly game)
         {
