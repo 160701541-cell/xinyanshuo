@@ -20,3 +20,9 @@ for url in urls:
    if positions:print("context",re.sub(r"<[^>]*>"," ",raw[max(0,positions[0]-90):positions[0]+200])[:280])
  except Exception as e:
   print(type(e).__name__,str(e)[:230])
+
+  if "purchase" in url:
+   for needle in ("Universal Base Characters[Standard].zip","No thanks","download_button","button","payments","form"):
+    idx=raw.find(needle)
+    if idx>=0:
+     print("RAW",needle,repr(raw[max(0,idx-500):idx+700])[:1100])
