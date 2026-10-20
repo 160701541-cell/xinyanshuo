@@ -1,0 +1,15 @@
+{
+  "name": "万界仙侠 WorldBox 观察层 v0.7 (候选)",
+  "GUID": "XINYANSHUO_WORLD_BOX_OBSERVER_V07",
+  "author": "Xianxia WorldBox external mod lab",
+  "version": "0.7.0-source-only",
+  "description": "Third-party WorldBox 0.51.4 read-only mod experiment. Not Canglan game dev. NML Android load unverified.",
+  "RepoUrl": "https://github.com/160701541-cell/xinyanshuo",
+  "Dependencies": [],
+  "OptionalDependencies": [],
+  "IncompatibleWith": [],
+  "targetGameBuild": 725,
+  "ModType": 0,
+  "UsePublicizedAssembly": true,
+  "IsNCMSMod": false
+}
