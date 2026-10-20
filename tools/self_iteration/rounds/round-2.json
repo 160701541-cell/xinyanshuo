@@ -3,7 +3,7 @@
   "date": "2026-10-20",
   "target": "颈部/头部衔接（续）：给领口加金边镶边，让点缀色面积落进 3–8%，并把影棚背景固定为深色使主体/背景明度差达标",
   "branch": "art/self-iteration-rounds",
-  "commit": "PENDING",
+  "commit": "d9b24a1",
   "changes": [
     "领口金边镶边（唯一变量族群）：新增 _collar_trim() 绕领口外表面生成 band_h 高的金色环带（环半径 = 领口环半径 + band_margin，顶点色 = gold_*），并把交领金边/内衫的角度窗口与颜色改为 rig/trim_params.json 驱动（w_in/w_out/gold_*/inner_*），缺文件=基线；影棚背景色改由 rig/studio_params.json 驱动（本轮固定深色 0.100/0.105/0.120，属 R3 量测台环境、非角色几何变量）"
   ],
