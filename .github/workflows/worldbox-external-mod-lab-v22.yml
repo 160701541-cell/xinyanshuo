@@ -44,6 +44,13 @@ jobs:
         run: dotnet run --project tools/worldbox-xianxia/tests/NativeLocaleScenarioV23.csproj -c Release
       - name: 'Execute opt-in untranslated menu audit C# privacy and export scenario'
         run: dotnet run --project tools/worldbox-xianxia/tests/UntranslatedMenuScenarioV23.csproj -c Release
+      - name: 'Execute real-world ZIP shape regression (no proprietary MOD binaries)'
+        run: |
+          mkdir -p /tmp/worldbox-v34-modformat-jvm
+          javac -encoding UTF-8 -d /tmp/worldbox-v34-modformat-jvm \
+            tools/worldbox-xianxia/private-apk-lab/ModFormatV34.java \
+            tools/worldbox-xianxia/tests/ModFormatV34Test.java
+          java -cp /tmp/worldbox-v34-modformat-jvm com.xinyanshuo.worldbox.lab13.ModFormatV34Test
       - name: 'Execute 2048-square world-size preset and actual menu-list simulation'
         run: dotnet run --project tools/worldbox-xianxia/tests/MapPresetBridgeV32.Tests.csproj -c Release
       - name: 'WorldBox external MOD only: prevent main-game edits'
@@ -298,7 +305,8 @@ jobs:
           subprocess.run(['javac','-encoding','UTF-8','-source','8','-target','8',
                           '-cp',jar,'-d','/tmp/worldbox-diagnostics-classes',
                           root+'DiagnosticReport.java',root+'DiagnosticsActivity.java',
-                          root+'ModDeployment.java',root+'ExternalModImporterV32.java'],check=True)
+                          root+'ModDeployment.java',root+'ExternalModImporterV32.java',
+                          root+'ModFormatV34.java'],check=True)
           from pathlib import Path
           import hashlib
           dexers=glob.glob(sdk+'/build-tools/*/d8')
@@ -319,6 +327,7 @@ jobs:
           cp tools/worldbox-xianxia/private-apk-lab/DiagnosticsActivity.java /tmp/worldbox-user-private-helper/
           cp tools/worldbox-xianxia/private-apk-lab/ModDeployment.java /tmp/worldbox-user-private-helper/
           cp tools/worldbox-xianxia/private-apk-lab/ExternalModImporterV32.java /tmp/worldbox-user-private-helper/
+          cp tools/worldbox-xianxia/private-apk-lab/ModFormatV34.java /tmp/worldbox-user-private-helper/
       - uses: actions/upload-artifact@v4
         with:
           name: 'worldbox-v22-generic-private-apk-assembly-toolkit-linux-x64'
