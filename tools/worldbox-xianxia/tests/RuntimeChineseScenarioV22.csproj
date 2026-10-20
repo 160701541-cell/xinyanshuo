@@ -3,6 +3,7 @@
  <ItemGroup>
   <Compile Include="../localization/ChineseLocalizationV22.cs" />
     <Compile Include="../localization/ChineseMenuGlossaryV23.cs" />
+    <Compile Include="../localization/UntranslatedMenuAuditV23.cs" />
   <Compile Include="../localization/RuntimeChineseOverlayV22.cs" />
   <Compile Include="RuntimeChineseScenarioV22.cs" />
  </ItemGroup>
