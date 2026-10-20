@@ -1,5 +1,11 @@
 # CAC 工序变更与开发日志
 
+## 2026-10-21 / CHARACTER-PIPELINE-NPC-FACE-MORPH-AND-EYE-SHADING / NPC 脸型变形入库 + 眼睛贴片加质感（分支 `character-pipeline`，源码级，未进原版热更新）
+- **改了什么**：①`tools/character-pipeline/src/npc_face_morph.gd` + `face_morph_core.py` + 测试/文档：按 NPC id 稳定生成不同的脸（提交 `ff98aec`，Python 19 项单测通过）；②`src/face_decal.gdshader` 的眼（mode 0）加了眼球明暗、虹膜径向渐变 + 角膜缘、瞳孔、屏幕同侧高光、上睑投影、外眼角加粗上睑线、内眼角肉色、淡下睑线。uniform 只新增（`iris`/`flesh`/`lid`/`catch_light`，均有默认值），`cloth.gd` 不用改；mode 1/2（眉/嘴）未动。
+- **测试结果（诚实边界）**：眼睛 shader **没有在真实 Godot 里编译或渲染过**（本环境无 Godot）。`tests/eye_preview.py` 是同一套公式的 numpy 移植，只能证明形状和层次大致对，不等于引擎输出；对比图见 `shots/eye_preview_numpy.png`。`npc_face_morph.gd` 及其 GD 测试同样未实机运行，位移幅度未对照截图验收。
+- **是否原版热更新**：**否**。仅源码/工具链进度；未做原 APK176 兼容性 QA，未生成 PCK，未签名。手机实测：未验证。
+- **已知问题 / 待办**：①`face_morph_core.py`（mulberry32、8 参数）与 `npc_face_morph.gd`（xorshift32、11 参数）种子算法不同，同一 id 两边脸不同，需合并为一套；②在能跑 Godot 的环境用 `glbshot.gd`/`cloth.gd --head` 出真实头部特写，调眼睛与 `SCALE`；③眼睑目前仍是平面贴片，侧面角度会露馅，下一步考虑独立眼球网格 + 上下眼睑；④表情（眨眼/张嘴）用换贴片实现，尚未做。
+
 ## 2026-10-18 / CAC-REV208-GROUND-PBR-A-B-ISOLATED-AND-RELEASE-GATE-REPAIR / 用 A/B 实验定位"青色地面"真因（是我的材质），并修通到捕获阶段
 - **A/B 隔离实验（可复现）**：把两级地表材质**全部关闭**后重跑正式链（run `39112007473`），`REV191_REAL_RENDER_SOIL_VS_SKY_BLUE_VOID_PIXEL_RATIO` 从 **0.771→0.0**，`PASS_REV187_TWO_GENUINE_ENGINE_RENDERED_WORKSITE_FRAMES_NOT_PHONE_TESTS` 通过。**结论：把它画成一片青色的就是我的地表材质（自定义 shader 与原生三平面都一样），不是场景/水面。** 两个实现都已在 `apk176_vivid_material_rev207.gd` 用 `HQ_GROUND_SHADER_ENABLED=false` / `HQ_GROUND_NATIVE_ENABLED=false` 默认关闭，资源与解析器保留，等能本地出图再开。
 - **同时保留的合法改动**：`material_for_real_terrain` 返回类型改为 `Material`（地表可以是 ShaderMaterial 或 StandardMaterial3D）；主 QA 的地表门禁 `code 337` 现在接受两种合法形态，其中"真 CC0 PBR"分支要求 albedo≥512² + 真 normal + roughness + triplanar，比原来更严而不是放宽。
