@@ -42,7 +42,7 @@ public final class DiagnosticsActivity extends Activity {
     private String logs() {
         File external=getExternalFilesDir(null);
         File logRoot=external==null?null:new File(external,"WorldBoxXianxiaLogs");
-        String report="WorldBox·万界仙侠 v16 MOD整合实测\n包名："+getPackageName()+
+        String report="WorldBox·万界仙侠 v17 MOD整合实测\n包名："+getPackageName()+
             "\n安卓："+android.os.Build.VERSION.RELEASE+" / "+android.os.Build.MODEL+
             "\n=== 安卓入口 ===\n"+read(bootFile())+
             "\n=== 上次安卓入口 ===\n"+read(new File(getFilesDir(),"worldbox_boot.previous.log"))+
@@ -66,7 +66,7 @@ public final class DiagnosticsActivity extends Activity {
                     final View launchButton=v;
                     new Thread(new Runnable(){public void run(){
                         try{
-                            stage("MOD_DEPLOY_BEGIN v16");stage(ModDeployment.install(DiagnosticsActivity.this));
+                            stage("MOD_DEPLOY_BEGIN v17");stage(ModDeployment.install(DiagnosticsActivity.this));
                             runOnUiThread(new Runnable(){public void run(){
                                 launchButton.setEnabled(true);stage("START_UNITY_REQUEST");
                                 Intent i=new Intent();i.setClassName(DiagnosticsActivity.this,"com.unity3d.player.UnityPlayerActivity");
@@ -100,7 +100,7 @@ public final class DiagnosticsActivity extends Activity {
         });
         stage("DIAGNOSTICS_READY Android="+android.os.Build.VERSION.RELEASE+" model="+android.os.Build.MODEL);
         LinearLayout root=new LinearLayout(this);root.setOrientation(1);root.setPadding(28,32,28,24);
-        TextView title=new TextView(this);title.setText("WorldBox·万界仙侠\nMOD整合实测版 v16");title.setTextSize(27);root.addView(title);
+        TextView title=new TextView(this);title.setText("WorldBox·万界仙侠\nMOD整合实测版 v17");title.setTextSize(27);root.addView(title);
         TextView note=new TextView(this);note.setText("内置：战斗之神1.0.5、合理的世界2.0.1、NeoModLoader1.2.1.1。\n点击启动会自动安装，无需文件管理器。\n旧修仙及人物控制包版本不兼容，未混入本包。\n\n若闪退或模组没出现，重新打开入口复制日志。存档保留在本测试应用中，与原版独立。\n");note.setTextSize(18);root.addView(note);
         button(root,"启动游戏测试",0);button(root,"复制报错日志",1);button(root,"分享报错日志",2);
         status=new TextView(this);status.setTextSize(14);root.addView(status);

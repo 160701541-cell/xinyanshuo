@@ -8,10 +8,16 @@ using UnityEngine;
 namespace XianxiaMonoBridge {
 public static class Entry {
     static bool installed;
+    public static bool SkipDesktopDiscord(){
+        if(Application.platform!=RuntimePlatform.Android)return false;
+        DiagnosticLog.Write("ANDROID_DESKTOP_DISCORD_SKIPPED; no native desktop SDK requested");
+        return true;
+    }
     public static void Install() {
         if(installed)return;
         DiagnosticLog.Install();
         DiagnosticLog.Write("ENTRY_INSTALL_BEGIN");
+        IntegratedModBootstrap.ConfigureMobileConsole();
         try {
             installed=true;
             var obj=new GameObject("WorldBoxXianxiaReadabilityBridge");
@@ -94,7 +100,7 @@ public sealed class Overlay : MonoBehaviour {
         var box=Styled(GUI.skin.box,ref boxStyle,18);
         float buttonW=242*u,buttonH=61*u;
         if(GUI.Button(new Rect(Screen.width-buttonW-14*u,14*u,buttonW,buttonH),
-           visible?"关闭万界设置":"万界 · 清晰大字",btn))
+           visible?"关闭万界设置":"万界 · MOD与字体",btn))
            visible=!visible;
         if(!visible)return;
         float pw=Mathf.Min(Screen.width-32*u,780*u),ph=Mathf.Min(Screen.height-32*u,490*u);
@@ -115,9 +121,9 @@ public sealed class Overlay : MonoBehaviour {
             nextCheck=0;
         }
         GUI.Label(new Rect(px+25*u,py+241*u,pw-50*u,134*u),
-          "字太小的第三方MOD：可尝试放大原有Unity UI文字。\n"+
-          "已调整："+applied+"处；可关闭并恢复原字体大小。\n"+
-          "更大的世界和战斗等功能需要继续验证兼容；此版为只读桥接实验。",label);
+          IntegratedModBootstrap.Status+"\n"+
+          "小字调整："+applied+"处。MOD名称仅在完成注册后显示。\n"+
+          "报错仍写入日志；可复制反馈。",label);
         if(GUI.Button(new Rect(px+25*u,py+ph-74*u,pw-50*u,56*u),"复制报错日志（粘贴发给我）",btn)){
             GUIUtility.systemCopyBuffer=DiagnosticLog.Read();
         }

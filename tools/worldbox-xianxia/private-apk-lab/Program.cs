@@ -159,9 +159,19 @@ class Program {
         dnlib.DotNet.MethodSig.CreateStatic(mod.CorLibTypes.Void),typeRef);
     start.Body.Instructions.Insert(0,
         dnlib.DotNet.Emit.Instruction.Create(dnlib.DotNet.Emit.OpCodes.Call,methodRef));
+    // Discord's desktop SDK is absent on Android. Keep the original method and
+    // exception regions intact; only add a platform guard before its first IL.
+    var discord=mod.Types.Single(x=>x.Name=="DiscordTracker").Methods.Single(x=>
+        x.Name=="Start"&&!x.IsStatic&&x.MethodSig.Params.Count==0&&x.HasBody);
+    var guard=new dnlib.DotNet.MemberRefUser(mod,"SkipDesktopDiscord",
+        dnlib.DotNet.MethodSig.CreateStatic(mod.CorLibTypes.Boolean),typeRef);
+    var originalFirst=discord.Body.Instructions[0];
+    discord.Body.Instructions.Insert(0,dnlib.DotNet.Emit.Instruction.Create(dnlib.DotNet.Emit.OpCodes.Call,guard));
+    discord.Body.Instructions.Insert(1,dnlib.DotNet.Emit.Instruction.Create(dnlib.DotNet.Emit.OpCodes.Brfalse,originalFirst));
+    discord.Body.Instructions.Insert(2,dnlib.DotNet.Emit.Instruction.Create(dnlib.DotNet.Emit.OpCodes.Ret));
     // dnlib writes without Cecil resolving netstandard forwarded type constants.
     mod.Write(output);
-    Console.WriteLine("PASS_MONO_ENTRYPOINT_PATCHED MapBox.Start only "+output);
+    Console.WriteLine("PASS_MONO_PATCHED MapBox.Start bootstrap + DiscordTracker.Start Android guard "+output);
  }
  static void Verify(string original,string patched,string plugin) {
     var a=dnlib.DotNet.ModuleDefMD.Load(original);
@@ -187,6 +197,15 @@ class Program {
           throw new InvalidOperationException("Original method signature changed");
         if(!am.HasBody)continue;
         int skip=am.DeclaringType.Name=="MapBox"&&am.Name=="Start"&&am.MethodSig.Params.Count==0?1:0;
+        if(am.DeclaringType.Name=="DiscordTracker"&&am.Name=="Start"&&am.MethodSig.Params.Count==0){
+          var di=bm.Body.Instructions;
+          if(di.Count!=am.Body.Instructions.Count+3 || di[0].OpCode!=dnlib.DotNet.Emit.OpCodes.Call ||
+             !di[0].Operand.ToString().Contains("XianxiaMonoBridge.Entry::SkipDesktopDiscord") ||
+             di[1].OpCode!=dnlib.DotNet.Emit.OpCodes.Brfalse || di[1].Operand!=di[3] ||
+             di[2].OpCode!=dnlib.DotNet.Emit.OpCodes.Ret)
+            throw new InvalidOperationException("Invalid Android Discord guard");
+          skip=3;
+        }
         if(!CanonicalBody(am,0).SequenceEqual(CanonicalBody(bm,skip)))
           throw new InvalidOperationException("Original IL or exception regions diverged: "+am.FullName);
         checkedMethods++;
@@ -194,7 +213,7 @@ class Program {
     }
     if(!b.GetAssemblyRefs().Any(x=>x.Name==p.Assembly.Name))
         throw new InvalidOperationException("Companion Mono assembly ref missing");
-    Console.WriteLine("PASS_MODIFIED_ENTRYPOINT_ONLY auditedMethodBodies="+checkedMethods+" startupInstructions="+aa.Count);
+    Console.WriteLine("PASS_ONLY_BOOTSTRAP_AND_ANDROID_DISCORD_GUARD auditedMethodBodies="+checkedMethods+" startupInstructions="+aa.Count);
  }
  static IEnumerable<string> CanonicalBody(dnlib.DotNet.MethodDef method,int skip){
     var body=method.Body;var ins=body.Instructions;
