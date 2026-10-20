@@ -139,7 +139,19 @@ class Program {
      var method=type?.Methods.FirstOrDefault(x=>x.Name==item.Item2&&!x.IsStatic&&x.HasBody&&x.Parameters.Count==0);
      if(method!=null)return method;
    }
-   throw new InvalidOperationException("no verified legacy Unity gameplay tick; stop private patch");
+   var own=mod.Types.Where(t=>t.Namespace.StartsWith("XianxiaMonoBridge",StringComparison.Ordinal)||
+      t.FullName.Contains("Xianxia")).ToArray();
+   var candidates=own.SelectMany(t=>t.Methods.Select(m=>(t,m)))
+      .Where(e=>e.m.HasBody&&!e.m.IsStatic&&e.m.Parameters.Count==0&&
+         (e.m.Name=="OnGUI"||e.m.Name=="Update"||e.m.Name=="LateUpdate"))
+      .ToArray();
+   if(candidates.Length>0) {
+     var preferred=candidates.FirstOrDefault(e=>e.t.Name.Contains("Cultivation")&&e.m.Name=="Update");
+     return preferred.m??candidates[0].m;
+   }
+   var inventory=string.Join(" | ",own.Take(16).Select(t=>t.FullName+" methods="+
+      string.Join(",",t.Methods.Take(30).Select(m=>m.Name+"("+m.Parameters.Count+")"))));
+   throw new InvalidOperationException("no verified legacy Unity gameplay tick; types: "+inventory);
  }
  static void PatchMapBridge(string original,string helper,string output) {
    var mod=dnlib.DotNet.ModuleDefMD.Load(original);
