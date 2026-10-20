@@ -20,6 +20,12 @@ class Program {
     case "verify-map-bridge":
      if(args.Length<4)throw new ArgumentException("verify-map-bridge original-bridge.dll patched-bridge.dll own-map-helper.dll");
      VerifyMapBridge(args[1],args[2],args[3]);return 0;
+    case "patch-economy-ui":
+     if(args.Length<4)throw new ArgumentException("patch-economy-ui MonoBridge.dll Economy.dll outputBridge.dll");
+     PatchEconomyUi(args[1],args[2],args[3]);return 0;
+    case "verify-economy-ui":
+     if(args.Length<4)throw new ArgumentException("verify-economy-ui original.dll patched.dll Economy.dll");
+     VerifyEconomyUi(args[1],args[2],args[3]);return 0;
     case "inspect-map-ui": InspectMapUi(args[1]);return 0;
     case "inspect": Inspect(args[1]);return 0;
     case "compile":
@@ -181,6 +187,50 @@ class Program {
    var inventory=string.Join(" | ",own.Take(16).Select(t=>t.FullName+" methods="+
       string.Join(",",t.Methods.Take(30).Select(m=>m.Name+"("+m.Parameters.Count+")"))));
    throw new InvalidOperationException("no verified legacy Unity gameplay tick; types: "+inventory);
+ }
+ static dnlib.DotNet.MethodDef FindOverlayGui(dnlib.DotNet.ModuleDefMD mod) {
+   var owner=mod.Types.FirstOrDefault(x=>x.FullName=="XianxiaMonoBridge.Overlay")
+     ?? throw new InvalidOperationException("existing user Mono Overlay missing");
+   return owner.Methods.FirstOrDefault(m=>m.Name=="OnGUI"&&m.HasBody&&!m.IsStatic&&
+     m.MethodSig.Params.Count==0)
+     ?? throw new InvalidOperationException("no live Overlay.OnGUI to host economy tab");
+ }
+ static void PatchEconomyUi(string original,string addonFile,string output) {
+   var mod=dnlib.DotNet.ModuleDefMD.Load(original);
+   var addon=dnlib.DotNet.ModuleDefMD.Load(addonFile);
+   var draw=addon.Types.FirstOrDefault(t=>t.FullName==
+        "XianxiaWorldBox.Economy.EconomyMonoOverlayV35")?.Methods
+        .FirstOrDefault(m=>m.Name=="Draw"&&m.IsStatic&&m.IsPublic&&m.MethodSig.Params.Count==0)
+     ?? throw new InvalidOperationException("economy DLL has no public Draw method");
+   var target=FindOverlayGui(mod);
+   if(target.Body.Instructions.Any(i=>i.Operand?.ToString()?.Contains("EconomyMonoOverlayV35")==true))
+     throw new InvalidOperationException("economy OnGUI already hooked");
+   var asm=new dnlib.DotNet.AssemblyRefUser(addon.Assembly);
+   var t=new dnlib.DotNet.TypeRefUser(mod,"XianxiaWorldBox.Economy","EconomyMonoOverlayV35",asm);
+   var m=new dnlib.DotNet.MemberRefUser(mod,"Draw",dnlib.DotNet.MethodSig.CreateStatic(mod.CorLibTypes.Void),t);
+   target.Body.Instructions.Insert(0,dnlib.DotNet.Emit.Instruction.Create(dnlib.DotNet.Emit.OpCodes.Call,m));
+   mod.Write(output);
+   Console.WriteLine("ECONOMY_GUI_CALL_ON_ORIGINAL_MONO_OVERLAY_ONLY "+output);
+ }
+ static void VerifyEconomyUi(string original,string patched,string addon) {
+   var before=dnlib.DotNet.ModuleDefMD.Load(original);
+   var after=dnlib.DotNet.ModuleDefMD.Load(patched);
+   var old=FindOverlayGui(before).Body.Instructions;
+   var neo=FindOverlayGui(after).Body.Instructions;
+   if(neo.Count!=old.Count+1 || neo[0].OpCode!=dnlib.DotNet.Emit.OpCodes.Call ||
+     !(neo[0].Operand?.ToString()?.Contains("EconomyMonoOverlayV35::Draw")??false))
+       throw new InvalidOperationException("economy injection modifies more than a single call");
+   for(int i=0;i<old.Count;i++) {
+     if(old[i].OpCode!=neo[i+1].OpCode)
+       throw new InvalidOperationException("old Overlay GUI opcode mutated");
+     if(old[i].Operand?.ToString()!=neo[i+1].Operand?.ToString() &&
+        !(old[i].Operand is dnlib.DotNet.Emit.Instruction)&&
+        !(old[i].Operand is dnlib.DotNet.Emit.Instruction[]))
+         throw new InvalidOperationException("old Overlay GUI operand mutated");
+   }
+   if(!after.GetAssemblyRefs().Any(a=>a.Name=="WorldBoxXianxiaEconomy"))
+     throw new InvalidOperationException("fiscal helper assembly not referenced");
+   Console.WriteLine("PASS_ECONOMY_UI_OWN_MONO_BRIDGE_ONLY originalGuiInstructions="+old.Count);
  }
  static void PatchMapBridge(string original,string helper,string output) {
    var mod=dnlib.DotNet.ModuleDefMD.Load(original);
