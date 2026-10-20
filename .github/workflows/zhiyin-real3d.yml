@@ -87,7 +87,6 @@ jobs:
           timeout 90s /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless --path . --script res://tests/vrm_import_smoke.gd >vrm-import-qa.log 2>&1 || { cat vrm-import-qa.log; exit 1; }
           cat vrm-import-qa.log
           grep -Fq 'PASS REAL VRM ANIME MODEL IMPORT' vrm-import-qa.log
-          python3 -c 'from pathlib import Path; Path("qa_samples/anime_cc0_lookdev.vrm").unlink(missing_ok=True)'
       - name: Inspect official Quaternius humanoid animation tracks
         run: |
           set -euo pipefail
@@ -123,6 +122,17 @@ jobs:
           cat room-render.log
           test -s room-qa-render.png
           grep -Fq 'PASS ACTUAL GODOT 3D FRAME' room-render.log
+      - name: Render licensed anime VRM art baseline, not user character
+        run: |
+          set -euo pipefail
+          LIBGL_ALWAYS_SOFTWARE=1 timeout 100s xvfb-run -a -s "-screen 0 1280x720x24" /tmp/Godot_v4.4.1-stable_linux.x86_64 --path . --rendering-method gl_compatibility --script res://tests/capture_cc0_anime_base.gd >anime-base-render.log 2>&1 || { cat anime-base-render.log; exit 1; }
+          cat anime-base-render.log
+          grep -Fq 'PASS VRM CC0 ANIME BASE ACTUAL GODOT' anime-base-render.log
+          test -s anime-base-front.png
+          test -s anime-base-angle.png
+      - name: Exclude generic anime asset from shipped apk
+        run: |
+          python3 -c 'from pathlib import Path; Path("qa_samples/anime_cc0_lookdev.vrm").unlink(missing_ok=True)'
       - name: Capture true 3D DeepSeek blue avatar close-up
         continue-on-error: true
         run: |
@@ -213,6 +223,9 @@ jobs:
             zhiyin-real3d/godot-scene-qa.log
             zhiyin-real3d/godot-navigation-qa.log
             zhiyin-real3d/vrm-import-qa.log
+            zhiyin-real3d/anime-base-render.log
+            zhiyin-real3d/anime-base-front.png
+            zhiyin-real3d/anime-base-angle.png
             zhiyin-real3d/VRM_PLUGIN_PROVENANCE.txt
             zhiyin-real3d/godot-android-export.log
             zhiyin-real3d/quaternius-motion-inspect.log
