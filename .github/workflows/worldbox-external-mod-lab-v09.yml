@@ -53,7 +53,11 @@ jobs:
           echo "9ed209cdc783ed26998d31e461d1bbd317c83aff7ed8eefe844ddb0878a19c6a  /tmp/NeoModLoader_mobile.dll" | sha256sum --check --status
           test "$(stat -c%s /tmp/NeoModLoader_mobile.dll)" = 20135424
           echo 'PASS Official MOBILE NML release signature pinned, no binaries committed'
-      - name: 'Compile v07 observer source against REAL public NML_mobile DLL (WorldBox/Unity stubs still used)'
+      - name: 'Download temporary public Unity CoreModule compile-time reference'
         run: |
-          dotnet build tools/worldbox-xianxia/tests/WorldBoxObserver.MobileSdk.csproj -c Release --verbosity quiet -p:MobileNMLPath=/tmp/NeoModLoader_mobile.dll
+          curl -fLsS --retry 2 --connect-timeout 20 -o /tmp/UnityEngine.CoreModule.dll https://raw.githubusercontent.com/WorldBoxOpenMods/AndroidModLoader/master/android-assembly-dependencies/UnityEngine.CoreModule.dll
+          test "$(stat -c%s /tmp/UnityEngine.CoreModule.dll)" = 2583552
+      - name: 'Compile v07 observer source against REAL public NML_mobile DLL (WorldBox API still stubbed)'
+        run: |
+          dotnet build tools/worldbox-xianxia/tests/WorldBoxObserver.MobileSdk.csproj -c Release --verbosity quiet -p:MobileNMLPath=/tmp/NeoModLoader_mobile.dll -p:UnityCorePath=/tmp/UnityEngine.CoreModule.dll
           echo 'THIS IS NOT A GAME DEVICE PASS; ONLY REAL PUBLIC NML ASSEMBLY REFERENCE'
