@@ -65,6 +65,7 @@ public final class HomeWorldView extends View {
     float d=(float)Math.hypot(tx-x,ty-y);
     float step=Math.min(d,3.0f);if(d>1){x+=(tx-x)/d*step;y+=(ty-y)/d*step;}
     drawCharacter(c,t,d>3);
+    drawActivityProps(c,t,d<=3);
     drawFurnitureFront(c,t);drawFloorDetails(c,t);drawThought(c,t);
     c.restore();
     postInvalidateDelayed(33);
@@ -215,6 +216,7 @@ public final class HomeWorldView extends View {
     float y0=y+bob;
     float height="SLEEP".equals(life.action)?105:133;
     c.save();c.translate(x,y0);
+    if("SLEEP".equals(life.action)&&!walking)c.rotate(65,0,-70);
     ellipse(c,0,7,29,9,0x66745B5F);
     // layered legs & shoes
     shape(c,new float[]{-14,-41,-4,-41,-5,1,-20,1},0xFF4E536F);
@@ -277,6 +279,69 @@ public final class HomeWorldView extends View {
     }
     c.restore();
   }
+  // Activity-linked equipment and motion; actions have visible local performances,
+  // not merely a changed status string.
+  private void drawActivityProps(Canvas c,long t,boolean arrived){
+    if(!arrived)return;
+    c.save();c.translate(x,y);
+    float pulse=(float)Math.sin(t/260.0);
+    switch(life.action){
+      case "READ":
+        shape(c,new float[]{-33,-77,-3,-87,0,-64,-25,-55},0xFFF8F1DD);
+        shape(c,new float[]{0,-64,3,-87,32,-77,25,-55},0xFFFFE8CD);
+        line(c,0,-86,0,-63,2,0xFFBA9C87);
+        for(int i=0;i<3;i++){line(c,-23,-72+i*5,-9,-77+i*5,.75f,0xFFAEA3A0);
+          line(c,11,-78+i*5,24,-73+i*5,.75f,0xFFAEA3A0);}
+        break;
+      case "WRITE":
+        rounded(c,-32,-77,25,-63,3,0xFFF4E8D7);
+        line(c,7,-91,15+pulse*2,-66,3,0xFF93788F);
+        break;
+      case "COOK":
+        rounded(c,-32,-67,35,-44,7,0xFF6B7181);
+        ellipse(c,1,-64,29,8,0xFFD4B8A1);
+        ellipse(c,1,-69,30,7,0xFF939AB0);
+        line(c,-2,-75,5,-97+Math.abs(pulse)*5,1.5f,0xBBFFEEE1);
+        line(c,11,-73,19,-94+Math.abs(pulse)*7,1.5f,0xBBFFEEE1);
+        break;
+      case "EAT":
+        ellipse(c,0,-61,30,12,0xFFF1EEE8);
+        ellipse(c,0,-64,24,7,0xFFC6A582);
+        line(c,17,-73,28,-101+pulse*5,2.6f,0xFFD7BF9B);
+        break;
+      case "WASH":
+        for(int i=0;i<4;i++){float dx=-27+i*16;
+          ellipse(c,dx,-85+Math.abs((float)Math.sin(t/380.0+i))*17,2.4f,3.5f,0x887DCEE2);}
+        rounded(c,-13,-69,24,-59,6,0xFFE7F4F2);
+        break;
+      case "CLEAN":
+        line(c,33,-107,49+pulse*4,-9,4,0xFF9C8066);
+        shape(c,new float[]{39+pulse*4,-13,64+pulse*4,-10,67+pulse*4,5,36+pulse*4,2},0xFFDDC2A7);
+        break;
+      case "WATER":
+        rounded(c,17,-81,43,-61,7,0xFF8FB5B5);
+        line(c,40,-78,55,-69,4,0xFF8FB5B5);
+        ellipse(c,61,-65+Math.abs(pulse)*6,3,4,0xFF74C3DD);
+        ellipse(c,66,-55+Math.abs(pulse)*8,2,3,0xFF74C3DD);
+        break;
+      case "STRETCH":
+        title(c,"✦",35,-131+3*pulse,15,0xFFFBE2A9);
+        break;
+      case "PRACTICE":
+      case "PIANO":
+        for(int i=0;i<3;i++)title(c,i==1?"♫":"♪",35+i*14,-153-i*19+(float)Math.sin(t/450.0+i)*7,17,0xFFFFE6B5);
+        break;
+      case "CHAT":
+        ellipse(c,40,-144,12,9,0x99FAE8D3);
+        title(c,"♥",32,-139,10,0xFFB7808A);
+        break;
+      case "WINDOW":
+        title(c,"✧",38,-164+(float)Math.sin(t/620.0)*4,21,0xFFFCEBC8);
+        break;
+    }
+    c.restore();
+  }
+
   private void drawThought(Canvas c,long t){
     float bubbleY=Math.max(122,y-230);
     float textWidth=Math.min(333,Math.max(175,life.note.length()*13));
