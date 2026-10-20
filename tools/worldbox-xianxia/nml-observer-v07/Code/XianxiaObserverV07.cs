@@ -158,6 +158,14 @@ namespace XianxiaWorldBox
                 open=!open;nextSample=0;
                 Debug.Log("[XIANXIA-V13] VIEW_"+(open?"OPEN":"CLOSE"));
             }
+            if(GUI.Button(new Rect(Mathf.Max(8,x-200*ui),9,190*ui,52*ui),"中文模组管理器",button)){
+                ChineseModManagerV21.Open=!ChineseModManagerV21.Open;
+                if(ChineseModManagerV21.Open)ChineseModManagerV21.Refresh();
+            }
+            if(ChineseModManagerV21.Open){
+                ChineseModManagerV21.Draw(ui,button,label,box);
+                return;
+            }
             if(!open)return;
             float pw=Mathf.Min(Screen.width-16,755*ui),ph=Mathf.Min(Screen.height-16,645*ui);
             Rect panel=new Rect((Screen.width-pw)/2,(Screen.height-ph)/2,pw,ph);
