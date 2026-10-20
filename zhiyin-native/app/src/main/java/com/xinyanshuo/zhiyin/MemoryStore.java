@@ -48,6 +48,25 @@ public final class MemoryStore extends SQLiteOpenHelper {
     v.put("privacy",privacy);v.put("owner",owner==null?"":owner);v.put("kind",kind);
     return getWritableDatabase().insertOrThrow("events",null,v);
   }
+  /** Transactional, lossless persistence of bounded life-engine stage events. */
+  public void appendLifeEvents(java.util.List<String> notes){
+    if(notes==null||notes.isEmpty())return;
+    SQLiteDatabase db=getWritableDatabase();
+    db.beginTransaction();
+    try{
+      long now=System.currentTimeMillis();int n=0;
+      for(String note:notes){
+        if(note==null||note.trim().isEmpty())continue;
+        ContentValues v=new ContentValues();
+        v.put("stamp",now+n++);
+        v.put("role","知音");v.put("body",note);
+        v.put("privacy","shared");v.put("owner","");
+        v.put("kind","life_simulation");
+        db.insertOrThrow("events",null,v);
+      }
+      db.setTransactionSuccessful();
+    }finally{db.endTransaction();}
+  }
   private JSONObject ev(Cursor c)throws JSONException{
     return new JSONObject().put("id",c.getLong(0)).put("stamp",c.getLong(1)).put("role",c.getString(2))
       .put("body",c.getString(3)).put("privacy",c.getString(4)).put("owner",c.getString(5)).put("kind",c.getString(6));
