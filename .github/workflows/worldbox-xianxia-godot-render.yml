@@ -1,0 +1,89 @@
+name: WorldBox xianxia REAL Godot sprite factory (isolated)
+on:
+  push:
+    branches:
+      - worldbox/xianxia-asset-adapter-v04
+    paths:
+      - "tools/worldbox-xianxia/**"
+      - ".github/workflows/worldbox-xianxia-godot-render.yml"
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  render-asset-candidates:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install open source raster tools and Xvfb CPU rendering dependencies
+        run: |
+          sudo apt-get -qq update
+          sudo apt-get -qq install -y xvfb libgl1-mesa-dri libglx-mesa0 libx11-6 unzip
+          python -m pip install "pillow>=10,<12"
+      - name: Download official Godot 4.4.1 (x86_64) - fail if unavailable
+        run: |
+          set -euo pipefail
+          curl -fLsS --retry 2 --connect-timeout 20 -o /tmp/godot.zip \
+            https://github.com/godotengine/godot/releases/download/4.4.1-stable/Godot_v4.4.1-stable_linux.x86_64.zip
+          unzip -oq /tmp/godot.zip -d /tmp/godotbin
+          chmod +x /tmp/godotbin/Godot_v4.4.1-stable_linux.x86_64
+      - name: Stage existing character-pipeline scripts into isolated Godot project
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/wb-runner/rig /tmp/wb-runner/out/{roles,matrix}
+          cp tools/worldbox-xianxia/godot/project.godot /tmp/wb-runner/project.godot
+          cp tools/worldbox-xianxia/godot/item3d.tscn /tmp/wb-runner/rig/item3d.tscn
+          cp tools/worldbox-xianxia/godot/shot.gd /tmp/wb-runner/rig/shot.gd
+          cp tools/character-pipeline/src/item3d.gd /tmp/wb-runner/rig/item3d.gd
+          cp tools/character-pipeline/src/icon_light.gdshader /tmp/wb-runner/rig/icon_light.gdshader
+      - name: Real 3D render - characters and beasts (not screenshots supplied by LLM)
+        run: |
+          set -euo pipefail
+          GODOT=/tmp/godotbin/Godot_v4.4.1-stable_linux.x86_64
+          xvfb-run -a -s "-screen 0 1280x800x24" timeout 420s "$GODOT" \
+            --path /tmp/wb-runner --rendering-driver opengl3 \
+            --resolution 512x512 -- --roles=wb04 > /tmp/wb-roles.log 2>&1 || { cat /tmp/wb-roles.log; exit 1; }
+          tail -n 50 /tmp/wb-roles.log
+          test "$(find /tmp/wb-runner/out/roles -name '*.png' | wc -l)" -ge 32
+      - name: Real 3D render - five elements times five item tiers
+        run: |
+          set -euo pipefail
+          GODOT=/tmp/godotbin/Godot_v4.4.1-stable_linux.x86_64
+          xvfb-run -a -s "-screen 0 1280x800x24" timeout 420s "$GODOT" \
+            --path /tmp/wb-runner --rendering-driver opengl3 \
+            --resolution 512x512 -- --matrix > /tmp/wb-matrix.log 2>&1 || { cat /tmp/wb-matrix.log; exit 1; }
+          tail -n 30 /tmp/wb-matrix.log
+          test "$(find /tmp/wb-runner/out/matrix -name '*.png' | wc -l)" -ge 25
+      - name: Export real rendering output as WorldBox GameResources candidate sprites
+        run: |
+          set -euo pipefail
+          python tools/worldbox-xianxia/export_nml_sprites.py \
+            --renders /tmp/wb-runner/out --out /tmp/wb-sprites --size 64 --pixel 2
+          python - <<'PY'
+          import json,hashlib
+          from pathlib import Path
+          from PIL import Image
+          root=Path('/tmp/wb-sprites')
+          manifest=json.loads((root/'asset_manifest.json').read_text())
+          assert manifest['frames'] >= 57,manifest['frames']
+          for item in manifest['sequences']:
+              for frame in item['frames']:
+                  p=root/frame['path']
+                  with Image.open(p) as im:
+                      im.load()
+                      assert im.size == (64,64)
+                      assert im.getchannel('A').getbbox(),p
+                  assert hashlib.sha256(p.read_bytes()).hexdigest()==frame['sha256']
+          print('PASS_GODOT_REAL_57PLUS_FRAMES, PENDING_WORLD_BOX_MOBILE',manifest['frames'])
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: worldbox-v04-real-godot-render-CANDIDATES
+          path: |
+            /tmp/wb-sprites/
+            /tmp/wb-roles.log
+            /tmp/wb-matrix.log
+          if-no-files-found: error
