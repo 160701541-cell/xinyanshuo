@@ -104,8 +104,11 @@ jobs:
           echo "Official Godot export templates sha256:"
           sha256sum /tmp/zhiyin-templates.tpz
           mkdir -p "$HOME/.local/share/godot/export_templates/4.4.1.stable"
-          unzip -j -o /tmp/zhiyin-templates.tpz 'templates/android_debug.apk' \
+          unzip -j -o /tmp/zhiyin-templates.tpz 'templates/android_debug.apk' 'templates/android_release.apk' 'templates/android_source.zip' \
             -d "$HOME/.local/share/godot/export_templates/4.4.1.stable/"
+          echo "4.4.1.stable" > "$HOME/.local/share/godot/export_templates/4.4.1.stable/version.txt"
+          ls -lh "$HOME/.local/share/godot/export_templates/4.4.1.stable/"
+          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --install "platforms;android-34" "build-tools;34.0.0" "platform-tools" >/dev/null
           test -s "$HOME/.local/share/godot/export_templates/4.4.1.stable/android_debug.apk"
           python3 -m pip install --quiet 'cryptography>=42,<47'
           python3 ../zhiyin-native/ci/make_lab_signer.py
@@ -122,12 +125,18 @@ jobs:
           [resource]
           export/android/android_sdk_path = "$ANDROID_HOME"
           export/android/java_sdk_path = "$JAVA_HOME_17_X64"
+          export/android/debug_keystore = "$RUNNER_TEMP/zhiyin-lab.jks"
+          export/android/debug_keystore_user = "zhiyin-lab"
+          export/android/debug_keystore_pass = "android"
           EOF
+          echo "SDK: $ANDROID_HOME  JAVA: $JAVA_HOME_17_X64"
+          java -version
+          ls "$ANDROID_HOME/platform-tools/adb" "$JAVA_HOME_17_X64/bin/java"
           export GODOT_ANDROID_KEYSTORE_DEBUG_PATH="$RUNNER_TEMP/zhiyin-lab.jks"
           export GODOT_ANDROID_KEYSTORE_DEBUG_USER="zhiyin-lab"
           export GODOT_ANDROID_KEYSTORE_DEBUG_PASSWORD="android"
           timeout 120s /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless \
-            --path . --export-debug Android build/zhiyin-real3d-room-lab.apk \
+            --verbose --path . --export-debug Android build/zhiyin-real3d-room-lab.apk \
             >godot-android-export.log 2>&1 || { cat godot-android-export.log; exit 1; }
           test -s build/zhiyin-real3d-room-lab.apk
           "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --print-certs \
