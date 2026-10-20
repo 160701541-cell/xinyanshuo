@@ -462,3 +462,25 @@ Work下一步：在真实Android16手机运行这一准确SHA256包，收集`MOD
 2. 地图**代码注册了2048候选入口**并真实嵌入原有托管桥，是否在用户版本的世界创建界面出现/可生成4,194,304格并保存未经过PKR110实机证据。内存/性能风险必须测，游戏生成器可能另有限制。不得把候选注册、SDK模拟和全量生成混为一谈。
 3. 观察组件FAILED、原有窗口重叠、王朝/人物英文名、原生桥V30全量重编、完整王朝皇宫、浮岛地府及本地AI仍是其他待验待实现项。**当前仅注入地图帮助DLL，没有宣称这些问题已经解决。**
 4. 同证书`lab31`更新需v0.31签名证书一致；任何`lab13`更新仍缺原旧测试私钥，禁止未备份卸载旧应用。与《苍岚》main完全隔离。
+
+
+---
+
+
+## 2026-10-21 v0.33——用户实机地图选项仍显示7/8，已复盘原版真实CLR程序集并修复
+
+**用户截图是失败证据，不能说“2048地图已经进入新建世界菜单”。** 用户当前选项“最大 7/8”说明实际仍然是原版8个尺寸，明确判定v0.32交付/视觉验收不合格。
+
+### 静态取证：首次真正用用户原有APK程序集定位根因
+- 已从私有用户安装包提取的真实0.51.4 `Assembly-CSharp.dll`运行原始dnlib只读元数据检测 `GameAssemblyToolkit inspect-map-ui`（工具源提交`b101a724`，修复编译提交`1063defa`），确认 `MapSizeLibrary.init()`将tiny/small/standard/large/huge/gigantic/titanic等资产放在继承来的 `AssetLibrary<MapSizeAsset>.list`，原代码**没有可供直接读取的 `MapSizeLibrary.titanic` 成员**。
+- v0.32原错误 `Member(lib,"titanic")`因不存在而直接 `WORLD_SIZE_NOT_READY` 返回，**根本没有调用add注册2048**。先前测试伪造了`titanic`字段，绿灯并不能证明真实原版行为，这是QA设计缺陷。
+- 真实`MapSizeLibrary.getSizes()`返回静态`_mapSizes`，`MapSizeTextUpdater.updateVars`以及`WorldTemplatesWindow.increaseSize`/`decreaseSize`读取此数组展示当前项/总项；`MapSizeLibrary.convertToOldFormat()`是真实原版维护此数组的方法，通过资产`list`重新生成新建世界尺寸列表。
+- 修复源码 `private-apk-lab/MapPresetBridgeV32/MapPresetBridgeV32.cs`：改用真实继承`get("titanic")`模板+在新候选尺寸进入资产列表后调用原版`convertToOldFormat()`，然后验证 `getSizes()`包含新ID；保留受限回退的缓存检查。不覆盖当前世界、已有存档、任何付费接口。
+- 修复旧测试`tests/MapPresetBridgeV32.Tests.cs`：明确删除伪造的`titanic`字段，模拟原版8项和继承`get`及`convertToOldFormat`，要求`8→9`并保留原8个选项、重复启动不重复。构建`39479083365`的3项任务**全部通过**，但这些仍是源码行为/SDK/私有工具编译，非手机UI证据。
+
+### 已完成本轮真实私有增量APK构建
+- 以用户已有lab31的v0.31私有实验APK为输入，使用新绿灯CI生成的`WorldBoxXianxiaMapPreset.dll` + `private_integrate_v32.py`编译工具做私有整合：同样保留多MOD ZIP导入原生DEX，仅替换`assets/Mono/Managed.zip`中的自有地图帮助DLL/自有Mono Overlay一条挂接调用，并刷新`install.json`的启动部署token。
+- 私有实签产物 `WorldBox_v033_2048地图创建选项修复_待实机.apk` 187,852,486字节，SHA256 `7932eb7774d4022065155f0f7ca5373f9bbd3ab1e9e10fe6c15d10d1f66bd996`。签名仍是lab31原有私钥证书 SHA256 `20087dc8c210c7c6a35a4492500324f33f36f7c5eb3a77dc62040c21281c400e`，v1/v2/v3均验证合格，可尝试覆盖**同证书的lab31**，不能覆盖lab13。
+- APK ZIP CRC通过；与v0.32比仅改变自有`Managed.zip`、部署`install.json`及签名；原版游戏`Assembly-CSharp.dll`实际SHA256一致，旧MOD内容、诊断DEX和导入ZIP功能未变；自有Overlay的旧18条IL经`verify-map-bridge`确认仅插入一个调用，其余语义保留。
+- 已成功上传v0.33签名APK及`WorldBox_v033_地图界面7of8_根因修复与私有验收.json`至用户的Work持久化文件库 `/WorldBox-万界仙侠/Work交接/`，公有GitHub只上传自有修复源码和日志，不公开用户商业APK或签名密钥。
+- **必须诚实的验收门槛**：还没有用户PKR110新v0.33手机截图；只有真的在新建世界菜单看见原8项基础上新增第9项“超大世界2048×2048”才可把“菜单入口显示”标通过。真正生成4,194,304格地图、保存/重载/长时间模拟也都未通过，世界生成及Config.maxMapSize可能还另有限制，必须分别测试。此前用户截图7/8为v0.32**失败**，不得再写功能交付成功。
