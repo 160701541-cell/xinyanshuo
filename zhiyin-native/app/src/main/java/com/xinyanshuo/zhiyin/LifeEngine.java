@@ -16,9 +16,9 @@ import java.util.Locale;
  */
 public final class LifeEngine {
   public static final String[] ACTIONS={"REST","SLEEP","SHOP","COOK","EAT","WASH","READ",
-    "PRACTICE","PIANO","WRITE","CLEAN","WATER","WINDOW","STRETCH","CHAT"};
+    "PRACTICE","PIANO","WRITE","CLEAN","WATER","WINDOW","STRETCH","CHAT","WORK"};
   public static final String[] LABELS={"休息","睡觉","补充食材","做饭","吃饭","洗漱","阅读",
-    "练习唱歌","弹琴","写日记","打扫房间","浇花","看风景","伸展运动","聊天"};
+    "练习唱歌","弹琴","写日记","打扫房间","浇花","看风景","伸展运动","聊天","编曲接单"};
 
   private static final long MAX_OFFLINE_MS=2L*60L*60L*1000L;
   private static final int MAX_STEPS=720;
@@ -79,7 +79,7 @@ public final class LifeEngine {
       case "SHOP":return .92f;
       case "COOK":case "EAT":return phase==0&&"COOK".equals(action)?.94f:.83f;
       case "WASH":return .95f;
-      case "READ":case "WRITE":return .70f;
+      case "READ":case "WRITE":case "WORK":return .70f;
       case "PIANO":case "PRACTICE":return .50f;
       case "WINDOW":return .26f;
       case "CLEAN":return phase%2==0?.42f:.65f;
@@ -95,7 +95,7 @@ public final class LifeEngine {
       case "SHOP":return .52f;
       case "COOK":case "EAT":return .64f;
       case "WASH":return .52f;
-      case "READ":case "WRITE":return .68f;
+      case "READ":case "WRITE":case "WORK":return .68f;
       case "PIANO":case "PRACTICE":return .73f;
       case "WINDOW":return .48f;
       case "WATER":return .81f;
@@ -125,6 +125,7 @@ public final class LifeEngine {
       case "WINDOW":return new String[]{"走近窗边","看云与树影","放松心情"};
       case "STRETCH":return new String[]{"舒展双臂","活动腰背","深呼吸"};
       case "CHAT":return new String[]{"走到你身边","认真听你说话","陪伴聊天"};
+      case "WORK":return new String[]{"阅读委托","编写简谱","调整编曲","交付音乐稿"};
       default:return new String[]{"坐下休息","整理计划","静静放松"};
     }
   }
@@ -144,6 +145,7 @@ public final class LifeEngine {
       case "WINDOW":return new int[]{6,24,5};
       case "STRETCH":return new int[]{7,9,7};
       case "CHAT":return new int[]{3,13,20};
+      case "WORK":return new int[]{6,17,16,8};
       default:return new int[]{5,12,9};
     }
   }
@@ -167,7 +169,9 @@ public final class LifeEngine {
       if(cursor>=phaseEnds){advance(cursor);count++;}
     }
     if(count>=MAX_STEPS){
-      queuedEvents.add("生活记录：离线时间很长，已按上限模拟，未虚构未计算的生活经历。");
+      phaseStarted=now;
+      phaseEnds=now+durations(action)[Math.min(phase,durations(action).length-1)]*1000L;
+      queuedEvents.add("生活记录：模拟步骤达到上限，已安全跳到当前时间，剩余时段不作虚构。");
     }
     if(wasOffline)queuedEvents.add("离线续接：超过两小时的区间已限制补算，避免错误生成大量虚构事件。");
     lastTick=now;
@@ -221,6 +225,7 @@ public final class LifeEngine {
       case "WINDOW":mood=clamp(mood+6);break;
       case "STRETCH":energy=clamp(energy+7);mood=clamp(mood+3);break;
       case "CHAT":social=clamp(social+19);mood=clamp(mood+6);break;
+      case "WORK":money=Math.min(999999,money+28);skill=clamp(skill+.8);energy=clamp(energy-5);break;
     }
   }
   private String resultOf(String a){
@@ -232,6 +237,7 @@ public final class LifeEngine {
       case "PRACTICE":return "已练习"+completedSongs+"次";
       case "PIANO":return "音乐熟练度"+Math.round(skill);
       case "READ":return "累计阅读"+readPages+"页";
+      case "WORK":return "交付音乐委托，金币"+money;
       default:return "心情"+Math.round(mood);
     }
   }
@@ -246,11 +252,13 @@ public final class LifeEngine {
     else if(hunger<54 && meals>0)selected="EAT";
     else if(hunger<54 && pantry>0)selected="COOK";
     else if(hunger<54 && money>=4)selected="SHOP";
+    else if(hunger<54)selected="WORK";
     else if(hygiene<43)selected="WASH";
     else if(dirtyDishes>3)selected="CLEAN";
     else if(energy<39)selected="REST";
     else if(social<34)selected="CHAT";
     else if(pantry==0&&money>=4)selected="SHOP";
+    else if(money<16)selected="WORK";
     else if(hour>=22&&energy<85)selected="SLEEP";
     else {
       String[] morning={"WASH","WATER","STRETCH","READ","WRITE","PIANO"};
