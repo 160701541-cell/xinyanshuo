@@ -329,17 +329,53 @@ func _loft_ell(rings: Array, seg := 40, collar := false) -> void:
 	mi.material_override = mat
 	pivot.add_child(mi)
 
+func _body_env(y0: float, half: float = 0.135, band: float = 0.012) -> Vector2:
+	# 第 4 轮（R2 参数化）：按身体顶点求该高度的椭圆柱包络半轴 (rx, rz)，
+	# 保证 |x|<=half 带内所有离 y0 不超过 band 的顶点都落在椭圆内。
+	# 只覆盖躯干中轴带（排除肩峰/手臂），与量测仪器 MEAS BREACH 的口径一致。
+	var ax := 0.0
+	var az := 0.0
+	for v in verts:
+		if absf(v.x) > half:
+			continue
+		if absf(v.y - y0) > band:
+			continue
+		ax = maxf(ax, absf(v.x))
+		az = maxf(az, absf(v.z))
+	if ax <= 0.0 or az <= 0.0:
+		return Vector2(-1.0, -1.0)
+	var m := 1.0
+	for v in verts:
+		if absf(v.x) > half:
+			continue
+		if absf(v.y - y0) > band:
+			continue
+		m = maxf(m, sqrt((v.x / ax) * (v.x / ax) + (v.z / az) * (v.z / az)))
+	return Vector2(ax * m, az * m)
+
 func _robe_rings() -> Array:
 	# R2 参数化：领口环带由 rig/neck_params.json 驱动（mid_y<=0 表示不插中间环）
 	var R := Color(0.085, 0.255, 0.250)     # 外袍
 	var D := Color(0.045, 0.150, 0.155)     # 下摆
 	var np := _neck_params()
-	var arr: Array = [
-		{"y": np["collar_y"], "rx": np["collar_rx"], "rz": np["collar_rz"], "c": R},       # 领口贴颈
-	]
-	if float(np["mid_y"]) > 0.0:
-		arr.append({"y": np["mid_y"], "rx": np["mid_rx"], "rz": np["mid_rz"], "c": R})    # 领口下沿（斜方肌）
-	arr.append({"y": np["shoulder_y"], "rx": np["shoulder_rx"], "rz": np["shoulder_rz"], "c": R})
+	var arr: Array = []
+	if float(np["fit_enable"]) > 0.5:
+		# 第 4 轮：颈–肩–领三环不再手调，改为按身体顶点椭圆柱包络数据求解
+		# （fit_rings 个环 × fit_margin 余量），消除分轴手调漏掉的残留穿插
+		var n: int = maxi(2, int(np["fit_rings"]))
+		var mg: float = float(np["fit_margin"])
+		for i in range(n):
+			var t := float(i) / float(n - 1)
+			var yf: float = lerpf(float(np["collar_y"]), float(np["shoulder_y"]), t)
+			var e := _body_env(yf)
+			if e.x <= 0.0:
+				continue
+			arr.append({"y": yf, "rx": e.x * mg, "rz": e.y * mg, "c": R})
+	else:
+		arr.append({"y": np["collar_y"], "rx": np["collar_rx"], "rz": np["collar_rz"], "c": R})       # 领口贴颈
+		if float(np["mid_y"]) > 0.0:
+			arr.append({"y": np["mid_y"], "rx": np["mid_rx"], "rz": np["mid_rz"], "c": R})    # 领口下沿（斜方肌）
+		arr.append({"y": np["shoulder_y"], "rx": np["shoulder_rx"], "rz": np["shoulder_rz"], "c": R})
 	arr.append_array([
 		{"y": 1.44, "rx": 0.210, "rz": np["ring2_rz"], "c": R},   # 肩
 		{"y": 1.34, "rx": 0.215, "rz": np["ring3_rz"], "c": R},
@@ -547,24 +583,24 @@ func _studio_params() -> Dictionary:
 
 func _collar_trim() -> void:
 	# R2 本轮唯一变量族：领口金边环带（贴着领口外表面、留 band_margin 余量）
+	# 第 4 轮起半径来源统一：金边跟随 **实际袍环** `_robe_rings()`，不再读 legacy 的
+	# collar_rx/mid_rx —— 否则环带一改成数据求解，金边就会落进袍面里而消失（实测 gold 5.45%→0.46%）
 	var tp := _trim_params()
 	var h := float(tp["band_h"])
 	if h <= 0.0:
 		return
-	var np := _neck_params()
-	var cy := float(np["collar_y"])
-	var my := float(np["mid_y"])
-	var cr := float(np["collar_rx"])
-	var cdz := float(np["collar_rz"])
-	var mr := float(np["mid_rx"])
-	var mdz := float(np["mid_rz"])
+	var rr := _robe_rings()
+	var cy: float = float(rr[0]["y"])
 	var m := float(tp["band_margin"])
 	var gold := Color(float(tp["gold_r"]), float(tp["gold_g"]), float(tp["gold_b"]))
 	var rings: Array = []
 	for i in range(2):
 		var y: float = cy - h * float(i)
-		var t: float = clampf((cy - y) / maxf(0.001, cy - my), 0.0, 1.0)
-		rings.append({"y": y, "rx": cr + t * (mr - cr) + m, "rz": cdz + t * (mdz - cdz) + m, "c": gold})
+		var rx := _robe_ring_at(rr, y, "rx")
+		var rz := _robe_ring_at(rr, y, "rz")
+		if rx <= 0.0 or rz <= 0.0:
+			continue
+		rings.append({"y": y, "rx": rx + m, "rz": rz + m, "c": gold})
 	_loft_ell(rings, 48, false)
 
 
@@ -725,6 +761,7 @@ func _neck_params() -> Dictionary:
 		"shoulder_y": 1.47, "shoulder_rx": 0.130, "shoulder_rz": 0.100,
 		"ring2_rz": 0.130, "ring3_rz": 0.132, "ring4_rz": 0.125, "ring5_rz": 0.110,
 		"mid_y": 0.0, "mid_rx": 0.0, "mid_rz": 0.0,
+		"fit_enable": 0.0, "fit_rings": 5.0, "fit_margin": 1.08,
 	}
 	var f := FileAccess.open("res://rig/neck_params.json", FileAccess.READ)
 	if f != null:
@@ -795,36 +832,39 @@ func _measure_dump() -> void:
 			rbx = maxf(rbx, absf(v.x))
 			rbz = maxf(rbz, absf(v.z))
 		print("MEAS BODY y=%.2f r_centerline=%.4f rx=%.4f rz=%.4f" % [float(yb), rb, rbx, rbz])
-	# R4 几何量测：领口带（ring0..ring2）的包覆余量 = 袍面半径 - 同高度身体半径，负数=穿插
+	# R4 几何量测：领口带由 neck_params 的 shoulder_y..collar_y 定义（与环数无关）
 	var rr2 := _robe_rings()
+	var npb := _neck_params()
+	var y_lo: float = minf(float(npb["shoulder_y"]), float(npb["collar_y"]))
+	var y_hi: float = maxf(float(npb["shoulder_y"]), float(npb["collar_y"]))
 	var min_clr := 1e9
 	var clr_at := ""
-	for k in range(3):
-		for tt in [0.0, 0.25, 0.5, 0.75]:
-			var yc: float = lerpf(float(rr2[k]["y"]), float(rr2[k + 1]["y"]), tt)
-			var rxc: float = lerpf(float(rr2[k]["rx"]), float(rr2[k + 1]["rx"]), tt)
-			var rzc: float = lerpf(float(rr2[k]["rz"]), float(rr2[k + 1]["rz"]), tt)
-			var bx := 0.0
-			var bz := 0.0
-			for v in verts:
-				if absf(v.x) > 0.135:
-					continue
-				if absf(v.y - yc) > 0.012:
-					continue
-				bx = maxf(bx, absf(v.x))
-				bz = maxf(bz, absf(v.z))
-			var cx := rxc - bx
-			var cz := rzc - bz
-			if minf(cx, cz) < min_clr:
-				min_clr = minf(cx, cz)
-				clr_at = "y=%.3f" % yc
-			print("MEAS COLLAR y=%.3f robe_rx=%.3f robe_rz=%.3f body_rx=%.3f body_rz=%.3f clr_x=%+.4f clr_z=%+.4f" % [yc, rxc, rzc, bx, bz, cx, cz])
+	var ncs: int = 7
+	for k in range(ncs):
+		var yc: float = lerpf(y_hi, y_lo, float(k) / float(ncs - 1))
+		var rxc := _robe_ring_at(rr2, yc, "rx")
+		var rzc := _robe_ring_at(rr2, yc, "rz")
+		var bx := 0.0
+		var bz := 0.0
+		for v in verts:
+			if absf(v.x) > 0.135:
+				continue
+			if absf(v.y - yc) > 0.008:
+				continue
+			bx = maxf(bx, absf(v.x))
+			bz = maxf(bz, absf(v.z))
+		var cx := rxc - bx
+		var cz := rzc - bz
+		if minf(cx, cz) < min_clr:
+			min_clr = minf(cx, cz)
+			clr_at = "y=%.3f" % yc
+		print("MEAS COLLAR y=%.3f robe_rx=%.3f robe_rz=%.3f body_rx=%.3f body_rz=%.3f clr_x=%+.4f clr_z=%+.4f" % [yc, rxc, rzc, bx, bz, cx, cz])
 	print("MEAS COLLAR_MIN clearance=%.4f at %s" % [min_clr, clr_at])
 	# R4 工具层换层（第 3 轮）：颈部门槛改由几何口径判定 ——
 	# 统计袍身领口带内身体顶点（|x|<=0.135）穿出袍面的数量，椭圆柱判据 (x/rx)^2+(z/rz)^2 > 1
-	var y_lo: float = minf(minf(float(rr2[0]["y"]), float(rr2[1]["y"])), float(rr2[2]["y"]))
-	var y_hi: float = maxf(maxf(float(rr2[0]["y"]), float(rr2[1]["y"])), float(rr2[2]["y"]))
 	var breach := 0
+	var worst := 0.0
+	var worst_at := Vector3.ZERO
 	for v in verts:
 		if absf(v.x) > 0.135:
 			continue
@@ -834,9 +874,13 @@ func _measure_dump() -> void:
 		var rz_b := _robe_ring_at(rr2, v.y, "rz")
 		if rx_b <= 0.0 or rz_b <= 0.0:
 			continue
-		if (v.x / rx_b) * (v.x / rx_b) + (v.z / rz_b) * (v.z / rz_b) > 1.0:
+		var q := (v.x / rx_b) * (v.x / rx_b) + (v.z / rz_b) * (v.z / rz_b)
+		if q > worst:
+			worst = q
+			worst_at = v
+		if q > 1.0:
 			breach += 1
-	print("MEAS BREACH verts=%d band=%.3f..%.3f" % [breach, y_lo, y_hi])
+	print("MEAS BREACH verts=%d band=%.3f..%.3f worst_q=%.4f at(%.3f,%.3f,%.3f)" % [breach, y_lo, y_hi, worst, worst_at.x, worst_at.y, worst_at.z])
 	var tot := idx.size() / 3
 	for c in pivot.get_children():
 		if c is MeshInstance3D:

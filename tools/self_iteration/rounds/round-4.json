@@ -1,0 +1,52 @@
+{
+  "round": 4,
+  "date": "2026-10-20",
+  "target": "颈部/头部衔接（收口）：颈–肩–领三环半径来源改为按身体顶点椭圆柱包络数据求解，把领口带的 body_breach_verts 从 42 压到 0",
+  "branch": "art/self-iteration-rounds",
+  "commit": "PENDING",
+  "changes": [
+    "颈–肩–领环带半径来源统一为数据求解（唯一变量族群）：cloth.gd 新增 _body_env(y)——按 |x|<=0.135 躯干中轴带内、距 y 不超过 ±0.012 的身体顶点求椭圆柱包络半轴（ax=max|x|、az=max|z|、m=max sqrt((x/ax)^2+(z/az)^2)，返回 (ax*m, az*m)，可证带内全部顶点落在椭圆内）；_robe_rings() 在 fit_enable=1 时按 fit_rings 个环（collar_y→shoulder_y 均分）取包络半径 ×fit_margin 余量，缺文件=基线手调值；同步把挂在领口环上的金边环带 _collar_trim() 改为跟随实际袍环 _robe_rings()（此前读 legacy 的 collar_rx/mid_rx，环带一改数据求解金边就落进袍面里、accent 5.45%→0.46%）。本轮参数 rig/neck_params.json：fit_enable=1、fit_rings=5、fit_margin=1.08。"
+  ],
+  "instrument_changes": [
+    "量测带定义改由参数给出：MEAS BREACH 的领口带从『环数组下标 rr2[0]..rr2[2]』改为 neck_params 的 shoulder_y..collar_y（与环数无关，fit_rings 变化时口径不漂）；MEAS COLLAR/CLLAR_MIN 的采样点同样改由参数带均分 7 点、采样半宽收窄到 ±0.008；MEAS BREACH 增加 worst_q 与最差顶点坐标（用于判断余量是否真的够）。"
+  ],
+  "renders": [
+    "tools/self_iteration/shots/round04_after_0.png",
+    "tools/self_iteration/shots/round04_after_90.png",
+    "tools/self_iteration/shots/round04_after_180.png",
+    "tools/self_iteration/shots/round04_after_45.png",
+    "tools/self_iteration/shots/round03_after_0.png",
+    "tools/self_iteration/shots/round03_after_90.png",
+    "tools/self_iteration/shots/round03_after_180.png",
+    "tools/self_iteration/shots/round03_after_45.png"
+  ],
+  "metrics": {
+    "delta_L": 32.59,
+    "accent_area_pct": 5.95,
+    "delta_E00": 5.84,
+    "outline_px": null,
+    "parts_readable": null,
+    "body_breach_verts": 0,
+    "neck_gap_px": 51.5,
+    "triangles": 26468,
+    "head_torso_leg_ratio": "1 : 1.75 : 3.38",
+    "collar_min_clearance_m": 0.0252
+  },
+  "verdict": {
+    "technical": "BLOCKED",
+    "aesthetic": "PENDING",
+    "note": "四项达标、两项 BLOCKED、零未达标 —— body_breach_verts 42 → 0（门槛 =0）PASS（最差顶点 q=0.8511，即仍在袍面内 15% 余量）；领口带包覆余量 collar_min_clearance 0.0048 → 0.0252 m（+25.2mm）；delta_L 33.06 → 32.59（≥25）PASS；accent_area_pct 5.45% → 5.95%（四视图 4.82–7.12，门槛 3–8%）PASS；delta_E00 5.81 → 5.84（≤6）PASS；outline_px / parts_readable 本环境无视觉通道 → BLOCKED（不填估计值）；neck_gap_px 51.5（像素口径，辅助回显）。技术判定按校验器口径为 BLOCKED（零 FAIL、两项 BLOCKED）—— 不是有指标未达标，而是两项门槛在本环境无法测量。aesthetic 一律 PENDING，由用户判。"
+  },
+  "attribution": {
+    "root_cause": "第 3 轮暴露的 42 个穿出顶点有两个真因：①第 1 轮的环半径是**分轴**手调的（rx 按 max|x|、rz 按 max|z| 各调各的），椭圆截面上 x 与 z 同时贴近边界的顶点会被漏判——分轴都留了余量，合起来仍然穿；②三环 loft 是分段线性插值，而身体轮廓在 y1.52–1.588 之间是向下收缩的凸形，环间距越大中段漏包越多。改为按身体顶点直接求包络椭圆（先归一化再取最大半径 m 整体缩放）＋ 5 环插值 ＋ 1.08 余量后，一次就压到 0。",
+    "evidence": "同一机位 A/B（exposure 1.8，620x820）：body_breach_verts 42 → **0**（band 1.520..1.588，worst_q 0.8511）；collar_min_clearance 0.0048 → **0.0252 m**；delta_L 33.06 → 32.59；accent_area_pct 5.45% → 5.95%（4.82–7.12）；delta_E00 5.81 → 5.84；neck_gap_px 53.0 → 51.5；三角面 26084 → 26468（+384，5 环 loft 的代价）。返工一次：金边环带未跟随新环半径时 accent 掉到 0.32%/0.46%（金边落进袍面内被遮挡），改为跟随 _robe_rings() 后恢复 5.56%。",
+    "residual": "本口径只覆盖躯干中轴带（|x|<=0.135）：肩峰/手臂带（|x|>0.135）的袍面穿帮不在本轮门槛内，未量测；像素口径 neck_gap_px 仍为 41–57（它分不清领口以上正常可见的颈部皮肤与真穿帮，已按停损规则降为辅助）；outline_px / parts_readable 需要视觉通道，本容器无 vision provider（read_image/modlens 均报无视觉后端）→ BLOCKED。"
+  },
+  "lessons": [
+    "手调半径不可能替代数据求解：分轴余量（max|x|、max|z| 各留一点）在椭圆截面对角方向会失效；正确做法是把顶点归一化到 (x/ax, z/az) 后取最大模 m，再整体缩放 (ax*m, az*m)",
+    "环数就是包覆精度：loft 是分段线性，身体轮廓是凸的，环越少中段漏包越明显；0.068m 的带用 5 环 + 1.08 余量即达标（代价只有 +384 三角面）",
+    "改『半径来源』这类底层耦合时，挂在上面的装饰件必须一起改：金边环带读的是 legacy 的 collar_rx，环带一改数据求解就落进袍面里被遮挡（accent 5.45%→0.46%），必须跟随实际袍环 —— 这是本轮唯一的返工",
+    "量测口径不能按下标写死（rr2[0]..rr2[2]）：环数一变口径就漂，必须由参数语义（shoulder_y..collar_y）定义"
+  ],
+  "next": "本环境已到收口：4 项门槛达标、2 项因**无视觉通道** BLOCKED（outline_px / parts_readable），需换到有视觉/人工判读的环境补齐并出审美判定。角色侧下一批真问题：①后脑发片与头壳穿插（README 未达成项 2）；②脸仍是 Quaternius 骨相，需换东亚脸底模（未达成项 3）；③袖口内壁黑盘（未达成项 1）。"
+}

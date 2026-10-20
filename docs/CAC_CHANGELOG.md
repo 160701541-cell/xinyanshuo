@@ -1,5 +1,15 @@
 # CAC 工序变更与开发日志
 
+## 2026-10-20 / CAC-SELF-ITERATION-ROUND-4-COLLAR-ENVELOPE-FIT / 第 4 轮收口：领口带穿出顶点 42→0（环半径改为按身体椭圆柱包络数据求解）；4 项门槛达标，2 项因无视觉通道 BLOCKED
+- **本轮唯一变量族群（R7，`changes` 只 1 项）**：颈–肩–领环带半径来源统一为**数据求解**。`cloth.gd` 新增 `_body_env(y)`：取躯干中轴带（|x|≤0.135）内距 y ±0.012 的身体顶点，归一化到 `(x/ax, z/az)` 后取最大模 `m`，返回 `(ax·m, az·m)` —— 可证带内全部顶点落在椭圆内；`_robe_rings()` 在 `fit_enable=1` 时按 `fit_rings=5` 环（collar_y→shoulder_y 均分）取包络半径 ×`fit_margin=1.08`。**同步把金边环带 `_collar_trim()` 改为跟随实际袍环**（它此前读 legacy 的 `collar_rx/mid_rx`）。
+- **真因（第 3 轮换层暴露的 42 个穿出顶点）**：①第 1 轮是**分轴**手调（rx 按 max|x|、rz 按 max|z| 各留余量），椭圆截面上 x/z 同时贴近边界的顶点被漏判 —— 分开看都够、合起来仍穿；②三环 loft 是分段线性插值，身体轮廓在 y1.52–1.588 是向下收缩的凸形，环间距越大中段漏包越多。
+- **诚实判定（`tools/self_iteration/rounds/round-4.json`，`check_round.py` exit=1、违规 0 项）**：`body_breach_verts` 42 → **0**（=0，最差顶点 q=0.8511，仍在袍面内 15% 余量）**PASS**；`delta_L` 33.06→**32.59**（≥25）PASS；`accent_area_pct` 5.45%→**5.95%**（四视图 4.82–7.12，门槛 3–8%）PASS；`delta_E00` 5.81→**5.84**（≤6）PASS；`collar_min_clearance` 0.0048→**0.0252 m**；`neck_gap_px` 51.5（像素口径，辅助）；`outline_px` / `parts_readable` **本环境无视觉通道 → BLOCKED**（本容器 `read_image` / modlens 均报无视觉后端，不填估计值）。**技术判定 = BLOCKED（零 FAIL、两项 BLOCKED）**，`aesthetic` 仍 PENDING 由用户判。
+- **仪器口径修订（台账 `instrument_changes`）**：`MEAS BREACH` 的领口带从「环数组下标 rr2[0]..rr2[2]」改为**参数语义** `neck_params.shoulder_y..collar_y`（环数变化时口径不漂）；`MEAS COLLAR/_MIN` 采样点同改由参数带均分 7 点、半宽 ±0.008；新增 `worst_q` 与最差顶点坐标。协议附录 A 已留痕。
+- **一次返工（已记入 lessons）**：环半径来源一改，金边环带没跟着改 → 金边落进袍面内被遮挡，`accent_area_pct` 5.45% → **0.32%/0.46%**；改为跟随 `_robe_rings()` 后恢复 5.56%。**教训：改「半径来源」这类底层耦合，挂在上面的装饰件必须一起改。**
+- **代价**：三角面 26084 → 26468（+384，5 环 loft）。
+- **一条命令复现**：`tools/character-pipeline/run_head_shot.sh /root/game /root/godot/Godot_v4.4.1-stable_linux.arm64 tools/self_iteration/params/round04_after.json round04_after`。
+- **未做**：未合并 `main`、未改 `android-preview/latest.json`、未签名、未发布；本轮**不是**"玩家打开原版《苍岚》就能更新"的东西，只是角色流水线的源码/迭代进度。
+
 ## 2026-10-20 / CAC-SELF-ITERATION-ROUND-3-EXPOSURE-CALIBRATION / 第 3 轮：主色漂移 ΔE00 14.23→5.81 达标（靠曝光标定，不是改材质）；颈缝主仪器换成几何椭圆柱口径，暴露残留 42 顶点
 - **本轮唯一变量族群（R7，`changes` 只 1 项）**：影棚曝光标定。真因不是材质色画错，而是**影棚曝光偏低**——渲染出的袍色比 `CHARACTER_SPEC.md` 色板暗，ΔE00 对曝光单调（降曝光只会更暗更偏）：单视图 yaw0 扫 8 个点，exposure 0.50→ΔE00 24.38、0.80→18.12、1.20→11.33、1.50→7.32、**1.80→5.66（最小）**、2.20→7.49。**先标定光照、再谈材质**，一维扫描比盲改色板便宜一个数量级。
 - **改动**：`rig/studio_params.json` 新增 `exposure` 键并驱动 `WorldEnvironment.tonemap_exposure`，本轮 1.0→1.8；深色背景 0.100/0.105/0.120、key 1.15 / fill 0.5 / ambient 0.55 **均未动**；角色几何与材质色**一字未改**。
