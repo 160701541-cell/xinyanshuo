@@ -34,6 +34,8 @@ jobs:
         run: dotnet run --project tools/worldbox-xianxia/tests/CultivationScenarioV18.csproj -c Release
       - name: 'Execute runtime Chinese translation and other-MOD display regression'
         run: dotnet run --project tools/worldbox-xianxia/tests/RuntimeChineseScenarioV22.csproj -c Release
+      - name: 'Execute original locale key and NML Chinese registration C# behavior test'
+        run: dotnet run --project tools/worldbox-xianxia/tests/NativeLocaleScenarioV23.csproj -c Release
       - name: 'WorldBox external MOD only: prevent main-game edits'
         run: python tools/worldbox-xianxia/scope_gate.py
       - name: 'Ensure only source code is published in third-party test folder'
@@ -67,6 +69,21 @@ jobs:
       - name: 'Inspect public reference WorldBox map size API metadata without running game'
         run: |
           dotnet run --project tools/worldbox-xianxia/inspector/MapTypes.csproj -- /tmp/wb-android-public-sdk/Assembly-CSharp.dll | tee /tmp/WORLDBOX_PUBLIC_MAP_TYPES.json
+      - name: 'Inspect public WorldBox and NML localization API metadata (not game runtime)'
+        run: |
+          dotnet run --project tools/worldbox-xianxia/inspector/LocaleTypes.csproj -- /tmp/wb-android-public-sdk/Assembly-CSharp.dll /tmp/wb-android-public-sdk/NeoModLoader_mobile.dll | tee /tmp/WORLDBOX_PUBLIC_LOCALE_TYPES.json
+          python - <<'PY'
+          import json
+          data=json.load(open('/tmp/WORLDBOX_PUBLIC_LOCALE_TYPES.json'))
+          entries={x['type']:x for x in data['items']}
+          assert 'LocalizedTextManager' in entries, 'Android public reference missing native localization manager'
+          assert 'NeoModLoader.General.LM' in entries, 'Android NML reference missing localization registry'
+          ltm=entries['LocalizedTextManager']
+          lm=entries['NeoModLoader.General.LM']
+          print('Native manager fields:',ltm['fields'])
+          print('NML locale methods:',lm['methods'])
+          assert 'Add' in lm['methods'] and 'ApplyLocale' in lm['methods'], 'NML locale API contract changed'
+          PY
       - name: 'Compile against ACTUAL public Android NML, Unity and WorldBox APIs; never use source stubs'
         run: |
           dotnet build tools/worldbox-xianxia/tests/WorldBoxObserver.AndroidSdk.csproj -c Release --verbosity quiet -p:AndroidSdkPath=/tmp/wb-android-public-sdk
@@ -90,6 +107,8 @@ jobs:
             --extra-source tools/worldbox-xianxia/localization/ChineseLocalizationV22.cs \
             --extra-source tools/worldbox-xianxia/localization/RuntimeChineseOverlayV22.cs \
             --extra-source tools/worldbox-xianxia/localization/OriginalMenuGuideV22.cs \
+            --extra-source tools/worldbox-xianxia/localization/ChineseMenuGlossaryV23.cs \
+            --extra-source tools/worldbox-xianxia/localization/NativeLocaleBridgeV23.cs \
             --manifest tools/worldbox-xianxia/nml-observer-v07/mod.json \
             --out /tmp/worldbox_v22_android_mono_source_DEVICE_PENDING.zip
       - name: 'Validate legacy source-only MOD contains no third-party DLL'
@@ -109,6 +128,8 @@ jobs:
               assert root+'Code/ChineseLocalizationV22.cs' in files
               assert root+'Code/RuntimeChineseOverlayV22.cs' in files
               assert root+'Code/OriginalMenuGuideV22.cs' in files
+              assert root+'Code/ChineseMenuGlossaryV23.cs' in files
+              assert root+'Code/NativeLocaleBridgeV23.cs' in files
               assert json.loads(z.read(root+'mod.json'))['ModType']==0
               assert all(not p.lower().endswith(('.apk','.dll','.pck')) for p in files)
               assert z.testzip() is None
@@ -150,6 +171,9 @@ jobs:
           cp tools/worldbox-xianxia/localization/ChineseLocalizationV22.cs /tmp/worldbox-v22-artifacts/
           cp tools/worldbox-xianxia/localization/RuntimeChineseOverlayV22.cs /tmp/worldbox-v22-artifacts/
           cp tools/worldbox-xianxia/localization/OriginalMenuGuideV22.cs /tmp/worldbox-v22-artifacts/
+          cp tools/worldbox-xianxia/localization/ChineseMenuGlossaryV23.cs /tmp/worldbox-v22-artifacts/
+          cp tools/worldbox-xianxia/localization/NativeLocaleBridgeV23.cs /tmp/worldbox-v22-artifacts/
+          cp /tmp/WORLDBOX_PUBLIC_LOCALE_TYPES.json /tmp/worldbox-v22-artifacts/
           cp tools/worldbox-xianxia/nml-observer-v07/mod.json /tmp/worldbox-v22-artifacts/
           cp /tmp/WORLDBOX_PUBLIC_MAP_TYPES.json /tmp/worldbox-v22-artifacts/
           cp /tmp/worldbox-v22-MAP_SIZE_CANDIDATES.json /tmp/worldbox-v22-artifacts/
