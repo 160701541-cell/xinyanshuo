@@ -3,13 +3,17 @@ from pathlib import Path
 from apk_loader_preflight import audit
 from android_log_gate import check
 from observer_math import Camera,zoom_lod
-from scope_gate import validate_paths
+from scope_gate import validate_paths,validate_change_entries
 
 class V08IsolationAndCompatibility(unittest.TestCase):
     def test_project_isolation(self):
         self.assertEqual(validate_paths(["tools/worldbox-xianxia/qa.py",".github/workflows/worldbox-external-mod-lab-v08.yml"]),[])
         for p in ("AGENTS.md","game-source/x.gd","android-preview/latest.json","docs/CAC_CHANGELOG.md","data/updates.json"):
             self.assertTrue(validate_paths([p]),p)
+    def test_deleted_canglan_file_blocked(self):
+        self.assertTrue(validate_change_entries(["D\tgame-source/Main.gd"]))
+        self.assertTrue(validate_change_entries(["D\tandroid-preview/latest.json"]))
+        self.assertEqual(validate_change_entries(["D\t.github/workflows/worldbox-external-mod-lab-v07.yml"]),[])
     def test_mock_loader_and_apk(self):
         with tempfile.TemporaryDirectory() as td:
             apk=Path(td)/"game.apk";loader=Path(td)/"loader.zip"
