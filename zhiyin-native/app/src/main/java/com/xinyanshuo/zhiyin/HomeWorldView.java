@@ -16,6 +16,7 @@ public final class HomeWorldView extends View {
   private LifeEngine life; private final Listener listener;
   private final Paint p=new Paint(Paint.ANTI_ALIAS_FLAG);
   private float zoom=1.05f,panX=0,panY=0,centerX,centerY;
+  private boolean userCamera=false;
   private float avatarX=4,avatarY=4,lookLeft=-1;
   private float downX,downY,lastX,lastY;private boolean dragged=false,scaleActive=false;
   private long lastFrame=0;private final ScaleGestureDetector scale;
@@ -42,7 +43,7 @@ public final class HomeWorldView extends View {
     objects.add(new Thing("door","房门·外出",7.65f,3.6f,.5f,1.3f,0));
     scale=new ScaleGestureDetector(ctx,new ScaleGestureDetector.SimpleOnScaleGestureListener(){
       @Override public boolean onScale(ScaleGestureDetector g){
-        float old=zoom;zoom=Math.max(.72f,Math.min(2.9f,zoom*g.getScaleFactor()));
+        userCamera=true;float old=zoom;zoom=Math.max(.68f,Math.min(4.1f,zoom*g.getScaleFactor()));
         // Keep the world point under the fingers roughly stationary.
         float fx=g.getFocusX(),fy=g.getFocusY();
         panX+=(fx-centerX-panX)*(1f-zoom/old);
@@ -50,6 +51,10 @@ public final class HomeWorldView extends View {
         scaleActive=true;invalidate();return true;
       }
     });
+  }
+  @Override protected void onSizeChanged(int w,int h,int oldW,int oldH){
+    super.onSizeChanged(w,h,oldW,oldH);
+    if(!userCamera){zoom=Math.max(.8f,Math.min(3.3f,w/(8*2*T)*1.28f));panX=0;panY=0;}
   }
   public void setLife(LifeEngine newLife){life=newLife;invalidate();}
   private int shade(int color,float factor){
@@ -306,6 +311,12 @@ public final class HomeWorldView extends View {
     line(c,b.x,b.y,d.x,d.y,7,0xFF8E7970);
   }
   private void drawAvatar(Canvas c,long now,float elapsed){
+    if("WORK".equals(life.action)&&life.phase>=1&&life.phase<=3){
+      Point doorway=iso(7.7f,3.6f,196);
+      round(c,doorway.x-48,doorway.y-18,doorway.x+48,doorway.y+8,7,0xDE314457);
+      label(c,"☕ 在咖啡馆上班",doorway.x-43,doorway.y,0xFFFFF1DB,11);
+      return;
+    }
     float destX=life.targetX()*7.7f,destY=life.targetY()*7.7f;
     float dist=(float)Math.hypot(destX-avatarX,destY-avatarY);
     boolean walking=dist>.07;
@@ -367,7 +378,7 @@ public final class HomeWorldView extends View {
         float dx=e.getX()-lastX,dy=e.getY()-lastY;
         if(Math.hypot(e.getX()-downX,e.getY()-downY)>14)dragged=true;
         if(dragged){
-          panX=Math.max(-610*zoom,Math.min(610*zoom,panX+dx));
+          userCamera=true;panX=Math.max(-610*zoom,Math.min(610*zoom,panX+dx));
           panY=Math.max(-370*zoom,Math.min(390*zoom,panY+dy));
         }
         lastX=e.getX();lastY=e.getY();invalidate();return true;
@@ -378,7 +389,7 @@ public final class HomeWorldView extends View {
           for(Thing o:objects){
             Point q=iso(o.x+o.wide/2,o.y+o.deep/2,37);
             double dist=Math.hypot((q.x-px), (q.y-py));
-            if(dist<48&&dist<best){chosen=o.id;best=dist;}
+            if(dist<76&&dist<best){chosen=o.id;best=dist;}
           }
           Point av=iso(avatarX,avatarY,80);
           if(Math.hypot(av.x-px,av.y-py)<37)chosen="character";
