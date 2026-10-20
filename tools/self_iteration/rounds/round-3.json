@@ -3,7 +3,7 @@
   "date": "2026-10-20",
   "target": "颈部/头部衔接（换工具层验颈）+ 主色漂移标定：把『主色漂移 ΔE00』作为本轮唯一变量族群（影棚光照/曝光标定，属量测台环境、非角色几何），并把颈缝主仪器从像素口径换成几何椭圆柱口径",
   "branch": "art/self-iteration-rounds",
-  "commit": "PENDING",
+  "commit": "300ae8d",
   "changes": [
     "影棚曝光标定（唯一变量族群）：rig/studio_params.json 新增 exposure 键并驱动 WorldEnvironment.tonemap_exposure，本轮 1.0 → 1.8（一维标定扫 0.5/0.6/0.7/0.8/1.2/1.5/1.8/2.2 单视图求最小 ΔE00）；其余影棚项（深色背景 0.100/0.105/0.120、key 1.15 / fill 0.5 / ambient 0.55）保持不变，角色几何与材质色一字未动。"
   ],
