@@ -1,3 +1,14 @@
+## 2026-10-21 · 真人形骨骼角色与Godot安卓导出P0续接
+
+**范围**：独立`zhiyin-real3d/`，不修改《苍岚》主分支，也不覆盖旧《知音》v0.7原生APK。
+
+- 真实人物原始素材：采用 Quaternius Universal Base Characters Standard 的女性角色，CC0-1.0；仓库镜像 `La2o/BlackVein` 固定源commit `16ef4707f0403a7942384fdbd960789a5c6adb86`，获取未删减的 `Superhero_Female_FullBody.gltf`、`.bin` 与7张原始贴图，包含眼睛、头发、皮肤衣饰的Albedo/Normal/Roughness资料。全部SHA256自动写入`ASSET_MANIFEST.json`，未以删除材质的白模充数。
+- 人物结构在资源源码及Godot中核对：`1 skin / 65 joints / 3 meshes / 3 materials / 7 images`，与旧Kenney方块人 `skins=0` 的技术性质不同。场景实际替换主角，而非只导入素材不显示。独立QA脚本通过 `Skeleton3D` 骨骼检查，至少50关节才放行。
+- 场景仍保留已过测试的真实Godot家具GLB模型、PBR地板墙面、物理交互和光照。
+- 正在推进完整Godot Android 64位导出，独立实验包名 `com.xinyanshuo.zhiyin.real3d.lab`，不影响 `com.xinyanshuo.zhiyin.companion` 现有AI/记忆数据。原安卓导出卡在配置校验的根因已定位：Godot 4.4实际加载 `~/.config/godot/editor_settings-4.4.tres`，之前CI错误写为`editor_settings-4.tres`，已修正。
+- **仍未完成（不合格）**：Quaternius角色虽具有真实完整骨骼和贴图，但尚未接入Universal Animation Library的走/坐/睡/做饭剪辑、动作树和寻路；面部表情BlendShape未验证；现有原生本地AI/API/SQLite记忆/生活工资尚未桥接Godot，Godot导出技术APK不是完整版。无安卓16实体设备安装截图/帧率、模型效果的手机验收。
+- 发布门槛：先确认Godot引擎资源QA与手机独立3D安装APK真实生成并校验签名，再进行角色动画、Android桥接；不得把独立视觉测试APK称为知音v0.8完整发布。
+
 ## 2026-10-21 · 真实3D建模/材质引擎底座（代替Canvas的独立迁移模块，非安卓发布版）
 
 **用户指出的真实问题**：v0.7仍靠画布+PNG模拟2.5D，不具备真正三维模型、UV/PBR材质体系、模型可交互碰撞、骨骼动画及灯光。之前把技术占位场景称为2.5D游戏是不当验收；立即转向Godot 4.4.1真实3D场景技术。
