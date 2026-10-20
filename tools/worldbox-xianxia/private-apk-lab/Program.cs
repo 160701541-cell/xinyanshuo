@@ -20,6 +20,7 @@ class Program {
     case "verify-map-bridge":
      if(args.Length<4)throw new ArgumentException("verify-map-bridge original-bridge.dll patched-bridge.dll own-map-helper.dll");
      VerifyMapBridge(args[1],args[2],args[3]);return 0;
+    case "inspect-map-ui": InspectMapUi(args[1]);return 0;
     case "inspect": Inspect(args[1]);return 0;
     case "compile":
      if(args.Length<4)throw new ArgumentException("compile source.cs managed-reference-dir output.dll");
@@ -53,6 +54,34 @@ class Program {
    var refs=Environment.GetEnvironmentVariable("WORLD_BOX_MONO_REFS");
    if(!string.IsNullOrWhiteSpace(refs)&&Directory.Exists(refs))resolver.AddSearchDirectory(refs);
    return new ReaderParameters{ReadSymbols=false,InMemory=true,AssemblyResolver=resolver};
+ }
+ static void InspectMapUi(string path) {
+   var mod=dnlib.DotNet.ModuleDefMD.Load(path);
+   foreach(var type in mod.Types.Where(t=>t.Name.IndexOf("MapSize",StringComparison.OrdinalIgnoreCase)>=0
+        ||t.Name.IndexOf("NewWorld",StringComparison.OrdinalIgnoreCase)>=0
+        ||t.Name.IndexOf("NewGame",StringComparison.OrdinalIgnoreCase)>=0
+        ||t.Name.IndexOf("WorldGenerator",StringComparison.OrdinalIgnoreCase)>=0
+        ||t.Name.IndexOf("MapGenerator",StringComparison.OrdinalIgnoreCase)>=0)){
+     Console.WriteLine("MAPTYPE "+type.FullName);
+     foreach(var f in type.Fields.Where(x=>x.Name.Contains("size",StringComparison.OrdinalIgnoreCase)
+                  ||x.Name.Contains("map",StringComparison.OrdinalIgnoreCase)))Console.WriteLine(" FIELD "+f.Name+" "+f.FieldType);
+     foreach(var m in type.Methods){
+       Console.WriteLine(" METHOD "+m.Name+" "+m.MethodSig);
+       if(m.HasBody && (type.Name.Contains("MapSize") || m.Name.Contains("Size",StringComparison.OrdinalIgnoreCase)))
+         foreach(var ins in m.Body.Instructions.Take(90))Console.WriteLine("  "+ins.OpCode+" "+ins.Operand);
+     }
+   }
+   int shown=0;
+   foreach(var type in mod.Types)foreach(var method in type.Methods.Where(m=>m.HasBody)){
+     var matches=method.Body.Instructions.Where(i=>
+       i.Operand?.ToString()?.Contains("MapSizeLibrary::getSizes")==true
+       || i.Operand?.ToString()?.Contains("_mapSizes")==true
+       || i.Operand?.ToString()?.Contains("MapSizeLibrary::add")==true).ToArray();
+     if(matches.Length==0)continue;
+     Console.WriteLine("MAP_UI_CALLER "+type.FullName+"."+method.Name);
+     foreach(var ins in matches)Console.WriteLine("  "+ins.OpCode+" "+ins.Operand);
+     if(++shown>=80)break;
+   }
  }
  static void Inspect(string path){
   using var a=AssemblyDefinition.ReadAssembly(path,Resolved(path));
