@@ -1,5 +1,14 @@
 # CAC 工序变更与开发日志
 
+## 2026-10-20 / CAC-SELF-ITERATION-OPTIMIZATION-PROTOCOL-V1 / 把"自判分闭环"固化成可执行协议 + 机器校验器
+- **用户原话（2026-10-19/20）**：「严格按这些执行，然后还需要自我迭代优化」「任何东西你都要自己写提示词然后严格执行迭代优化」「把你那套自我迭代优化方案写上去并且严格执行，先思考再行动」。本条目就是"写上去"这一步。
+- **要解决的病**：那套自判分闭环此前只活在单个会话里（2026-10-19 角色迭代把美术判断从"我觉得好看"换成固定机位出图 + 量化门槛，例如主体/背景明度差 ΔL* 实测 49.3 / 门槛 ≥25），会话一结束就蒸发；用户要拿仓库去别处跑迭代，所以必须入库、可校验、可移植。
+- **新增 `docs/SELF_ITERATION_OPTIMIZATION_PROTOCOL_V1.md`**（执行约束，非通过证据）：八步闭环 R1 锁目标 → R2 参数化生成 → R3 固定机位四视图 → R4 自动量测 → R5 自判分 → R6 归因 → R7 最小改动回炉 → R8 入库或记录失败；门槛表（ΔL* ≥25、点缀色面积 3–8%、ΔE00 ≤6、描边 1.5–2.5px、可辨部件 ≥5、颈缝 =0）；每轮台账固定 JSON 字段；停损规则（同一门槛连续 3 轮无改善即判定路线失败、必须换工具层，禁止原地磨 5 轮）；**审美自批禁令**（沿用 `ENGINEERING_QA_RELEASE_POLICY.md`：A 项只能人工判，AI 只能给 technical 与指标）；跨环境接续条款（产物全入库、一条命令可复现、缺依赖写 BLOCKED 而不得用文字描述冒充出图）。
+- **新增 `tools/self_iteration/check_round.py`**（纯标准库）：把门槛表变成机器判定 —— 指标在门槛内 PASS / 阈值外 FAIL / 缺失或 null BLOCKED（不许填估计值）；并硬性拦截三类违规：四视图不足 4 张、`aesthetic=PASS` 自批审美、`changes` 超过一个变量族群（违反 R7）。exit 0/1/2 = 通过/未过/违规。
+- **本机可执行环境已核实**：Godot `4.4.1-stable linux.arm64`（`/root/godot/`）+ Blender `4.0.2`（`/usr/bin/blender`）都在，所以"没跑就说 BLOCKED"这条能被真正执行。
+- **诚实边界**：本条目只交协议与校验器，**没有任何人物美术被本轮验收**；协议第 8 节的活跃目标（主角四视图达标）在写条目时仍是待执行状态，`aesthetic` 一律 PENDING 等用户判定。未合并 `main`、未改 `android-preview/latest.json`、未签名、未发布。
+- **下一步**：按协议第 8 节从 R1 起跑第 1 轮，唯一变量 = 颈部/头部衔接比例（用户点名的"脖子也有问题"），产出 `tools/self_iteration/rounds/round-1.json` + 四视图。
+
 ## 2026-10-18 / CAC-REV208-QA-GROUNDCOVER-GLTF-BASE-PATH / 扫描地被 glTF 解析基路径修正（分支 agent/dsh-p0-xianxia-ecology，未签名未发布）
 - 失败事实：run 39119309572 里原版 Main 场景其实跑到了结尾、统计打印完整，但日志闸门命中 4 个引擎 ERROR：ERROR: glTF: Binary file not found: res://canglan_rev187/hq_ecology_groundcover/fern_clump.bin（shrub_low / moss_patch / rock_moss_set 同），导致 rev208_real_scanned_groundcover.spawned=0。
 - 根因（本机 Godot 4.4.1 arm64 复现，不是猜）：GLTFDocument.append_from_buffer(bytes, base_path, state) 的 base_path 要传 gltf 文件本身，引擎内部会再取 get_base_dir() 解析 .bin 与贴图相对 uri；apk176_hq_terrain_pbr_rev208.gd 传的是 path.get_base_dir()，等于上跳一级。散文件与 PCK 两种布局都能复现同一错误；改成传 path 后 4 个 .gltf 全部 err=0，三角面 6232/8287/204/63127 与 manifest 完全一致（PCK 内亦同）。
