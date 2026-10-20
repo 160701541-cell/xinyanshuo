@@ -1,9 +1,9 @@
 {
-  "name": "万界仙侠·只读微观世界v0.10（安卓测试候选）",
+  "name": "万界仙侠 · 高清大字与微观世界（安卓候选）",
   "GUID": "XINYANSHUO_WORLD_BOX_OBSERVER_V07",
   "author": "Xianxia WorldBox external mod lab",
-  "version": "0.10.0-candidate",
-  "description": "Third-party unofficial WorldBox Android MOD derivative LAB ONLY; completely unrelated to Canglan game development. Compiled against official public Android NML 2.1 SDK; actual user-device loading unverified.",
+  "version": "0.13.0-candidate",
+  "description": "Third-party WorldBox Android MOD derivative testing; unrelated to Canglan original game. Readable CJK text and optional UnityUI/TMP font scaling. SDK_COMPILE_TESTED_ONLY, APK_READY=false, DEVICE_PENDING.",
   "RepoUrl": "https://github.com/160701541-cell/xinyanshuo",
   "Dependencies": [],
   "OptionalDependencies": [],
