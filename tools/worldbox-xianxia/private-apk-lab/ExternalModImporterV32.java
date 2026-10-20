@@ -72,6 +72,43 @@ final class ExternalModImporterV32 {
             dst.getFD().sync();
         }
     }
+    /** Store a ZIP that cannot safely run as NML under app-private quarantine,
+      * never execute/extract it; future compatible loader or user may inspect. */
+    static String stageIncompatible(Context ctx,Uri selected)throws Exception {
+        File app=ctx.getExternalFilesDir(null);
+        if(app==null)throw new IOException("无法访问应用私有存储");
+        File folder=new File(app,"XianxiaModStaging/incompatible");
+        if(!folder.isDirectory()&&!folder.mkdirs())
+            throw new IOException("无法建立待兼容存储目录");
+        File[] already=folder.listFiles();
+        if(already!=null&&already.length>60)
+            throw new IOException("待兼容MOD暂存区超过60个文件，请先整理");
+        File temp=File.createTempFile(".incoming-", ".zip",folder);
+        try {
+            try(InputStream stream=ctx.getContentResolver().openInputStream(selected)){
+                if(stream==null)throw new IOException("手机文件选择器未返回内容");
+                copyLimited(stream,temp,MAX_ZIP);
+            }
+            try(ZipFile test=new ZipFile(temp)) {
+                if(test.size()==0)throw new IOException("ZIP没有文件");
+            }catch(ZipException wrong){
+                throw new IOException("文件不是有效ZIP，未执行或暂存",wrong);
+            }
+            MessageDigest md=MessageDigest.getInstance("SHA-256");
+            try(InputStream raw=new FileInputStream(temp)){
+                byte[] block=new byte[32768];int n;
+                while((n=raw.read(block))!=-1)md.update(block,0,n);
+            }
+            StringBuilder fingerprint=new StringBuilder();
+            for(byte b:md.digest())
+                fingerprint.append(String.format(Locale.US,"%02x",b&255));
+            File target=new File(folder,"pending-"+fingerprint.substring(0,20)+".zip");
+            if(target.exists())return target.getName()+"（已暂存）";
+            if(!temp.renameTo(target))
+                throw new IOException("待兼容ZIP保存失败");
+            return target.getName();
+        }finally{temp.delete();}
+    }
     private static void removeTree(File path){
         if(path.isDirectory()){
             File[] children=path.listFiles();
