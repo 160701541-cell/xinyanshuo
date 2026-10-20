@@ -354,3 +354,9 @@ Work仍负责私有APK整合、签名、安卓16真机验收。不得上传商�
 - 完整日志入口改为ACTION_CREATE_DOCUMENT由用户选择ZIP保存位置；后台流式导出四份现存原始日志原字节及summary.txt，随后ACTION_SEND通过content URI+EXTRA_STREAM/临时读授权分享文件，完全移除原长文本分享与60KB/180KB裁剪。无额外存储权限，不读取/导出世界存档。
 - 增加真实JVM合成日志测试，覆盖上万缺词记录、早期编译错误保留、末尾加载状态、完整UTF-8字节导出、原日志不变、排除存档；CI增加实际Android SDK javac编译原生入口，并将三个原生源码放入私人打包工具工件供Work重编DEX。
 - 提交时待CI，不宣称APK已更新。入口是原生Java代码，必须重编classes5.dex并私下重签APK；仅替换MOD源码不会改变手机按钮。原手机仍旧入口，无须用户继续复制整屏日志。
+
+## 2026-10-21 — 手机日志导出修复实际验证完成
+- run 39464057658（aa53c1d24976e6f2abc772a7f675772dba513db1）三项任务全部success；100项Python/真实JVM合成行为测试通过，含12000条缺词情况下早期异常和最近FAILED保留、完整UTF-8 ZIP字节一致、源日志不变及不导出存档；原有六项C#场景及SDK编译通过。
+- Android原生DiagnosticsActivity/DiagnosticReport/ModDeployment已针对实际安装Android SDK编译，并由d8成功生成原创入口WorldBoxDiagnostics_classes5.dex与SHA256，已收入worldbox-v22-generic-private-apk-assembly-toolkit-linux-x64工件。无商业游戏字节。
+- 修正CI选择平台时原正则只支持android-整数的问题，现兼容含小版本号的SDK目录；二进制DEX头校验使用正确换行。没有降低原SDK/行为验收。
+- WORK_LIBRARY_HANDOFF_20261021.md已明确新入口DEX与MOD源码必须分别集成、检查原DEX是否还含其他必要类，私下签名后验证系统保存/取消/附件分享。当前仍未生成新完整APK，未在PKR110验证；手机旧日志按钮尚未变化。无需用户继续复制长文本。
