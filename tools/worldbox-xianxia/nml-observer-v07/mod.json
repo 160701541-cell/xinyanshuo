@@ -3,7 +3,7 @@
   "GUID": "XINYANSHUO_WORLD_BOX_OBSERVER_V07",
   "author": "Xianxia WorldBox external mod lab",
   "version": "0.10.0-candidate",
-  "description": "NONOFFICIAL WorldBox Android MOD derivative LAB ONLY, completely unrelated to Canglan game development. Compiled NML 2.1 Android SDK verified; device loading and compatibility NOT verified.",
+  "description": "Third-party unofficial WorldBox Android MOD derivative LAB ONLY; completely unrelated to Canglan game development. Compiled against official public Android NML 2.1 SDK; actual user-device loading unverified.",
   "RepoUrl": "https://github.com/160701541-cell/xinyanshuo",
   "Dependencies": [],
   "OptionalDependencies": [],
