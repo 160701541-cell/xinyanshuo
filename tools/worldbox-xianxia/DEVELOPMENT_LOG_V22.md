@@ -375,3 +375,11 @@ Work仍负责私有APK整合、签名、安卓16真机验收。不得上传商�
 - 原生桥完整源码图已在NativeBridgeSources工件内。必须强调：CI没有用户APK的精确Mono Assembly-CSharp/Unity引用，因此没有实际编译改过的旧原生托管桥与CultivationBridgeV18，也未跑原版GUI/实体命名/Android手机；SDK与模拟实体测试不等于用户APK全兼容。
 - Work整合必须同时重编该源图到原有WorldBoxXianxiaMonoBridge.dll并更新Managed.zip/部署token，以及更新NML源码MOD；否则旧桥仍画独立入口/叠加窗口，单独更新NML不足以兑现截图修复。重编时沿实际原包保留原挂载/修仙入口钩子及依赖。
 - 无新完整APK/签名包；未生成实际新UI截图，不声称已风格统一或全量命名已在手机生效。最新源码候选已可审查，私有构建环境仍是实际交付阻塞；main/苍岚未动。
+
+## 2026-10-21 — 用户追问超大地图未加：补齐入口依赖和新建列表缓存
+- 目标一直是约2000×2000格，候选2048×2048（32×32区块，4194304格）。现有截图World信息448×448，不能算超大地图完成。旧按钮只在失败的观察模块内，且只做AssetManager.map_sizes.add，没有同步新建界面getSizes列表。
+- 已读取真实公开SDK元数据日志：MapSizeLibrary有getSizes、_mapSizes缓存及MapSizeAsset.getLocaleID；这是公开SDK证据，仍需匹配用户原Mono0.51.4。
+- 新EnsureExtremeChoice独立于观察加载，接原生桥Update与“万界”菜单2048入口，亦接NML Update。不重复请求用户批准注册，不自动生成/改大当前世界。查已有同ID尺寸避免重复/冲突，再独立核查getSizes确实含新ID。
+- 若创建列表未含ID，仅在_mapSizes确认为可写string[]、与getSizes一致且包含真实原版模板ID时追加缓存，并回读getSizes验证；失败恢复原缓存，不猜测写其他字段。返回状态区分尺寸注册与创建列表就绪。中文标签从实际asset.getLocaleID取key，通过已有LM.AddToCurrentLocale尝试登记；不臆造键名。
+- 新GiantChoiceScenarioV31用独立模拟地图API验证add本身不更新缓存情况下的列表修复、重复调用无重复条目、中文key实际读取、448×448现世界不变、注册后诊断仍必须WORLD_SIZE_DIFFERENT。未运行生成4194304格，不宣称设备生成/存读/性能通过。
+- Work须同步重编原生桥及NML源码；NativeBridgeSources工件补入GiantMapOptionsV11和ObserverFrameGuardV12。没有新APK，手机尚无新建选项证据；当前构建终端仍不可用。不得再用实验注册或CI绿灯声称已交付超大世界。

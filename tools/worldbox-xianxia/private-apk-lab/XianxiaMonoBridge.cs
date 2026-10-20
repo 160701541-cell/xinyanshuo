@@ -86,6 +86,10 @@ public sealed class Overlay : MonoBehaviour {
         if(Time.unscaledTime<nextCheck)return;
         nextCheck=Time.unscaledTime+5f;
         ReadWorld();
+        if(!GiantMapOptionsV11.ExtremeChoiceReady||!GiantMapOptionsV11.ExtremeLabelReady){
+            string mapStatus=GiantMapOptionsV11.EnsureExtremeChoice();
+            DiagnosticLog.Write("[XIANXIA-MAP-CHOICE] "+mapStatus);
+        }
         if(fontsEnabled)TryApplySmallFonts();
     }
     void ResetStyles() {buttonStyle=null;labelStyle=null;boxStyle=null;}
@@ -112,12 +116,17 @@ public sealed class Overlay : MonoBehaviour {
         }
         if(SharedPanelsV30.Active=="menu"){
             float mw=Mathf.Min(Screen.width-32*u,600*u);
-            float mx=(Screen.width-mw)/2f,my=Mathf.Max(90*u,(Screen.height-340*u)/2f);
-            PixelFrameV30.Draw(new Rect(mx,my,mw,310*u));
+            float mx=(Screen.width-mw)/2f,my=Mathf.Max(90*u,(Screen.height-450*u)/2f);
+            PixelFrameV30.Draw(new Rect(mx,my,mw,420*u));
             GUI.Label(new Rect(mx+18*u,my+18*u,mw-36*u,44*u),"万界仙侠",label);
             if(GUI.Button(new Rect(mx+18*u,my+76*u,mw-36*u,60*u),"人物修行",btn))SharedPanelsV30.Show("cultivation");
             if(GUI.Button(new Rect(mx+18*u,my+148*u,mw-36*u,60*u),"世界观察",btn))SharedPanelsV30.Show("observer");
             if(GUI.Button(new Rect(mx+18*u,my+220*u,mw-36*u,60*u),"字体设置",btn))SharedPanelsV30.Show("settings");
+            if(GUI.Button(new Rect(mx+18*u,my+292*u,mw-36*u,60*u),"超大地图 · 2048×2048",btn)){
+                GiantMapOptionsV11.EnsureExtremeChoice();
+                DiagnosticLog.Write("[XIANXIA-MAP-CHOICE] "+GiantMapOptionsV11.ChoiceReport);
+            }
+            GUI.Label(new Rect(mx+18*u,my+356*u,mw-36*u,56*u),GiantMapOptionsV11.ChoiceReport,label);
             return;
         }
         if(SharedPanelsV30.Active!="settings")return;

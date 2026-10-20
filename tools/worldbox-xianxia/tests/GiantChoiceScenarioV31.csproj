@@ -1,0 +1,9 @@
+<Project Sdk="Microsoft.NET.Sdk">
+ <PropertyGroup><TargetFramework>net8.0</TargetFramework><OutputType>Exe</OutputType><EnableDefaultCompileItems>false</EnableDefaultCompileItems><Nullable>disable</Nullable><GenerateAssemblyInfo>false</GenerateAssemblyInfo></PropertyGroup>
+ <ItemGroup>
+  <Compile Include="../huge-map-mod/GiantMapOptionsV11.cs"/>
+  <Compile Include="../huge-map-mod/ObserverFrameGuardV12.cs"/>
+  <Compile Include="stubs/WorldBoxApiStubs.cs"/>
+  <Compile Include="GiantChoiceScenarioV31.cs"/>
+ </ItemGroup>
+</Project>

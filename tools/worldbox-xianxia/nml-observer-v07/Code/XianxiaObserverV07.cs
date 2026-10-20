@@ -79,7 +79,7 @@ namespace XianxiaWorldBox
             }
             return Camera.main;
         }
-        float nextOwnTraitAudit;
+        float nextOwnTraitAudit, nextMapChoiceCheck;
         static object LibraryGet(object library,string id)
         {
             if(library==null||string.IsNullOrEmpty(id))return null;
@@ -165,6 +165,11 @@ namespace XianxiaWorldBox
             if(!versionOK)return;
             ChineseWorldNamesV30.Tick(World.world,Time.unscaledTime);
             RepairOwnTraitGroups();
+            if((!GiantMapOptionsV11.ExtremeChoiceReady||!GiantMapOptionsV11.ExtremeLabelReady)&&Time.unscaledTime>=nextMapChoiceCheck){
+                nextMapChoiceCheck=Time.unscaledTime+10f;
+                mapStatus=GiantMapOptionsV11.EnsureExtremeChoice();
+                Debug.Log("[XIANXIA-MAP-CHOICE] "+mapStatus);
+            }
             ModTextAccessibilityV13.Tick();
             RuntimeChineseOverlayV22.Tick();
             if(Time.unscaledTime>=nextCultivationCleanup){

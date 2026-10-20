@@ -15,6 +15,9 @@ namespace XianxiaWorldBox
         public static bool Armed { get; private set; }
         public static bool ExtremeArmed { get; private set; }
         public static bool ExtremeRegistered { get; private set; }
+        public static bool ExtremeChoiceReady { get; private set; }
+        public static bool ExtremeLabelReady { get; private set; }
+        public static string ChoiceReport { get; private set; } = "超大地图选项尚未就绪";
         public const int ExtremeChunks = 32;
         public const int ExtremeTiles = 2048;
         public const long ExtremeTileCount = 4194304L;
@@ -47,6 +50,76 @@ namespace XianxiaWorldBox
             f.SetValue(obj, Convert.ChangeType(value, f.FieldType));
             return true;
         }
+        static void LabelExtreme(object asset)
+        {
+            if(ExtremeLabelReady||asset==null)return;
+            var locale=asset.GetType().GetMethod("getLocaleID",F,null,Type.EmptyTypes,null);
+            string key=locale==null?null:locale.Invoke(asset,null) as string;
+            if(string.IsNullOrEmpty(key))return;
+            foreach(var asm in AppDomain.CurrentDomain.GetAssemblies()){
+                var lm=asm.GetType("NeoModLoader.General.LM");
+                if(lm==null)continue;
+                var current=lm.GetMethod("AddToCurrentLocale",F,null,new[]{typeof(string),typeof(string)},null);
+                if(current!=null&&current.IsStatic){
+                    current.Invoke(null,new object[]{key,"超大世界（2048×2048）"});
+                    ExtremeLabelReady=true;
+                    return;
+                }
+            }
+        }
+
+        // Registration is already authorized by the user; it does not generate
+        // a world. Verify the game's NEW-WORLD choice list, not just add(asset).
+        public static string EnsureExtremeChoice()
+        {
+            try
+            {
+                if(!ExtremeRegistered||!ExtremeLabelReady)TryRegisterExtreme();
+                if(!ExtremeRegistered)return ChoiceReport="超大地图尺寸注册未就绪";
+                var asm=typeof(World).Assembly;
+                var libraryType=asm.GetType("MapSizeLibrary");
+                var manager=asm.GetType("AssetManager");
+                object lib=Member(manager,"map_sizes");
+                if(libraryType==null||lib==null)return ChoiceReport="新建地图尺寸库未就绪";
+                var sizes=libraryType.GetMethod("getSizes",F,null,Type.EmptyTypes,null);
+                if(sizes==null||!sizes.IsStatic)return ChoiceReport="新建地图列表接口不兼容";
+                var current=sizes.Invoke(null,null) as string[];
+                if(current==null)return ChoiceReport="新建地图列表格式待适配";
+                if(current.Contains("xianxia_extreme_32")){
+                    ExtremeChoiceReady=true;
+                    return ChoiceReport="新建世界已提供2048×2048选项；当前世界不变";
+                }
+                // The legacy Mono build caches UI choices separately from assets.
+                // Only edit a verified string[] preset cache, never map terrain.
+                var cache=libraryType.GetField("_mapSizes",F);
+                object owner=cache!=null&&cache.IsStatic?null:lib;
+                var original=cache==null?null:cache.GetValue(owner) as string[];
+                var template=Member(lib,"titanic");
+                string baseID=Member(template,"id") as string;
+                if(cache==null||cache.IsInitOnly||cache.FieldType!=typeof(string[])||
+                   original==null||current.Length<1||current.Length>128||
+                   string.IsNullOrEmpty(baseID)||!current.Contains(baseID)||
+                   !original.SequenceEqual(current))
+                    return ChoiceReport="尺寸已注册，新建地图列表缓存待适配";
+                var next=current.Concat(new[]{"xianxia_extreme_32"}).ToArray();
+                cache.SetValue(owner,next);
+                bool verified=false;
+                try{
+                    var actual=sizes.Invoke(null,null) as string[];
+                    verified=actual!=null&&actual.Contains("xianxia_extreme_32");
+                } finally {
+                    if(!verified)cache.SetValue(owner,original);
+                }
+                ExtremeChoiceReady=verified;
+                return ChoiceReport=verified?
+                    "新建世界已提供2048×2048选项；当前世界不变":
+                    "新建地图列表校验失败，已恢复原列表";
+            }
+            catch(Exception e){
+                return ChoiceReport="超大地图入口未就绪："+e.ToString();
+            }
+        }
+
         public static string OnTap()
         {
             if (Enabled) return Report;
@@ -145,6 +218,16 @@ namespace XianxiaWorldBox
             var add = lib.GetType().GetMethods(F)
                 .FirstOrDefault(m=>m.Name=="add"&&m.GetParameters().Length==1);
             if (add == null) return "地图尺寸库不支持注册，停止实验。";
+            var lookup=lib.GetType().GetMethods(F).FirstOrDefault(m=>m.Name=="get"&&
+                !m.IsGenericMethod&&m.GetParameters().Length==1&&m.GetParameters()[0].ParameterType==typeof(string));
+            object existing=lookup==null?null:lookup.Invoke(lib,new object[]{"xianxia_extreme_32"});
+            if(existing!=null){
+                if(Convert.ToInt32(Member(existing,"size"))!=ExtremeChunks)
+                    return "已有同名尺寸与2048目标冲突，未覆盖";
+                LabelExtreme(existing);
+                ExtremeRegistered=true;
+                return "已确认现有2048×2048尺寸";
+            }
             var original=Member(lib,"titanic");
             if(original==null) return "缺少原版地图库模板，停止实验。";
             object asset=Activator.CreateInstance(sizeType);
@@ -155,6 +238,7 @@ namespace XianxiaWorldBox
             if(icon!=null)Set(asset,"path_icon",icon);
             Set(asset,"show_warning",true);
             add.Invoke(lib,new[]{asset});
+            LabelExtreme(asset);
             ExtremeRegistered=true;
             return "已提交32×32候选（2048×2048），不是地图生成通过。需要Work实机测试和保存读取。";
         }
