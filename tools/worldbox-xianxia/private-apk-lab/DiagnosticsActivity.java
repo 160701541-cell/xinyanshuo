@@ -66,7 +66,9 @@ public final class DiagnosticsActivity extends Activity {
               Intent i=new Intent(Intent.ACTION_OPEN_DOCUMENT);
               i.addCategory(Intent.CATEGORY_OPENABLE);
               i.setType("*/*");
-              i.putExtra(Intent.EXTRA_MIME_TYPES,new String[]{"application/zip","application/octet-stream","application/x-zip-compressed"});
+              // Many Android providers label genuine ZIPs as application/octet-stream
+              // or arbitrary MIME. Select via SAF and verify ZIP magic via ZipFile.
+              // Never hide legitimate user ZIPs based solely on provider MIME.
               i.putExtra(Intent.EXTRA_ALLOW_MULTIPLE,true);
               startActivityForResult(i,IMPORT_MODS);
           }).show();
@@ -85,18 +87,24 @@ public final class DiagnosticsActivity extends Activity {
                 try {
                     List<ExternalModImporterV32.Result> imported=ExternalModImporterV32.importZip(this,uri);
                     for(ExternalModImporterV32.Result result:imported) {
-                        installed++;
-                        report.append("已导入 ").append(result.id).append(" [").append(result.layout).append("]\\n");
-                        stage("USER_MOD_IMPORTED "+result.id+" "+result.layout);
+                        if(result.target!=null&&!result.target.isEmpty()){
+                            installed++;
+                            report.append("已导入 ").append(result.id).append(" [")
+                                .append(result.layout).append("]\n");
+                            stage("USER_MOD_IMPORTED "+result.id+" "+result.layout);
+                        }else{
+                            report.append(result.id).append("\n");
+                            stage("USER_MOD_SKIPPED "+result.id);
+                        }
                     }
                 }catch(Exception e){
-                    report.append("导入失败：").append(e.getMessage()).append("\\n");
+                    report.append("导入失败：").append(e.getMessage()).append("\n");
                     stage("USER_MOD_IMPORT_FAILED "+android.util.Log.getStackTraceString(e));
                 }
             }
             final int count=installed;
-            runOnUiThread(()->status.setText("本次已导入 "+count+" 个MOD目录。重新启动游戏后才可能被加载。\\n"+
-                "实际NML/Mono兼容性未验证。\\n"+report.toString()));
+            runOnUiThread(()->status.setText("成功安装 "+count+" 个个MOD目录。重新启动游戏才可能被加载。\n"+
+                "部分旧DLL/BepInEx包不兼容安卓NML；详细原因如下。\n"+report.toString()));
         },"WorldBox-SAF-MOD-Import").start();
     }
     @Override protected void onActivityResult(int request,int result,Intent data) {
@@ -189,7 +197,9 @@ public final class DiagnosticsActivity extends Activity {
         TextView note=new TextView(this);note.setText("内置：原创人物修仙、采集炼丹、8种原创建筑图鉴；战斗之神1.0.5、合理的世界2.0.1。\n点击启动会自动安装，无需文件管理器。\n旧修仙及人物控制包版本不兼容，未混入本包。\n\n若闪退或模组没出现，重新打开入口复制关键摘要，或导出完整日志ZIP。存档保留在本测试应用中，与原版独立。\n");note.setTextSize(18);root.addView(note);
         button(root,"启动游戏测试",0);button(root,"导入第三方MOD ZIP（支持多选）",3);
         button(root,"复制关键错误摘要",1);button(root,"导出并分享完整日志ZIP",2);
-        status=new TextView(this);status.setTextSize(14);root.addView(status);
+        status=new TextView(this);status.setTextSize(17);
+        status.setPadding(8,18,8,20);status.setTextIsSelectable(true);
+        root.addView(status,new LinearLayout.LayoutParams(-1,-2));
         ScrollView scroll=new ScrollView(this);scroll.addView(root);setContentView(scroll);
     }
     @Override public void onResume(){super.onResume();if(status!=null)status.setText("入口正常。可直接选择第三方MOD ZIP多选导入；需要重新进入游戏测试。\n日志仅保存在本机。");}
