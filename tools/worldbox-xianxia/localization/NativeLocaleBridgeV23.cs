@@ -189,6 +189,96 @@ namespace XianxiaWorldBox
             }
         }
 
+        public static bool LastPackOk {get;private set;}
+
+        /// <summary>
+        /// NML supports registering exact, existing or third-party MOD locale keys.
+        /// This does not infer keys from English UI text. Imported strings are
+        /// user-supplied; loaded only on explicit UI action.
+        /// </summary>
+        public static string RegisterExplicitKeys(IDictionary<string,string> translations)
+        {
+            LastPackOk=false;
+            if(translations==null||translations.Count==0)
+                return "中文键值包为空；未登记。";
+            try
+            {
+                if(!Discover())
+                    return "原版语言/NML接口不可用，无法登记自定义翻译键。";
+                var add=StaticMethod(lmType,"Add",typeof(string),typeof(string),typeof(string));
+                var has=StaticMethod(lmType,"Has",typeof(string),typeof(string));
+                if(add==null||has==null)
+                    return "NML语言接口不支持安全检测翻译冲突；未登记。";
+                string current=Convert.ToString(Member(manager,"language"));
+                object raw=Member(manager,"_localized_text");
+                // We check game-native Chinese values separately because LM.Has
+                // only reflects MOD-registered translations, not vanilla locales.
+                var readable=raw as IDictionary;
+                int registered=0,existing=0,native=0,errors=0;
+                foreach(var pair in translations)
+                {
+                    if(pair.Key==null||pair.Value==null)continue;
+                    if((bool)has.Invoke(null,new object[]{pair.Key,"cz"}))
+                    {
+                        existing++;continue;
+                    }
+                    if(current=="cz" && readable!=null && readable.Contains(pair.Key))
+                    {
+                        string currentValue=Convert.ToString(readable[pair.Key]);
+                        if(ContainsChinese(currentValue)){native++;continue;}
+                    }
+                    try
+                    {
+                        add.Invoke(null,new object[]{"cz",pair.Key,pair.Value});
+                        registered++;
+                    }
+                    catch {errors++;break;}
+                }
+                LastPackOk=errors==0;
+                if(LastPackOk)Ready=true;
+                return "已登记 "+registered+" 条，跳过其他MOD已有 "+existing+
+                    " 条、原生简中已有 "+native+" 条"+
+                    (errors==0?"。":"，部分登记失败，需检查日志。");
+            }
+            catch(Exception e)
+            {
+                return "翻译包注册失败："+e.GetType().Name+"；未改变世界存档。";
+            }
+        }
+
+        static bool ContainsChinese(string value)
+        {
+            if(string.IsNullOrEmpty(value))return false;
+            foreach(char c in value)
+                if(c>=0x3400&&c<=0x9fff)return true;
+            return false;
+        }
+
+        /// <summary>
+        /// Explicit player-requested language switch. Verifies the exact public
+        /// WorldBox manager method before invoking; never runs automatically.
+        /// </summary>
+        public static string SwitchToChineseByUserTap()
+        {
+            try
+            {
+                if(!Discover())return "无法检测原版语言管理器；没有修改当前语言。";
+                MethodInfo change=managerType.GetMethod("setLanguage",
+                    BindingFlags.Instance|BindingFlags.Public,null,
+                    new[]{typeof(string)},null);
+                if(change==null)
+                    return "当前版本没有可确认的简中切换接口；未更改设置。";
+                change.Invoke(manager,new object[]{"cz"});
+                // Original game is responsible for remembering this explicit choice.
+                // NML setLanguagePostfix should apply previously registered locales.
+                return "已请求切换原版简体中文；请检查各个菜单实际显示。";
+            }
+            catch(Exception e)
+            {
+                return "语言切换失败："+e.GetType().Name+"；可返回原版语言设置。";
+            }
+        }
+
         public static string ActivateChinese()
         {
             try
