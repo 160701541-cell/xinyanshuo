@@ -286,6 +286,9 @@ public final class LifeEngine {
   public String request(String next){
     if(index(next)<0)throw new IllegalArgumentException("未知行为");
     long now=System.currentTimeMillis();update(now);
+    // Never conjure food when the player requests an impossible action.
+    if("COOK".equals(next)&&pantry==0)next=money>=4?"SHOP":"WORK";
+    if("EAT".equals(next)&&meals==0)next=pantry>0?"COOK":money>=4?"SHOP":"WORK";
     if(!"CHAT".equals(action)&&"CHAT".equals(next))suspended=action;
     else if(!"CHAT".equals(next))suspended="";
     startTask(next,now,"你邀请她"+name(next));save();return note;
