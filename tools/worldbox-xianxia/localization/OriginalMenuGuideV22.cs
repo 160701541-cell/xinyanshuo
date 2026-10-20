@@ -35,32 +35,41 @@ namespace XianxiaWorldBox
         {
             if(!Open)return;
             float w=Mathf.Min(Screen.width-16,790f*scale);
-            float h=Mathf.Min(Screen.height-16,590f*scale);
+            float h=Mathf.Min(Screen.height-16,600f*scale);
             Rect r=new Rect((Screen.width-w)/2f,(Screen.height-h)/2f,w,h);
-            GUI.Box(r,"中文操作说明（通用功能参考，非原版完整汉化）",box);
-            if(GUI.Button(new Rect(r.x+w-108f*scale,r.y+12f*scale,96f*scale,44f*scale),"关闭",button))Open=false;
-            if(GUI.Button(new Rect(r.x+12f*scale,r.y+63f*scale,194f*scale,47f*scale),
+            GUI.Box(r,"原版菜单中文说明 / 原生语言键登记（实验版）",box);
+            if(GUI.Button(new Rect(r.x+w-108f*scale,r.y+12f*scale,96f*scale,43f*scale),"关闭",button))
+                Open=false;
+            if(GUI.Button(new Rect(r.x+12f*scale,r.y+60f*scale,180f*scale,44f*scale),
                  RuntimeChineseOverlayV22.Enabled?"实时中文：开":"实时中文：关",button))
                 RuntimeChineseOverlayV22.SetEnabled(!RuntimeChineseOverlayV22.Enabled);
-            GUI.Label(new Rect(r.x+216f*scale,r.y+63f*scale,w-228f*scale,65f*scale),
+            GUI.Label(new Rect(r.x+207f*scale,r.y+65f*scale,w-219f*scale,40f*scale),
                 RuntimeChineseOverlayV22.Status,label);
-            int perPage=6;
+            if(GUI.Button(new Rect(r.x+12f*scale,r.y+112f*scale,185f*scale,44f*scale),
+                "登记原版中文",button))
+                NativeLocaleBridgeV23.RegisterActualKeys();
+            if(GUI.Button(new Rect(r.x+203f*scale,r.y+112f*scale,185f*scale,44f*scale),
+                "刷新简体中文",button))
+                NativeLocaleBridgeV23.ActivateChinese();
+            GUI.Label(new Rect(r.x+12f*scale,r.y+162f*scale,w-24f*scale,55f*scale),
+                NativeLocaleBridgeV23.Status,label);
+            const int perPage=3;
             int pages=(Entries.Length+perPage-1)/perPage;
             int first=page*perPage;
-            float rowH=Mathf.Max(46f*scale,(h-230f*scale)/perPage);
+            float rowsTop=r.y+223f*scale;
+            float available=Mathf.Max(80f,h-310f*scale);
+            float rowH=available/perPage;
             for(int i=first;i<Entries.Length&&i<first+perPage;i++)
-            {
-                GUI.Label(new Rect(r.x+15f*scale,r.y+137f*scale+(i-first)*rowH,
+                GUI.Label(new Rect(r.x+15f*scale,rowsTop+(i-first)*rowH,
                     w-30f*scale,rowH-3f*scale),Entries[i],label);
-            }
-            if(GUI.Button(new Rect(r.x+15f*scale,r.y+h-65f*scale,125f*scale,48f*scale),"上一页",button))
+            if(GUI.Button(new Rect(r.x+15f*scale,r.y+h-66f*scale,125f*scale,46f*scale),"上一页",button))
                 page=(page+pages-1)%pages;
-            GUI.Label(new Rect(r.x+158f*scale,r.y+h-58f*scale,160f*scale,42f*scale),
+            GUI.Label(new Rect(r.x+156f*scale,r.y+h-59f*scale,145f*scale,35f*scale),
                 (page+1)+"/"+pages+" 页",label);
-            if(GUI.Button(new Rect(r.x+320f*scale,r.y+h-65f*scale,125f*scale,48f*scale),"下一页",button))
+            if(GUI.Button(new Rect(r.x+298f*scale,r.y+h-66f*scale,125f*scale,46f*scale),"下一页",button))
                 page=(page+1)%pages;
-            GUI.Label(new Rect(r.x+465f*scale,r.y+h-55f*scale,w-476f*scale,38f*scale),
-                "未知英文不会乱翻译。",label);
+            GUI.Label(new Rect(r.x+435f*scale,r.y+h-57f*scale,w-448f*scale,35f*scale),
+                "不支持或未翻译的词条保留原样。",label);
         }
     }
 }
