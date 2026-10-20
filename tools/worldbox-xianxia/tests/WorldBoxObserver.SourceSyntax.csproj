@@ -11,6 +11,7 @@
     <Compile Include="../huge-map-mod/ObserverFrameGuardV12.cs" />
     <Compile Include="../ui/ModTextAccessibilityV13.cs" />
     <Compile Include="../gameplay/CultivationV18.cs" />
+    <Compile Include="../ui/ChineseModManagerV21.cs" />
     
     <Compile Include="stubs/WorldBoxApiStubs.cs" />
   </ItemGroup>
