@@ -81,6 +81,11 @@ jobs:
           if grep -Eq 'SCRIPT ERROR:|Parse Error:|Parser Error:|Invalid call|Failed to load script' godot-scene-qa.log; then
             exit 1
           fi
+      - name: Check room navigation and animation QA
+        run: |
+          set -euo pipefail
+          timeout 50s /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless --path . --script res://tests/navigation_smoke.gd >godot-navigation-qa.log 2>&1 || { cat godot-navigation-qa.log; exit 1; }
+          grep -Fq 'PASS ZHIYIN FURNITURE PATH A-STAR' godot-navigation-qa.log
       - name: Render first REAL 3D screenshot via Mesa and Xvfb
         continue-on-error: true
         run: |
@@ -171,6 +176,7 @@ jobs:
             zhiyin-real3d/ASSET_MANIFEST.json
             zhiyin-real3d/godot-import.log
             zhiyin-real3d/godot-scene-qa.log
+            zhiyin-real3d/godot-navigation-qa.log
             zhiyin-real3d/godot-android-export.log
             zhiyin-real3d/quaternius-motion-inspect.log
             zhiyin-real3d/room-render.log
