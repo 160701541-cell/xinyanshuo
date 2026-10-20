@@ -2,12 +2,12 @@
   "project_id": "WORLDBOX_THIRD_PARTY_MOD_DERIVATIVE_TEST",
   "title": "WorldBox·万界仙侠 非官方MOD衍生测试",
   "repository": "160701541-cell/xinyanshuo",
-  "branch": "worldbox/external-mod-lab-v10",
+  "branch": "worldbox/external-mod-lab-v11",
   "game": "WorldBox Android 0.51.4",
   "unrelated_to": "苍岚·人生世界 原创游戏研发/热更新/发布",
   "allowed_changed_paths": [
     "tools/worldbox-xianxia/",
-    ".github/workflows/worldbox-external-mod-lab-v10.yml"
+    ".github/workflows/worldbox-external-mod-lab-v11.yml"
   ],
   "prohibited_paths": [
     "AGENTS.md",
