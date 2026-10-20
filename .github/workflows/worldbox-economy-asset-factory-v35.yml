@@ -5,6 +5,7 @@ on:
     paths:
       - 'tools/worldbox-xianxia/economy-v35/**'
       - 'tools/worldbox-xianxia/tests/EconomyScenarioV35.*'
+      - 'tools/worldbox-xianxia/tests/RealWorldEconomyScenarioV36.*'
       - '.github/workflows/worldbox-economy-asset-factory-v35.yml'
   workflow_dispatch:
 permissions:
@@ -55,6 +56,8 @@ jobs:
         with: {dotnet-version: '8.0.x'}
       - name: Verify six-tier administrative & monetary/commodity conservation economy
         run: dotnet run --project tools/worldbox-xianxia/tests/EconomyScenarioV35.csproj -c Release
+      - name: Verify actual 0.51.4 MapBox, Kingdom.cities, TileZone.tiles, native warehouses
+        run: dotnet run --project tools/worldbox-xianxia/tests/RealWorldEconomyScenarioV36.csproj -c Release
       - name: Build Android-ready standalone netstandard economy DLL
         run: |
           dotnet build tools/worldbox-xianxia/economy-v35/WorldBoxXianxiaEconomy.csproj -c Release --verbosity quiet
