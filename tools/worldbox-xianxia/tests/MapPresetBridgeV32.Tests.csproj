@@ -1,0 +1,9 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <OutputType>Exe</OutputType>
+    <LangVersion>latest</LangVersion>
+    <Nullable>disable</Nullable>
+  </PropertyGroup>
+  <ItemGroup><ProjectReference Include="../../private-apk-lab/MapPresetBridgeV32/WorldBoxXianxiaMapPreset.csproj" /></ItemGroup>
+</Project>
