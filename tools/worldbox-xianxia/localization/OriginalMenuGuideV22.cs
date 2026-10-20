@@ -52,9 +52,11 @@ namespace XianxiaWorldBox
             x+=quarter+gap;
             if(GUI.Button(new Rect(x,top,quarter,43f*scale),OwnLocaleLabelsV25.Get("one_tap_chinese","一键选择简中"),button))
             {
-                NativeLocaleBridgeV23.RegisterActualKeys();
+                // The actual user-owned WorldBox APK already indexes many
+                // native locales/cz groups. Prefer them FIRST: never
+                // pre-register guessed English fallback values that could
+                // shadow official Simplified Chinese translations.
                 oneTapStatus=NativeLocaleBridgeV23.SwitchToChineseByUserTap();
-                NativeLocaleBridgeV23.ActivateChinese();
             }
             x+=quarter+gap;
             if(GUI.Button(new Rect(x,top,quarter,43f*scale),OwnLocaleLabelsV25.Get("register_native_chinese","登记原版中文"),button))
