@@ -108,18 +108,9 @@ public final class HomeActivity extends Activity {
       +" · 阅读 "+life.readPages+"页 · 练歌 "+life.completedSongs+"次");
     phaseBar.setProgress((int)life.phaseProgress(now));
     ArrayList<String> updates=life.drainEvents();
-    // Persist completed steps and their consequences; cap massive offline imports
-    // and write one explicit summary instead of fabricating an unseen timeline.
-    int written=0;
-    for(String update:updates){
-      if(written>=100)break;
-      try{memory.addEvent("知音",update,"shared","","life");written++;}
-      catch(Exception ex){break;}
-    }
-    if(updates.size()>100){
-      try{memory.addEvent("系统","离线恢复中有"+(updates.size()-100)+"条中间模拟步骤未展开存入对话历史。","shared","","life_meta");}
-      catch(Exception ignored){}
-    }
+    // LifeEngine itself bounds offline simulation; no additional event loss here.
+    try{memory.appendLifeEvents(updates);}
+    catch(Exception ex){toast("生活记录保存失败："+ex.getMessage());}
     lastAction=life.action;lastSequence=life.sequence;
   }
   private final Runnable ticker=new Runnable(){
