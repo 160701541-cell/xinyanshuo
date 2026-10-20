@@ -64,5 +64,12 @@ func _verify() -> void:
     face.set_emotion("joy",0.75)
     face.set_viseme("aa",0.90)
     face.set_silent()
+    var Production=load("res://scenes/production_vrm_avatar.gd")
+    var desired=Production.load_actor(root,"npc_deepseek_blue",Vector3.ZERO)
+    if str(desired.get("status",""))!="MISSING_AUTHORED_VRM":
+        push_error("Production must NOT silently substitute a generic sample avatar")
+        quit(7)
+        return
+    print("PASS: missing authored DeepSeek asset never silently replaced by a generic mannequin")
     print("PASS REAL VRM ANIME MODEL IMPORT + SKELETON + FACIAL MORPHS + MATERIALS")
     quit(0)
