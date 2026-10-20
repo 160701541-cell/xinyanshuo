@@ -32,6 +32,9 @@ def check(data:bytes):
         raise ValueError("Not a real rigged avatar")
     if not gltf.get("images") or not gltf.get("materials"):
         raise ValueError("This anime model is missing its hair/face textures")
+    print("LOOKDEV_ANIME_MESH_NAMES",[m.get("name","") for m in gltf.get("meshes",[])])
+    print("LOOKDEV_ANIME_MATERIAL_NAMES",[m.get("name","") for m in gltf.get("materials",[])][:100])
+    print("LOOKDEV_ANIME_IMAGE_NAMES",[m.get("name","") for m in gltf.get("images",[])][:50])
     print("LOOKDEV_CC0_ANIME_BASE verified",{
         "source":SOURCE,"model_name":meta.get("title") or meta.get("name"),
         "license":rights,"skins":len(gltf["skins"]),
