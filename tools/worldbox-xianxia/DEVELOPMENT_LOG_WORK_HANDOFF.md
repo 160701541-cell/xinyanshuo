@@ -124,3 +124,66 @@ Before publishing this work, the branch advanced to
 target, with an opt-in 2048x2048 chunk-aligned stress preset to investigate.
 Preserve that update when writing this source commit. This build does not
 implement or certify 2000/2048-square maps; that acceptance item remains open.
+
+## 2026-10-20 — v14 user-authorized Android install test + diagnostic logs
+
+User follow-up explicitly authorized receiving a test APK and doing device QA
+personally: “你打包我安装不就行了，写个报错日志”. This supersedes withholding
+all APKs until in-session device testing. Status is **USER_DEVICE_TEST_CANDIDATE**,
+never a claim of successful phone launch or complete MOD integration.
+
+### Original changes and save isolation
+
+- Added an original Java `DiagnosticsActivity` launcher, independent of Unity.
+  It shows Start Game / Copy Error Log / Share Error Log. It records entry and
+  Unity-start requests before loading Unity, captures Java uncaught exceptions,
+  reads current/previous Mono logs and shares text through Android's chooser.
+  Logs stay on-device unless the user explicitly copies/shares them.
+- Added original `DiagnosticLog.cs`: Unity threaded log callback, managed
+  unhandled exception capture, device/GPU/startup context, lifecycle messages,
+  bounded files and rotation. Added in-game copy-log button. Native SIGSEGV,
+  OS kills, or failures before app code executes may lack a full stack trace.
+- New application ID **com.xinyanshuo.worldbox.lab13**; name
+  **WorldBox·万界仙侠 测试v14**. Android grants a separate app identity/data area.
+  Existing WorldBox installation is retained; no uninstall, clear-data, old
+  world access, automatic save import or format conversion is performed.
+- Added original AXML clone script preserving resource IDs and original class
+  names, changing package-specific provider authorities/custom permission,
+  retaining Unity activity and adding our diagnostic activity as launcher.
+  Added a separate classes5.dex containing only our three diagnostic classes.
+- Native libraries, original classes.dex/classes2/3/4.dex and resources.arsc
+  compare byte-for-byte equal to uploaded APK. No paid-content code altered.
+- Exact managed references compile succeeds; MapBox.Start hook verified again
+  across 20597 original method bodies. Java compiled with Eclipse ECJ 3.39.0,
+  Android platform35 android.jar, D8/build-tools35, min-api23; no game Java code
+  recompilation. All original source remains in WorldBox-only paths.
+
+### Build and actual verification
+
+- Output: `WorldBox_Xianxia_v14_Android_Test.apk`, **167723254 bytes**.
+- SHA256: `2403a65c7c476f46866993e972a41c5818b020d3b68fb9a921339bfe39f8dcb2`.
+- Dedicated v13 test key reused locally; v1/v2/v3 signatures verify; 16KB ZIP
+  alignment check exits 0. Test certificate unchanged from preceding record.
+- Parsed final manifest with Androguard: clone app ID/name and diagnostic main
+  activity correct; all eight provider authorities differ from original;
+  Android permission set unchanged except package-scoped custom permission;
+  exactly one additional activity, and no authority collision with old APK.
+- Inspected generated DEX: only DiagnosticsActivity plus two listener classes.
+- APK CRC and strict per-entry diff verification succeeded. Only original
+  AndroidManifest.xml and assets/Mono/Managed.zip changed, plus added diagnostic
+  DEX and new signatures. Original APK retained unchanged.
+- Python regression suite: **38 passed**; git diff --check passed.
+- **Android launch/UI/CJK/font sizing/world generation/follow/pseudo-3D/map
+  sizes/save-load/FPS remain USER_PENDING**, to be checked after installation.
+- Third-party MODs and 2000/2048-square map target remain incomplete. The APK
+  is a baseline logging/observer test candidate, not the promised final all-MOD
+  integrated edition. No commercial game or third-party DLL published to GitHub.
+
+User flow: install side by side, tap Start Game; if launch fails, reopen the
+diagnostic launcher and Copy Error Log, then paste it into this conversation.
+If Android refuses installation, send its displayed error; do not uninstall old
+WorldBox. Phone save migration remains a separate unimplemented acceptance item.
+
+- Delivery integrity: host-upload initially truncated the APK central directory; caught by post-upload SHA/signature verification. Rebuilt signed bytes from aligned input and switched to exact-size prepared transfer; do not distribute the invalid intermediate.
+
+- Prepared transfer saved the full 167723254-byte APK; downloaded it back for SHA256/v1-v2-v3 signature and alignment verification before providing the user link. Final status: USER_DEVICE_TEST_CANDIDATE, no Android runtime pass claim.

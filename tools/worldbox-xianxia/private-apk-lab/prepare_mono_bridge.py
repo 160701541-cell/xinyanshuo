@@ -25,7 +25,7 @@ def prepare(root: Path, output: Path):
     if bridge.count(hook) != 1:
         raise ValueError('Bridge bootstrap source contract changed')
     bridge = bridge.replace(hook, hook + '\n            obj.AddComponent(typeof(XianxiaWorldBox.XianxiaObserverV07));')
-    sources = [bridge, observer] + [
+    sources = [bridge, observer, (root / 'private-apk-lab/DiagnosticLog.cs').read_text()] + [
         (root / path).read_text() for path in (
             'huge-map-mod/GiantMapOptionsV11.cs',
             'huge-map-mod/ObserverFrameGuardV12.cs',

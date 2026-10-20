@@ -10,6 +10,8 @@ public static class Entry {
     static bool installed;
     public static void Install() {
         if(installed)return;
+        DiagnosticLog.Install();
+        DiagnosticLog.Write("ENTRY_INSTALL_BEGIN");
         try {
             installed=true;
             var obj=new GameObject("WorldBoxXianxiaReadabilityBridge");
@@ -115,8 +117,9 @@ public sealed class Overlay : MonoBehaviour {
           "字太小的第三方MOD：可尝试放大原有Unity UI文字。\n"+
           "已调整："+applied+"处；可关闭并恢复原字体大小。\n"+
           "更大的世界和战斗等功能需要继续验证兼容；此版为只读桥接实验。",label);
-        GUI.Label(new Rect(px+25*u,py+ph-84*u,pw-50*u,66*u),
-          "【实验版本】未经过用户手机启动与存档测试。与《苍岚》原创游戏无关。",label);
+        if(GUI.Button(new Rect(px+25*u,py+ph-74*u,pw-50*u,56*u),"复制报错日志（粘贴发给我）",btn)){
+            GUIUtility.systemCopyBuffer=DiagnosticLog.Read();
+        }
     }
     void TryApplySmallFonts(){
         try{
@@ -158,5 +161,8 @@ public sealed class Overlay : MonoBehaviour {
         if(font!=null)UnityEngine.Object.Destroy(font);
         Debug.Log("[XIANXIA-MONO-V13] COMPONENT_DESTROYED");
     }
+    void OnApplicationPause(bool paused){DiagnosticLog.Write("APP_PAUSE "+paused);}
+    void OnApplicationFocus(bool focused){DiagnosticLog.Write("APP_FOCUS "+focused);}
+    void OnApplicationQuit(){DiagnosticLog.Write("APP_QUIT");}
 }
 }
