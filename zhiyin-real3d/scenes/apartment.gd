@@ -7,6 +7,7 @@ extends Node3D
 
 const RoomNavigator = preload("res://scenes/room_navigation.gd")
 const HeadComposer = preload("res://scenes/character_head.gd")
+const DeepSeekBlue = preload("res://scenes/deepseek_blue_avatar.gd")
 const ROOM := 3.2
 const HALF := ROOM * 0.5
 const FURNITURE := [
@@ -36,6 +37,7 @@ var avatar: Node3D
 var avatar_target := Vector3(0.15,0.0,0.10)
 var avatar_idle := Vector3(0.15,0.0,0.10)
 var avatar_animation: AnimationPlayer
+var avatar_identity: Dictionary = {}
 var last_task := "阅读"
 var idle_seconds := 0.0
 var prop_positions := {}
@@ -62,7 +64,7 @@ func _ready() -> void:
     room_nav.setup(FURNITURE)
     _setup_camera()
     _setup_ui()
-    _status("17项GLB  ·  PBR木纹/法线  ·  3D物理交互")
+    _status("DeepSeek蓝鲸少女  ·  真实3D试制形态  ·  PBR + 65骨骼")
     set_process(true)
     set_process_unhandled_input(true)
 
@@ -255,6 +257,10 @@ func _import_character() -> void:
     var face_parts: Dictionary=HeadComposer.attach(avatar)
     if face_parts.is_empty():
         push_error("正式人物头部、脸与长发绑定失败，禁止把无头NPC标记为成功")
+    else:
+        avatar_identity=DeepSeekBlue.install(avatar)
+        if avatar_identity.is_empty():
+            push_error("DeepSeek蓝鲸少女3D组件没有成功安装")
     avatar_idle=avatar.position
     avatar_target=avatar.position
     # Official CC0 Universal Animation Library 1 / Standard:
@@ -396,12 +402,12 @@ func _setup_ui() -> void:
     var stack:=VBoxContainer.new()
     info.add_child(stack)
     var title:=Label.new()
-    title.text="知音   /   REAL 3D ROOM"
+    title.text="知音  /  DeepSeek蓝鲸少女 · 3D试制"
     title.add_theme_font_size_override("font_size",20)
     title.add_theme_color_override("font_color",Color(1,.94,.86))
     stack.add_child(title)
     var subtitle:=Label.new()
-    subtitle.text="临河巷  •  3.2 × 3.2 m   •   GLB / PBR"
+    subtitle.text="蓝发 · 鲸鳍 · 鲸尾 · 女仆头饰 · 65骨骼"
     subtitle.add_theme_font_size_override("font_size",14)
     subtitle.add_theme_color_override("font_color",Color(.78,.86,.86))
     stack.add_child(subtitle)
@@ -421,14 +427,15 @@ func _setup_ui() -> void:
     var row:=HBoxContainer.new()
     row.add_theme_constant_override("separation",10)
     dock.add_child(row)
-    _button(row,"回到房间",func():camera_target=Vector3(0,.72,0);camera_zoom=5.25;_set_camera())
+    _button(row,"房间全景",func():camera_target=Vector3(0,.72,0);camera_zoom=5.25;_set_camera())
+    _button(row,"角色特写",func():camera_target=avatar.position+Vector3(0,1.16,0);camera_zoom=2.35;_set_camera())
     _button(row,"阅读",func():_go_to("desk","她打算到书桌前阅读。"))
     _button(row,"做饭",func():_go_to("stove","她先走到真实3D灶台。"))
     _button(row,"休息",func():_go_to("bed","她回到床边休息。"))
     _button(row,"照料植物",func():_go_to("plant","她准备浇花。"))
     var foot:=Label.new()
     foot.name="3D-only QA / no AI bridge"
-    foot.text="3D渲染验收版 · AI/存档待桥接"
+    foot.text="DeepSeek角色外观制作中 · 非官方形象 · AI/存档待桥接"
     foot.add_theme_color_override("font_color",Color(1,.88,.76))
     foot.set_anchors_preset(Control.PRESET_TOP_RIGHT)
     foot.offset_left=-355;foot.offset_right=-12
