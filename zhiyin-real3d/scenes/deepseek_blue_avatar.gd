@@ -243,8 +243,8 @@ static func install(avatar:Node3D) -> Dictionary:
         return {}
     # Headboard, blue bows, fins and a navy/sky-blue long layered hairstyle.
     _scallop("MAID_HEADBAND",head,Vector3(0,.19,-.012),Vector2(.19,.077),9,WHITE)
-    var cap:=_ball("DS_HAIR_CROWN",head,Vector3(0,.105,.012),
-        Vector3(.37,.25,.33),BLUE_MAIN)
+    var cap:=_ball("DS_HAIR_CROWN",head,Vector3(0,.243,-.121),
+        Vector3(.280,.185,.185),BLUE_MAIN)
     cap.material_override=_surface_mat(Color(.075,.18,.46),0.0,.42)
     for i in range(12):
         var x:float=(float(i)-5.5)*.036
@@ -257,7 +257,7 @@ static func install(avatar:Node3D) -> Dictionary:
     for i in range(7):
         var x:float=(float(i)-3.0)*.061
         _make_hair_strand("BANG_"+str(i),head,
-            Vector3(x,.19,.16),Vector3(x*.76,.005,.225),
+            Vector3(x,.22,.145),Vector3(x*.76,.095,.204),
             .042,-x*.25,-.03,BLUE_DARK)
     _fin("LEFT",head,Vector3(-.19,-.01,.014),-1.0,BLUE_MAIN)
     _fin("RIGHT",head,Vector3(.19,-.01,.014),1.0,BLUE_MAIN)
@@ -270,9 +270,11 @@ static func install(avatar:Node3D) -> Dictionary:
     _eyes(head)
     _skirt(waist)
     _whale_tail(waist)
-    _ball("DS_COLLAR_BLUE_BOW",chest,Vector3(0,.012,-.133),
+    _ball("DS_BIB_WHITE",chest,Vector3(0,.022,.16),
+        Vector3(.245,.33,.055),WHITE)
+    _ball("DS_COLLAR_BLUE_BOW",chest,Vector3(0,.12,.20),
         Vector3(.15,.071,.035),BLUE_DARK)
-    _ball("DS_COLLAR_GEM",chest,Vector3(0,.025,-.163),
+    _ball("DS_COLLAR_GEM",chest,Vector3(0,.125,.235),
         Vector3(.058,.070,.033),BLUE_SKY,_surface_mat(BLUE_SKY,.3,.2))
     return {
         "identity":"npc_deepseek_blue",
