@@ -38,7 +38,10 @@ namespace UnityEngine {
         public static Texture2D whiteTexture { get; }=new Texture2D(1,1,TextureFormat.RGBA32,false);
     }
     public struct Rect {
-        public Rect(float x,float y,float width,float height) {}
+        public float x,y,width,height;
+        public Rect(float x,float y,float width,float height) {
+            this.x=x;this.y=y;this.width=width;this.height=height;
+        }
     }
     public static class Screen { public static int width=1280,height=720; }
     public static class Time { public static float unscaledTime; }
