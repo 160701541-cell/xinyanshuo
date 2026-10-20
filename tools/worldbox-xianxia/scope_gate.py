@@ -5,6 +5,7 @@ from pathlib import Path
 BASE_SHA="843aa12861fd6838584c2ec9fe8f3b019ced2b2c"
 SOURCE="tools/worldbox-xianxia/"
 WORKFLOW=".github/workflows/worldbox-external-mod-lab-v22.yml"
+ECONOMY_WORKFLOW=".github/workflows/worldbox-economy-asset-factory-v35.yml"
 OLD_WORKFLOW=".github/workflows/worldbox-external-mod-lab-v21.yml"
 FORBIDDEN=(".apk",".pck",".dll",".pdb",".exe",".rar",".7z",".aab")
 
@@ -15,7 +16,7 @@ def validate_paths(paths):
         if p.startswith("./"):p=p[2:]
         if not p or p.startswith("../") or "/.." in p:
             errors.append("BAD_PATH: "+raw)
-        elif not (p.startswith(SOURCE) or p==WORKFLOW):
+        elif not (p.startswith(SOURCE) or p in (WORKFLOW,ECONOMY_WORKFLOW)):
             errors.append("CROSS_PROJECT_EDIT_BLOCKED: "+p)
         if p.lower().endswith(FORBIDDEN):
             errors.append("THIRD_PARTY_BINARY_BLOCKED: "+p)
