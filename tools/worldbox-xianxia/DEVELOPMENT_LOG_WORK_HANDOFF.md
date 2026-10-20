@@ -260,3 +260,37 @@ promote this narrow startup confirmation to full gameplay acceptance.
 
 Next device acceptance: check whether the in-game 万界·清晰大字 and observer
 controls appear, exercise font sizes, and return diagnostic logs if missing.
+
+## 2026-10-20 — v16 first actual compatible third-party MOD integration
+
+User explicitly requested integrating the MODs rather than continuing launcher-only tests. Preserved v15 user-confirmed startup and the separate test app identity. v16 is a new user-device test candidate, NOT a full final xianxia edition or a phone-verified MOD pass.
+
+### Uploaded file audit (actual contents)
+
+- NeoModLoader 1.2.1.1: legacy Mono loader, not NeoModLoader_mobile/LemonLoader. Exact game metadata audit: 380 referenced game/NML members checked, zero missing. Read official source tag 1.2.1.1 (f6017bdcb6a3cfd4855d634e41b274f013463092), MIT license; included license privately with payload. Original uploaded APK's external loader had been 1.2.0.1.
+- Combat Gods 1.0.5 (Turbo, GUID TURBO_SAKUGA): user archive contains 305 C# files, assets and 36 cz.json Chinese locale files. Compiled all 305 against the exact original APK's reference-only publicized game API plus uploaded NML1.2.1.1/dependencies. Successful. Additional metadata audit: 691 referenced game/NML members, zero missing.
+- Frontiers 2.0.1 (MidNight, GUID MIDNIGHT_FRONTIERS): user-supplied precompiled module. All 150 direct game type references present; 521 referenced game/NML members resolve, zero missing. Retained original binary and default configuration.
+- Uploaded vassal5.1 ZIP is a Civilization VI Lua/SQL/modinfo package, not a WorldBox module: excluded.
+- TWrecks character-control guide explicitly targets WorldBox0.10.3/BepInEx and WASD keyboard: excluded from0.51.4, requires porting.
+- Chinese0.10.3 patch contains old Assembly-CSharp replacement ZIPs for0.9.1/0.9.6/0.10.3: excluded; never replace current game assembly with it.
+- More-powers/map/GUI bundle is an old Windows/BepInEx whole-game package: excluded fromAndroid0.51.4.
+- Cultivation0.078.6 complete ZIP was retrieved on retry and inspected: old Windows game, BepInEx, replacement game DLLs and Unity2019-era logs from2021. It is not a ready-compatible0.51.4 source MOD. Not merged or falsely called working. Upstream Cultivation-Way-Core main also declares build558, so was not silently substituted for725.
+
+### Actual APK integration
+
+- Original build_mod_payload.py stages private files only: ONE legacy NML1.2.1.1, its matching embedded dependencies, compiled Combat Gods, Frontiers, icons/Forge/game resources/locales/default configurations. Each mod root has exactly one DLL and ModType=COMPILED_NEOMOD(1); normalized stale Windows FolderPath. Third-party names/author/GUID retained.
+- 701 payload files, 45341531 uncompressed bytes. Token v16-8f37e6f55455468e. Every file SHA256 verified both in staging and final APK. No NML mobile, LemonLoader, BepInEx runtime, old whole-game DLLs or publicized SDK reference bundled as a MOD.
+- Added original Android ModDeployment.java: first launch automatically extracts exact APK Mono DLLs/PDBs into THIS app's files/mono and verifies/deploys the checksummed NML and Mods assets. Runs off the UI thread; uses temporary files, hash checks and atomic rename. Version marker avoids repeating successful installation. Targets only this package's files/mods and Mods folders; no worlds/settings import, no uninstall or data wipe.
+- Added original IntegratedModBootstrap.cs to existing exact-APK entry bridge. Waits for Config.game_loaded, instantiates the standard NeoModLoader.WorldBoxMod entry, disables the duplicate native-loader pass, supplies an assembly resolver, and logs ACTUAL LoadedMods entries/states. File deployment and runtime registration are logged separately; neither is falsely called gameplay acceptance.
+- Retained fonts/observer/pseudo-3D/map candidate code. Expanded bounded diagnostic logs to retain NML/module messages. Native entry lists the included modules and still offers copy/share logs.
+- Same app ID com.xinyanshuo.worldbox.lab13 and dedicated test certificate; versionCode727 permits updatingv15. Retained v15 resource-namespace fix. Native game libraries and original classes.dex/classes2/3/4.dex unchanged. No added Android permissions or paid-content changes.
+- Toolkit now has compile-tree, reference-only publicizer and metadata API audit commands. The publicized reference is compile-only; shipping original game bodies still verified across20597 methods with only the isolated entry hook. Python suite42 tests pass, including private payload checksums/layout/no-source/no-SDK-reference regression. Original Java compiled with Android35+ECJ/D8; original bridge compiles against exact original Mono references.
+
+### Signed candidate and open acceptance
+
+- File WorldBox_Xianxia_v16_Integrated_Test.apk, 185612979 bytes.
+- SHA256 d1cf154f65e1f1f89db269b896844ce39e8d0c33aded95938c493c103e6d8ec9.
+- v1/v2/v3 signatures verified; 16KB ZIP alignment verified. Final APK manifest/resources/app identity, same-certificate update, original native/Dex preservation and all701 embedded payload hashes checked.
+- Actual Android deployment/NML boot/MOD registration and gameplay remain USER_PENDING. Next phone log should show MOD_DEPLOY_OK followed by NML_ACTUALLY_LOADED_COUNT and Sakuga.SakugaMod / Frontiers.FrontiersMod entries. A populated mod list is still not proof all combat/kingdom features, saves or performance work.
+- The full xianxia cultivation/roots/ascension/world systems, old control-mod port, vassal feature port and huge-map device QA remain incomplete. This is a real two-module integration candidate, not a claim all uploaded files or the full design are compatible.
+- Public repository receives ONLY original integration source/tests/log. Uploaded game, third-party DLLs, assets and APK stay private user artifacts.

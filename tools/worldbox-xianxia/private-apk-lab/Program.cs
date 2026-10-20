@@ -14,6 +14,15 @@ class Program {
   try {
    if(args.Length<2){Console.Error.WriteLine("usage: inspect game.dll | compile source.cs references-dir output.dll | patch game.dll plugin.dll output.dll | verify before.dll after.dll");return 2;}
    switch(args[0]){
+    case "audit-mod-api":
+     if(args.Length<3)throw new ArgumentException("audit-mod-api mod.dll exact-reference-dir");
+     AuditModApi(args[1],args[2]);return 0;
+    case "publicize-reference":
+     if(args.Length<3)throw new ArgumentException("publicize-reference input.dll reference-only.dll");
+     PublicizeReference(args[1],args[2]);return 0;
+    case "compile-tree":
+     if(args.Length<4)throw new ArgumentException("compile-tree source-dir references-dir output.dll");
+     CompileTree(args[1],args[2],args[3]);return 0;
     case "inspect": Inspect(args[1]);return 0;
     case "compile":
      if(args.Length<4)throw new ArgumentException("compile source.cs managed-reference-dir output.dll");
@@ -77,6 +86,57 @@ class Program {
    foreach(var d in emit.Diagnostics.Where(d=>d.Severity>=DiagnosticSeverity.Warning))Console.WriteLine(d.ToString());
    if(!emit.Success)throw new InvalidOperationException("private original-APK Mono reference compilation failed");
    Console.WriteLine("PASS_MONO_ORIGINAL_REFERENCE_COMPILE "+output);
+ }
+ static void PublicizeReference(string source,string output){
+   if(Path.GetFullPath(source)==Path.GetFullPath(output))throw new ArgumentException("Never replace input");
+   using var module=dnlib.DotNet.ModuleDefMD.Load(source);
+   foreach(var t in module.GetTypes()){
+     if(t.Name=="<Module>")continue;
+     t.Attributes=(t.Attributes & ~dnlib.DotNet.TypeAttributes.VisibilityMask) |
+       (t.IsNested?dnlib.DotNet.TypeAttributes.NestedPublic:dnlib.DotNet.TypeAttributes.Public);
+     foreach(var f in t.Fields)
+       f.Attributes=(f.Attributes & ~dnlib.DotNet.FieldAttributes.FieldAccessMask)|dnlib.DotNet.FieldAttributes.Public;
+     foreach(var m in t.Methods)
+       m.Attributes=(m.Attributes & ~dnlib.DotNet.MethodAttributes.MemberAccessMask)|dnlib.DotNet.MethodAttributes.Public;
+   }
+   module.Write(output);
+   Console.WriteLine("REFERENCE_ONLY_PUBLICIZED; never ship as original game "+output);
+ }
+ static void CompileTree(string sourceDir,string refDir,string output){
+   var paths=Directory.GetFiles(sourceDir,"*.cs",SearchOption.AllDirectories).OrderBy(x=>x).ToArray();
+   if(paths.Length==0)throw new InvalidOperationException("No C# sources");
+   var parse=new CSharpParseOptions(LanguageVersion.Preview,preprocessorSymbols:new[]{"NML_ANDROID"});
+   var trees=paths.Select(p=>CSharpSyntaxTree.ParseText(File.ReadAllText(p),parse,p));
+   var refs=new List<MetadataReference>();
+   foreach(var p in Directory.GetFiles(refDir,"*.dll"))
+     try{refs.Add(MetadataReference.CreateFromFile(p));}catch(BadImageFormatException){}
+   var c=CSharpCompilation.Create(Path.GetFileNameWithoutExtension(output),trees,refs,
+     new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary,optimizationLevel:OptimizationLevel.Release,
+        allowUnsafe:true,deterministic:true));
+   using var stream=File.Create(output);var emit=c.Emit(stream);
+   foreach(var d in emit.Diagnostics.Where(d=>d.Severity==DiagnosticSeverity.Error))Console.WriteLine(d);
+   if(!emit.Success)throw new InvalidOperationException("Exact reference MOD compile failed");
+   Console.WriteLine("PASS_EXACT_REFERENCE_MOD_COMPILE files="+paths.Length+" "+output);
+ }
+ static void AuditModApi(string path,string refDir){
+   var resolver=new dnlib.DotNet.AssemblyResolver();
+   resolver.PreSearchPaths.Add(Path.GetFullPath(refDir));
+   var context=new dnlib.DotNet.ModuleContext(resolver);
+   resolver.DefaultModuleContext=context;
+   using var module=dnlib.DotNet.ModuleDefMD.Load(path,context);
+   int checkedMembers=0;var missing=new List<string>();
+   foreach(var member in module.GetMemberRefs()){
+     string scope=member.DeclaringType.Scope?.ToString()??"";
+     if(!scope.StartsWith("Assembly-CSharp,")&&!scope.StartsWith("NeoModLoader,"))continue;
+     checkedMembers++;
+     try{
+       bool resolved=member.IsMethodRef?member.ResolveMethod()!=null:member.ResolveField()!=null;
+       if(!resolved)missing.Add(member.FullName);
+     }catch(Exception e){missing.Add(member.FullName+" "+e.GetType().Name);}
+   }
+   foreach(var value in missing)Console.WriteLine("MISSING_API "+value);
+   Console.WriteLine("MOD_API_AUDIT checked="+checkedMembers+" missing="+missing.Count);
+   if(missing.Count!=0)throw new InvalidOperationException("Mod references unavailable exact-game APIs");
  }
  static void Patch(string original,string plugin,string output) {
     var mod=dnlib.DotNet.ModuleDefMD.Load(original);

@@ -17,6 +17,7 @@ public static class Entry {
             var obj=new GameObject("WorldBoxXianxiaReadabilityBridge");
             UnityEngine.Object.DontDestroyOnLoad(obj);
             obj.AddComponent(typeof(Overlay));
+            obj.AddComponent(typeof(IntegratedModBootstrap));
             Debug.Log("[XIANXIA-MONO-V13] LOAD_BRIDGE_OK");
         } catch(Exception e) {
             installed=false;

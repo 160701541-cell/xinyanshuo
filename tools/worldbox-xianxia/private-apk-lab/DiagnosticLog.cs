@@ -25,7 +25,7 @@ public static class DiagnosticLog {
                 installed=true;
                 Application.logMessageReceivedThreaded+=Receive;
                 AppDomain.CurrentDomain.UnhandledException+=Unhandled;
-                Write("MONO_DIAGNOSTICS_READY v15 game="+Application.version+
+                Write("MONO_DIAGNOSTICS_READY v16 game="+Application.version+
                     " unity="+Application.unityVersion+" model="+SystemInfo.deviceModel+
                     " gpu="+SystemInfo.graphicsDeviceName+" data="+Application.persistentDataPath);
             }catch(Exception){installed=false;}
@@ -35,7 +35,10 @@ public static class DiagnosticLog {
         Write("MANAGED_UNHANDLED terminating="+args.IsTerminating+"\n"+args.ExceptionObject);
     }
     static void Receive(string message,string stack,LogType kind){
-        if(kind==LogType.Log && message.IndexOf("XIANXIA",StringComparison.OrdinalIgnoreCase)<0){
+        if(kind==LogType.Log && message.IndexOf("XIANXIA",StringComparison.OrdinalIgnoreCase)<0 &&
+           message.IndexOf("NML",StringComparison.OrdinalIgnoreCase)<0 &&
+           message.IndexOf("Sakuga",StringComparison.OrdinalIgnoreCase)<0 &&
+           message.IndexOf("Frontiers",StringComparison.OrdinalIgnoreCase)<0){
             lock(Gate){if(++regularCount>200)return;}
         }
         Write(kind+" "+message+"\n"+stack);
@@ -57,7 +60,7 @@ public static class DiagnosticLog {
     public static string Read(){
         lock(Gate){
             try{
-                var text=new StringBuilder("WorldBox万界仙侠 v15 测试日志\n");
+                var text=new StringBuilder("WorldBox万界仙侠 v16 MOD整合日志\n");
                 foreach(string name in new[]{"previous.log","rotated.log","session.log"}){
                     string file=Path.Combine(directory,name);
                     if(!File.Exists(file))continue;

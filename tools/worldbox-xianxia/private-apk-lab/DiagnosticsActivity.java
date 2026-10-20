@@ -42,7 +42,7 @@ public final class DiagnosticsActivity extends Activity {
     private String logs() {
         File external=getExternalFilesDir(null);
         File logRoot=external==null?null:new File(external,"WorldBoxXianxiaLogs");
-        String report="WorldBox·万界仙侠 v15 用户实测候选\n包名："+getPackageName()+
+        String report="WorldBox·万界仙侠 v16 MOD整合实测\n包名："+getPackageName()+
             "\n安卓："+android.os.Build.VERSION.RELEASE+" / "+android.os.Build.MODEL+
             "\n=== 安卓入口 ===\n"+read(bootFile())+
             "\n=== 上次安卓入口 ===\n"+read(new File(getFilesDir(),"worldbox_boot.previous.log"))+
@@ -62,9 +62,21 @@ public final class DiagnosticsActivity extends Activity {
                     stage("RESOURCE_PREFLIGHT description=0x"+Integer.toHexString(description)+" surface=0x"+Integer.toHexString(surface));
                     if(description==0||surface==0)throw new IllegalStateException("Unity资源名称未正确匹配。请复制日志反馈。");
                     getResources().getString(description);
-                    stage("START_UNITY_REQUEST");
-                    Intent i=new Intent();i.setClassName(DiagnosticsActivity.this,"com.unity3d.player.UnityPlayerActivity");
-                    startActivity(i);
+                    v.setEnabled(false);status.setText("正在自动部署模组，首次启动需要稍等……");
+                    final View launchButton=v;
+                    new Thread(new Runnable(){public void run(){
+                        try{
+                            stage("MOD_DEPLOY_BEGIN v16");stage(ModDeployment.install(DiagnosticsActivity.this));
+                            runOnUiThread(new Runnable(){public void run(){
+                                launchButton.setEnabled(true);stage("START_UNITY_REQUEST");
+                                Intent i=new Intent();i.setClassName(DiagnosticsActivity.this,"com.unity3d.player.UnityPlayerActivity");
+                                startActivity(i);
+                            }});
+                        }catch(final Exception error){
+                            stage("MOD_DEPLOY_FAILED "+android.util.Log.getStackTraceString(error));
+                            runOnUiThread(new Runnable(){public void run(){launchButton.setEnabled(true);status.setText("模组部署失败："+error.toString()+"\n请复制日志反馈。");}});
+                        }
+                    }},"WorldBox-MOD-Installer").start();
                 } else if(action==1) {
                     ((ClipboardManager)getSystemService(CLIPBOARD_SERVICE)).setPrimaryClip(ClipData.newPlainText("万界仙侠测试日志",logs()));
                     Toast.makeText(DiagnosticsActivity.this,"日志已复制，粘贴到聊天即可",Toast.LENGTH_LONG).show();
@@ -88,8 +100,8 @@ public final class DiagnosticsActivity extends Activity {
         });
         stage("DIAGNOSTICS_READY Android="+android.os.Build.VERSION.RELEASE+" model="+android.os.Build.MODEL);
         LinearLayout root=new LinearLayout(this);root.setOrientation(1);root.setPadding(28,32,28,24);
-        TextView title=new TextView(this);title.setText("WorldBox·万界仙侠\n安卓实测版 v15");title.setTextSize(27);root.addView(title);
-        TextView note=new TextView(this);note.setText("与原版并排安装，存档独立。\n本包待手机实测，尚未整合全部第三方MOD。\n\n若闪退，重新打开此入口，复制或分享日志。原生崩溃不一定能留下完整堆栈。\n");note.setTextSize(18);root.addView(note);
+        TextView title=new TextView(this);title.setText("WorldBox·万界仙侠\nMOD整合实测版 v16");title.setTextSize(27);root.addView(title);
+        TextView note=new TextView(this);note.setText("内置：战斗之神1.0.5、合理的世界2.0.1、NeoModLoader1.2.1.1。\n点击启动会自动安装，无需文件管理器。\n旧修仙及人物控制包版本不兼容，未混入本包。\n\n若闪退或模组没出现，重新打开入口复制日志。存档保留在本测试应用中，与原版独立。\n");note.setTextSize(18);root.addView(note);
         button(root,"启动游戏测试",0);button(root,"复制报错日志",1);button(root,"分享报错日志",2);
         status=new TextView(this);status.setTextSize(14);root.addView(status);
         ScrollView scroll=new ScrollView(this);scroll.addView(root);setContentView(scroll);
