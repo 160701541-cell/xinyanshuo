@@ -155,7 +155,7 @@ public final class ModelDownloadService extends Service {
           long remoteSize=-1;
           if(code==416&&bytes>0){
             String range=con.getHeaderField("Content-Range");
-            if(range!=null&&range.matches("bytes \\\\*/[0-9]+")){
+            if(range!=null&&range.startsWith("bytes */")&&range.substring(8).matches("[0-9]+")){
               remoteSize=Long.parseLong(range.substring(range.indexOf('/')+1));
               if(remoteSize==bytes){total=bytes;finalizeFile(p,destination,etag);return;}
             }
