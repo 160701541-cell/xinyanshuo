@@ -180,3 +180,10 @@ Work仍负责私有APK整合、签名、安卓16真机验收。不得上传商�
 - 修改 `tests/NativeLocaleScenarioV23.cs`：执行模拟管理器的真实词条计数测试、语言切换被忽略的误报拦截测试，并保留旧中文键/第三方MOD不覆盖/离线导入测试。上述都是**实际代码和可执行回归测试**，不是新造一个翻译词库。
 - 已经查到用户本人上传的 APK 与两份MOD候选被安全保留在用户文件库；原APK静态证据只说明存在Mono/IL2CPP及原生 `cz` 资源，不能据此推断加载器确实运行。**本轮未做Android设备连接、签名、安装，不宣称完整中文或APK成功。** 后续仍按完整汉化→私有APK整合及真机验收→天道放置→多城皇城→建筑等级→浮岛地府的既定次序推进。
 - 仅WorldBox隔离分支 `worldbox/external-mod-lab-v22-zh-localization`，不修改《苍岚》main、官网、游戏发行代码/安装包或开发日志。本提交触发的CI要查当前新运行号后才能评价。
+
+
+### v0.26 功能提交后的最新CI闭环和本机用户私有输入审计
+- **真实功能提交**：`d6c5dd8ef912dfb2a343051e1b7cdcac22d4fffa`；对应 Actions **`39448677637` 三项作业全部成功**：`offline-source-qa`、`android-public-sdk-compile`、`private-user-file-apk-inspector`。证明新C#真语言诊断、忽略语言切换回归及SDK/候选打包仍过离线测试。**不是Android16设备安装通过**。
+- 本轮安全地从用户文件库实际取回原APK和两份v0.25 MOD ZIP，仅做本地字节哈希、ZIP CRC、资源分组和文件清单检查；原APK SHA256 `c39817efa21e539fe61f318dc1ad4050b424c6120ab8ed384d94148f869c4bdc`，原生`cz`和`en`资源分组均为70。无NML程序集出现在APK内`assets/Mono/Managed.zip`的顶层清单，**但无法凭此排除外部运行时注入**。候选ZIP CRC均无坏项且自身仍非APK。
+- 同时实查用户上传的`模组装载器NeoModLoader_1.2.1.1(适用于0.51.+)(1).zip`：仅有`NeoModLoader.dll`和安装说明，说明明确教用户放至`worldbox_Data/StreamingAssets/mods/`（桌面端路径）；不包含`NeoModLoader_mobile.dll`。**不能把这个独立包冒充已经验证适用于用户Android16 APK的移动NML。**
+- 本机只读QA产物`WorldBox_v026_用户APK与汉化加载器_私有只读审计.json`保存在当前ChatGPT工作输出中，**未加入GitHub、未上传游戏二进制、未制作/重签/安装APK**。当前P0唯一真实红灯仍是设备加载链及APK私有集成验收。之后才能进行真实汉化覆盖统计；玩法路线不变。

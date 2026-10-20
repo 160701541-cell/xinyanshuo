@@ -144,3 +144,10 @@ The public Worldbox-OWL index has 0.51.x packages **简单汉化模组修正 v1.
 - Updated MOD manifest version `0.25.0-chinese-test` still includes `DEVICE_PENDING`, 725 target build, same GUID. Both packers have validated `--locales` option and check owned-key namespace; CI package tests validate six-file compiled NML layout (was 4). 
 - For Work private APK test: prioritize enabling and screenshotting native `cz` original game **before installing the old community translation MOD**, as installed game may already have localized original resources. Test other original MODs separately, verifying no name-patch conflict; third-party translations remain incomplete and no in-game SAF ZIP batch file picker exists yet.
 - The public branch is source plus independently compiled NML MOD candidate, NOT a rebuilt signed commercial APK. Work must inspect actual user loader chain/Android16, then integrate and validate privately. The independent Canglan game, main branch, APK176, PCK and keys must remain untouched.
+
+
+## v0.26 WORK交接增量（2026-10-20：已读取v0.25基线后继续）
+- 当前唯一代码分支仍是`worldbox/external-mod-lab-v22-zh-localization`。本轮真实代码提交`d6c5dd8ef912dfb2a343051e1b7cdcac22d4fffa`：`NativeLocaleBridgeV23.VerifyCurrentLocale()`读取实际`LocalizedTextManager`语言码和不超过2,000个实时字典项的纯计数样本，游戏汉化控制台新增触屏「核验简中」；如原版语言`setLanguage("cz")`调用返回但未改变当前`language`，会显式显示未确认，不再把方法调用成功当完整汉化。已扩充C#行为回归，原有导入/导出/漏译/原版翻译优先路径保留。
+- 功能对应 GitHub Actions **39448677637 已三项全绿**（离线源码QA、公开Android NML/WorldBox SDK编译/候选MOD包、用户本机用的通用APK检查器编译）。不能宣称手机已加载或已有APK交付。
+- 2026-10-20 再次实际只读检查用户本人原APK（SHA256 c39817…869c4bdc）：`globalgamemanagers`所含原生`cz`与`en`分组分别70/70，原APK嵌套`Managed.zip`未列出NeoModLoader程序集。用户提供的`模组装载器NeoModLoader_1.2.1.1`包内说明为桌面`worldbox_Data/StreamingAssets/mods/`目录，只有`NeoModLoader.dll`，不含移动版`NeoModLoader_mobile.dll`。**不要把它直接作为安卓引导链证据。**
+- 在Work私有整合前，先拿真实Android16设备安装/启动日志确定 Mono旧版NML 或 LemonLoader+移动NML；不能用该桌面说明猜安装路径。先在原版设置实机试原生简中并截图；确认 NML 模组的实际加载后在汉化控制台触发「核验简中」并检查真实code/text样本，再逐页对原版/其他MOD汉化、字体、命名、保存进行验收。真实已签名用户私有APK依然未制作；不碰苍岚main或商用付费验证逻辑。
