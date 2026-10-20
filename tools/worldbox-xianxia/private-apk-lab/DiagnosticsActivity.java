@@ -83,6 +83,7 @@ public final class DiagnosticsActivity extends Activity {
         new Thread(()->{
             final StringBuilder report=new StringBuilder();
             int installed=0;
+            int staged=0;
             for(android.net.Uri uri:picked) {
                 try {
                     List<ExternalModImporterV32.Result> imported=ExternalModImporterV32.importZip(this,uri);
@@ -98,13 +99,28 @@ public final class DiagnosticsActivity extends Activity {
                         }
                     }
                 }catch(Exception e){
-                    report.append("导入失败：").append(e.getMessage()).append("\n");
                     stage("USER_MOD_IMPORT_FAILED "+android.util.Log.getStackTraceString(e));
+                    String explanation=e.getMessage()==null?e.getClass().getSimpleName():e.getMessage();
+                    if(explanation.startsWith("已安装同名MOD")) {
+                        report.append("已存在，无需重复安装：").append(explanation).append("\n");
+                    }else {
+                        try {
+                            String name=ExternalModImporterV32.stageIncompatible(this,uri);
+                            staged++;
+                            report.append("仅保存在待兼容区，尚不能运行：").append(name)
+                                .append("\n原因：").append(explanation).append("\n");
+                            stage("USER_MOD_QUARANTINED "+name);
+                        }catch(Exception copy) {
+                            report.append("ZIP无法导入：").append(explanation)
+                                .append("；保存失败：").append(copy.getMessage()).append("\n");
+                        }
+                    }
                 }
             }
-            final int count=installed;
-            runOnUiThread(()->status.setText("成功安装 "+count+" 个MOD目录。重新启动游戏才可能被加载。\n"+
-                "部分旧DLL/BepInEx包不兼容安卓NML；详细原因如下。\n"+report.toString()));
+            final int count=installed,waiting=staged;
+            runOnUiThread(()->status.setText("可尝试加载 "+count+" 个，待兼容保管 "+waiting+
+                " 个（不会执行）。重启进入游戏后才能验证。\n"+
+                "注意：旧DLL或桌面BepInEx模组不能直接当安卓NML运行。\n"+report.toString()));
         },"WorldBox-SAF-MOD-Import").start();
     }
     @Override protected void onActivityResult(int request,int result,Intent data) {
