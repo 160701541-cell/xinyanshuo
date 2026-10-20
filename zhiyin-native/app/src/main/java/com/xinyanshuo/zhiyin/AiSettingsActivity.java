@@ -200,8 +200,7 @@ public final class AiSettingsActivity extends Activity {
     if(ai.installed()){toast("模型已安装，无需再次下载；如要换模型请使用文件导入");return;}
     try{
       ModelDownloadService.command(this,ModelDownloadService.START);
-      report("已交给安卓前台下载服务；你可以切到其他页面，下载不会因为关掉设置界面而自动放弃。
-"+
+      report("已交给安卓前台下载服务；你可以切到其他页面，下载不会因为关掉设置界面而自动放弃。\n"+
         ModelDownloadService.report(this));
     }catch(Exception e){report("启动下载服务失败："+e.getMessage());}
   }
