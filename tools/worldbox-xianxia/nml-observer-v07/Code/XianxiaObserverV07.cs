@@ -165,7 +165,13 @@ namespace XianxiaWorldBox
             if(GUI.Button(new Rect(panel.x+192*ui,firstY,210*ui,45*ui),
                  GiantMapOptionsV11.ExtremeArmed?"确认2048×2048":"2048×2048实验",button))
                 mapStatus=GiantMapOptionsV11.OnExtremeTap();
-            GUI.Label(new Rect(panel.x+414*ui,firstY+3*ui,pw-427*ui,45*ui),mapStatus,label);
+            if(GUI.Button(new Rect(panel.x+414*ui,firstY,Mathf.Max(110,pw-427*ui),45*ui),
+                 "尺寸API自检",button))
+            {
+                mapStatus=GiantMapOptionsV11.DiagnoseMapApi();
+                Debug.Log("[XIANXIA-V15] "+mapStatus);
+            }
+            GUI.Label(new Rect(panel.x+12,panel.y+188*ui,pw-24,36*ui),mapStatus,label);
             float secondY=panel.y+142*ui;
             if(GUI.Button(new Rect(panel.x+12,secondY,180*ui,46*ui),
                           "字体 "+Mathf.RoundToInt(ModTextAccessibilityV13.Scale*100f)+"%",button))
@@ -175,7 +181,7 @@ namespace XianxiaWorldBox
                 ModTextAccessibilityV13.ToggleGlobal();
             GUI.Label(new Rect(panel.x+417*ui,secondY+4*ui,pw-430*ui,44*ui),
                 "已增大："+ModTextAccessibilityV13.ModifiedCount+"处",label);
-            Rect map=new Rect(panel.x+10,panel.y+199*ui,pw-20,Mathf.Max(90,ph-315*ui));
+            Rect map=new Rect(panel.x+10,panel.y+226*ui,pw-20,Mathf.Max(90,ph-342*ui));
             GUI.Box(map,"",box);
             if (ObserverFrameGuardV12.Paused)
             {
