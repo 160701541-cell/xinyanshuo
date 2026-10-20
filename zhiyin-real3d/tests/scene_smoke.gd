@@ -22,8 +22,14 @@ func _verify() -> void:
         if material is StandardMaterial3D:
             if material.albedo_texture != null and material.roughness_texture != null and material.normal_texture != null:
                 pbr += 1
-    print("3D QA models=", assets.size(), " meshes=", meshes.size(), " lights=", lights.size(), " pbr=", pbr)
-    if assets.size() < 10 or meshes.size() < 28 or lights.size() < 2 or pbr < 15:
+    var skeletons = stage.find_children("*", "Skeleton3D", true, false)
+    var hero = stage.get_node_or_null("知音 · 65关节Humanoid骨骼角色")
+    var hero_joints = 0
+    if hero != null:
+        for node in hero.find_children("*", "Skeleton3D", true, false):
+            hero_joints = maxi(hero_joints, (node as Skeleton3D).get_bone_count())
+    print("3D QA models=", assets.size(), " meshes=", meshes.size(), " lights=", lights.size(), " pbr=", pbr, " skeletons=", skeletons.size(), " hero_bones=",hero_joints)
+    if assets.size() < 10 or meshes.size() < 28 or lights.size() < 2 or pbr < 15 or hero_joints < 50:
         push_error("Godot mesh/material quality gate failed")
         quit(3)
         return
