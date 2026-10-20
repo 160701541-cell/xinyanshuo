@@ -2,8 +2,8 @@
 config_version=5
 
 [application]
-config/name="知音 · 真3D场景技术验证"
-run/main_scene="res://scenes/apartment.tscn"
+config/name="知音 · 蓝发动漫VRM美术实验（非正式版）"
+run/main_scene="res://scenes/anime_showroom.tscn"
 config/features=PackedStringArray("4.4", "GL Compatibility")
 boot_splash/show_image=false
 
