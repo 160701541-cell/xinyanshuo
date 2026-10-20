@@ -3,7 +3,7 @@
   "GUID": "XINYANSHUO_WORLD_BOX_OBSERVER_V07",
   "author": "Xianxia WorldBox external mod lab",
   "version": "0.35.0-economy-material-factory-device-pending",
-  "description": "Source-owned v35 pixel icon factory: 171 category icons, 74 processing recipes, an isolated ledger kernel for copper/silver/gold/spirit stone and six administrative tiers; binds buttons to actual vanilla Nature/Creation/Kingdom NML tabs only if runtime supports it. Game rendering, treasury effects, border painting and device QA NOT COMPLETE. Never redistribute WorldBox game APK publicly.",
+  "description": "Independent third-party MOD derivative lab; source-owned v35 pixel icon factory: 171 category icons, 74 processing recipes, conserved ledger kernel for copper/silver/gold/spirit stone and six administrative tiers; binds buttons to vanilla Nature/Creation/Kingdom tabs only if runtime supports it. Game rendering, treasury effects, border painting and device QA NOT COMPLETE. Never redistribute commercial WorldBox APK or private keys.",
   "RepoUrl": "https://github.com/160701541-cell/xinyanshuo",
   "Dependencies": [],
   "OptionalDependencies": [],
