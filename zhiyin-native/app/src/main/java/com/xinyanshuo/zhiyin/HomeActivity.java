@@ -26,7 +26,10 @@ public final class HomeActivity extends Activity {
   private LifeEngine life;
   private MemoryStore memory;
   private HomeWorldView world;
-  private TextView activity,banner,stat,tip,inventory;
+  private TextView activity,banner,stat,tip,inventory,chatReply;
+  private EditText chatInput;
+  private LinearLayout chatSheet;
+  private FrameLayout stageRoot;
   private ProgressBar phaseBar;
   private static final int RECOGNIZE_SPEECH=501;
   private TextToSpeech voice;
@@ -57,43 +60,74 @@ public final class HomeActivity extends Activity {
     getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
     life=new LifeEngine(this);memory=new MemoryStore(this);
     voice=new TextToSpeech(this,s->{if(s==TextToSpeech.SUCCESS){voiceReady=true;voice.setLanguage(Locale.SIMPLIFIED_CHINESE);}});
-    FrameLayout screen=new FrameLayout(this);
+    FrameLayout screen=new FrameLayout(this);stageRoot=screen;
     world=new HomeWorldView(this,life,this::onSceneTap);
     screen.addView(world,new FrameLayout.LayoutParams(-1,-1));
 
     // Overlay status is purposefully small: no button grid over the companion.
-    LinearLayout hud=vertical();hud.setPadding(dp(16),dp(9),dp(16),dp(11));hud.setBackground(back(0xDD1A1D31,18));
+    LinearLayout hud=vertical();hud.setPadding(dp(14),dp(7),dp(14),dp(8));hud.setBackground(back(0xE5293545,15));
+    hud.setElevation(dp(4));
     FrameLayout.LayoutParams top=new FrameLayout.LayoutParams(-1,-2,Gravity.TOP);
-    top.setMargins(dp(12),dp(14),dp(12),0);screen.addView(hud,top);
-    banner=text("知音  ·  她的日常",21,WHITE,true);hud.addView(banner);
-    activity=text("",13,0xFFF5CDB2,false);hud.addView(activity);
-    stat=text("",12,MUTED,false);hud.addView(stat);
+    top.setMargins(dp(9),dp(9),dp(9),0);screen.addView(hud,top);
+    banner=text("知音   ·   临河巷  •  10.24㎡",17,WHITE,true);hud.addView(banner);
+    activity=text("",12,0xFFF5CDB2,false);hud.addView(activity);
+    stat=text("",11,MUTED,false);hud.addView(stat);
     inventory=text("",11,0xFFE8DBCC,false);hud.addView(inventory);
     phaseBar=new ProgressBar(this,null,android.R.attr.progressBarStyleHorizontal);
     phaseBar.setMax(100);
     LinearLayout.LayoutParams pp=new LinearLayout.LayoutParams(-1,dp(4));
-    pp.setMargins(0,dp(7),0,0);hud.addView(phaseBar,pp);
+    pp.setMargins(0,dp(5),0,0);hud.addView(phaseBar,pp);
     hud.setOnClickListener(v->showNeeds());
 
-    LinearLayout bottom=vertical();bottom.setPadding(dp(14),dp(12),dp(14),dp(13));
-    bottom.setBackground(back(0xF5EFE4D9,22));
+    LinearLayout bottom=vertical();bottom.setPadding(dp(9),dp(7),dp(9),dp(8));
+    bottom.setBackground(back(0xF4F2EBDF,17));bottom.setElevation(dp(5));
     FrameLayout.LayoutParams base=new FrameLayout.LayoutParams(-1,-2,Gravity.BOTTOM);
-    base.setMargins(dp(11),0,dp(11),dp(13));screen.addView(bottom,base);
-    tip=text("轻触她聊天  ·  点床、钢琴、书桌等互动",12,0xFF756A70,false);
+    base.setMargins(dp(8),0,dp(8),dp(8));screen.addView(bottom,base);
+    tip=text("单指拖动镜头  ·  双指缩放  ·  点击家具",11,0xFF706C75,false);
     bottom.addView(tip);
     LinearLayout options=new LinearLayout(this);options.setOrientation(LinearLayout.HORIZONTAL);
     bottom.addView(options);
-    Button talk=chip("💬  对话",this::talk);
-    LinearLayout.LayoutParams big=new LinearLayout.LayoutParams(0,dp(51),1.5f);
-    big.setMargins(0,dp(8),dp(5),0);options.addView(talk,big);
+    Button talk=chip("💬 对话",this::talk);
+    LinearLayout.LayoutParams big=new LinearLayout.LayoutParams(0,dp(44),1.35f);
+    big.setMargins(0,dp(5),dp(4),0);options.addView(talk,big);
     Button mic=chip("🎙",this::listen);
-    LinearLayout.LayoutParams micp=new LinearLayout.LayoutParams(dp(57),dp(51));
-    micp.setMargins(0,dp(8),dp(5),0);options.addView(mic,micp);
-    Button album=chip("🎵 音乐",()->openStudio("音乐"));
-    LinearLayout.LayoutParams sp=new LinearLayout.LayoutParams(0,dp(51),1);
-    sp.setMargins(0,dp(8),dp(6),0);options.addView(album,sp);
+    LinearLayout.LayoutParams micp=new LinearLayout.LayoutParams(dp(47),dp(44));
+    micp.setMargins(0,dp(5),dp(4),0);options.addView(mic,micp);
+    Button album=chip("♪ 音乐",()->openStudio("音乐"));
+    LinearLayout.LayoutParams sp=new LinearLayout.LayoutParams(0,dp(44),1.05f);
+    sp.setMargins(0,dp(5),dp(4),0);options.addView(album,sp);
+    Button district=chip("⌖ 地图",this::openDistrict);
+    LinearLayout.LayoutParams mapP=new LinearLayout.LayoutParams(0,dp(44),1.05f);
+    mapP.setMargins(0,dp(5),dp(4),0);options.addView(district,mapP);
     Button misc=chip("☰",this::showMenu);
-    LinearLayout.LayoutParams sm=new LinearLayout.LayoutParams(dp(55),dp(51));sm.setMargins(0,dp(8),0,0);options.addView(misc,sm);
+    LinearLayout.LayoutParams sm=new LinearLayout.LayoutParams(dp(41),dp(44));
+    sm.setMargins(0,dp(5),0,0);options.addView(misc,sm);
+
+    // Non-modal native conversation panel; the room remains visible.
+    chatSheet=vertical();chatSheet.setVisibility(View.GONE);
+    chatSheet.setPadding(dp(14),dp(11),dp(14),dp(12));
+    chatSheet.setBackground(back(0xF7FFF9F0,17));chatSheet.setElevation(dp(11));
+    LinearLayout head=new LinearLayout(this);head.setOrientation(LinearLayout.HORIZONTAL);
+    chatSheet.addView(head);
+    TextView who=text("知音  ·  对话",16,0xFF344457,true);
+    head.addView(who,new LinearLayout.LayoutParams(0,dp(30),1));
+    Button close=chip("×",()->{chatSheet.setVisibility(View.GONE);});
+    head.addView(close,new LinearLayout.LayoutParams(dp(39),dp(33)));
+    chatReply=text("在听呢。现在仍是本地规则聊天演示。",13,0xFF506273,false);
+    chatReply.setMaxLines(3);chatReply.setPadding(0,dp(4),0,dp(5));chatSheet.addView(chatReply);
+    LinearLayout compose=new LinearLayout(this);compose.setOrientation(LinearLayout.HORIZONTAL);chatSheet.addView(compose);
+    chatInput=new EditText(this);chatInput.setSingleLine(true);chatInput.setTextSize(14);
+    chatInput.setTextColor(0xFF30445A);chatInput.setHint("跟她说点什么…");chatInput.setHintTextColor(0xFF8090A2);
+    chatInput.setPadding(dp(10),dp(2),dp(8),dp(2));chatInput.setBackground(back(0xFFE9F0EB,12));
+    compose.addView(chatInput,new LinearLayout.LayoutParams(0,dp(45),1));
+    Button send=chip("发送",()->{
+      String text=chatInput.getText().toString().trim();
+      chatInput.setText("");
+      sendMessage(text);
+    });
+    LinearLayout.LayoutParams sendP=new LinearLayout.LayoutParams(dp(64),dp(45));sendP.setMargins(dp(7),0,0,0);compose.addView(send,sendP);
+    FrameLayout.LayoutParams chatP=new FrameLayout.LayoutParams(-1,-2,Gravity.BOTTOM);
+    chatP.setMargins(dp(10),0,dp(10),dp(97));screen.addView(chatSheet,chatP);
 
     setContentView(screen);refresh();
   }
@@ -101,11 +135,11 @@ public final class HomeActivity extends Activity {
     if(life==null)return;
     long now=System.currentTimeMillis();
     life.update(now);
-    activity.setText("● "+life.label()+" · "+life.phaseName()+"（"+(life.phase+1)+"/"+LifeEngine.phaseCount(life.action)+"）");
+    activity.setText("● "+life.label()+" · "+life.phaseName()+"  "+(life.phase+1)+"/"+LifeEngine.phaseCount(life.action));
     stat.setText("心情 "+Math.round(life.mood)+" · 精力 "+Math.round(life.energy)
       +" · 饱腹 "+Math.round(life.hunger)+" · 音乐 "+Math.round(life.skill));
-    inventory.setText("食材 "+life.pantry+" · 餐食 "+life.meals+" · 脏碗 "+life.dirtyDishes
-      +" · 阅读 "+life.readPages+"页 · 练歌 "+life.completedSongs+"次");
+    inventory.setText("存款 ¥"+life.money+"  ·  周租 ¥"+LifeEngine.WEEKLY_RENT+
+      "  ·  "+life.daysUntilRent(now)+"天后交租  ·  "+life.employment);
     phaseBar.setProgress((int)life.phaseProgress(now));
     ArrayList<String> updates=life.drainEvents();
     // LifeEngine itself bounds offline simulation; no additional event loss here.
@@ -138,23 +172,25 @@ public final class HomeActivity extends Activity {
     switch(thing){
       case "character":talk();break;
       case "bed":interact("SLEEP","让她去床边休息一会儿？");break;
+      case "wardrobe":interact("DRESS","整理衣柜和换装");break;
+      case "books":interact("READ","从书架选本书");break;
+      case "sofa":interact("REST","坐下来休息");break;
+      case "door":openDistrict();break;
       case "kitchen":interact(life.meals>0?"EAT":life.pantry>0?"COOK":"SHOP","一起准备食物？");break;
       case "plant":interact("WATER","和她一起给植物浇水？");break;
       case "piano":interact("PIANO","邀请她弹一小段钢琴？");break;
       case "desk":interact("READ","让她在书桌前阅读？");break;
       case "window":interact("WINDOW","一起看看窗外？");break;
       case "wash":interact("WASH","让她整理仪容？");break;
-      default:toast("轻触她，或点床铺、钢琴、书桌等物品。");
+      default:toast("可拖动/缩放场景；轻触床、衣柜、钢琴、厨房、书架、绿植或房门。");
     }
   }
   private void interact(String goal,String question){
-    new AlertDialog.Builder(this).setTitle(question)
-      .setMessage("你可以提议活动，但她也会在无人操作时依据精力、饥饿和作息自行安排。")
-      .setPositiveButton("好呀",(d,w)->{String note=life.request(goal);
-        try{memory.addEvent("玩家","邀请知音："+LifeEngine.LABELS[indexOf(goal)],"shared","","interaction");}catch(Exception ignored){}
-        refresh();speak(note);})
-      .setNegativeButton("暂时不用",null).show();
+    String note=life.request(goal);
+    try{memory.addEvent("玩家","在出租屋互动："+question,"shared","","interaction");}catch(Exception ignored){}
+    refresh();toast(question+" · "+note);
   }
+  private void openDistrict(){startActivity(new Intent(this,DistrictActivity.class));}
   private int indexOf(String action){for(int i=0;i<LifeEngine.ACTIONS.length;i++)if(action.equals(LifeEngine.ACTIONS[i]))return i;return 0;}
   private void openStudio(String part){
     Intent intent=new Intent(this,MainActivity.class);
@@ -164,35 +200,58 @@ public final class HomeActivity extends Activity {
     startActivity(intent);
   }
   private void showMenu(){
-    String[] items={"查看她的生活状态","查看生活时间线","今天一起做件事","角色 / 素材 / 声线","剧本杀 / 旁白","唱歌 / A-B对唱","长期记忆管理","生活模拟说明"};
+    String[] items={"⌖ 社区地图 · 看看其他人住哪里","查看她的生活状态","房租 / 工作 / 账目","查看生活时间线","今天一起做件事","角色与素材","剧本杀与旁白","音乐与对唱","永久记忆备份","版本说明"};
     new AlertDialog.Builder(this).setTitle("知音 · 场景菜单").setItems(items,(d,which)->{
       switch(which){
-        case 0:showNeeds();break;
-        case 1:showLifeLog();break;
-        case 2:showActivities();break;
-        case 3:case 4:case 5:case 6:openStudio(items[which]);break;
-        case 7:new AlertDialog.Builder(this).setTitle("当前版本行为说明")
-          .setMessage("v0.3 实装：多阶段生活任务、真实阶段计时、食材与餐食消耗、收拾餐具、睡眠和音乐训练结果、场景位置移动、完整事件日志。"
-            +"关闭后按上限回放离线时间，避免产生无限重复事件。"
-            +"角色形象仍为临时程序绘制；这是一套有限规则驱动模拟，不是接入大模型的自主认知。"
-            +"语音识别由安卓系统提供，可能需要安装语音服务，也可能通过网络处理。")
+        case 0:openDistrict();break;
+        case 1:showNeeds();break;
+        case 2:showFinances();break;
+        case 3:showLifeLog();break;
+        case 4:showActivities();break;
+        case 5:openStudio("角色");break;
+        case 6:openStudio("剧本");break;
+        case 7:openStudio("音乐");break;
+        case 8:openStudio("记忆");break;
+        case 9:new AlertDialog.Builder(this).setTitle("知音 v0.4 · 生活社区原型")
+          .setMessage("3.2m×3.2m出租房（10.24㎡），支持拖动和双指缩放、原生2.5D等轴测房间、家具物件交互。"
+            +"新增居民独立住处及社交档案，生活资金来自咖啡馆打工，每周需交房租，音乐属于个人爱好。"
+            +"注意：外部社区只有地图与社交模拟，尚未完成所有NPC动态生活；聊天仍是有限规则回复，未接本地AI大模型。"
+            +"程序生成图形仍是占位美术，后续需使用许可合规的高质量素材包与动画。")
           .setPositiveButton("了解",null).show();break;
       }
     }).show();
   }
   private void showNeeds(){
-    String h="每日作息（手机本地时间）\n早晨：洗漱、整理、阅读\n白天：学习、练歌、弹琴、浇花\n晚上：放松、写日记、休息\n夜间：优先睡眠\n\n"+
+    String h="生活作息（手机本地时间）\n早晨：洗漱、整理、阅读\n白天：学习、练歌、弹琴、浇花\n晚上：放松、写日记、休息\n夜间：优先睡眠\n\n"+
       "【状态】\n"+life.summary()+"\n\n"+
       "【当前目标】\n"+life.goal+"\n\n"+
       "【当前活动】\n"+life.note+"（已完成"+life.completedTasks+"件生活任务）\n\n"+
       "【生活机制】\n食材→清洗→切菜→烹饪→餐食→进食→碗碟→打扫，每一步独立计时。"
       +"读书增加阅读页数，练歌增加练习次数和熟练度。无人的时候依然会自己安排日常。";
-    new AlertDialog.Builder(this).setTitle("知音的生活").setMessage(h)
+    new AlertDialog.Builder(this).setTitle("10.24㎡ · 她的生活").setMessage(h)
       .setPositiveButton("明白",null).setNeutralButton("与她聊天",(d,w)->talk()).show();
   }
+  private void showFinances(){
+    long now=System.currentTimeMillis();
+    String bill="【房屋】临河巷单间，3.2×3.2米（10.24㎡）\\n"+
+      "【职业】"+life.employment+"\\n"+
+      "【存款】"+life.money+"\\n"+
+      "【周租】"+LifeEngine.WEEKLY_RENT+"\\n"+
+      "【距离下次交租】"+life.daysUntilRent(now)+"天\\n"+
+      "【目前欠租】"+life.rentArrears+"\\n"+
+      "【累计已交】"+life.rentPaid+"\\n"+
+      "【已完成班次】"+life.workShifts+"\\n"+
+      "【食材/餐食】"+life.pantry+"/"+life.meals+"\\n\\n"+
+      "收入来自咖啡馆的普通工作。唱歌只是她的爱好，不会凭空增加收入。每天只结算一次有工资的班次。";
+    new AlertDialog.Builder(this).setTitle("生活账本")
+      .setMessage(bill.replace("\\n","\n"))
+      .setPositiveButton("去社区", (d,w)->openDistrict())
+      .setNeutralButton("查看日志",(d,w)->showLifeLog())
+      .setNegativeButton("关闭",null).show();
+  }
   private void showActivities(){
-    final String[] names={"一起读书","一起练歌","弹琴","一起做饭","吃饭","休息","洗漱","打扫","浇花","写日记","看窗外","伸展运动"};
-    final String[] actions={"READ","PRACTICE","PIANO","COOK","EAT","SLEEP","WASH","CLEAN","WATER","WRITE","WINDOW","STRETCH"};
+    final String[] names={"一起读书","一起练歌","弹琴","去咖啡馆上班","一起做饭","吃饭","休息","洗漱","整理衣柜","打扫","浇花","写日记","看窗外","伸展运动"};
+    final String[] actions={"READ","PRACTICE","PIANO","WORK","COOK","EAT","SLEEP","WASH","DRESS","CLEAN","WATER","WRITE","WINDOW","STRETCH"};
     new AlertDialog.Builder(this).setTitle("邀请知音做一件事")
       .setItems(names,(dialog,which)->interact(actions[which],"邀请她"+names[which]+"？"))
       .setNegativeButton("取消",null).show();
@@ -265,26 +324,19 @@ public final class HomeActivity extends Activity {
       memory.addEvent("知音",reply,"shared","","demo_reply");
       life.note=reply;life.social=LifeEngine.clamp(life.social+4);
       life.save();refresh();
-      new AlertDialog.Builder(this).setTitle("知音 · 规则聊天演示")
-        .setMessage(reply).setNegativeButton("关闭",null)
-        .setNeutralButton("朗读",(d2,w2)->speak(reply))
-        .setPositiveButton("继续聊",(d2,w2)->talk()).show();
-    }catch(Exception e){toast("消息保存失败："+e.getMessage());}
+      if(chatSheet!=null){chatSheet.setVisibility(View.VISIBLE);chatReply.setText(reply);}
+    }catch(Exception ex){toast("消息保存失败："+ex.getMessage());}
   }
   private void talk(){talk("");}
   private void talk(String prefill){
     life.request("CHAT");refresh();
-    LinearLayout wrapper=vertical();wrapper.setPadding(dp(20),dp(8),dp(20),dp(5));
-    TextView introduction=text("你可以在这里直接跟知音说话。对话完整保存在本地；当前还没有接入AI对话模型。",13,0xFF65657A,false);
-    wrapper.addView(introduction);
-    EditText input=new EditText(this);input.setHint("想对她说些什么…");
-    input.setMinLines(2);input.setMaxLines(5);
-    input.setText(prefill);
-    if(!prefill.isEmpty())input.setSelection(prefill.length());
-    wrapper.addView(input);
-    new AlertDialog.Builder(this).setTitle("💬  与知音聊天").setView(wrapper)
-      .setPositiveButton("发送",(d,w)->sendMessage(input.getText().toString().trim()))
-      .setNeutralButton("用语音说",(d,w)->listen())
-      .setNegativeButton("取消",null).show();
+    chatSheet.setVisibility(View.VISIBLE);
+    chatInput.setText(prefill);
+    if(!prefill.isEmpty())chatInput.setSelection(prefill.length());
   }
+  @Override public void onBackPressed(){
+    if(chatSheet!=null&&chatSheet.getVisibility()==View.VISIBLE){chatSheet.setVisibility(View.GONE);return;}
+    super.onBackPressed();
+  }
+
 }
