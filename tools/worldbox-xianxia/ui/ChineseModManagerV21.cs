@@ -13,7 +13,7 @@ namespace XianxiaWorldBox
         const int MaxEntries=48;
         static readonly List<string> Names=new List<string>();
         public static bool Open;
-        public static string Status="模组管理器：只读预览；手机批量选择与安装尚未接入。";
+        public static string Status="模组管理器：只读预览；暂存文件尚未安装或启用；手机批量选择与安装尚未接入。";
         static string dictionaryStatus="内置中文词库已就绪。";
         public static string Folder
         {
