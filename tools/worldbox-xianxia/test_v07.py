@@ -6,7 +6,7 @@ from scope_gate import validate_paths,evaluate_policy
 
 class ExternalModOnlyTests(unittest.TestCase):
     def test_whitelist(self):
-        self.assertEqual(validate_paths(["tools/worldbox-xianxia/a.cs",".github/workflows/worldbox-external-mod-lab-v08.yml"]),[])
+        self.assertEqual(validate_paths(["tools/worldbox-xianxia/a.cs",".github/workflows/worldbox-external-mod-lab-v09.yml"]),[])
     def test_main_game_protected(self):
         for path in ["AGENTS.md","docs/CAC_CHANGELOG.md","game-source/Main.gd","android-preview/latest.json","data/updates.json","art/real.png","index.html"]:
             self.assertTrue(validate_paths([path]),path)
