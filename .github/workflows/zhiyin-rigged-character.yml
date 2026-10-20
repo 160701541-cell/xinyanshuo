@@ -1,0 +1,24 @@
+name: ZhiYin Rigged Female CC0 Character Integration
+on:
+  push:
+    branches: ['zhiyin/native-android-prototype']
+    paths:
+      - 'zhiyin-real3d/tools/probe_itch.py'
+      - 'zhiyin-real3d/tools/import_quaternius_character.py'
+      - '.github/workflows/zhiyin-rigged-character.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: zhiyin-character-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  discover:
+    name: Validate official CC0 rigged model distribution
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - name: Inspect original official source
+        run: |
+          python3 zhiyin-real3d/tools/probe_itch.py
