@@ -64,6 +64,11 @@ jobs:
           if grep -Eq 'SCRIPT ERROR:|Parse Error:|Parser Error:|Failed to load script|ERROR:.*glb' godot-import.log; then
             cat godot-import.log; exit 1
           fi
+      - name: Inspect official Quaternius humanoid animation tracks
+        run: |
+          set -euo pipefail
+          timeout 45s /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless \
+            --path . --script res://tests/inspect_motion.gd | tee quaternius-motion-inspect.log
       - name: Spawn and QA scene inside the Godot engine
         run: |
           set -euo pipefail
@@ -167,6 +172,7 @@ jobs:
             zhiyin-real3d/godot-import.log
             zhiyin-real3d/godot-scene-qa.log
             zhiyin-real3d/godot-android-export.log
+            zhiyin-real3d/quaternius-motion-inspect.log
             zhiyin-real3d/room-render.log
             zhiyin-real3d/room-qa-render.png
           if-no-files-found: warn
