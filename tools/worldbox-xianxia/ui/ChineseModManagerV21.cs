@@ -43,12 +43,12 @@ namespace XianxiaWorldBox
             float w=Mathf.Min(Screen.width-24,670*scale);
             float h=Mathf.Min(Screen.height-24,560*scale);
             Rect panel=new Rect((Screen.width-w)/2,(Screen.height-h)/2,w,h);
-            GUI.Box(panel,"中文模组管理器（实验版）",box);
-            if(GUI.Button(new Rect(panel.x+w-115*scale,panel.y+12*scale,100*scale,45*scale),"关闭",button))
+            GUI.Box(panel,OwnLocaleLabelsV25.Get("mod_manager","中文模组管理器")+"（实验版）",box);
+            if(GUI.Button(new Rect(panel.x+w-115*scale,panel.y+12*scale,100*scale,45*scale),OwnLocaleLabelsV25.Get("close","关闭"),button))
                 Open=false;
-            if(GUI.Button(new Rect(panel.x+200*scale,panel.y+65*scale,190*scale,48*scale),"载入模组中文词库",button))
+            if(GUI.Button(new Rect(panel.x+200*scale,panel.y+65*scale,190*scale,48*scale),OwnLocaleLabelsV25.Get("mod_keypack","载入模组中文词库"),button))
                 dictionaryStatus=ChineseLocalizationV22.LoadUserTranslations();
-            if(GUI.Button(new Rect(panel.x+15*scale,panel.y+65*scale,170*scale,48*scale),"刷新暂存列表",button))
+            if(GUI.Button(new Rect(panel.x+15*scale,panel.y+65*scale,170*scale,48*scale),OwnLocaleLabelsV25.Get("mod_reload","刷新暂存列表"),button))
                 Refresh();
             GUI.Label(new Rect(panel.x+15*scale,panel.y+120*scale,w-30*scale,85*scale),
                 Status+"\n"+dictionaryStatus+"（词条："+ChineseLocalizationV22.DictionarySize+"）",label);
