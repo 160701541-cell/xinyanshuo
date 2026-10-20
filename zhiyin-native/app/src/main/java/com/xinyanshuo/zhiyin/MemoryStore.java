@@ -12,7 +12,8 @@ import java.util.ArrayList;
 
 public final class MemoryStore extends SQLiteOpenHelper {
   public static final int VERSION=1;
-  public MemoryStore(Context c){super(c,"zhiyin_memory_v1.db",null,VERSION);}
+  private final Context app;
+  public MemoryStore(Context c){super(c,"zhiyin_memory_v1.db",null,VERSION);app=c.getApplicationContext();}
   @Override public void onCreate(SQLiteDatabase d){
     d.execSQL("CREATE TABLE roles (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL UNIQUE, persona TEXT NOT NULL DEFAULT '', voice INTEGER NOT NULL DEFAULT 0, created INTEGER NOT NULL)");
     d.execSQL("CREATE TABLE events (id INTEGER PRIMARY KEY AUTOINCREMENT, stamp INTEGER NOT NULL, role TEXT NOT NULL, body TEXT NOT NULL, privacy TEXT NOT NULL DEFAULT 'shared', owner TEXT NOT NULL DEFAULT '', kind TEXT NOT NULL DEFAULT 'dialogue')");
@@ -111,6 +112,8 @@ public final class MemoryStore extends SQLiteOpenHelper {
         }
       }root.put(table,rows);
     }
+    // v0.3: export real companion life state along with dialogue/history.
+    root.put("life",new JSONObject(app.getSharedPreferences("zhiyin_life_engine_v1",Context.MODE_PRIVATE).getString("state","{}")));
     return root;
   }
   public void restore(JSONObject root)throws JSONException{
@@ -141,13 +144,17 @@ public final class MemoryStore extends SQLiteOpenHelper {
       }
       d.setTransactionSuccessful();
     }finally{d.endTransaction();}
+    // Import old v0.1-v0.2 backup without life state without touching current life.
+    // App's HomeActivity reloads this state when returning to the main scene.
+    JSONObject life=root.optJSONObject("life");
+    if(life!=null){app.getSharedPreferences("zhiyin_life_engine_v1",Context.MODE_PRIVATE).edit().putString("state",life.toString()).commit();}
   }
   private boolean allowed(String table,String k){
     switch(table){
-      case "roles":return "id,name,persona,voice,created".contains(k) && !k.contains(",");
-      case "events":return "id,stamp,role,body,privacy,owner,kind".contains(k) && !k.contains(",");
-      case "facts":return "id,stamp,subject,predicate,value,role,supersedes".contains(k) && !k.contains(",");
-      case "scripts":return "id,title,body,stamp".contains(k) && !k.contains(",");
+      case "roles":return (",id,name,persona,voice,created,").contains(","+k+",");
+      case "events":return (",id,stamp,role,body,privacy,owner,kind,").contains(","+k+",");
+      case "facts":return (",id,stamp,subject,predicate,value,role,supersedes,").contains(","+k+",");
+      case "scripts":return (",id,title,body,stamp,").contains(","+k+",");
       default:return false;
     }
   }
