@@ -1,9 +1,9 @@
 {
-  "name": "万界仙侠 · 高清大字与微观世界（安卓候选）",
+  "name": "万界仙侠·原版及MOD中文辅助（安卓测试候选）",
   "GUID": "XINYANSHUO_WORLD_BOX_OBSERVER_V07",
   "author": "Xianxia WorldBox external mod lab",
-  "version": "0.13.0-candidate",
-  "description": "Third-party WorldBox Android MOD derivative testing; unrelated to Canglan original game. Readable CJK text and optional UnityUI/TMP font scaling. SDK_COMPILE_TESTED_ONLY, APK_READY=false, DEVICE_PENDING.",
+  "version": "0.25.0-chinese-test",
+  "description": "Independent WorldBox 0.51.4 Chinese localization candidate: NML auto-loaded cz/en menu texts, vanilla native Simplified Chinese switch, safe other-MOD UI label translation and private untranslated audit. NOT full translation, not signed APK. DEVICE_PENDING. Unrelated to Canglan.",
   "RepoUrl": "https://github.com/160701541-cell/xinyanshuo",
   "Dependencies": [],
   "OptionalDependencies": [],
