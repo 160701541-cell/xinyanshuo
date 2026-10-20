@@ -271,3 +271,14 @@ Work仍负责私有APK整合、签名、安卓16真机验收。不得上传商�
 源码另外存在明确功能缺口：本分支XianxiaObserverV07的修炼仍标注“本次运行内，暂不保存”；原日志列出的天道放置、皇城、多城、建筑升级、跨层空间也尚未实现。即使修复加载，也不能宣称这些玩法已完成。十二层/极高天赋冲关异变进入隐藏十三层、天劫和世界消息仍为必须实现规则，不能沿用普通十三层上限。
 
 当前执行环境由平台标记unavailable，无可用APK构建终端、手机或ADB；本轮无法重新读取实际v0.28 APK字节、重编译签名或执行手机验证。没有新APK交付，没有修复通过结论。下一步应取得现有诊断启动页“复制错误日志”的完整本次/上次日志，分别定位Java部署、Mono入口、NML初始化、MOD源码编译、OnModLoad和UI执行；环境恢复后针对确认断点修复并私下重签测试。保留现有存档，禁止卸载/清数据；v0.28签名与历史v18不同，不能假定可直接覆盖。只修改本WorldBox独立分支日志，苍岚main不动。
+
+
+## 2026-10-21 00:36 Asia/Shanghai — 用户真实Mono/NML运行栈，缩小P0故障范围
+
+用户粘贴“WorldBox万界仙侠 v18 MOD整合日志 / previous.log”，时间2026-10-20T16:26:54.8829330Z至16:26:54.8854940Z（北京时间10月21日00:26:54）。可见多条LocalizedTextManager missing text: sakuga_title_*，示例silver_cross_wave、heron_swallow_draw、heron_petal_storm。共同调用栈：MapBox.Update → SmoothLoader → NeoModLoader.services.ModCompileLoadService.loadMods/LoadMod → NeoModLoader.api.BasicMod.OnLoad → Sakuga.SakugaMod.OnModLoad → Sakuga.Hooks.RunInits → Sakuga.Forge.Texts/PutMissing → Sakuga.Locale.Get → NeoModLoader.General.LM.Get → LocalizedTextManager.getText。
+
+确定证据：该次运行的传统托管NML链已执行，且实际进入Combat Gods/Sakuga的OnModLoad。不能再笼统称“完全没有加载器/所有MOD都没执行”，也不应改装新版移动NML或混入另一套引导来试错。
+
+证据限制：该段为previous.log且文本截断；标题仍v18可能只是沿用的诊断标题，不能据此判定安装了错包。missing text只证明查询当时缺失这些key，PutMissing本身可能执行补缺逻辑；当前证据不能断言语言JSON未部署、初始化因此失败/卡死，或之后已成功。没有出现完整初始化结果、LoadedMods状态或自有XianxiaObserver/CultivationBridge入口日志，故这些模块仍未确认。原生启动通过与自有功能未见的实测结论保留。
+
+下一诊断证据应取current.log/本次会话开头和NML最终结果，保留包含WorldBoxXianxiaObserver、XIANXIA、Cultivation、compile、Exception、NML_ACTUALLY_LOADED_COUNT等上下文；用户通过原有复制/分享日志入口即可，无须MT/ADB。若手机长文本复制截断，优先从现有分享日志导出全文，而不是让用户手动翻目录。修复重点为自有模块的实际部署/编译/初始化/UI可见性，不把屏蔽Sakuga报错当作修仙功能接入。平台构建环境仍unavailable，本轮仅证据分析与记录，无新APK、无新增实机通过项。苍岚main不动。
