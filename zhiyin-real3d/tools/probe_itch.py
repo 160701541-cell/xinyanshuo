@@ -11,7 +11,7 @@ with urllib.request.urlopen(urllib.request.Request(URL,headers=headers),timeout=
 print("OFFICIAL_PAGE_BYTES",len(page))
 patterns=[
     r'Universal Base Characters\\[Standard\\].{0,360}',
-    r'upload_id[=: \\"\\']{0,16}[0-9]+',
+    r"upload_id.{0,28}[0-9]{7,}",
     r'data-upload_id="([0-9]+)"',
     r'/file/([0-9]+)',
     r'<a[^>]*class="[^"]*download[^"]*"[^>]+',
