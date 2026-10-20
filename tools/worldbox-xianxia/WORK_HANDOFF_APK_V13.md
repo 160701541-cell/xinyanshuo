@@ -68,3 +68,12 @@ Use branch `worldbox/external-mod-lab-v16-diagnostics` as latest source. New `Gi
 ## v0.17 Work packaging/Android QA sync — latest isolated WorldBox branch
 Use `worldbox/external-mod-lab-v17-world-proof` (not older v13/v14/v15/v16) for the **other-game WorldBox MOD test**, completely unrelated to original 《苍岚·人生世界》. User requested assistant build MOD and Work alone handle local signed APK.
 New `tools/worldbox-xianxia/qa/verify_android_world_evidence.py` parses **actual Android logcat** privately and emits JSON with distinct outcomes: API present, 2048x2048 generated-world dimension readback, crashes, and *unverified* device-install/save-reload/FPS. Example: `python tools/worldbox-xianxia/qa/verify_android_world_evidence.py --log path/to/real-logcat.txt --out path/to/result.json`. Never upload user's private logs, game APK, third-party binaries or keystore to this public GitHub branch. Only after Work has real APK/device evidence claim installable/playable; passing dimension readback is not save/load certification. Remain at 2048×2048 target.
+
+## v0.18 REAL CULTIVATION GAMEPLAY SLICE (latest branch)
+
+**Use `worldbox/external-mod-lab-v18-xianxia-data` for the latest other-game WorldBox MOD build, not v17 or earlier.** This is strictly separate from the original 《苍岚·人生世界》 and MUST NOT be merged with main or the original game's APK/PCK/hot-update.
+
+- New `tools/worldbox-xianxia/gameplay/CultivationV18.cs` implements a first playable **in-memory** actor-linked cultivation slice: button `吐纳修炼` in the observation UI, spirit-Qi accumulation, two-second cooldown, staged realm breakthroughs from 炼气 to 筑基/结丹/元婴/化神/炼虚/合体/大乘/渡劫, max 256 actor records, and death cleanup. It does **NOT** modify vanilla actor combat stats, add cultivation buffs, provide full sect combat systems, or persist cultivation records across game restart; do not claim otherwise.
+- This source is compiled into the Android NML observer assembly **and** included in the alternate legacy Mono source candidate. Work must check the user-provided actual WorldBox 0.51.4 runtime and NML path before choosing which candidate integrates into the private signed APK.
+- Dedicated `CultivationScenarioV18.csproj` C# executable simulates cooldown, Qi and real breakthrough. The huge-map 2048×2048 candidate remains experimental; font scaling 100-175% retained.
+- Work owns private single-APK assembly, signature, installation and Android16 real-device QA; do not post commercial APK or third-party DLL to public GitHub.
