@@ -1,0 +1,88 @@
+name: ZhiYin True 3D Godot Model Material QA
+
+on:
+  push:
+    branches: ['zhiyin/native-android-prototype']
+    paths:
+      - 'zhiyin-real3d/**'
+      - '.github/workflows/zhiyin-real3d.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: zhiyin-real3d-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  godot-real3d:
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    defaults:
+      run:
+        working-directory: zhiyin-real3d
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install original PBR texture tooling
+        run: python3 -m pip install --user 'Pillow>=10,<12'
+      - name: Retrieve validated 3D glTF meshes and license manifest
+        run: |
+          set -euo pipefail
+          python3 tools/import_cc0_models.py
+          python3 - <<'PY'
+          import json
+          j=json.load(open('ASSET_MANIFEST.json'))
+          assert len(j['models'])>=15
+          assert all(a['meshes']>0 and a['materials']>0 for a in j['models'].values())
+          print("VALID REAL 3D GLB mesh and embedded material manifest")
+          PY
+      - name: Create real albedo normal roughness maps
+        run: |
+          python3 tools/generate_materials.py
+          for family in oak wall stone; do
+            for layer in albedo normal roughness; do
+              test -s "assets/materials/${family}_${layer}.png"
+            done
+          done
+      - name: Install Godot Engine 4.4.1 (actual engine)
+        run: |
+          set -euo pipefail
+          curl -fL --retry 3 --connect-timeout 20 --max-time 180 \
+            "https://github.com/godotengine/godot-builds/releases/download/4.4.1-stable/Godot_v4.4.1-stable_linux.x86_64.zip" \
+            -o /tmp/zhiyin-godot.zip
+          echo "d6e382fb531019f85630c1f485a561a0d20c4a2344b6c3847735cfee7da812aa  /tmp/zhiyin-godot.zip" | sha256sum -c -
+          unzip -q /tmp/zhiyin-godot.zip -d /tmp
+          chmod +x /tmp/Godot_v4.4.1-stable_linux.x86_64
+          /tmp/Godot_v4.4.1-stable_linux.x86_64 --version
+      - name: Import actual GLB, PNG and GDScript in Godot
+        run: |
+          set -euo pipefail
+          timeout 180s /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless --editor --path . --import \
+            >godot-import.log 2>&1 || { cat godot-import.log; exit 1; }
+          cat godot-import.log | tail -40
+          if grep -Eq 'SCRIPT ERROR:|Parse Error:|Parser Error:|Failed to load script|ERROR:.*glb' godot-import.log; then
+            cat godot-import.log; exit 1
+          fi
+      - name: Spawn and QA scene inside the Godot engine
+        run: |
+          set -euo pipefail
+          timeout 60s /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless --path . \
+            --script res://tests/scene_smoke.gd >godot-scene-qa.log 2>&1 || {
+              cat godot-scene-qa.log; exit 1;
+            }
+          cat godot-scene-qa.log
+          grep -Fq 'PASS ZHIYIN TRUE 3D RENDER SCENE' godot-scene-qa.log
+          if grep -Eq 'SCRIPT ERROR:|Parse Error:|Parser Error:|Invalid call|Failed to load script' godot-scene-qa.log; then
+            exit 1
+          fi
+      - name: Upload genuine model/material manifest and engine QA
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: zhiyin-real3d-model-material-qa
+          path: |
+            zhiyin-real3d/ASSET_MANIFEST.json
+            zhiyin-real3d/godot-import.log
+            zhiyin-real3d/godot-scene-qa.log
+          if-no-files-found: warn
