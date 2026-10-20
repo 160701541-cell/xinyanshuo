@@ -168,8 +168,8 @@ namespace XianxiaWorldBox
             if(GUI.Button(new Rect(panel.x+414*ui,firstY,Mathf.Max(110,pw-427*ui),45*ui),
                  "尺寸API自检",button))
             {
-                mapStatus=GiantMapOptionsV11.DiagnoseMapApi();
-                Debug.Log("[XIANXIA-V15] "+mapStatus);
+                mapStatus=GiantMapOptionsV11.DiagnoseMapApi()+" | "+GiantMapOptionsV11.DiagnoseActualWorld();
+                Debug.Log("[XIANXIA-V16] "+mapStatus);
             }
             GUI.Label(new Rect(panel.x+12,panel.y+188*ui,pw-24,36*ui),mapStatus,label);
             float secondY=panel.y+142*ui;
