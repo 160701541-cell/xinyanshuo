@@ -157,7 +157,7 @@ class Program {
    var aa=oldType.Methods.First(m=>m.Name=="Update").Body.Instructions;
    var bb=newType.Methods.First(m=>m.Name=="Update").Body.Instructions;
    if(bb.Count!=aa.Count+1||bb[0].OpCode!=dnlib.DotNet.Emit.OpCodes.Call||
-      !(bb[0].Operand?.ToString()?.Contains("MapPresetBridgeV32.Tick")??false))
+      !(bb[0].Operand?.ToString()?.Contains("MapPresetBridgeV32::Tick")??false))
       throw new InvalidOperationException("map bridge inserted IL differs from expected");
    for(int i=0;i<aa.Count;i++)
      if(aa[i].OpCode!=bb[i+1].OpCode||aa[i].Operand?.ToString()!=bb[i+1].Operand?.ToString())
