@@ -143,7 +143,7 @@ namespace XianxiaWorldBox
                     if(Patched.TryGetValue(key,out known))
                     {
                         // Do not hijack dynamically changing labels, timers, etc.
-                        if(!Object.ReferenceEquals(known.Component,component)||
+                        if(!object.ReferenceEquals(known.Component,component)||
                             current!=known.Translation)
                             Patched.Remove(key);
                         else continue;
