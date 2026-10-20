@@ -51,13 +51,21 @@ namespace XianxiaWorldBox
             if(GUI.Button(new Rect(r.x+203f*scale,r.y+112f*scale,185f*scale,44f*scale),
                 "刷新简体中文",button))
                 NativeLocaleBridgeV23.ActivateChinese();
-            GUI.Label(new Rect(r.x+12f*scale,r.y+162f*scale,w-24f*scale,55f*scale),
+            if(GUI.Button(new Rect(r.x+399f*scale,r.y+112f*scale,154f*scale,44f*scale),
+                UntranslatedMenuAuditV23.Enabled?"停止漏译采集":"开启漏译采集",button))
+                UntranslatedMenuAuditV23.SetEnabled(!UntranslatedMenuAuditV23.Enabled);
+            if(GUI.Button(new Rect(r.x+563f*scale,r.y+112f*scale,148f*scale,44f*scale),
+                "导出漏译清单",button))
+                UntranslatedMenuAuditV23.ExportLocalReport();
+            GUI.Label(new Rect(r.x+12f*scale,r.y+162f*scale,w-24f*scale,46f*scale),
                 NativeLocaleBridgeV23.Status,label);
+            GUI.Label(new Rect(r.x+12f*scale,r.y+209f*scale,w-24f*scale,43f*scale),
+                UntranslatedMenuAuditV23.Status+" [记录 "+UntranslatedMenuAuditV23.Count+" 项]",label);
             const int perPage=3;
             int pages=(Entries.Length+perPage-1)/perPage;
             int first=page*perPage;
-            float rowsTop=r.y+223f*scale;
-            float available=Mathf.Max(80f,h-310f*scale);
+            float rowsTop=r.y+263f*scale;
+            float available=Mathf.Max(55f,h-354f*scale);
             float rowH=available/perPage;
             for(int i=first;i<Entries.Length&&i<first+perPage;i++)
                 GUI.Label(new Rect(r.x+15f*scale,rowsTop+(i-first)*rowH,
