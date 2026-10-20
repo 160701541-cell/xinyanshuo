@@ -7,6 +7,9 @@ on:
       - 'zhiyin-native/**'
       - '.github/workflows/zhiyin-native-apk.yml'
   workflow_dispatch:
+concurrency:
+  group: zhiyin-native-${{ github.ref }}
+  cancel-in-progress: true
 jobs:
   apk:
     runs-on: ubuntu-latest
