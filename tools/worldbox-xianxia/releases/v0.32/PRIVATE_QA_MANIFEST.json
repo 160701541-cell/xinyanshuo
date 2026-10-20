@@ -1,0 +1,50 @@
+{
+  "schema": 1,
+  "project": "WORLDBOX_THIRD_PARTY_MOD_DERIVATIVE_TEST",
+  "version": "v0.32-external-mod-import-and-2048-new-world-presets",
+  "public_repo_branch": "worldbox/external-mod-lab-v22-zh-localization",
+  "private_apk_file": "WorldBox_v032_万界仙侠_直接导入MOD_2048大地图_待实机.apk",
+  "private_apk_bytes": 187848395,
+  "private_apk_sha256": "3698773435e2a63fa07ccd75a9aa5b9f7ab3fb009d235f52ca5f4e3ef8fe12dc",
+  "package_id": "com.xinyanshuo.worldbox.lab31",
+  "signer_certificate_sha256": "20087dc8c210c7c6a35a4492500324f33f36f7c5eb3a77dc62040c21281c400e",
+  "signer_matches_v31": true,
+  "native_multiselect_mod_importer": {
+    "shipped_in_apk_classes5_dex": true,
+    "entry": "游戏启动前的整合入口/导入第三方MOD ZIP",
+    "android_saf": true,
+    "max_zip_selections": 8,
+    "source": "private-apk-lab/ExternalModImporterV32.java",
+    "zip_modtype_supported": [
+      0,
+      1
+    ],
+    "safe_limits": "MAX_ZIP=48MiB per ZIP; MAX_EXPANDED=128MiB; <=1200 entries; Zip Slip and overwrite blocked",
+    "re_enter_game_required": true,
+    "device_tested": false
+  },
+  "huge_map_new_world": {
+    "candidate_tiles_each_edge": 2048,
+    "tiles_total": 4194304,
+    "chunks_each_edge": 32,
+    "legacy_bridge_il_helper_call_inserted": true,
+    "helper_assembly": "WorldBoxXianxiaMapPreset.dll",
+    "source": "private-apk-lab/MapPresetBridgeV32/MapPresetBridgeV32.cs",
+    "offline_simulation": true,
+    "new_world_menu_on_device_verified": false,
+    "real_generation_verified": false,
+    "save_load_verified": false
+  },
+  "testing": {
+    "signed_v1_v2_v3": true,
+    "apk_crc_pass": true,
+    "original_game_assembly_unchanged": true,
+    "existing_experiment_mono_bridge_patch": "verified exactly one new Tick call, existing instructions semantically preserved",
+    "sdk_and_source_ci_green": "39474793381",
+    "android_16_device_test": "PENDING",
+    "cross_mod_compatibility": "PENDING"
+  },
+  "private_work_library": "/WorldBox-万界仙侠/Work交接/",
+  "public_game_apk_uploaded": false,
+  "canglan_main_modified": false
+}
