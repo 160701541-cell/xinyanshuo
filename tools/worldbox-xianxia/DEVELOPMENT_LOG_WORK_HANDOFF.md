@@ -245,3 +245,18 @@ oversight in v14, not a user installation error.
   save-load QA remain open. No claim that v15 is the final integrated edition.
 - User flow: update the existing test app directly, tap Start Game. If it fails,
   reopen diagnostics, Copy Error Log and return it; preserve old WorldBox.
+
+## 2026-10-20 19:23 Asia/Shanghai — user-confirmed v15 launch
+
+User reports “可以进” after receiving v15. Record **USER_CONFIRMED_STARTUP_PASS**
+on the previously reported OnePlus PKR110 / Android16. This confirms entering
+the game following the resource-package fix; it is user testimony, not an
+in-session adb test. No new screenshot or Unity/Mono loading log supplied.
+
+Still UNVERIFIED: original bridge execution/MOD load, font scaling and CJK
+layout, observer/actor follow/pseudo-3D, large-map generation, save/read,
+performance/thermal behavior and complete third-party MOD integration. Do not
+promote this narrow startup confirmation to full gameplay acceptance.
+
+Next device acceptance: check whether the in-game 万界·清晰大字 and observer
+controls appear, exercise font sizes, and return diagnostic logs if missing.
