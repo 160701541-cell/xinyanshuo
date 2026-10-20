@@ -1,0 +1,56 @@
+extends SceneTree
+## This test validates the importer and an anime-style rig, NOT reference
+## likeness. The model is CC0 pixiv legacy sample and must not be shipped
+## under the DeepSeek/Claude identity without full independent art production.
+func _initialize() -> void:
+    call_deferred("_verify")
+func _verify() -> void:
+    var sample:=load("res://qa_samples/anime_cc0_lookdev.vrm") as PackedScene
+    if sample==null:
+        push_error("VRM importer did not produce a real PackedScene")
+        quit(2)
+        return
+    var root_avatar:=sample.instantiate()
+    root.add_child(root_avatar)
+    await process_frame
+    await process_frame
+    var rigged=root_avatar.find_children("*","Skeleton3D",true,false)
+    var drawables=root_avatar.find_children("*","MeshInstance3D",true,false)
+    var morph_names: PackedStringArray=PackedStringArray()
+    var textured=0
+    var custom_shader=0
+    var joint_count=0
+    for item in rigged:
+        var s=item as Skeleton3D
+        joint_count=maxi(joint_count,s.get_bone_count())
+    for item in drawables:
+        var mesh3d=item as MeshInstance3D
+        if mesh3d.mesh==null:
+            continue
+        for idx in range(mesh3d.mesh.get_blend_shape_count()):
+            morph_names.append(str(mesh3d.mesh.get_blend_shape_name(idx)))
+        for si in range(mesh3d.mesh.get_surface_count()):
+            var mat=mesh3d.get_active_material(si)
+            if mat is ShaderMaterial:
+                custom_shader+=1
+            elif mat is StandardMaterial3D:
+                if (mat as StandardMaterial3D).albedo_texture!=null:
+                    textured+=1
+    print("VRM_LOOKDEV_IMPORT_LOG"," bones=",joint_count," meshes=",drawables.size(),
+          " facial_morphs=",morph_names.size()," real_textured_materials=",textured,
+          " MToon_or_other_shader_materials=",custom_shader,
+          " example_morphs=",morph_names.slice(0,12))
+    if joint_count<40 or drawables.size()<2:
+        push_error("Not a real skinned humanoid anime VRM")
+        quit(3)
+        return
+    if morph_names.size()<3:
+        push_error("Anime VRM import stripped real blendshape expressions")
+        quit(4)
+        return
+    if textured+custom_shader<2:
+        push_error("VRM lost all its face, clothing and hair materials")
+        quit(5)
+        return
+    print("PASS REAL VRM ANIME MODEL IMPORT + SKELETON + FACIAL MORPHS + MATERIALS")
+    quit(0)
