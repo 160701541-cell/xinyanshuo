@@ -68,6 +68,7 @@ public final class ModelDownloadService extends Service {
       pause.set(true);
       HttpURLConnection current=liveConnection;if(current!=null)current.disconnect();
       Thread t=worker;if(t!=null)t.interrupt();
+      prefs.edit().putBoolean("auto_resume",false).apply();
       setState("已暂停，下载进度保留");
       // Don't stop until the worker has closed its output.
       if(t==null||!t.isAlive())stopForegroundAndSelf();
@@ -81,12 +82,14 @@ public final class ModelDownloadService extends Service {
       File p=partial(this);
       if(p.exists()&&!p.delete()){setState("无法清理下载缓存");return START_NOT_STICKY;}
       prefs.edit().remove("etag").remove("total").remove("sha256").apply();
+      prefs.edit().putBoolean("auto_resume",false).apply();
       bytes=0;total=-1;setState("旧缓存已按用户确认清理");
       stopForegroundAndSelf();
       return START_NOT_STICKY;
     }
     if(worker!=null&&worker.isAlive()){showNotification();return START_STICKY;}
     pause.set(false);
+    prefs.edit().putBoolean("auto_resume",true).apply();
     startForeground(NOTIF,notification());
     worker=new Thread(this::work,"zhiyin-resumable-gguf");
     worker.start();
@@ -277,7 +280,8 @@ public final class ModelDownloadService extends Service {
     }
     if(done.exists()&&!done.delete())throw new IOException("无法替换已安装的旧模型");
     if(!part.renameTo(done))throw new IOException("模型复制完成但安装失败，数据仍在.part中");
-    prefs.edit().putLong("bytes",done.length()).putLong("total",done.length()).remove("etag").remove("sha256").apply();
+    prefs.edit().putLong("bytes",done.length()).putLong("total",done.length())
+      .putBoolean("auto_resume",false).remove("etag").remove("sha256").apply();
     setState("已下载并安装GGUF模型");
   }
 }
