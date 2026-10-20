@@ -136,6 +136,17 @@ namespace XianxiaWorldBox
                     Status="当前安卓本地化字典无法安全枚举；未做修改。";
                     return Status;
                 }
+                // WorldBox's own 0.51.4 APK already ships locales/cz.
+                // The live dictionary loaded in "en" is NOT proof a key is
+                // untranslated in "cz". Registering guesses now would shadow
+                // official native translations after the language changes.
+                string active=Convert.ToString(Member(manager,"language"))??"未知";
+                if(active!="cz")
+                {
+                    Status="当前原版语言为 "+active+
+                        "。先切到原版简体中文再补译；不覆盖未知原生中文。";
+                    return Status;
+                }
                 MethodInfo add=StaticMethod(lmType,"Add",typeof(string),typeof(string),typeof(string));
                 MethodInfo has=StaticMethod(lmType,"Has",typeof(string),typeof(string));
                 int considered=0;
@@ -158,6 +169,9 @@ namespace XianxiaWorldBox
                     }
                     if(string.IsNullOrEmpty(key)||key.Length>150||!IsEnglishLike(original))
                         continue;
+                    // A native Chinese value is authoritative; do not use an
+                    // English fallback guessed from this key to replace it.
+                    if(ContainsChinese(original))continue;
                     Seen++;
                     string chinese=ChineseLocalizationV22.Translate(original);
                     if(chinese==original)chinese=ChineseLocalizationV22.Translate(key);

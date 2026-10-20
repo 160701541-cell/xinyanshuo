@@ -59,7 +59,7 @@ namespace XianxiaWorldBox
                 oneTapStatus=NativeLocaleBridgeV23.SwitchToChineseByUserTap();
             }
             x+=quarter+gap;
-            if(GUI.Button(new Rect(x,top,quarter,43f*scale),OwnLocaleLabelsV25.Get("register_native_chinese","登记原版中文"),button))
+            if(GUI.Button(new Rect(x,top,quarter,43f*scale),OwnLocaleLabelsV25.Get("register_native_chinese","补齐简中漏译"),button))
                 oneTapStatus=NativeLocaleBridgeV23.RegisterActualKeys();
             x+=quarter+gap;
             if(GUI.Button(new Rect(x,top,quarter,43f*scale),OwnLocaleLabelsV25.Get("refresh_chinese","刷新简体中文"),button))

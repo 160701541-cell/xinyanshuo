@@ -72,22 +72,36 @@ class Program
         Assert(measured.Contains("实际文本抽样 6项"),"read actual game strings");
         Assert(measured.Contains("含汉字1／拉丁字母5"),"no fake locale completion rate");
         Assert(measured.Contains("非全量汉化完成率"),"must not label sample as coverage");
+        string denied=NativeLocaleBridgeV23.RegisterActualKeys();
+        Assert(denied.Contains("先切到原版简体中文"),"English live table cannot infer missing native translations");
+        Assert(!NativeLocaleBridgeV23.Ready&&NativeLocaleBridgeV23.Registered==0,
+            "no guessed translations registered over unknown native Chinese");
+        Assert(!NeoModLoader.General.LM.locales["cz"].ContainsKey("kingdoms_tab"),
+            "vanilla kingdoms key must be reserved until cz is active");
+        data.language="cz";
+        // Simulate real vanilla native Chinese already loaded, while other
+        // mod labels remain English and need an opt-in fallback.
+        data._localized_text["kingdoms_tab"]="王国";
         string info=NativeLocaleBridgeV23.RegisterActualKeys();
-        Assert(NativeLocaleBridgeV23.Ready,"real instance and LM API detected");
-        Assert(NativeLocaleBridgeV23.Seen==5,"5 English values scanned, existing native Chinese skipped");
-        Assert(NativeLocaleBridgeV23.Matched==4,"4 known labels recognized");
-        Assert(NativeLocaleBridgeV23.Registered==3,"3 new labels registered");
-        Assert(NativeLocaleBridgeV23.SkippedExisting==1,"do not replace other MOD cz translations");
-        Assert(NeoModLoader.General.LM.locales["cz"]["kingdoms_tab"]=="王国列表","real locale key chosen, not guessed");
-        Assert(NeoModLoader.General.LM.locales["cz"]["mod_menu"]=="模组管理器","real third-party MOD locale key");
-        Assert(!NeoModLoader.General.LM.locales["cz"].ContainsKey("royal_person"),"do not translate names");
-        Assert(data.language=="en"&&data._localized_text["kingdoms_tab"]=="Kingdoms","registration must not change player locale");
-        Assert(NativeLocaleBridgeV23.ActivateChinese().Contains("请到原版设置中"),"English user is prompted to switch");
+        Assert(NativeLocaleBridgeV23.Ready,"real instance and NML API detected");
+        Assert(NativeLocaleBridgeV23.Seen==4,"only four English labels in live Chinese locale");
+        Assert(NativeLocaleBridgeV23.Matched==3,"three known untranslated labels recognized");
+        Assert(NativeLocaleBridgeV23.Registered==2,"only missing Chinese registered");
+        Assert(NativeLocaleBridgeV23.SkippedExisting==1,"other MOD translations retained");
+        Assert(!NeoModLoader.General.LM.locales["cz"].ContainsKey("kingdoms_tab"),
+            "official native translated key must never be registered from English dictionary");
+        Assert(NeoModLoader.General.LM.locales["cz"]["mod_menu"]=="模组管理器",
+            "known foreign MOD label may be optionally translated");
+        Assert(!NeoModLoader.General.LM.locales["cz"].ContainsKey("royal_person"),
+            "generated actor and city names must not be rewritten");
+        data.language="en";
+        Assert(NativeLocaleBridgeV23.ActivateChinese().Contains("请到原版设置中"),
+            "English user is prompted to switch; no unrequested switch");
         Assert(NeoModLoader.General.LM.applyCount==0,"no unrequested locale switch");
         data.language="cz";
         Assert(NativeLocaleBridgeV23.ActivateChinese().Contains("已刷新"),"refresh existing Chinese language");
         Assert(NeoModLoader.General.LM.applyCount==1,"call native LM.ApplyLocale exactly once");
-        Assert(data._localized_text["kingdoms_tab"]=="王国列表","native label was applied");
+        Assert(data._localized_text["kingdoms_tab"]=="王国","official native Chinese preserved after refresh");
         Assert(data._localized_text["wars_tab"]=="战事（其他MOD）","other mod translation not erased");
         Assert(ChineseLocalizationV22.Translate("Royal Palace")=="皇宫","large menu glossary works");
         Assert(ChineseLocalizationV22.Translate("Main Menu")=="主菜单","menu glossary works");

@@ -9,7 +9,7 @@
   "xinyanshuo.wb.toggle_chinese_on": "实时中文：开",
   "xinyanshuo.wb.toggle_chinese_off": "实时中文：关",
   "xinyanshuo.wb.one_tap_chinese": "一键选择简中",
-  "xinyanshuo.wb.register_native_chinese": "登记原版中文",
+  "xinyanshuo.wb.register_native_chinese": "补齐简中漏译",
   "xinyanshuo.wb.refresh_chinese": "刷新简体中文",
   "xinyanshuo.wb.import_keypack": "导入中文键值包",
   "xinyanshuo.wb.stop_missing_scan": "停止漏译采集",

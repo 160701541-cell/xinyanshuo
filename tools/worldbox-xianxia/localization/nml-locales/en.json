@@ -9,7 +9,7 @@
   "xinyanshuo.wb.toggle_chinese_on": "Live Chinese: ON",
   "xinyanshuo.wb.toggle_chinese_off": "Live Chinese: OFF",
   "xinyanshuo.wb.one_tap_chinese": "Switch to Chinese",
-  "xinyanshuo.wb.register_native_chinese": "Register Vanilla Chinese",
+  "xinyanshuo.wb.register_native_chinese": "Fill Missing Chinese Labels",
   "xinyanshuo.wb.refresh_chinese": "Refresh Simplified Chinese",
   "xinyanshuo.wb.import_keypack": "Import Chinese Key Pack",
   "xinyanshuo.wb.stop_missing_scan": "Stop Untranslated Audit",
