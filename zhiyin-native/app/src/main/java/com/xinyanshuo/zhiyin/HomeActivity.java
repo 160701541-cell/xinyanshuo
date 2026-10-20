@@ -26,6 +26,8 @@ public final class HomeActivity extends Activity {
   private LifeEngine life;
   private MemoryStore memory;
   private Neighborhood neighborhood;
+  private AiGateway ai;
+  private volatile boolean waitingForAI=false;
   private HomeWorldView world;
   private TextView activity,banner,stat,tip,inventory,chatReply;
   private EditText chatInput;
@@ -59,7 +61,7 @@ public final class HomeActivity extends Activity {
     super.onCreate(state);
     getWindow().setStatusBarColor(0xFF282A3D);getWindow().setNavigationBarColor(0xFF3C3C50);
     getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
-    life=new LifeEngine(this);memory=new MemoryStore(this);neighborhood=new Neighborhood(this);
+    life=new LifeEngine(this);memory=new MemoryStore(this);neighborhood=new Neighborhood(this);ai=new AiGateway(this);
     voice=new TextToSpeech(this,s->{if(s==TextToSpeech.SUCCESS){voiceReady=true;voice.setLanguage(Locale.SIMPLIFIED_CHINESE);}});
     FrameLayout screen=new FrameLayout(this);stageRoot=screen;
     world=new HomeWorldView(this,life,this::onSceneTap);
@@ -114,7 +116,7 @@ public final class HomeActivity extends Activity {
     head.addView(who,new LinearLayout.LayoutParams(0,dp(30),1));
     Button close=chip("×",()->{chatSheet.setVisibility(View.GONE);});
     head.addView(close,new LinearLayout.LayoutParams(dp(39),dp(33)));
-    chatReply=text("在听呢。现在仍是本地规则聊天演示。",13,0xFF506273,false);
+    chatReply=text("在听呢。选择本地模型或者API后，就能真正对话。",13,0xFF506273,false);
     chatReply.setMaxLines(3);chatReply.setPadding(0,dp(4),0,dp(5));chatSheet.addView(chatReply);
     LinearLayout compose=new LinearLayout(this);compose.setOrientation(LinearLayout.HORIZONTAL);chatSheet.addView(compose);
     chatInput=new EditText(this);chatInput.setSingleLine(true);chatInput.setTextSize(14);
@@ -157,11 +159,13 @@ public final class HomeActivity extends Activity {
   @Override protected void onResume(){
     super.onResume();
     if(life!=null){life=new LifeEngine(this);if(world!=null)world.setLife(life);}
+    if(chatReply!=null && !waitingForAI)chatReply.setText("当前："+(AiGateway.MODE_API.equals(ai.mode())?"API联网模式":"手机本地模式")+"。可以开始说话。");
     paused=false;handler.removeCallbacks(ticker);handler.post(ticker);
   }
   @Override protected void onPause(){paused=true;handler.removeCallbacks(ticker);if(life!=null)life.save();super.onPause();}
   @Override protected void onDestroy(){
     paused=true;handler.removeCallbacks(ticker);if(voice!=null){voice.stop();voice.shutdown();}
+    if(ai!=null)ai.close();
     if(memory!=null)memory.close();super.onDestroy();
   }
   private void speak(String s){
@@ -196,6 +200,7 @@ public final class HomeActivity extends Activity {
     refresh();toast(question+" · "+note);
   }
   private void openDistrict(){startActivity(new Intent(this,DistrictActivity.class));}
+  private void openAiSettings(){startActivity(new Intent(this,AiSettingsActivity.class));}
   private int indexOf(String action){for(int i=0;i<LifeEngine.ACTIONS.length;i++)if(action.equals(LifeEngine.ACTIONS[i]))return i;return 0;}
   private void openStudio(String part){
     Intent intent=new Intent(this,MainActivity.class);
@@ -205,22 +210,23 @@ public final class HomeActivity extends Activity {
     startActivity(intent);
   }
   private void showMenu(){
-    String[] items={"⌖ 社区地图 · 看看其他人住哪里","查看她的生活状态","房租 / 工作 / 账目","查看生活时间线","今天一起做件事","角色与素材","剧本杀与旁白","音乐与对唱","永久记忆备份","版本说明"};
+    String[] items={"🤖 AI 模型 / API 接口","⌖ 社区地图","查看她的生活状态","房租 / 工作 / 账目","生活时间线","今天一起做件事","角色与素材","剧本杀与旁白","音乐与对唱","永久记忆备份","版本说明"};
     new AlertDialog.Builder(this).setTitle("知音 · 场景菜单").setItems(items,(d,which)->{
       switch(which){
-        case 0:openDistrict();break;
-        case 1:showNeeds();break;
-        case 2:showFinances();break;
-        case 3:showLifeLog();break;
-        case 4:showActivities();break;
-        case 5:openStudio("角色");break;
-        case 6:openStudio("剧本");break;
-        case 7:openStudio("音乐");break;
-        case 8:openStudio("记忆");break;
-        case 9:new AlertDialog.Builder(this).setTitle("知音 v0.4 · 生活社区原型")
+        case 0:openAiSettings();break;
+        case 1:openDistrict();break;
+        case 2:showNeeds();break;
+        case 3:showFinances();break;
+        case 4:showLifeLog();break;
+        case 5:showActivities();break;
+        case 6:openStudio("角色");break;
+        case 7:openStudio("剧本");break;
+        case 8:openStudio("音乐");break;
+        case 9:openStudio("记忆");break;
+        case 10:new AlertDialog.Builder(this).setTitle("知音 v0.5 · AI模型实验版")
           .setMessage("3.2m×3.2m出租房（10.24㎡），支持拖动和双指缩放、原生2.5D等轴测房间、家具物件交互。"
             +"新增居民独立住处及社交档案，生活资金来自咖啡馆打工，每周需交房租，音乐属于个人爱好。"
-            +"注意：外部社区只有地图与社交模拟，尚未完成所有NPC动态生活；聊天仍是有限规则回复，未接本地AI大模型。"
+            +"此版增加OpenAI兼容API和llama.cpp手机端GGUF推理。首次使用需要在AI设置下载模型或填写API配置；不是预设回复。"
             +"程序生成图形仍是占位美术，后续需使用许可合规的高质量素材包与动画。")
           .setPositiveButton("了解",null).show();break;
       }
@@ -324,21 +330,37 @@ public final class HomeActivity extends Activity {
   }
   private void sendMessage(String s){
     if(s.isEmpty())return;
-    try{
-      memory.addEvent("玩家",s,"shared","","dialogue");
-      String reply=demoReply(s);
-      memory.addEvent("知音",reply,"shared","","demo_reply");
-      neighborhood.meet("zhiyin","聊天交流");
-      life.note=reply;life.social=LifeEngine.clamp(life.social+4);
-      life.save();refresh();
-      if(chatSheet!=null){chatSheet.setVisibility(View.VISIBLE);chatReply.setText(reply);}
-      if(voiceReady)speak(reply);
-    }catch(Exception ex){toast("消息保存失败："+ex.getMessage());}
+    if(waitingForAI){toast("知音还在生成上一条回复，请稍等");return;}
+    try{memory.addEvent("玩家",s,"shared","","dialogue");}
+    catch(Exception e){toast("消息写入失败："+e.getMessage());return;}
+    if(chatSheet!=null)chatSheet.setVisibility(View.VISIBLE);
+    chatReply.setText("知音正在"+(AiGateway.MODE_API.equals(ai.mode())?"通过API":"使用手机本地模型")+"思考…");
+    waitingForAI=true;
+    ai.ask(s,"知音",memory,(answer,error)->runOnUiThread(()->{
+      if(isFinishing()||isDestroyed())return;
+      waitingForAI=false;
+      if(error!=null){
+        chatReply.setText("AI推理未成功："+error+"。请打开AI设置检查模型和API。");
+        // User original has been saved, no pretend response or fallback.
+        return;
+      }
+      try{
+        memory.addEvent("知音",answer,"shared","","ai_reply");
+        neighborhood.meet("zhiyin","聊天交流");
+        life.note=answer;life.social=LifeEngine.clamp(life.social+4);
+        life.save();refresh();
+        chatReply.setText(answer);
+        if(voiceReady)speak(answer);
+      }catch(Exception e){chatReply.setText("回答已生成，但保存失败："+e.getMessage());}
+    }));
   }
   private void talk(){talk("");}
   private void talk(String prefill){
     life.request("CHAT");refresh();
     chatSheet.setVisibility(View.VISIBLE);
+    if(!ai.installed()&&AiGateway.MODE_LOCAL.equals(ai.mode())){
+      chatReply.setText("首次离线聊天，请先安装GGUF模型。打开菜单 → AI模型/API接口。");
+    }
     chatInput.setText(prefill);
     if(!prefill.isEmpty())chatInput.setSelection(prefill.length());
   }
