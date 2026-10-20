@@ -1,9 +1,9 @@
 {
-  "name": "万界仙侠·原版及MOD中文辅助（安卓测试候选）",
+  "name": "万界仙侠·资源经济与原版分类图标（安卓测试）",
   "GUID": "XINYANSHUO_WORLD_BOX_OBSERVER_V07",
   "author": "Xianxia WorldBox external mod lab",
-  "version": "0.27.0-chinese-device-pending",
-  "description": "Independent third-party WorldBox Android Chinese localization test: use original cz locale first, register fallbacks only after cz is active, count current visible Text/TMP languages, opt-in missing-label audit and no invalid success report. NOT full translation, not signed APK. DEVICE_PENDING. Unrelated to Canglan.",
+  "version": "0.35.0-economy-material-factory-device-pending",
+  "description": "Source-owned v35 pixel icon factory: 171 category icons, 74 processing recipes, an isolated ledger kernel for copper/silver/gold/spirit stone and six administrative tiers; binds buttons to actual vanilla Nature/Creation/Kingdom NML tabs only if runtime supports it. Game rendering, treasury effects, border painting and device QA NOT COMPLETE. Never redistribute WorldBox game APK publicly.",
   "RepoUrl": "https://github.com/160701541-cell/xinyanshuo",
   "Dependencies": [],
   "OptionalDependencies": [],
