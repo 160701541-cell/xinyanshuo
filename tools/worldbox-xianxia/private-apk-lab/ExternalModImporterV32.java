@@ -44,24 +44,12 @@ final class ExternalModImporterV32 {
       * the layout by the actual files, never invent a format solely from a
       * translated display name. Explicit ModType stays authoritative. */
     static int inferType(JSONObject json,String prefix,Map<String,ZipEntry> files)throws IOException {
-        if(json.has("ModType")) {
-            int mode=json.optInt("ModType",-1);
+        if(json.has("ModType")||json.has("modType")) {
+            int mode=json.has("ModType")?json.optInt("ModType",-1):json.optInt("modType",-1);
             if(mode==0||mode==1)return mode;
             throw new IOException("模组声明的ModType不受支持："+json.optString("ModType"));
         }
-        String dir=prefix.toLowerCase(Locale.ROOT);
-        if(dir.startsWith("nmlmods/")||dir.contains("/nmlmods/"))return 1;
-        if(dir.startsWith("mods/")||dir.contains("/mods/"))return 0;
-        boolean source=false,compiled=false;
-        for(String file:files.keySet()){
-            if(!file.startsWith(prefix))continue;
-            String n=file.substring(prefix.length()).toLowerCase(Locale.ROOT);
-            if(n.startsWith("code/")&&n.endsWith(".cs"))source=true;
-            if(n.endsWith(".dll")&&n.indexOf('/')<0)compiled=true;
-        }
-        if(source)return 0; // Traditional NML source MOD without ModType, e.g. ChineseName 1.5.1
-        if(compiled)return 1; // compiled NML candidate; still runtime-unverified
-        throw new IOException("无法识别模组加载类型：缺少ModType、Code/*.cs或根目录DLL");
+        return ModFormatV34.infer(prefix,files.keySet());
     }
     static String safeModId(String original)throws Exception {
         if(original!=null&&original.matches("[A-Za-z0-9_.-]{1,80}")&&
@@ -121,8 +109,8 @@ final class ExternalModImporterV32 {
                 }
                 List<String> manifests=new ArrayList<>();
                 for(String name:all.keySet()){
-                    if(name.endsWith("mod.json")&&!all.get(name).isDirectory() &&
-                      (name.equals("mod.json")||name.endsWith("/mod.json")))
+                    if(!all.get(name).isDirectory() &&
+                      (name.equalsIgnoreCase("mod.json")||name.toLowerCase(Locale.ROOT).endsWith("/mod.json")))
                         manifests.add(name);
                 }
                 if(manifests.isEmpty()) {
