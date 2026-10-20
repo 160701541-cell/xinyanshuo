@@ -26,6 +26,9 @@ class Program {
     case "verify-economy-ui":
      if(args.Length<4)throw new ArgumentException("verify-economy-ui original.dll patched.dll Economy.dll");
      VerifyEconomyUi(args[1],args[2],args[3]);return 0;
+    case "inspect-economy-api":
+     if(args.Length<2)throw new ArgumentException("inspect-economy-api private Assembly-CSharp.dll");
+     InspectEconomyApi(args[1]);return 0;
     case "inspect-map-ui": InspectMapUi(args[1]);return 0;
     case "inspect": Inspect(args[1]);return 0;
     case "compile":
@@ -60,6 +63,25 @@ class Program {
    var refs=Environment.GetEnvironmentVariable("WORLD_BOX_MONO_REFS");
    if(!string.IsNullOrWhiteSpace(refs)&&Directory.Exists(refs))resolver.AddSearchDirectory(refs);
    return new ReaderParameters{ReadSymbols=false,InMemory=true,AssemblyResolver=resolver};
+ }
+ static void InspectEconomyApi(string path) {
+   var mod=dnlib.DotNet.ModuleDefMD.Load(path);
+   string[] targets={"World","MapBox","Kingdom","KingdomManager","KingdomData",
+     "City","CityManager","CityData","TileZone","WorldTile","Tile","MapSizeAsset","MapChunk"};
+   foreach(var type in mod.Types.Where(t=>targets.Contains(t.Name.ToString()))) {
+     Console.WriteLine("ECONOMY_TYPE "+type.FullName+" BASE "+type.BaseType);
+     foreach(var field in type.Fields)
+       if(field.IsPublic||field.IsStatic||field.Name.ToString().Contains("kingdom",StringComparison.OrdinalIgnoreCase)
+         ||field.Name.ToString().Contains("city",StringComparison.OrdinalIgnoreCase)
+         ||field.Name.ToString().Contains("tile",StringComparison.OrdinalIgnoreCase)
+         ||field.Name.ToString().Contains("zone",StringComparison.OrdinalIgnoreCase))
+         Console.WriteLine("  FIELD "+(field.IsStatic?"static ":"")+field.Name+" "+field.FieldType);
+     foreach(var property in type.Properties.Take(80))
+       Console.WriteLine("  PROP "+property.Name+" "+property.Type);
+     foreach(var m in type.Methods.Where(x=>new[]{"get","kingdom","city","tile","zone","name","population","area"}
+           .Any(k=>x.Name.ToString().Contains(k,StringComparison.OrdinalIgnoreCase))).Take(75))
+       Console.WriteLine("  METHOD "+m.Name+" "+m.MethodSig);
+   }
  }
  static void InspectMapUi(string path) {
    var mod=dnlib.DotNet.ModuleDefMD.Load(path);
