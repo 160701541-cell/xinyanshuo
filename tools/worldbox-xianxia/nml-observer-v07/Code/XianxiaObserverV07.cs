@@ -86,6 +86,7 @@ namespace XianxiaWorldBox
         {
             if(!versionOK)return;
             ModTextAccessibilityV13.Tick();
+            RuntimeChineseOverlayV22.Tick();
             if(Time.unscaledTime>=nextCultivationCleanup){
                 nextCultivationCleanup=Time.unscaledTime+15f;
                 CultivationV18.Cleanup();
@@ -160,7 +161,18 @@ namespace XianxiaWorldBox
             }
             if(GUI.Button(new Rect(Mathf.Max(8,x-200*ui),9,190*ui,52*ui),"中文模组管理器",button)){
                 ChineseModManagerV21.Open=!ChineseModManagerV21.Open;
-                if(ChineseModManagerV21.Open)ChineseModManagerV21.Refresh();
+                if(ChineseModManagerV21.Open){
+                    OriginalMenuGuideV22.Open=false;
+                    ChineseModManagerV21.Refresh();
+                }
+            }
+            if(GUI.Button(new Rect(Mathf.Max(8,x-405*ui),9,195*ui,52*ui),"原版菜单中文说明",button)){
+                OriginalMenuGuideV22.Open=!OriginalMenuGuideV22.Open;
+                if(OriginalMenuGuideV22.Open)ChineseModManagerV21.Open=false;
+            }
+            if(OriginalMenuGuideV22.Open){
+                OriginalMenuGuideV22.Draw(ui,button,label,box);
+                return;
             }
             if(ChineseModManagerV21.Open){
                 ChineseModManagerV21.Draw(ui,button,label,box);
@@ -251,6 +263,6 @@ namespace XianxiaWorldBox
             GUI.Label(new Rect(panel.x+12,by+54*ui,pw-24,36*ui),
                 "高清字仅作用UI；不会凭空提升原游戏贴图分辨率。Android真机待测。",label);
         }
-        void OnDestroy(){ModTextAccessibilityV13.Shutdown();if(diamond!=null)Destroy(diamond);target=null;}
+        void OnDestroy(){RuntimeChineseOverlayV22.Shutdown();ModTextAccessibilityV13.Shutdown();if(diamond!=null)Destroy(diamond);target=null;}
     }
 }
