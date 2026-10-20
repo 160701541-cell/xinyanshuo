@@ -1,0 +1,6 @@
+<Project Sdk="Microsoft.NET.Sdk"><PropertyGroup>
+<TargetFramework>net8.0</TargetFramework><OutputType>Exe</OutputType>
+<EnableDefaultCompileItems>false</EnableDefaultCompileItems><Nullable>disable</Nullable>
+</PropertyGroup>
+<ItemGroup><Compile Include="EconomyScenarioV35.cs"/>
+<ProjectReference Include="../economy-v35/WorldBoxXianxiaEconomy.csproj"/></ItemGroup></Project>
