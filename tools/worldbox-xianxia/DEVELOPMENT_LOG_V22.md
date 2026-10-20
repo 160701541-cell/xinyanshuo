@@ -282,3 +282,14 @@ Work仍负责私有APK整合、签名、安卓16真机验收。不得上传商�
 证据限制：该段为previous.log且文本截断；标题仍v18可能只是沿用的诊断标题，不能据此判定安装了错包。missing text只证明查询当时缺失这些key，PutMissing本身可能执行补缺逻辑；当前证据不能断言语言JSON未部署、初始化因此失败/卡死，或之后已成功。没有出现完整初始化结果、LoadedMods状态或自有XianxiaObserver/CultivationBridge入口日志，故这些模块仍未确认。原生启动通过与自有功能未见的实测结论保留。
 
 下一诊断证据应取current.log/本次会话开头和NML最终结果，保留包含WorldBoxXianxiaObserver、XIANXIA、Cultivation、compile、Exception、NML_ACTUALLY_LOADED_COUNT等上下文；用户通过原有复制/分享日志入口即可，无须MT/ADB。若手机长文本复制截断，优先从现有分享日志导出全文，而不是让用户手动翻目录。修复重点为自有模块的实际部署/编译/初始化/UI可见性，不把屏蔽Sakuga报错当作修仙功能接入。平台构建环境仍unavailable，本轮仅证据分析与记录，无新APK、无新增实机通过项。苍岚main不动。
+
+
+## 2026-10-21 00:39 Asia/Shanghai — 自有特性分组静态疑点与补充实测摘要
+
+用户转述更完整实测分析：Combat Gods出现Loaded并注册432招式、Frontiers持续运行、自制观察V07持续FAILED但原因空白、V18检测曾返回火灵根；特性编辑器/特性雨两次ArgumentNullException(key)→groupsBuilder。此处为用户提供的分析摘要，并非本轮直接读取了完整设备日志；保留其来源层次。自制部分代码执行与独立观察MOD失败可同时成立，不能混为单一加载状态。
+
+本轮直接通过GitHub读取旧v18源文件 tools/worldbox-xianxia/cultivation/CultivationBridgeV18.cs（独立v13分支，非苍岚）。Initialize创建xys_wanjie_v18_qi_1至qi_13共13个ActorTrait，设置id、path_icon、type、各种开关、base_stats后直接AssetManager.traits.add；没有显式指定特性分组。该处是与groupsBuilder空键相符的优先排查候选，不能直接认定根因：需检查实际0.51.4 ActorTrait默认分组值、groupsBuilder查询哪个字段，以及最终注册的具体特性记录。v0.28日志称沿用v18 Managed.zip不变，但本轮未复验APK字节，因此二进制与源代码一致性仍待核查。
+
+修复验收要求：识别真实分组字段/已有合法分组或正确注册自有分组，再注册境界特性；进入特性编辑器和特性雨均无空键异常；保存并读回原有人物特性。不得靠全局吞掉ArgumentNullException、删除第三方特性或删除人物修为掩盖错误。另需让观察模块失败状态记录完整异常与内部异常，区分编译、初始化和UI异常。十二层规则及隐藏十三层另行落实，不能因本次崩溃修复误删合法人物。
+
+本轮完成源码定位及证据记录；没有更改运行代码、没有构建/签名/手机回归，平台执行环境仍不可用。外部GitHub读取和日志提交可用，不应笼统称所有工程读取工具不可用。main/苍岚保持不变。
