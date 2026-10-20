@@ -287,10 +287,10 @@ jobs:
           classes=[str(p) for p in Path('/tmp/worldbox-diagnostics-classes').rglob('*.class')]
           subprocess.run([d8,'--lib',jar,'--min-api','23','--output',str(output)]+classes,check=True)
           dex=(output/'classes.dex').read_bytes()
-          assert dex.startswith(b'dex\\n'),'invalid DEX header'
+          assert dex.startswith(b'dex\n'),'invalid DEX header'
           target=Path('/tmp/worldbox-user-private-helper/WorldBoxDiagnostics_classes5.dex')
           target.write_bytes(dex)
-          target.with_suffix('.sha256').write_text(hashlib.sha256(dex).hexdigest()+'  '+target.name+'\\n')
+          target.with_suffix('.sha256').write_text(hashlib.sha256(dex).hexdigest()+'  '+target.name+'\n')
           print('PASS_ANDROID_DIAGNOSTICS_DEX; original launcher only, private APK still required')
           PY
           cp tools/worldbox-xianxia/private-apk-lab/DiagnosticReport.java /tmp/worldbox-user-private-helper/
