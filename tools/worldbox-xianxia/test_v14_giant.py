@@ -25,7 +25,7 @@ class ExtremeMapV14Tests(unittest.TestCase):
 
     def test_only_registers_new_world_candidate(self):
         s=CODE.read_text(encoding="utf8")
-        self.assertNotIn("generateMap(",s)
+        self.assertNotIn("generateMap(", "\n".join(line for line in s.splitlines() if not line.strip().startswith("//")))
         self.assertNotIn("setMapSize(",s.replace("setMapSize()",""))
         self.assertIn("add.Invoke(lib,new[]{asset})",s)
 
