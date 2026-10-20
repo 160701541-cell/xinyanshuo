@@ -19,6 +19,7 @@ namespace XianxiaWorldBox
         Texture2D diamond;
         string summary = "尚未读取游戏地图", actorName = "未选中";
         string mapStatus = "实验地图默认关闭。大世界选项仅影响新建世界，需实机验证。";
+        string cultivationStatus = "选择人物后可吐纳灵气（本次运行内，暂不保存）。";
 
         protected override void OnModLoad()
         {
@@ -78,12 +79,14 @@ namespace XianxiaWorldBox
                 target=selected;
                 actorName=selected==null?"附近没有人物":selected.getName();
                 follow=target!=null;nextSample=0;
+                cultivationStatus=target==null?"无可修炼人物":"已选："+actorName;
             }catch(Exception e){summary="选取失败 "+e.GetType().Name;}
         }
         void Update()
         {
             if(!versionOK)return;
             ModTextAccessibilityV13.Tick();
+            CultivationV18.Cleanup();
             if(!open)return;
             ObserverFrameGuardV12.Tick();
             if(ObserverFrameGuardV12.Paused||Time.unscaledTime<nextSample)return;
@@ -172,6 +175,13 @@ namespace XianxiaWorldBox
                 Debug.Log("[XIANXIA-V16] "+mapStatus);
             }
             GUI.Label(new Rect(panel.x+12,panel.y+188*ui,pw-24,36*ui),mapStatus,label);
+            // First interactive xianxia gameplay slice: a selected WorldBox actor
+            // may cultivate Qi and break through realms without mutating vanilla stats.
+            if(GUI.Button(new Rect(panel.x+12,panel.y+226*ui,180*ui,45*ui),"吐纳修炼",button))
+                cultivationStatus=CultivationV18.Meditate(target,Time.unscaledTime);
+            var cultivator=CultivationV18.Inspect(target);
+            GUI.Label(new Rect(panel.x+200*ui,panel.y+226*ui,pw-213*ui,45*ui),
+                cultivator==null?cultivationStatus:cultivator.Summary,label);
             float secondY=panel.y+142*ui;
             if(GUI.Button(new Rect(panel.x+12,secondY,180*ui,46*ui),
                           "字体 "+Mathf.RoundToInt(ModTextAccessibilityV13.Scale*100f)+"%",button))
@@ -181,7 +191,7 @@ namespace XianxiaWorldBox
                 ModTextAccessibilityV13.ToggleGlobal();
             GUI.Label(new Rect(panel.x+417*ui,secondY+4*ui,pw-430*ui,44*ui),
                 "已增大："+ModTextAccessibilityV13.ModifiedCount+"处",label);
-            Rect map=new Rect(panel.x+10,panel.y+226*ui,pw-20,Mathf.Max(90,ph-342*ui));
+            Rect map=new Rect(panel.x+10,panel.y+279*ui,pw-20,Mathf.Max(90,ph-395*ui));
             GUI.Box(map,"",box);
             if (ObserverFrameGuardV12.Paused)
             {
