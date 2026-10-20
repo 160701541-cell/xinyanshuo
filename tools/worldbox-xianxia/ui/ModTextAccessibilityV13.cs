@@ -84,9 +84,10 @@ namespace XianxiaWorldBox
             if (!styleDirty && accessibleButton != null) return;
             if (GUI.skin == null) return;
             var os = TryFont();
-            accessibleButton = GUI.skin.button;
-            accessibleLabel = GUI.skin.label;
-            accessibleBox = GUI.skin.box;
+            // Own the styles: modifying GUI.skin directly changes other MODs too.
+            accessibleButton = new GUIStyle(GUI.skin.button);
+            accessibleLabel = new GUIStyle(GUI.skin.label);
+            accessibleBox = new GUIStyle(GUI.skin.box);
             int px = Mathf.Clamp(Mathf.RoundToInt(17f * Scale), 17, 31);
             accessibleButton.fontSize = px;
             accessibleLabel.fontSize = px;
