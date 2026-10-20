@@ -23,7 +23,7 @@ NOTICE = ("世界盒子 WorldBox 安卓传统Mono NeoModLoader **源码型** MOD
           "这里的代码会尝试由已装载的传统NeoModLoader在手机内编译，如报错，请保留完整错误日志。\n"
           "真实Android0.51.4兼容性：DEVICE_PENDING。\n")
 
-def create(source, original_manifest, output):
+def create(source, original_manifest, output, extra_sources=()):
     code=Path(source).read_text(encoding="utf8")
     if "BasicMod<" not in code or "OnModLoad()" not in code or "World.world.GetTile" not in code:
         raise ValueError("incompatible observer source")
@@ -40,6 +40,14 @@ def create(source, original_manifest, output):
         ROOT+"/mod.json":(json.dumps(mod,ensure_ascii=False,indent=2)+"\n").encode("utf8"),
         "README_传统Mono安装前必读.txt":NOTICE.encode("utf8")
     }
+    for extra_path in extra_sources:
+        extra_path=Path(extra_path)
+        if extra_path.suffix.lower()!=".cs" or not extra_path.name.isascii():
+            raise ValueError("unsafe additional source name")
+        extra_code=extra_path.read_text(encoding="utf8")
+        if "HarmonyPatch" in extra_code or "File.Write" in extra_code:
+            raise ValueError("unsafe game save modification in source")
+        files[ROOT+"/Code/"+extra_path.name]=extra_code.encode("utf8")
     checks="\n".join(hashlib.sha256(v).hexdigest()+"  "+k for k,v in sorted(files.items()))+"\n"
     files["SHA256SUMS.txt"]=checks.encode("utf8")
     output=Path(output);output.parent.mkdir(parents=True,exist_ok=True)
@@ -52,7 +60,8 @@ def main():
     p.add_argument("--source",type=Path,required=True)
     p.add_argument("--manifest",type=Path,required=True)
     p.add_argument("--out",type=Path,required=True)
+    p.add_argument("--extra-source",type=Path,action="append",default=[])
     a=p.parse_args()
-    print(json.dumps(create(a.source,a.manifest,a.out),ensure_ascii=False,indent=2))
+    print(json.dumps(create(a.source,a.manifest,a.out,a.extra_source),ensure_ascii=False,indent=2))
 
 if __name__=="__main__":main()
