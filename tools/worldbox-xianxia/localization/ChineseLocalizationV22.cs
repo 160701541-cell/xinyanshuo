@@ -64,7 +64,8 @@ namespace XianxiaWorldBox
             string translated;
             if(UserTerms.TryGetValue(original,out translated))return translated;
             if(Terms.TryGetValue(original,out translated))return translated;
-            return ChineseMenuGlossaryV23.Translate(original);
+            string named=ChineseMenuGlossaryV23.Translate(original);
+            return named!=original?named:ChineseTextTemplatesV24.Translate(original);
         }
         public static string LoadUserTranslations()
         {
