@@ -1,0 +1,10 @@
+{
+  "name": "万界仙侠·微观观察",
+  "GUID": "XINYANSHUO_XIANXIA_OBSERVER",
+  "author": "Xianxia WorldBox Project",
+  "version": "0.6.0-candidate",
+  "description": "Read-only isometric viewer for actual WorldBox tiles and nearby NPCs",
+  "RepoUrl": "https://github.com/160701541-cell/xinyanshuo",
+  "Dependencies": [], "OptionalDependencies": [], "IncompatibleWith": [],
+  "targetGameBuild": 725, "ModType": 0, "UsePublicizedAssembly": true, "IsNCMSMod": false
+}
