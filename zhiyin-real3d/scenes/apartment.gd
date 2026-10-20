@@ -6,6 +6,7 @@ extends Node3D
 ## payroll and voice services are NOT yet bridged into this scene.
 
 const RoomNavigator = preload("res://scenes/room_navigation.gd")
+const HeadComposer = preload("res://scenes/character_head.gd")
 const ROOM := 3.2
 const HALF := ROOM * 0.5
 const FURNITURE := [
@@ -251,6 +252,9 @@ func _import_character() -> void:
         Vector3(.58,1.63,.35),0.55)
     if avatar==null:return
     avatar.name="知音 · 65关节Humanoid骨骼角色"
+    var face_parts: Dictionary=HeadComposer.attach(avatar)
+    if face_parts.is_empty():
+        push_error("正式人物头部、脸与长发绑定失败，禁止把无头NPC标记为成功")
     avatar_idle=avatar.position
     avatar_target=avatar.position
     # Official CC0 Universal Animation Library 1 / Standard:
