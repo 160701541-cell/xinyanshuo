@@ -25,6 +25,7 @@ public final class HomeActivity extends Activity {
   private final int WHITE=0xFFF8F5EF, MUTED=0xFFC9CBD6, INK=0xFF20263A;
   private LifeEngine life;
   private MemoryStore memory;
+  private Neighborhood neighborhood;
   private HomeWorldView world;
   private TextView activity,banner,stat,tip,inventory,chatReply;
   private EditText chatInput;
@@ -58,7 +59,7 @@ public final class HomeActivity extends Activity {
     super.onCreate(state);
     getWindow().setStatusBarColor(0xFF282A3D);getWindow().setNavigationBarColor(0xFF3C3C50);
     getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
-    life=new LifeEngine(this);memory=new MemoryStore(this);
+    life=new LifeEngine(this);memory=new MemoryStore(this);neighborhood=new Neighborhood(this);
     voice=new TextToSpeech(this,s->{if(s==TextToSpeech.SUCCESS){voiceReady=true;voice.setLanguage(Locale.SIMPLIFIED_CHINESE);}});
     FrameLayout screen=new FrameLayout(this);stageRoot=screen;
     world=new HomeWorldView(this,life,this::onSceneTap);
@@ -137,7 +138,7 @@ public final class HomeActivity extends Activity {
     life.update(now);
     activity.setText("● "+life.label()+" · "+life.phaseName()+"  "+(life.phase+1)+"/"+LifeEngine.phaseCount(life.action));
     stat.setText("心情 "+Math.round(life.mood)+" · 精力 "+Math.round(life.energy)
-      +" · 饱腹 "+Math.round(life.hunger)+" · 音乐 "+Math.round(life.skill));
+      +" · 饱腹 "+Math.round(life.hunger)+" · 关系 "+neighborhood.tier("zhiyin"));
     inventory.setText("存款 ¥"+life.money+"  ·  周租 ¥"+LifeEngine.WEEKLY_RENT+
       "  ·  "+life.daysUntilRent(now)+"天后交租  ·  "+life.employment);
     phaseBar.setProgress((int)life.phaseProgress(now));
@@ -228,6 +229,7 @@ public final class HomeActivity extends Activity {
       "【当前活动】\n"+life.note+"（已完成"+life.completedTasks+"件生活任务）\n\n"+
       "【生活机制】\n食材→清洗→切菜→烹饪→餐食→进食→碗碟→打扫，每一步独立计时。"
       +"读书增加阅读页数，练歌增加练习次数和熟练度。无人的时候依然会自己安排日常。";
+    h+="\n\n【与你的关系】"+neighborhood.tier("zhiyin")+" · 熟悉度"+neighborhood.closeness("zhiyin")+"/100";
     new AlertDialog.Builder(this).setTitle("10.24㎡ · 她的生活").setMessage(h)
       .setPositiveButton("明白",null).setNeutralButton("与她聊天",(d,w)->talk()).show();
   }
@@ -322,9 +324,11 @@ public final class HomeActivity extends Activity {
       memory.addEvent("玩家",s,"shared","","dialogue");
       String reply=demoReply(s);
       memory.addEvent("知音",reply,"shared","","demo_reply");
+      neighborhood.meet("zhiyin","聊天交流");
       life.note=reply;life.social=LifeEngine.clamp(life.social+4);
       life.save();refresh();
       if(chatSheet!=null){chatSheet.setVisibility(View.VISIBLE);chatReply.setText(reply);}
+      if(voiceReady)speak(reply);
     }catch(Exception ex){toast("消息保存失败："+ex.getMessage());}
   }
   private void talk(){talk("");}
