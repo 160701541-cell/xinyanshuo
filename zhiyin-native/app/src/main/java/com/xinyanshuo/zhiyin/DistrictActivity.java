@@ -12,6 +12,7 @@ import org.json.*;
 /** Small native 2.5D neighborhood world: residents do not all live in one apartment. */
 public final class DistrictActivity extends Activity {
   private Neighborhood residents;private MemoryStore memory;private CityView map;
+  private AiGateway ai;
   private final int INK=0xFF243041;
   private static final class Place {
     String id,tag;float x,y;int color; Place(String id,String tag,float x,float y,int color){
@@ -29,7 +30,7 @@ public final class DistrictActivity extends Activity {
   };
   @Override public void onCreate(Bundle b){
     super.onCreate(b);getWindow().setStatusBarColor(0xFF263448);getWindow().setNavigationBarColor(0xFF223144);
-    residents=new Neighborhood(this);memory=new MemoryStore(this);
+    residents=new Neighborhood(this);memory=new MemoryStore(this);ai=new AiGateway(this);
     FrameLayout frame=new FrameLayout(this);
     map=new CityView();frame.addView(map);
     LinearLayout header=new LinearLayout(this);header.setOrientation(LinearLayout.VERTICAL);
@@ -46,7 +47,10 @@ public final class DistrictActivity extends Activity {
     bp.setMargins(dp(10),0,dp(10),dp(13));frame.addView(bottom,bp);
     setContentView(frame);
   }
-  @Override public void onDestroy(){if(memory!=null)memory.close();super.onDestroy();}
+  @Override public void onDestroy(){
+    if(ai!=null)ai.close();
+    if(memory!=null)memory.close();super.onDestroy();
+  }
   private GradientDrawable tint(int clr,int radius){GradientDrawable d=new GradientDrawable();d.setColor(clr);d.setCornerRadius(dp(radius));return d;}
   private TextView label(String s,int size,int c){TextView t=new TextView(this);t.setText(s);t.setTextSize(size);t.setTextColor(c);return t;}
   private int dp(float x){return (int)(getResources().getDisplayMetrics().density*x+.5f);}
@@ -71,18 +75,89 @@ public final class DistrictActivity extends Activity {
       " / 100\n已共同互动："+residents.count(person.id)+"次\n关系："+residents.tier(person.id)+
       "\n\n不同居民目前有独立档案和关系值，只有知音在出租屋拥有完整生活动作模拟。";
     String[] acts=residents.canExpressFeelings(person.id)?
-      new String[]{"聊聊近况","分享兴趣","表达心意（需尊重彼此意愿）"}:
-      new String[]{"聊聊近况","分享兴趣","去她家附近散步"};
+      new String[]{"🤖 与TA自由聊天（本地AI/API）","聊聊近况","分享兴趣","表达心意（需尊重彼此意愿）"}:
+      new String[]{"🤖 与TA自由聊天（本地AI/API）","聊聊近况","分享兴趣","去附近散步"};
     new AlertDialog.Builder(this).setTitle(person.name+" · 个人住处").setMessage(msg)
       .setItems(acts,(dialog,i)->{
-        String act=i==0?"聊天":i==1?"分享"+person.hobby:(residents.canExpressFeelings(person.id)?"认真表达感受":"散步");
+        if(i==0){openNpcChat(person);return;}
+        int actionIndex=i-1;
+        String act=actionIndex==0?"聊天":actionIndex==1?"分享"+person.hobby:
+          (residents.canExpressFeelings(person.id)?"认真表达感受":"散步");
         String result=residents.meet(person.id,act);
         // Not an instant relationship or an autonomous consent model.
-        if(i==2&&residents.canExpressFeelings(person.id)){
+        if(actionIndex==2&&residents.canExpressFeelings(person.id)){
           result+="\n\n当前只是心意交流的剧情入口，并不自动宣布双方成为恋人。后续会加入角色意愿与事件条件。";
         }
         record("与"+person.name+"： "+result);showMeeting(result);
       }).setNegativeButton("离开",null).show();
+  }
+  /** A separate chat timeline per character, stored privately by that character ID. */
+  private void openNpcChat(Neighborhood.Person person){
+    if(AiGateway.MODE_LOCAL.equals(ai.mode())&&!ai.installed()){
+      new AlertDialog.Builder(this).setTitle("未安装本地AI模型")
+        .setMessage("先在知音主场景右下菜单 → AI模型/API接口中安装GGUF模型，或改用你的API接口。")
+        .setPositiveButton("设置AI",(d,w)->startActivity(new android.content.Intent(this,AiSettingsActivity.class)))
+        .setNegativeButton("取消",null).show();
+      return;
+    }
+    LinearLayout layout=new LinearLayout(this);layout.setOrientation(LinearLayout.VERTICAL);
+    layout.setPadding(dp(16),dp(9),dp(16),dp(12));
+    ScrollView history=new ScrollView(this);
+    TextView messages=label("",14,INK);messages.setPadding(dp(8),dp(6),dp(8),dp(13));
+    history.addView(messages);
+    layout.addView(history,new LinearLayout.LayoutParams(-1,dp(255)));
+    EditText input=new EditText(this);input.setTextSize(14);
+    input.setSingleLine(false);input.setMaxLines(3);
+    input.setHint("跟"+person.name+"说些什么…");
+    layout.addView(input);
+    LinearLayout buttons=new LinearLayout(this);buttons.setOrientation(LinearLayout.HORIZONTAL);
+    layout.addView(buttons);
+    TextView indicator=label("角色记忆独立保存 · 不与其他NPC串线",11,0xFF758598);layout.addView(indicator);
+    Button send=new Button(this);send.setAllCaps(false);send.setText("发送给"+person.name);
+    buttons.addView(send,new LinearLayout.LayoutParams(0,dp(48),2));
+    Button close=new Button(this);close.setAllCaps(false);close.setText("关闭");
+    buttons.addView(close,new LinearLayout.LayoutParams(0,dp(48),1));
+    Runnable redraw=()->{
+      try{
+        JSONArray events=memory.recent(28,person.name);
+        StringBuilder sb=new StringBuilder();
+        for(int i=events.length()-1;i>=0;i--){
+          JSONObject e=events.optJSONObject(i);if(e==null)continue;
+          if(!"private".equals(e.optString("privacy"))||!person.name.equals(e.optString("owner")))continue;
+          sb.append(e.optString("role")).append("：").append(e.optString("body")).append("\n\n");
+        }
+        if(sb.length()==0)sb.append(person.name+"：你好，我今天还在忙"+person.job+"，有什么事吗？（这是界面提示，并非AI生成回复）");
+        messages.setText(sb.toString());
+        history.post(()->history.fullScroll(View.FOCUS_DOWN));
+      }catch(Exception ex){messages.setText("读取记录失败："+ex.getMessage());}
+    };
+    AlertDialog dialog=new AlertDialog.Builder(this).setTitle("💬 "+person.name+" · 独立记忆")
+      .setView(layout).create();
+    close.setOnClickListener(v->dialog.dismiss());
+    send.setOnClickListener(v->{
+      String user=input.getText().toString().trim();
+      if(user.isEmpty())return;
+      send.setEnabled(false);input.setText("");
+      try{
+        memory.addEvent("玩家",user,"private",person.name,"npc_chat_user");
+        redraw.run();
+        indicator.setText(person.name+"正在用"+(AiGateway.MODE_API.equals(ai.mode())?"API":"本地模型")+"回复…");
+        ai.ask(user,person.name,memory,(answer,error)->runOnUiThread(()->{
+          if(isFinishing()||isDestroyed())return;
+          send.setEnabled(true);
+          if(error!=null){
+            indicator.setText("AI未回复："+error+"（玩家原文已保留，可重试）");return;
+          }
+          try{
+            memory.addEvent(person.name,answer,"private",person.name,"npc_chat_reply");
+            residents.meet(person.id,"聊天交流");
+            indicator.setText("已保存到"+person.name+"的独立记忆。");
+            redraw.run();
+          }catch(Exception e){indicator.setText("保存回答失败："+e.getMessage());}
+        }));
+      }catch(Exception ex){send.setEnabled(true);indicator.setText("写入失败："+ex.getMessage());}
+    });
+    redraw.run();dialog.show();
   }
   private void record(String s){try{memory.addEvent("玩家",s,"shared","","social");}catch(Exception ex){Toast.makeText(this,ex.getMessage(),Toast.LENGTH_SHORT).show();}}
   private void showMeeting(String result){new AlertDialog.Builder(this).setTitle("社区交往记录")
