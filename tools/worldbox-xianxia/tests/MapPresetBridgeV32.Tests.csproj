@@ -4,6 +4,10 @@
     <OutputType>Exe</OutputType>
     <LangVersion>latest</LangVersion>
     <Nullable>disable</Nullable>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
   </PropertyGroup>
-  <ItemGroup><ProjectReference Include="../private-apk-lab/MapPresetBridgeV32/WorldBoxXianxiaMapPreset.csproj" /></ItemGroup>
+  <ItemGroup>
+    <Compile Include="MapPresetBridgeV32.Tests.cs" />
+    <ProjectReference Include="../private-apk-lab/MapPresetBridgeV32/WorldBoxXianxiaMapPreset.csproj" />
+  </ItemGroup>
 </Project>
