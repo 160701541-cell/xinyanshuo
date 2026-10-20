@@ -64,6 +64,7 @@ public final class LifeEngine {
   public static float clamp(double n){return (float)Math.max(0,Math.min(100,n));}
   private int index(String a){for(int i=0;i<ACTIONS.length;i++)if(ACTIONS[i].equals(a))return i;return -1;}
   public String label(){int i=index(action);return i>=0?LABELS[i]:"活动";}
+  public static int phaseCount(String action){return phases(action).length;}
   public String phaseName(){
     String[] phases=phases(action);
     return phases[Math.min(phase,phases.length-1)];
