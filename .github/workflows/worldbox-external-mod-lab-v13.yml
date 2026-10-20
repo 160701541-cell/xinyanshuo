@@ -2,7 +2,7 @@ name: 'WorldBox External MOD Lab v0.13 - NOT Canglan game'
 on:
   push:
     branches:
-      - 'worldbox/external-mod-lab-v13'
+      - 'worldbox/external-mod-lab-v13-font-apk'
     paths:
       - 'tools/worldbox-xianxia/**'
       - '.github/workflows/worldbox-external-mod-lab-v13.yml'
