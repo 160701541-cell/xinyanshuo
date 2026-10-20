@@ -23,7 +23,10 @@ namespace XianxiaWorldBox
 
         protected override void OnModLoad()
         {
-            versionOK = Application.version.StartsWith("0.51.", StringComparison.Ordinal);
+            Debug.Log("[XIANXIA-V07] INIT_BEGIN version="+Application.version);
+            try {
+            versionOK = !string.IsNullOrEmpty(Application.version) &&
+                Application.version.StartsWith("0.51.", StringComparison.Ordinal);
             diamond = new Texture2D(64,32,TextureFormat.RGBA32,false);
             diamond.filterMode = FilterMode.Point;
             diamond.wrapMode = TextureWrapMode.Clamp;
@@ -34,6 +37,10 @@ namespace XianxiaWorldBox
                 }
             diamond.Apply(false,true);
             Debug.Log("[XIANXIA-V07] SOURCE_ONLY_LOAD "+Application.version+" supported="+versionOK);
+            } catch(Exception e) {
+                Debug.LogError("[XIANXIA-V07] INIT_FAILED "+e.ToString());
+                throw;
+            }
         }
 
         static object Field(object obj,string key)
@@ -45,6 +52,31 @@ namespace XianxiaWorldBox
             if(f!=null)return f.GetValue(obj);
             PropertyInfo p=t.GetProperty(key,flags);
             return p!=null && p.GetIndexParameters().Length==0?p.GetValue(obj,null):null;
+        }
+        static Camera WorldCamera()
+        {
+            // The original 0.51.4 camera member is private; public SDK visibility differs.
+            object world=World.world;
+            if(world!=null) {
+                const BindingFlags flags=BindingFlags.Instance|BindingFlags.Static|
+                    BindingFlags.Public|BindingFlags.NonPublic|BindingFlags.DeclaredOnly;
+                for(Type t=world.GetType();t!=null;t=t.BaseType) {
+                    var field=t.GetField("camera",flags);
+                    if(field!=null) {
+                        var camera=field.GetValue(field.IsStatic?null:world) as Camera;
+                        if(camera!=null)return camera;
+                    }
+                    var property=t.GetProperty("camera",flags);
+                    if(property!=null&&property.GetIndexParameters().Length==0) {
+                        var getter=property.GetGetMethod(true);
+                        if(getter!=null) {
+                            var camera=property.GetValue(getter.IsStatic?null:world,null) as Camera;
+                            if(camera!=null)return camera;
+                        }
+                    }
+                }
+            }
+            return Camera.main;
         }
         static Color Ground(WorldTile tile)
         {
@@ -80,7 +112,7 @@ namespace XianxiaWorldBox
                 actorName=selected==null?"附近没有人物":selected.getName();
                 follow=target!=null;nextSample=0;
                 cultivationStatus=target==null?"无可修炼人物":"已选："+actorName;
-            }catch(Exception e){summary="选取失败 "+e.GetType().Name;}
+            }catch(Exception e){summary="选取失败 "+e.GetType().Name;Debug.LogError("[XIANXIA-V07] PICK_FAILED "+e.ToString());}
         }
         void Update()
         {
@@ -99,15 +131,17 @@ namespace XianxiaWorldBox
             catch(Exception e){
                 summary="地图采样失败 "+e.GetType().Name;
                 nextSample=Time.unscaledTime+5f;
-                Debug.LogWarning("[XIANXIA-V07] SAMPLE_ERROR "+e.GetType().Name);
+                Debug.LogWarning("[XIANXIA-V07] SAMPLE_ERROR "+e.ToString());
             }
         }
         void Sample()
         {
-            if(World.world==null||World.world.camera==null){summary="请先打开一个世界";return;}
+            if(World.world==null){summary="请先打开一个世界";return;}
+            Camera camera=WorldCamera();
+            if(camera==null){summary="尚未取得世界相机，请稍后重试";return;}
             if(target!=null&&!target.isAlive()){target=null;follow=false;actorName="人物已死亡";}
             Vector2 p=follow&&target!=null?target.current_position:
-                new Vector2(World.world.camera.transform.position.x,World.world.camera.transform.position.y);
+                new Vector2(camera.transform.position.x,camera.transform.position.y);
             centerX=Mathf.Clamp(Mathf.RoundToInt(p.x),0,Math.Max(0,MapBox.width-1));
             centerY=Mathf.Clamp(Mathf.RoundToInt(p.y),0,Math.Max(0,MapBox.height-1));
             for(int dy=-radius;dy<=radius;dy++)
@@ -148,7 +182,12 @@ namespace XianxiaWorldBox
         }
         void OnGUI()
         {
-            if(!versionOK||diamond==null)return;
+            if(!versionOK||diamond==null) {
+                GUI.Box(new Rect(12,80,Mathf.Min(Screen.width-24,650),90),
+                    "万界观察未就绪：游戏版本 "+Application.version+
+                    "；需要0.51.x。请分享启动日志，检查 INIT_BEGIN / INIT_FAILED。");
+                return;
+            }
             GUIStyle button = ModTextAccessibilityV13.ButtonStyle();
             GUIStyle label = ModTextAccessibilityV13.LabelStyle();
             GUIStyle box = ModTextAccessibilityV13.BoxStyle();
