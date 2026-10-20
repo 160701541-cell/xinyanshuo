@@ -2,10 +2,10 @@
 """Strictly separate WorldBox external MOD lab from Canglan original game."""
 import argparse,json,subprocess
 from pathlib import Path
-BASE_SHA="fa34fa03aa21bff5179056a35ebe85a8226fcec1"
+BASE_SHA="bae8e3c78376f8cdaf137132c796c7f3b60ee858"
 SOURCE="tools/worldbox-xianxia/"
-WORKFLOW=".github/workflows/worldbox-external-mod-lab-v17.yml"
-OLD_WORKFLOW=".github/workflows/worldbox-external-mod-lab-v16.yml"
+WORKFLOW=".github/workflows/worldbox-external-mod-lab-v18.yml"
+OLD_WORKFLOW=".github/workflows/worldbox-external-mod-lab-v17.yml"
 FORBIDDEN=(".apk",".pck",".dll",".pdb",".exe",".rar",".7z",".aab")
 
 def validate_paths(paths):
