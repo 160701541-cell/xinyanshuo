@@ -104,3 +104,33 @@ Source code now includes **`localization/ChineseMenuGlossaryV23.cs` (580 candida
 - `tests/UntranslatedMenuScenarioV23.csproj` must PASS along with `NativeLocaleScenarioV23.csproj`, `RuntimeChineseScenarioV22.csproj`, all Python tests, actual public SDK compile, compiled + Mono source candidate structure checks and project scope gate.
 - The earlier `MapTypes.csproj` default glob accidentally incorporated new `LocaleTypes.cs`, causing a duplicate top-level program compile; now restricted to `Program.cs`. Earlier private Mono source packaging guard rejects ANY `File.Write` token to prevent save mutation; safe audit source now uses `StreamWriter` in the MOD's own private directory, maintaining the original guard unchanged. These are CI build fixes, **not** verified device installation.
 - Work needs to open **all** common vanilla WorldBox 0.51.4 menu pages and at least one other MOD; record actual translated/untranslated strings, loader errors and whether on-device `LocalizedTextManager._localized_text` exposes readable keys. Build an accurate per-page coverage report, then curate the missing terms. A source ZIP / Unity SDK compilation must not be misreported as a signed playable APK or 100% Chinese localization.
+
+
+## 2026-10-20 FINAL CURRENT WORK HANDOFF — Chinese-first v0.24 on v0.22 branch
+**Actual active branch** `worldbox/external-mod-lab-v22-zh-localization`, supersedes all historical branch pointers embedded earlier in this accumulating document. Current development log `tools/worldbox-xianxia/DEVELOPMENT_LOG_V22.md` is authoritative. This is an independent WorldBox third-party MOD experiment, NEVER original Canglan main-game work.
+
+### Concrete sources ready for PRIVATE integration
+- The prior 580 original menu, state, god-power, dynasty, building, diplomacy and MOD English→Chinese terms remain in `localization/ChineseMenuGlossaryV23.cs`.
+- User-click 「一键选择简中」 attempts the original `LocalizedTextManager.setLanguage(string)` after exact runtime API inspection; chooses NML code `cz`, not fabricated `zh-CN`. No forced background language switch.
+- `localization/ChineseTextTemplatesV24.cs` translates safe dynamic numbers like `Population: 1200`→「人口：1200」 across accessible vanilla and other-MOD Text/TMP controls, without rewriting proper names.
+- `localization/ChineseKeyPackV24.cs` and `NativeLocaleBridgeV23.RegisterExplicitKeys` import a UTF-8 NML key→简中 translation map at private game path `XianxiaModStaging/zh_cn_keymap_v24.txt` only when the in-game button is pressed, checking 512KiB/4000-entry/duplicate and avoiding registered other MOD translations. **There is still no Android system bulk-ZIP file picker**, only this private per-key adapter.
+- `localization/REAL_APK_AND_TRANSLATIONS_V24.md` records real user-provided file hashes, MIT ChineseName source and publicly indexed native-chinese translation alternatives.
+
+### Actual user-uploaded files present in model's current conversation working container
+- `WorldBox_0.51.4_用户上传安装包_未整合仙侠MOD.apk`, SHA256 `c39817efa21e539fe61f318dc1ad4050b424c6120ab8ed384d94148f869c4bdc`.
+- `0.51.+中文名模组ChineseName_1.5.1.zip`, SHA256 `094b856262a93f24f639774ae235058d2e5c035a8bf8e465264406e397094470`, bundled MIT license from 一米/Inmny, real source code for city, kingdom, actor, culture etc Chinese name generation.
+- NOTE: User APK contains `assets/Mono/Managed.zip` with `Assembly-CSharp.dll`, plus both ARM64 `libil2cpp.so` and `libmonosgen-2.0.so`. NML DLL is not present inside top-level `Managed.zip` and **loader compatibility is not yet proven**.
+
+### Reuse before reinventing and verify permissions
+The public Worldbox-OWL index has 0.51.x packages **简单汉化模组修正 v1.0.8** (game's normally translatable text, not names/other MODs), **上帝模式翻译 v1.2.2** (dev/god UI labels and descriptions), and **中文名模组 1.5.1** (the uploaded user ZIP, MIT). Refer to `REAL_APK_AND_TRANSLATIONS_V24.md` for exact links and ownership. Other Chinese translation binaries' redistribution license has not yet been checked; **do not post or commit any to public GitHub or bundle without applicable permission**. Test each one *privately* against user's 0.51.4 Android loader, version, saved worlds and conflicts; name mod should never be injected twice.
+
+### Acceptance gate Work MUST perform
+1. Read actual provided APK rather than assuming public SDK 2.1 = real WorldBox 0.51.4 runtime. Verify selected Mono/IL2CPP/NML bootstrap chain. No wrong-loader APK modifications.
+2. Private-user install: if feasible integrate **authorized** original Chinese pack, uploaded MIT ChineseName and god UI Chinese mod plus our observer translation source in **one signed APK**, preserve package/install ability and backups, no bypassing payment checks.
+3. On Android16 actually open and screenshot all original create-world/terrain/god powers/creature spawning/kingdom info/capital/diplomacy/buildings/settings/third-party MOD UIs. Report count translated/untranslated in every category. Verify native Chinese fonts, small-screen clipping, FPS and rollback.
+4. Test simulated population dynamic numbers, foreign MOD text and actual Chinese names for creatures/cities/states, saving and reloading worlds; verify no double-name patch or crash.
+5. If cannot get **real device boot**, do not call the source ZIP an integrated APK, and state the precise blocker. All green CI is PUBLIC SDK compilation only.
+6. Append actual build attempts/errors/status to this branch dev log; never touch original `main`/Canglan APK/PCK/website.
+
+### Current CI evidence
+`https://github.com/160701541-cell/xinyanshuo/actions/runs/39440588704` — all 3 job groups green on functional sources including dynamic stat translator and private key importer; later documentation commits only, so check latest run separately. No Android16 device proof.
