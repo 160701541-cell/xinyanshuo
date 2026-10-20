@@ -1,9 +1,9 @@
 {
-  "name": "万界仙侠 WorldBox 观察层 v0.7 (候选)",
+  "name": "万界仙侠 · 观察视角 v0.9 安卓SDK候选",
   "GUID": "XINYANSHUO_WORLD_BOX_OBSERVER_V07",
   "author": "Xianxia WorldBox external mod lab",
-  "version": "0.7.0-source-only",
-  "description": "Third-party WorldBox 0.51.4 read-only mod experiment. Not Canglan game dev. NML Android load unverified.",
+  "version": "0.9.0-candidate",
+  "description": "WorldBox Android 0.51.4 third-party MOD experiment: read-only isometric live view. Public Android NML SDK compiled; DEVICE LOAD UNVERIFIED. Absolutely unrelated to Canglan game development.",
   "RepoUrl": "https://github.com/160701541-cell/xinyanshuo",
   "Dependencies": [],
   "OptionalDependencies": [],
