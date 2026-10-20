@@ -84,9 +84,9 @@ namespace XianxiaWorldBox
             if (!styleDirty && accessibleButton != null) return;
             if (GUI.skin == null) return;
             var os = TryFont();
-            accessibleButton = new GUIStyle(GUI.skin.button);
-            accessibleLabel = new GUIStyle(GUI.skin.label);
-            accessibleBox = new GUIStyle(GUI.skin.box);
+            accessibleButton = GUI.skin.button;
+            accessibleLabel = GUI.skin.label;
+            accessibleBox = GUI.skin.box;
             int px = Mathf.Clamp(Mathf.RoundToInt(17f * Scale), 17, 31);
             accessibleButton.fontSize = px;
             accessibleLabel.fontSize = px;
@@ -120,6 +120,36 @@ namespace XianxiaWorldBox
                 nextScan = Time.unscaledTime + 20f;
             }
         }
+        static IEnumerable FindExistingTextComponents(Type type)
+        {
+            // Android IL2CPP expects Il2CppSystem.Type while older Mono expects
+            // System.Type. Invoke via reflection so this candidate can compile
+            // for both SDK targets without fake type conversions.
+            foreach(var method in typeof(Resources).GetMethods(BindingFlags.Public|BindingFlags.Static))
+            {
+                if (method.Name!="FindObjectsOfTypeAll") continue;
+                var ps=method.GetParameters();
+                if(ps.Length!=1 || method.IsGenericMethodDefinition) continue;
+                object targetType = null;
+                if(ps[0].ParameterType==typeof(Type)) targetType=type;
+                else if(ps[0].ParameterType.FullName=="Il2CppSystem.Type")
+                {
+                    var converter=Type.GetType("Il2CppInterop.Runtime.Il2CppType, Il2CppInterop.Runtime",false);
+                    if(converter==null) continue;
+                    foreach(var convert in converter.GetMethods(BindingFlags.Public|BindingFlags.Static))
+                    {
+                        if(convert.Name!="Of"||!convert.IsGenericMethodDefinition||
+                           convert.GetGenericArguments().Length!=1||convert.GetParameters().Length!=0)continue;
+                        try { targetType=convert.MakeGenericMethod(type).Invoke(null,null);break; }
+                        catch { }
+                    }
+                }
+                if(targetType==null)continue;
+                try { return method.Invoke(null,new[]{targetType}) as IEnumerable; }
+                catch { }
+            }
+            return null;
+        }
         static void ApplyToClass(string fullName, string assembly, int maxNew)
         {
             if (maxNew <= 0) return;
@@ -135,7 +165,7 @@ namespace XianxiaWorldBox
             if (type == null) return;
             PropertyInfo font = type.GetProperty("fontSize", All);
             if (font == null || !font.CanRead || !font.CanWrite) return;
-            var results = Resources.FindObjectsOfTypeAll(type) as IEnumerable;
+            var results = FindExistingTextComponents(type);
             if (results == null) return;
             int seen = 0;
             foreach (object component in results)
