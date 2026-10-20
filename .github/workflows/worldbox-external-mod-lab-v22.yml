@@ -264,6 +264,24 @@ jobs:
             java -jar /tmp/worldbox-user-private-helper/apksigner.jar version
           fi
           echo 'NO user-owned APK or commercial game binaries uploaded to public GitHub.'
+      - name: 'Compile Android launcher diagnostic export against installed Android SDK'
+        run: |
+          python - <<'PY'
+          import glob,os,re,subprocess
+          sdk=os.environ.get('ANDROID_HOME') or os.environ.get('ANDROID_SDK_ROOT','/usr/local/lib/android/sdk')
+          jars=glob.glob(sdk+'/platforms/android-*/android.jar')
+          assert jars,'Android SDK platform jar missing; launcher not validated'
+          jar=max(jars,key=lambda p:int(re.search(r'android-(\d+)/',p).group(1)))
+          root='tools/worldbox-xianxia/private-apk-lab/'
+          subprocess.run(['javac','-encoding','UTF-8','-source','8','-target','8',
+                          '-cp',jar,'-d','/tmp/worldbox-diagnostics-classes',
+                          root+'DiagnosticReport.java',root+'DiagnosticsActivity.java',
+                          root+'ModDeployment.java'],check=True)
+          print('PASS_ANDROID_DIAGNOSTICS_COMPILE; no DEX or signed APK generated')
+          PY
+          cp tools/worldbox-xianxia/private-apk-lab/DiagnosticReport.java /tmp/worldbox-user-private-helper/
+          cp tools/worldbox-xianxia/private-apk-lab/DiagnosticsActivity.java /tmp/worldbox-user-private-helper/
+          cp tools/worldbox-xianxia/private-apk-lab/ModDeployment.java /tmp/worldbox-user-private-helper/
       - uses: actions/upload-artifact@v4
         with:
           name: 'worldbox-v22-generic-private-apk-assembly-toolkit-linux-x64'
