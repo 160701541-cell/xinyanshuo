@@ -34,7 +34,7 @@ def validate_metadata(mod):
     if not all(x in mod for x in ("name", "author", "version", "description")):
         raise ValueError("incomplete NML mod.json")
 
-def pack(dll, mod_path, out):
+def pack(dll, mod_path, out, locales_dir=None):
     mod = json.loads(Path(mod_path).read_text(encoding="utf-8"))
     validate_metadata(mod)
     buf = Path(dll).read_bytes()
@@ -49,6 +49,22 @@ def pack(dll, mod_path, out):
         ROOT + "/" + UID + ".dll": buf,
         "README_INSTALL_DEVICE_PENDING.txt": NOTICE.encode("utf-8"),
     }
+    if locales_dir is not None:
+        base = Path(locales_dir)
+        for lang in ("cz", "en"):
+            p = base / (lang + ".json")
+            payload = p.read_bytes()
+            if len(payload) > 64_000:
+                raise ValueError("oversized own-language locale JSON")
+            dictionary = json.loads(payload.decode("utf-8-sig"))
+            if (not isinstance(dictionary, dict) or not dictionary
+                or len(dictionary) > 128 or
+                not all(isinstance(k, str) and k.startswith("xinyanshuo.wb.")
+                        and len(k) <= 100 and isinstance(v, str)
+                        and 0 < len(v) <= 256
+                        for k, v in dictionary.items())):
+                raise ValueError("unexpected/unsafe locale keys in packaged file")
+            files[ROOT + "/Locales/" + lang + ".json"] = payload
     checks = "\n".join(f"{sha(body)}  {name}" for name,body in sorted(files.items())) + "\n"
     files["SHA256SUMS.txt"] = checks.encode("utf-8")
     p=Path(out);p.parent.mkdir(parents=True,exist_ok=True)
@@ -63,7 +79,8 @@ def main():
     ap.add_argument("--dll",type=Path,required=True)
     ap.add_argument("--manifest",type=Path,required=True)
     ap.add_argument("--out",type=Path,required=True)
+    ap.add_argument("--locales",type=Path)
     args=ap.parse_args()
-    print(json.dumps(pack(args.dll,args.manifest,args.out),ensure_ascii=False,indent=2))
+    print(json.dumps(pack(args.dll,args.manifest,args.out,args.locales),ensure_ascii=False,indent=2))
 
 if __name__=="__main__":main()
