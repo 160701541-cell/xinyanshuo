@@ -305,3 +305,12 @@ Work仍负责私有APK整合、签名、安卓16真机验收。不得上传商�
 验证范围：在工具内对源码替换锚点及无残留World.world.camera进行了静态断言。当前没有可用执行环境，未运行C#编译、Python测试、实际APK打包签名或安卓验证；不能称编译通过或已修复手机。既有CI会按分支规则触发，待单独查证，不继承旧绿灯。
 
 未解决：groupsBuilder空键疑点、观察MOD实际编译错误/失败状态的完整原始证据，以及完整修仙玩法。没有删除特性、人物或存档；没有更换加载器；没有修改苍岚main。当前手机APK仍旧版，仓库源码修复须进入新的私有APK才会生效。
+
+
+## 2026-10-21 00:44 Asia/Shanghai — 字体共用皮肤污染修复，构建终端重试失败
+
+实际代码提交cbc833c66dba40a4db3eefba6690d74ef29b186b：ModTextAccessibilityV13.EnsureStyles原先直接引用GUI.skin.button/label/box后改字体大小、字体及换行，实际会改动原版和其他MOD共用皮肤，且Shutdown不能恢复这些皮肤字段。现改为new GUIStyle(original)独立副本，字体开关/缩放只改变自有IMGUI样式；原有显式开启其他MOD Text/TMP放大逻辑保留。
+
+回归提交c95ebed7b6e161c9f346d71734b050d676c94a80：FontAccessibilityScenarioV13新增打开面板、循环缩放后原共享皮肤字体大小/字体引用不变的行为检查；已核对既有测试stub支持真实GUIStyle复制构造器。未执行测试，不能记录PASS。修复共用皮肤干扰不等于解决观察模块FAILED或groupsBuilder空键，不夸大范围。
+
+本轮再次实际调用pwd，终端返回“No usable execution environment is available. Wait for an environment to become available before using this tool.”。无法本地编译、验证完整APK或签名；没有新APK，旧手机安装包不会自动得到GitHub改动。需可用构建环境恢复私有APK流水线，不得用公开Actions上传商业游戏或密钥绕过。当前独立分支继续保留P0加载失败和特性空分组排查；苍岚main未动。
