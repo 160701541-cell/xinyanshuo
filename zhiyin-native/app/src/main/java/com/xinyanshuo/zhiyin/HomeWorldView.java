@@ -1,408 +1,391 @@
 package com.xinyanshuo.zhiyin;
 
 import android.content.Context;
-import android.graphics.Canvas;
-import android.graphics.Color;
-import android.graphics.LinearGradient;
-import android.graphics.Paint;
-import android.graphics.Path;
-import android.graphics.RectF;
-import android.graphics.Shader;
-import android.view.MotionEvent;
-import android.view.View;
-import java.util.Calendar;
-import java.util.Random;
+import android.graphics.*;
+import android.view.*;
+import java.util.*;
 
+/**
+ * 2.5D isometric dollhouse on Android Canvas; fully camera-draggable and pinch-zoomable.
+ * 8 x 8 tiles, 0.4m per tile = 3.2m x 3.2m = 10.24 square metres.
+ * No HTML/WebView. All hotspots correspond to objects in a shared world-coordinate frame.
+ */
 public final class HomeWorldView extends View {
   public interface Listener { void onObject(String object); }
-  private LifeEngine life;
-  private final Listener listener;
+  private static final float T=42f, K=21f;
+  private LifeEngine life; private final Listener listener;
   private final Paint p=new Paint(Paint.ANTI_ALIAS_FLAG);
-  private float w=420,h=850,x=202,y=590;
-  private long start=System.currentTimeMillis();
-  private boolean night=false;
-  public HomeWorldView(Context context,LifeEngine data,Listener callback){
-    super(context);life=data;listener=callback;setLayerType(View.LAYER_TYPE_HARDWARE,null);
-    x=life.targetX()*w;y=life.targetY()*h;
+  private float zoom=1.05f,panX=0,panY=0,centerX,centerY;
+  private float avatarX=4,avatarY=4,lookLeft=-1;
+  private float downX,downY,lastX,lastY;private boolean dragged=false,scaleActive=false;
+  private long lastFrame=0;private final ScaleGestureDetector scale;
+  private final ArrayList<Thing> objects=new ArrayList<>();
+  private final int[] woods={0xFFD4B59B,0xFFD0AF96,0xFFD7BAA1,0xFFD3B29B,0xFFDDBEA6};
+  private static class Point {float x,y;Point(float a,float b){x=a;y=b;}}
+  private static class Thing {
+    final String id,name;final float x,y,wide,deep; final int order;
+    Thing(String i,String n,float x,float y,float w,float d,int order){
+      id=i;name=n;this.x=x;this.y=y;wide=w;deep=d;this.order=order;
+    }
   }
-  public void setLife(LifeEngine replacement){this.life=replacement;invalidate();}
-  private void color(int c){p.reset();p.setAntiAlias(true);p.setColor(c);p.setStyle(Paint.Style.FILL);}
-  private int mix(int c1,int c2,float t){
-    t=Math.max(0,Math.min(1,t));return Color.rgb((int)(Color.red(c1)*(1-t)+Color.red(c2)*t),
-      (int)(Color.green(c1)*(1-t)+Color.green(c2)*t),(int)(Color.blue(c1)*(1-t)+Color.blue(c2)*t));
+  public HomeWorldView(Context ctx,LifeEngine engine,Listener callback){
+    super(ctx);life=engine;listener=callback;setLayerType(View.LAYER_TYPE_HARDWARE,null);
+    objects.add(new Thing("wardrobe","衣柜",.30f,.35f,1.2f,1.0f,0));
+    objects.add(new Thing("bed","单人床",.8f,1.4f,1.9f,2.1f,0));
+    objects.add(new Thing("books","书架",2.1f,.30f,1.2f,.75f,0));
+    objects.add(new Thing("kitchen","迷你厨房",5.6f,.55f,1.9f,1.3f,0));
+    objects.add(new Thing("wash","洗漱区",7.1f,2.15f,.75f,1.2f,0));
+    objects.add(new Thing("desk","折叠书桌",.85f,5.7f,1.6f,1.0f,0));
+    objects.add(new Thing("piano","电子琴",5.0f,5.0f,2.0f,1.3f,0));
+    objects.add(new Thing("plant","绿植",6.9f,6.95f,.65f,.65f,0));
+    objects.add(new Thing("sofa","坐垫",3.2f,6.3f,1.5f,1.0f,0));
+    objects.add(new Thing("door","房门·外出",7.65f,3.6f,.5f,1.3f,0));
+    scale=new ScaleGestureDetector(ctx,new ScaleGestureDetector.SimpleOnScaleGestureListener(){
+      @Override public boolean onScale(ScaleGestureDetector g){
+        float old=zoom;zoom=Math.max(.72f,Math.min(2.9f,zoom*g.getScaleFactor()));
+        // Keep the world point under the fingers roughly stationary.
+        float fx=g.getFocusX(),fy=g.getFocusY();
+        panX+=(fx-centerX-panX)*(1f-zoom/old);
+        panY+=(fy-centerY-panY)*(1f-zoom/old);
+        scaleActive=true;invalidate();return true;
+      }
+    });
   }
-  private void rect(Canvas c,float a,float b,float r,float bot,int clr){color(clr);c.drawRect(a,b,r,bot,p);}
-  private void rounded(Canvas c,float a,float b,float r,float bot,float radius,int clr){
-    color(clr);c.drawRoundRect(new RectF(a,b,r,bot),radius,radius,p);
+  public void setLife(LifeEngine newLife){life=newLife;invalidate();}
+  private int shade(int color,float factor){
+    return Color.rgb(Math.max(0,Math.min(255,(int)(Color.red(color)*factor))),
+      Math.max(0,Math.min(255,(int)(Color.green(color)*factor))),
+      Math.max(0,Math.min(255,(int)(Color.blue(color)*factor))));
   }
-  private void ellipse(Canvas c,float cx,float cy,float rx,float ry,int clr){
-    color(clr);c.drawOval(new RectF(cx-rx,cy-ry,cx+rx,cy+ry),p);
+  private void brush(int col){p.reset();p.setAntiAlias(true);p.setColor(col);p.setStyle(Paint.Style.FILL);}
+  private Point iso(float x,float y,float z){return new Point((x-y)*T,(x+y-8)*K-z);}
+  private void polygon(Canvas c,int clr,Point... points){
+    if(points.length<3)return;brush(clr);Path path=new Path();path.moveTo(points[0].x,points[0].y);
+    for(int i=1;i<points.length;i++)path.lineTo(points[i].x,points[i].y);path.close();c.drawPath(path,p);
   }
-  private void line(Canvas c,float x1,float y1,float x2,float y2,float sw,int clr){
-    color(clr);p.setStrokeWidth(sw);p.setStrokeCap(Paint.Cap.ROUND);c.drawLine(x1,y1,x2,y2,p);
+  private void tile(Canvas c,float x,float y,float sx,float sy,float z,int col){
+    polygon(c,col,iso(x,y,z),iso(x+sx,y,z),iso(x+sx,y+sy,z),iso(x,y+sy,z));
   }
-  private void title(Canvas c,String str,float x,float y,float size,int clr){
-    color(clr);p.setTextSize(size);p.setFakeBoldText(true);c.drawText(str,x,y,p);
+  private void block(Canvas c,float x,float y,float sx,float sy,float height,int top,int side){
+    // World-space iso cuboid, painted back-to-front.
+    polygon(c,shade(side,.83f),iso(x,y+sy,0),iso(x+sx,y+sy,0),
+      iso(x+sx,y+sy,height),iso(x,y+sy,height));
+    polygon(c,side,iso(x+sx,y,0),iso(x+sx,y+sy,0),
+      iso(x+sx,y+sy,height),iso(x+sx,y,height));
+    tile(c,x,y,sx,sy,height,top);
   }
-  private void grad(Canvas c,float a,float b,float r,float bot,int top,int bottom){
-    color(top);p.setShader(new LinearGradient(0,b,0,bot,top,bottom,Shader.TileMode.CLAMP));
-    c.drawRect(a,b,r,bot,p);p.setShader(null);
+  private void line(Canvas c,float x,float y,float x2,float y2,float width,int color){
+    brush(color);p.setStrokeWidth(width);p.setStrokeCap(Paint.Cap.ROUND);c.drawLine(x,y,x2,y2,p);
   }
-  private void glow(Canvas c,float cx,float cy,float radius,int clr){
-    color(clr);p.setShadowLayer(radius,0,0,clr);c.drawCircle(cx,cy,2,p);p.clearShadowLayer();
+  private void oval(Canvas c,float x,float y,float rx,float ry,int col){
+    brush(col);c.drawOval(x-rx,y-ry,x+rx,y+ry,p);
   }
-  private void shape(Canvas c,float[] pts,int clr){
-    Path path=new Path();path.moveTo(pts[0],pts[1]);for(int i=2;i<pts.length;i+=2)path.lineTo(pts[i],pts[i+1]);path.close();
-    color(clr);c.drawPath(path,p);
+  private void round(Canvas c,float x,float y,float r,float bot,float rad,int col){
+    brush(col);c.drawRoundRect(x,y,r,bot,rad,rad,p);
+  }
+  private void label(Canvas c,String s,float x,float y,int col,int size){
+    brush(col);p.setTypeface(Typeface.create("sans-serif-medium",Typeface.NORMAL));
+    p.setTextSize(size);c.drawText(s,x,y,p);
   }
   @Override protected void onDraw(Canvas raw){
     super.onDraw(raw);
-    float scl=getWidth()/420f;h=getHeight()/scl;w=420;
-    Calendar cal=Calendar.getInstance();int hour=cal.get(Calendar.HOUR_OF_DAY);night=hour<6||hour>=19;
-    Canvas c=raw;c.save();c.scale(scl,scl);
-    long t=System.currentTimeMillis()-start;
-    drawBackdrop(c,t);drawWindow(c,t);drawRoom(c,t);drawFurnitureBack(c,t);
-    float tx=life.targetX()*w,ty=life.targetY()*h;
-    float d=(float)Math.hypot(tx-x,ty-y);
-    float step=Math.min(d,3.0f);if(d>1){x+=(tx-x)/d*step;y+=(ty-y)/d*step;}
-    drawCharacter(c,t,d>3);
-    drawActivityProps(c,t,d<=3);
-    drawFurnitureFront(c,t);drawFloorDetails(c,t);drawThought(c,t);
+    long now=System.currentTimeMillis();
+    if(lastFrame==0)lastFrame=now;
+    float elapsed=Math.min(.05f,Math.max(0,(now-lastFrame)/1000f));
+    lastFrame=now;
+    centerX=getWidth()/2f;centerY=getHeight()*.51f;
+    raw.drawColor(0xFFBAC4C6);
+    // matte world outside the room, so camera panning never exposes solid black.
+    brush(0xFF9DADB4);raw.drawRect(0,getHeight()*.11f,getWidth(),getHeight(),p);
+    Canvas c=raw;c.save();c.translate(centerX+panX,centerY+panY);c.scale(zoom,zoom);
+    drawWalls(c);drawFloor(c);drawAmbient(c,now);
+    ArrayList<Thing> ordered=new ArrayList<>(objects);
+    Collections.sort(ordered,(a,b)->Float.compare(a.x+a.y+a.wide+a.deep,b.x+b.y+b.wide+b.deep));
+    float ax=avatarX,ay=avatarY;
+    boolean avatarDone=false;
+    for(Thing item:ordered){
+      if(!avatarDone && (ax+ay)<(item.x+item.y+item.wide+item.deep)){
+        drawAvatar(c,now,elapsed);avatarDone=true;
+      }
+      drawThing(c,item,now);
+    }
+    if(!avatarDone)drawAvatar(c,now,elapsed);
+    drawFurnitureTags(c);drawFrontBorder(c);
     c.restore();
     postInvalidateDelayed(33);
   }
-  private void drawBackdrop(Canvas c,long t){
-    int top=night?0xFF16223A:0xFFA5CECC;
-    int bottom=night?0xFF262A48:0xFFEEE1D4;
-    grad(c,0,0,w,h,top,bottom);
-    grad(c,0,0,w,h*.415f,night?0xFF31364E:0xFFF4D9CC,night?0xFF363B52:0xFFF2E3D9);
-    rect(c,0,0,420,36,night?0xFF313348:0xFFDDD0C3);
-    rounded(c,0,20,420,38,4,night?0xFF5B5265:0xFFC5AEA0);
-    for(int i=0;i<9;i++){
-      line(c,0,50+i*28,420,50+i*28,.7f,night?0x124D4960:0x1C9F9185);
+  private void drawWalls(Canvas c){
+    int hour=Calendar.getInstance().get(Calendar.HOUR_OF_DAY);
+    boolean dark=hour<6||hour>=19;
+    int back=dark?0xFF45445C:0xFFE8D5CB,left=dark?0xFF515266:0xFFF1DFD1;
+    // 2.5D dollhouse: y=0 and x=0 walls extend vertically from the floor.
+    polygon(c,back,iso(0,0,0),iso(8,0,0),iso(8,0,228),iso(0,0,228));
+    polygon(c,left,iso(0,0,0),iso(0,8,0),iso(0,8,228),iso(0,0,228));
+    for(int i=1;i<8;i++){
+      Point a=iso(i,0,0),b=iso(i,0,225);
+      line(c,a.x,a.y,b.x,b.y,1,0x23705E60);
+      a=iso(0,i,0);b=iso(0,i,225);line(c,a.x,a.y,b.x,b.y,1,0x1C70565A);
     }
-    rect(c,0,h*.42f,420,h,night?0xFF72596B:0xFFC9A78D);
-    shape(c,new float[]{0,h*.42f,420,h*.42f,420,h,0,h},night?0xFF644B5D:0xFFB58D79);
-    for(int j=0;j<11;j++){
-      float lineY=h*.45f+j*(h*.55f/10);
-      line(c,0,lineY,420,lineY,1.5f,night?0x3362515D:0x668A695E);
+    // painted panels + moulding
+    for(int n=0;n<2;n++){
+      float h=n==0?11:218;
+      Point a=iso(0,0,h),b=iso(8,0,h),d=iso(0,8,h);
+      line(c,a.x,a.y,b.x,b.y,4,n==0?0xFFA38B7E:0xFFFCF0DF);
+      line(c,a.x,a.y,d.x,d.y,4,n==0?0xFFB19B8B:0xFFFCF0DF);
     }
-    for(int i=0;i<14;i++){
-      float xx=(i%2==0?0:22)+i*57-320;
-      line(c,xx,h*.43f,xx+70,h,1.2f,night?0x226F626A:0x24916B5E);
-    }
-    if(!night){
-      shape(c,new float[]{0,75,208,75,333,h*.78f,130,h*.69f},0x16FFEEB5);
-    }
-  }
-  private void drawWindow(Canvas c,long t){
-    float cy=h*.285f;
-    rounded(c,22,cy-114,177,cy+120,13,night?0xFF6A5162:0xFFA5806E);
-    rounded(c,31,cy-105,168,cy+108,9,night?0xFF23304D:0xFF83B9BB);
-    grad(c,33,cy-103,166,cy+106,night?0xFF17243E:0xFF82B0BE,night?0xFF52648D:0xFFF5D2B0);
-    ellipse(c,night?131:118,cy-55,night?13:22,night?13:22,night?0xFFE8E9D3:0xFFFBDAB0);
-    for(int i=0;i<5;i++){
-      float fx=45+i*28;
-      float yy=cy+66-(i%3)*17;
-      ellipse(c,fx,yy,37,17,night?0xFF253950:0xFF5B927B);
-      ellipse(c,fx+10,yy-15,22,18,night?0xFF2D4C58:0xFF669C78);
-    }
-    rect(c,95,cy-105,100,cy+108,0xFF8C6F6B);
-    rect(c,31,cy-1,168,cy+4,0xFF8C6F6B);
-    rect(c,20,cy+101,179,cy+113,0xFF735966);
-    shape(c,new float[]{18,cy-111,40,cy-111,48,cy+107,14,cy+129},night?0xFF917C9C:0xFFE7C6BB);
-    shape(c,new float[]{176,cy-111,151,cy-111,153,cy+107,185,cy+129},night?0xFF917C9C:0xFFE7C6BB);
-    if(night)for(int i=0;i<12;i++){float xx=45+i*9.1f;float yy=cy-83+(i%4)*19;ellipse(c,xx,yy,1,1,0x88F6E8B0);}
-  }
-  private void drawRoom(Canvas c,long t){
-    float r=h*.405f;
-    rounded(c,205,r-105,399,r+28,10,night?0xFF56475B:0xFFBDA08C);
-    rounded(c,212,r-100,391,r+15,6,night?0xFF343B54:0xFFF5E6CE);
-    title(c,"每一天都有新故事",224,r-73,12,night?0xFFB7BCD2:0xFF876E68);
-    for(int i=0;i<4;i++)line(c,230,r-57+i*15,370,r-57+i*15,1.2f,night?0xFF5D5B73:0xFFD1BBB0);
-    // hanging ceiling lamp
-    line(c,327,0,327,107,3,0xFF76666D);
-    ellipse(c,327,110,54,19,night?0xFFEAC99A:0xFFC8A997);
-    shape(c,new float[]{290,110,364,110,345,141,308,141},night?0xFFFFDCA2:0xFFEBCCAB);
-    if(night)glow(c,326,139,42,0x44FFD899);
-    // framed musical notes
-    rounded(c,192,83,273,175,8,0xFFAB8478);
-    rounded(c,197,88,269,170,6,0xFFFFE8D0);
-    title(c,"♪  ♫",207,142,28,0xFF94769B);
-    // shelf
-    rounded(c,10,h*.46f,117,h*.65f,10,0xFF715C63);
-    for(int j=0;j<3;j++){
-      float sy=h*.485f+j*48;
-      rect(c,16,sy+26,110,sy+32,0xFFB5958B);
-      for(int i=0;i<7;i++){
-        int[] colors={0xFF8B9DB2,0xFFB8818B,0xFFC5B786,0xFF92936F,0xFF997EAA};
-        rounded(c,21+i*12,sy-(i%3)*3,30+i*12,sy+26,2,colors[(i+j)%colors.length]);
-      }
-    }
-  }
-  private void drawFurnitureBack(Canvas c,long t){
-    float bedY=h*.755f;
-    // quilt bed / headboard
-    rounded(c,0,bedY-116,141,bedY+24,18,night?0xFF675365:0xFF9B7E76);
-    rounded(c,-10,bedY-104,143,bedY+18,18,0xFFFADED1);
-    rounded(c,13,bedY-90,119,bedY-62,12,0xFFFFF3E5);
-    rounded(c,-8,bedY-58,145,bedY+20,13,0xFFA6A7BE);
-    rounded(c,-8,bedY-53,142,bedY+3,13,0xFFCBC0CE);
-    line(c,9,bedY-21,116,bedY-21,2,0xFF9C99B9);
-    // kitchen counter
-    float kitchen=h*.63f;
-    rounded(c,319,kitchen-91,430,kitchen+37,10,0xFF947C72);
-    rounded(c,313,kitchen-96,433,kitchen-80,5,0xFFF3D9BE);
-    rounded(c,332,kitchen-61,390,kitchen-22,6,0xFFB5C6B9);
-    ellipse(c,360,kitchen-77,19,5,0xFF5C737C);
-    rounded(c,353,kitchen-110,358,kitchen-83,2,0xFFD8C4A9);
-    rounded(c,348,kitchen-112,368,kitchen-105,3,0xFFE9D5BB);
-    // simple washroom door
-    rounded(c,364,h*.39f,420,h*.58f,4,0xFF8A7778);
-    rounded(c,374,h*.405f,415,h*.563f,4,0xFFB6A2A0);
-    ellipse(c,384,h*.5f,2.5f,3,0xFFE9CDA6);
-    // piano
-    float pianoY=h*.70f;
-    rounded(c,144,pianoY-94,279,pianoY+4,10,0xFF44445D);
-    rounded(c,151,pianoY-105,272,pianoY-34,8,0xFF535268);
-    rounded(c,163,pianoY-90,261,pianoY-46,4,0xFF8B849C);
-    title(c,"♫",201,pianoY-58,28,0xFFF0D7D3);
-    rounded(c,149,pianoY-35,274,pianoY+15,5,0xFF35374D);
-    for(int i=0;i<14;i++)rounded(c,152+i*8.5f,pianoY-30,160+i*8.5f,pianoY+7,1,0xFFF4E7E2);
-    for(int i=0;i<9;i++)rounded(c,160+i*12.2f,pianoY-31,165+i*12.2f,pianoY-9,1,0xFF353247);
-    rect(c,163,pianoY+10,172,pianoY+43,0xFF474456);
-    rect(c,252,pianoY+10,261,pianoY+43,0xFF474456);
-  }
-  private void drawFurnitureFront(Canvas c,long t){
-    // cozy reading desk
-    float yy=h*.72f;
-    ellipse(c,300,yy+33,58,14,0x44735F57);
-    rounded(c,277,yy-18,358,yy+16,10,0xFFC3A48B);
-    rounded(c,296,yy+9,308,yy+60,5,0xFF806B62);
-    rounded(c,331,yy+9,343,yy+60,5,0xFF806B62);
-    rounded(c,298,yy-35,333,yy-21,2,0xFFECE5CF);
-    line(c,316,yy-35,316,yy-22,1,0xFFAA9189);
-    rounded(c,345,yy-38,353,yy-10,3,0xFFD4BDA5);
-    ellipse(c,349,yy-45,18,13,0xFFFFDCC1);
-    // large potted monstera
-    float py=h*.80f;
-    rounded(c,355,py-5,405,py+41,8,0xFFB57E74);
-    ellipse(c,380,py-4,30,7,0xFF6C806A);
-    line(c,381,py-62,380,py,3,0xFF678B70);
+    // back wall framed window: main blue/cyan outside with night glow
+    wallRect(c,1.3f,0,1.9f,177,60,0xFF926F69);
+    wallRect(c,1.44f,0,1.62f,160,73,dark?0xFF263D68:0xFF86BDC0);
+    float x1=1.47f,xx=1.44f,xx2=3.08f;
+    Point aa=iso(xx,0,114),bb=iso(xx2,0,114);
+    line(c,aa.x,aa.y,bb.x,bb.y,4,0xFF8A7067);
+    aa=iso(2.25f,0,74);bb=iso(2.25f,0,160);line(c,aa.x,aa.y,bb.x,bb.y,4,0xFF8A7067);
+    Point moon=iso(2.65f,0,140);oval(c,moon.x,moon.y,8,10,dark?0xFFF4EACD:0xFFFADEAB);
     for(int i=0;i<7;i++){
-      double phase=i*0.88+0.1;
-      float bx=380+(float)Math.cos(phase)*28;
-      float by=py-35+(float)Math.sin(phase)*16;
-      ellipse(c,bx,by,18,10,i%2==0?0xFF5D9278:0xFF87AE81);
+      Point star=iso(1.65f+i*.2f,0,91+(i%3)*18);
+      oval(c,star.x,star.y,1.6f,1.5f,dark?0xFFFFF0C3:0xFFEBF6E1);
     }
-    // rug
-    ellipse(c,211,h*.855f,112,18,0x44896C75);
-    ellipse(c,211,h*.854f,92,12,0xFFDDD0BE);
+    // shelf of pottery and framed tiny landscape on left wall
+    wallRect(c,0,3.4f,1.25f,182,120,0xFF7B7774);
+    for(int k=0;k<3;k++){
+      Point pos=iso(0,3.55f+k*.35f,144);
+      oval(c,pos.x,pos.y-2,5,8,k%2==0?0xFF8B9FA2:0xFFBD8A8A);
+    }
+    // lamp above room, warm hanging light
+    Point l=iso(5.05f,1.8f,235);
+    line(c,l.x,l.y,l.x,l.y+35,3,0xFF95847E);
+    oval(c,l.x,l.y+42,24,10,0xFFF6D7AC);
+    polygon(c,0xFFE2B789,new Point(l.x-25,l.y+39),new Point(l.x+25,l.y+39),
+      new Point(l.x+14,l.y+64),new Point(l.x-14,l.y+64));
+    if(dark)oval(c,l.x,l.y+60,19,4,0x88FFDE9C);
   }
-  private void drawFloorDetails(Canvas c,long t){
-    float fy=h*.94f;
-    rounded(c,10,fy-33,410,fy-4,12,night?0x664D4657:0x667B665F);
-    title(c,night?"✦ 晚安，世界":"✦ 让日子慢慢发光",20,fy-13,11,night?0xFFBFC1D2:0xFF90776B);
-    float sec=t/1000f;for(int i=0;i<8;i++){
-      float sx=(float)((i*73+Math.sin(sec*.12+i)*9+420)%420);
-      float sy=h*.43f+(i*59%(int)Math.max(1,(h*.36f)));
-      ellipse(c,sx,sy,1.3f,1.3f,night?0x55FFD8AA:0x33FFF6DD);
+  private void wallRect(Canvas c,float x,float y,float length,float high,float low,int clr){
+    if(y==0)polygon(c,clr,iso(x,0,low),iso(x+length,0,low),iso(x+length,0,high),iso(x,0,high));
+    else polygon(c,clr,iso(0,y,low),iso(0,y+length,low),iso(0,y+length,high),iso(0,y,high));
+  }
+  private void drawFloor(Canvas c){
+    tile(c,0,0,8,8,0,0xFFCFB19B);
+    for(int iy=0;iy<8;iy++)for(int ix=0;ix<8;ix++){
+      float fx=ix,fy=iy;int col=woods[(ix*17+iy*7)%woods.length];
+      tile(c,fx+.023f,fy+.02f,.95f,.96f,1,col);
+      Point a=iso(fx+.12f,fy+.17f,2),b=iso(fx+.86f,fy+.17f,2);
+      line(c,a.x,a.y,b.x,b.y,1,0x26FFFFFF);
+      a=iso(fx+.15f,fy+.6f,2);b=iso(fx+.62f,fy+.6f,2);
+      line(c,a.x,a.y,b.x,b.y,.8f,0x148A645A);
+      if((ix+iy)%4==0){Point nail=iso(fx+.1f,fy+.9f,2);oval(c,nail.x,nail.y,1,1,0x554D4440);}
+    }
+    // layered woven floor rug
+    tile(c,2.75f,3.95f,2.7f,2.6f,2,0xFF9689A3);
+    tile(c,2.92f,4.1f,2.35f,2.3f,3,0xFFB1A5B4);
+    tile(c,3.2f,4.35f,1.8f,1.8f,3,0xFFE3D4C4);
+    for(int j=0;j<6;j++){
+      Point from=iso(2.85f+j*.44f,3.95f,3),to=iso(2.85f+j*.44f,6.55f,3);
+      line(c,from.x,from.y,to.x,to.y,1,0x44866E9F);
     }
   }
-  private void drawCharacter(Canvas c,long t,boolean walking){
-    float bob=(float)Math.sin(t/320.0)*1.3f;
-    float move=walking?(float)Math.sin(t/105.0)*5f:0;
-    float breath=(float)Math.sin(t/800.0)*1.4f;
-    boolean eyesClosed="SLEEP".equals(life.action)||t%5300>5110;
-    float y0=y+bob;
-    float height="SLEEP".equals(life.action)?105:133;
-    c.save();c.translate(x,y0);
-    if("SLEEP".equals(life.action)&&!walking)c.rotate(65,0,-70);
-    ellipse(c,0,7,29,9,0x66745B5F);
-    // layered legs & shoes
-    shape(c,new float[]{-14,-41,-4,-41,-5,1,-20,1},0xFF4E536F);
-    shape(c,new float[]{2,-41,15,-41,17,1,4,1},0xFF4E536F);
-    rounded(c,-26+move*.3f,-6,-6+move*.3f,7,5,0xFF655365);
-    rounded(c,2-move*.3f,-6,24-move*.3f,7,5,0xFF655365);
-    // skirt under cardigan
-    shape(c,new float[]{-18,-85,22,-85,33,-36,-35,-36},0xFF4E7D89);
-    shape(c,new float[]{-19,-74,20,-74,26,-38,-24,-38},0xFF86B5AD);
-    for(int i=0;i<4;i++)line(c,-13+i*9,-66,-17+i*12,-41,1,0x4483A9B6);
-    // clothes body
-    rounded(c,-24,-111-breath,25,-67-breath,17,0xFFE6D4CD);
-    shape(c,new float[]{-19,-109,0,-90,19,-109,23,-77,0,-72,-23,-77},0xFFA9C2B6);
-    shape(c,new float[]{-5,-107,1,-97,7,-107,3,-80,-3,-80},0xFFECDFD3);
-    // arms animated by context
-    float armSwing=walking?move*1.3f:(("PIANO".equals(life.action)||"PRACTICE".equals(life.action))?
-      (float)Math.sin(t/270.)*3:0);
-    line(c,-21,-101,-34,-68+armSwing,13,0xFF9CBAB3);
-    line(c,22,-101,35,-67-armSwing,13,0xFF9CBAB3);
-    ellipse(c,-34,-67+armSwing,6,7,0xFFF5C7B3);
-    ellipse(c,35,-67-armSwing,6,7,0xFFF5C7B3);
-    // neck
-    rounded(c,-8,-124,8,-101,5,0xFFF3C8B6);
-    // hair rear
-    ellipse(c,1,-156,39,51,0xFF38364A);
-    rounded(c,-38,-160,38,-112,25,0xFF403A4B);
-    // face
-    ellipse(c,0,-153,29,37,0xFFF8D6C5);
-    ellipse(c,-28,-153,5,10,0xFFEEBDAF);
-    ellipse(c,29,-153,5,10,0xFFEEBDAF);
-    // side hair
-    rounded(c,-34,-174,-24,-122,8,0xFF343445);
-    rounded(c,25,-174,35,-122,8,0xFF343445);
-    shape(c,new float[]{-30,-166,-24,-192,4,-192,30,-179,24,-164,15,-176,-4,-166,-25,-163},0xFF373648);
-    shape(c,new float[]{-27,-165,-14,-185,0,-184,-5,-164,-18,-151},0xFF484353);
-    // hair hairpin and side braid
-    rounded(c,19,-185,34,-180,2,0xFFE7C4A8);
-    ellipse(c,28,-182,4,4,0xFF8AAFB0);
-    line(c,32,-141,39,-101,9,0xFF413B50);
-    ellipse(c,39,-101,5,7,0xFF4F4559);
-    // eyes & brows
-    if(eyesClosed){
-      line(c,-19,-150,-8,-150,1.7f,0xFF5B4146);line(c,8,-150,19,-150,1.7f,0xFF5B4146);
+  private void drawAmbient(Canvas c,long now){
+    int hour=Calendar.getInstance().get(Calendar.HOUR_OF_DAY);
+    if(hour>=6&&hour<18){
+      polygon(c,0x22FFEEBB,iso(1.44f,0,110),iso(3,0,110),iso(6.7f,5.0f,2),iso(3.7f,5.0f,2));
+    }
+    for(int i=0;i<22;i++){
+      float px=(i*17%79)*.10f,py=(i*29%78)*.10f;
+      Point dust=iso(px,py,15+(i*7%35)+(float)Math.sin(now/1900f+i)*3);
+      oval(c,dust.x,dust.y,.5f,.5f,0x55FFF2CD);
+    }
+  }
+  private void drawThing(Canvas c,Thing o,long now){
+    switch(o.id){
+      case "wardrobe":
+        block(c,o.x,o.y,o.wide,o.deep,132,0xFF8B7069,0xFF755F61);
+        tile(c,o.x+.07f,o.y+.04f,1.07f,.12f,133,0xFFD7B59D);
+        for(int i=0;i<2;i++){
+          Point pt=iso(o.x+.25f+i*.46f,o.y+.75f,90);
+          oval(c,pt.x,pt.y,3,3,0xFFF4CF9E);
+        }break;
+      case "bed":
+        block(c,o.x,o.y,o.wide,o.deep,27,0xFFF7E4D8,0xFF8F8D9D);
+        tile(c,o.x+.08f,o.y+.12f,o.wide-.16f,o.deep-.20f,31,0xFFB0B5CA);
+        tile(c,o.x+.15f,o.y+.12f,o.wide-.3f,.63f,35,0xFFF9EFDC);
+        tile(c,o.x+.2f,o.y+.19f,o.wide-.4f,.28f,37,0xFFFFFAE9);
+        tile(c,o.x+.1f,o.y+.95f,o.wide-.2f,.89f,33,0xFFA5B4BE);
+        for(int j=0;j<4;j++){
+          Point p1=iso(o.x+.16f,o.y+1.1f+j*.19f,34),p2=iso(o.x+o.wide-.16f,o.y+1.1f+j*.19f,34);
+          line(c,p1.x,p1.y,p2.x,p2.y,1,0x33948CA9);
+        }break;
+      case "books":
+        block(c,o.x,o.y,o.wide,o.deep,156,0xFFAD8B78,0xFF785F5B);
+        for(int layer=0;layer<3;layer++){
+          for(int i=0;i<6;i++){
+            float xx=o.x+.08f+i*.17f,yy=o.y+.25f;
+            int[] book={0xFF8EA9B3,0xFFB77E87,0xFFC7AE87,0xFF97A67F,0xFF9D89B0};
+            block(c,xx,yy,.13f,.22f,22+(2-layer)*40,book[(i+layer)%book.length],0xFF7D777B);
+          }
+        }break;
+      case "kitchen":
+        block(c,o.x,o.y,o.wide,o.deep,55,0xFFEDE0CF,0xFF879D99);
+        tile(c,o.x+.1f,o.y+.1f,o.wide-.2f,o.deep-.2f,58,0xFFB5B3B2);
+        Point pot=iso(o.x+.6f,o.y+.6f,59);
+        oval(c,pot.x,pot.y,15,9,0xFF424F61);
+        oval(c,pot.x,pot.y-5,12,6,0xFF87959C);
+        oval(c,pot.x,pot.y-8,5,4,0xFFC6A9A5);
+        Point sink=iso(o.x+1.35f,o.y+.65f,59);
+        oval(c,sink.x,sink.y,16,7,0xFF5F929A);
+        line(c,sink.x-3,sink.y-12,sink.x+2,sink.y-26,3,0xFFCED7D4);
+        Point spice=iso(o.x+.25f,o.y+.25f,62);
+        oval(c,spice.x,spice.y-7,7,7,0xFFF0C69A);
+        break;
+      case "wash":
+        block(c,o.x,o.y,o.wide,o.deep,47,0xFFD5DFDD,0xFF88A2A7);
+        Point basin=iso(o.x+.35f,o.y+.55f,49);
+        oval(c,basin.x,basin.y,18,9,0xFFFAFEF9);
+        oval(c,basin.x,basin.y,12,5,0xFF8DB4BD);
+        break;
+      case "desk":
+        block(c,o.x,o.y,o.wide,o.deep,57,0xFFE0C7AE,0xFF90726B);
+        Point page=iso(o.x+.7f,o.y+.58f,60);
+        polygon(c,0xFFF8F3E8,new Point(page.x-13,page.y-9),new Point(page.x+16,page.y-2),
+          new Point(page.x+14,page.y+9),new Point(page.x-16,page.y+2));
+        line(c,page.x-10,page.y,page.x+6,page.y+4,1,0xFFB7AEA7);
+        Point mug=iso(o.x+1.2f,o.y+.3f,64);
+        oval(c,mug.x,mug.y,6,5,0xFF8CA9B2);
+        line(c,mug.x+5,mug.y-1,mug.x+10,mug.y-7,2,0xFF8CA9B2);
+        break;
+      case "piano":
+        block(c,o.x,o.y,o.wide,o.deep,64,0xFF44475A,0xFF2D344B);
+        tile(c,o.x+.12f,o.y+.16f,o.wide-.2f,.45f,66,0xFFF3EEE8);
+        for(int n=0;n<15;n++){
+          Point a=iso(o.x+.14f+n*.11f,o.y+.17f,67),b=iso(o.x+.14f+n*.11f,o.y+.57f,67);
+          line(c,a.x,a.y,b.x,b.y,.85f,0xFF363748);
+        }
+        for(int n=0;n<10;n++)tile(c,o.x+.21f+n*.15f,o.y+.15f,.065f,.22f,68,0xFF333344);
+        Point stand=iso(o.x+.85f,o.y+.11f,69);
+        line(c,stand.x,stand.y,stand.x,stand.y-35,4,0xFF4A465A);
+        polygon(c,0xFFF1E9D9,new Point(stand.x-18,stand.y-38),new Point(stand.x+18,stand.y-38),
+          new Point(stand.x+14,stand.y-22),new Point(stand.x-14,stand.y-22));
+        break;
+      case "plant":
+        Point base=iso(o.x+.35f,o.y+.34f,0);
+        oval(c,base.x,base.y+2,20,8,0x447C6758);
+        block(c,o.x+.13f,o.y+.10f,.44f,.43f,33,0xFFB98772,0xFF967169);
+        for(int i=0;i<10;i++){
+          float angle=(float)(i*Math.PI*.65f);
+          float ix=base.x+(float)Math.sin(angle)*(10+(i%3)*6);
+          float iy=base.y-34-(i%4)*8+(float)Math.cos(now/1200f+i)*2;
+          line(c,base.x,base.y-25,ix,iy,1.7f,0xFF547F61);
+          oval(c,ix,iy,12,6,i%2==0?0xFF5E9374:0xFF82AD82);
+        }break;
+      case "sofa":
+        block(c,o.x,o.y,o.wide,o.deep,24,0xFFCFB6BD,0xFF8F849A);
+        block(c,o.x,o.y,.24f,o.deep,48,0xFFBBA6B1,0xFF897E9A);
+        tile(c,o.x+.3f,o.y+.17f,1.1f,.67f,27,0xFFE2C9CC);
+        break;
+      case "door":
+        // Door in right wall; frame + bright passage beyond apartment.
+        polygon(c,0xFF7B655F,iso(8,3.25f,0),iso(8,4.7f,0),
+          iso(8,4.7f,173),iso(8,3.25f,173));
+        polygon(c,0xFFC6B49C,iso(7.95f,3.42f,4),iso(7.95f,4.54f,4),
+          iso(7.95f,4.54f,158),iso(7.95f,3.42f,158));
+        Point knob=iso(7.95f,4.23f,76);oval(c,knob.x,knob.y,3,4,0xFFFFE5A5);
+        break;
+    }
+  }
+  private void drawFurnitureTags(Canvas c){
+    for(Thing obj:objects){
+      if(obj.id.equals("wardrobe")||obj.id.equals("sofa")||obj.id.equals("books"))continue;
+      Point pt=iso(obj.x+obj.wide/2,obj.y+obj.deep/2,obj.id.equals("plant")?85:104);
+      String label=obj.name;
+      float ww=Math.max(36, label.length()*12+13);
+      round(c,pt.x-ww/2,pt.y-20,pt.x+ww/2,pt.y+1,7,0xDB293044);
+      label(c,label,pt.x-ww/2+7,pt.y-6,0xFFFFEEE7,11);
+    }
+  }
+  private void drawFrontBorder(Canvas c){
+    Point a=iso(8,0,0),b=iso(8,8,0),d=iso(0,8,0);
+    line(c,a.x,a.y,b.x,b.y,7,0xFF866E68);
+    line(c,b.x,b.y,d.x,d.y,7,0xFF8E7970);
+  }
+  private void drawAvatar(Canvas c,long now,float elapsed){
+    float destX=life.targetX()*7.7f,destY=life.targetY()*7.7f;
+    float dist=(float)Math.hypot(destX-avatarX,destY-avatarY);
+    boolean walking=dist>.07;
+    if(walking){
+      float speed=Math.min(dist,elapsed*.60f);
+      lookLeft=(destX-avatarX)+(destY-avatarY)>0?1:-1;
+      avatarX+=(destX-avatarX)/dist*speed;
+      avatarY+=(destY-avatarY)/dist*speed;
+    }
+    Point base=iso(avatarX,avatarY,3);
+    float wave=(float)Math.sin(now/(walking?140f:720f));
+    float bounce=walking?Math.abs(wave)*2:wave*.6f;
+    c.save();c.translate(base.x,base.y+bounce);
+    oval(c,0,2,22,7,0x55725F66);
+    if("SLEEP".equals(life.action)&&!walking){c.rotate(67,0,-36);label(c,"z z",30,-115,0xFF7C7695,13);}
+    float legs=walking?wave*6:0;
+    line(c,-8,-37,-9+legs,0,9,0xFF53616F);
+    line(c,7,-37,7-legs,0,9,0xFF53616F);
+    oval(c,-10+legs,0,9,4,0xFF554F60);oval(c,8-legs,0,9,4,0xFF554F60);
+    polygon(c,0xFF507E80,new Point(-19,-76),new Point(19,-76),
+      new Point(27,-35),new Point(-29,-35));
+    polygon(c,0xFF8EB3AD,new Point(-18,-85),new Point(17,-85),
+      new Point(19,-60),new Point(-18,-60));
+    line(c,-17,-77,-27,-51+legs,9,0xFF86ADAD);
+    line(c,17,-78,27,-51-legs,9,0xFF86ADAD);
+    oval(c,-27,-48+legs,5,6,0xFFF1CBB8);
+    oval(c,27,-48-legs,5,6,0xFFF1CBB8);
+    oval(c,0,-108,25,31,0xFF38384B);
+    oval(c,0,-105,19,25,0xFFF6D7C3);
+    oval(c,-19,-105,7,22,0xFF3B394C);
+    oval(c,19,-105,7,22,0xFF3B394C);
+    polygon(c,0xFF383848,new Point(-20,-117),new Point(-11,-137),new Point(13,-134),
+      new Point(24,-119),new Point(7,-121),new Point(-10,-113));
+    oval(c,-7,-103,2,3,0xFF41435B);oval(c,9,-103,2,3,0xFF41435B);
+    float blink=now%4700; if(blink>4610){
+      line(c,-10,-103,-4,-103,1.5f,0xFF585066);
+      line(c,6,-103,12,-103,1.5f,0xFF585066);
     }else{
-      ellipse(c,-13,-151,3.5f,6,0xFF414052);ellipse(c,13,-151,3.5f,6,0xFF414052);
-      ellipse(c,-14,-153,1.4f,1.9f,0xFFFFFFFF);ellipse(c,12,-153,1.4f,1.9f,0xFFFFFFFF);
-      line(c,-20,-160,-9,-161,1.4f,0xFF6A4B4A);line(c,9,-161,20,-160,1.4f,0xFF6A4B4A);
+      oval(c,-8,-104,1,1,0xFFFFFFFF);oval(c,8,-104,1,1,0xFFFFFFFF);
     }
-    ellipse(c,-22,-140,6,2.8f,0x66D9868B);ellipse(c,21,-140,6,2.8f,0x66D9868B);
-    line(c,-3,-137,3,-137,1.6f,0xFFB8717A);
+    oval(c,-14,-96,5,2,0x55E18B93);oval(c,14,-96,5,2,0x55E18B93);
+    line(c,-3,-94,3,-94,1,0xFFB87B81);
+    oval(c,20,-127,4,4,0xFFDDC79B);
     if("PRACTICE".equals(life.action)||"PIANO".equals(life.action)){
-      ellipse(c,0,-136,3,3.2f,0xFFBD727F);
+      label(c,"♪",25,-151,0xFF7C799A,19);
     }
-    // little pendant
-    ellipse(c,0,-92,4,5,0xFF91C7CD);
-    if("SLEEP".equals(life.action)){
-      title(c,"z z",25,-195,10,0xFFDDD4EB);
-    }else if("PRACTICE".equals(life.action)||"PIANO".equals(life.action)){
-      title(c,"♪",27,-189,22,0xFFFFE4B8);
-    }
+    if("COOK".equals(life.action)&&life.phase>=2)label(c,"✦",25,-130,0xFFEAAC72,16);
     c.restore();
-  }
-  // Activity-linked equipment and motion; actions have visible local performances,
-  // not merely a changed status string.
-  private void drawActivityProps(Canvas c,long t,boolean arrived){
-    if(!arrived)return;
-    c.save();c.translate(x,y);
-    float pulse=(float)Math.sin(t/260.0);
-    switch(life.action){
-      case "READ":
-        shape(c,new float[]{-33,-77,-3,-87,0,-64,-25,-55},0xFFF8F1DD);
-        shape(c,new float[]{0,-64,3,-87,32,-77,25,-55},0xFFFFE8CD);
-        line(c,0,-86,0,-63,2,0xFFBA9C87);
-        for(int i=0;i<3;i++){line(c,-23,-72+i*5,-9,-77+i*5,.75f,0xFFAEA3A0);
-          line(c,11,-78+i*5,24,-73+i*5,.75f,0xFFAEA3A0);}
-        break;
-      case "WORK":
-        rounded(c,-34,-77,31,-58,3,0xFFF5EAD6);
-        for(int i=0;i<4;i++)line(c,-25,-71+i*3,20,-71+i*3,1,0xFF7F869B);
-        title(c,"♫",1,-82,16,0xFF7F8EAB);
-        ellipse(c,40,-101+(float)Math.sin(t/310.0)*3,10,10,0xFFE5BD76);
-        title(c,"¥",36,-96+(float)Math.sin(t/310.0)*3,12,0xFF856044);
-        break;
-      case "WRITE":
-        rounded(c,-32,-77,25,-63,3,0xFFF4E8D7);
-        line(c,7,-91,15+pulse*2,-66,3,0xFF93788F);
-        break;
-      case "SHOP":
-        rounded(c,-32,-74,33,-31,6,0xFFD3A67D);
-        rounded(c,-29,-67,30,-38,3,0xFFEED9B9);
-        line(c,-20,-76,20,-76,4,0xFF9A725F);
-        title(c,"♧",0,-40,18,0xFF578A63);
-        break;
-      case "COOK":
-        if(life.phase==0){
-          rounded(c,-28,-70,27,-46,6,0xFFC8A17C);
-          ellipse(c,-13,-65,12,9,0xFF719F72);
-          ellipse(c,7,-62,12,9,0xFFB9A75F);
-          break;
-        }
-        if(life.phase==1){
-          rounded(c,-30,-68,28,-45,8,0xFFD1DDE4);
-          ellipse(c,0,-64,22,7,0xFF78B2B4);
-          ellipse(c,19,-74+Math.abs(pulse)*8,3,5,0xFF80C9DA);
-          break;
-        }
-        if(life.phase==2){
-          rounded(c,-36,-65,37,-51,4,0xFFD9B58D);
-          line(c,-5,-65,17,-94+Math.abs(pulse)*6,3,0xFF8D7460);
-          ellipse(c,0,-60,9,4,0xFF79A677);
-          break;
-        }
-        if(life.phase==4){
-          ellipse(c,0,-59,34,12,0xFFF3EBE0);
-          ellipse(c,0,-63,26,8,0xFFD6A988);
-          title(c,"✦",0,-76,14,0xFFFFE2A0);
-          break;
-        }
-        rounded(c,-32,-67,35,-44,7,0xFF6B7181);
-        ellipse(c,1,-64,29,8,0xFFD4B8A1);
-        ellipse(c,1,-69,30,7,0xFF939AB0);
-        line(c,-2,-75,5,-97+Math.abs(pulse)*5,1.5f,0xBBFFEEE1);
-        line(c,11,-73,19,-94+Math.abs(pulse)*7,1.5f,0xBBFFEEE1);
-        break;
-      case "EAT":
-        ellipse(c,0,-61,30,12,0xFFF1EEE8);
-        ellipse(c,0,-64,24,7,0xFFC6A582);
-        line(c,17,-73,28,-101+pulse*5,2.6f,0xFFD7BF9B);
-        break;
-      case "WASH":
-        for(int i=0;i<4;i++){float dx=-27+i*16;
-          ellipse(c,dx,-85+Math.abs((float)Math.sin(t/380.0+i))*17,2.4f,3.5f,0x887DCEE2);}
-        rounded(c,-13,-69,24,-59,6,0xFFE7F4F2);
-        break;
-      case "CLEAN":
-        line(c,33,-107,49+pulse*4,-9,4,0xFF9C8066);
-        shape(c,new float[]{39+pulse*4,-13,64+pulse*4,-10,67+pulse*4,5,36+pulse*4,2},0xFFDDC2A7);
-        break;
-      case "WATER":
-        rounded(c,17,-81,43,-61,7,0xFF8FB5B5);
-        line(c,40,-78,55,-69,4,0xFF8FB5B5);
-        ellipse(c,61,-65+Math.abs(pulse)*6,3,4,0xFF74C3DD);
-        ellipse(c,66,-55+Math.abs(pulse)*8,2,3,0xFF74C3DD);
-        break;
-      case "STRETCH":
-        title(c,"✦",35,-131+3*pulse,15,0xFFFBE2A9);
-        break;
-      case "PRACTICE":
-      case "PIANO":
-        for(int i=0;i<3;i++)title(c,i==1?"♫":"♪",35+i*14,-153-i*19+(float)Math.sin(t/450.0+i)*7,17,0xFFFFE6B5);
-        break;
-      case "CHAT":
-        ellipse(c,40,-144,12,9,0x99FAE8D3);
-        title(c,"♥",32,-139,10,0xFFB7808A);
-        break;
-      case "WINDOW":
-        title(c,"✧",38,-164+(float)Math.sin(t/620.0)*4,21,0xFFFCEBC8);
-        break;
-    }
-    c.restore();
-  }
-
-  private void drawThought(Canvas c,long t){
-    float bubbleY=Math.max(122,y-230);
-    float textWidth=Math.min(333,Math.max(175,life.note.length()*13));
-    float bx=Math.max(6,Math.min(420-textWidth-8,x-textWidth*.5f));
-    rounded(c,bx,bubbleY,bx+textWidth,bubbleY+51,16,0xEAFBF4EE);
-    shape(c,new float[]{x-5,bubbleY+49,x+10,bubbleY+49,x+3,bubbleY+60},0xEAFBF4EE);
-    String note=life.note;
-    if(note.length()>21){title(c,note.substring(0,Math.min(21,note.length())),bx+12,bubbleY+21,12,0xFF4A5366);
-      title(c,note.substring(21,Math.min(38,note.length())),bx+12,bubbleY+40,12,0xFF4A5366);}
-    else title(c,note,bx+12,bubbleY+31,12,0xFF4A5366);
   }
   @Override public boolean onTouchEvent(MotionEvent e){
-    if(e.getAction()==MotionEvent.ACTION_UP){
-      float px=e.getX()*420f/getWidth(),py=e.getY()*420f/getWidth();
-      if(Math.abs(px-x)<67&&Math.abs(py-y+80)<116){listener.onObject("character");return true;}
-      if(px>348&&py>h*.78f&&py<h*.9f){listener.onObject("plant");return true;}
-      if(px<143&&py>h*.57f){listener.onObject("bed");return true;}
-      if(px>316&&py>h*.49f&&py<h*.78f){listener.onObject("kitchen");return true;}
-      if(px>135&&px<285&&py>h*.58f&&py<h*.8f){listener.onObject("piano");return true;}
-      if(px<183&&py<h*.48f){listener.onObject("window");return true;}
-      if(px>264&&py>h*.66f&&py<h*.88f){listener.onObject("desk");return true;}
-      if(px>360&&py<h*.6f){listener.onObject("wash");return true;}
-      listener.onObject("floor");return true;
+    scale.onTouchEvent(e);
+    switch(e.getActionMasked()){
+      case MotionEvent.ACTION_DOWN:
+        downX=lastX=e.getX();downY=lastY=e.getY();dragged=false;scaleActive=false;return true;
+      case MotionEvent.ACTION_POINTER_DOWN:
+        dragged=true;scaleActive=true;return true;
+      case MotionEvent.ACTION_MOVE:
+        if(e.getPointerCount()>=2)return true;
+        float dx=e.getX()-lastX,dy=e.getY()-lastY;
+        if(Math.hypot(e.getX()-downX,e.getY()-downY)>14)dragged=true;
+        if(dragged){
+          panX=Math.max(-610*zoom,Math.min(610*zoom,panX+dx));
+          panY=Math.max(-370*zoom,Math.min(390*zoom,panY+dy));
+        }
+        lastX=e.getX();lastY=e.getY();invalidate();return true;
+      case MotionEvent.ACTION_UP:
+        if(!dragged&&!scaleActive){
+          float px=(e.getX()-centerX-panX)/zoom,py=(e.getY()-centerY-panY)/zoom;
+          String chosen="floor";double best=Double.MAX_VALUE;
+          for(Thing o:objects){
+            Point q=iso(o.x+o.wide/2,o.y+o.deep/2,37);
+            double dist=Math.hypot((q.x-px), (q.y-py));
+            if(dist<48&&dist<best){chosen=o.id;best=dist;}
+          }
+          Point av=iso(avatarX,avatarY,80);
+          if(Math.hypot(av.x-px,av.y-py)<37)chosen="character";
+          listener.onObject(chosen);
+        }
+        return true;
+      case MotionEvent.ACTION_CANCEL:return true;
     }
     return true;
   }
