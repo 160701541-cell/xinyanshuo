@@ -18,7 +18,7 @@ import java.util.concurrent.*;
 /** Native screen for genuine API/local GGUF selection. No HTML or third-party account. */
 public final class AiSettingsActivity extends Activity {
   private static final int PICK_GGUF=90;
-  private static final String DEMO_MODEL="https://huggingface.co/QuantFactory/Qwen3-0.6B-GGUF/resolve/main/Qwen3-0.6B.Q4_K_M.gguf";
+  // All network download activity is owned by the resumable foreground service.
   private AiGateway ai;
   private TextView state,downloadStatus;
   private EditText url,model,key;
@@ -26,6 +26,12 @@ public final class AiSettingsActivity extends Activity {
   private final ExecutorService io=Executors.newSingleThreadExecutor();
   private final Handler ui=new Handler(Looper.getMainLooper());
   private int ink=0xFF253343;
+  private final Handler ticker=new Handler(Looper.getMainLooper());
+  private final Runnable progressUpdate=new Runnable(){public void run(){
+    if(downloadStatus!=null)downloadStatus.setText(ModelDownloadService.report(AiSettingsActivity.this));
+    if(state!=null)status();
+    ticker.postDelayed(this,1700);
+  }};
   private int d(float n){return (int)(getResources().getDisplayMetrics().density*n+.5f);}
   private GradientDrawable rounded(int col,int r){GradientDrawable v=new GradientDrawable();v.setColor(col);v.setCornerRadius(d(r));return v;}
   private TextView label(String t,int sz){TextView v=new TextView(this);v.setText(t);v.setTextSize(sz);v.setTextColor(ink);v.setPadding(0,d(7),0,d(6));return v;}
@@ -73,8 +79,40 @@ public final class AiSettingsActivity extends Activity {
 
     root.addView(label("① 手机端离线模型  ·  GGUF (arm64 CPU)",19));
     root.addView(label("推荐：Qwen3-0.6B-Q4_K_M，约484 MB，Apache-2.0。首次下载需要联网；安装后推理可断网。小模型中文效果有限。",13));
-    downloadStatus=label("本地模式仅支持 GGUF，模型文件保存在APP私有目录。",13);root.addView(downloadStatus);
-    button(root,"⬇ 下载推荐模型（约484 MB）",()->downloadModel());
+    downloadStatus=label(ModelDownloadService.report(this),13);root.addView(downloadStatus);
+    ProgressBar progressBar=new ProgressBar(this,null,android.R.attr.progressBarStyleHorizontal);
+    progressBar.setMax(100);root.addView(progressBar,new LinearLayout.LayoutParams(-1,d(7)));
+    ticker.post(new Runnable(){public void run(){
+      if(isFinishing()||isDestroyed())return;
+      android.content.SharedPreferences p=getSharedPreferences(ModelDownloadService.PREF,MODE_PRIVATE);
+      File part=ModelDownloadService.partial(AiSettingsActivity.this);
+      long total=p.getLong("total",-1),got=part.isFile()?part.length():0;
+      progressBar.setProgress(total>0?(int)Math.min(100,100L*got/total):0);
+      ticker.postDelayed(this,1500);
+    }});
+    button(root,"⬇ 开始 / 继续下载（断点续传）",()->downloadModel());
+    button(root,"Ⅱ 暂停下载（保留已下载部分）",()->{
+      ModelDownloadService.command(this,ModelDownloadService.PAUSE);
+      toast("正在暂停。缓存不会因退出APP或断网删除。");
+    });
+    button(root,"清理损坏缓存（需再次确认）",()->{
+      new AlertDialog.Builder(this).setTitle("确认删除尚未完成的模型缓存？")
+        .setMessage("此操作会清除已经下载的文件，只有缓存确实损坏或服务器无法续传时才需要。先暂停下载，再清理。")
+        .setNegativeButton("取消",null).setPositiveButton("删除缓存",(d,w)->{
+          // Do not reset a running foreground service; request pause first.
+          ModelDownloadService.command(this,ModelDownloadService.PAUSE);
+          android.os.Handler h=new Handler(Looper.getMainLooper());
+          h.postDelayed(()->{
+            File p=ModelDownloadService.partial(this);
+            if(p.exists()&&!p.delete())toast("清理失败，文件仍在");
+            else{
+              getSharedPreferences(ModelDownloadService.PREF,MODE_PRIVATE)
+                .edit().remove("etag").remove("sha256").remove("total").putString("state","缓存已主动清理").apply();
+              toast("旧缓存已清理，可重新下载");
+            }
+          },900);
+        }).show();
+    });
     button(root,"📂 从手机下载已有 GGUF 文件",()->{
       Intent i=new Intent(Intent.ACTION_OPEN_DOCUMENT);i.addCategory(Intent.CATEGORY_OPENABLE);
       i.setType("*/*");startActivityForResult(i,PICK_GGUF);
@@ -121,7 +159,7 @@ public final class AiSettingsActivity extends Activity {
     File finalFile=ai.modelFile();File folder=finalFile.getParentFile();
     if(!folder.exists()&&!folder.mkdirs())throw new IOException("无法创建模型目录");
     if(expected>0 && folder.getUsableSpace()<expected+64*1024*1024L)throw new IOException("磁盘剩余空间不足");
-    File tmp=new File(folder,"active.gguf.part");long total=0;
+    File tmp=new File(folder,"active.gguf.importing");long total=0;
     try(OutputStream out=new BufferedOutputStream(new FileOutputStream(tmp))){
       byte[] buffer=new byte[256*1024];int n;
       while((n=in.read(buffer))!=-1){
@@ -159,27 +197,21 @@ public final class AiSettingsActivity extends Activity {
     });
   }
   private void downloadModel(){
-    report("正在连接公开GGUF资源仓库，下载约484MB。请使用Wi-Fi并保持应用前台。");
-    io.execute(()->{
-      HttpURLConnection conn=null;
-      try{
-        URL url=new URL(DEMO_MODEL);
-        conn=(HttpURLConnection)url.openConnection();
-        conn.setConnectTimeout(25000);conn.setReadTimeout(60000);
-        conn.setInstanceFollowRedirects(true);
-        conn.setRequestProperty("User-Agent","ZhiYin-Android-GGUF/0.5");
-        int code=conn.getResponseCode();
-        if(code!=200)throw new IOException("模型下载HTTP "+code);
-        long size=conn.getContentLengthLong();
-        if(size<10000000L)throw new IOException("模型文件异常，实际响应长度："+size);
-        try(InputStream in=conn.getInputStream()){installStream(in,size);}
-      }catch(Exception e){report("下载失败："+e.getMessage()+"。可使用浏览器下载GGUF后在这里导入。");}
-      finally{if(conn!=null)conn.disconnect();}
-    });
+    if(ai.installed()){toast("模型已安装，无需再次下载；如要换模型请使用文件导入");return;}
+    try{
+      ModelDownloadService.command(this,ModelDownloadService.START);
+      report("已交给安卓前台下载服务；你可以切到其他页面，下载不会因为关掉设置界面而自动放弃。
+"+
+        ModelDownloadService.report(this));
+    }catch(Exception e){report("启动下载服务失败："+e.getMessage());}
   }
   @Override protected void onActivityResult(int req,int code,Intent data){
     super.onActivityResult(req,code,data);
     if(req==PICK_GGUF&&code==RESULT_OK&&data!=null&&data.getData()!=null)importFile(data.getData());
   }
-  @Override protected void onDestroy(){io.shutdownNow();if(ai!=null)ai.close();super.onDestroy();}
+  @Override protected void onResume(){
+    super.onResume();ticker.removeCallbacks(progressUpdate);ticker.post(progressUpdate);
+  }
+  @Override protected void onPause(){ticker.removeCallbacks(progressUpdate);super.onPause();}
+  @Override protected void onDestroy(){ticker.removeCallbacksAndMessages(null);io.shutdownNow();if(ai!=null)ai.close();super.onDestroy();}
 }
