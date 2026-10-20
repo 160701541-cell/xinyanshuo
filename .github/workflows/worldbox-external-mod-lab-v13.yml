@@ -157,6 +157,9 @@ jobs:
             -p:PublishSingleFile=true -p:PublishTrimmed=false -o /tmp/worldbox-user-private-helper
           test -f /tmp/worldbox-user-private-helper/GameAssemblyToolkit
           cp tools/worldbox-xianxia/private-apk-lab/XianxiaMonoBridge.cs /tmp/worldbox-user-private-helper/
+          find /usr/share/dotnet/shared/Microsoft.NETCore.App -name netstandard.dll | sort -V | tail -1 | xargs -r -I '{}' cp '{}' /tmp/worldbox-user-private-helper/netstandard.dll
+          find /usr/share/dotnet/shared/Microsoft.NETCore.App -name System.Runtime.dll | sort -V | tail -1 | xargs -r -I '{}' cp '{}' /tmp/worldbox-user-private-helper/System.Runtime.dll
+          test -s /tmp/worldbox-user-private-helper/netstandard.dll
           echo 'NO user-owned APK or commercial game binaries uploaded to public GitHub.'
       - uses: actions/upload-artifact@v4
         with:
