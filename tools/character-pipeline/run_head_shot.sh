@@ -13,7 +13,7 @@ if [ ! -d "$GAME" ]; then echo "BLOCKED: 宿主工程不存在: $GAME"; exit 3; 
 if [ ! -x "$GODOT" ]; then echo "BLOCKED: Godot 二进制不存在: $GODOT"; exit 3; fi
 cp "$HERE/src/cloth.gd" "$GAME/rig/cloth.gd"
 cp "$HERE/src/cloth.tscn" "$GAME/rig/cloth.tscn"
-cp "$PARAMS" "$GAME/rig/neck_params.json"
+for f in neck_params.json trim_params.json studio_params.json; do cp "$PARAMS" "$GAME/rig/$f"; done
 echo "参数: $PARAMS"
 python3 -c "import json,sys;print(json.dumps(json.load(open(sys.argv[1])),ensure_ascii=False))" "$PARAMS"
 for y in 0 90 180 45; do

@@ -1,5 +1,15 @@
 # CAC 工序变更与开发日志
 
+## 2026-10-20 / CAC-SELF-ITERATION-ROUND-2-COLLAR-GOLD-TRIM / 领口金边：点缀色 0.09%→5.46%、主体/背景明度差达标；主色漂移与像素级颈缝仍未过
+- **本轮唯一变量族群（R7，`changes` 只 1 项）**：领口金边镶边。真因不是"忘了画金边"，而是①交领金边画在 y1.18–1.42，**fov16 头部特写只覆盖 y≈1.49–1.75，金边整个在画面外**；②量测仪表 v1 用"色相 35–60°"判金边，但 CIELAB 下金黄≈80°、肤色≈68°，**金边被全部判成肤色**。
+- **改动**：`cloth.gd` 新增 `_collar_trim()`——绕领口外表面生成 `band_h` 高的金色环带（环半径 = 领口环半径 + `band_margin`）；交领金边/内衫的角度窗口与颜色改为 `rig/trim_params.json` 驱动；影棚背景色改为 `rig/studio_params.json` 驱动（本轮固定深色 0.100/0.105/0.120，**属 R3 量测台环境、非角色几何变量**）。
+- **量测仪表升级到 v4（`tools/self_iteration/measure.py`）**：v2 按 CIELAB **彩度**分离金边（金 ≥28、肤 12–28）；v3 裂缝改为"被主体完全包围的背景孔洞"（四边泛洪），并单列 `silhouette_hole_px`；v4 穿帮只认**金边上沿以下**被袍/金边夹住的皮肤（领口以上的脖子是正常可见颈部，不算穿帮）。
+- **诚实判定（`tools/self_iteration/rounds/round-2.json`）**：delta_L 27.38→**26.76**（≥25）**PASS**；accent_area_pct 0.09%→**5.46%**（四视图 4.33–6.62，门槛 3–8%）**PASS**；delta_E00 14.16→14.23（≤6）FAIL；neck_gap_px 45.5→45.5（=0）FAIL；outline_px / parts_readable 无视觉通道 → BLOCKED。`aesthetic` 仍 PENDING，**由用户判**。
+- **门槛的线性控制已验证**：`band_h` 18mm 时 accent 12.67%（超上限）→ 8mm 时 5.46%（达标），说明点缀色面积由环带高度线性控制，不是撞运气。
+- **停损计数**：neck_gap_px 连续两轮无改善（第 1 轮 45.75 → 第 2 轮 45.5）。按协议停损规则，**第 3 轮若仍无改善必须换工具层**（像素口径降为辅助，几何包覆余量 `collar_min_clearance` 升为主仪器）。
+- **一条命令复现**：`tools/character-pipeline/run_head_shot.sh /root/game /root/godot/Godot_v4.4.1-stable_linux.arm64 tools/self_iteration/params/round02_after.json round02_after`（参数文件同时投递 neck/trim/studio 三份）。
+- **未做**：未合并 `main`、未改 `android-preview/latest.json`、未签名、未发布；本轮**不是**"玩家打开原版《苍岚》就能更新"的东西，只是角色流水线的源码/迭代进度。
+
 ## 2026-10-20 / CAC-SELF-ITERATION-ROUND-1-NECK-COLLAR-FIT / 第 1 轮闭环：领口真正贴颈（几何包覆 -69.5mm → +4.8mm）；技术判定 FAIL，如实记录
 - **本轮唯一变量族群（R7，`changes` 只 1 项）**：外袍领口环带几何。基线领口两环半径**小于同高度身体半径**——领口环 rx0.075/rz0.072 位于 y1.520 身体(rx0.138/rz0.142)**内部**，肩颈环 rz0.100 对 rz0.157 差 57mm，整条上袍 rz 比身体小 30–57mm；结果就是颈肩胸的皮肤/身体**穿出袍面**（基线四视图中可见袍面积只占 7.5–10.2%，其余是底模衣物与皮肤）。
 - **改动（R2 参数化，全部由 `rig/neck_params.json` 驱动，缺文件=基线）**：领口贴颈环 y1.520→1.588 / rx0.075→0.080 / rz0.072→0.122；**新增领口下沿环** mid(y1.554, rx0.132, rz0.132)；肩颈过渡环 y1.470→1.520 / rx0.130→0.146 / rz0.100→0.152；上袍贴体深度 ring2_rz0.130→0.171、ring3_rz0.132→0.168、ring4_rz0.125→0.132。`tools/character-pipeline/src/cloth.gd` 里新增 `_robe_rings()` 与 `_measure_dump()` 的几何探针。

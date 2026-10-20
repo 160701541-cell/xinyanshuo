@@ -279,6 +279,7 @@ func _loft_ell(rings: Array, seg := 40, collar := false) -> void:
 	var nn := PackedVector3Array()
 	var cc := PackedColorArray()
 	var ii := PackedInt32Array()
+	var tp := _trim_params()          # R2：每帧只读一次，避免逐顶点解析 JSON
 	for k in range(rings.size()):
 		var r: Dictionary = rings[k]
 		var slope := 0.0
@@ -299,10 +300,10 @@ func _loft_ell(rings: Array, seg := 40, collar := false) -> void:
 				var yv: float = float(r["y"])
 				# 交领：中心角随高度外扩 → 形成 V（领口宽、胸前收）
 				var ctr := 0.05 + 0.72 * clampf(yv - 1.16, 0.0, 0.28)
-				if d > ctr - 0.050 and d < ctr + 0.010:
-					base_c = Color(0.40, 0.30, 0.11)      # 金边（两条斜线）
-				elif d < ctr - 0.050:
-					base_c = Color(0.52, 0.50, 0.45)     # 内衫
+				if d > ctr - float(tp["w_in"]) and d < ctr + float(tp["w_out"]):
+					base_c = Color(float(tp["gold_r"]), float(tp["gold_g"]), float(tp["gold_b"]))    # 金边（两条斜线）
+				elif d < ctr - float(tp["w_in"]):
+					base_c = Color(float(tp["inner_r"]), float(tp["inner_g"]), float(tp["inner_b"]))  # 内衫
 			cc.append(base_c)
 	for row in range(rings.size() - 1):
 		for i in range(seg):
@@ -497,12 +498,69 @@ func _sash_tails(ring: Dictionary) -> void:
 		mi.material_override = mat
 		pivot.add_child(mi)
 
+func _trim_params() -> Dictionary:
+	# R2 参数化：金边宽度/颜色 + 领口金边环带，由 res://rig/trim_params.json 驱动（缺文件=基线）
+	var d := {
+		"w_in": 0.050, "w_out": 0.010,
+		"gold_r": 0.40, "gold_g": 0.30, "gold_b": 0.11,
+		"inner_r": 0.52, "inner_g": 0.50, "inner_b": 0.45,
+		"band_h": 0.0, "band_margin": 0.004,
+	}
+	var f := FileAccess.open("res://rig/trim_params.json", FileAccess.READ)
+	if f != null:
+		var j: Variant = JSON.parse_string(f.get_as_text())
+		if typeof(j) == TYPE_DICTIONARY:
+			for k in d.keys():
+				if (j as Dictionary).has(k):
+					d[k] = float((j as Dictionary)[k])
+			print("TRIM_PARAMS loaded")
+	return d
+
+
+func _studio_params() -> Dictionary:
+	# R3 量测台：影棚背景色，由 res://rig/studio_params.json 驱动（缺文件=基线暖灰）
+	var d := {"bg_r": 0.945, "bg_g": 0.918, "bg_b": 0.870}
+	var f := FileAccess.open("res://rig/studio_params.json", FileAccess.READ)
+	if f != null:
+		var j: Variant = JSON.parse_string(f.get_as_text())
+		if typeof(j) == TYPE_DICTIONARY:
+			for k in d.keys():
+				if (j as Dictionary).has(k):
+					d[k] = float((j as Dictionary)[k])
+			print("STUDIO_PARAMS loaded")
+	return d
+
+
+func _collar_trim() -> void:
+	# R2 本轮唯一变量族：领口金边环带（贴着领口外表面、留 band_margin 余量）
+	var tp := _trim_params()
+	var h := float(tp["band_h"])
+	if h <= 0.0:
+		return
+	var np := _neck_params()
+	var cy := float(np["collar_y"])
+	var my := float(np["mid_y"])
+	var cr := float(np["collar_rx"])
+	var cdz := float(np["collar_rz"])
+	var mr := float(np["mid_rx"])
+	var mdz := float(np["mid_rz"])
+	var m := float(tp["band_margin"])
+	var gold := Color(float(tp["gold_r"]), float(tp["gold_g"]), float(tp["gold_b"]))
+	var rings: Array = []
+	for i in range(2):
+		var y: float = cy - h * float(i)
+		var t: float = clampf((cy - y) / maxf(0.001, cy - my), 0.0, 1.0)
+		rings.append({"y": y, "rx": cr + t * (mr - cr) + m, "rz": cdz + t * (mdz - cdz) + m, "c": gold})
+	_loft_ell(rings, 48, false)
+
+
 func _build() -> void:
 	var ring := _waist_ring()
 	waist_y = float(ring["y"])
 	# 内衫壳去掉：白片会从袍身缺口里露出来，改由交领刷色表现
 	_shell(2, 0.008, Color(0.16, 0.17, 0.18))
 	_robe(ring)
+	_collar_trim()
 	_sleeve(-1.0)
 	_sleeve(1.0)
 	_sleeve_cap(-1.0)
@@ -763,7 +821,8 @@ func _setup_world() -> void:
 	var we := WorldEnvironment.new()
 	var env := Environment.new()
 	env.background_mode = Environment.BG_COLOR
-	env.background_color = Color(0.945, 0.918, 0.870)
+	var bp := _studio_params()
+	env.background_color = Color(float(bp["bg_r"]), float(bp["bg_g"]), float(bp["bg_b"]))
 	env.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
 	env.ambient_light_color = Color(0.80, 0.78, 0.74)
 	env.ambient_light_energy = 0.55

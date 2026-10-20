@@ -11,7 +11,7 @@
 - 主体掩膜   : 与 bg 的 CIEDE2000 距离 > DE_SUBJECT 的像素
 - delta_L    : |主体 L* 均值 - 背景 L* 均值|（CIELAB L*）
 - 分类       : CIELAB 色相/彩度分类（忽略明度，因为渲染光照只近似缩放 L）：
-               彩度<8 -> neutral(内衫/靴)；色相170-215 -> robe(袍)；色相35-60且彩度>=20 -> gold(金边点缀)；
+               彩度<8 -> neutral(内衫/靴)；色相170-215 -> robe(袍)；彩度>=28且色相50-110 -> gold(金边点缀)；彩度12-28且色相30-100 -> skin；
                色相60-100且彩度>=15 -> skin(皮肤)；其余 -> unclassified
 - accent_area_pct: gold 像素 / 主体像素 ×100
 - delta_E00  : 主色(robe)像素 Lab 均值 vs 色板(CHARACTER_SPEC.md 外袍 线性RGB 0.085,0.255,0.250)
@@ -101,6 +101,33 @@ def palette_lab():
     return out
 
 
+def enclosed_background(mask):
+    """被主体完全包围的背景像素（孔洞）。从四边泛洪，泛不到的背景即孔洞。"""
+    from collections import deque
+    h, w = mask.shape
+    bg = ~mask
+    reach = np.zeros_like(bg)
+    dq = deque()
+    for x in range(w):
+        for y in (0, h - 1):
+            if bg[y, x] and not reach[y, x]:
+                reach[y, x] = True
+                dq.append((y, x))
+    for y in range(h):
+        for x in (0, w - 1):
+            if bg[y, x] and not reach[y, x]:
+                reach[y, x] = True
+                dq.append((y, x))
+    while dq:
+        y, x = dq.popleft()
+        for dy, dx in ((1, 0), (-1, 0), (0, 1), (0, -1)):
+            ny, nx = y + dy, x + dx
+            if 0 <= ny < h and 0 <= nx < w and bg[ny, nx] and not reach[ny, nx]:
+                reach[ny, nx] = True
+                dq.append((ny, nx))
+    return bg & ~reach
+
+
 def longest_run(flags):
     """一维布尔数组里最长 True 连续段长度。"""
     best = cur = 0
@@ -178,10 +205,12 @@ def analyse(path):
     delta_L = float(abs(L[sub].mean() - bg_lab[0])) if sub.any() else None
 
     cls = np.zeros_like(mask, dtype=np.int8)          # 0 none 1 neutral 2 robe 3 gold 4 skin 5 other
+    # 仪表 v2：CIELAB 下金/黄 ≈ 色相 55–110°、彩度 ≥28；肤色是低彩度橙（12–28）。
+    # v1 按色相 35–60 判金边，实测把金色判成了肤色（金黄 Lab 色相 ≈80°）→ 已修正。
     cls[sub & (chroma < 8)] = 1
     cls[sub & (chroma >= 8) & (hue >= 170) & (hue <= 215)] = 2
-    cls[sub & (chroma >= 20) & (hue >= 35) & (hue < 60)] = 3
-    cls[sub & (chroma >= 15) & (hue >= 60) & (hue <= 100)] = 4
+    cls[sub & (chroma >= 12) & (hue >= 30) & (hue <= 100)] = 4      # skin
+    cls[sub & (chroma >= 28) & (hue >= 50) & (hue <= 110)] = 3      # gold（高彩度覆盖肤色）
     cls[sub & (cls == 0)] = 5
     n_sub = int(sub.sum())
     area = {k: float((cls == v).sum()) / max(1, n_sub) * 100.0 for v, k in
@@ -207,23 +236,27 @@ def analyse(path):
         if head_px > 0:
             neck_head_ratio = round(neck_px / head_px, 3)
 
-    crack = 0
-    thru = 0
-    cap = max(4, int(0.10 * w))   # 只认'细缝'：>10%图宽的缺口是轮廓凹槽（头/肩之间的天然凹陷），不算裂缝
+    # 仪表 v3：裂缝只认「被主体完全包围的背景孔洞」（四边泛洪，泛不到的背景即孔洞）。
+    # v2 的「同行左右夹住」会把头与肩之间的天然凹陷算成裂缝 → 已废。
+    enclosed = enclosed_background(mask)
+    hole = 0
     for y in range(h):
-        m = mask[y]
-        idxs = np.where(m)[0]
-        if len(idxs) > 1:
-            lo, hi = int(idxs[0]), int(idxs[-1])
-            inner = ~m[lo:hi + 1]
-            if inner.any():
-                run = longest_run(inner)
-                if run <= cap:
-                    crack = max(crack, run)
-        rob = cls[y] == 2
+        e = enclosed[y]
+        if e.any():
+            run = longest_run(e)
+            if run > hole:
+                hole = run
+    # 仪表 v4：穿帮只认「领口金边上沿以下、却被袍/金边夹住的皮肤」——
+    # 领口以上的脖子是正常可见颈部，不算穿帮；而金边上沿以下本该被袍面盖住。
+    gold_rows = np.where((cls == 3).any(axis=1))[0]
+    rim = int(gold_rows[0]) if len(gold_rows) else 0
+    thru = 0
+    cap = max(4, int(0.10 * w))
+    for y in range(rim, h):
+        cov = (cls[y] == 2) | (cls[y] == 3)
         skn = cls[y] == 4
-        if rob.any() and skn.any():
-            ri = np.where(rob)[0]
+        if cov.any() and skn.any():
+            ri = np.where(cov)[0]
             lo, hi = int(ri[0]), int(ri[-1])
             inner = skn[lo:hi + 1]
             if inner.any():
@@ -235,11 +268,12 @@ def analyse(path):
         "delta_L": round(delta_L, 2) if delta_L is not None else None,
         "accent_area_pct": round(area.get("gold", 0.0), 2),
         "delta_E00": round(de_by_class.get("robe", float("nan")), 2) if "robe" in de_by_class else None,
-        "neck_gap_px": int(max(crack, thru)),
+        "neck_gap_px": int(thru), "neck_gap_src": "skin-below-collar-rim",
+        "silhouette_hole_px": int(hole),
         "outline_px": None,
         "parts_readable": None,
         "extra": {"neck_head_width_ratio": neck_head_ratio,
-                  "crack_px": int(crack), "skin_through_collar_px": int(thru),
+                  "crack_px": int(hole), "skin_through_collar_px": int(thru),
                   "crack_cap_px": int(cap),
                   "area_pct_by_class": {k: round(v, 2) for k, v in area.items()},
                   "delta_E00_by_class": {k: round(v, 2) for k, v in de_by_class.items()}},

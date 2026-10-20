@@ -1,0 +1,48 @@
+{
+  "round": 2,
+  "date": "2026-10-20",
+  "target": "颈部/头部衔接（续）：给领口加金边镶边，让点缀色面积落进 3–8%，并把影棚背景固定为深色使主体/背景明度差达标",
+  "branch": "art/self-iteration-rounds",
+  "commit": "PENDING",
+  "changes": [
+    "领口金边镶边（唯一变量族群）：新增 _collar_trim() 绕领口外表面生成 band_h 高的金色环带（环半径 = 领口环半径 + band_margin，顶点色 = gold_*），并把交领金边/内衫的角度窗口与颜色改为 rig/trim_params.json 驱动（w_in/w_out/gold_*/inner_*），缺文件=基线；影棚背景色改由 rig/studio_params.json 驱动（本轮固定深色 0.100/0.105/0.120，属 R3 量测台环境、非角色几何变量）"
+  ],
+  "renders": [
+    "tools/self_iteration/shots/round02_after_0.png",
+    "tools/self_iteration/shots/round02_after_90.png",
+    "tools/self_iteration/shots/round02_after_180.png",
+    "tools/self_iteration/shots/round02_after_45.png",
+    "tools/self_iteration/shots/round02_base_0.png",
+    "tools/self_iteration/shots/round02_base_90.png",
+    "tools/self_iteration/shots/round02_base_180.png",
+    "tools/self_iteration/shots/round02_base_45.png"
+  ],
+  "metrics": {
+    "delta_L": 26.76,
+    "accent_area_pct": 5.46,
+    "delta_E00": 14.23,
+    "outline_px": null,
+    "parts_readable": null,
+    "neck_gap_px": 45.5,
+    "triangles": 25796,
+    "head_torso_leg_ratio": "1 : 1.75 : 3.38",
+    "collar_min_clearance_m": 0.0048
+  },
+  "verdict": {
+    "technical": "FAIL",
+    "aesthetic": "PENDING",
+    "note": "两项达标、两项未达标、两项 BLOCKED —— delta_L 27.38→26.76（门槛 ≥25）PASS；accent_area_pct 0.09%→5.46%（门槛 3–8%，四视图 4.33–6.62）PASS；delta_E00 14.16→14.23（门槛 ≤6）FAIL；neck_gap_px 45.5→45.5（门槛 0）FAIL；outline_px 与 parts_readable 本环境无视觉通道 → BLOCKED"
+  },
+  "attribution": {
+    "root_cause": "点缀色面积长期为 0 有两个真因：①交领金边画在 y1.18–1.42，而 fov16 头部特写只覆盖 y≈1.49–1.75，金边整个在画面外；②仪表 v1 用『色相 35–60°』判金边，但 CIELAB 下金黄≈80°、肤色≈68°，金边被全部判成肤色（实测 0.01–0.14%）。把金边改挂在画面内的领口、并改用彩度分离后，accent 立刻可测。",
+    "evidence": "同一深色影棚机位 A/B：accent_area_pct 0.09% → 5.46%（band_h 8mm；band_h 18mm 时为 12.67%，说明门槛由环带高度线性控制）；delta_L 27.38 → 26.76；ΔE00 14.16 → 14.23；neck_gap_px 45.5 → 45.5；像素分类面积（view0）：robe 29.82% → 26.50%、gold 0.13% → 4.66%、neutral 34.55% → 34.38%",
+    "residual": "ΔE00 主色漂移未标定（影棚光照 + 色调映射使袍色偏离设定色板，两轮都在 14 上下，属光照问题而非材质问题）；neck_gap 像素口径无法区分『领口以上正常可见的颈部皮肤』与『皮肤穿出袍面』——几何口径 collar_min_clearance 第 1 轮已从 -69.5mm 修到 +4.8mm，穿帮在几何上已消除；outline_px / parts_readable 无视觉通道"
+  },
+  "lessons": [
+    "机位决定仪器有效性：门槛挂在胸襟（y1.18–1.42）上，而量测机位是头部特写（y≈1.49–1.75）→ 门槛必须挂在画面内的部位（领口）",
+    "颜色分类必须用 CIELAB 彩度而不是色相：金黄与肤色色相只差约 12°，色相窗口分不开；彩度（金 ≥28 / 肤 12–28）才分得开（仪表 v1→v2）",
+    "同一门槛连续两轮无改善（neck_gap_px：第 1 轮 45.75、第 2 轮 45.5）→ 按协议停损规则，第 3 轮若仍无改善必须换工具层（视觉模型/人工判读，或改以几何余量作主仪器）",
+    "l2s 文件层坑复现：本轮所有新文件（_collar_trim 补丁、参数 JSON、台账）都用 bash/python 直接写，避免 write 工具落成断链符号链接"
+  ],
+  "next": "换工具层验颈部：像素级颈缝口径降为辅助，几何包覆余量（collar_min_clearance）升为主仪器并加进四视图；同时把『主色漂移 ΔE00（影棚光照/曝光标定）』作为下一轮唯一变量族群"
+}
