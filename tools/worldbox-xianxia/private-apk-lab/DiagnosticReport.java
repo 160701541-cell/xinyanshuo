@@ -19,13 +19,22 @@ final class DiagnosticReport {
             if(file==null||!file.isFile()){out.append("(暂无记录)\n");continue;}
             LinkedHashSet<String> first=new LinkedHashSet<String>();
             ArrayDeque<String> recent=new ArrayDeque<String>();
-            int missing=0;String build=null;
+            int missing=0,steamWarnings=0;String build=null,latestObserver=null,latestLoader=null,latestImport=null;
             try(BufferedReader reader=new BufferedReader(new InputStreamReader(
                     new FileInputStream(file),StandardCharsets.UTF_8))) {
                 String line; int context=0;
                 while((line=reader.readLine())!=null) {
                     if(line.contains("missing text:")){missing++;context=0;continue;}
                     if(line.contains("MOD_DEPLOY_OK")||line.contains("MOD_DEPLOY_CACHED"))build=shortLine(line);
+                    if(line.contains("MOD_STATE XINYANSHUO_WORLD_BOX_OBSERVER_V07="))
+                        latestObserver=shortLine(line);
+                    if(line.contains("NML_STAGE")||line.contains("NML_ACTUALLY_LOADED_COUNT"))
+                        latestLoader=shortLine(line);
+                    if(line.contains("USER_MOD_IMPORT_BEGIN")||line.contains("USER_MOD_IMPORT_FAILED"))
+                        latestImport=shortLine(line);
+                    if(line.contains("libsteam_api")||line.contains("Steam is not available")){
+                        steamWarnings++;context=0;continue;
+                    }
                     String lower=line.toLowerCase(Locale.ROOT);
                     boolean error=lower.contains("exception")||lower.contains("failed")||
                         lower.contains("error cs")||lower.contains("error:")||lower.contains("fatal");
@@ -45,9 +54,14 @@ final class DiagnosticReport {
                 }
             } catch(IOException e){out.append("读取失败：").append(e.toString()).append("\n");}
             if(build!=null)out.append(build).append("\n");
+            if(latestLoader!=null)out.append("NML加载器最近状态：").append(latestLoader).append("\n");
+            if(latestObserver!=null)out.append("万界观察MOD最近状态：").append(latestObserver).append("\n");
+            if(latestImport!=null)out.append("最后ZIP导入记录：").append(latestImport).append("\n");
             for(String line:first)out.append(line).append("\n");
             for(String line:recent)if(!first.contains(line))out.append(line).append("\n");
             if(missing>0)out.append("重复缺词记录：").append(missing).append("条（原文保存在ZIP）\n");
+            if(steamWarnings>0)out.append("已折叠安卓Steam缺库警告：").append(steamWarnings)
+                .append("条；并非观察MOD失败根因的证据。\n");
         }
         String text=out.toString();
         if(text.length()<=COPY_LIMIT)return text;
