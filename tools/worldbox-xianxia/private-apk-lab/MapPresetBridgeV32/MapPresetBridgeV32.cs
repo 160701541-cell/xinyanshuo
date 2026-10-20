@@ -58,12 +58,17 @@ namespace XianxiaWorldBox
             if(manager==null||size==null||library==null)
                 return Status="WORLD_SIZE_INCOMPATIBLE map size API unavailable";
             object lib=Member(manager,"map_sizes");
-            object vanilla=Member(lib,"titanic");
-            if(lib==null||vanilla==null)return Status="WORLD_SIZE_NOT_READY AssetManager.map_sizes";
-            object preset=null;
+            if(lib==null)return Status="WORLD_SIZE_NOT_READY AssetManager.map_sizes";
+            // Actual user-owned WorldBox 0.51.4 MapSizeLibrary has NO
+            // 'titanic' instance field. It stores vanilla presets in
+            // inherited AssetLibrary<MapSizeAsset>.get("titanic").
+            // The former Member(lib,"titanic") always failed before add().
             var lookup=lib.GetType().GetMethods(F).FirstOrDefault(m=>m.Name=="get"&&
                 m.GetParameters().Length==1&&m.GetParameters()[0].ParameterType==typeof(string));
-            if(lookup!=null)preset=lookup.Invoke(lib,new object[]{Id});
+            if(lookup==null)return Status="WORLD_SIZE_INCOMPATIBLE AssetLibrary.get(string) absent";
+            object vanilla=lookup.Invoke(lib,new object[]{"titanic"});
+            if(vanilla==null)return Status="WORLD_SIZE_NOT_READY vanilla Titanic asset absent";
+            object preset=lookup.Invoke(lib,new object[]{Id});
             if(preset==null)
             {
                 preset=Activator.CreateInstance(size);
@@ -87,6 +92,25 @@ namespace XianxiaWorldBox
                 return Status="WORLD_SIZE_CONFLICT preset exists with another chunk count";
             string[] visible=Sizes(library);
             if(visible==null)return Status="WORLD_SIZE_NOT_READY getSizes() is not string[]";
+            if(!visible.Contains(Id))
+            {
+                // Real 0.51.4 MapSizeLibrary.linkAssets initializes its UI
+                // list by convertToOldFormat() -> _mapSizes from 'list'.
+                // Reuse that SAME native list rebuilder after registering
+                // the asset, rather than maintain an unrelated guessed list.
+                // A user-installed other map MOD is preserved by the list.
+                MethodInfo rebuild=library.GetMethod("convertToOldFormat",F,
+                    null,Type.EmptyTypes,null);
+                if(rebuild!=null)
+                {
+                    rebuild.Invoke(rebuild.IsStatic?null:lib,null);
+                    string[] built=Sizes(library);
+                    if(built!=null&&built.Contains(Id))
+                    {
+                        visible=built;
+                    }
+                }
+            }
             if(!visible.Contains(Id))
             {
                 FieldInfo cache=library.GetField("_mapSizes",F);
@@ -113,7 +137,8 @@ namespace XianxiaWorldBox
                 if(!confirmed)return Status="WORLD_SIZE_UNCONFIRMED UI cache reverted";
             }
             Ready=true;
-            return Status="WORLD_SIZE_PRESET_READY 2048x2048; real generation/save still untested";
+            return Status="WORLD_SIZE_PRESET_READY 2048x2048 new world list="+
+                Sizes(library).Length+"; real generation/save still untested";
         }
         static void Log(string message)
         {
