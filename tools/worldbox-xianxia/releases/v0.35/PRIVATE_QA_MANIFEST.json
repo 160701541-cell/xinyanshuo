@@ -1,0 +1,74 @@
+{
+  "schema": 1,
+  "project": "WORLDBOX_THIRD_PARTY_MOD_DERIVATIVE_TEST",
+  "version": "v0.35",
+  "scope": {
+    "repo": "160701541-cell/xinyanshuo",
+    "branch": "worldbox/external-mod-lab-v22-zh-localization",
+    "main_canglan_unchanged": true,
+    "public_commercial_game_binary": false,
+    "signing_key_public": false
+  },
+  "user_request": "基于WorldBox世界盒子新增可计算货币、灵石与自然资源、工业化图标和配方、行政层级与国界军农商职业，借鉴苍岚设计规则不复用Godot运行态",
+  "manufactured": {
+    "families": 10,
+    "base_resource_seeds": 97,
+    "generative_sprite_variants": 171,
+    "processing_and_building_recipe_records": 74,
+    "atlas_pixels": [
+      544,
+      374
+    ],
+    "sprite_pixels": [
+      32,
+      32
+    ],
+    "transparent_original_pixel_art": true,
+    "visual_style_qc": "USER_PENDING"
+  },
+  "gamecode": {
+    "currency": "铜钱/白银/黄金基准兑换及灵石独立资源；账户交易税收军饷库存守恒C#验证",
+    "administrative": "6层 村-乡镇-县-州府-郡-国，皇宫图标与三级候选，真实皇宫施工实体未实现",
+    "livelihoods": "种田/采矿/商贸/军人/官员/工匠/炼丹等职业枚举及目录, 尚未完整绑定实际WorldBox NPC职业",
+    "nation_area": "C# tile ownership area/border算法测试完成；真实世界Kingdom数据仅只读读取候选，国家边界尚未实机绘制",
+    "source_material_factory": "economy-v35/material_factory_v35.py",
+    "real_original_game_tabs": "NML PowerButtonCreator 4参按钮+AddButtonToTab 2参，nature/creation/noosphere自动分类按钮；需移动NML实际装载才显示，设备尚未验证",
+    "mono_menu": "在既有Mono万界菜单中注入独立钱粮财政入口/信息界面，未修改WorldBox主Assembly-CSharp",
+    "actual_world_simulation": "NOT_COMPLETE_NO_FAKE_DATA"
+  },
+  "public_CI": {
+    "asset_batch": 39489547081,
+    "standalone_source_sdk": 39489547057,
+    "all_green_at_check": true
+  },
+  "signed_private_apk": {
+    "filename": "WorldBox_万界仙侠_v035_经济货币与171项资源流水线_待实机.apk",
+    "bytes": 188042919,
+    "sha256": "2504cbf0d4c3a407c9d590cd07ebaa1ff59d5f787a3b19440c25a5e8c9efc101",
+    "package_name": "com.xinyanshuo.worldbox.lab31",
+    "signer_sha256": "20087dc8c210c7c6a35a4492500324f33f36f7c5eb3a77dc62040c21281c400e",
+    "manifest_record_count": 911,
+    "added_deployment_records": 176,
+    "game_original_Assembly_CSharp_unchanged": true,
+    "worldbox_launcher_classes5_dex_unchanged": true,
+    "zip_crc": true,
+    "v1_v2_v3_signature_verified": true,
+    "device_tested": false,
+    "npc_market_tax_harvest_end_to_end_tested": false,
+    "native_worldbox_resource_buttons_device_visible": false
+  },
+  "art_pack": {
+    "file": "WorldBox_v035_171素材图标与74条制造配方_独立素材包.zip",
+    "sha256": "",
+    "visual_preview": "WorldBox_v035_171图标总览.png",
+    "copyright": "self_generated_pixel_icons_not_WorldBox_sprite_export"
+  },
+  "private_work_folder": "/WorldBox-万界仙侠/Work交接/",
+  "priority_next": [
+    "安卓16实机检测新钱粮财政菜单和NML自然/制造/王国分类按钮",
+    "从WorldBox原生Tile区域读取真实国界绘制与面积，保存和载入",
+    "NPC农耕采矿/商队交易税收/军费联动库存",
+    "皇城皇宫升级与村县州郡建筑图标接入真实原版建造逻辑",
+    "不同职业身份与宗门经济耦合，避免标签式玩法"
+  ]
+}
