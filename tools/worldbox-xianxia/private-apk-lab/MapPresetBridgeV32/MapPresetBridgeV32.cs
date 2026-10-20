@@ -152,6 +152,17 @@ namespace XianxiaWorldBox
         }
         public static void Tick()
         {
+            // One verified existing Mono update hook also advances the
+            // isolated v35 economy reader. It never invents stock or borders.
+            try {
+                foreach(var a in AppDomain.CurrentDomain.GetAssemblies()){
+                    if(a.GetName().Name!="WorldBoxXianxiaEconomy")continue;
+                    var type=a.GetType("XianxiaWorldBox.Economy.EconomyUnityAdapterV35");
+                    var tick=type==null?null:type.GetMethod("Tick",F);
+                    if(tick!=null)tick.Invoke(null,null);
+                    break;
+                }
+            }catch(Exception){}
             if(Ready)return;
             DateTime now=DateTime.UtcNow;
             if(now<retryAt)return;
