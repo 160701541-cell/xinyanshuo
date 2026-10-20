@@ -94,29 +94,51 @@ def main():
                 "bytes":len(blob), "external_textures":external_textures, **data}
         manifest["models"][short] = item
         print(short, item, flush=True)
-    # Quaternius Universal Base Characters [Standard] female, CC0.
-    # Binary repack from BeefTV keeps 65-joint humanoid skin but omits source textures.
-    # This is an actual bone-rigged character, not a Kenney block animation surrogate.
-    female_source="glanderness/BeefTV"
-    female_commit="62d19db13bbe6f287fa769afd391866747a01033"
-    female_rel="web/public/canvas/models/quaternius-standard-female.glb"
-    female_url=f"https://raw.githubusercontent.com/{female_source}/{female_commit}/{female_rel}"
-    with urllib.request.urlopen(female_url,timeout=60) as resp:
-        data=resp.read(6*1024*1024)
-    meta=read_gltf_metadata(data)
-    if meta["skins"]<1 or meta["meshes"]<1:
-        raise ValueError("Rejected female model: no actual skeleton/skin")
-    gltf=json.loads(data[20:20+struct.unpack_from("<I",data,12)[0]])
-    if len(gltf.get("skins",[{}])[0].get("joints",[]))<50:
-        raise ValueError("Rejected female model: missing humanoid joints")
-    (targets/"hero_female.glb").write_bytes(data)
+    # ORIGINAL textured humanoid glTF from Quaternius Universal Base Characters Standard (CC0).
+    # Mirrors publisher's unchanged mesh/rig and complete source albedo/normal/roughness textures.
+    female_commit="16ef4707f0403a7942384fdbd960789a5c6adb86"
+    female_repo="La2o/BlackVein"
+    female_dir="assets/characters/base"
+    filename="Superhero_Female_FullBody.gltf"
+    def from_female_upstream(name):
+        url=f"https://raw.githubusercontent.com/{female_repo}/{female_commit}/{female_dir}/{name}"
+        with urllib.request.urlopen(url,timeout=60) as response:
+            return response.read(12*1024*1024)
+    raw_gltf=from_female_upstream(filename)
+    female=json.loads(raw_gltf)
+    assert len(female.get("skins",[]))>=1, "No skinned humanoid"
+    joints=len(female["skins"][0].get("joints",[]))
+    if joints<50 or len(female.get("meshes",[]))<2:
+        raise ValueError("Quaternius female skeleton or meshes incomplete")
+    textures=female.get("images",[])
+    if len(textures)<6 or len(female.get("materials",[]))<3:
+        raise ValueError("Female PBR albedo/normal/roughness material maps missing")
+    female_assets=ROOT/"assets/characters"
+    female_assets.mkdir(parents=True,exist_ok=True)
+    (female_assets/filename).write_bytes(raw_gltf)
+    files={}
+    referenced=[b["uri"] for b in female.get("buffers",[]) if "uri" in b]
+    referenced += [im["uri"] for im in textures if "uri" in im]
+    for name in sorted(set(referenced)):
+        rel=Path(name)
+        if rel.is_absolute() or ".." in rel.parts or rel.suffix.lower() not in (".png",".bin"):
+            raise ValueError("Unsafe character resource URI: "+name)
+        blob=from_female_upstream(name)
+        if rel.suffix.lower()==".png" and not blob.startswith(bytes.fromhex("89504e470d0a1a0a")):
+            raise ValueError("Referenced character texture is not a PNG: "+name)
+        (female_assets/rel).write_bytes(blob)
+        files[name]={"sha256":hashlib.sha256(blob).hexdigest(),"bytes":len(blob)}
+    if not any("Roughness" in x for x in files) or not any("Normal" in x for x in files):
+        raise ValueError("Character normal and roughness texture absent")
     manifest["models"]["hero_female"]={
-        "path":female_rel,"source":f"https://github.com/{female_source}",
+        "path":f"{female_dir}/{filename}","source":f"https://github.com/{female_repo}",
         "commit":female_commit,"license":"Quaternius Universal Base Characters Standard, CC0-1.0",
-        "sha256":hashlib.sha256(data).hexdigest(),"bytes":len(data),
-        "joints":len(gltf["skins"][0]["joints"]),**meta
+        "sha256":hashlib.sha256(raw_gltf).hexdigest(),
+        "bytes":len(raw_gltf),"skins":len(female["skins"]),"joints":joints,
+        "meshes":len(female["meshes"]),"materials":len(female["materials"]),
+        "images":len(textures),"files":files
     }
-    print("TRUE_RIGGED_HERO",manifest["models"]["hero_female"],flush=True)
+    print("TRUE_TEXTURED_RIGGED_HERO",manifest["models"]["hero_female"],flush=True)
     (ROOT / "ASSET_MANIFEST.json").write_text(json.dumps(manifest,indent=2,ensure_ascii=False)+"\n",encoding="utf-8")
     assert len(manifest["models"]) == len(ASSETS)
 
