@@ -21,6 +21,7 @@ jobs:
       - name: 'Source regression tests - NOT Android certification'
         run: |
           python -m compileall -q tools/worldbox-xianxia
+          python -m unittest tools/worldbox-xianxia/test_v39_manifest_dex_gate.py -v
           python -m unittest discover -s tools/worldbox-xianxia -p 'test_v*.py' -v
       - uses: actions/setup-dotnet@v4
         with: { dotnet-version: '8.0.x' }
