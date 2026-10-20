@@ -1,0 +1,25 @@
+{
+  "schema_version": 1,
+  "project": "WORLDBOX_THIRD_PARTY_MOD_DERIVATIVE_TEST",
+  "branch": "worldbox/external-mod-lab-v22-zh-localization",
+  "release": "v0.28-private-android16-device-pending",
+  "public_payload": "original MOD source, packaging scripts, tests and public-SDK compiled candidate only",
+  "contains_commercial_apk": false,
+  "contains_signing_key": false,
+  "private_apk": {
+    "filename": "WorldBox_WanjieXianxia_v0.28_Private_Android16_DEVICE_PENDING.apk",
+    "sha256": "9efa49f98e92921f7ee8b9341f14b68b39d426323bc0a8cf25d8acc41e6cc822",
+    "size_bytes": 189287005,
+    "package_name": "com.xinyanshuo.worldbox.lab13",
+    "embedded_mod_version": "0.27.0-chinese-device-pending",
+    "public_uploaded": false,
+    "signed": true,
+    "installed_on_device": false,
+    "verified_running_on_device": false
+  },
+  "build_script": "tools/worldbox-xianxia/private_stage_mono_v28.py",
+  "test_script": "tools/worldbox-xianxia/test_v28_private_stage.py",
+  "android_device_qa": "PENDING",
+  "public_repo_source_only": true,
+  "main_canglan_unchanged": true
+}

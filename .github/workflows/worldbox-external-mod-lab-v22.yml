@@ -201,6 +201,10 @@ jobs:
           cp tools/worldbox-xianxia/localization/ChineseKeyPackV24.cs /tmp/worldbox-v22-artifacts/
           cp tools/worldbox-xianxia/localization/ChineseTextTemplatesV24.cs /tmp/worldbox-v22-artifacts/
           cp tools/worldbox-xianxia/localization/OwnLocaleLabelsV25.cs /tmp/worldbox-v22-artifacts/
+          cp tools/worldbox-xianxia/private_stage_mono_v28.py /tmp/worldbox-v22-artifacts/
+          cp tools/worldbox-xianxia/test_v28_private_stage.py /tmp/worldbox-v22-artifacts/
+          cp tools/worldbox-xianxia/releases/v0.28/PUBLIC_RELEASE_MANIFEST.json /tmp/worldbox-v22-artifacts/
+          cp tools/worldbox-xianxia/releases/v0.28/README.md /tmp/worldbox-v22-artifacts/README_v028_SOURCE_ONLY.md
           mkdir -p /tmp/worldbox-v22-artifacts/NMLLocales
           cp tools/worldbox-xianxia/localization/nml-locales/cz.json /tmp/worldbox-v22-artifacts/NMLLocales/
           cp tools/worldbox-xianxia/localization/nml-locales/en.json /tmp/worldbox-v22-artifacts/NMLLocales/
@@ -209,6 +213,22 @@ jobs:
           cp /tmp/WORLDBOX_PUBLIC_MAP_TYPES.json /tmp/worldbox-v22-artifacts/
           cp /tmp/worldbox-v22-MAP_SIZE_CANDIDATES.json /tmp/worldbox-v22-artifacts/
           printf '%s\n' 'WorldBox third-party MOD test; completely unrelated to original Canglan game.' 'Requires user-owned Android installation with verified NML bootstrap. DEVICE_PENDING.' 'NMLMods folder in zipped candidate is derived from official Android ModLoader Paths.ModsPath.' > /tmp/worldbox-v22-artifacts/README.txt
+      - name: 'v0.28 public artifact safety: no commercial APK or signing secrets'
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import json,zipfile
+          root=Path('/tmp/worldbox-v22-artifacts')
+          meta=json.loads((root/'PUBLIC_RELEASE_MANIFEST.json').read_text(encoding='utf-8'))
+          assert meta['private_apk']['public_uploaded'] is False
+          forbidden={'.apk','.aab','.pck','.jks','.keystore','.p12','.pfx','.idsig'}
+          assert not [x for x in root.rglob('*') if x.is_file() and x.suffix.lower() in forbidden]
+          for f in root.glob('*.zip'):
+            with zipfile.ZipFile(f) as z:
+              assert z.testzip() is None
+              assert not [x for x in z.namelist() if Path(x).suffix.lower() in forbidden]
+          print('PASS_PUBLIC_SOURCE_ONLY_NO_GAME_APK')
+          PY
       - uses: actions/upload-artifact@v4
         with:
           name: 'worldbox-v22-NMLMods-precompiled-original-CANDIDATE'

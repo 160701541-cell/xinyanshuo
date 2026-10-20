@@ -171,3 +171,6 @@ The public Worldbox-OWL index has 0.51.x packages **简单汉化模组修正 v1.
 - **验收状态是SIGNED_PRIVATE_APK_DEVICE_PENDING，绝非INSTALLED/WORKING！** 安卓16 PKR110需实际记录安装后是否进入 v18 Java 诊断页、`MOD_DEPLOY_OK`/失败原因、原版Unity启动、Mono Bridge日志`NML_ASSEMBLY_LOADED`/失败、`WorldBoxXianxiaObserver`是否加载；之后逐页测试语言/字体/NPC与存档。启动成功**不等于**MOD编译加载成功。
 - APK使用包名`com.xinyanshuo.worldbox.lab13`，本次测试签名非历史lab13签名：不能直接保证覆盖旧安装，先备份存档，禁止建议不经备份强卸载。签名密钥不公开，支付/游戏内购逻辑未修改。
 - 《苍岚》main/官网/正式APK176/PCK仍完全不动；WorldBox GitHub只维护合法源码、隔离工作流、版本日志。后续优先修实机引导，再针对漏译增量修复，之后实现真实天道放置。
+
+## 2026-10-21 Work仓库交接（用户要求先上传）
+已更新 `tools/worldbox-xianxia/releases/v0.28/PUBLIC_RELEASE_MANIFEST.json` 和 `tools/worldbox-xianxia/releases/v0.28/README.md` 作为公开GitHub源码发布入口；其中含私有v0.28签名APK的字节数、SHA256、包名、未实机验收状态。原始商业WorldBox APK、第三方二进制和测试签名密钥不得进入公开仓库。专属Actions产出自己的MOD与源码，私人完整APK仍从用户原ChatGPT附件领取。后续继续Android16真实安装、NML加载、简中菜单、存档与性能验收；严禁碰苍岚main。

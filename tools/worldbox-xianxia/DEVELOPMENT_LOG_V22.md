@@ -252,3 +252,11 @@ Work仍负责私有APK整合、签名、安卓16真机验收。不得上传商�
 - 真实验收缺口：当前会话**无法访问用户PKR110 Android16手机和ADB日志**，没有实际执行安装、启动游戏、证明v18引导成功、对比全页面中文、触发MOD行为、存档/存读回归。此版本须准确称为“**已签名的私有整合APK测试候选**”，不是“实机已经可玩/汉化100%”，任何安装/加载结果由设备实际验收决定。
 - 私有完整报告：`WorldBox_v028_APK私有整合静态验收报告.json`；APK及测试证书存留当前私有工作空间，不向公开GitHub发商业APK、密钥或旧第三方MOD二进制。
 - 下轮优先从**这份真正含18份MOD代码的私有APK**取得真实设备启动/装载/汉化逐页证据后修复失败，不得退回无限只产源码ZIP。后续天道放置、王朝多城、皇城、建筑升级、仙岛、地府依既定顺序推进；与苍岚main严格隔离。
+
+---
+
+## 2026-10-21 用户要求先上传仓库：v0.28公开源码/私人APK边界
+- 本轮实际在 `worldbox/external-mod-lab-v22-zh-localization` 提交公开版本清单 `tools/worldbox-xianxia/releases/v0.28/PUBLIC_RELEASE_MANIFEST.json`、README、发布隔离单测，并把v0.28私有APK制作脚本、单测及公开版本清单装入专属Actions候选工件。仓库源代码已经可从GitHub查看，正式`main`、苍岚游戏/网站/PCK不改。
+- 用户上轮取得的完整、已签名 **v0.28私有整合APK** 实际已在ChatGPT工作区，SHA256 `9efa49f98e92921f7ee8b9341f14b68b39d426323bc0a8cf25d8acc41e6cc822`、189287005字节、包名 `com.xinyanshuo.worldbox.lab13`；公开GitHub仓库不适合在未经商业游戏重新分发授权的情况下上传WorldBox APK、第三方MOD二进制或签名密钥。GitHub版本清单只公开可验证摘要，不含APK字节。
+- 工作流新增自动化上传前检查确保v0.28公开候选工件没有APK或签名密钥；`test_v28_release_publication.py`离线验证状态始终为DEVICE_PENDING，不冒充设备通过。
+- P0仍需真实Android16 NML装载链、简体中文逐页截图与存档验收。不得将GitHub源码工件当作安装APK。
