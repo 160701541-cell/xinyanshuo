@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <OutputType>Exe</OutputType>
+    <Nullable>disable</Nullable>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="../gameplay/CultivationV18.cs" />
+    <Compile Include="stubs/WorldBoxApiStubs.cs" />
+    <Compile Include="CultivationScenarioV18.cs" />
+  </ItemGroup>
+</Project>
