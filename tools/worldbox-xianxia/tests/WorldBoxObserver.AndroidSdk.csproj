@@ -10,6 +10,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="../ui/SharedPanelsV30.cs" />
+    <Compile Include="../economy-v35/EconomyVanillaTabsV35.cs" />
     <Compile Include="../ui/NativeWorldBoxUiV32.cs" />
     <Compile Include="../ui/PixelFrameV30.cs" />
     <Compile Include="../localization/ChineseWorldNamesV30.cs" />
