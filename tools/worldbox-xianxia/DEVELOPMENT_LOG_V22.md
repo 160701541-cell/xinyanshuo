@@ -221,3 +221,10 @@ Work仍负责私有APK整合、签名、安卓16真机验收。不得上传商�
 ### v0.27真实MOD版本号与候选包记录
 - `nml-observer-v07/mod.json`版本号已经随真实代码增量正式升为 `0.27.0-chinese-device-pending`，保留原GUID和构建版本725。先前同系列ZIP曾仍标v0.25的Manifest；当前要求ZIP内`mod.json`与源码/README版本一致才当作**v0.27候选**。
 - 同版新构建 **`39451867361`** 在Manifest版本号提交后自动触发；是否全部通过必须以实际Actions结果为准，不能继承此前通过的ZIP打包状态。**此项依旧不是安卓手机安装/签名验收。**
+
+
+### v0.27 带正确版本号的真实MOD构建/CRC/CI最终闭环
+- Manifest已更新为`0.27.0-chinese-device-pending`，最新同代码构建测试`39451867361` **三项作业全部成功**（Python+C#场景、真正公开Android NML SDK编译及MOD格式双路线、私有工具编译），仅文档追加后的`39451969938` **同样三项作业全部成功**；均非安卓实机通过。
+- 实际拉取Actions生成的嵌套ZIP，逐个运行ZIP CRC、解析包内`mod.json`确保版本确实为`0.27.0-chinese-device-pending`，其中传统Mono源文件核实包含原生简中非覆盖安全门禁；新版NML根目录仅一个SDK编译DLL并带`Locales/cz.json`和`en.json`。
+- 真实v0.27独立MOD ZIP（非APK）：`WorldBox_万界仙侠_v0.27_传统Mono源码MOD_待实机.zip` 48,547字节，SHA256 `f5ebde042db9edf373a1f78972a8faa54e732517e28a4e822b6cad02412fd2e6`；`WorldBox_万界仙侠_v0.27_安卓NML预编译MOD_待实机.zip` 42,943字节，SHA256 `75dfa8e734d70ce3350951332e0b3ab1e649059f31c7537c4e4eabc9574c0bda`。均已过ZIP CRC；两种安装路线不应混用。
+- **状态严格不变：**这是两份测试候选MOD，不是完整、签名、已安装或手机验收的WorldBox游戏APK。当前唯一P0阻塞是用户Android16真实MOD加载器引导链与后续私有构建/现场验收。Work按交接文档执行，不动苍岚main。
