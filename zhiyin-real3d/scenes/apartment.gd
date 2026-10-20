@@ -180,6 +180,8 @@ func _bounds_of_meshes(root:Node3D) -> AABB:
 func _instantiate_model(model_id:String, world_pos:Vector2,
                         wanted:Vector3, rotation:float) -> Node3D:
     var path := "res://assets/characters/Superhero_Female_FullBody.gltf" if model_id=="hero_female" else "res://assets/models/"+model_id+".glb"
+    if model_id=="hero_clothed_female":
+        path="res://assets/models/hero_clothed_female.glb"
     var source := load(path) as PackedScene
     if source==null:
         push_error("缺少真正GLB文件: "+path)
@@ -201,7 +203,7 @@ func _instantiate_model(model_id:String, world_pos:Vector2,
     var resize: float = minf(wanted.x/maxf(0.01,b.size.x),
         minf(wanted.y/maxf(0.01,b.size.y),wanted.z/maxf(0.01,b.size.z)))
     # We use a single uniform scale: no anatomical stretching of humanoids.
-    if model_id=="hero_female" or model_id=="prototype_character":
+    if model_id=="hero_female" or model_id=="hero_clothed_female" or model_id=="prototype_character":
         # Humanoid height drives scale. X/Z restriction made the full 3D
         # model shrink to an unusable 50-pixel silhouette.
         resize=wanted.y/maxf(0.01,b.size.y)
@@ -236,7 +238,7 @@ func _import_furniture() -> void:
         add_child(zone)
 
 func _import_character() -> void:
-    avatar=_instantiate_model("hero_female",Vector2(0.14,0.16),
+    avatar=_instantiate_model("hero_clothed_female",Vector2(0.14,0.16),
         Vector3(.58,1.63,.35),0.55)
     if avatar==null:return
     avatar.name="知音 · 65关节Humanoid骨骼角色"
