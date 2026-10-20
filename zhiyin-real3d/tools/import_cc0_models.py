@@ -173,12 +173,15 @@ def main():
     # body instead of nude/blocky placeholder. Pinned community mirror
     # carries original FREE asset and its License_Standard.txt.
     outfit_repo="ecbarish/generations"
-    outfit_ref="main"
+    outfit_ref="8df479c9485969ff4ed6de8fd691e1a5e6094a3d"
     outfit_file="shared/assets/characters/quaternius/Female_Peasant.glb"
     outfit_license="shared/assets/characters/quaternius/LICENSE-outfits.txt"
     model_url=f"https://raw.githubusercontent.com/{outfit_repo}/{outfit_ref}/{outfit_file}"
     with urllib.request.urlopen(model_url,timeout=65) as result:
         cloth_body=result.read(10*1024*1024)
+    expected_sha="e44904ed8c71dc76cd6641eb2ce4c26d6c0a7f043d66bef6e08dd2c18115bab8"
+    if hashlib.sha256(cloth_body).hexdigest()!=expected_sha:
+        raise ValueError("Pinned Quaternius Female_Peasant GLB SHA256 mismatch")
     cloth_meta=read_gltf_metadata(cloth_body)
     gltf=json.loads(cloth_body[20:20+struct.unpack_from("<I",cloth_body,12)[0]])
     cloth_joint_names=[gltf["nodes"][i].get("name","") for i in gltf.get("skins",[{}])[0].get("joints",[])] if gltf.get("skins") else []
