@@ -7,6 +7,10 @@
     <DefineConstants>REAL_MOBILE_NML</DefineConstants>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="UnityEngine.CoreModule">
+      <HintPath>$(UnityCorePath)</HintPath>
+      <Private>false</Private>
+    </Reference>
     <Reference Include="NeoModLoader_mobile">
       <HintPath>$(MobileNMLPath)</HintPath>
       <Private>false</Private>
