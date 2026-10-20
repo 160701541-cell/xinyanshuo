@@ -120,6 +120,7 @@ jobs:
           python tools/worldbox-xianxia/package_android_mono_source.py \
             --source tools/worldbox-xianxia/nml-observer-v07/Code/XianxiaObserverV07.cs \
             --extra-source tools/worldbox-xianxia/ui/SharedPanelsV30.cs \
+            --extra-source tools/worldbox-xianxia/economy-v35/EconomyVanillaTabsV35.cs \
             --extra-source tools/worldbox-xianxia/ui/NativeWorldBoxUiV32.cs \
             --extra-source tools/worldbox-xianxia/ui/PixelFrameV30.cs \
             --extra-source tools/worldbox-xianxia/localization/ChineseWorldNamesV30.cs \
@@ -153,6 +154,7 @@ jobs:
               assert root+'Code/ObserverFrameGuardV12.cs' in files
               assert root+'Code/ModTextAccessibilityV13.cs' in files
               assert root+'Code/CultivationV18.cs' in files
+              assert root+'Code/EconomyVanillaTabsV35.cs' in files
               assert root+'Code/ChineseModManagerV21.cs' in files
               assert root+'Code/ChineseLocalizationV22.cs' in files
               assert root+'Code/RuntimeChineseOverlayV22.cs' in files
@@ -212,6 +214,7 @@ jobs:
           cp tools/worldbox-xianxia/huge-map-mod/GiantMapOptionsV11.cs /tmp/worldbox-v22-artifacts/
           cp tools/worldbox-xianxia/huge-map-mod/ObserverFrameGuardV12.cs /tmp/worldbox-v22-artifacts/
           cp tools/worldbox-xianxia/ui/NativeWorldBoxUiV32.cs /tmp/worldbox-v22-artifacts/
+          cp tools/worldbox-xianxia/economy-v35/EconomyVanillaTabsV35.cs /tmp/worldbox-v22-artifacts/
           cp tools/worldbox-xianxia/ui/ModTextAccessibilityV13.cs /tmp/worldbox-v22-artifacts/
           cp tools/worldbox-xianxia/gameplay/CultivationV18.cs /tmp/worldbox-v22-artifacts/
           cp tools/worldbox-xianxia/localization/ChineseLocalizationV22.cs /tmp/worldbox-v22-artifacts/
