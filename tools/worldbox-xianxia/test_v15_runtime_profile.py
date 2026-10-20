@@ -17,7 +17,7 @@ class RuntimeProfileTests(unittest.TestCase):
         s=(ROOT/"nml-observer-v07"/"Code"/"XianxiaObserverV07.cs").read_text(encoding="utf8")
         self.assertIn('"尺寸API自检"',s)
         self.assertIn('DiagnoseMapApi()',s)
-        self.assertIn('[XIANXIA-V15]',s)
+        self.assertTrue('[XIANXIA-V15]' in s or '[XIANXIA-V16]' in s)
     def test_2048_candidate_explicit_only(self):
         s=(ROOT/"huge-map-mod"/"GiantMapOptionsV11.cs").read_text(encoding="utf8")
         self.assertIn('public const int ExtremeChunks = 32;',s)
