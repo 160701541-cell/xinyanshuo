@@ -80,3 +80,15 @@ New `tools/worldbox-xianxia/qa/verify_android_world_evidence.py` parses **actual
 
 ## v0.21 actual in-game Chinese MOD manager panel
 Latest WorldBox-only branch: `worldbox/external-mod-lab-v21-mod-ui`. `ui/ChineseModManagerV21.cs` is now compiled into observer via NML SDK and exposed as 「中文模组管理器」 button. It shows private `Application.persistentDataPath/XianxiaModStaging` subdirectories and their explicitly unverified status, with refresh/close controls. It does NOT implement Android SAF document picker, actual ZIP installation, NML loader enable/disable, or real cross-mod compatibility. The separate `mod-manager/batch_import_v20.py` is an offline safe staging utility; do not claim the Android game can invoke it. Work owns private APK signing, actual game install, and real Android 16 UI verification. Keep this WorldBox experiment completely separate from original Canglan main game.
+
+
+## 2026-10-20 v0.22 current branch — ACTIVE (overrides historical branch pointer)
+**Branch `worldbox/external-mod-lab-v22-zh-localization` only. Read `DEVELOPMENT_LOG_V22.md` before any packaging.**
+New sources included in both Android public SDK compiled candidate and legacy Mono source candidate:
+- `localization/ChineseLocalizationV22.cs` exact-match vanilla/common-other-MOD Chinese dictionary + user overrides.
+- `localization/RuntimeChineseOverlayV22.cs` opt-out reversible Unity UI.Text/TMPro runtime translation pass, throttled and bounded.
+- `localization/OriginalMenuGuideV22.cs` in-game Chinese user guide for vanilla menus.
+- `ui/ChineseModManagerV21.cs` private staging-only mod UI; no Android SAF file picker or actual MOD installation.
+- `tests/RuntimeChineseScenarioV22.csproj` executable behavior QA for live labels, user overrides and safe restore.
+
+**Work integration acceptance:** build user-owned APK privately, verify real Android 16 WorldBox 0.51.4 loads DLL (choose original Mono vs IL2CPP/NML only after verifying loader); actually open vanilla settings/kingdom/menu and other third-party MOD menu; record pre/post untranslated text counts and screenshots, test CJK font and FPS; verify language toggle returns untouched English; verify game saves unaffected. Do not label complete Chinese unless actual on-device menu/key coverage measured. Dynamic Chinese kingdom/city/person names may use the user-provided ChineseName 1.5.1 optional MOD; verify exact NML loader compatibility first and avoid clashing name patches. User goal includes future heaven placement, larger empires with capital imperial palace/building levels, multi-layer sky islands/netherworld; listed as UNIMPLEMENTED in `DEVELOPMENT_LOG_V22.md`. Work must not present them as APK-ready.
