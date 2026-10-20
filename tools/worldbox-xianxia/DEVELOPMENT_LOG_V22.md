@@ -383,3 +383,11 @@ Work仍负责私有APK整合、签名、安卓16真机验收。不得上传商�
 - 若创建列表未含ID，仅在_mapSizes确认为可写string[]、与getSizes一致且包含真实原版模板ID时追加缓存，并回读getSizes验证；失败恢复原缓存，不猜测写其他字段。返回状态区分尺寸注册与创建列表就绪。中文标签从实际asset.getLocaleID取key，通过已有LM.AddToCurrentLocale尝试登记；不臆造键名。
 - 新GiantChoiceScenarioV31用独立模拟地图API验证add本身不更新缓存情况下的列表修复、重复调用无重复条目、中文key实际读取、448×448现世界不变、注册后诊断仍必须WORLD_SIZE_DIFFERENT。未运行生成4194304格，不宣称设备生成/存读/性能通过。
 - Work须同步重编原生桥及NML源码；NativeBridgeSources工件补入GiantMapOptionsV11和ObserverFrameGuardV12。没有新APK，手机尚无新建选项证据；当前构建终端仍不可用。不得再用实验注册或CI绿灯声称已交付超大世界。
+
+
+## 2026-10-21 — 用户质疑“做完的玩法为何不上传”：已执行交付纠偏（与一键接续新对话相关）
+- **已实际上传**：将GitHub Actions已通过的run `39465488094` 模组构建工件 `worldbox-v22-NMLMods-precompiled-original-CANDIDATE` 下载为 `WorldBox_v30_中文命名_UI_修炼_NML候选与源码.zip`，通过`files.manage_library`上传成功至用户持久化私有文件库：`/WorldBox-万界仙侠/Work交接/WorldBox_v30_中文命名_UI_修炼_NML候选与源码.zip`，之后Work可直接取用；所含 `worldbox_v22_android_mono_source_DEVICE_PENDING.zip` 包含`CultivationV18.cs`、`ChineseWorldNamesV30.cs`、`SharedPanelsV30.cs`、`PixelFrameV30.cs`以及完整汉化观察器源码，另有NML预编译候选DLL和中文包。此上传是**MOD构建候选交接，不是更新进入手机APK**。
+- **既有真实APK**：私有文件库还存有已签名 `WorldBox_WanjieXianxia_v0.28_Private_Android16_DEVICE_PENDING.apk` 189287005字节；用户Android16实测已进入Unity且CombatGods/Frontiers加载，但自有观察模块V07仍FAILED，特性编辑器groupsBuilder存在空键异常；不能称整合游戏全部玩法可玩。
+- **玩法准确盘点**：已进入NML候选的真实可执行玩法主要是选中Actor「吐纳修炼」基础逻辑（限本次运行、只有内存数据，未验证实际手机加载）；世界中文名和UI互斥/样式为修复候选。妖兽进化、筑基真实飞行、宗门/大阵、多城王朝皇城、建筑等级、真正天道投放、浮岛和地府多数仍是设计/数据计划，**不能以“已经做完但忘上传”掩饰为现成完整游戏功能**。
+- **交付阻塞**：将v30源与原有NativeBridgeSources完整桥重新编译进用户v0.28私有APK，并完成安卓DEX更新、同签名重签、v28原MOD替换升级、手机实机验收尚未执行；没有签名/设备证据禁止写成已更新。Work从文件库取到两个交接文件仍必须亲自构建，不能拿ZIP候选冒充APK。
+- **优先级纠偏**：之后先解决观察模块FAILED、groupsBuilder空键、v30UI重叠与中文名，确保至少已真实编写的功能可安装运行；再根据真实WorldBox API继续做天道投放与妖兽/飞行等功能，不再堆只存在于日志的“完成”。
