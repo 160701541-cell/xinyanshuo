@@ -314,3 +314,10 @@ Work仍负责私有APK整合、签名、安卓16真机验收。不得上传商�
 回归提交c95ebed7b6e161c9f346d71734b050d676c94a80：FontAccessibilityScenarioV13新增打开面板、循环缩放后原共享皮肤字体大小/字体引用不变的行为检查；已核对既有测试stub支持真实GUIStyle复制构造器。未执行测试，不能记录PASS。修复共用皮肤干扰不等于解决观察模块FAILED或groupsBuilder空键，不夸大范围。
 
 本轮再次实际调用pwd，终端返回“No usable execution environment is available. Wait for an environment to become available before using this tool.”。无法本地编译、验证完整APK或签名；没有新APK，旧手机安装包不会自动得到GitHub改动。需可用构建环境恢复私有APK流水线，不得用公开Actions上传商业游戏或密钥绕过。当前独立分支继续保留P0加载失败和特性空分组排查；苍岚main未动。
+
+
+## 2026-10-21 00:50 Asia/Shanghai — 实际特性空分组兼容修复
+
+提交9aeb9070db24939d8d6728c396e8fb4d0193bee3：在现有打包已包含的XianxiaObserverV07.cs内加入RepairOwnTraitGroups，由Update每10秒检查一次。只枚举自有xys_wanjie_v18_qi_1..13；仅修复空分组或不存在的分组，保留合法分组。先从原版blessed特性读取真实group_id，确认AssetManager.trait_groups存在对应项，才回填自有特性；不臆造组名、不删除特性/人物/存档、不改第三方特性。通过反射适配实际字段/库get(string)避免直接依赖SDK可见性；接口或模板不存在时不写入。写入日志逐条记录实际id/group；异常记录完整堆栈并节流60秒。开源WorldBoxOpenMods/ModExample/content/ExampleTraits.cs确认group_id和trait_groups注册关系，仅作接口调研，不代替实际0.51.4元数据验证。
+
+限制：此修复依赖观察模块先成功编译/启动；它不能单独救活FAILED的组件，也不能覆盖全部第三方空键可能性。若空键来自其他字段/其他MOD，应按原始groupsBuilder栈继续定位。此前相机接口修复须一并重编译。修复代码已提交但未编译/测试/打包，DEVICE_PENDING，不声称空键已从手机消除。平台仍无可用执行环境，未生成新安装包；完整私有构建阻塞未解除。main/苍岚未动。
