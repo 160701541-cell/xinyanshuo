@@ -184,8 +184,26 @@ class Program {
       !(bb[0].Operand?.ToString()?.Contains("MapPresetBridgeV32::Tick")??false))
       throw new InvalidOperationException("map bridge inserted IL differs from expected");
    for(int i=0;i<aa.Count;i++)
-     if(aa[i].OpCode!=bb[i+1].OpCode||aa[i].Operand?.ToString()!=bb[i+1].Operand?.ToString())
-       throw new InvalidOperationException("original overlay update IL mutated");
+   {
+     if(aa[i].OpCode!=bb[i+1].OpCode)
+       throw new InvalidOperationException("original overlay opcode mutated at "+i);
+     var left=aa[i].Operand;
+     var right=bb[i+1].Operand;
+     if(left is dnlib.DotNet.Emit.Instruction && right is dnlib.DotNet.Emit.Instruction) {
+       if(aa.IndexOf((dnlib.DotNet.Emit.Instruction)left)+1!=
+          bb.IndexOf((dnlib.DotNet.Emit.Instruction)right))
+         throw new InvalidOperationException("original IL branch target changed "+i);
+     }else if(left is dnlib.DotNet.Emit.Instruction[]&&right is dnlib.DotNet.Emit.Instruction[]) {
+       var aTargets=(dnlib.DotNet.Emit.Instruction[])left;
+       var bTargets=(dnlib.DotNet.Emit.Instruction[])right;
+       if(aTargets.Length!=bTargets.Length)
+         throw new InvalidOperationException("original IL switch target count changed");
+       for(int n=0;n<aTargets.Length;n++)
+         if(aa.IndexOf(aTargets[n])+1!=bb.IndexOf(bTargets[n]))
+           throw new InvalidOperationException("original IL switch target changed");
+     }else if(left?.ToString()!=right?.ToString())
+       throw new InvalidOperationException("original IL operand changed at "+i);
+   }
    if(!after.GetAssemblyRefs().Any(x=>x.Name==addon.Assembly.Name))
       throw new InvalidOperationException("map bridge assembly reference is missing");
    if(before.Types.Count!=after.Types.Count)
