@@ -39,6 +39,15 @@ func _verify() -> void:
         if face_mesh!=null and face_mesh.mesh!=null:
             var skin_mat=face_mesh.mesh.surface_get_material(0) as StandardMaterial3D
             face_pbr=skin_mat!=null and skin_mat.albedo_texture!=null and skin_mat.normal_texture!=null
+    var blue_components=0
+    var blue_hair=0
+    if hero!=null:
+        blue_components=hero.find_children("DS_*","MeshInstance3D",true,false).size()
+        blue_hair=hero.find_children("DS_HAIR_*","MeshInstance3D",true,false).size()
+    var has_blue_fin = hero!=null and hero.find_child("DS_FIN_LEFT",true,false)!=null
+    var has_blue_tail = hero!=null and hero.find_child("DS_WHALE_TAIL_STALK",true,false)!=null
+    var has_blue_apron = hero!=null and hero.find_child("DS_APRON_WHITE_LAYER",true,false)!=null
+    var blue_identity_ok = stage.avatar_identity.get("identity","")=="npc_deepseek_blue"
     var hero_motion_count = 0
     var hero_anim_playing = false
     if hero != null:
@@ -48,8 +57,8 @@ func _verify() -> void:
             if player.has_animation("Idle") and player.has_animation("Walk") and player.has_animation("Sitting_Idle"):
                 hero_motion_count = player.get_animation_list().size()
                 hero_anim_playing = player.is_playing()
-    print("3D QA models=", assets.size(), " meshes=", meshes.size(), " lights=", lights.size(), " pbr=", pbr, " skeletons=", skeletons.size(), " hero_bones=",hero_joints," authentic_motion_clips=",hero_motion_count," playing=",hero_anim_playing," full_head=",assembled_heads," skinned_hair=",assembled_hair," face_PBR=",face_pbr)
-    if assets.size() < 10 or meshes.size() < 28 or lights.size() < 2 or pbr < 15 or hero_joints < 50 or hero_motion_count < 40 or not hero_anim_playing or assembled_heads!=1 or assembled_hair<1 or not face_pbr:
+    print("3D QA models=", assets.size(), " meshes=", meshes.size(), " lights=", lights.size(), " pbr=", pbr, " skeletons=", skeletons.size(), " hero_bones=",hero_joints," authentic_motion_clips=",hero_motion_count," playing=",hero_anim_playing," full_head=",assembled_heads," skinned_hair=",assembled_hair," face_PBR=",face_pbr," deepseek_components=",blue_components," hair_locks=",blue_hair," fin=",has_blue_fin," tail=",has_blue_tail," apron=",has_blue_apron," identity=",blue_identity_ok)
+    if assets.size() < 10 or meshes.size() < 28 or lights.size() < 2 or pbr < 15 or hero_joints < 50 or hero_motion_count < 40 or not hero_anim_playing or assembled_heads!=1 or assembled_hair<1 or not face_pbr or blue_components<50 or blue_hair<19 or not has_blue_fin or not has_blue_tail or not has_blue_apron or not blue_identity_ok:
         push_error("Godot mesh/material quality gate failed")
         quit(3)
         return
