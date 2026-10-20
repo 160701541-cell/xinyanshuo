@@ -1,0 +1,52 @@
+{
+  "round": 3,
+  "date": "2026-10-20",
+  "target": "颈部/头部衔接（换工具层验颈）+ 主色漂移标定：把『主色漂移 ΔE00』作为本轮唯一变量族群（影棚光照/曝光标定，属量测台环境、非角色几何），并把颈缝主仪器从像素口径换成几何椭圆柱口径",
+  "branch": "art/self-iteration-rounds",
+  "commit": "PENDING",
+  "changes": [
+    "影棚曝光标定（唯一变量族群）：rig/studio_params.json 新增 exposure 键并驱动 WorldEnvironment.tonemap_exposure，本轮 1.0 → 1.8（一维标定扫 0.5/0.6/0.7/0.8/1.2/1.5/1.8/2.2 单视图求最小 ΔE00）；其余影棚项（深色背景 0.100/0.105/0.120、key 1.15 / fill 0.5 / ambient 0.55）保持不变，角色几何与材质色一字未动。"
+  ],
+  "renders": [
+    "tools/self_iteration/shots/round03_after_0.png",
+    "tools/self_iteration/shots/round03_after_90.png",
+    "tools/self_iteration/shots/round03_after_180.png",
+    "tools/self_iteration/shots/round03_after_45.png",
+    "tools/self_iteration/shots/round02_after_0.png",
+    "tools/self_iteration/shots/round02_after_90.png",
+    "tools/self_iteration/shots/round02_after_180.png",
+    "tools/self_iteration/shots/round02_after_45.png"
+  ],
+  "metrics": {
+    "delta_L": 33.06,
+    "accent_area_pct": 5.45,
+    "delta_E00": 5.81,
+    "outline_px": null,
+    "parts_readable": null,
+    "body_breach_verts": 42,
+    "neck_gap_px": 53.0,
+    "triangles": 26084,
+    "head_torso_leg_ratio": "1 : 1.75 : 3.38",
+    "collar_min_clearance_m": 0.0048
+  },
+  "verdict": {
+    "technical": "FAIL",
+    "aesthetic": "PENDING",
+    "note": "三项达标、一项未达标、两项 BLOCKED —— delta_L 26.76 → 33.06（门槛 ≥25，四视图 25.89–44.22）PASS；accent_area_pct 5.46% → 5.45%（门槛 3–8%，四视图 4.31–6.72）PASS；delta_E00 14.23 → 5.81（门槛 ≤6，四视图 5.66–5.95）PASS（本轮核心进展）；body_breach_verts 首次量测 = 42（门槛 0）FAIL；neck_gap_px 45.5 → 53.0（像素口径，已降为辅助）；outline_px 与 parts_readable 本环境无视觉通道 → BLOCKED"
+  },
+  "attribution": {
+    "root_cause": "主色漂移 ΔE00 两轮都卡在 14 上下，真因不是材质色而是影棚曝光偏低：渲染出的袍色比设定色板暗，ΔE00 对曝光单调（降曝光只会更暗、更偏）。这与『改材质色』的直觉相反 —— 正确做法是先做一维曝光标定扫，找到渲染 L* 与色板 L* 的交点。",
+    "evidence": "单视图（yaw0）标定扫 exposure → (delta_L / accent% / ΔE00)：0.50→16.9/4.25/24.38；0.60→17.25/4.42/22.11；0.70→18.58/4.55/20.05；0.80→18.99/4.76/18.12；1.20→21.81/4.77/11.33；1.50→23.75/4.82/7.32；1.80→25.89/4.78/5.66；2.20→28.81/4.71/7.49 —— 最小点在 1.8 附近且在 1.5–2.2 内 ≤6。四视图（exposure=1.8，620x820）：delta_L 33.06（25.89–44.22）、accent_area_pct 5.45%（4.31–6.72）、ΔE00 5.81（5.66–5.95）、neck_gap_px 53.0（41–62）、body_breach_verts 42。",
+    "residual": "换几何口径后暴露真实残留：领口带 y1.520–1.588 内仍有 42 个身体顶点穿出袍面（判据 (x/rx)^2+(z/rz)^2 > 1）。第 1 轮的 collar_min_clearance(+4.8mm) 把 max|x| 与 max|z| 分开比较，会漏掉『x 与 z 同时接近椭圆边界』的顶点，所以当时读数是正数、实际仍在穿。像素口径 neck_gap_px 三轮无改善（45.75 / 45.5 / 53.0），证明它分不清『领口以上正常可见的颈部皮肤』与『皮肤穿出袍面』。"
+  },
+  "lessons": [
+    "颜色类门槛先标定光照，再动材质：ΔE00 的支配变量是曝光/光照标定，不是材质色 —— 一维扫描（8 个点）比盲改色板成本低一个数量级",
+    "主仪器必须与门槛语义等价：『颈缝 = 0』用分轴最大半径（max|x|、max|z|）会在椭圆截面上漏判，必须用椭圆柱判据 (x/rx)^2+(z/rz)^2>1 才是『顶点在袍面内』",
+    "同一门槛连续三轮无改善即按停损规则换工具层：neck_gap_px 45.75→45.5→53.0，本轮降为辅助并把几何口径升为主仪器 —— 换层不是换个数字，而是让仪器能区分原口径分不清的两类像素",
+    "像素口径与几何口径要同时记录：只记一个会出现『看起来修好了 / 几何上没修好』的对不上"
+  ],
+  "next": "第 4 轮唯一变量族群 = 颈–肩–领三环的椭圆柱包覆：把 y1.520–1.588 领口带的 body_breach_verts 从 42 压到 0（在 _robe_ring_at 环半径上给领口环与肩颈环留出按椭圆柱计算的包覆余量），光照固定 exposure=1.8 不动",
+  "instrument_changes": [
+    "仪器口径修订（测量台变更，非角色变量）：check_round.py 主打门槛『颈缝 = 0』由像素口径 neck_gap_px 改为几何口径 body_breach_verts（身体顶点穿出袍面的数量 = 0），判据 (x/rx)^2 + (z/rz)^2 > 1（在 y1.520–1.588 领口带内按 _robe_ring_at 插值环半径）；neck_gap_px 因连续三轮无改善（45.75 → 45.5 → 53.0）按协议停损规则降为辅助回显；cloth.gd _measure_dump() 新增 MEAS BREACH 输出。"
+  ]
+}

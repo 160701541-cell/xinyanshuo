@@ -498,6 +498,19 @@ func _sash_tails(ring: Dictionary) -> void:
 		mi.material_override = mat
 		pivot.add_child(mi)
 
+func _robe_ring_at(rings: Array, y: float, key: String) -> float:
+	# 在袍身环列上按高度线性插值取 rx/rz（环列按 y 递减）
+	if rings.size() < 2:
+		return 0.0
+	for i in range(rings.size() - 1):
+		var y0 := float(rings[i]["y"])
+		var y1 := float(rings[i + 1]["y"])
+		if y >= minf(y0, y1) and y <= maxf(y0, y1):
+			var t := 0.0 if absf(y1 - y0) < 1e-6 else (y - y0) / (y1 - y0)
+			return lerpf(float(rings[i][key]), float(rings[i + 1][key]), clampf(t, 0.0, 1.0))
+	return 0.0
+
+
 func _trim_params() -> Dictionary:
 	# R2 参数化：金边宽度/颜色 + 领口金边环带，由 res://rig/trim_params.json 驱动（缺文件=基线）
 	var d := {
@@ -519,7 +532,8 @@ func _trim_params() -> Dictionary:
 
 func _studio_params() -> Dictionary:
 	# R3 量测台：影棚背景色，由 res://rig/studio_params.json 驱动（缺文件=基线暖灰）
-	var d := {"bg_r": 0.945, "bg_g": 0.918, "bg_b": 0.870}
+	var d := {"bg_r": 0.945, "bg_g": 0.918, "bg_b": 0.870,
+		"ambient_energy": 0.55, "key_energy": 1.15, "fill_energy": 0.5, "exposure": 1.0}
 	var f := FileAccess.open("res://rig/studio_params.json", FileAccess.READ)
 	if f != null:
 		var j: Variant = JSON.parse_string(f.get_as_text())
@@ -806,6 +820,23 @@ func _measure_dump() -> void:
 				clr_at = "y=%.3f" % yc
 			print("MEAS COLLAR y=%.3f robe_rx=%.3f robe_rz=%.3f body_rx=%.3f body_rz=%.3f clr_x=%+.4f clr_z=%+.4f" % [yc, rxc, rzc, bx, bz, cx, cz])
 	print("MEAS COLLAR_MIN clearance=%.4f at %s" % [min_clr, clr_at])
+	# R4 工具层换层（第 3 轮）：颈部门槛改由几何口径判定 ——
+	# 统计袍身领口带内身体顶点（|x|<=0.135）穿出袍面的数量，椭圆柱判据 (x/rx)^2+(z/rz)^2 > 1
+	var y_lo: float = minf(minf(float(rr2[0]["y"]), float(rr2[1]["y"])), float(rr2[2]["y"]))
+	var y_hi: float = maxf(maxf(float(rr2[0]["y"]), float(rr2[1]["y"])), float(rr2[2]["y"]))
+	var breach := 0
+	for v in verts:
+		if absf(v.x) > 0.135:
+			continue
+		if v.y < y_lo - 0.02 or v.y > y_hi + 0.02:
+			continue
+		var rx_b := _robe_ring_at(rr2, v.y, "rx")
+		var rz_b := _robe_ring_at(rr2, v.y, "rz")
+		if rx_b <= 0.0 or rz_b <= 0.0:
+			continue
+		if (v.x / rx_b) * (v.x / rx_b) + (v.z / rz_b) * (v.z / rz_b) > 1.0:
+			breach += 1
+	print("MEAS BREACH verts=%d band=%.3f..%.3f" % [breach, y_lo, y_hi])
 	var tot := idx.size() / 3
 	for c in pivot.get_children():
 		if c is MeshInstance3D:
@@ -823,20 +854,21 @@ func _setup_world() -> void:
 	env.background_mode = Environment.BG_COLOR
 	var bp := _studio_params()
 	env.background_color = Color(float(bp["bg_r"]), float(bp["bg_g"]), float(bp["bg_b"]))
+	env.tonemap_exposure = float(bp["exposure"])
 	env.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
 	env.ambient_light_color = Color(0.80, 0.78, 0.74)
-	env.ambient_light_energy = 0.55
+	env.ambient_light_energy = float(bp["ambient_energy"])
 	we.environment = env
 	add_child(we)
 	var key := DirectionalLight3D.new()
 	key.rotation_degrees = Vector3(-42, 148, -12)
-	key.light_energy = 1.15
+	key.light_energy = float(bp["key_energy"])
 	key.light_color = Color(1.0, 0.96, 0.90)
 	key.shadow_enabled = true
 	add_child(key)
 	var fill := DirectionalLight3D.new()
 	fill.rotation_degrees = Vector3(-8, 320, 0)
-	fill.light_energy = 0.5
+	fill.light_energy = float(bp["fill_energy"])
 	fill.light_color = Color(0.68, 0.80, 0.90)
 	add_child(fill)
 

@@ -1,5 +1,14 @@
 # CAC 工序变更与开发日志
 
+## 2026-10-20 / CAC-SELF-ITERATION-ROUND-3-EXPOSURE-CALIBRATION / 第 3 轮：主色漂移 ΔE00 14.23→5.81 达标（靠曝光标定，不是改材质）；颈缝主仪器换成几何椭圆柱口径，暴露残留 42 顶点
+- **本轮唯一变量族群（R7，`changes` 只 1 项）**：影棚曝光标定。真因不是材质色画错，而是**影棚曝光偏低**——渲染出的袍色比 `CHARACTER_SPEC.md` 色板暗，ΔE00 对曝光单调（降曝光只会更暗更偏）：单视图 yaw0 扫 8 个点，exposure 0.50→ΔE00 24.38、0.80→18.12、1.20→11.33、1.50→7.32、**1.80→5.66（最小）**、2.20→7.49。**先标定光照、再谈材质**，一维扫描比盲改色板便宜一个数量级。
+- **改动**：`rig/studio_params.json` 新增 `exposure` 键并驱动 `WorldEnvironment.tonemap_exposure`，本轮 1.0→1.8；深色背景 0.100/0.105/0.120、key 1.15 / fill 0.5 / ambient 0.55 **均未动**；角色几何与材质色**一字未改**。
+- **仪器口径修订（台账单列 `instrument_changes`，属 R3 量测台变更、非角色变量）**：主打门槛"颈缝 = 0"由像素口径 `neck_gap_px` 改为几何口径 `body_breach_verts`（身体顶点满足 `(x/rx)^2+(z/rz)^2 > 1` 的数量 = 0，在 y1.520–1.588 领口带内按 `_robe_ring_at` 插值环半径）；`cloth.gd` 新增 `MEAS BREACH` 探针。**换层理由**：`neck_gap_px` 连续三轮无改善（45.75 → 45.5 → 53.0，且第 1 轮的 `collar_min_clearance` +4.8mm 用 max|x| 与 max|z| **分轴**比较，会漏掉 x/z 同时贴近椭圆边界的顶点）。协议附录 A 已留痕。
+- **诚实判定（`tools/self_iteration/rounds/round-3.json`，`check_round.py` exit=1、无违规项）**：delta_L 26.76→**33.06**（四视图 25.89–44.22，≥25）**PASS**；accent_area_pct 5.46%→**5.45%**（四视图 4.31–6.72，门槛 3–8%）**PASS**；delta_E00 14.23→**5.81**（四视图 5.66–5.95，≤6）**PASS**；`body_breach_verts` 首次量测 = **42**（=0）FAIL；`neck_gap_px` 45.5→53.0（已降为辅助）；outline_px / parts_readable 无视觉通道 → BLOCKED。`aesthetic` 仍 PENDING，**由用户判**。
+- **换工具层后的真实发现**：领口带仍有 42 个身体顶点在袍面之外——第 1 轮那个"+4.8mm 已修好"的读数是被分轴判据掩盖的，几何穿帮**并没有真正消除**。这是本轮最重要的诚实结论。
+- **一条命令复现**：`tools/character-pipeline/run_head_shot.sh /root/game /root/godot/Godot_v4.4.1-stable_linux.arm64 tools/self_iteration/params/round03_after.json round03_after`（参数文件同时投递 neck/trim/studio 三份；标定扫图见 `tools/self_iteration/shots/calib_e*.png`）。
+- **未做**：未合并 `main`、未改 `android-preview/latest.json`、未签名、未发布；本轮**不是**"玩家打开原版《苍岚》就能更新"的东西，只是角色流水线的源码/迭代进度。
+
 ## 2026-10-20 / CAC-SELF-ITERATION-ROUND-2-COLLAR-GOLD-TRIM / 领口金边：点缀色 0.09%→5.46%、主体/背景明度差达标；主色漂移与像素级颈缝仍未过
 - **本轮唯一变量族群（R7，`changes` 只 1 项）**：领口金边镶边。真因不是"忘了画金边"，而是①交领金边画在 y1.18–1.42，**fov16 头部特写只覆盖 y≈1.49–1.75，金边整个在画面外**；②量测仪表 v1 用"色相 35–60°"判金边，但 CIELAB 下金黄≈80°、肤色≈68°，**金边被全部判成肤色**。
 - **改动**：`cloth.gd` 新增 `_collar_trim()`——绕领口外表面生成 `band_h` 高的金色环带（环半径 = 领口环半径 + `band_margin`）；交领金边/内衫的角度窗口与颜色改为 `rig/trim_params.json` 驱动；影棚背景色改为 `rig/studio_params.json` 驱动（本轮固定深色 0.100/0.105/0.120，**属 R3 量测台环境、非角色几何变量**）。
