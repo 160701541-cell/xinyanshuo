@@ -146,6 +146,8 @@ namespace XianxiaWorldBox
             Set(clone, "resizeTextForBestFit", false);
             Set(clone, "alignment", Enum.Parse(Need("UnityEngine.TextAnchor"), "MiddleCenter"));
             Set(clone, "raycastTarget", false);
+            Set(clone, "horizontalOverflow", Enum.Parse(Need("UnityEngine.HorizontalWrapMode"), "Wrap"));
+            Set(clone, "verticalOverflow", Enum.Parse(Need("UnityEngine.VerticalWrapMode"), "Truncate"));
             Set(clone, "text", text);
             Active(clone, true);
             return clone;
@@ -180,6 +182,7 @@ namespace XianxiaWorldBox
         {
             if (status == null) return;
             var actor = Get(bridge, "selected");
+            if (actor != null && !Convert.ToBoolean(Call(actor, "isAlive"))) actor = null;
             string title = actor == null ? "未选取人物" : Convert.ToString(Call(actor, "getName"));
             string info = "";
             if (actor != null) {
@@ -221,15 +224,15 @@ namespace XianxiaWorldBox
             var content = Get(window, "transform_content");
             if (content == null) content = Call(Transform(window), "Find", "Background/Scroll View/Viewport/Content");
             if (content == null) throw new InvalidOperationException("Original scroll content unavailable");
-            Set(content, "sizeDelta", Vec("Vector2", 220f, 332f));
-            status = NativeText(content, "选取人物后开启修行", 0, -42, 212, 76);
+            Set(content, "sizeDelta", Vec("Vector2", 220f, 356f));
+            status = NativeText(content, "选取人物后开启修行", 0, -52, 212, 96);
             for (int i = 0; i < Labels.Length; i++) {
                 int action = i;
                 string key = Id + "_action_" + i;
                 Locale(key, Labels[i]);
                 Locale(key + " Description", Labels[i]);
                 float x = i % 2 == 0 ? -84 : 24;
-                float y = -104 - 44 * (i / 2);
+                float y = -128 - 44 * (i / 2);
                 var button = Call(factory, "CreateSimpleButton", key,
                     (Action)(() => InvokeAction(action)), Icon(Icons[i]), content);
                 created.Add(button);
@@ -266,7 +269,7 @@ namespace XianxiaWorldBox
             if (time < refreshAt) return;
             refreshAt = time + .5f;
             try { Refresh(); }
-            catch (Exception e) { Report("[XIANXIA-NATIVE-UI] REFRESH_FAILED " + e); }
+            catch (Exception e) { refreshAt = time + 15; Report("[XIANXIA-NATIVE-UI] REFRESH_FAILED " + e); }
         }
     }
 }

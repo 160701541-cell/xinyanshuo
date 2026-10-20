@@ -422,3 +422,21 @@ Work下一步：在真实Android16手机运行这一准确SHA256包，收集`MOD
 - **私有文件已上传并回传成功**：`/WorldBox-万界仙侠/Work交接/WorldBox_v031_Isolated_Install_DEVICE_PENDING.apk`、`WorldBox_v031_signer_gate_report.json`、`private_side_by_side_v31.py`、`private_signing_gate_v31.py`；不向GitHub公开分发商业WorldBox。
 - 签名兼容门禁补进独立分支源代码及6项本地Python合成测试（均通过），离线还核验基线v18和最新v31签名证书，输出明确`SEPARATE_APP_ID`。旧应用/旧存档绝不卸载；`lab31`是单独新数据目录，不自动继承旧存档，可能被游戏SDK授权/包名关联限制，手机测试结果决定是否可继续使用。
 - **后续优先级**：真实Android16安装实验版→实际Unity/NML/日志与玩法→寻找原v18签名密钥（只有找到才能按旧包名签升级版）→修复原生桥编译失败、观察FAILED、UI叠层/人物名称和2048地图。不要再无故换签名，不要修改苍岚main。
+
+
+---
+
+## 2026-10-21 原版WorldBox UI整合：替换方向和实际边界
+
+用户明确拒绝自制半透明浮窗、叠层菜单及另画像素边框。本次新增 `ui/NativeWorldBoxUiV32.cs`，从已安装的原版/NML复用 `WindowCreator.CreateEmptyWindow`（windows/empty）、`PowerButtonCreator.CreateWindowButton/CreateSimpleButton`（world_laws按钮模板）、原版底部other工具栏和原版SpriteTextureLoader图标；正文克隆原版标题Text并保留其字体/材质/颜色。没有绘制新背景、边框或替换原版字体。
+
+十个中文操作直接反射调用实际已运行的 `XianxiaMonoBridge.CultivationBridgeV18.Pick(bool)/Action(int)`，状态读取该组件选取人物、实际Read/Now修炼数据和message；不另造临时修炼状态。只有原版窗口、全部动作、原版工具栏入口和两处旧GUI前置拦截都成功后才置Ready，随后抑制**我们自己的**Overlay.OnGUI/CultivationBridgeV18.OnGUI及观察器OnGUI，保留其Update和世界模拟。任一步失败则保留旧入口、销毁未完成的新控件并记录BUILD_FAILED，不能冒称原版UI接入成功。
+
+已加入NML源码候选、公开SDK编译和独立C#模拟场景。首轮Actions 39473275346的UI场景已通过：实际执行反射工厂调用/失败清理/十个回调索引/旧GUI就绪门禁/原版字体继承。**这些使用模拟API，不能证明Android16显示、原版按钮触摸或旧Mono安装已生效。** 当前路径仍需观察器成功加载；此前旧原生桥编译失败问题未被该UI适配器自动解决。既有v0.31私有APK也不包含本次新增界面。
+
+原版API依据（直接读取官方源码，未复制商业游戏素材）：
+- https://github.com/WorldBoxOpenMods/ModLoader/blob/master/general/WindowCreator.cs
+- https://github.com/WorldBoxOpenMods/ModLoader/blob/master/general/PowerButtonCreator.cs
+- https://github.com/WorldBoxOpenMods/ModLoader/blob/master/general/PowerTabNames.cs
+
+交接验证：实际手机日志需出现 `[XIANXIA-NATIVE-UI] READY`，底部other页签应只有一个万界仙侠入口，原版窗口可滚动/关闭，地图上旧三块入口消失；逐个动作观察同一人物数据变化。若出现BUILD_FAILED需读取完整异常修兼容，不能用SDK编译通过替代验收。本会话执行环境不可用，未重新构建私有APK，也未获得新界面的真机截图。

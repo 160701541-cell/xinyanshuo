@@ -40,6 +40,8 @@ public static class NativeUiScenario
 }
 namespace UnityEngine {
     public enum TextAnchor { MiddleCenter }
+    public enum HorizontalWrapMode { Wrap }
+    public enum VerticalWrapMode { Truncate }
     public struct Vector2 { public float x,y; public Vector2(float a,float b){x=a;y=b;} }
     public struct Vector3 { public float x,y,z; public Vector3(float a,float b,float c){x=a;y=b;z=c;} }
     public class Object {
@@ -82,6 +84,8 @@ namespace UnityEngine.UI {
         public int fontSize;
         public bool resizeTextForBestFit,raycastTarget;
         public UnityEngine.TextAnchor alignment;
+        public UnityEngine.HorizontalWrapMode horizontalOverflow;
+        public UnityEngine.VerticalWrapMode verticalOverflow;
     }
 }
 public class LocalizedText { public bool enabled; }
@@ -122,7 +126,7 @@ namespace NeoModLoader.General {
 }
 namespace XianxiaMonoBridge {
     public class Overlay { private void OnGUI(){} }
-    public class Actor { public string getName(){return "测试修士";} }
+    public class Actor { public bool isAlive(){return true;} public string getName(){return "测试修士";} }
     public class State { public int Layer=2,Herbs=3,Stones=4,Pills=1; public float Qi=24; }
     public class CultivationBridgeV18 : UnityEngine.Object {
         public static CultivationBridgeV18 Instance=new CultivationBridgeV18();
