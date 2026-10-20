@@ -144,8 +144,9 @@ static func _whale_tail(parent:Node3D) -> void:
     var shaft:=_colored_mesh("DS_WHALE_TAIL_STALK",stalk,parent,_surface_mat(BLUE_MAIN),
         Vector3(0,-.09,.27))
     shaft.rotation_degrees=Vector3(76,0,0)
-    _fin("WHALE_LEFT",parent,Vector3(-.02,-.02,.50),-1.0,BLUE_MAIN)
-    _fin("WHALE_RIGHT",parent,Vector3(.02,-.02,.50),1.0,BLUE_MAIN)
+    shaft.position.z=-.27
+    _fin("WHALE_LEFT",parent,Vector3(-.02,-.02,-.50),-1.0,BLUE_MAIN)
+    _fin("WHALE_RIGHT",parent,Vector3(.02,-.02,-.50),1.0,BLUE_MAIN)
 
 static func _skirt(parent:Node3D) -> void:
     # Radial rings with folds, true closed 3D mesh, 48 subdivisions.
@@ -179,8 +180,8 @@ static func _skirt(parent:Node3D) -> void:
     var panel:=SurfaceTool.new()
     panel.begin(Mesh.PRIMITIVE_TRIANGLES)
     for i in range(16):
-        var a:float=-PI*.68+PI*.37*float(i)/16.0
-        var b:float=-PI*.68+PI*.37*float(i+1)/16.0
+        var a:float=PI*.30+PI*.40*float(i)/16.0
+        var b:float=PI*.30+PI*.40*float(i+1)/16.0
         var top1:=Vector3(cos(a)*.21,-.17,sin(a)*.21)
         var top2:=Vector3(cos(b)*.21,-.17,sin(b)*.21)
         var bot1:=Vector3(cos(a)*.38,-.61,sin(a)*.38)
@@ -194,10 +195,10 @@ static func _eyes(parent:Node3D) -> void:
     # Full anime facial sculpt & corrective blendshapes remain a separate P0.
     for side in [-1.0,1.0]:
         var eye:=_ball("DS_EYE_IRIS_"+str(side),parent,
-            Vector3(side*.072,.018,-.146),Vector3(.075,.084,.018),BLUE_MAIN)
+            Vector3(side*.072,.015,.168),Vector3(.073,.084,.014),BLUE_MAIN)
         eye.cast_shadow=GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
         _ball("DS_EYE_LIGHT_"+str(side),parent,
-            Vector3(side*.072-.012,.041,-.158),Vector3(.021,.022,.008),WHITE)
+            Vector3(side*.072-.011,.043,.181),Vector3(.021,.022,.008),WHITE)
 
 static func _style_garment(rig:Skeleton3D) -> int:
     var count:=0
@@ -247,16 +248,16 @@ static func install(avatar:Node3D) -> Dictionary:
     cap.material_override=_surface_mat(Color(.075,.18,.46),0.0,.42)
     for i in range(12):
         var x:float=(float(i)-5.5)*.036
-        var z:float=.06 if i%2==0 else -.10
+        var z:float=-.065 if i%2==0 else -.12
         var start:=Vector3(x,.18,z)
         var end:=Vector3(x*1.9,-.73+float(i%4)*.045,
-            .15+float(i%3)*.028)
+            -.17-float(i%3)*.035)
         _make_hair_strand(str(i),head,start,end,.064,
             x*.7,(float(i%3)-1)*.035,BLUE_MAIN)
     for i in range(7):
         var x:float=(float(i)-3.0)*.061
         _make_hair_strand("BANG_"+str(i),head,
-            Vector3(x,.19,-.17),Vector3(x*.76,-.09,-.24),
+            Vector3(x,.19,.16),Vector3(x*.76,.005,.225),
             .042,-x*.25,-.03,BLUE_DARK)
     _fin("LEFT",head,Vector3(-.19,-.01,.014),-1.0,BLUE_MAIN)
     _fin("RIGHT",head,Vector3(.19,-.01,.014),1.0,BLUE_MAIN)
