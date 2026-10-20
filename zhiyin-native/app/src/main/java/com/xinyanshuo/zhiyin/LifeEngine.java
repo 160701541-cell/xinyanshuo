@@ -83,37 +83,42 @@ public final class LifeEngine {
     long span=Math.max(1,phaseEnds-phaseStarted);
     return clamp(100d*(now-phaseStarted)/span);
   }
+  // Local world-space destinations for the 3.2m x 3.2m isometric apartment.
+  // Every autonomous activity is anchored to the actual interactive prop.
   public float targetX(){
     switch(action){
-      case "SLEEP":return .17f;
-      case "DRESS":return .11f;
-      case "SHOP":case "WORK":return .97f;
-      case "COOK":case "EAT":return phase==0&&"COOK".equals(action)?.94f:.83f;
-      case "WASH":return .95f;
-      case "READ":case "WRITE":return .70f;
-      case "PIANO":case "PRACTICE":return .50f;
-      case "WINDOW":return .26f;
-      case "CLEAN":return phase%2==0?.42f:.65f;
-      case "WATER":return .93f;
-      case "STRETCH":return .43f;
-      case "CHAT":return .51f;
-      default:return .54f;
+      case "SLEEP":return .22f;       // mattress
+      case "DRESS":return .115f;      // wardrobe
+      case "SHOP":case "WORK":return .975f; // front door
+      case "COOK":case "EAT":return .81f;    // kitchenette
+      case "WASH":return .94f;        // wash basin
+      case "READ":case "WRITE":return .21f; // reading desk
+      case "PIANO":case "PRACTICE":return .74f; // compact keyboard
+      case "WINDOW":return .275f;    // window
+      case "CLEAN":return phase%2==0?.24f:.57f;
+      case "WATER":return .89f;       // potted plant
+      case "STRETCH":return .51f;     // rug
+      case "CHAT":return .52f;        // meeting corner
+      case "REST":return .49f;        // floor sofa
+      default:return .50f;
     }
   }
   public float targetY(){
     switch(action){
-      case "SLEEP":return .75f;
-      case "DRESS":return .14f;
-      case "SHOP":case "WORK":return .60f;
-      case "COOK":case "EAT":return .64f;
-      case "WASH":return .52f;
-      case "READ":case "WRITE":return .68f;
-      case "PIANO":case "PRACTICE":return .73f;
-      case "WINDOW":return .48f;
-      case "WATER":return .81f;
-      case "CLEAN":return .77f;
-      case "STRETCH":return .78f;
-      default:return .76f;
+      case "SLEEP":return .30f;
+      case "DRESS":return .13f;
+      case "SHOP":case "WORK":return .51f;
+      case "COOK":case "EAT":return .17f;
+      case "WASH":return .35f;
+      case "READ":case "WRITE":return .78f;
+      case "PIANO":case "PRACTICE":return .70f;
+      case "WINDOW":return .12f;
+      case "CLEAN":return phase%2==0?.31f:.75f;
+      case "WATER":return .90f;
+      case "STRETCH":return .56f;
+      case "CHAT":return .70f;
+      case "REST":return .85f;
+      default:return .52f;
     }
   }
   public String summary(){
