@@ -140,7 +140,7 @@ def main():
     }
     print("TRUE_TEXTURED_RIGGED_HERO",manifest["models"]["hero_female"],flush=True)
     (ROOT / "ASSET_MANIFEST.json").write_text(json.dumps(manifest,indent=2,ensure_ascii=False)+"\n",encoding="utf-8")
-    assert len(manifest["models"]) == len(ASSETS)
+    assert len(manifest["models"]) == len(ASSETS)+1
 
 if __name__=="__main__":
     main()
