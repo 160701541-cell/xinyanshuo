@@ -35,6 +35,8 @@ public final class HomeActivity extends Activity {
   private EditText chatInput;
   private LinearLayout chatSheet;
   private FrameLayout stageRoot;
+  private LinearLayout hudContainer;
+  private boolean hudExpanded=false;
   private ProgressBar phaseBar;
   private static final int RECOGNIZE_SPEECH=501;
   private TextToSpeech voice;
@@ -54,14 +56,18 @@ public final class HomeActivity extends Activity {
   }
   private LinearLayout vertical(){LinearLayout v=new LinearLayout(this);v.setOrientation(LinearLayout.VERTICAL);return v;}
   private Button chip(String txt,Runnable callback){
-    Button b=new Button(this);b.setAllCaps(false);b.setText(txt);b.setTextSize(13);b.setTextColor(INK);
-    b.setBackground(back(0xFFF9EDE1,19));b.setElevation(dp(2));
+    Button b=new Button(this);b.setAllCaps(false);b.setText(txt);b.setTextSize(12);b.setTextColor(0xFFF7F5F2);
+    b.setBackground(back(0xFF314A57,15));b.setElevation(dp(2));
+    b.setMinHeight(0);b.setMinimumHeight(0);b.setMinWidth(0);b.setMinimumWidth(0);
+    b.setPadding(dp(3),0,dp(3),0);
     b.setOnClickListener(v->callback.run());return b;
   }
   private void toast(String msg){Toast.makeText(this,msg,Toast.LENGTH_SHORT).show();}
   @Override public void onCreate(Bundle state){
     super.onCreate(state);
-    getWindow().setStatusBarColor(0xFF282A3D);getWindow().setNavigationBarColor(0xFF3C3C50);
+    getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN,WindowManager.LayoutParams.FLAG_FULLSCREEN);
+    getWindow().setNavigationBarColor(0xFF243040);
+    getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_LAYOUT_STABLE);
     getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
     life=new LifeEngine(this);memory=new MemoryStore(this);neighborhood=new Neighborhood(this);ai=new AiGateway(this);
     lastPlannerRequest=getSharedPreferences("zhiyin_ai_settings",MODE_PRIVATE).getLong("last_planner_request",0);
@@ -71,53 +77,62 @@ public final class HomeActivity extends Activity {
     screen.addView(world,new FrameLayout.LayoutParams(-1,-1));
 
     // Overlay status is purposefully small: no button grid over the companion.
-    LinearLayout hud=vertical();hud.setPadding(dp(14),dp(7),dp(14),dp(8));hud.setBackground(back(0xE5293545,15));
+    LinearLayout hud=vertical();hudContainer=hud;
+    hud.setPadding(dp(13),dp(7),dp(13),dp(8));hud.setBackground(back(0xDA1E2B36,17));
     hud.setElevation(dp(4));
     FrameLayout.LayoutParams top=new FrameLayout.LayoutParams(-1,-2,Gravity.TOP);
-    top.setMargins(dp(9),dp(9),dp(9),0);screen.addView(hud,top);
-    banner=text("知音   ·   临河巷  •  10.24㎡",17,WHITE,true);hud.addView(banner);
-    activity=text("",12,0xFFF5CDB2,false);hud.addView(activity);
-    stat=text("",11,MUTED,false);hud.addView(stat);
-    inventory=text("",11,0xFFE8DBCC,false);hud.addView(inventory);
+    top.setMargins(dp(10),dp(8),dp(10),0);screen.addView(hud,top);
+    banner=text("知音   ·   临河巷",17,WHITE,true);hud.addView(banner);
+    activity=text("",12,0xFFE7CDA7,false);hud.addView(activity);
+    stat=text("",11,MUTED,false);stat.setVisibility(View.GONE);hud.addView(stat);
+    inventory=text("",11,0xFFE8DBCC,false);inventory.setVisibility(View.GONE);hud.addView(inventory);
     phaseBar=new ProgressBar(this,null,android.R.attr.progressBarStyleHorizontal);
     phaseBar.setMax(100);
     LinearLayout.LayoutParams pp=new LinearLayout.LayoutParams(-1,dp(4));
-    pp.setMargins(0,dp(5),0,0);hud.addView(phaseBar,pp);
-    hud.setOnClickListener(v->showNeeds());
+    pp.setMargins(0,dp(6),0,0);hud.addView(phaseBar,pp);
+    hud.setOnClickListener(v->{
+      hudExpanded=!hudExpanded;
+      stat.setVisibility(hudExpanded?View.VISIBLE:View.GONE);
+      inventory.setVisibility(hudExpanded?View.VISIBLE:View.GONE);
+      toast(hudExpanded?"状态面板已展开，长按查看更多":"状态面板已收起");
+    });
+    hud.setOnLongClickListener(v->{showNeeds();return true;});
 
-    LinearLayout bottom=vertical();bottom.setPadding(dp(9),dp(7),dp(9),dp(8));
-    bottom.setBackground(back(0xF4F2EBDF,17));bottom.setElevation(dp(5));
+    LinearLayout bottom=vertical();bottom.setPadding(dp(8),dp(7),dp(8),dp(8));
+    bottom.setBackground(back(0xEE21333F,21));bottom.setElevation(dp(7));
     FrameLayout.LayoutParams base=new FrameLayout.LayoutParams(-1,-2,Gravity.BOTTOM);
     base.setMargins(dp(8),0,dp(8),dp(8));screen.addView(bottom,base);
-    tip=text("单指拖动镜头  ·  双指缩放  ·  点击家具",11,0xFF706C75,false);
-    bottom.addView(tip);
+    tip=text("◌   单指移动视角  ·  双指缩放  ·  轻触家具互动",11,0xFFE2D7C5,false);
+    tip.setPadding(dp(7),0,0,dp(3));bottom.addView(tip);
     LinearLayout options=new LinearLayout(this);options.setOrientation(LinearLayout.HORIZONTAL);
     bottom.addView(options);
-    Button talk=chip("💬 对话",this::talk);
+    Button talk=chip("对话",this::talk);
+    talk.setBackground(back(0xFFBDB18E,15));talk.setTextColor(0xFF263643);
     LinearLayout.LayoutParams big=new LinearLayout.LayoutParams(0,dp(44),1.35f);
     big.setMargins(0,dp(5),dp(4),0);options.addView(talk,big);
-    Button mic=chip("🎙",this::listen);
+    Button mic=chip("语音",this::listen);
     LinearLayout.LayoutParams micp=new LinearLayout.LayoutParams(dp(47),dp(44));
     micp.setMargins(0,dp(5),dp(4),0);options.addView(mic,micp);
-    Button album=chip("♪ 音乐",()->openStudio("音乐"));
+    Button album=chip("♫ 音乐",()->openStudio("音乐"));
     LinearLayout.LayoutParams sp=new LinearLayout.LayoutParams(0,dp(44),1.05f);
     sp.setMargins(0,dp(5),dp(4),0);options.addView(album,sp);
-    Button district=chip("⌖ 地图",this::openDistrict);
+    Button district=chip("地图",this::openDistrict);
     LinearLayout.LayoutParams mapP=new LinearLayout.LayoutParams(0,dp(44),1.05f);
     mapP.setMargins(0,dp(5),dp(4),0);options.addView(district,mapP);
-    Button misc=chip("☰",this::showMenu);
-    LinearLayout.LayoutParams sm=new LinearLayout.LayoutParams(dp(41),dp(44));
+    Button misc=chip("设置",this::showMenu);
+    LinearLayout.LayoutParams sm=new LinearLayout.LayoutParams(dp(56),dp(44));
     sm.setMargins(0,dp(5),0,0);options.addView(misc,sm);
 
     // Non-modal native conversation panel; the room remains visible.
     chatSheet=vertical();chatSheet.setVisibility(View.GONE);
     chatSheet.setPadding(dp(14),dp(11),dp(14),dp(12));
-    chatSheet.setBackground(back(0xF7FFF9F0,17));chatSheet.setElevation(dp(11));
+    chatSheet.setBackground(back(0xF8FBF7F0,18));chatSheet.setElevation(dp(11));
     LinearLayout head=new LinearLayout(this);head.setOrientation(LinearLayout.HORIZONTAL);
     chatSheet.addView(head);
-    TextView who=text("知音  ·  对话",16,0xFF344457,true);
+    TextView who=text("知音   /   TALK",16,0xFF284352,true);
     head.addView(who,new LinearLayout.LayoutParams(0,dp(30),1));
     Button close=chip("×",()->{chatSheet.setVisibility(View.GONE);});
+    close.setTextColor(0xFFF9F9F5);
     head.addView(close,new LinearLayout.LayoutParams(dp(39),dp(33)));
     chatReply=text("在听呢。选择本地模型或者API后，就能真正对话。",13,0xFF506273,false);
     chatReply.setMaxLines(3);chatReply.setPadding(0,dp(4),0,dp(5));chatSheet.addView(chatReply);
@@ -131,9 +146,10 @@ public final class HomeActivity extends Activity {
       chatInput.setText("");
       sendMessage(text);
     });
+    send.setBackground(back(0xFF3F6D76,12));
     LinearLayout.LayoutParams sendP=new LinearLayout.LayoutParams(dp(64),dp(45));sendP.setMargins(dp(7),0,0,0);compose.addView(send,sendP);
     FrameLayout.LayoutParams chatP=new FrameLayout.LayoutParams(-1,-2,Gravity.BOTTOM);
-    chatP.setMargins(dp(10),0,dp(10),dp(97));screen.addView(chatSheet,chatP);
+    chatP.setMargins(dp(9),0,dp(9),dp(84));screen.addView(chatSheet,chatP);
 
     setContentView(screen);refresh();
   }
@@ -141,7 +157,9 @@ public final class HomeActivity extends Activity {
     if(life==null)return;
     long now=System.currentTimeMillis();
     life.update(now);
-    activity.setText("● "+life.label()+" · "+life.phaseName()+"  "+(life.phase+1)+"/"+LifeEngine.phaseCount(life.action));
+    String clock=new java.text.SimpleDateFormat("HH:mm",java.util.Locale.CHINA).format(new java.util.Date(now));
+    banner.setText("知音    ·    临河巷 / 10㎡          "+clock);
+    activity.setText("● "+life.label()+"  /  "+life.phaseName()+"    "+(life.phase+1)+"/"+LifeEngine.phaseCount(life.action));
     stat.setText("心情 "+Math.round(life.mood)+" · 精力 "+Math.round(life.energy)
       +" · 饱腹 "+Math.round(life.hunger)+" · 关系 "+neighborhood.tier("zhiyin"));
     inventory.setText("存款 ¥"+life.money+"  ·  周租 ¥"+LifeEngine.WEEKLY_RENT+
