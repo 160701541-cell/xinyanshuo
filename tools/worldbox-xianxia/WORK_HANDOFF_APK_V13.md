@@ -77,3 +77,17 @@ New `tools/worldbox-xianxia/qa/verify_android_world_evidence.py` parses **actual
 - This source is compiled into the Android NML observer assembly **and** included in the alternate legacy Mono source candidate. Work must check the user-provided actual WorldBox 0.51.4 runtime and NML path before choosing which candidate integrates into the private signed APK.
 - Dedicated `CultivationScenarioV18.csproj` C# executable simulates cooldown, Qi and real breakthrough. The huge-map 2048×2048 candidate remains experimental; font scaling 100-175% retained.
 - Work owns private single-APK assembly, signature, installation and Android16 real-device QA; do not post commercial APK or third-party DLL to public GitHub.
+
+## v0.19 — USER WORLD-RULES / WORK INTEGRATION HANDOFF (2026-10-20)
+
+**LATEST WorldBox MOD branch: `worldbox/external-mod-lab-v19-world-society`.** This is a third-party WorldBox MOD derivative ONLY, strictly unrelated to original 《苍岚·人生世界》 game development. Do not merge it to main or touch Canglan files, updates, signatures or website.
+
+User's binding design decisions:
+1. **WorldBox's original secular human kingdoms and human people remain unchanged.** They are mundane empires with standard statecraft, wars and settlement dynamics. Do not indiscriminately turn human units into cultivators.
+2. Existing fantasy nations/species such as elves can receive an in-lore name/material/skin reinterpretation (e.g. elves→青木灵裔, dwarves→地脉工族, orcs→荒原战裔). No destructive base-game species replacement until a proven mod API adapter, coherent sprite atlas and compatibility QA exist.
+3. **Ordinary animals have a rare chance of spirit awakening** and gain cultivation; prolonged practice can produce independent demon beasts; after taming/affinity they can be spirit beasts. Most animals remain ordinary. No indiscriminate conversions.
+4. From **筑基初期** onwards, a cultivator may fly by spending their own Qi, or ride a faster flying sword (Qi usage). Spirit boats consume spirit stones but not personal Qi. This is the **current rules prototype**; it has not been connected to the vanilla WorldBox movement controller or renderer.
+5. Sect territories naturally prefer mountains and peaks, protected by **spirit-stone-driven sect formations** that have HP, can be destroyed in battle and recharged. Cultivator clans settle near secular cities, sheltering local dynasties/people; mortal governance continues independently.
+6. Before production, systems still needed include world-event lifecycle, persistent per-actor identities, loot economy for Qi/stones, actor attribute modifications, spatial movement, terrain locality placement, art assets/sprites and Android performance test on 2048².
+
+Implementation source **already compiled into the MOD candidate build**: `tools/worldbox-xianxia/gameplay/XianxiaWorldRulesV19.cs` — pure C# domain prototype for rare awakening, demon→spirit beast taming, sect/clan placement rules, Qi/stone travel consumption and defensive formations. C# executable QA `tests/WorldRulesScenarioV19.csproj` covers these rules; full game-world integration/runtime **NOT** yet validated. Work should use v19 source in private signed APK and NOT claim these rules already alter live WorldBox animals, ships, sect buildings or combat.
