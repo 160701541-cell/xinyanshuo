@@ -54,6 +54,16 @@ static func _extract_head(original: MeshInstance3D) -> ArrayMesh:
     var flags:=Mesh.ARRAY_FLAG_USE_8_BONE_WEIGHTS if per==8 else 0
     var output:=ArrayMesh.new()
     output.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES,input,[],{},flags)
+    # Most importantly: retain the actual ORIGINAL skinned head's PBR material.
+    # Without this, Godot draws the new face mesh as a frightening gray mask.
+    var original_mat:=original.mesh.surface_get_material(0) as StandardMaterial3D
+    if original_mat!=null:
+        var face_mat:=original_mat.duplicate(true) as StandardMaterial3D
+        var face_tex:=load("res://assets/characters/T_Superhero_Female_Light_BaseColor.png") as Texture2D
+        if face_tex!=null:
+            face_mat.albedo_texture=face_tex
+        face_mat.albedo_color=Color(1.0,0.95,0.90)
+        output.surface_set_material(0,face_mat)
     return output
 
 static func _attach_mesh(original:MeshInstance3D,rig:Skeleton3D,
@@ -61,8 +71,16 @@ static func _attach_mesh(original:MeshInstance3D,rig:Skeleton3D,
     var dest:=MeshInstance3D.new()
     dest.name=display
     dest.mesh=override if override!=null else original.mesh
+    if display.begins_with("知音长发"):
+        var original_hair_mat:=original.mesh.surface_get_material(0) as StandardMaterial3D
+        if original_hair_mat!=null:
+            var tinted:=original_hair_mat.duplicate(true) as StandardMaterial3D
+            tinted.albedo_color=Color(0.29,0.23,0.20)
+            tinted.roughness=0.78
+            dest.material_override=tinted
     dest.skin=original.skin
-    dest.material_override=original.material_override
+    if dest.material_override==null:
+        dest.material_override=original.material_override
     dest.transform=original.transform
     rig.add_child(dest)
     dest.skeleton=NodePath("..")
