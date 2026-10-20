@@ -32,6 +32,8 @@ jobs:
         run: dotnet run --project tools/worldbox-xianxia/tests/FontAccessibilityScenarioV13.csproj -c Release
       - name: 'Execute per-actor Qi, breakthrough and cooldown C# gameplay tests'
         run: dotnet run --project tools/worldbox-xianxia/tests/CultivationScenarioV18.csproj -c Release
+      - name: 'Execute runtime Chinese translation and other-MOD display regression'
+        run: dotnet run --project tools/worldbox-xianxia/tests/RuntimeChineseScenarioV22.csproj -c Release
       - name: 'WorldBox external MOD only: prevent main-game edits'
         run: python tools/worldbox-xianxia/scope_gate.py
       - name: 'Ensure only source code is published in third-party test folder'
@@ -86,6 +88,8 @@ jobs:
             --extra-source tools/worldbox-xianxia/gameplay/CultivationV18.cs \
             --extra-source tools/worldbox-xianxia/ui/ChineseModManagerV21.cs \
             --extra-source tools/worldbox-xianxia/localization/ChineseLocalizationV22.cs \
+            --extra-source tools/worldbox-xianxia/localization/RuntimeChineseOverlayV22.cs \
+            --extra-source tools/worldbox-xianxia/localization/OriginalMenuGuideV22.cs \
             --manifest tools/worldbox-xianxia/nml-observer-v07/mod.json \
             --out /tmp/worldbox_v22_android_mono_source_DEVICE_PENDING.zip
       - name: 'Validate legacy source-only MOD contains no third-party DLL'
@@ -103,6 +107,8 @@ jobs:
               assert root+'Code/CultivationV18.cs' in files
               assert root+'Code/ChineseModManagerV21.cs' in files
               assert root+'Code/ChineseLocalizationV22.cs' in files
+              assert root+'Code/RuntimeChineseOverlayV22.cs' in files
+              assert root+'Code/OriginalMenuGuideV22.cs' in files
               assert json.loads(z.read(root+'mod.json'))['ModType']==0
               assert all(not p.lower().endswith(('.apk','.dll','.pck')) for p in files)
               assert z.testzip() is None
@@ -141,6 +147,9 @@ jobs:
           cp tools/worldbox-xianxia/huge-map-mod/ObserverFrameGuardV12.cs /tmp/worldbox-v22-artifacts/
           cp tools/worldbox-xianxia/ui/ModTextAccessibilityV13.cs /tmp/worldbox-v22-artifacts/
           cp tools/worldbox-xianxia/gameplay/CultivationV18.cs /tmp/worldbox-v22-artifacts/
+          cp tools/worldbox-xianxia/localization/ChineseLocalizationV22.cs /tmp/worldbox-v22-artifacts/
+          cp tools/worldbox-xianxia/localization/RuntimeChineseOverlayV22.cs /tmp/worldbox-v22-artifacts/
+          cp tools/worldbox-xianxia/localization/OriginalMenuGuideV22.cs /tmp/worldbox-v22-artifacts/
           cp tools/worldbox-xianxia/nml-observer-v07/mod.json /tmp/worldbox-v22-artifacts/
           cp /tmp/WORLDBOX_PUBLIC_MAP_TYPES.json /tmp/worldbox-v22-artifacts/
           cp /tmp/worldbox-v22-MAP_SIZE_CANDIDATES.json /tmp/worldbox-v22-artifacts/
