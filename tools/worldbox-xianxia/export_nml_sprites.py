@@ -71,7 +71,11 @@ def export_renders(folder,out,size,pixel):
                   "beasts" if family=="beasts" else
                   "items" if family in ("matrix","batch","prod","items") else None)
         if category is None:continue
-        name=re.sub(r"[^A-Za-z0-9_-]","_",src.stem)
+        # Preserve unique five-element identifiers instead of replacing all Hanzi with '_'.
+        element={"火":"fire","雷":"thunder","水":"water","木":"wood","金":"metal"}
+        stem=src.stem
+        for ch,ascii_name in element.items():stem=stem.replace(ch,"_"+ascii_name)
+        name=re.sub(r"[^A-Za-z0-9_-]","_",stem)
         direction="iso"
         m=re.fullmatch(r"(.+)_([0-3])",name)
         if m: name,direction=m.group(1),"d"+m.group(2)
