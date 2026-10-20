@@ -3,6 +3,8 @@ package com.xinyanshuo.worldbox.lab13;
 import android.app.Activity;
 import android.os.Bundle;
 import android.content.Intent;
+import android.database.Cursor;
+import android.provider.OpenableColumns;
 import android.content.ClipData;
 import android.content.ClipboardManager;
 import android.widget.*;
@@ -73,6 +75,16 @@ public final class DiagnosticsActivity extends Activity {
               startActivityForResult(i,IMPORT_MODS);
           }).show();
     }
+    private String selectedZipLabel(android.net.Uri uri) {
+        String label=null;
+        try(Cursor cursor=getContentResolver().query(uri,
+            new String[]{OpenableColumns.DISPLAY_NAME},null,null,null)){
+            if(cursor!=null&&cursor.moveToFirst())label=cursor.getString(0);
+        }catch(Exception ignored){}
+        if(label==null||label.trim().isEmpty())label="未命名ZIP";
+        label=label.replace('\n','_').replace('\r','_').replace('\t','_');
+        return label.length()>110?label.substring(0,110)+"…":label;
+    }
     private void importSelectedMods(final Intent data) {
         final List<android.net.Uri> picked=new ArrayList<>();
         if(data.getClipData()!=null)for(int i=0;i<data.getClipData().getItemCount();i++)
@@ -85,6 +97,8 @@ public final class DiagnosticsActivity extends Activity {
             int installed=0;
             int staged=0;
             for(android.net.Uri uri:picked) {
+                final String zipName=selectedZipLabel(uri);
+                stage("USER_MOD_IMPORT_BEGIN name="+zipName);
                 try {
                     List<ExternalModImporterV32.Result> imported=ExternalModImporterV32.importZip(this,uri);
                     for(ExternalModImporterV32.Result result:imported) {
@@ -92,26 +106,26 @@ public final class DiagnosticsActivity extends Activity {
                             installed++;
                             report.append("已导入 ").append(result.id).append(" [")
                                 .append(result.layout).append("]\n");
-                            stage("USER_MOD_IMPORTED "+result.id+" "+result.layout);
+                            stage("USER_MOD_IMPORTED from="+zipName+" "+result.id+" "+result.layout);
                         }else{
                             report.append(result.id).append("\n");
-                            stage("USER_MOD_SKIPPED "+result.id);
+                            stage("USER_MOD_SKIPPED from="+zipName+" "+result.id);
                         }
                     }
                 }catch(Exception e){
-                    stage("USER_MOD_IMPORT_FAILED "+android.util.Log.getStackTraceString(e));
+                    stage("USER_MOD_IMPORT_FAILED name="+zipName+" "+android.util.Log.getStackTraceString(e));
                     String explanation=e.getMessage()==null?e.getClass().getSimpleName():e.getMessage();
                     if(explanation.startsWith("已安装同名MOD")) {
-                        report.append("已存在，无需重复安装：").append(explanation).append("\n");
+                        report.append(zipName).append("：已存在，无需重复安装：").append(explanation).append("\n");
                     }else {
                         try {
                             String name=ExternalModImporterV32.stageIncompatible(this,uri);
                             staged++;
-                            report.append("仅保存在待兼容区，尚不能运行：").append(name)
+                            report.append(zipName).append("：仅保存在待兼容区，尚不能运行：").append(name)
                                 .append("\n原因：").append(explanation).append("\n");
                             stage("USER_MOD_QUARANTINED "+name);
                         }catch(Exception copy) {
-                            report.append("ZIP无法导入：").append(explanation)
+                            report.append(zipName).append("：ZIP无法导入：").append(explanation)
                                 .append("；保存失败：").append(copy.getMessage()).append("\n");
                         }
                     }
