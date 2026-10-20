@@ -134,7 +134,8 @@ class Program {
    var overlay=mod.Types.FirstOrDefault(t=>t.FullName=="XianxiaMonoBridge.Overlay")
      ?? throw new InvalidOperationException("expected legacy Mono UI Overlay absent");
    var update=overlay.Methods.FirstOrDefault(m=>m.Name=="Update"&&!m.IsStatic&&m.HasBody&&m.Parameters.Count==0)
-     ?? throw new InvalidOperationException("legacy Mono Overlay.Update absent");
+     ?? overlay.Methods.FirstOrDefault(m=>m.Name=="OnGUI"&&!m.IsStatic&&m.HasBody&&m.Parameters.Count==0)
+     ?? throw new InvalidOperationException("legacy Mono Overlay has neither Update nor OnGUI");
    if(update.Body.Instructions.Any(i=>i.Operand?.ToString()?.Contains("MapPresetBridgeV32")==true))
      throw new InvalidOperationException("2048 hook already inserted; do not duplicate");
    var bridge=addon.Types.FirstOrDefault(t=>t.FullName=="XianxiaWorldBox.MapPresetBridgeV32")
@@ -154,8 +155,10 @@ class Program {
    var addon=dnlib.DotNet.ModuleDefMD.Load(helper);
    var oldType=before.Types.First(t=>t.FullName=="XianxiaMonoBridge.Overlay");
    var newType=after.Types.First(t=>t.FullName=="XianxiaMonoBridge.Overlay");
-   var aa=oldType.Methods.First(m=>m.Name=="Update").Body.Instructions;
-   var bb=newType.Methods.First(m=>m.Name=="Update").Body.Instructions;
+   var method=oldType.Methods.FirstOrDefault(m=>m.Name=="Update"&&!m.IsStatic&&m.HasBody&&m.Parameters.Count==0)
+     ?? oldType.Methods.First(m=>m.Name=="OnGUI"&&!m.IsStatic&&m.HasBody&&m.Parameters.Count==0);
+   var aa=method.Body.Instructions;
+   var bb=newType.Methods.First(m=>m.Name==method.Name&&m.Parameters.Count==0).Body.Instructions;
    if(bb.Count!=aa.Count+1||bb[0].OpCode!=dnlib.DotNet.Emit.OpCodes.Call||
       !(bb[0].Operand?.ToString()?.Contains("MapPresetBridgeV32::Tick")??false))
       throw new InvalidOperationException("map bridge inserted IL differs from expected");
