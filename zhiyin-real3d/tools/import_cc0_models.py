@@ -139,6 +139,42 @@ def main():
         "images":len(textures),"files":files
     }
     print("TRUE_TEXTURED_RIGGED_HERO",manifest["models"]["hero_female"],flush=True)
+    # Original CC0 hair mesh for the same 65-bone female skeleton.
+    # Quaternius free Standard base pack: attach Hair_Long to target rig.
+    hair_file="Hair_Long.gltf"
+    hair_source=f"assets/characters/hair/{hair_file}"
+    hair_url=f"https://raw.githubusercontent.com/{female_repo}/{female_commit}/{hair_source}"
+    with urllib.request.urlopen(hair_url,timeout=50) as response:
+        hair_blob=response.read(128*1024)
+    hair_gltf=json.loads(hair_blob)
+    if not hair_gltf.get("skins") or len(hair_gltf["skins"][0].get("joints",[]))<50:
+        raise ValueError("Quaternius hair attachment isn't skinned to a humanoid")
+    if not hair_gltf.get("meshes"):
+        raise ValueError("Quaternius hair missing Mesh")
+    hair_folder=ROOT/"assets/characters/hair"
+    hair_folder.mkdir(parents=True,exist_ok=True)
+    (hair_folder/hair_file).write_bytes(hair_blob)
+    hairs=[b["uri"] for b in hair_gltf.get("buffers",[]) if b.get("uri")]
+    hairs += [im["uri"] for im in hair_gltf.get("images",[]) if im.get("uri")]
+    hair_meta={}
+    for uri in sorted(set(hairs)):
+        target=Path(uri)
+        if target.is_absolute() or ".." in target.parts or target.suffix.lower() not in (".png",".bin"):
+            raise ValueError("Unsafe hair texture URI")
+        with urllib.request.urlopen(
+            f"https://raw.githubusercontent.com/{female_repo}/{female_commit}/assets/characters/hair/{uri}",
+            timeout=60) as response:
+            content=response.read(5*1024*1024)
+        (hair_folder/target).write_bytes(content)
+        hair_meta[uri]={"sha256":hashlib.sha256(content).hexdigest(),"bytes":len(content)}
+    manifest["models"]["hero_hair_long"]={
+        "path":hair_source,"source":f"https://github.com/{female_repo}",
+        "license":"Quaternius Universal Base Characters Standard FREE, CC0-1.0",
+        "sha256":hashlib.sha256(hair_blob).hexdigest(),
+        "bones":len(hair_gltf["skins"][0].get("joints",[])),
+        "files":hair_meta
+    }
+    print("TRUE_RIGGED_HAIR",manifest["models"]["hero_hair_long"],flush=True)
     # Optional *real* CC0 Quaternius Universal Animation Library Standard
     # originally by Quaternius; hosted with clear CC0 attribution in Elderforge.
     # Includes proper humanoid animations; do not invent animated steps.
@@ -207,7 +243,7 @@ def main():
     }
     print("TRUE_CLOTHED_FEMALE",manifest["models"]["hero_clothed_female"],flush=True)
     (ROOT / "ASSET_MANIFEST.json").write_text(json.dumps(manifest,indent=2,ensure_ascii=False)+"\n",encoding="utf-8")
-    assert len(manifest["models"]) == len(ASSETS)+2
+    assert len(manifest["models"]) == len(ASSETS)+3
 
 if __name__=="__main__":
     main()
