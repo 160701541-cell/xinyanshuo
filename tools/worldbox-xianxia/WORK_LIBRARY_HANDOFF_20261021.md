@@ -122,3 +122,26 @@ Work下一步：在真实Android16手机运行这一准确SHA256包，收集`MOD
 - APK ZIP CRC通过；与v0.32比仅改变自有`Managed.zip`、部署`install.json`及签名；原版游戏`Assembly-CSharp.dll`实际SHA256一致，旧MOD内容、诊断DEX和导入ZIP功能未变；自有Overlay的旧18条IL经`verify-map-bridge`确认仅插入一个调用，其余语义保留。
 - 已成功上传v0.33签名APK及`WorldBox_v033_地图界面7of8_根因修复与私有验收.json`至用户的Work持久化文件库 `/WorldBox-万界仙侠/Work交接/`，公有GitHub只上传自有修复源码和日志，不公开用户商业APK或签名密钥。
 - **必须诚实的验收门槛**：还没有用户PKR110新v0.33手机截图；只有真的在新建世界菜单看见原8项基础上新增第9项“超大世界2048×2048”才可把“菜单入口显示”标通过。真正生成4,194,304格地图、保存/重载/长时间模拟也都未通过，世界生成及Config.maxMapSize可能还另有限制，必须分别测试。此前用户截图7/8为v0.32**失败**，不得再写功能交付成功。
+
+
+---
+
+## 2026-10-21 03:08 用户实机反馈：v0.33已有9档，但手机挑选多个ZIP大多数无法导入 → v0.34 P0修复真实安装包
+
+### 本轮明确实测情况
+- 用户实机反馈“**有9档了**”，地图尺寸列表由原8档出现第9档，故**只将“菜单第9档出现”改记为用户确认**；没有新世界2048×2048生成尺寸日志或存读回归，地图真实生成仍保持红灯。
+- 用户Android原生MOD导入实测：一次选择多份ZIP，多数提示“ModType -1”、“找不到有效mod.json”及路径错误；有一份模组曾导入成功。界面把字面量`\\n`画成文字，导入状态可读性差。这是确实存在的导入器验收失败，不是让用户一遍遍重复选择。
+- 对用户**已经上传的真实MOD ZIP**在私有环境逐个打开、校验CRC/文件布局，发现`0.51.+中文名模组ChineseName_1.5.1.zip`包含181项、真实`ChineseName_1.5.1/mod.json`却**没写ModType**，包含合法`Code/*.cs`。旧导入器只判断`ModType==0/1`而错误拒绝。`操作人物mod(1).zip`只有`z_com_TWrecksMod.dll`和说明，无mod.json；静态DLL标记BepInEx/BaseUnityPlugin，不可无端当安卓NML。`WorldBox修仙模组0.078.6整合包带国风材质.zip`含旧桌面BepInEx，`附庸国系统5.1.zip`多Lua/Civ6资源，`国风-中文汉化mod 0.10.3.zip`内还嵌其他ZIP但无NML描述文件。这些内容不能靠改个ModType蒙混加载。
+
+### 本轮真正提交/编译并装入原有lab31的v0.34 APK
+- `private-apk-lab/ExternalModImporterV32.java`实质修复：存在`mod.json`但无ModType时按包内**真正的Code/*.cs或NMLMods/*.dll结构**判断Mono源码/NML编译格式；有效Unicode/中文GUID经确定性哈希正规化为私有目录名，仍阻断路径穿越、重复同名及尺寸异常。支持一个外层ZIP含多个嵌套ZIP时**递归一层并逐包报告**；支持最长128MiB输入、384MiB总解压（边读边校验）。**绝不把桌面BepInEx、散装DLL、其他游戏Lua脚本误声明为安卓可运行MOD**。
+- 新增`ModFormatV34.java`纯JVM格式检测与`tests/ModFormatV34Test.java`，采用合成ZIP文件复现缺`ModType`的`ChineseName_1.5.1/Code/*.cs`结构和NMLMods预编译结构。GitHub Actions `39482655211`三项作业全部绿灯（Android SDK javac+d8、公开SDK C#、Python/JVM回归），工件内包含真正编出的新增导入器DEX，不使用客户商业APK做公开CI。
+- 对未知但**有效ZIP**新增`XianxiaModStaging/incompatible/`本应用私有待兼容目录：严格限量、按SHA256存放ZIP原字节，仅暂存**不解压执行**。用户可看到“可尝试加载N个/待兼容保管M个”和各失败原因，避免所有选择都被直接丢弃。对假ZIP、不可信可执行内容和同名覆盖保持阻断，**存下≠兼容或运行成功**。
+- `DiagnosticsActivity.java`修复手机UI把`\\n`当文字的问题，结果改为真实换行、可长按选择的17sp文字；多选SAF不再误过滤某些提供方自定义ZIP MIME；启动入口过时`v18`标题更新v0.34。原版WorldBox Unity画风/菜单仍未统一、此仅原生导入入口功能与排版修复。
+- **真实私人APK重新制作且签名通过：**`WorldBox_v034_第三方MOD_ZIP直接导入修复_待实机.apk`（187,852,486字节；SHA256 **`464348c8075b70f367dfab2758844baba3a168a7c189be1321d7b71caeeac1df`**）。继续使用lab31同一测试证书SHA256 `20087dc8c210c7c6a35a4492500324f33f36f7c5eb3a77dc62040c21281c400e`，v1/v2/v3签名及ZIP CRC全过，可供已有lab31用户尝试覆盖。与v0.33相比**仅改变自有`classes5.dex`和部署`install.json`、重签元数据**；原WorldBox游戏/旧2048尺寸帮助DLL/原游戏资产完全不变。
+- 真正APK、仅含摘要的用户既有MOD包格式分析JSON、APK静态验收报告、私有整合脚本均已成功上传ChatGPT持久文件库 `/WorldBox-万界仙侠/Work交接/`；仓库只收录合法自有源码、诊断和开发日志，**不上传游戏APK/用户MOD二进制/私钥**。
+
+### 不可提前写PASS的事项
+- v0.34尚未通过用户PKR110设备点击导入并重启验证；真实`ChineseName_1.5.1`能否被NML编译并影响名称、第三方MOD依赖/版本冲突、模组管理启停/卸载、ZIP中嵌套包互斥冲突均待现场测试。
+- v0.33用户确认新建世界9档，但**9档不是2048生成、保存与读取均成功**；仍需实际创建新世界、读取长宽、保存回读与手机性能。
+- 暂存的旧DLL/BepInEx包不会自动执行。与苍岚游戏main完全隔离。

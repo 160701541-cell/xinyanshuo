@@ -1,0 +1,33 @@
+{
+  "schema": 1,
+  "project": "WORLDBOX_THIRD_PARTY_MOD_DERIVATIVE_TEST",
+  "release": "v0.34",
+  "private_apk": "WorldBox_v034_第三方MOD_ZIP直接导入修复_待实机.apk",
+  "private_apk_bytes": 187852486,
+  "private_apk_sha256": "464348c8075b70f367dfab2758844baba3a168a7c189be1321d7b71caeeac1df",
+  "package_name": "com.xinyanshuo.worldbox.lab31",
+  "signer_sha256": "20087dc8c210c7c6a35a4492500324f33f36f7c5eb3a77dc62040c21281c400e",
+  "same_certificate_as_v033": true,
+  "bundle_contains_native_picker_and_changed_importer": true,
+  "features": [
+    "infer NML source zip missing ModType",
+    "valid nested ZIPs one level",
+    "Unicode mod IDs sanitized",
+    "store unsupported genuine ZIPs in app-private quarantine without execution",
+    "actual UI line breaks",
+    "file provider agnostic SAF"
+  ],
+  "quality_assurance": {
+    "github_actions_run": 39482655211,
+    "actions_three_jobs_success": true,
+    "signed_apk_v1_v2_v3": true,
+    "zip_crc": true,
+    "user_observed_9_map_sizes": true,
+    "generated_and_saved_2048_square_world": false,
+    "imported_user_zip_on_v034_device": false,
+    "unknown_mods_load_without_bridge": false
+  },
+  "source_only_on_public_github": true,
+  "private_work_directory": "/WorldBox-万界仙侠/Work交接/",
+  "canglan_untouched": true
+}
