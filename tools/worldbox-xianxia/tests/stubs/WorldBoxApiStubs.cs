@@ -107,3 +107,6 @@ public class World {
     public WorldTile GetTile(int x,int y)=>null;
 }
 public static class MapBox { public static int width=512,height=512; }
+
+// SourceSyntax-only stub: real implementation compiled by Android public NML SDK.
+namespace XianxiaWorldBox { public static class EconomyVanillaTabsV35 { public static void Tick(){} public static void Draw(){} } }
