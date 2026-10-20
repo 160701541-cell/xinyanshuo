@@ -7,7 +7,8 @@
   "unrelated_to": "苍岚·人生世界 原创游戏研发/热更新/发布",
   "allowed_changed_paths": [
     "tools/worldbox-xianxia/",
-    ".github/workflows/worldbox-external-mod-lab-v22.yml"
+    ".github/workflows/worldbox-external-mod-lab-v22.yml",
+    ".github/workflows/worldbox-economy-asset-factory-v35.yml"
   ],
   "prohibited_paths": [
     "AGENTS.md",
