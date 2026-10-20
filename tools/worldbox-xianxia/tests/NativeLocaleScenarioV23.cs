@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using XianxiaWorldBox;
 
 namespace UnityEngine
@@ -12,6 +13,7 @@ public class LocalizedTextManager
     public static LocalizedTextManager instance=new LocalizedTextManager();
     public string language="en";
     public Dictionary<string,string> _localized_text=new Dictionary<string,string>();
+    public void setLanguage(string id){language=id;}
 }
 namespace NeoModLoader.General
 {
@@ -76,6 +78,27 @@ class Program
         Assert(ChineseLocalizationV22.Translate("Royal Palace")=="皇宫","large menu glossary works");
         Assert(ChineseLocalizationV22.Translate("Main Menu")=="主菜单","menu glossary works");
         Assert(ChineseLocalizationV22.Translate("Northridge")=="Northridge","unknown names unchanged");
+        // Private direct key packs cover untranslated third-party MOD keys
+        // even when the vanilla language currently shows Chinese values.
+        string folder=Path.Combine(UnityEngine.Application.persistentDataPath,"XianxiaModStaging");
+        Directory.CreateDirectory(folder);
+        string pack=Path.Combine(folder,"zh_cn_keymap_v24.txt");
+        File.WriteAllText(pack,"new_mod_tab=仙途菜单\\nmod_menu=不应覆盖已有汉化\\n");
+        string imported=ChineseKeyPackV24.ImportPrivatePack();
+        Assert(ChineseKeyPackV24.KeyCount==2,"load direct locale-key pack");
+        Assert(NativeLocaleBridgeV23.LastPackOk,"accepted pack");
+        Assert(NeoModLoader.General.LM.locales["cz"]["new_mod_tab"]=="仙途菜单","foreign MOD direct key registered");
+        Assert(NeoModLoader.General.LM.locales["cz"]["mod_menu"]=="模组管理器","existing NML translation never overwritten");
+
+        // Entire invalid pack must be rejected before any NML writes.
+        File.WriteAllText(pack,"safe_entry=好\\nunsafe$key=非法\\n");
+        string rejected=ChineseKeyPackV24.ImportPrivatePack();
+        Assert(rejected.Contains("非法键"),"invalid direct key pack rejected");
+        Assert(!NeoModLoader.General.LM.locales["cz"].ContainsKey("safe_entry"),"invalid pack atomic validation");
+        data.language="en";
+        string switchResult=NativeLocaleBridgeV23.SwitchToChineseByUserTap();
+        Assert(switchResult.Contains("已请求切换")&&data.language=="cz","user-tap switch to vanilla Chinese");
+        Directory.Delete(UnityEngine.Application.persistentDataPath,true);
         Console.WriteLine("PASS_NATIVE_LOCALE_V23 real key lookup + NML LM cz registry and non-destructive refresh");
     }
 }
