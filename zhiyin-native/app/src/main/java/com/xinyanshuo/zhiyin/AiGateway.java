@@ -80,6 +80,10 @@ public final class AiGateway {
     for(int i=originals.length()-1;i>=0;i--){
       JSONObject ev=originals.optJSONObject(i);if(ev==null)continue;
       String kind=ev.optString("kind");
+      // Every other resident has an independent conversation namespace.
+      // Do NOT expose another resident's shared/user message as their own.
+      if(!"知音".equals(observer) &&
+        (!"private".equals(ev.optString("privacy"))||!observer.equals(ev.optString("owner"))))continue;
       if(kind.equals("life_simulation")||kind.equals("life")||kind.equals("demo_reply"))continue;
       // The v0.5 player/companion log is shared. Other NPCs must not inherit
       // what the player said privately to ZhiYin.
@@ -125,7 +129,7 @@ public final class AiGateway {
         JSONArray messages=new JSONArray()
           .put(new JSONObject().put("role","system").put("content",
             "你是虚拟居民知音的生活顾问。只输出一行紧凑JSON，禁止Markdown。"+
-            "格式：{\\\"action\\\":\\\"READ\\\",\\\"reason\\\":\\\"想看会书\\\"}。"+
+            "格式：{\"action\":\"READ\",\"reason\":\"想看会书\"}。"+
             "只能从READ,PRACTICE,PIANO,WRITE,CLEAN,WATER,WINDOW,STRETCH,REST,DRESS里选择。"+
             "切勿安排打工、买东西、吃饭、睡觉和支付房租；这些必须由确定性经济与生存规则控制。"+
             "人物性格：独立，内向但友善，喜欢唱歌，普通咖啡馆店员。/no_think"))
