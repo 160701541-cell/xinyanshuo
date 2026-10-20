@@ -157,8 +157,11 @@ public final class HomeActivity extends Activity {
   }
   private int indexOf(String action){for(int i=0;i<LifeEngine.ACTIONS.length;i++)if(action.equals(LifeEngine.ACTIONS[i]))return i;return 0;}
   private void openStudio(String part){
-    Intent intent=new Intent(this,MainActivity.class);startActivity(intent);
-    toast("已进入工具工作台，可切换到「"+part+"」标签。");
+    Intent intent=new Intent(this,MainActivity.class);
+    String tab=part.contains("音乐")||part.contains("唱歌")?"音乐":
+      part.contains("剧本")?"剧场":part.contains("角色")?"角色":"记忆";
+    intent.putExtra("section",tab);
+    startActivity(intent);
   }
   private void showMenu(){
     String[] items={"查看她的生活状态","查看生活时间线","今天一起做件事","角色 / 素材 / 声线","剧本杀 / 旁白","唱歌 / A-B对唱","长期记忆管理","生活模拟说明"};
