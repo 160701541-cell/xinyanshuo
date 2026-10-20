@@ -30,11 +30,16 @@ namespace XianxiaWorldBox.Economy {
    }
  }
  public sealed class District {
-   public readonly string Id,Name;
+   public readonly string Id;
+   public string Name; // City and kingdom names can genuinely change in-game.
    public readonly DistrictTier Tier;
    public string ParentId;
    public int People;
-   public int TerritoryTiles=-1; // unknown until sampled actual WorldBox map
+   public int TerritoryTiles=-1; // actual owned zone tiles, unknown until sampled
+   public int BorderZoneLinks=-1; // zone adjacency count; NOT km or 1-tile border
+   public int CityCount;          // native WorldBox City objects observed this snapshot
+   public bool NativeResourcesObserved; // original game's resources, never minted
+   public int NativeWood,NativeGold,NativeStone,NativeCommonMetals;
    public string KingdomId;        // from original WorldBox id, not fabricated borders
    public readonly WbLedger Stock=new WbLedger();
    public District(string id,string name,DistrictTier tier,string parentId,string kingdomId) {
