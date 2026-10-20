@@ -99,6 +99,17 @@ jobs:
           cat room-render.log
           test -s room-qa-render.png
           grep -Fq 'PASS ACTUAL GODOT 3D FRAME' room-render.log
+      - name: Capture true 3D DeepSeek blue avatar close-up
+        continue-on-error: true
+        run: |
+          set -euo pipefail
+          LIBGL_ALWAYS_SOFTWARE=1 timeout 70s xvfb-run -a -s "-screen 0 1280x720x24" \
+            /tmp/Godot_v4.4.1-stable_linux.x86_64 --path . --rendering-method gl_compatibility \
+            --script res://tests/capture_deepseek_portrait.gd >deepseek-portrait.log 2>&1 || {
+              cat deepseek-portrait.log; exit 1;
+            }
+          cat deepseek-portrait.log
+          test -s deepseek-blue-avatar-engine-portrait.png
       - name: Package imported REAL 3D project files
         run: |
           set -euo pipefail
@@ -181,4 +192,6 @@ jobs:
             zhiyin-real3d/quaternius-motion-inspect.log
             zhiyin-real3d/room-render.log
             zhiyin-real3d/room-qa-render.png
+            zhiyin-real3d/deepseek-portrait.log
+            zhiyin-real3d/deepseek-blue-avatar-engine-portrait.png
           if-no-files-found: warn
