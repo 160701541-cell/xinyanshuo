@@ -155,18 +155,18 @@ namespace XianxiaWorldBox
             if (button==null || label==null || box==null) return;
             float ui=Mathf.Clamp(Screen.width/900f,.8f,1.35f);
             float x=Screen.width-230*ui;
-            if(GUI.Button(new Rect(x,9,220*ui,52*ui),open?"收起万界观察":"万界观察 · 大字",button)){
+            if(GUI.Button(new Rect(x,9,220*ui,52*ui),open?OwnLocaleLabelsV25.Get("observer_open","收起万界观察"):OwnLocaleLabelsV25.Get("observer_closed","万界观察 · 大字"),button)){
                 open=!open;nextSample=0;
                 Debug.Log("[XIANXIA-V13] VIEW_"+(open?"OPEN":"CLOSE"));
             }
-            if(GUI.Button(new Rect(Mathf.Max(8,x-200*ui),9,190*ui,52*ui),"中文模组管理器",button)){
+            if(GUI.Button(new Rect(Mathf.Max(8,x-200*ui),9,190*ui,52*ui),OwnLocaleLabelsV25.Get("mod_manager","中文模组管理器"),button)){
                 ChineseModManagerV21.Open=!ChineseModManagerV21.Open;
                 if(ChineseModManagerV21.Open){
                     OriginalMenuGuideV22.Open=false;
                     ChineseModManagerV21.Refresh();
                 }
             }
-            if(GUI.Button(new Rect(Mathf.Max(8,x-405*ui),9,195*ui,52*ui),"原版菜单中文说明",button)){
+            if(GUI.Button(new Rect(Mathf.Max(8,x-405*ui),9,195*ui,52*ui),OwnLocaleLabelsV25.Get("vanilla_help","原版菜单中文说明"),button)){
                 OriginalMenuGuideV22.Open=!OriginalMenuGuideV22.Open;
                 if(OriginalMenuGuideV22.Open)ChineseModManagerV21.Open=false;
             }
@@ -200,7 +200,7 @@ namespace XianxiaWorldBox
             GUI.Label(new Rect(panel.x+12,panel.y+188*ui,pw-24,36*ui),mapStatus,label);
             // First interactive xianxia gameplay slice: a selected WorldBox actor
             // may cultivate Qi and break through realms without mutating vanilla stats.
-            if(GUI.Button(new Rect(panel.x+12,panel.y+226*ui,180*ui,45*ui),"吐纳修炼",button))
+            if(GUI.Button(new Rect(panel.x+12,panel.y+226*ui,180*ui,45*ui),OwnLocaleLabelsV25.Get("realm_cultivation","吐纳修炼"),button))
                 cultivationStatus=CultivationV18.Meditate(target,Time.unscaledTime);
             var cultivator=CultivationV18.Inspect(target);
             GUI.Label(new Rect(panel.x+200*ui,panel.y+226*ui,pw-213*ui,45*ui),
@@ -247,7 +247,7 @@ namespace XianxiaWorldBox
                 GUI.color=previous;
             }
             float by=panel.y+ph-99*ui,bw=(pw-20)/5f;
-            if(GUI.Button(new Rect(panel.x+10,by,bw-2,48*ui),"选择人物",button))PickPerson();
+            if(GUI.Button(new Rect(panel.x+10,by,bw-2,48*ui),OwnLocaleLabelsV25.Get("choose_actor","选择人物"),button))PickPerson();
             if(GUI.Button(new Rect(panel.x+10+bw,by,bw-2,48*ui),follow?"停止跟随":"跟随",button)){
                 follow=!follow;nextSample=0;
             }
