@@ -66,6 +66,7 @@ jobs:
           set -euo pipefail
           python3 tools/fetch_cc0_anime_base.py
           python3 tools/recolor_vrm_anime.py qa_samples/anime_cc0_lookdev.vrm qa_samples/blue_anime_lookdev.vrm
+          python3 -c 'from pathlib import Path; import shutil; p=Path("assets/characters/lookdev/blue_anime_lookdev.vrm"); p.parent.mkdir(parents=True,exist_ok=True); shutil.copy2("qa_samples/blue_anime_lookdev.vrm",p)'
       - name: Import actual GLB, PNG and GDScript in Godot
         run: |
           set -euo pipefail
@@ -110,6 +111,12 @@ jobs:
           set -euo pipefail
           timeout 50s /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless --path . --script res://tests/navigation_smoke.gd >godot-navigation-qa.log 2>&1 || { cat godot-navigation-qa.log; exit 1; }
           grep -Fq 'PASS ZHIYIN FURNITURE PATH A-STAR' godot-navigation-qa.log
+      - name: QA native Godot real anime visual showroom
+        run: |
+          set -euo pipefail
+          timeout 60s /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless --path . --script res://tests/showroom_smoke.gd >showroom-qa.log 2>&1 || { cat showroom-qa.log; exit 1; }
+          cat showroom-qa.log
+          grep -Fq 'PASS REAL ANIME VRM SHOWROOM' showroom-qa.log
       - name: Render first REAL 3D screenshot via Mesa and Xvfb
         continue-on-error: true
         run: |
@@ -133,7 +140,14 @@ jobs:
           test -s anime-base-angle.png
           test -s anime-blue-front.png
           test -s anime-blue-angle.png
-      - name: Exclude generic anime asset from shipped apk
+      - name: Capture current real VRM lookdev APK main scene
+        run: |
+          set -euo pipefail
+          LIBGL_ALWAYS_SOFTWARE=1 timeout 90s xvfb-run -a -s "-screen 0 1280x720x24" /tmp/Godot_v4.4.1-stable_linux.x86_64 --path . --rendering-method gl_compatibility --script res://tests/capture_showroom.gd >showroom-render.log 2>&1 || { cat showroom-render.log; exit 1; }
+          cat showroom-render.log
+          grep -Fq 'PASS REAL GODOT ANIME VRM SHOWROOM' showroom-render.log
+          test -s vrm-blue-showroom-real-engine.png
+      - name: Exclude temporary duplicate anime assets from shipped apk
         run: |
           python3 -c 'from pathlib import Path; Path("qa_samples/anime_cc0_lookdev.vrm").unlink(missing_ok=True)'
           python3 -c 'from pathlib import Path; Path("qa_samples/blue_anime_lookdev.vrm").unlink(missing_ok=True)'
@@ -232,6 +246,9 @@ jobs:
             zhiyin-real3d/anime-base-angle.png
             zhiyin-real3d/anime-blue-front.png
             zhiyin-real3d/anime-blue-angle.png
+            zhiyin-real3d/showroom-qa.log
+            zhiyin-real3d/showroom-render.log
+            zhiyin-real3d/vrm-blue-showroom-real-engine.png
             zhiyin-real3d/VRM_PLUGIN_PROVENANCE.txt
             zhiyin-real3d/godot-android-export.log
             zhiyin-real3d/quaternius-motion-inspect.log
