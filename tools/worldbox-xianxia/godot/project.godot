@@ -1,0 +1,17 @@
+; Isolated 2D sprite factory runner; do NOT alter primary game engine.
+config_version=5
+
+[application]
+config/name="WorldBox-xianxia-render-factory"
+run/main_scene="res://rig/item3d.tscn"
+
+[autoload]
+Shot="*res://rig/shot.gd"
+
+[display]
+window/size/viewport_width=512
+window/size/viewport_height=512
+
+[rendering]
+renderer/rendering_method="gl_compatibility"
+renderer/rendering_method.mobile="gl_compatibility"
