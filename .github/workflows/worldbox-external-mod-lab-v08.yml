@@ -35,9 +35,10 @@ jobs:
         run: |
           python - <<'PY'
           from pathlib import Path
-          base=Path('tools/worldbox-xianxia')
+          import subprocess
           forbidden={'.apk','.pck','.dll','.pdb','.rar','.7z','.aab'}
-          wrong=[str(p) for p in base.rglob('*') if p.is_file() and p.suffix.lower() in forbidden]
+          tracked=subprocess.check_output(['git','ls-files','--','tools/worldbox-xianxia'],text=True).splitlines()
+          wrong=[s for s in tracked if Path(s).suffix.lower() in forbidden]
           assert not wrong,wrong
-          print('PASS: no third-party binary files committed')
+          print('PASS: no third-party binary files committed; source files checked:',len(tracked))
           PY
