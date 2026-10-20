@@ -34,6 +34,8 @@ public final class LifeEngine {
   public long nextRentAt=0;
   public String employment="河畔咖啡馆 · 兼职店员";
   public String action="REST",note="正在认识这间新房子。",goal="照顾自己，慢慢练好唱歌";
+  private String aiQueuedAction="",aiQueuedReason="";
+  private long aiPlanTime=0;
   public long lastTick=0,phaseStarted=0,phaseEnds=0;
   public boolean mealReady=false,wasOffline=false;
   private String suspended="", suspendedActionNote="";
@@ -59,6 +61,9 @@ public final class LifeEngine {
       nextRentAt=j.optLong("nextRentAt",0);
       lastTick=j.optLong("lastTick",now);phaseStarted=j.optLong("phaseStarted",0);phaseEnds=j.optLong("phaseEnds",0);
       note=j.optString("note",note);goal=j.optString("goal",goal);
+      aiQueuedAction=j.optString("aiQueuedAction","");
+      aiQueuedReason=j.optString("aiQueuedReason","");
+      aiPlanTime=j.optLong("aiPlanTime",0);
       suspended=j.optString("suspended","");suspendedActionNote=j.optString("suspendedActionNote","");
       // Migrate from v0.2 (old state had "until" but no phaseEnds).
       if(phaseEnds<=0){phaseEnds=j.optLong("until",0);}
@@ -321,6 +326,13 @@ public final class LifeEngine {
     else if(money<16&&lastShiftDay!=todayKey(when))selected="WORK";
     else if(hour>=8&&hour<18&&lastShiftDay!=todayKey(when)&&energy>=37&&hunger>=43)selected="WORK";
     else if(hour>=22&&energy<85)selected="SLEEP";
+    else if(!aiQueuedAction.isEmpty() && when-aiPlanTime<120*60000L && when>=aiPlanTime){
+      // Follow the model's suggestion ONLY after deterministic survival,
+      // safety, employment and debt logic has had priority.
+      selected=aiQueuedAction;
+      queuedEvents.add("执行经过核验的AI活动建议："+name(selected)+"，理由："+aiQueuedReason);
+      aiQueuedAction="";aiQueuedReason="";aiPlanTime=0;
+    }
     else {
       String[] morning={"WASH","WATER","STRETCH","READ","WRITE","PIANO"};
       String[] daytime={"PRACTICE","READ","PIANO","CLEAN","WRITE","STRETCH","WATER","WINDOW"};
@@ -344,6 +356,23 @@ public final class LifeEngine {
     sequence++;
     queuedEvents.add("她开始"+name(action)+"："+phaseName()+"。");
   }
+  /** Model output can only schedule a safe hobby; never authorizes arbitrary actions. */
+  public boolean scheduleAiHobby(String proposal,String reason){
+    switch(proposal){
+      case "READ":case "PRACTICE":case "PIANO":case "WRITE":
+      case "CLEAN":case "WATER":case "WINDOW":case "STRETCH":
+      case "REST":case "DRESS":break;
+      default:return false;
+    }
+    // Preserve the player's conversation and deterministic survival work.
+    if(reason==null)reason="";
+    String cleaned=reason.replace("\\n"," ").replace("\\r"," ").trim();
+    if(cleaned.length()>100)cleaned=cleaned.substring(0,100);
+    aiQueuedAction=proposal;aiQueuedReason=cleaned;aiPlanTime=System.currentTimeMillis();
+    queuedEvents.add("知音提出一项AI生活计划："+name(proposal)+"，理由："+cleaned+"。完成必要事务后才会执行。");
+    save();return true;
+  }
+  public String pendingAiHobby(){return aiQueuedAction;}
   public String request(String next){
     if(index(next)<0)throw new IllegalArgumentException("未知行为");
     long now=System.currentTimeMillis();update(now);
@@ -365,6 +394,7 @@ public final class LifeEngine {
       j.put("pantry",pantry);j.put("meals",meals);j.put("dirtyDishes",dirtyDishes);
       j.put("money",money);j.put("readPages",readPages);j.put("completedSongs",completedSongs);
       j.put("sequence",sequence);j.put("phase",phase);j.put("completedTasks",completedTasks);
+      j.put("aiQueuedAction",aiQueuedAction);j.put("aiQueuedReason",aiQueuedReason);j.put("aiPlanTime",aiPlanTime);
       j.put("rentArrears",rentArrears);j.put("rentPaid",rentPaid);j.put("workShifts",workShifts);
       j.put("lastShiftDay",lastShiftDay);j.put("nextRentAt",nextRentAt);
       j.put("action",action);j.put("note",note);j.put("goal",goal);j.put("suspended",suspended);
