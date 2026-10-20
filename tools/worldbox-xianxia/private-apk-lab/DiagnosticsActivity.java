@@ -103,7 +103,7 @@ public final class DiagnosticsActivity extends Activity {
                 }
             }
             final int count=installed;
-            runOnUiThread(()->status.setText("成功安装 "+count+" 个个MOD目录。重新启动游戏才可能被加载。\n"+
+            runOnUiThread(()->status.setText("成功安装 "+count+" 个MOD目录。重新启动游戏才可能被加载。\n"+
                 "部分旧DLL/BepInEx包不兼容安卓NML；详细原因如下。\n"+report.toString()));
         },"WorldBox-SAF-MOD-Import").start();
     }
@@ -194,7 +194,7 @@ public final class DiagnosticsActivity extends Activity {
         stage("DIAGNOSTICS_READY Android="+android.os.Build.VERSION.RELEASE+" model="+android.os.Build.MODEL);
         LinearLayout root=new LinearLayout(this);root.setOrientation(1);root.setPadding(28,32,28,24);
         TextView title=new TextView(this);title.setText("WorldBox·万界仙侠\n整合测试 v0.32 · ZIP模组导入");title.setTextSize(27);root.addView(title);
-        TextView note=new TextView(this);note.setText("内置：原创人物修仙、采集炼丹、8种原创建筑图鉴；战斗之神1.0.5、合理的世界2.0.1。\n点击启动会自动安装，无需文件管理器。\n旧修仙及人物控制包版本不兼容，未混入本包。\n\n若闪退或模组没出现，重新打开入口复制关键摘要，或导出完整日志ZIP。存档保留在本测试应用中，与原版独立。\n");note.setTextSize(18);root.addView(note);
+        TextView note=new TextView(this);note.setText("内置：原创人物修仙、采集炼丹、8种原创建筑图鉴；战斗之神1.0.5、合理的世界2.0.1。\n点击启动会自动安装，无需文件管理器。\n第三方MOD ZIP可在此逐个识别，旧版桌面BepInEx或散装DLL不会自动执行。\n\n若闪退或模组没出现，重新打开入口复制关键摘要，或导出完整日志ZIP。存档保留在本测试应用中，与原版独立。\n");note.setTextSize(18);root.addView(note);
         button(root,"启动游戏测试",0);button(root,"导入第三方MOD ZIP（支持多选）",3);
         button(root,"复制关键错误摘要",1);button(root,"导出并分享完整日志ZIP",2);
         status=new TextView(this);status.setTextSize(17);
