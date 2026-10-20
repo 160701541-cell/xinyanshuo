@@ -1,0 +1,81 @@
+{
+  "schema": "worldbox.xianxia.mod.compat.v1",
+  "update_date": "2026-10-20",
+  "status": "SOURCE_STAGED_ANDROID_RUNTIME_UNVERIFIED",
+  "game": {
+    "name": "WorldBox Android",
+    "user_apk_label": "0.51.4",
+    "has_libil2cpp": true,
+    "has_libmonosgen": true,
+    "has_nested_managed_assemblies": true,
+    "proof_of_running_nml": false
+  },
+  "packaged_mods": [
+    {
+      "name": "Frontiers",
+      "guid": "MIDNIGHT_FRONTIERS",
+      "version": "2.0.1",
+      "source": "user-supplied RAR",
+      "kind": "compiled dll",
+      "targetGameBuild": 0,
+      "features": [
+        "king",
+        "lord",
+        "knight",
+        "noble",
+        "soldier",
+        "walled city",
+        "castle",
+        "formations",
+        "sieges"
+      ],
+      "chinese_locale": "cz.json (107/107 keys, user-owned output)"
+    },
+    {
+      "name": "Combat Gods",
+      "guid": "TURBO_SAKUGA",
+      "version": "1.0.5",
+      "source": "user-supplied RAR",
+      "kind": "NML C# sources",
+      "targetGameBuild": 719,
+      "features": [
+        "combat tiers",
+        "schools",
+        "techniques",
+        "combat_fx",
+        "duels",
+        "Worldfall3D optional overlay"
+      ],
+      "future_migration": "keep combat tier independent from cultivation level"
+    },
+    {
+      "name": "NeoModLoader",
+      "version": "1.2.1.1",
+      "source": "user-supplied ZIP",
+      "kind": "NeoModLoader.dll only",
+      "mobile_variant_confirmed": false,
+      "warning": "PDB absent; do not assume desktop DLL runs on Android 0.51.4"
+    }
+  ],
+  "candidate_resources": {
+    "source": "WorldBox v0.4 candidate",
+    "rendered_frames": 1794,
+    "zoom_lod_frames": 432,
+    "zoom_source_resolution": "96 native pixels; 64 and 32 downsampled",
+    "used_in_live_game": false
+  },
+  "external_optional": {
+    "name": "Worldfall",
+    "android_beta_official_url": "https://worldfall3d.com/install/",
+    "available_from_author": true,
+    "bundled": false,
+    "android_verified_by_this_project": false,
+    "author_android_zip_sha256": "d699f7a66e08acae4a6bbb57428bf7a3f21e8587d795296fb2eae52fd77d91a0"
+  },
+  "conflict_policy": [
+    "never equate Combat Gods tier with spiritual realm",
+    "never override Frontiers kingdom ranks with sect professions",
+    "do not activate new NML or install modified APK without device compatibility evidence",
+    "do not publish third-party uploaded binaries to this public GitHub repo"
+  ]
+}
