@@ -16,6 +16,8 @@
       <Private>false</Private>
     </Reference>
     <Compile Include="../nml-observer-v07/Code/XianxiaObserverV07.cs" />
+    <Compile Include="../huge-map-mod/GiantMapOptionsV11.cs" />
+    
     <Compile Include="stubs/WorldBoxApiStubs.cs" />
   </ItemGroup>
 </Project>
