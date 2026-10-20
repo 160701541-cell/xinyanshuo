@@ -12,9 +12,11 @@
     <Compile Include="../nml-observer-v07/Code/XianxiaObserverV07.cs" />
     <Compile Include="../huge-map-mod/GiantMapOptionsV11.cs" />
     <Compile Include="../huge-map-mod/ObserverFrameGuardV12.cs" />
+    <Compile Include="../ui/ModTextAccessibilityV13.cs" />
     
     <Reference Include="NeoModLoader_mobile"><HintPath>$(AndroidSdkPath)/NeoModLoader_mobile.dll</HintPath><Private>false</Private></Reference>
     <Reference Include="UnityEngine.CoreModule"><HintPath>$(AndroidSdkPath)/UnityEngine.CoreModule.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="UnityEngine.TextRenderingModule"><HintPath>$(AndroidSdkPath)/UnityEngine.TextRenderingModule.dll</HintPath><Private>false</Private></Reference>
     <Reference Include="UnityEngine.IMGUIModule"><HintPath>$(AndroidSdkPath)/UnityEngine.IMGUIModule.dll</HintPath><Private>false</Private></Reference>
     <Reference Include="Assembly-CSharp"><HintPath>$(AndroidSdkPath)/Assembly-CSharp.dll</HintPath><Private>false</Private></Reference>
     <Reference Include="Assembly-CSharp-firstpass"><HintPath>$(AndroidSdkPath)/Assembly-CSharp-firstpass.dll</HintPath><Private>false</Private></Reference>
