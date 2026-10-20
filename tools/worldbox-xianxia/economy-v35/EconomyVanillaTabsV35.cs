@@ -29,11 +29,14 @@ namespace XianxiaWorldBox {
     if(root!=null)return root;
     // ModDeployment places 'Mods/' next to Android/data/<package>/files.
     string basePath=Application.persistentDataPath;
-    string parent=Path.GetDirectoryName(basePath);
-    string candidate=Path.Combine(parent??basePath,"Mods/WorldBoxEconomy");
+    // Native Android ModDeployment writes under application-owned files/mods
+    // but Unity persistentDataPath differs on some Android OEM builds.
+    string candidate=Path.Combine(basePath,"mods/WorldBoxEconomy");
     if(File.Exists(Path.Combine(candidate,"resource_index.tsv")))return root=candidate;
-    string other=Path.Combine(basePath,"Mods/WorldBoxEconomy");
-    return root=File.Exists(Path.Combine(other,"resource_index.tsv"))?other:candidate;
+    string parent=Path.GetDirectoryName(basePath);
+    string alternate=Path.Combine(parent??basePath,"files/mods/WorldBoxEconomy");
+    if(File.Exists(Path.Combine(alternate,"resource_index.tsv")))return root=alternate;
+    return root=candidate;
    }
   }
   static bool LoadIndex() {
