@@ -29,7 +29,7 @@ def make(source, dex, out, payload=None):
                 if not (payload/'install.json').is_file():raise ValueError('Missing deployment manifest')
                 for file in sorted(payload.rglob('*')):
                     if file.is_file():
-                        target.write(file,'assets/worldbox-xianxia/v17/'+file.relative_to(payload).as_posix(),compress_type=zipfile.ZIP_DEFLATED)
+                        target.write(file,'assets/worldbox-xianxia/v18/'+file.relative_to(payload).as_posix(),compress_type=zipfile.ZIP_DEFLATED)
         with zipfile.ZipFile(out) as check:
             if check.testzip() is not None:raise ValueError('CRC check failed')
             for name in original.namelist():

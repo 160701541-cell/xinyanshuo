@@ -30,6 +30,8 @@ jobs:
         run: dotnet run --project tools/worldbox-xianxia/tests/FrameGuardScenarioV12.csproj -c Release
       - name: 'Execute font-size and localized UI C# regression'
         run: dotnet run --project tools/worldbox-xianxia/tests/FontAccessibilityScenarioV13.csproj -c Release
+      - name: 'Execute original cultivation clock and resource conservation regression'
+        run: dotnet run --project tools/worldbox-xianxia/tests/CultivationScenarioV18.csproj -c Release
       - name: 'WorldBox external MOD only: prevent main-game edits'
         run: python tools/worldbox-xianxia/scope_gate.py
       - name: 'Ensure only source code is published in third-party test folder'

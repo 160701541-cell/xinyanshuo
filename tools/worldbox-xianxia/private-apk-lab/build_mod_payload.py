@@ -45,7 +45,7 @@ def build(loader,dependencies,combat,combat_dll,frontiers,license_file,out):
         rel=p.relative_to(out).as_posix()
         if not (rel.startswith('files/mods/') or rel.startswith('Mods/')):raise ValueError('Unexpected deployment target')
         files.append({'target':rel,'size':p.stat().st_size,'sha256':digest(p)})
-    token='v17-'+hashlib.sha256(json.dumps(files,sort_keys=True).encode()).hexdigest()[:16]
+    token='v18-'+hashlib.sha256(json.dumps(files,sort_keys=True).encode()).hexdigest()[:16]
     manifest={'build_token':token,'loader':'Legacy Mono NeoModLoader 1.2.1.1',
               'mods':['Combat Gods 1.0.5','Frontiers 2.0.1'],
               'device_test':'USER_PENDING','files':files}

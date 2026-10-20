@@ -12,7 +12,7 @@ from pathlib import Path
 OLD = 'com.mkarpenko.worldbox'
 NEW = 'com.xinyanshuo.worldbox.lab13'
 ACTIVITY = NEW + '.DiagnosticsActivity'
-TITLE = 'WorldBox·万界仙侠 整合v17'
+TITLE = 'WorldBox·万界仙侠 整合v18'
 ANDROID = 'http://schemas.android.com/apk/res/android'
 
 
@@ -84,7 +84,7 @@ def patch(data):
                 for a in range(total):
                     o=at+a*step
                     if strings[u32(raw,o+4)]=='versionCode':
-                        set32(raw,o+16,728)
+                        set32(raw,o+16,729)
             if tag=='activity':
                 unity=False
                 for a in range(total):

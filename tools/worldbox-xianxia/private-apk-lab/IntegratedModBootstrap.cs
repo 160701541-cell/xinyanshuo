@@ -24,7 +24,7 @@ public sealed class IntegratedModBootstrap : MonoBehaviour {
     static readonly System.Collections.Generic.HashSet<string> Resolving=new System.Collections.Generic.HashSet<string>();
     void Start(){
         AppDomain.CurrentDomain.AssemblyResolve+=Resolve;
-        DiagnosticLog.Write("[XIANXIA-INTEGRATION] BOOTSTRAP_READY v17; waiting for original world initialization");
+        DiagnosticLog.Write("[XIANXIA-INTEGRATION] BOOTSTRAP_READY v18; waiting for original world initialization");
     }
     static Assembly Resolve(object sender,ResolveEventArgs args){
         string name=new AssemblyName(args.Name).Name;

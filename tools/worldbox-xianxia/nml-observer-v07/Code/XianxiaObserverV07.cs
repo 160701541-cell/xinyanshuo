@@ -149,7 +149,8 @@ namespace XianxiaWorldBox
             if (button==null || label==null || box==null) return;
             float ui=Mathf.Clamp(Screen.width/900f,.8f,1.35f);
             float x=Screen.width-230*ui;
-            if(GUI.Button(new Rect(x,9,220*ui,52*ui),open?"收起万界观察":"万界观察 · 大字",button)){
+            float top=Mathf.Clamp(Screen.height/720f,.92f,1.65f)*90f;
+            if(GUI.Button(new Rect(x,top,220*ui,52*ui),open?"收起万界观察":"万界观察 · 大字",button)){
                 open=!open;nextSample=0;
                 Debug.Log("[XIANXIA-V13] VIEW_"+(open?"OPEN":"CLOSE"));
             }

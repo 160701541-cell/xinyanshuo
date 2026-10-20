@@ -9,7 +9,7 @@ import org.json.*;
 
 /** Installs only bundled technical files into THIS test app. Never imports/deletes worlds. */
 final class ModDeployment {
-    static final String ASSETS="worldbox-xianxia/v17/";
+    static final String ASSETS="worldbox-xianxia/v18/";
     static String install(Context context) throws Exception {
         File external=context.getExternalFilesDir(null);
         if(external==null)throw new IOException("应用外部存储不可用");
@@ -24,7 +24,7 @@ final class ModDeployment {
             return "MOD_DEPLOY_CACHED "+build+"; 战斗之神1.0.5 / 合理的世界2.0.1";
         int managed=0;
         // Synchronize the APK's exact Mono assemblies before the engine starts.
-        // This also updates the original entry hook when upgrading v15 -> v17.
+        // This also updates the original entry hook when upgrading v15 -> v18.
         ZipInputStream zip=new ZipInputStream(context.getAssets().open("Mono/Managed.zip"));
         try {
             ZipEntry entry;
