@@ -82,7 +82,9 @@ namespace XianxiaWorldBox
         }
         void Update()
         {
-            if(!open||!versionOK)return;
+            if(!versionOK)return;
+            ModTextAccessibilityV13.Tick();
+            if(!open)return;
             ObserverFrameGuardV12.Tick();
             if(ObserverFrameGuardV12.Paused||Time.unscaledTime<nextSample)return;
             nextSample=Time.unscaledTime+ObserverFrameGuardV12.SampleInterval();
@@ -140,67 +142,85 @@ namespace XianxiaWorldBox
         void OnGUI()
         {
             if(!versionOK||diamond==null)return;
-            float ui=Mathf.Clamp(Screen.width/900f,.66f,1.25f);
-            if(GUI.Button(new Rect(Screen.width-182*ui,9,174*ui,44*ui),open?"关闭万界观察":"进入万界观察")){
+            GUIStyle button = ModTextAccessibilityV13.ButtonStyle();
+            GUIStyle label = ModTextAccessibilityV13.LabelStyle();
+            GUIStyle box = ModTextAccessibilityV13.BoxStyle();
+            if (button==null || label==null || box==null) return;
+            float ui=Mathf.Clamp(Screen.width/900f,.8f,1.35f);
+            float x=Screen.width-230*ui;
+            if(GUI.Button(new Rect(x,9,220*ui,52*ui),open?"收起万界观察":"万界观察 · 大字",button)){
                 open=!open;nextSample=0;
-                Debug.Log("[XIANXIA-V07] VIEW_"+(open?"OPEN":"CLOSE"));
+                Debug.Log("[XIANXIA-V13] VIEW_"+(open?"OPEN":"CLOSE"));
             }
             if(!open)return;
-            float pw=Mathf.Min(Screen.width-18,690*ui),ph=Mathf.Min(Screen.height-58,610*ui);
+            float pw=Mathf.Min(Screen.width-16,755*ui),ph=Mathf.Min(Screen.height-16,645*ui);
             Rect panel=new Rect((Screen.width-pw)/2,(Screen.height-ph)/2,pw,ph);
-            GUI.Box(panel,"第三方 WorldBox MOD 实验 · 微观伪3D（只读）");
-            GUI.Label(new Rect(panel.x+12,panel.y+26*ui,pw-24,54*ui),
-                "人物: "+actorName+"  "+summary+"\n角度:"+angle*90+"°   观察层: "+Mathf.RoundToInt(ObserverFrameGuardV12.SmoothedFps)+" FPS");
-            if(GUI.Button(new Rect(panel.x+12,panel.y+73*ui,143*ui,30*ui),
-                GiantMapOptionsV11.Armed ? "再次确认大地图" : "实验大地图 10-20"))
+            GUI.Box(panel,"WorldBox 万界观察 / 非官方 MOD 实验",box);
+            GUI.Label(new Rect(panel.x+12,panel.y+33*ui,pw-24,60*ui),
+                "人物："+actorName+" / "+summary+"\n方向："+angle*90+"° | 观察层FPS "+Mathf.RoundToInt(ObserverFrameGuardV12.SmoothedFps),label);
+            float firstY=panel.y+94*ui;
+            if(GUI.Button(new Rect(panel.x+12,firstY,172*ui,45*ui),
+                 GiantMapOptionsV11.Armed?"再次确认大地图":"大地图实验",button))
                 mapStatus=GiantMapOptionsV11.OnTap();
-            GUI.Label(new Rect(panel.x+158*ui,panel.y+76*ui,pw-170*ui,29*ui),mapStatus);
-            Rect map=new Rect(panel.x+10,panel.y+109*ui,pw-20,Mathf.Max(110,ph-208*ui));
-            GUI.Box(map,"");
+            GUI.Label(new Rect(panel.x+192*ui,firstY+3*ui,pw-207*ui,45*ui),mapStatus,label);
+            float secondY=panel.y+142*ui;
+            if(GUI.Button(new Rect(panel.x+12,secondY,180*ui,46*ui),
+                          "字体 "+Mathf.RoundToInt(ModTextAccessibilityV13.Scale*100f)+"%",button))
+                ModTextAccessibilityV13.CycleScale();
+            if(GUI.Button(new Rect(panel.x+202*ui,secondY,205*ui,46*ui),
+                          ModTextAccessibilityV13.GlobalEnabled?"其他MOD字体：开":"其他MOD字体：关",button))
+                ModTextAccessibilityV13.ToggleGlobal();
+            GUI.Label(new Rect(panel.x+417*ui,secondY+4*ui,pw-430*ui,44*ui),
+                "已增大："+ModTextAccessibilityV13.ModifiedCount+"处",label);
+            Rect map=new Rect(panel.x+10,panel.y+199*ui,pw-20,Mathf.Max(90,ph-315*ui));
+            GUI.Box(map,"",box);
             if (ObserverFrameGuardV12.Paused)
             {
-                GUI.Label(new Rect(map.x+12,map.y+20,map.width-24,120*ui),
-                    ObserverFrameGuardV12.Reason+"\n世界仍在模拟；只暂停万界观察绘制。");
-                return;
+                GUI.Label(new Rect(map.x+16,map.y+18,map.width-32,140*ui),
+                    ObserverFrameGuardV12.Reason+"\n原游戏继续运行，只有额外观察层暂停。",label);
             }
-            int useRadius = ObserverFrameGuardV12.ClampRadius(radius);
-            float tw=Mathf.Min((map.width-16)/(2f*useRadius+1),(map.height-20)/(useRadius+1));
-            tw=Mathf.Max(7f,tw);
-            float hw=tw*.5f,hh=tw*.25f;
-            float ox=map.x+map.width*.5f-hw,oy=map.y+11;
-            Color previous=GUI.color;
-            for(int sum=0;sum<=4*useRadius;sum++)
-                for(int sy=0;sy<=2*useRadius;sy++){
-                    int sx=sum-sy;
-                    if(sx<0||sx>2*useRadius)continue;
-                    Vector2 w=Unrot(sx-useRadius,sy-useRadius);
-                    GUI.color=colors[(int)w.x+MaxRadius,(int)w.y+MaxRadius];
-                    GUI.DrawTexture(new Rect(ox+(sx-sy)*hw,oy+(sx+sy)*hh,tw,tw*.5f),diamond);
+            else
+            {
+                int useRadius=ObserverFrameGuardV12.ClampRadius(radius);
+                float tw=Mathf.Min((map.width-16)/(2f*useRadius+1),(map.height-20)/(useRadius+1));
+                tw=Mathf.Max(7f,tw);
+                float hw=tw*.5f,hh=tw*.25f;
+                float ox=map.x+map.width*.5f-hw,oy=map.y+11;
+                Color previous=GUI.color;
+                for(int sum=0;sum<=4*useRadius;sum++)
+                    for(int sy=0;sy<=2*useRadius;sy++){
+                        int sx=sum-sy;
+                        if(sx<0||sx>2*useRadius)continue;
+                        Vector2 w=Unrot(sx-useRadius,sy-useRadius);
+                        GUI.color=colors[(int)w.x+MaxRadius,(int)w.y+MaxRadius];
+                        GUI.DrawTexture(new Rect(ox+(sx-sy)*hw,oy+(sx+sy)*hh,tw,tw*.5f),diamond);
+                    }
+                for(int i=0;i<peopleCount;i++){
+                    Vector2 p=Rot(peopleX[i],peopleY[i]);
+                    if(Mathf.Abs(p.x)>useRadius||Mathf.Abs(p.y)>useRadius)continue;
+                    float sx=p.x+useRadius,sy=p.y+useRadius;
+                    GUI.color=new Color(1,.85f,.28f);
+                    GUI.DrawTexture(new Rect(ox+(sx-sy)*hw+hw-3,oy+(sx+sy)*hh-4,7,7),Texture2D.whiteTexture);
                 }
-            for(int i=0;i<peopleCount;i++){
-                Vector2 p=Rot(peopleX[i],peopleY[i]);
-                float sx=p.x+useRadius,sy=p.y+useRadius;
-                GUI.color=new Color(1,.85f,.28f);
-                GUI.DrawTexture(new Rect(ox+(sx-sy)*hw+hw-3,oy+(sx+sy)*hh-4,7,7),Texture2D.whiteTexture);
+                GUI.color=previous;
             }
-            GUI.color=previous;
-            float by=panel.y+ph-88*ui,bw=(pw-20)/5;
-            if(GUI.Button(new Rect(panel.x+10,by,bw-2,34*ui),"选取人物"))PickPerson();
-            if(GUI.Button(new Rect(panel.x+10+bw,by,bw-2,34*ui),follow?"停跟随":"跟随")){
+            float by=panel.y+ph-99*ui,bw=(pw-20)/5f;
+            if(GUI.Button(new Rect(panel.x+10,by,bw-2,48*ui),"选择人物",button))PickPerson();
+            if(GUI.Button(new Rect(panel.x+10+bw,by,bw-2,48*ui),follow?"停止跟随":"跟随",button)){
                 follow=!follow;nextSample=0;
             }
-            if(GUI.Button(new Rect(panel.x+10+2*bw,by,bw-2,34*ui),"放大")){
+            if(GUI.Button(new Rect(panel.x+10+2*bw,by,bw-2,48*ui),"放大",button)){
                 radius=Math.Max(3,radius-1);nextSample=0;
             }
-            if(GUI.Button(new Rect(panel.x+10+3*bw,by,bw-2,34*ui),"缩小")){
+            if(GUI.Button(new Rect(panel.x+10+3*bw,by,bw-2,48*ui),"缩小",button)){
                 radius=Math.Min(9,radius+1);nextSample=0;
             }
-            if(GUI.Button(new Rect(panel.x+10+4*bw,by,bw-2,34*ui),"转90°")){
+            if(GUI.Button(new Rect(panel.x+10+4*bw,by,bw-2,48*ui),"旋转90°",button)){
                 angle=(angle+1)%4;nextSample=0;
             }
-            GUI.Label(new Rect(panel.x+12,by+39*ui,pw-24,40*ui),
-                "地图扩容只影响新建世界。低FPS自动降采样、暂停绘制。Android实机仍待验收。");
+            GUI.Label(new Rect(panel.x+12,by+54*ui,pw-24,36*ui),
+                "高清字仅作用UI；不会凭空提升原游戏贴图分辨率。Android真机待测。",label);
         }
-        void OnDestroy(){if(diamond!=null)Destroy(diamond);target=null;}
+        void OnDestroy(){ModTextAccessibilityV13.Shutdown();if(diamond!=null)Destroy(diamond);target=null;}
     }
 }
