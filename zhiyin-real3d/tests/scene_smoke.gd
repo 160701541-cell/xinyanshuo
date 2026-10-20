@@ -28,8 +28,17 @@ func _verify() -> void:
     if hero != null:
         for node in hero.find_children("*", "Skeleton3D", true, false):
             hero_joints = maxi(hero_joints, (node as Skeleton3D).get_bone_count())
-    print("3D QA models=", assets.size(), " meshes=", meshes.size(), " lights=", lights.size(), " pbr=", pbr, " skeletons=", skeletons.size(), " hero_bones=",hero_joints)
-    if assets.size() < 10 or meshes.size() < 28 or lights.size() < 2 or pbr < 15 or hero_joints < 50:
+    var hero_motion_count = 0
+    var hero_anim_playing = false
+    if hero != null:
+        var players = hero.find_children("*","AnimationPlayer",true,false)
+        for raw in players:
+            var player = raw as AnimationPlayer
+            if player.has_animation("Idle") and player.has_animation("Walk") and player.has_animation("Sitting_Idle"):
+                hero_motion_count = player.get_animation_list().size()
+                hero_anim_playing = player.is_playing()
+    print("3D QA models=", assets.size(), " meshes=", meshes.size(), " lights=", lights.size(), " pbr=", pbr, " skeletons=", skeletons.size(), " hero_bones=",hero_joints," authentic_motion_clips=",hero_motion_count," playing=",hero_anim_playing)
+    if assets.size() < 10 or meshes.size() < 28 or lights.size() < 2 or pbr < 15 or hero_joints < 50 or hero_motion_count < 40 or not hero_anim_playing:
         push_error("Godot mesh/material quality gate failed")
         quit(3)
         return
