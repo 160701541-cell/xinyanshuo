@@ -1,0 +1,191 @@
+{
+  "schema_version": 1,
+  "scope": "zhiyin avatar identity and art fidelity contract",
+  "disclaimer": "User-created character representations, not affiliated with or endorsed by the AI vendors.",
+  "references": {
+    "primary": [
+      "user-uploaded blue chibi pout+angry poses",
+      "user-uploaded orange-haired gentle embrace scene"
+    ],
+    "secondary": [
+      "user-uploaded two-character promotional image"
+    ]
+  },
+  "characters": [
+    {
+      "id": "npc_deepseek_blue",
+      "name": "DeepSeek",
+      "zh_name": "DeepSeek（蓝色鲸鱼角色）",
+      "stage_priority": "P0_first",
+      "canonical_color_family": [
+        "#142B68",
+        "#3154A7",
+        "#61A5E7",
+        "#EAF7FC"
+      ],
+      "appearance": {
+        "hair": "Very long thick wavy gradient cobalt-to-sky-blue hair with layered shine",
+        "eye": "large multi-highlight blue iris, expressive brows",
+        "silhouette": [
+          "white frilled maid headband",
+          "whale-like side fins",
+          "3D whale-tail accessory",
+          "blue bows",
+          "long gradient hair",
+          "deep navy blue and white frilly dress"
+        ],
+        "outfit": [
+          "navy blue dress",
+          "white ruffled apron with original simplified whale motif",
+          "gold embroidery details",
+          "blue collar bow and jewel",
+          "layered skirt and white sleeve ruffles"
+        ],
+        "expressive_signatures": [
+          "puffed-cheek pout",
+          "angry small fang",
+          "joyful open-mouth smile",
+          "embarrassed blush",
+          "surprised eyes"
+        ],
+        "variants": [
+          "chibi 2.8-3.3 heads",
+          "anime life scene 5-6 heads"
+        ],
+        "mandatory_art_meshes": [
+          "head_face",
+          "eyelids",
+          "eyebrows",
+          "eye_irises",
+          "hair_main",
+          "hair_bangs",
+          "hair_gradient_tips",
+          "fin_accessories_left_right",
+          "maid_headband",
+          "blue_bows",
+          "maid_dress",
+          "ruffle_apron",
+          "tail_accessory",
+          "jewel",
+          "shoes"
+        ],
+        "mandatory_face_controls": [
+          "blink_left",
+          "blink_right",
+          "smile",
+          "angry",
+          "pout",
+          "blush",
+          "viseme_a",
+          "viseme_e",
+          "viseme_i",
+          "viseme_o",
+          "viseme_u"
+        ]
+      },
+      "ai": {
+        "model_provider": "user_selectable",
+        "memory_scope": "npc_deepseek_blue",
+        "voice_profile": "user_assignable",
+        "role_card": "independent"
+      },
+      "current_asset_status": "NOT_MODELED"
+    },
+    {
+      "id": "npc_claude_amber",
+      "name": "Claude",
+      "zh_name": "Claude（橙金发角色）",
+      "stage_priority": "P1_after_blue",
+      "canonical_color_family": [
+        "#A94C24",
+        "#E7894C",
+        "#F6C96E",
+        "#FFF0DC",
+        "#332C31"
+      ],
+      "appearance": {
+        "hair": "extra long softly flowing amber-to-orange hair",
+        "eye": "warm amber/golden irises with warm expression",
+        "silhouette": [
+          "sunflower hair ornament",
+          "black ribbon hair bow",
+          "gold tassel decorations",
+          "long loose hair",
+          "warm cream and orange clothing"
+        ],
+        "outfit": [
+          "cream and white layered clothing",
+          "black/brown ribbon accents",
+          "warm amber embroidery",
+          "optional long sleeves"
+        ],
+        "expressive_signatures": [
+          "gentle caring smile",
+          "listening attentively",
+          "surprised",
+          "closed-eye smile",
+          "contemplative"
+        ],
+        "variants": [
+          "anime life scene 5-6 heads"
+        ],
+        "mandatory_art_meshes": [
+          "head_face",
+          "eyelids",
+          "eyebrows",
+          "eye_irises",
+          "hair_main",
+          "hair_wisps",
+          "sunflower_ornament",
+          "dark_hair_bow",
+          "tassels",
+          "cream_outfit",
+          "shoes"
+        ],
+        "mandatory_face_controls": [
+          "blink_left",
+          "blink_right",
+          "smile",
+          "surprised",
+          "frown",
+          "viseme_a",
+          "viseme_e",
+          "viseme_i",
+          "viseme_o",
+          "viseme_u"
+        ]
+      },
+      "ai": {
+        "model_provider": "user_selectable",
+        "memory_scope": "npc_claude_amber",
+        "voice_profile": "user_assignable",
+        "role_card": "independent"
+      },
+      "current_asset_status": "NOT_MODELED"
+    }
+  ],
+  "integration": {
+    "independent_npc_ids": true,
+    "allow_two_character_scenes": true,
+    "lore_or_visual_brand_not_official": true,
+    "require_distinct_voice_identity": true,
+    "require_complete_gltf_vrm_with_meshes_uv_materials_skeleton_animations": true,
+    "scene_provider_decoupled_from_character": true,
+    "qa_images": [
+      "source_reference",
+      "godot_front",
+      "godot_profile",
+      "godot_back",
+      "godot_45degree",
+      "android_real_device_frame"
+    ],
+    "release_blockers": [
+      "missing_custom_meshes",
+      "missing_hair_fin_tail",
+      "missing_animation_binding",
+      "missing_skin_and_pbr",
+      "model_does_not_resemble_reference",
+      "not_in_actual_android_apk"
+    ]
+  }
+}
