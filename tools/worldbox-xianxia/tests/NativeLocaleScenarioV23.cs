@@ -37,6 +37,14 @@ namespace NeoModLoader.General
             }
             dict[key]=text;
         }
+        public static string Get(string key)
+        {
+            Dictionary<string,string> localized;
+            string value;
+            if(locales.TryGetValue(LocalizedTextManager.instance.language,out localized)
+                &&localized.TryGetValue(key,out value))return value;
+            return key;
+        }
         public static void ApplyLocale(string lang,bool update)
         {
             applyCount++;
@@ -99,6 +107,13 @@ class Program
         data.language="en";
         string switchResult=NativeLocaleBridgeV23.SwitchToChineseByUserTap();
         Assert(switchResult.Contains("已请求切换")&&data.language=="cz","user-tap switch to vanilla Chinese");
+        OwnLocaleLabelsV25.Reset();
+        NeoModLoader.General.LM.Add("cz","xinyanshuo.wb.mod_manager","模拟NML中文包载入");
+        Assert(OwnLocaleLabelsV25.Get("mod_manager","中文模组管理器")=="模拟NML中文包载入",
+            "actual own NML locale entry must be used when loaded");
+        Assert(OwnLocaleLabelsV25.Get("not_in_pack","中文回退")=="中文回退",
+            "unknown NML locale key must fall back to readable Chinese");
+        OwnLocaleLabelsV25.Reset();
         Directory.Delete(UnityEngine.Application.persistentDataPath,true);
         Console.WriteLine("PASS_NATIVE_LOCALE_V23 real key lookup + NML LM cz registry and non-destructive refresh");
     }
