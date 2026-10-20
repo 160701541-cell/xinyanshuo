@@ -42,6 +42,8 @@ jobs:
         run: dotnet run --project tools/worldbox-xianxia/tests/NativeLocaleScenarioV23.csproj -c Release
       - name: 'Execute opt-in untranslated menu audit C# privacy and export scenario'
         run: dotnet run --project tools/worldbox-xianxia/tests/UntranslatedMenuScenarioV23.csproj -c Release
+      - name: 'Execute 2048-square world-size preset and actual menu-list simulation'
+        run: dotnet run --project tools/worldbox-xianxia/tests/MapPresetBridgeV32.Tests.csproj -c Release
       - name: 'WorldBox external MOD only: prevent main-game edits'
         run: python tools/worldbox-xianxia/scope_gate.py
       - name: 'Ensure only source code is published in third-party test folder'
@@ -256,6 +258,10 @@ jobs:
             -r linux-x64 -c Release --self-contained true \
             -p:PublishSingleFile=true -p:PublishTrimmed=false -o /tmp/worldbox-user-private-helper
           test -f /tmp/worldbox-user-private-helper/GameAssemblyToolkit
+          dotnet build tools/worldbox-xianxia/private-apk-lab/MapPresetBridgeV32/WorldBoxXianxiaMapPreset.csproj -c Release --verbosity quiet
+          cp tools/worldbox-xianxia/private-apk-lab/MapPresetBridgeV32/bin/Release/netstandard2.1/WorldBoxXianxiaMapPreset.dll /tmp/worldbox-user-private-helper/
+          cp tools/worldbox-xianxia/private-apk-lab/MapPresetBridgeV32/MapPresetBridgeV32.cs /tmp/worldbox-user-private-helper/
+          test -s /tmp/worldbox-user-private-helper/WorldBoxXianxiaMapPreset.dll
           cp tools/worldbox-xianxia/private-apk-lab/XianxiaMonoBridge.cs /tmp/worldbox-user-private-helper/
           mkdir -p /tmp/worldbox-user-private-helper/NativeBridgeSources
           cp tools/worldbox-xianxia/private-apk-lab/XianxiaMonoBridge.cs tools/worldbox-xianxia/private-apk-lab/DiagnosticLog.cs tools/worldbox-xianxia/private-apk-lab/IntegratedModBootstrap.cs /tmp/worldbox-user-private-helper/NativeBridgeSources/
