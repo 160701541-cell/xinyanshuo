@@ -119,7 +119,7 @@ jobs:
             -destkeystore "$RUNNER_TEMP/zhiyin-lab.jks" \
             -deststoretype JKS -deststorepass android -destkeypass android
           mkdir -p "$HOME/.config/godot" build
-          cat > "$HOME/.config/godot/editor_settings-4.tres" <<EOF
+          cat > "$HOME/.config/godot/editor_settings-4.4.tres" <<EOF
           [gd_resource type="EditorSettings" format=3]
 
           [resource]
