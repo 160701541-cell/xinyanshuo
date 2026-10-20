@@ -601,3 +601,23 @@ Work下一步：在真实Android16手机运行这一准确SHA256包，收集`MOD
 - APK v1/v2/v3验签通过，全13605个ZIP条目CRC通过；只改自身地图模块及安装清单，原WorldBox Unity主程序集、旧Mono桥及安卓DEX均未变；使用lab31相同测试证书，可尝试覆盖同签名lab31，不可覆盖lab13。
 - 私有APK、真实验签报告、复现打包脚本已经上传ChatGPT持久文件库 `/WorldBox-万界仙侠/Work交接/`。商业游戏不上传公开GitHub。
 - P0待证实：手机11/11菜单出现；6400平方地图成功生成、存档并重新载入；内存/卡顿。4096万格可能导致严重OOM。不能将编译/签名成功当作手机实机完成。
+
+
+---
+
+## 2026-10-21 v0.38 实机关键错误摘要诊断（PKR110 Android16）
+
+### 用户提供的客观实机证据
+- 安卓日志最新显式部署为 `MOD_DEPLOY_OK build=v34-modzip-7ef655d45280b5f40a managed=294 payloadFiles=735`：这只证明**v34部署运行**，而非用户后来v0.35/v0.36/v0.37已完成装载；要结合APK里实际`install.json`和最新手机导出记录辨别当前运行的版本。
+- Unity日志有 `LOADED_ENTRY Frontiers.FrontiersMod`、`Sakuga.SakugaMod`、`FengyunRankings.ModClass` 及前一段`NML_STAGE initialized_successfully=True`：部分第三方模组真实加载成功。**不能说整个加载器不可用**。
+- `MOD_STATE XINYANSHUO_WORLD_BOX_OBSERVER_V07=FAILED reason=`：自有观察MOD真实运行失败、原因字段空。这份**关键摘要不足以还原异常/编译堆栈**，必须使用安卓诊断入口导出的完整`WorldBox_logs_*.zip`检查原始`unity_current.log`。不允许把此MOD标记为功能通过。
+- `USER_MOD_IMPORT_FAILED java.util.zip.ZipException: zip END header not found`：所选文件不是结构完整的ZIP（可能下载不完整、损坏、扩展名错误），与另一次`ModType -1`错误不是同一根因；不可为了解决导入而绕开压缩包路径安全校验。
+- `java.io.IOException: 仅支持ModType 0/1，实际：-1`及ZIP安全路径错误出现在当天03:05导入事件，早于03:34部署日志；将它们和新出现的ZIP END错误分开定位，不能全部说成新版已修复。
+- `System.DllNotFoundException: libsteam_api`/`Steam is not available`为Android调用桌面Steam相关功能时可能存在的警告；由于随后其他MOD实际`LOADED_ENTRY`，它**不能单独充当观察MOD失败根因**。
+
+### 已真正提交代码和离线QA
+- 改进安卓`DiagnosticsActivity.java`：现在在处理每一个用户手选ZIP时读取SAF显示文件名，逐一写`USER_MOD_IMPORT_BEGIN name=...`、`USER_MOD_IMPORT_FAILED name=...`及成功/待兼容原因；屏幕同样标识是哪个ZIP，避免用户一次选择多个却不知道哪个损坏。
+- 改进`DiagnosticReport.java`：优先呈现最近一次NML阶段、专用Observer MOD状态、ZIP导入记录；折叠无直接因果的Steam缺库噪声，不改变导出ZIP内的原始日志字节。
+- `tests/DiagnosticReportScenario.java`新增观察MOD`FAILED reason=`空值、NML`initialized_successfully=True`、ZIP END损坏、Steam警告的合成验证。通过`test_v29_diagnostics.py`离线JVM QA。
+- `qa/triage_android_summary_v38.py`及`qa/test_triage_v38.py`：结构化分类并阻止将`MOD_DEPLOY_OK`误解为观察MOD`LOADED`，并明确缺少完整堆栈时不猜测错误来源。
+- **真实失败仍未解决**：已有Android实机观察MOD状态是FAILED；所有更新到仓库的仅为诊断与回归工具，必须收到完整ZIP并查看真正内部异常才能确定修复点。没有再复制出假的“已能导入所有ZIP”、“本地AI已经加载成功”或“经济NPC玩法已全部验收”。
