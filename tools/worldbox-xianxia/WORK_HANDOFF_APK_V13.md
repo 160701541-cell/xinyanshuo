@@ -52,3 +52,11 @@ One downloadable Android APK that installs and actually runs WorldBox with reada
 - Added `tools/worldbox-xianxia/test_v14_giant.py` unit regression and added 32×32 to `world_size_planner.py` capacity analysis. Do NOT default 2048² on first launch. Keep existing saves unchanged; measure actual peak RAM, sustained frame time, thermal behavior, 5k–20k NPC pathfinding and world persistence on target Snapdragon 8 Elite phone.
 - v13 font accessibility module `ui/ModTextAccessibilityV13.cs` remains in v14: 100/125/150/175% scales, opt-in scaling of other mods' tiny Unity UI labels; Android in-game font rendering and overall readability must still be validated.
 - Continue separately testing/packing the mod in Work. Work owns end-to-end APK integration and signing **locally/private**, not in this public branch. An APK is **not delivered merely because the MOD compiler CI passes**.
+
+## v0.15 (latest WorldBox functionality; Work APK handoff)
+
+**New WorldBox-only branch is `worldbox/external-mod-lab-v15-giant-qa`**; when integrating the original third-party WorldBox MOD candidate into a privately built APK, use **this** latest source and avoid cherry-picking stale v13/v14 files. Absolutely do not merge this experimental other-game branch with the original 《苍岚·人生世界》 main game or its Android update system.
+
+New feature: the observer has a **「尺寸API自检」** button. In a compatible loaded WorldBox Android runtime, it prints `[XIANXIA-V15] MAP_API_READY/FAIL` plus `titanic.size` and map registry method parameter information. It only READS the game's actual map-size API metadata and does not mutate saves or world size. Collect logs from actual Android 0.51.4 to diagnose whether the experimental **2048×2048 (32×32 chunk)** size can even be registered. The existing 2048² button is a separate *registration experiment only*, not proof that maps will generate, load or save.
+
+Preserve the v13 Chinese readability settings (100%–175%, optional reversible tiny labels on some third-party MODs) and v12 frame guard. Work remains exclusively responsible for private APK packaging, signing and real-device launch tests; GitHub CI passing is not APK runtime certification.
