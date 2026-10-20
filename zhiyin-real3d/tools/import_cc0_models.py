@@ -172,6 +172,9 @@ def main():
         "license":"Quaternius Universal Base Characters Standard FREE, CC0-1.0",
         "sha256":hashlib.sha256(hair_blob).hexdigest(),
         "bones":len(hair_gltf["skins"][0].get("joints",[])),
+        "meshes":len(hair_gltf.get("meshes",[])),
+        "materials":len(hair_gltf.get("materials",[])),
+        "skins":len(hair_gltf.get("skins",[])),
         "files":hair_meta
     }
     print("TRUE_RIGGED_HAIR",manifest["models"]["hero_hair_long"],flush=True)
