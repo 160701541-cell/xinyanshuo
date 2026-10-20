@@ -5,6 +5,7 @@ from pathlib import Path
 BASE_SHA="2602b360f2ab04c776a36eb6bfbd3674bc4b1972"
 SOURCE="tools/worldbox-xianxia/"
 WORKFLOW=".github/workflows/worldbox-external-mod-lab-v08.yml"
+OLD_WORKFLOW=".github/workflows/worldbox-external-mod-lab-v07.yml"
 FORBIDDEN=(".apk",".pck",".dll",".pdb",".exe",".rar",".7z",".aab")
 
 def validate_paths(paths):
@@ -32,6 +33,19 @@ def evaluate_policy(scope):
         errors.append("Unverified Android device claim")
     return errors
 
+def validate_change_entries(entries):
+    """Include deletions. Only old *invalid* WorldBox workflow can be deleted."""
+    errs=[]
+    for row in entries:
+        if "\t" not in row:
+            errs.append("BAD_GIT_NAME_STATUS: "+row)
+            continue
+        kind,path=row.split("\t",1)
+        if kind=="D" and path==OLD_WORKFLOW:
+            continue
+        errs.extend(validate_paths([path]))
+    return errs
+
 def main():
     ap=argparse.ArgumentParser()
     ap.add_argument("--changed-file-list",type=Path)
@@ -39,11 +53,13 @@ def main():
     args=ap.parse_args()
     scope=json.loads(args.scope.read_text(encoding="utf8"))
     if args.changed_file_list:
-        paths=args.changed_file_list.read_text(encoding="utf8").splitlines()
+        # Legacy offline test mode accepts plain paths as added/modified.
+        paths=["M\t"+p for p in args.changed_file_list.read_text(encoding="utf8").splitlines()]
     else:
-        paths=subprocess.check_output(["git","diff","--name-only","--diff-filter=ACMRT",BASE_SHA+"..HEAD"],text=True).splitlines()
-    errors=evaluate_policy(scope)+validate_paths(paths)
-    if not paths: errors.append("No changed files in v0.7 test scope")
+        paths=subprocess.check_output(
+            ["git","diff","--no-renames","--name-status","--diff-filter=ACMRTD",BASE_SHA+"..HEAD"],text=True).splitlines()
+    errors=evaluate_policy(scope)+validate_change_entries(paths)
+    if not paths: errors.append("No changed files in v0.8 test scope")
     for x in paths:print("SCOPED "+x)
     for x in errors:print("BLOCKED "+x)
     if errors:raise SystemExit(1)
