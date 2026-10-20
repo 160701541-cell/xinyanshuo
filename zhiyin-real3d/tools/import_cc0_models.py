@@ -139,6 +139,36 @@ def main():
         "images":len(textures),"files":files
     }
     print("TRUE_TEXTURED_RIGGED_HERO",manifest["models"]["hero_female"],flush=True)
+    # Optional *real* CC0 Quaternius Universal Animation Library Standard
+    # originally by Quaternius; hosted with clear CC0 attribution in Elderforge.
+    # Includes proper humanoid animations; do not invent animated steps.
+    anim_commit="bb2ce469f0ab2ccfc487faef55550ba07fae2483"
+    anim_source="Barbatos6669/elderforge"
+    anim_rel="assets/animations/universal_animation_library_1/UAL1_Standard.glb"
+    anim_url=f"https://raw.githubusercontent.com/{anim_source}/{anim_commit}/{anim_rel}"
+    with urllib.request.urlopen(anim_url,timeout=100) as response:
+        anim_blob=response.read(12*1024*1024)
+    if anim_blob[:4]!=b"glTF":
+        raise ValueError("Invalid Quaternius animation archive")
+    _,_,sz=struct.unpack_from("<III",anim_blob,0)
+    if sz!=len(anim_blob):raise ValueError("Animation glTF truncated")
+    jc=struct.unpack_from("<I",anim_blob,12)[0]
+    animation_meta=json.loads(anim_blob[20:20+jc])
+    if len(animation_meta.get("animations",[]))<20 or not animation_meta.get("skins"):
+        raise ValueError("Not enough official humanoid animations")
+    anim_target=ROOT/"assets/animation"
+    anim_target.mkdir(parents=True,exist_ok=True)
+    (anim_target/"UAL1_Standard.glb").write_bytes(anim_blob)
+    manifest["animation_library"]={
+        "source":f"https://github.com/{anim_source}/blob/{anim_commit}/{anim_rel}",
+        "license":"Quaternius Universal Animation Library Standard, CC0-1.0",
+        "sha256":hashlib.sha256(anim_blob).hexdigest(),"bytes":len(anim_blob),
+        "animations":len(animation_meta["animations"]),
+        "sample_clips":[x.get("name","unnamed") for x in animation_meta["animations"][:25]],
+        "skeleton_names":[animation_meta["nodes"][i].get("name","")
+              for i in animation_meta["skins"][0].get("joints",[])[:65]],
+    }
+    print("TRUE_CC0_ANIMATION_LIBRARY",manifest["animation_library"],flush=True)
     (ROOT / "ASSET_MANIFEST.json").write_text(json.dumps(manifest,indent=2,ensure_ascii=False)+"\n",encoding="utf-8")
     assert len(manifest["models"]) == len(ASSETS)+1
 
