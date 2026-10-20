@@ -189,17 +189,14 @@ public final class ModelDownloadService extends Service {
           String hfLinked=con.getHeaderField("X-Linked-Etag");
           String newEtag=responseEtag!=null?responseEtag:etag;
           String maybeSha=(hfLinked!=null?hfLinked:newEtag).replace("\"","");
+          String oldSha=prefs.getString("sha256","");
+          if(bytes>0&&oldSha.matches("(?i)[a-f0-9]{64}")&&
+             maybeSha.matches("(?i)[a-f0-9]{64}")&&!oldSha.equalsIgnoreCase(maybeSha)){
+            throw new IOException("模型源SHA256改变，保留旧缓存，拒绝拼接");
+          }
           if(maybeSha.matches("(?i)[a-f0-9]{64}"))
             prefs.edit().putString("sha256",maybeSha.toLowerCase(Locale.ROOT)).apply();
           if(bytes==0&&responseEtag!=null)etag=responseEtag;
-          // CDN ETag can differ after a redirect. The actual source blob
-          // is verified via X-Linked-Etag SHA256 when supplied, not URL ETag.
-          String pinned=prefs.getString("sha256","");
-          if(bytes>0&&pinned.matches("(?i)[a-f0-9]{64}")&&
-            hfLinked!=null&&hfLinked.replace("\"","").matches("(?i)[a-f0-9]{64}")&&
-            !pinned.equalsIgnoreCase(hfLinked.replace("\"",""))){
-            throw new IOException("模型源SHA256改变，保留旧缓存，拒绝拼接");
-          }
           if(remoteSize>0)total=remoteSize;
           prefs.edit().putString("etag",etag).putLong("total",total).apply();
           if(total>0&&p.getUsableSpace()<Math.max(0,total-bytes)+48L*1024*1024L)
@@ -233,7 +230,8 @@ public final class ModelDownloadService extends Service {
             e.getMessage().contains("版本不一致")||
             e.getMessage().contains("缓存文件不是GGUF")||
             e.getMessage().contains("超出文件长度")||
-            e.getMessage().contains("剩余空间不足")))throw e;
+            e.getMessage().contains("剩余空间不足")||
+            e.getMessage().contains("模型源SHA256改变")))throw e;
           // Automatic retries are bounded; each new request sends Range.
           try{Thread.sleep(Math.min(60000L,2000L*(1L<<Math.min(attempt,5))));}
           catch(InterruptedException ex){Thread.currentThread().interrupt();setState("暂停，缓存保留");return;}
