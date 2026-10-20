@@ -1,0 +1,663 @@
+{
+  "schema": 1,
+  "project": "WorldBox·万界仙侠 非官方独立Mod",
+  "revision": "v0.35",
+  "source": "原苍岚原材料→半成品→成品设计规则独立移植，不复用苍岚Godot运行代码",
+  "units": "整数单位，价格单位铜钱; 灵石为独立修仙资源，不作为自动印发的法币",
+  "native_tabs": [
+    "nature",
+    "creation",
+    "noosphere"
+  ],
+  "natural_spawn": "只允许地图上合法生境随机生成资源节点，城池仓库、NPC背包与国库不凭空增加",
+  "families": [
+    {
+      "id": "currency",
+      "display": "货币",
+      "tab": "kingdoms",
+      "motif": "coin",
+      "variants": [
+        {
+          "name": "铜钱",
+          "id": "copper_coin",
+          "color": "#c47a34"
+        },
+        {
+          "name": "白银",
+          "id": "silver_ingot",
+          "color": "#a6bfd0"
+        },
+        {
+          "name": "黄金",
+          "id": "gold_ingot",
+          "color": "#f0be48"
+        },
+        {
+          "name": "碎银",
+          "id": "silver_fragment",
+          "color": "#bbd4da"
+        },
+        {
+          "name": "金锭",
+          "id": "gold_bar",
+          "color": "#edb739"
+        }
+      ]
+    },
+    {
+      "id": "spirit",
+      "display": "修仙资源",
+      "tab": "nature",
+      "motif": "crystal",
+      "variants": [
+        {
+          "name": "下品灵石",
+          "id": "spirit_stone_low",
+          "color": "#49a9a2"
+        },
+        {
+          "name": "中品灵石",
+          "id": "spirit_stone_mid",
+          "color": "#2e9ff2"
+        },
+        {
+          "name": "上品灵石",
+          "id": "spirit_stone_high",
+          "color": "#b283fa"
+        },
+        {
+          "name": "极品灵石",
+          "id": "spirit_stone_supreme",
+          "color": "#f2abf5"
+        },
+        {
+          "name": "灵晶",
+          "id": "spirit_crystal",
+          "color": "#65d9f4"
+        },
+        {
+          "name": "灵髓",
+          "id": "spirit_essence",
+          "color": "#9bd8fa"
+        },
+        {
+          "name": "灵砂",
+          "id": "spirit_sand",
+          "color": "#cd8af2"
+        }
+      ]
+    },
+    {
+      "id": "ore",
+      "display": "矿石矿脉",
+      "tab": "nature",
+      "motif": "ore",
+      "variants": [
+        {
+          "name": "铜矿",
+          "id": "copper_ore",
+          "color": "#b87b4e"
+        },
+        {
+          "name": "铁矿",
+          "id": "iron_ore",
+          "color": "#6c8186"
+        },
+        {
+          "name": "银矿",
+          "id": "silver_ore",
+          "color": "#b0c7cc"
+        },
+        {
+          "name": "金矿",
+          "id": "gold_ore",
+          "color": "#e4b74e"
+        },
+        {
+          "name": "锡矿",
+          "id": "tin_ore",
+          "color": "#8c9696"
+        },
+        {
+          "name": "铅矿",
+          "id": "lead_ore",
+          "color": "#677987"
+        },
+        {
+          "name": "玄铁矿",
+          "id": "dark_iron_ore",
+          "color": "#414f76"
+        },
+        {
+          "name": "赤铜矿",
+          "id": "vermillion_copper",
+          "color": "#cf593b"
+        },
+        {
+          "name": "灵铁矿",
+          "id": "spirit_iron_ore",
+          "color": "#3dbaae"
+        }
+      ]
+    },
+    {
+      "id": "crop",
+      "display": "粮食农业",
+      "tab": "nature",
+      "motif": "grain",
+      "variants": [
+        {
+          "name": "稻谷",
+          "id": "rice",
+          "color": "#d9ba52"
+        },
+        {
+          "name": "麦穗",
+          "id": "wheat",
+          "color": "#cead59"
+        },
+        {
+          "name": "粟米",
+          "id": "millet",
+          "color": "#b28b3c"
+        },
+        {
+          "name": "黄豆",
+          "id": "soybean",
+          "color": "#bfa358"
+        },
+        {
+          "name": "蔬菜",
+          "id": "vegetables",
+          "color": "#4d9955"
+        },
+        {
+          "name": "麻",
+          "id": "hemp",
+          "color": "#699b5e"
+        },
+        {
+          "name": "桑叶",
+          "id": "mulberry",
+          "color": "#6a9c64"
+        },
+        {
+          "name": "茶叶",
+          "id": "tea_leaf",
+          "color": "#347950"
+        },
+        {
+          "name": "棉花",
+          "id": "cotton",
+          "color": "#dfe5c3"
+        },
+        {
+          "name": "甘蔗",
+          "id": "sugarcane",
+          "color": "#8c9a4c"
+        }
+      ]
+    },
+    {
+      "id": "herb",
+      "display": "灵植药材",
+      "tab": "nature",
+      "motif": "herb",
+      "variants": [
+        {
+          "name": "聚灵草",
+          "id": "qi_herb",
+          "color": "#58bf78"
+        },
+        {
+          "name": "回春草",
+          "id": "healing_herb",
+          "color": "#79cd70"
+        },
+        {
+          "name": "百年人参",
+          "id": "ginseng",
+          "color": "#c9a36b"
+        },
+        {
+          "name": "朱果",
+          "id": "vermillion_fruit",
+          "color": "#ce4a35"
+        },
+        {
+          "name": "凝露花",
+          "id": "dew_flower",
+          "color": "#79cfe8"
+        },
+        {
+          "name": "玄灵芝",
+          "id": "spirit_mushroom",
+          "color": "#8b63b4"
+        },
+        {
+          "name": "筑基草",
+          "id": "foundation_herb",
+          "color": "#95c36d"
+        },
+        {
+          "name": "火莲",
+          "id": "fire_lotus",
+          "color": "#e57548"
+        },
+        {
+          "name": "冰蕊花",
+          "id": "frost_blume",
+          "color": "#8ad9d4"
+        },
+        {
+          "name": "雷藤",
+          "id": "thunder_vine",
+          "color": "#ad96e8"
+        }
+      ]
+    },
+    {
+      "id": "forest",
+      "display": "木石土水",
+      "tab": "nature",
+      "motif": "log",
+      "variants": [
+        {
+          "name": "原木",
+          "id": "wood_log",
+          "color": "#886343"
+        },
+        {
+          "name": "竹材",
+          "id": "bamboo",
+          "color": "#6b9f47"
+        },
+        {
+          "name": "杉木",
+          "id": "fir_log",
+          "color": "#986b4d"
+        },
+        {
+          "name": "灵木",
+          "id": "spirit_wood",
+          "color": "#58a986"
+        },
+        {
+          "name": "石块",
+          "id": "stone",
+          "color": "#818881"
+        },
+        {
+          "name": "砂石",
+          "id": "gravel",
+          "color": "#bdac83"
+        },
+        {
+          "name": "黏土",
+          "id": "clay",
+          "color": "#9e8065"
+        },
+        {
+          "name": "河水",
+          "id": "water",
+          "color": "#479bc1"
+        },
+        {
+          "name": "石灰石",
+          "id": "limestone",
+          "color": "#a3a79d"
+        },
+        {
+          "name": "盐矿",
+          "id": "salt",
+          "color": "#ece6da"
+        }
+      ]
+    },
+    {
+      "id": "animal",
+      "display": "畜牧渔猎",
+      "tab": "nature",
+      "motif": "livestock",
+      "variants": [
+        {
+          "name": "鸡肉",
+          "id": "chicken_meat",
+          "color": "#ce9a73"
+        },
+        {
+          "name": "猪肉",
+          "id": "pork",
+          "color": "#c37973"
+        },
+        {
+          "name": "羊毛",
+          "id": "wool",
+          "color": "#d0c2a0"
+        },
+        {
+          "name": "牛皮",
+          "id": "leather",
+          "color": "#99654e"
+        },
+        {
+          "name": "鱼获",
+          "id": "fish",
+          "color": "#5b9cbb"
+        },
+        {
+          "name": "蜜蜂蜂蜜",
+          "id": "honey",
+          "color": "#dda33c"
+        },
+        {
+          "name": "蚕茧",
+          "id": "silkworm_cocoon",
+          "color": "#e8e7cf"
+        },
+        {
+          "name": "兽骨",
+          "id": "beast_bone",
+          "color": "#ded5ae"
+        },
+        {
+          "name": "兽皮",
+          "id": "hide",
+          "color": "#805c3e"
+        }
+      ]
+    },
+    {
+      "id": "material",
+      "display": "中间材料",
+      "tab": "creation",
+      "motif": "material",
+      "variants": [
+        {
+          "name": "铜锭",
+          "id": "copper_ingot",
+          "color": "#c78a59"
+        },
+        {
+          "name": "铁锭",
+          "id": "iron_ingot",
+          "color": "#89949a"
+        },
+        {
+          "name": "银锭",
+          "id": "silver_processed",
+          "color": "#d0dde1"
+        },
+        {
+          "name": "金料",
+          "id": "gold_processed",
+          "color": "#dbb34a"
+        },
+        {
+          "name": "木板",
+          "id": "plank",
+          "color": "#996c48"
+        },
+        {
+          "name": "青砖",
+          "id": "qing_brick",
+          "color": "#5f6c72"
+        },
+        {
+          "name": "瓦片",
+          "id": "roof_tile",
+          "color": "#3b5968"
+        },
+        {
+          "name": "丝线",
+          "id": "silk_thread",
+          "color": "#d8c2a8"
+        },
+        {
+          "name": "布匹",
+          "id": "cloth",
+          "color": "#d1bf9c"
+        },
+        {
+          "name": "纸张",
+          "id": "paper",
+          "color": "#e6d7b3"
+        },
+        {
+          "name": "陶器",
+          "id": "pottery",
+          "color": "#c78c5c"
+        },
+        {
+          "name": "精盐",
+          "id": "refined_salt",
+          "color": "#f4e4c7"
+        }
+      ]
+    },
+    {
+      "id": "product",
+      "display": "工商业制品",
+      "tab": "creation",
+      "motif": "product",
+      "variants": [
+        {
+          "name": "农具",
+          "id": "farm_tools",
+          "color": "#a0a6a2"
+        },
+        {
+          "name": "铁剑",
+          "id": "iron_sword",
+          "color": "#a5b5be"
+        },
+        {
+          "name": "军甲",
+          "id": "armor",
+          "color": "#737c87"
+        },
+        {
+          "name": "弓箭",
+          "id": "bow",
+          "color": "#8c6547"
+        },
+        {
+          "name": "马车",
+          "id": "cart",
+          "color": "#b28653"
+        },
+        {
+          "name": "丹炉",
+          "id": "alchemy_cauldron",
+          "color": "#78636b"
+        },
+        {
+          "name": "聚气丹",
+          "id": "qi_pill",
+          "color": "#69c59c"
+        },
+        {
+          "name": "筑基丹",
+          "id": "foundation_pill",
+          "color": "#92a6e0"
+        },
+        {
+          "name": "符纸",
+          "id": "talisman_paper",
+          "color": "#e4cc86"
+        },
+        {
+          "name": "灵器",
+          "id": "spirit_artifact",
+          "color": "#68bdc7"
+        },
+        {
+          "name": "盐袋",
+          "id": "salt_bag",
+          "color": "#c1b398"
+        },
+        {
+          "name": "丝绸",
+          "id": "silk",
+          "color": "#b18fba"
+        }
+      ]
+    },
+    {
+      "id": "governance",
+      "display": "政区军政",
+      "tab": "noosphere",
+      "motif": "flag",
+      "variants": [
+        {
+          "name": "村落",
+          "id": "village",
+          "color": "#799c5d"
+        },
+        {
+          "name": "乡镇",
+          "id": "township",
+          "color": "#a3a26b"
+        },
+        {
+          "name": "县衙",
+          "id": "county_office",
+          "color": "#c39359"
+        },
+        {
+          "name": "州府",
+          "id": "prefecture",
+          "color": "#bb7b5d"
+        },
+        {
+          "name": "郡治",
+          "id": "commandery",
+          "color": "#a17b99"
+        },
+        {
+          "name": "王国",
+          "id": "kingdom",
+          "color": "#cda953"
+        },
+        {
+          "name": "皇宫",
+          "id": "imperial_palace",
+          "color": "#e3b95c"
+        },
+        {
+          "name": "城墙",
+          "id": "city_wall",
+          "color": "#8c8a79"
+        },
+        {
+          "name": "军营",
+          "id": "barracks",
+          "color": "#8d634e"
+        },
+        {
+          "name": "集市",
+          "id": "market",
+          "color": "#b88550"
+        },
+        {
+          "name": "粮仓",
+          "id": "granary",
+          "color": "#b59f57"
+        },
+        {
+          "name": "港口",
+          "id": "harbor",
+          "color": "#7492a2"
+        },
+        {
+          "name": "驿站",
+          "id": "post_station",
+          "color": "#b29468"
+        }
+      ]
+    }
+  ],
+  "administration": {
+    "levels": [
+      {
+        "id": "village",
+        "name": "村",
+        "parent": "township"
+      },
+      {
+        "id": "township",
+        "name": "乡镇",
+        "parent": "county"
+      },
+      {
+        "id": "county",
+        "name": "县",
+        "parent": "prefecture"
+      },
+      {
+        "id": "prefecture",
+        "name": "州府",
+        "parent": "commandery"
+      },
+      {
+        "id": "commandery",
+        "name": "郡",
+        "parent": "kingdom"
+      },
+      {
+        "id": "kingdom",
+        "name": "国",
+        "parent": null
+      }
+    ],
+    "capital_roles": [
+      "皇帝",
+      "皇后",
+      "太子",
+      "丞相",
+      "尚书",
+      "御史",
+      "将军",
+      "太守",
+      "县令",
+      "里正"
+    ],
+    "jobs": [
+      "农户",
+      "佃农",
+      "牧民",
+      "渔民",
+      "矿工",
+      "樵夫",
+      "工匠",
+      "商贾",
+      "盐商",
+      "车夫",
+      "镖师",
+      "士兵",
+      "军官",
+      "官吏",
+      "学者",
+      "医师",
+      "丹师",
+      "符师",
+      "阵法师",
+      "宗门弟子",
+      "家族管事",
+      "散修"
+    ],
+    "features": [
+      "省-郡-州-县-乡镇-村的归属账本",
+      "国界从原版Kingdom实际领土提取，勿擅自改变世界边界",
+      "税收/军费/工资分离账户",
+      "跨境商品真实运输结算与存量守恒",
+      "行政建筑真实施工、等级与人口前置"
+    ]
+  },
+  "exchange": {
+    "copper_per_silver": 1000,
+    "silver_per_gold": 100,
+    "spirit_stones_not_auto_exchanged": true
+  },
+  "licensing": "此包中生成的图标为原创程序像素图，不含WorldBox提取纹理及苍岚艺术资产；原版图标对应栏位的装载需要实际Unity菜单注册QA"
+}
