@@ -39,9 +39,9 @@ jobs:
       - name: Fetch pinned llama.cpp source
         run: |
           mkdir -p app/src/main/cpp/llama.cpp
-          git clone --filter=blob:none --no-checkout https://github.com/ggml-org/llama.cpp.git app/src/main/cpp/llama.cpp
-          git -C app/src/main/cpp/llama.cpp checkout 1ba568c5ad5c6c718984bd2bf4e7c71485b706f9
-          git -C app/src/main/cpp/llama.cpp rev-parse HEAD
+          curl --fail --location --retry 3 --connect-timeout 15 --max-time 180 https://codeload.github.com/ggml-org/llama.cpp/tar.gz/1ba568c5ad5c6c718984bd2bf4e7c71485b706f9 \
+            | tar -xz --strip-components=1 -C app/src/main/cpp/llama.cpp
+          test -f app/src/main/cpp/llama.cpp/CMakeLists.txt
       - name: Build native Android APK
         run: gradle --no-daemon --stacktrace assembleDebug
       - name: Verify test APK signing
