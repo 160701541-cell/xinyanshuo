@@ -321,3 +321,9 @@ Work仍负责私有APK整合、签名、安卓16真机验收。不得上传商�
 提交9aeb9070db24939d8d6728c396e8fb4d0193bee3：在现有打包已包含的XianxiaObserverV07.cs内加入RepairOwnTraitGroups，由Update每10秒检查一次。只枚举自有xys_wanjie_v18_qi_1..13；仅修复空分组或不存在的分组，保留合法分组。先从原版blessed特性读取真实group_id，确认AssetManager.trait_groups存在对应项，才回填自有特性；不臆造组名、不删除特性/人物/存档、不改第三方特性。通过反射适配实际字段/库get(string)避免直接依赖SDK可见性；接口或模板不存在时不写入。写入日志逐条记录实际id/group；异常记录完整堆栈并节流60秒。开源WorldBoxOpenMods/ModExample/content/ExampleTraits.cs确认group_id和trait_groups注册关系，仅作接口调研，不代替实际0.51.4元数据验证。
 
 限制：此修复依赖观察模块先成功编译/启动；它不能单独救活FAILED的组件，也不能覆盖全部第三方空键可能性。若空键来自其他字段/其他MOD，应按原始groupsBuilder栈继续定位。此前相机接口修复须一并重编译。修复代码已提交但未编译/测试/打包，DEVICE_PENDING，不声称空键已从手机消除。平台仍无可用执行环境，未生成新安装包；完整私有构建阻塞未解除。main/苍岚未动。
+
+## 2026-10-21 — 修复上一轮新增的真实CI编译失败
+- 已实际读取run 39461084755的失败日志：97项Python回归成功，但SourceSyntax因stub缺少Debug.LogError、Camera.main而失败；AndroidSdk因公开IL2CPP GUIStyle引用只提供指针构造签名，三处GUIStyle复制构造静态调用CS1503失败。不是设备异常根因证明，但这阻止修复候选构建。
+- ModTextAccessibilityV13改为在实际运行时反射查找公开GUIStyle(GUIStyle)构造器，保留传统Mono的独立样式复制；绝不将共享皮肤或同一原生指针冒充独立副本。若目标运行时没有复制构造器，记录完整STYLE_COPY_UNAVAILABLE并节流10秒，不写共享皮肤；公开SDK编译不代表该IL2CPP运行时能生成样式。
+- 非交付stub补齐LogError和Camera.main；实际公开SDK引用校验保留，不降低测试门槛。
+- 本次提交后由原独立CI执行编译/回归，提交时尚未取得新结果。私有APK终端仍不可用，本轮尚无新APK/签名/手机回归；旧手机仍使用旧包，不能称修复已进手机。只改WorldBox分支。

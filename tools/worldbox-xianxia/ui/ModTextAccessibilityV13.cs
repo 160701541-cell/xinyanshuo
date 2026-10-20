@@ -25,6 +25,7 @@ namespace XianxiaWorldBox
         static readonly string[] FontFamilies = { "Noto Sans CJK SC", "Droid Sans Fallback", "sans-serif" };
         static GUIStyle accessibleButton, accessibleLabel, accessibleBox;
         static bool styleDirty = true;
+        static float nextStyleRetry;
         static int modifiedCount;
         const int MaxTracked = 480;
 
@@ -79,15 +80,45 @@ namespace XianxiaWorldBox
             EnsureStyles();
             return accessibleBox;
         }
+        static GUIStyle CopyStyle(GUIStyle source)
+        {
+            if (source == null) throw new ArgumentNullException("source");
+            var constructor = typeof(GUIStyle).GetConstructor(
+                BindingFlags.Public | BindingFlags.Instance, null,
+                new[] { typeof(GUIStyle) }, null);
+            if (constructor == null)
+                throw new MissingMethodException("UnityEngine.GUIStyle", ".ctor(GUIStyle)");
+            var copy = constructor.Invoke(new object[] { source }) as GUIStyle;
+            if (copy == null || object.ReferenceEquals(copy, source))
+                throw new InvalidOperationException("GUIStyle copy did not allocate an independent style");
+            return copy;
+        }
         static void EnsureStyles()
         {
             if (!styleDirty && accessibleButton != null) return;
             if (GUI.skin == null) return;
+            if (Time.unscaledTime < nextStyleRetry) return;
             var os = TryFont();
-            // Own the styles: modifying GUI.skin directly changes other MODs too.
-            accessibleButton = new GUIStyle(GUI.skin.button);
-            accessibleLabel = new GUIStyle(GUI.skin.label);
-            accessibleBox = new GUIStyle(GUI.skin.box);
+            // The legacy Mono Unity API has the copy constructor. The public
+            // IL2CPP reference wrapper may expose only .ctor(IntPtr).
+            // Resolve the actual runtime constructor without taking ownership
+            // of a skin-owned style or wrapping the same native pointer.
+            GUIStyle nextButton, nextLabel, nextBox;
+            try
+            {
+                nextButton = CopyStyle(GUI.skin.button);
+                nextLabel = CopyStyle(GUI.skin.label);
+                nextBox = CopyStyle(GUI.skin.box);
+            }
+            catch (Exception e)
+            {
+                nextStyleRetry = Time.unscaledTime + 10f;
+                Debug.LogWarning("[XIANXIA-FONT] STYLE_COPY_UNAVAILABLE " + e.ToString());
+                return;
+            }
+            accessibleButton = nextButton;
+            accessibleLabel = nextLabel;
+            accessibleBox = nextBox;
             int px = Mathf.Clamp(Mathf.RoundToInt(17f * Scale), 17, 31);
             accessibleButton.fontSize = px;
             accessibleLabel.fontSize = px;
@@ -225,6 +256,7 @@ namespace XianxiaWorldBox
             }
             accessibleButton = null; accessibleLabel = null; accessibleBox = null;
             styleDirty = true;
+            nextStyleRetry = 0f;
         }
     }
 }

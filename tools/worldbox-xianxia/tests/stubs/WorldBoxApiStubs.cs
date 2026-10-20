@@ -31,7 +31,7 @@ namespace UnityEngine {
         public Vector3(float x,float y,float z){this.x=x;this.y=y;this.z=z;}
     }
     public class Transform { public Vector3 position; }
-    public class Camera { public Transform transform=new Transform(); }
+    public class Camera { public Transform transform=new Transform(); public static Camera main; }
     public class Font : Object {
         public static Font CreateDynamicFontFromOSFont(string[] names, int fontSize) => new Font();
     }
@@ -68,6 +68,7 @@ namespace UnityEngine {
     public static class Debug {
         public static void Log(object msg){}
         public static void LogWarning(object msg){}
+        public static void LogError(object msg){}
     }
     public static class GUI {
         public static Color color;
