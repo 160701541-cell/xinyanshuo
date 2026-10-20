@@ -36,6 +36,8 @@ jobs:
         run: dotnet run --project tools/worldbox-xianxia/tests/RuntimeChineseScenarioV22.csproj -c Release
       - name: 'Execute original locale key and NML Chinese registration C# behavior test'
         run: dotnet run --project tools/worldbox-xianxia/tests/NativeLocaleScenarioV23.csproj -c Release
+      - name: 'Execute opt-in untranslated menu audit C# privacy and export scenario'
+        run: dotnet run --project tools/worldbox-xianxia/tests/UntranslatedMenuScenarioV23.csproj -c Release
       - name: 'WorldBox external MOD only: prevent main-game edits'
         run: python tools/worldbox-xianxia/scope_gate.py
       - name: 'Ensure only source code is published in third-party test folder'
@@ -109,6 +111,7 @@ jobs:
             --extra-source tools/worldbox-xianxia/localization/OriginalMenuGuideV22.cs \
             --extra-source tools/worldbox-xianxia/localization/ChineseMenuGlossaryV23.cs \
             --extra-source tools/worldbox-xianxia/localization/NativeLocaleBridgeV23.cs \
+            --extra-source tools/worldbox-xianxia/localization/UntranslatedMenuAuditV23.cs \
             --manifest tools/worldbox-xianxia/nml-observer-v07/mod.json \
             --out /tmp/worldbox_v22_android_mono_source_DEVICE_PENDING.zip
       - name: 'Validate legacy source-only MOD contains no third-party DLL'
@@ -130,6 +133,7 @@ jobs:
               assert root+'Code/OriginalMenuGuideV22.cs' in files
               assert root+'Code/ChineseMenuGlossaryV23.cs' in files
               assert root+'Code/NativeLocaleBridgeV23.cs' in files
+              assert root+'Code/UntranslatedMenuAuditV23.cs' in files
               assert json.loads(z.read(root+'mod.json'))['ModType']==0
               assert all(not p.lower().endswith(('.apk','.dll','.pck')) for p in files)
               assert z.testzip() is None
@@ -173,6 +177,7 @@ jobs:
           cp tools/worldbox-xianxia/localization/OriginalMenuGuideV22.cs /tmp/worldbox-v22-artifacts/
           cp tools/worldbox-xianxia/localization/ChineseMenuGlossaryV23.cs /tmp/worldbox-v22-artifacts/
           cp tools/worldbox-xianxia/localization/NativeLocaleBridgeV23.cs /tmp/worldbox-v22-artifacts/
+          cp tools/worldbox-xianxia/localization/UntranslatedMenuAuditV23.cs /tmp/worldbox-v22-artifacts/
           cp /tmp/WORLDBOX_PUBLIC_LOCALE_TYPES.json /tmp/worldbox-v22-artifacts/
           cp tools/worldbox-xianxia/nml-observer-v07/mod.json /tmp/worldbox-v22-artifacts/
           cp /tmp/WORLDBOX_PUBLIC_MAP_TYPES.json /tmp/worldbox-v22-artifacts/
