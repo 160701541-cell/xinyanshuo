@@ -101,16 +101,13 @@ public final class AiSettingsActivity extends Activity {
         .setNegativeButton("取消",null).setPositiveButton("删除缓存",(d,w)->{
           // Do not reset a running foreground service; request pause first.
           ModelDownloadService.command(this,ModelDownloadService.PAUSE);
+          // The service alone decides if its writer has fully closed.
+          // Never delete a live .part from an Activity, even after a delay.
           android.os.Handler h=new Handler(Looper.getMainLooper());
           h.postDelayed(()->{
-            File p=ModelDownloadService.partial(this);
-            if(p.exists()&&!p.delete())toast("清理失败，文件仍在");
-            else{
-              getSharedPreferences(ModelDownloadService.PREF,MODE_PRIVATE)
-                .edit().remove("etag").remove("sha256").remove("total").putString("state","缓存已主动清理").apply();
-              toast("旧缓存已清理，可重新下载");
-            }
-          },900);
+            ModelDownloadService.command(this,ModelDownloadService.RESTART);
+            toast("已提交缓存清理请求；确认停止后才会删除");
+          },1100);
         }).show();
     });
     button(root,"📂 从手机下载已有 GGUF 文件",()->{
