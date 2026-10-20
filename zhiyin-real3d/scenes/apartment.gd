@@ -198,8 +198,8 @@ func _instantiate_model(model_id:String, world_pos:Vector2,
         push_error("GLB缺少可见Mesh: "+path)
         root.queue_free()
         return null
-    var resize := min(wanted.x/max(0.01,b.size.x),
-        min(wanted.y/max(0.01,b.size.y),wanted.z/max(0.01,b.size.z)))
+    var resize: float = minf(wanted.x/maxf(0.01,b.size.x),
+        minf(wanted.y/maxf(0.01,b.size.y),wanted.z/maxf(0.01,b.size.z)))
     # We use a single uniform scale: no anatomical stretching of humanoids.
     root.scale=Vector3.ONE*resize
     root.position=Vector3(world_pos.x,-b.position.y*resize,world_pos.y)
@@ -265,7 +265,7 @@ func _process(delta:float) -> void:
     var to:=avatar_target-avatar.position
     to.y=0.0
     if to.length()>0.04:
-        var movement:=to.normalized()*min(to.length(),delta*.65)
+        var movement: Vector3 = to.normalized()*minf(to.length(),delta*.65)
         avatar.position+=movement
         avatar.rotation.y=lerp_angle(avatar.rotation.y,atan2(movement.x,movement.z),delta*8.0)
         if avatar_animation!=null and avatar_animation.has_animation("walk"):
