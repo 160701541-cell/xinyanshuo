@@ -5,6 +5,7 @@ extends Node3D
 ## Only renderer/art/interaction validation: original Android AI, memory,
 ## payroll and voice services are NOT yet bridged into this scene.
 
+const RoomNavigator = preload("res://scenes/room_navigation.gd")
 const ROOM := 3.2
 const HALF := ROOM * 0.5
 const FURNITURE := [
@@ -38,6 +39,13 @@ var last_task := "阅读"
 var idle_seconds := 0.0
 var prop_positions := {}
 var picked: String = ""
+var room_nav = RoomNavigator.new()
+var waypoint_list: Array[Vector3] = []
+var activity_clip: String = "Idle"
+var activity_remaining: float = 0.0
+var unattended_timer: float = 0.0
+var routine_step: int = 0
+const ROOM_ROUTINE := ["plant","desk","stove","sofa","bed","bookshelf"]
 var material_floor: StandardMaterial3D
 var material_wall: StandardMaterial3D
 var material_stone: StandardMaterial3D
@@ -50,6 +58,7 @@ func _ready() -> void:
     _build_room()
     _import_furniture()
     _import_character()
+    room_nav.setup(FURNITURE)
     _setup_camera()
     _setup_ui()
     _status("17项GLB  ·  PBR木纹/法线  ·  3D物理交互")
@@ -292,21 +301,64 @@ func _set_camera() -> void:
     camera.size=camera_zoom
 
 func _process(delta:float) -> void:
-    if avatar==null:return
+    if avatar==null:
+        return
+    unattended_timer+=delta
+    if waypoint_list.size()>0:
+        avatar_target=waypoint_list[0]
     var to:=avatar_target-avatar.position
-    to.y=0.0
-    if to.length()>0.04:
-        var movement: Vector3 = to.normalized()*minf(to.length(),delta*.65)
+    to.y=0
+    if to.length()>0.045:
+        var movement: Vector3 = to.normalized()*minf(to.length(),delta*.63)
         avatar.position+=movement
         avatar.rotation.y=lerp_angle(avatar.rotation.y,atan2(movement.x,movement.z),delta*8.0)
         if avatar_animation!=null and avatar_animation.has_animation("Walk"):
             if avatar_animation.current_animation!="Walk":
-                avatar_animation.play("Walk",0.20)
+                avatar_animation.play("Walk",0.22)
+        return
+    if waypoint_list.size()>0:
+        waypoint_list.pop_front()
+        if waypoint_list.size()>0:
+            avatar_target=waypoint_list[0]
+            return
+        _on_arrival()
+    idle_seconds+=delta
+    if activity_remaining>0.0:
+        activity_remaining=maxf(0.0,activity_remaining-delta)
+        if avatar_animation!=null and avatar_animation.has_animation(activity_clip):
+            if avatar_animation.current_animation!=activity_clip:
+                avatar_animation.play(activity_clip,0.20)
     else:
-        idle_seconds+=delta
         if avatar_animation!=null and avatar_animation.has_animation("Idle"):
             if avatar_animation.current_animation!="Idle":
                 avatar_animation.play("Idle",0.25)
+        if unattended_timer>25.0:
+            unattended_timer=0
+            # Local preview of spontaneous decisions, not the original
+            # Android LifeEngine / salary / family / AI decision planner.
+            var activity: String=ROOM_ROUTINE[routine_step%ROOM_ROUTINE.size()]
+            routine_step+=1
+            _go_to(activity,"她自己决定去做一件小事（3D生活行为预览）")
+
+func _on_arrival() -> void:
+    var label_name=last_task
+    match last_task:
+        "sofa","chair","bed":
+            activity_clip="Sitting_Idle"
+            activity_remaining=9.0
+            label_name="坐下休息"
+        "plant","stove","sink":
+            activity_clip="Interact"
+            activity_remaining=5.5
+            label_name="伸手互动"
+        "desk","bookshelf":
+            activity_clip="Idle_Talking"
+            activity_remaining=8.0
+            label_name="阅读思考"
+        _:
+            activity_clip="Idle"
+            activity_remaining=3.0
+    _status("角色已到达"+last_task+"  ·  正在"+label_name+"（真实骨骼动画预览）")
 
 func _make_style(color:Color)->StyleBoxFlat:
     var st:=StyleBoxFlat.new()
@@ -396,12 +448,27 @@ func _go_to(item:String,message:String) -> void:
     if not prop_positions.has(item):
         _status("没有加载"+item+"的真正3D模型。")
         return
+    var info: Dictionary={}
+    for prop in FURNITURE:
+        if str(prop["id"])==item:
+            info=prop
+            break
+    if info.is_empty() or avatar==null:
+        _status("找不到实体物件，无法进行空间寻路。")
+        return
+    var waypoints: Array[Vector3]=room_nav.nearest_furniture_path(
+        Vector2(avatar.position.x,avatar.position.z),info)
+    if waypoints.is_empty() or not room_nav.path_is_clear(waypoints):
+        _status("家具被遮挡：没有可以到达的交互位置，禁止穿模。")
+        return
     picked=item
-    var p :Vector3=prop_positions[item]
-    avatar_target=Vector3(clamp(p.x*.72,-1.25,1.25),0,
-        clamp(p.z*.72,-1.25,1.25))
     last_task=item
-    _status(message)
+    idle_seconds=0.0
+    unattended_timer=0.0
+    activity_remaining=0.0
+    waypoint_list=waypoints
+    avatar_target=waypoint_list[0]
+    _status(message+"  ·  A*避障路径 "+str(waypoint_list.size())+" 步")
 
 func _pick(screen:Vector2) -> void:
     var from=camera.project_ray_origin(screen)
