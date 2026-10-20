@@ -59,6 +59,31 @@ namespace XianxiaWorldBox
             try { return Report = TryRegister(); }
             catch (Exception ex) { return Report = "未注入，原因：" + ex.GetType().Name + "，请保留NML日志。"; }
         }
+        // Explicit post-generation evidence check, no mutation. Distinguishes a
+        // registered UI preset from an actually loaded 2048x2048 world.
+        public static string DiagnoseActualWorld()
+        {
+            try
+            {
+                var asm=typeof(World).Assembly;
+                var mapType=asm.GetType("MapBox");
+                if(mapType==null) return "WORLD_SIZE_FAIL MapBox unavailable";
+                object width=Member(mapType,"width");
+                object height=Member(mapType,"height");
+                if(width==null||height==null)
+                    return "WORLD_SIZE_FAIL size members unavailable";
+                int w=Convert.ToInt32(width), h=Convert.ToInt32(height);
+                if(w<=0||h<=0)return "WORLD_SIZE_FAIL world not generated";
+                bool matched=w==2048&&h==2048;
+                return "WORLD_SIZE_"+(matched?"MATCH":"DIFFERENT")+
+                       " actual="+w+"x"+h+
+                       " target=2048x2048"+
+                       " tiles="+((long)w*h)+
+                       " (save/load and simulation still unverified)";
+            }
+            catch(Exception e){return "WORLD_SIZE_FAIL "+e.GetType().Name;}
+        }
+
         // Read-only runtime diagnostics used by Work to confirm real Android 0.51.4
         // map size API before declaring the 2048-square preset playable.
         public static string DiagnoseMapApi()
