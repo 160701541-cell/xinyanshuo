@@ -1,0 +1,33 @@
+name: WorldBox External MOD Lab (NOT Canglan game)
+on:
+  push:
+    branches:
+      - worldbox/external-mod-lab-v07
+    paths:
+      - 'tools/worldbox-xianxia/**'
+      - '.github/workflows/worldbox-external-mod-lab-v07.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  offline-source-only-qa:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Source QA (does NOT certify Android NML or 3D WorldBox runtime)
+        run: |
+          python -m compileall -q tools/worldbox-xianxia
+          python -m unittest discover -s tools/worldbox-xianxia -p 'test_v07.py' -v
+      - name: Hard project separation: changes ONLY in WorldBox test folder
+        run: python tools/worldbox-xianxia/scope_gate.py
+      - name: Guard third-party game binaries and APK176 OTA
+        run: |
+          test ! -f tools/worldbox-xianxia/user_supplied_worldbox.apk
+          test ! -f tools/worldbox-xianxia/android-preview/latest.json
+          echo 'Independent derivative MOD research. Do NOT merge to main.'
