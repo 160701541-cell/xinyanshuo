@@ -57,17 +57,17 @@ class Program {
  }
  static void InspectMapUi(string path) {
    var mod=dnlib.DotNet.ModuleDefMD.Load(path);
-   foreach(var type in mod.Types.Where(t=>t.Name.IndexOf("MapSize",StringComparison.OrdinalIgnoreCase)>=0
-        ||t.Name.IndexOf("NewWorld",StringComparison.OrdinalIgnoreCase)>=0
-        ||t.Name.IndexOf("NewGame",StringComparison.OrdinalIgnoreCase)>=0
-        ||t.Name.IndexOf("WorldGenerator",StringComparison.OrdinalIgnoreCase)>=0
-        ||t.Name.IndexOf("MapGenerator",StringComparison.OrdinalIgnoreCase)>=0)){
+   foreach(var type in mod.Types.Where(t=>t.Name.ToString().IndexOf("MapSize",StringComparison.OrdinalIgnoreCase)>=0
+        ||t.Name.ToString().IndexOf("NewWorld",StringComparison.OrdinalIgnoreCase)>=0
+        ||t.Name.ToString().IndexOf("NewGame",StringComparison.OrdinalIgnoreCase)>=0
+        ||t.Name.ToString().IndexOf("WorldGenerator",StringComparison.OrdinalIgnoreCase)>=0
+        ||t.Name.ToString().IndexOf("MapGenerator",StringComparison.OrdinalIgnoreCase)>=0)){
      Console.WriteLine("MAPTYPE "+type.FullName);
-     foreach(var f in type.Fields.Where(x=>x.Name.Contains("size",StringComparison.OrdinalIgnoreCase)
-                  ||x.Name.Contains("map",StringComparison.OrdinalIgnoreCase)))Console.WriteLine(" FIELD "+f.Name+" "+f.FieldType);
+     foreach(var f in type.Fields.Where(x=>x.Name.ToString().Contains("size",StringComparison.OrdinalIgnoreCase)
+                  ||x.Name.ToString().Contains("map",StringComparison.OrdinalIgnoreCase)))Console.WriteLine(" FIELD "+f.Name+" "+f.FieldType);
      foreach(var m in type.Methods){
        Console.WriteLine(" METHOD "+m.Name+" "+m.MethodSig);
-       if(m.HasBody && (type.Name.Contains("MapSize") || m.Name.Contains("Size",StringComparison.OrdinalIgnoreCase)))
+       if(m.HasBody && (type.Name.ToString().Contains("MapSize") || m.Name.ToString().Contains("Size",StringComparison.OrdinalIgnoreCase)))
          foreach(var ins in m.Body.Instructions.Take(90))Console.WriteLine("  "+ins.OpCode+" "+ins.Operand);
      }
    }
