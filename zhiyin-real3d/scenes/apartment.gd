@@ -179,7 +179,7 @@ func _bounds_of_meshes(root:Node3D) -> AABB:
 
 func _instantiate_model(model_id:String, world_pos:Vector2,
                         wanted:Vector3, rotation:float) -> Node3D:
-    var path := "res://assets/models/"+model_id+".glb"
+    var path := "res://assets/characters/Superhero_Female_FullBody.gltf" if model_id=="hero_female" else "res://assets/models/"+model_id+".glb"
     var source := load(path) as PackedScene
     if source==null:
         push_error("缺少真正GLB文件: "+path)
