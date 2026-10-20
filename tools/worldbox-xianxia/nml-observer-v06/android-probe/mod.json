@@ -1,0 +1,10 @@
+{
+  "name":"万界仙侠·Android加载验证探针",
+  "GUID":"XINYANSHUO_XIANXIA_ANDROID_PROBE",
+  "author":"WorldBox xianxia project",
+  "version":"0.6.0-probe",
+  "description":"0.51.x source-only NML Android probe: GUI + read real map tile",
+  "RepoUrl":"https://github.com/160701541-cell/xinyanshuo",
+  "Dependencies":[],"OptionalDependencies":[],"IncompatibleWith":[],
+  "targetGameBuild":725,"ModType":0,"UsePublicizedAssembly":true,"IsNCMSMod":false
+}
