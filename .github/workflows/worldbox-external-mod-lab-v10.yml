@@ -67,6 +67,26 @@ jobs:
             --dll tools/worldbox-xianxia/tests/bin/Release/net8.0/XianxiaObserverMobileSDKProbe.dll \
             --manifest tools/worldbox-xianxia/nml-observer-v07/mod.json \
             --out /tmp/worldbox_v10_android_nml_mod_DEVICE_PENDING.zip
+      - name: 'Package legacy Mono source variant according to actual user-provided APK guide'
+        run: |
+          python tools/worldbox-xianxia/package_android_mono_source.py \
+            --source tools/worldbox-xianxia/nml-observer-v07/Code/XianxiaObserverV07.cs \
+            --manifest tools/worldbox-xianxia/nml-observer-v07/mod.json \
+            --out /tmp/worldbox_v10_android_mono_source_DEVICE_PENDING.zip
+      - name: 'Validate legacy source-only MOD contains no third-party DLL'
+        run: |
+          python - <<'PY'
+          import zipfile,json
+          path='/tmp/worldbox_v10_android_mono_source_DEVICE_PENDING.zip'
+          with zipfile.ZipFile(path) as z:
+              root='Mods/WorldBoxXianxiaObserver/'
+              files=z.namelist()
+              assert root+'Code/XianxiaObserverV07.cs' in files
+              assert json.loads(z.read(root+'mod.json'))['ModType']==0
+              assert all(not p.lower().endswith(('.apk','.dll','.pck')) for p in files)
+              assert z.testzip() is None
+          print('PASS_LEGACY_MONO_SOURCE_CANDIDATE; Android runtime DEVICE_PENDING')
+          PY
       - name: 'Unpack/verify real candidate has mod.json and exactly one first-level compiled DLL'
         run: |
           python - <<'PY'
@@ -91,6 +111,7 @@ jobs:
         run: |
           mkdir -p /tmp/worldbox-v10-artifacts
           cp /tmp/worldbox_v10_android_nml_mod_DEVICE_PENDING.zip /tmp/worldbox-v10-artifacts/
+          cp /tmp/worldbox_v10_android_mono_source_DEVICE_PENDING.zip /tmp/worldbox-v10-artifacts/
           cp tools/worldbox-xianxia/nml-observer-v07/Code/XianxiaObserverV07.cs /tmp/worldbox-v10-artifacts/
           cp tools/worldbox-xianxia/nml-observer-v07/mod.json /tmp/worldbox-v10-artifacts/
           printf '%s\n' 'WorldBox third-party MOD test; completely unrelated to original Canglan game.' 'Requires user-owned Android installation with verified NML bootstrap. DEVICE_PENDING.' 'NMLMods folder in zipped candidate is derived from official Android ModLoader Paths.ModsPath.' > /tmp/worldbox-v10-artifacts/README.txt
