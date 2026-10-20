@@ -28,7 +28,7 @@ class AndroidManifestDexGateTest(unittest.TestCase):
                 inspect_apk(path)
     def test_stale_checksum_fails(self):
         with tempfile.TemporaryDirectory() as td:
-            path=Path(td)/"bad.apk";dex=fake_dex("lab31");dex[-3]^=1
+            path=Path(td)/"bad.apk";dex=fake_dex("lab31");dex[50]^=1  # corrupt header bytes, preserve all class strings
             fake_apk(path,dex)
             with self.assertRaisesRegex(ValueError,"DEX SHA1 signature"):
                 inspect_apk(path)
