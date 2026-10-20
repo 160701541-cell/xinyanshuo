@@ -1,0 +1,37 @@
+{
+  "project": "WORLDBOX_THIRD_PARTY_MOD_DERIVATIVE_TEST",
+  "release": "v0.38_ANDROID16_DIAGNOSTIC_DEVICE_PENDING",
+  "repo": "160701541-cell/xinyanshuo",
+  "branch": "worldbox/external-mod-lab-v22-zh-localization",
+  "source_ci_run": 39504776367,
+  "source_ci_jobs_success": 3,
+  "owned_private_apk": "WorldBox_万界仙侠_v038_实机MOD故障诊断_待实机.apk",
+  "size_bytes": 188042967,
+  "sha256": "65dc2ec13f5c2d25c6c2fe94fb437b0b947c547477a95b410f680aaf5644ed73",
+  "package_name": "com.xinyanshuo.worldbox.lab31",
+  "signer_cert_sha256": "20087dc8c210c7c6a35a4492500324f33f36f7c5eb3a77dc62040c21281c400e",
+  "same_signing_key_as_lab31_v037": true,
+  "native_diagnostic_dex_updated": true,
+  "modified_game_payload": [
+    "classes5.dex",
+    "assets/worldbox-xianxia/v18/install.json"
+  ],
+  "same_original_worldbox_managed_zip_as_v037": true,
+  "apk_signature_v1_v2_v3_valid": true,
+  "apk_zip_crc_valid": true,
+  "v38_build_token": "v38-observer-zip-diagnostic-c6ce167f0bbffd91",
+  "installed_on_android16": false,
+  "observer_failed_in_user_pasted_v34_logs": true,
+  "observer_root_cause_fixed": false,
+  "last_observed_deployment_from_user_device": "v34-modzip-7ef655d45280b5f40a",
+  "confirmed_other_mods": [
+    "Frontiers.FrontiersMod",
+    "Sakuga.SakugaMod",
+    "FengyunRankings.ModClass"
+  ],
+  "known_zip_error": "zip END header not found: invalid/truncated/not ZIP",
+  "steam_runtime_warning_root_cause_of_observer": "NOT_ESTABLISHED",
+  "next_needed_evidence": "in-app exported full WorldBox_logs_*.zip, particularly unity_current.log and android_current.log",
+  "commercial_apk_public_github_upload": false,
+  "private_work_folder": "/WorldBox-万界仙侠/Work交接/"
+}

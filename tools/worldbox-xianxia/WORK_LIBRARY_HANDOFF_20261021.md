@@ -228,3 +228,14 @@ Work下一步：在真实Android16手机运行这一准确SHA256包，收集`MOD
 - APK v1/v2/v3验签通过，全13605个ZIP条目CRC通过；只改自身地图模块及安装清单，原WorldBox Unity主程序集、旧Mono桥及安卓DEX均未变；使用lab31相同测试证书，可尝试覆盖同签名lab31，不可覆盖lab13。
 - 私有APK、真实验签报告、复现打包脚本已经上传ChatGPT持久文件库 `/WorldBox-万界仙侠/Work交接/`。商业游戏不上传公开GitHub。
 - P0待证实：手机11/11菜单出现；6400平方地图成功生成、存档并重新载入；内存/卡顿。4096万格可能导致严重OOM。不能将编译/签名成功当作手机实机完成。
+
+
+---
+
+
+## 2026-10-21 v0.38 已私有签名重打包：错误可观测性修复（不是观察MOD已修好）
+- 用户提供实机**v34**`MOD_DEPLOY_OK`，同时自家Observer`FAILED reason=`。必须先从完整Unity栈定位真实异常，不能将已成功的`Frontiers/Sakuga`或非致命`libsteam_api`警告误判为观察MOD启动成功/失败的根因。
+- 已提交并经Actions `39504776367`三组全部通过：`DiagnosticsActivity.java`按安卓SAF显示实际每个被导入ZIP的文件名+失败原因；`DiagnosticReport.java`突出NML及Observer最后状态，把Steam警告折叠而不从完整日志里删除；`DiagnosticReportScenario.java`复现FAILED+Steam+zip END场景；`qa/triage_android_summary_v38.py`输出证据分级报告。
+- **已真正用v0.37私有原APK增量制作`WorldBox_万界仙侠_v038_实机MOD故障诊断_待实机.apk`**，188042967字节，SHA256 `65dc2ec13f5c2d25c6c2fe94fb437b0b947c547477a95b410f680aaf5644ed73`，包名`com.xinyanshuo.worldbox.lab31`，沿用lab31原有测试签名指纹`20087dc8c210c7c6a35a4492500324f33f36f7c5eb3a77dc62040c21281c400e`。全APK ZIP CRC及Android v1/v2/v3验签通过，原WorldBox`assets/Mono/Managed.zip`、游戏主程序集、AndroidManifest不变。除签名metadata外只更新自有`classes5.dex`和部署`install.json`（build`v38-observer-zip-diagnostic-c6ce167f0bbffd91`）。与lab13不是同一个包名，不要覆盖或卸载旧lab13。
+- 此私有APK及JSON审计已经实际上传用户ChatGPT Library`/WorldBox-万界仙侠/Work交接/`。**没有Android16安装验收，observer具体修复仍为红灯**，必须等待用户通过新版入口【导出并分享完整日志ZIP】上传实际异常；不要声称v38修复了ZIP自身损坏或观察模块FAILED。
+- 公开GitHub只放自有代码、QA及本报告，**不上传商业WorldBox游戏APK、玩家存档或私钥**；苍岚main未修改。
