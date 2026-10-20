@@ -1,0 +1,47 @@
+{
+  "round": 1,
+  "date": "2026-10-20",
+  "target": "颈部/头部衔接比例：让外袍领口真正贴住颈肩，消除身体穿出袍面的接缝穿帮",
+  "branch": "art/self-iteration-rounds",
+  "commit": "PENDING",
+  "changes": [
+    "领口环带几何（唯一变量族群）：领口贴颈环 collar(y1.520→1.588, rx0.075→0.080, rz0.072→0.122)、新增领口下沿环 mid(y1.554, rx0.132, rz0.132)、肩颈过渡环 shoulder(y1.470→1.520, rx0.130→0.146, rz0.100→0.152)、上袍贴体深度 ring2_rz0.130→0.171 / ring3_rz0.132→0.168 / ring4_rz0.125→0.132；全部由 rig/neck_params.json 驱动，默认值即基线（mid_y<=0 时不插中间环）"
+  ],
+  "renders": [
+    "tools/self_iteration/shots/round01_after_0.png",
+    "tools/self_iteration/shots/round01_after_90.png",
+    "tools/self_iteration/shots/round01_after_180.png",
+    "tools/self_iteration/shots/round01_after_45.png",
+    "tools/self_iteration/shots/round01_base_0.png",
+    "tools/self_iteration/shots/round01_base_90.png",
+    "tools/self_iteration/shots/round01_base_180.png",
+    "tools/self_iteration/shots/round01_base_45.png"
+  ],
+  "metrics": {
+    "delta_L": 24.23,
+    "accent_area_pct": 0.01,
+    "delta_E00": 14.15,
+    "outline_px": null,
+    "parts_readable": null,
+    "neck_gap_px": 45.75,
+    "triangles": 25796,
+    "head_torso_leg_ratio": "1 : 1.75 : 3.38",
+    "collar_min_clearance_m": 0.0048
+  },
+  "verdict": {
+    "technical": "FAIL",
+    "aesthetic": "PENDING",
+    "note": "四项量测改善显著但未过门槛：neck_gap_px 61→45.75(门槛0)、delta_L 15.22→24.23(门槛>=25)、delta_E00 18.56→14.15(门槛<=6)、accent 0.01%(门槛3-8%)；outline_px 与 parts_readable 无视觉通道→BLOCKED"
+  },
+  "attribution": {
+    "root_cause": "外袍领口两环半径远小于同高度身体半径——基线领口 rx0.075/rz0.072 处于 y1.520 身体(rx0.138/rz0.142)内部，肩颈环 rz0.100 对 rz0.157 也差 57mm；整条上袍 rz 比身体小 30-57mm，导致颈肩胸的皮肤/身体穿出袍面",
+    "evidence": "几何量测 MEAS COLLAR_MIN：基线 -0.0695 m（y1.520，最深 -83.9mm 含 0.16 带）→ 本轮 +0.0048 m，领口带全程 clr>0；像素对照：可见袍面积占比 7.5-10.2% → 25.7-58.7%，中性(底模衣物)占比 62-80% → 25.7-55.8%",
+    "residual": "accent 面积 0（尚无金色镶边）；渲染主色与设定色板 ΔE00=14.15（光照下偏色，未标定）；delta_L 差 0.77 未达 25（影棚背景 ivory L≈93 与主体过近）；neck_gap_px 残 45.75（细缝定义 cap=10%图宽，剩的是领口下沿与锁骨之间的窄缝）"
+  },
+  "lessons": [
+    "像素级'接缝穿帮'在头部特写会被解剖凹槽污染（头与肩之间的天然凹陷宽达 500+px），必须限制为'细缝'（<=10%图宽）并把几何包覆余量作为主仪器",
+    "本容器 l2s 层会把 write 工具新建的文件落成断链符号链接，必须用 bash heredoc 落真实文件",
+    "背景检测不能用边框中位数（主体触底会污染）；应取图像上缘 4 行的量化众数"
+  ],
+  "next": "领口金边镶边（点缀色面积 3-8%）：在 collar/mid/shoulder 三环上加金色窄边并让 accent_area_pct 落进门槛，同时把影棚背景固定为深色以让 delta_L 达标（环境非几何变量）"
+}

@@ -28,6 +28,8 @@ func _ready() -> void:
 	add_child(pivot)
 	_grab(root)
 	_build()
+	if "--measure" in OS.get_cmdline_user_args():
+		_measure_dump()
 	_setup_world()
 	_shot()
 
@@ -326,24 +328,33 @@ func _loft_ell(rings: Array, seg := 40, collar := false) -> void:
 	mi.material_override = mat
 	pivot.add_child(mi)
 
-func _robe(ring: Dictionary) -> void:
-	var yw: float = float(ring["y"])
+func _robe_rings() -> Array:
+	# R2 参数化：领口环带由 rig/neck_params.json 驱动（mid_y<=0 表示不插中间环）
 	var R := Color(0.085, 0.255, 0.250)     # 外袍
 	var D := Color(0.045, 0.150, 0.155)     # 下摆
-	var I := Color(0.80, 0.78, 0.72)        # 内衫
-	var rings := [
-		{"y": 1.52, "rx": 0.075, "rz": 0.072, "c": R},   # 领口贴颈
-		{"y": 1.47, "rx": 0.130, "rz": 0.100, "c": R},   # 肩颈过渡
-		{"y": 1.44, "rx": 0.210, "rz": 0.130, "c": R},   # 肩
-		{"y": 1.34, "rx": 0.215, "rz": 0.132, "c": R},
-		{"y": 1.24, "rx": 0.200, "rz": 0.125, "c": R},
-		{"y": 1.16, "rx": 0.150, "rz": 0.110, "c": R},   # 腰
+	var np := _neck_params()
+	var arr: Array = [
+		{"y": np["collar_y"], "rx": np["collar_rx"], "rz": np["collar_rz"], "c": R},       # 领口贴颈
+	]
+	if float(np["mid_y"]) > 0.0:
+		arr.append({"y": np["mid_y"], "rx": np["mid_rx"], "rz": np["mid_rz"], "c": R})    # 领口下沿（斜方肌）
+	arr.append({"y": np["shoulder_y"], "rx": np["shoulder_rx"], "rz": np["shoulder_rz"], "c": R})
+	arr.append_array([
+		{"y": 1.44, "rx": 0.210, "rz": np["ring2_rz"], "c": R},   # 肩
+		{"y": 1.34, "rx": 0.215, "rz": np["ring3_rz"], "c": R},
+		{"y": 1.24, "rx": 0.200, "rz": np["ring4_rz"], "c": R},
+		{"y": 1.16, "rx": 0.150, "rz": np["ring5_rz"], "c": R},   # 腰
 		{"y": 1.10, "rx": 0.170, "rz": 0.120, "c": D},
 		{"y": 0.92, "rx": 0.240, "rz": 0.165, "c": D},
 		{"y": 0.72, "rx": 0.330, "rz": 0.225, "c": D},
 		{"y": 0.52, "rx": 0.400, "rz": 0.280, "c": D},
 		{"y": 0.40, "rx": 0.425, "rz": 0.300, "c": D},   # 摆口
-	]
+	])
+	return arr
+
+func _robe(ring: Dictionary) -> void:
+	var yw: float = float(ring["y"])
+	var rings := _robe_rings()
 	_loft_ell(rings, 96, true)
 
 
@@ -634,6 +645,119 @@ func _decals() -> void:
 		m.set_shader_parameter("side", float(sp[1]))
 		q.material_override = m
 		pivot.add_child(q)
+
+func _neck_params() -> Dictionary:
+	# R2 参数化：颈部/领口两环由 rig/neck_params.json 驱动（缺文件则用下列默认值=基线）
+	var d := {
+		"collar_y": 1.52, "collar_rx": 0.075, "collar_rz": 0.072,
+		"shoulder_y": 1.47, "shoulder_rx": 0.130, "shoulder_rz": 0.100,
+		"ring2_rz": 0.130, "ring3_rz": 0.132, "ring4_rz": 0.125, "ring5_rz": 0.110,
+		"mid_y": 0.0, "mid_rx": 0.0, "mid_rz": 0.0,
+	}
+	var f := FileAccess.open("res://rig/neck_params.json", FileAccess.READ)
+	if f != null:
+		var j: Variant = JSON.parse_string(f.get_as_text())
+		if typeof(j) == TYPE_DICTIONARY:
+			for k in d.keys():
+				if (j as Dictionary).has(k):
+					d[k] = float((j as Dictionary)[k])
+			print("NECK_PARAMS loaded")
+	return d
+
+func _dom_bone(t: int) -> int:
+	var best := 0
+	var bw := 0.0
+	for k in range(3):
+		var vi := idx[t * 3 + k]
+		for j in range(4):
+			var w := weights[vi * 4 + j]
+			if w > bw:
+				bw = w
+				best = bones[vi * 4 + j]
+	return best
+
+func _measure_dump() -> void:
+	# R4 量测探针：只读数、不改几何
+	var grp := {}
+	for t in range(idx.size() / 3):
+		var g := _group_of_tri(t)
+		for k in range(3):
+			var v := verts[idx[t * 3 + k]]
+			var rec: Array = grp.get(g, [Vector3(1e9, 1e9, 1e9), Vector3(-1e9, -1e9, -1e9)])
+			rec[0] = (rec[0] as Vector3).min(v)
+			rec[1] = (rec[1] as Vector3).max(v)
+			grp[g] = rec
+	var gm := ["head", "arm", "leg", "hand", "foot", "other"]
+	for g in range(6):
+		if not grp.has(g):
+			continue
+		var lo: Vector3 = grp[g][0]
+		var hi: Vector3 = grp[g][1]
+		print("MEAS PART %d %s y=%.3f..%.3f size=(%.3f,%.3f,%.3f)" % [g, gm[g], lo.y, hi.y, hi.x - lo.x, hi.y - lo.y, hi.z - lo.z])
+	for yb in [1.48, 1.50, 1.52, 1.54, 1.56, 1.58]:
+		var rn := 0.0
+		var rh := 0.0
+		for t in range(idx.size() / 3):
+			var dom := _dom_bone(t)
+			var nm := bone_names[dom].to_lower() if dom < bone_names.size() else ""
+			for k in range(3):
+				var v := verts[idx[t * 3 + k]]
+				if absf(v.y - float(yb)) > 0.012:
+					continue
+				var rr := sqrt(v.x * v.x + v.z * v.z)
+				if nm.contains("neck"):
+					rn = maxf(rn, rr)
+				elif nm.contains("head"):
+					rh = maxf(rh, rr)
+		print("MEAS NECK y=%.2f r_neckbone=%.4f r_headbone=%.4f" % [float(yb), rn, rh])
+	for yb in [1.16, 1.24, 1.30, 1.34, 1.38, 1.40, 1.44, 1.48, 1.50, 1.52, 1.54, 1.56, 1.58, 1.60]:
+		var rb := 0.0
+		var rbx := 0.0
+		var rbz := 0.0
+		for v in verts:
+			if absf(v.x) > 0.135:
+				continue
+			if absf(v.y - float(yb)) > 0.012:
+				continue
+			rb = maxf(rb, sqrt(v.x * v.x + v.z * v.z))
+			rbx = maxf(rbx, absf(v.x))
+			rbz = maxf(rbz, absf(v.z))
+		print("MEAS BODY y=%.2f r_centerline=%.4f rx=%.4f rz=%.4f" % [float(yb), rb, rbx, rbz])
+	# R4 几何量测：领口带（ring0..ring2）的包覆余量 = 袍面半径 - 同高度身体半径，负数=穿插
+	var rr2 := _robe_rings()
+	var min_clr := 1e9
+	var clr_at := ""
+	for k in range(3):
+		for tt in [0.0, 0.25, 0.5, 0.75]:
+			var yc: float = lerpf(float(rr2[k]["y"]), float(rr2[k + 1]["y"]), tt)
+			var rxc: float = lerpf(float(rr2[k]["rx"]), float(rr2[k + 1]["rx"]), tt)
+			var rzc: float = lerpf(float(rr2[k]["rz"]), float(rr2[k + 1]["rz"]), tt)
+			var bx := 0.0
+			var bz := 0.0
+			for v in verts:
+				if absf(v.x) > 0.135:
+					continue
+				if absf(v.y - yc) > 0.012:
+					continue
+				bx = maxf(bx, absf(v.x))
+				bz = maxf(bz, absf(v.z))
+			var cx := rxc - bx
+			var cz := rzc - bz
+			if minf(cx, cz) < min_clr:
+				min_clr = minf(cx, cz)
+				clr_at = "y=%.3f" % yc
+			print("MEAS COLLAR y=%.3f robe_rx=%.3f robe_rz=%.3f body_rx=%.3f body_rz=%.3f clr_x=%+.4f clr_z=%+.4f" % [yc, rxc, rzc, bx, bz, cx, cz])
+	print("MEAS COLLAR_MIN clearance=%.4f at %s" % [min_clr, clr_at])
+	var tot := idx.size() / 3
+	for c in pivot.get_children():
+		if c is MeshInstance3D:
+			var mi := c as MeshInstance3D
+			if mi.mesh != null:
+				tot += mi.mesh.get_faces().size() / 3
+	print("MEAS TRIS total=%d base=%d" % [tot, idx.size() / 3])
+	print("MEAS HEAD c=(%.3f,%.3f,%.3f) r=(%.4f,%.4f,%.4f)" % [head_c.x, head_c.y, head_c.z, head_r.x, head_r.y, head_r.z])
+	var np := _neck_params()
+	print("MEAS NECKCFG collar_y=%.3f collar_rx=%.4f collar_rz=%.4f shoulder_y=%.3f shoulder_rx=%.4f shoulder_rz=%.4f" % [float(np["collar_y"]), float(np["collar_rx"]), float(np["collar_rz"]), float(np["shoulder_y"]), float(np["shoulder_rx"]), float(np["shoulder_rz"])])
 
 func _setup_world() -> void:
 	var we := WorldEnvironment.new()
