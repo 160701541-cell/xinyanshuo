@@ -40,8 +40,16 @@ class Program {
    }
    throw new InvalidOperationException("MapBox lacks a safe startup method");
  }
+ static ReaderParameters Resolved(string path){
+   var resolver=new DefaultAssemblyResolver();
+   resolver.AddSearchDirectory(Path.GetDirectoryName(Path.GetFullPath(path))!);
+   resolver.AddSearchDirectory(AppContext.BaseDirectory);
+   var refs=Environment.GetEnvironmentVariable("WORLD_BOX_MONO_REFS");
+   if(!string.IsNullOrWhiteSpace(refs)&&Directory.Exists(refs))resolver.AddSearchDirectory(refs);
+   return new ReaderParameters{ReadSymbols=false,InMemory=true,AssemblyResolver=resolver};
+ }
  static void Inspect(string path){
-  using var a=AssemblyDefinition.ReadAssembly(path,new ReaderParameters{ReadSymbols=false,InMemory=true});
+  using var a=AssemblyDefinition.ReadAssembly(path,Resolved(path));
   Console.WriteLine("ASSEMBLY "+a.Name.FullName);
   foreach(string typeName in new[]{"MapBox","ModLoader","AssetModLoader","World"}){
     var type=a.MainModule.Types.FirstOrDefault(t=>t.Name==typeName);
@@ -71,8 +79,8 @@ class Program {
    Console.WriteLine("PASS_MONO_ORIGINAL_REFERENCE_COMPILE "+output);
  }
  static void Patch(string original,string plugin,string output) {
-   using var game=AssemblyDefinition.ReadAssembly(original,new ReaderParameters{ReadSymbols=false,InMemory=true});
-   using var addon=AssemblyDefinition.ReadAssembly(plugin,new ReaderParameters{ReadSymbols=false,InMemory=true});
+   using var game=AssemblyDefinition.ReadAssembly(original,Resolved(path));
+   using var addon=AssemblyDefinition.ReadAssembly(plugin,Resolved(path));
    var entry=FindStartup(game);
    var addonEntry=addon.MainModule.Types.FirstOrDefault(t=>t.FullName=="XianxiaMonoBridge.Entry");
    var install=addonEntry?.Methods.FirstOrDefault(m=>m.Name=="Install"&&m.IsStatic&&m.Parameters.Count==0);
@@ -97,9 +105,9 @@ class Program {
    Console.WriteLine("PATCHED_MAPBOX_START "+output+" game="+game.Name.Name+" plugin="+addon.Name.Name);
  }
  static void Verify(string original,string patched,string plugin) {
-  using var a=AssemblyDefinition.ReadAssembly(original);
-  using var b=AssemblyDefinition.ReadAssembly(patched);
-  using var p=AssemblyDefinition.ReadAssembly(plugin);
+  using var a=AssemblyDefinition.ReadAssembly(original,Resolved(original));
+  using var b=AssemblyDefinition.ReadAssembly(patched,Resolved(patched));
+  using var p=AssemblyDefinition.ReadAssembly(plugin,Resolved(plugin));
   var aa=FindStartup(a).Body.Instructions.Select(x=>x.OpCode+" "+x.Operand).ToArray();
   var bb=FindStartup(b).Body.Instructions.Select(x=>x.OpCode+" "+x.Operand).ToArray();
   if(bb.Length!=aa.Length+1||!bb[0].Contains("XianxiaMonoBridge.Entry::Install"))throw new InvalidOperationException("patch hook not at startup");
