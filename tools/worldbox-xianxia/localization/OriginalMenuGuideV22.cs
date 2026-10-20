@@ -38,8 +38,8 @@ namespace XianxiaWorldBox
             float w=Mathf.Min(Screen.width-16,790f*scale);
             float h=Mathf.Min(Screen.height-16,610f*scale);
             Rect r=new Rect((Screen.width-w)/2f,(Screen.height-h)/2f,w,h);
-            GUI.Box(r,"中文操作说明 / 汉化控制台（实验版）",box);
-            if(GUI.Button(new Rect(r.x+w-102f*scale,r.y+11f*scale,90f*scale,42f*scale),"关闭",button))
+            GUI.Box(r,OwnLocaleLabelsV25.Get("language_panel","中文操作说明 / 汉化控制台（实验版）"),box);
+            if(GUI.Button(new Rect(r.x+w-102f*scale,r.y+11f*scale,90f*scale,42f*scale),OwnLocaleLabelsV25.Get("close","关闭"),button))
                 Open=false;
 
             float margin=10f*scale, gap=6f*scale;
@@ -47,35 +47,35 @@ namespace XianxiaWorldBox
             float quarter=(w-2f*margin-3f*gap)/4f;
             float top=r.y+57f*scale;
             if(GUI.Button(new Rect(x,top,quarter,43f*scale),
-                RuntimeChineseOverlayV22.Enabled?"实时中文：开":"实时中文：关",button))
+                RuntimeChineseOverlayV22.Enabled?OwnLocaleLabelsV25.Get("toggle_chinese_on","实时中文：开"):OwnLocaleLabelsV25.Get("toggle_chinese_off","实时中文：关"),button))
                 RuntimeChineseOverlayV22.SetEnabled(!RuntimeChineseOverlayV22.Enabled);
             x+=quarter+gap;
-            if(GUI.Button(new Rect(x,top,quarter,43f*scale),"一键选择简中",button))
+            if(GUI.Button(new Rect(x,top,quarter,43f*scale),OwnLocaleLabelsV25.Get("one_tap_chinese","一键选择简中"),button))
             {
                 NativeLocaleBridgeV23.RegisterActualKeys();
                 oneTapStatus=NativeLocaleBridgeV23.SwitchToChineseByUserTap();
                 NativeLocaleBridgeV23.ActivateChinese();
             }
             x+=quarter+gap;
-            if(GUI.Button(new Rect(x,top,quarter,43f*scale),"登记原版中文",button))
+            if(GUI.Button(new Rect(x,top,quarter,43f*scale),OwnLocaleLabelsV25.Get("register_native_chinese","登记原版中文"),button))
                 oneTapStatus=NativeLocaleBridgeV23.RegisterActualKeys();
             x+=quarter+gap;
-            if(GUI.Button(new Rect(x,top,quarter,43f*scale),"刷新简体中文",button))
+            if(GUI.Button(new Rect(x,top,quarter,43f*scale),OwnLocaleLabelsV25.Get("refresh_chinese","刷新简体中文"),button))
                 oneTapStatus=NativeLocaleBridgeV23.ActivateChinese();
 
             x=r.x+margin;
             float second=r.y+107f*scale;
-            if(GUI.Button(new Rect(x,second,quarter,43f*scale),"导入中文键值包",button))
+            if(GUI.Button(new Rect(x,second,quarter,43f*scale),OwnLocaleLabelsV25.Get("import_keypack","导入中文键值包"),button))
                 oneTapStatus=ChineseKeyPackV24.ImportPrivatePack();
             x+=quarter+gap;
             if(GUI.Button(new Rect(x,second,quarter,43f*scale),
-                UntranslatedMenuAuditV23.Enabled?"停止漏译采集":"开启漏译采集",button))
+                UntranslatedMenuAuditV23.Enabled?OwnLocaleLabelsV25.Get("stop_missing_scan","停止漏译采集"):OwnLocaleLabelsV25.Get("start_missing_scan","开启漏译采集"),button))
                 UntranslatedMenuAuditV23.SetEnabled(!UntranslatedMenuAuditV23.Enabled);
             x+=quarter+gap;
-            if(GUI.Button(new Rect(x,second,quarter,43f*scale),"导出漏译清单",button))
+            if(GUI.Button(new Rect(x,second,quarter,43f*scale),OwnLocaleLabelsV25.Get("export_missing","导出漏译清单"),button))
                 UntranslatedMenuAuditV23.ExportLocalReport();
             x+=quarter+gap;
-            if(GUI.Button(new Rect(x,second,quarter,43f*scale),"清空漏译记录",button))
+            if(GUI.Button(new Rect(x,second,quarter,43f*scale),OwnLocaleLabelsV25.Get("clear_missing","清空漏译记录"),button))
                 UntranslatedMenuAuditV23.Clear();
 
             GUI.Label(new Rect(r.x+margin,r.y+155f*scale,w-2f*margin,47f*scale),
@@ -94,11 +94,11 @@ namespace XianxiaWorldBox
             for(int i=first;i<Entries.Length&&i<first+perPage;i++)
                 GUI.Label(new Rect(r.x+margin,rowsTop+(i-first)*rowH,
                     w-2f*margin,rowH-3f*scale),Entries[i],label);
-            if(GUI.Button(new Rect(r.x+margin,r.y+h-64f*scale,118f*scale,46f*scale),"上一页",button))
+            if(GUI.Button(new Rect(r.x+margin,r.y+h-64f*scale,118f*scale,46f*scale),OwnLocaleLabelsV25.Get("page_previous","上一页"),button))
                 page=(page+pages-1)%pages;
             GUI.Label(new Rect(r.x+148f*scale,r.y+h-58f*scale,130f*scale,35f*scale),
                 (page+1)+"/"+pages+" 页",label);
-            if(GUI.Button(new Rect(r.x+280f*scale,r.y+h-64f*scale,118f*scale,46f*scale),"下一页",button))
+            if(GUI.Button(new Rect(r.x+280f*scale,r.y+h-64f*scale,118f*scale,46f*scale),OwnLocaleLabelsV25.Get("page_next","下一页"),button))
                 page=(page+1)%pages;
             GUI.Label(new Rect(r.x+414f*scale,r.y+h-56f*scale,w-425f*scale,35f*scale),
                 "未知英文保留原文；真机尚待检验。",label);
