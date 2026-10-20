@@ -14,6 +14,7 @@ namespace XianxiaWorldBox
         static readonly List<string> Names=new List<string>();
         public static bool Open;
         public static string Status="模组管理器：只读预览；手机批量选择与安装尚未接入。";
+        static string dictionaryStatus="内置中文词库已就绪。";
         public static string Folder
         {
             get {return Path.Combine(Application.persistentDataPath,"XianxiaModStaging");}
@@ -45,10 +46,12 @@ namespace XianxiaWorldBox
             GUI.Box(panel,"中文模组管理器（实验版）",box);
             if(GUI.Button(new Rect(panel.x+w-115*scale,panel.y+12*scale,100*scale,45*scale),"关闭",button))
                 Open=false;
+            if(GUI.Button(new Rect(panel.x+200*scale,panel.y+65*scale,190*scale,48*scale),"载入模组中文词库",button))
+                dictionaryStatus=ChineseLocalizationV22.LoadUserTranslations();
             if(GUI.Button(new Rect(panel.x+15*scale,panel.y+65*scale,170*scale,48*scale),"刷新暂存列表",button))
                 Refresh();
             GUI.Label(new Rect(panel.x+15*scale,panel.y+120*scale,w-30*scale,85*scale),
-                Status+"\n不读取受保护的Android/data目录；不擅自安装其他MOD。",label);
+                Status+"\n"+dictionaryStatus+"（词条："+ChineseLocalizationV22.DictionarySize+"）",label);
             int maxRows=Math.Min(Names.Count,6);
             for(int i=0;i<maxRows;i++)
                 GUI.Label(new Rect(panel.x+20*scale,panel.y+(213+i*48)*scale,w-40*scale,42*scale),
