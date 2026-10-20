@@ -18,6 +18,20 @@ class ExternalModOnlyTests(unittest.TestCase):
         s=json.loads(p.read_text(encoding="utf8"))
         self.assertEqual(evaluate_policy(s),[])
         self.assertIn("MOD",s["title"].upper())
+    def test_mod_manifest_is_distinct(self):
+        meta=json.loads((Path(__file__).with_name("nml-observer-v07")/"mod.json").read_text())
+        self.assertEqual(meta["targetGameBuild"],725)
+        self.assertNotEqual(meta["GUID"],"TURBO_SAKUGA")
+        self.assertNotEqual(meta["GUID"],"MIDNIGHT_FRONTIERS")
+        self.assertIn("third-party",meta["description"].lower())
+    def test_observer_never_mutates_game(self):
+        s=(Path(__file__).with_name("nml-observer-v07")/"Code"/"XianxiaObserverV07.cs").read_text()
+        self.assertIn("REAL_MAP_SAMPLE",s)
+        self.assertIn("FilterMode.Point",s)
+        self.assertIn("void PickPerson()",s)
+        self.assertIn("angle=(angle+1)%4",s)
+        for forbidden in ("HarmonyPatch", "File.Write", "saveWorld(", "spawnNewUnit(", "setTileDirty(", "android-preview"):
+            self.assertNotIn(forbidden,s)
     def test_fabricated_android_test_rejected(self):
         s=json.loads(Path(__file__).with_name("project_scope.json").read_text())
         s["device_test"]="PASS"
