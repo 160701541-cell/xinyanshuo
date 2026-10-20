@@ -1,3 +1,15 @@
+## 2026-10-21 · 蓝色DeepSeek角色真3D原型、视觉验收失败与正确资产管线
+
+**已真实完成**：GitHub独立分支`zhiyin/native-android-prototype`提交`zhiyin-real3d/scenes/deepseek_blue_avatar.gd`，使用65骨骼成品女性角色为动画底座，追加三维网格蓝色分层头发、头饰、左右鲸鳍、鲸尾、蓝白裙摆围裙、蓝眼组件。所有部件在Godot 4.4引擎内实例化为MeshInstance3D，随Head/Pelvis/Spine骨骼挂点运动，非二维贴图假装模型。主场景加入角色近景镜头，角色标识独立为`npc_deepseek_blue`。
+
+**实测与候选包**：run `39495141961` 成功，场景QA为12个导入模型、118个Mesh实例、65根骨骼、43个真实动作、60个DeepSeek主题网格和20束头发（含已有基底发型）、鲸鳍/鲸尾/围裙可见；APK v2签名校验通过。独立Android lab包名`com.xinyanshuo.zhiyin.real3d.lab` versionCode 13、versionName `0.9.4-blue-whale-face-test`，SHA256为`08118f5aad63f5f34f0a98bed319ddff023fd0e25473ae7570e5c82df1c80cb0`。未经过用户Android16真实设备测帧率/触控。
+
+**P0视觉失败，禁止称还原成功**：审核实际Godot生成的`deepseek-blue-avatar-engine-portrait.png`，原型仍与用户蓝色鲸鱼女仆插画差距巨大：头身仍是Quaternius通用成人造型；粗大球状蓝眼和头饰不自然；头发是粗糙曲面条带；脸部特征不符合二次元；围裙仅有三维几何简化并非参考图完整刺绣；3D室内和UI依旧极为简陋。第一轮P0整改曾将脸完全挡住，第二轮修复发束方向、相机角度与白色上衣部分，但整体仍明确不合格。QA自动计数/签名通过 **不等于外观还原合格**。此候选APK仅可作为骨骼跟随与三维部件的工程测试，不应替换原生《知音》APP。
+
+**停止将程序自动拼出的球/片/方块充作正式美术**。后续需要可编辑的日式卡通造型资产流水线：优先使用VRoid Studio制作美术绑定人形与头发发束，Blender修改UV、服装层、鲸鳍和尾巴，最终VRM1.0/GLB+表情BlendShape并在Godot4中使用V-Sekai的`godot-vrm`插件（含MToon卡通材质、VRM表情及春骨）。Godot VRM插件支持VRM 0/1导入、MToon、SpringBone与表情轨，需锁定版本并通过实际引擎构建；**插件本轮尚未集成，仅完成来源核验**。VRoid预置素材不属于CC0，商业使用需遵循官方许可，第三方发型/衣服单独核对。作为图片参考的拟人角色不代表DeepSeek或Claude官方授权产品。
+
+**下一版P0**：真正基于正确动漫头部比例的可编辑3D人物，重新制作蓝渐变长发、鱼鳍/鲸尾、蓝白褶裙与刺绣围裙，提供四视图和眨眼/撅嘴/愤怒/视素真实变形。仍未完成原Android App的LLM/记忆/房租等与Godot合并，更不能冒充生产发布。Claude橙金发独立角色仍未建模、身份不变。
+
 ## 2026-10-21 · 蓝色DeepSeek鲸鱼少女 · 真实3D试制 P0
 
 - 用户已锁定身份：蓝色渐变发鲸鱼主题女仆=DeepSeek拟人形象；橙金发向日葵少女=Claude拟人形象。用户参考图片是造型目标而非已许可使用的官方品牌美术。
