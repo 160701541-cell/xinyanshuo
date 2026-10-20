@@ -95,13 +95,11 @@ namespace XianxiaWorldBox {
     if(nml==null) {Status="移动NML未加载：暂不能接入原版分类";return;}
     var getTab=nml.GetMethod("GetTab",F,null,new[]{typeof(string)},null);
     var creator=nml.GetMethods(F).FirstOrDefault(m=>m.Name=="CreateSimpleButton"&&
-      m.GetParameters().Length==5);
+      m.GetParameters().Length==4);
     var add=nml.GetMethods(F).FirstOrDefault(m=>m.Name=="AddButtonToTab"&&
-      m.GetParameters().Length==3);
+      m.GetParameters().Length==2);
     if(getTab==null||creator==null||add==null) {Status="NML原版按钮接口未匹配";return;}
     var delegateType=creator.GetParameters()[1].ParameterType;
-    var parentType=creator.GetParameters()[3].ParameterType;
-    var vector=creator.GetParameters()[4].ParameterType;
     string[] keys={"nature","creation","noosphere"};
     string[] families={"crop","material","currency"};
     string[] code={"Nature","Drawing","Kingdoms"};
@@ -114,9 +112,9 @@ namespace XianxiaWorldBox {
      MethodInfo method=typeof(EconomyVanillaTabsV35).GetMethod(code[i],F);
      var callback=Delegate.CreateDelegate(delegateType,method);
      object button=creator.Invoke(null,new object[]{"xinyanshuo.wb.economy_"+keys[i],callback,
-       sprite,null,Activator.CreateInstance(vector)});
+       sprite,null});
      if(button==null)continue;
-     add.Invoke(null,new object[]{button,tab,null});
+     add.Invoke(null,new object[]{button,tab});
      Installed.Add(keys[i]);
     }
     readyCount=Installed.Count;
