@@ -1,6 +1,17 @@
 # CAC 工序变更与开发日志
 
-## 2026-10-20 / CAC-FACE-BASEMODEL-AUDIT / 脸部母版取证：原始 GLB 只有「身体+眼+眉」三个网格；眼/眉确实可见，但全白无虹膜（不是「被藏起来的真头」）
+## 2026-10-20 / CAC-FACE-BASEMODEL-AUDIT-CORRECTION / 更正：真头母版一直存在 —— /sdcard/Download 的 MasterSculpt WIP（body 网格内含 3203 顶点真头 + 两颗 308 顶点眼球）
+- **为什么更正**：上一条 `CAC-FACE-BASEMODEL-AUDIT` 只查了流水线自己的中间拷贝 `tools/character-pipeline/assets/character_ea.glb`，**没有全盘搜索设备上的原始资产**，因此错误地得出「文件里没有真正雕出来的头、没有虹膜」。按用户要求「仔细找」扩大搜索面后，该结论被推翻。**教训：资产级结论必须建立在原始文件上，不能建立在流水线自己的中间产物上。**
+- **真正的头部母版**：`/sdcard/Download/Canglan_XianxiaMale_MasterSculpt_WIP.blend`（4,968,464 B）与 `.glb`（6,517,964 B），均 2026-10-14 01:53。**不在仓库里、也不在 `/root` 下** —— 此前所有取证都没碰到它。
+- **实测（Blender 4.0.2 + Python 直读 GLB）**：`.blend` 共 **165 个对象** = **25 个非头发** + **140 个头发曲线**（`Hair forelock`×85、`Hair long`×52、`Hairpin silk`×2…）；**无骨架、无顶点组、无形态键、无顶点色**，body 有 `UVMap`。身体对象 = **`00_CC0_Human_RealAnatomy_EditBody`**，**13,380 顶点 / 13,378 面**，材质 `12 Face + hands`（导出 GLB 后按缝拆成 14,517 顶点 / 26,756 面）。GLB 共 **30 张贴图、10 个材质**，每材质一套 albedo/normal/roughness。
+- **决定性证据（GLB body 网格的 9 个连通分量）**：**head 岛 3203 顶点**，中心 (0.00,1.55,0.06)，尺寸 **0.18×0.23×0.21 m**（= 真人头尺寸）；**两颗眼球岛各 308 顶点**，中心 **(±0.03,1.55,0.12)**，尺寸 **0.03×0.03×0.03 m**（= 3cm 真眼球）；另有颈 446、躯干+腿 4170、双手 1817×2、双脚 1224×2。**真头与真眼球都在 `body` 这一个网格里，是连通分量而非独立对象** —— 这就是按对象名/网格名搜 `eye|brow|iris` 全都搜不到的原因。
+- **脸部贴图实测**：`12_Face___hands_albedo.png` 384×384，逐通道 R 133–137、G 93–96、B 70–72，**唯一颜色只有 10 种**（(135,94,71) 占 68,578 px）→ **纯色肤色底，没有画上去的五官**；虹膜/瞳孔/眉色仍需自己生成。
+- **流水线真正的病根**：`src/cloth.gd:26 root.visible=false` + `_grab()` 取「顶点最多的网格」，用的是 **Quaternius 卡通底模的中间拷贝 `character_ea.glb`**（3 网格、顶点色全白、零贴图）。→ 「被藏起来」是真的，但被藏起来的是**整个真头母版**，不是两个眼眉网格。
+- **全文证据**：`docs/FACE_BASEMODEL_AUDIT_20261020.md`。
+- **未做/待确认**：①来源与许可未证实（对象名含 `CC0_Human_RealAnatomy`，但 `/sdcard` 上 grep 全部 .md/.txt/.json **没有任何来源说明文件**）→ 入库或发布前必须先写清来源与许可；②两颗眼球**没有虹膜几何**（纯球体，与身体共用纯色贴图）；③**没有眉/睫对象**（头发对象只有 forelock/long），眉毛是否在头岛内未证实；④真母版**无骨架无权重**，要接进流水线须重新蒙皮或只取头/眼做替换；⑤未改袍/发/腰带、未合并 `main`、未签名、未发布。
+
+## 2026-10-20 / CAC-FACE-BASEMODEL-AUDIT / ⚠️【取证范围错误，已被同日 CAC-FACE-BASEMODEL-AUDIT-CORRECTION 推翻】脸部母版取证：流水线中间产物 character_ea.glb 只有「身体+眼+眉」三个网格；眼/眉确实可见，但全白无虹膜
+- **⚠️ 本条目只对「流水线中间产物 character_ea.glb」成立，不能代表原始资产**：真头母版一直存在于 `/sdcard/Download/Canglan_XianxiaMale_MasterSculpt_WIP.{blend,glb}`，见同日更正条目。
 - **取证对象**：`tools/character-pipeline/assets/character_ea.glb`（md5 `cf517c6a…`，与宿主工程 `/root/game/assets/cc0/character_ea.glb` 同一文件，707,764 B；`images=0`——**文件里没有任何贴图**，只有 1 个材质 `Matte jade`）。
 - **网格清单（实测）**：`SuperHero_Male` 7281 顶点 = 整个身体（**头、鼻、嘴、耳都在这个网格里，没有独立的雕塑头网格**）；`Eyebrows` 650 顶点（y1.695–1.725、x±0.062、z0.057–0.094，左右各 325）；`Eyes` 556 顶点 = **两只各 278 顶点的球**（y1.684–1.714、x±0.049、z0.051–0.081）。
 - **颜色实测**：三个网格的 `COLOR_0` **全部是纯白 (1,1,1)** —— 文件里没有任何颜色信息，**「真眼球虹膜」不存在**；虹膜/瞳孔/眉色必须自己生成（着色器或顶点绘制）。
