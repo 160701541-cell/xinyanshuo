@@ -55,6 +55,16 @@ jobs:
           unzip -q /tmp/zhiyin-godot.zip -d /tmp
           chmod +x /tmp/Godot_v4.4.1-stable_linux.x86_64
           /tmp/Godot_v4.4.1-stable_linux.x86_64 --version
+      - name: Install pinned MIT Godot VRM MToon importer
+        run: |
+          set -euo pipefail
+          python3 tools/install_vrm_pipeline.py
+          test -s addons/vrm/plugin.cfg
+          test -s addons/Godot-MToon-Shader/plugin.cfg
+      - name: Retrieve CC0 anime base for INTERNAL QA only
+        run: |
+          set -euo pipefail
+          python3 tools/fetch_cc0_anime_base.py
       - name: Import actual GLB, PNG and GDScript in Godot
         run: |
           set -euo pipefail
@@ -64,6 +74,13 @@ jobs:
           if grep -Eq 'SCRIPT ERROR:|Parse Error:|Parser Error:|Failed to load script|ERROR:.*glb' godot-import.log; then
             cat godot-import.log; exit 1
           fi
+      - name: Prove genuine VRM anime rig face morph and materials import
+        run: |
+          set -euo pipefail
+          timeout 90s /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless --path . --script res://tests/vrm_import_smoke.gd >vrm-import-qa.log 2>&1 || { cat vrm-import-qa.log; exit 1; }
+          cat vrm-import-qa.log
+          grep -Fq 'PASS REAL VRM ANIME MODEL IMPORT' vrm-import-qa.log
+          python3 -c 'from pathlib import Path; Path("qa_samples/anime_cc0_lookdev.vrm").unlink(missing_ok=True)'
       - name: Inspect official Quaternius humanoid animation tracks
         run: |
           set -euo pipefail
@@ -113,7 +130,7 @@ jobs:
       - name: Package imported REAL 3D project files
         run: |
           set -euo pipefail
-          zip -q -r /tmp/zhiyin-real3d-project.zip project.godot scenes assets ASSET_MANIFEST.json tools tests
+          zip -q -r /tmp/zhiyin-real3d-project.zip project.godot scenes assets addons VRM_PLUGIN_PROVENANCE.txt ASSET_MANIFEST.json tools tests characters
           test -s /tmp/zhiyin-real3d-project.zip
           cp /tmp/zhiyin-real3d-project.zip ./zhiyin-real3d-project.zip
       - name: Export real 3D scene as arm64 Android test APK
@@ -188,6 +205,8 @@ jobs:
             zhiyin-real3d/godot-import.log
             zhiyin-real3d/godot-scene-qa.log
             zhiyin-real3d/godot-navigation-qa.log
+            zhiyin-real3d/vrm-import-qa.log
+            zhiyin-real3d/VRM_PLUGIN_PROVENANCE.txt
             zhiyin-real3d/godot-android-export.log
             zhiyin-real3d/quaternius-motion-inspect.log
             zhiyin-real3d/room-render.log
