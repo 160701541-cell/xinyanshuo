@@ -1,0 +1,55 @@
+{
+  "schema": 1,
+  "scope": "WORLDBOX_THIRD_PARTY_MOD_DERIVATIVE_TEST",
+  "release": "v0.30-gameplay-integration-candidate",
+  "privacy": "user-owned private signed APK; never public GitHub",
+  "filename": "WorldBox_WanjieXianxia_v0.30_Gameplay_PRIVATE_DEVICE_PENDING.apk",
+  "bytes": 187840198,
+  "sha256": "1c6dcf0e8f55520497aa516f2c971c37588a3890a3352569c890ebdd1f517fcf",
+  "cert_sha256": "20087dc8c210c7c6a35a4492500324f33f36f7c5eb3a77dc62040c21281c400e",
+  "apk_source": "privately stored signed v0.28 test APK",
+  "module_source": "CI 39465488094 legacy Mono MOD candidate",
+  "module_source_files": 21,
+  "changes": [
+    "replace 18 previous Mono source assets with 21 current v30 source assets",
+    "preserve 714 foreign/v18 deployment records",
+    "new diagnostics classes5.dex with DiagnosticReport",
+    "updated deployment build token to avoid stale deploy",
+    "private test signed v1/v2/v3"
+  ],
+  "gameplay_modules": {
+    "native_bridge_v18": [
+      "灵根检测",
+      "传授功法",
+      "人物吐纳",
+      "炼气1-13层突破",
+      "灵草和灵石采集再生",
+      "聚气丹炼制与服用",
+      "规则驱动NPC修炼机缘"
+    ],
+    "native_bridge_recompiled_to_v30": false,
+    "mono_observer_source_v30": [
+      "观察地图",
+      "角色选取跟随",
+      "离线修炼记录",
+      "中文人物/王朝/城池改名候选",
+      "互斥面板UI候选"
+    ],
+    "prior_runtime_issue": "ObserverV07 FAILED on prior Android phone; new device verification pending"
+  },
+  "build_validation": {
+    "apk_zip_crc": true,
+    "manifest_records": 735,
+    "signatures_v1_v2_v3": true,
+    "game_managed_zip_unmodified": true
+  },
+  "current_blockers": [
+    "no verified Android16 run of v0.30 APK",
+    "native V30 bridge C# compilation failed with actual game's patched Assembly-CSharp.dll invalid public key and reference assembly issues",
+    "signer differs from v0.28; backup required",
+    "multi-city/palace/building tiers/floating islands/underworld/offline NPC AI not implemented"
+  ],
+  "all_gameplay_working": false,
+  "device_pending": true,
+  "canglan_main_unmodified": true
+}
