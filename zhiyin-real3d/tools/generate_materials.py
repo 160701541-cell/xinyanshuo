@@ -34,12 +34,12 @@ def build(kind):
                     .02*math.cos(2*math.pi*y*3)))
                 h=.57+n*.11+stripe*.12
                 shade=h*17 + stripe*7
-                col=(135+shade,87+shade*.70,60+shade*.43)
+                col=(116+shade,73+shade*.70,49+shade*.43)
                 r=.64+stripe*.055+n*.026
             elif kind=="wall":
                 h=.50+.07*n+.05*math.sin(2*math.pi*x*9)*math.sin(2*math.pi*y*9)
                 shade=n*9
-                col=(222+shade,211+shade,198+shade)
+                col=(207+shade,191+shade,178+shade)
                 r=.88+.06*n
             else:
                 joints=1 if min(abs((x*8)%1),abs((y*8)%1))<.016 else 0
