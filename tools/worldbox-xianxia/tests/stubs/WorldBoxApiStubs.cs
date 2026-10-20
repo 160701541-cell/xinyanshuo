@@ -64,7 +64,7 @@ namespace UnityEngine {
     }
     public static class Screen { public static int width=1280,height=720; }
     public static class Time { public static float unscaledTime; public static float unscaledDeltaTime = .0167f; public static float smoothDeltaTime = .0167f; }
-    public static class Application { public static string version="0.51.4"; }
+    public static class Application { public static string version="0.51.4"; public static string persistentDataPath="/tmp/worldbox-v21"; }
     public static class Debug {
         public static void Log(object msg){}
         public static void LogWarning(object msg){}
