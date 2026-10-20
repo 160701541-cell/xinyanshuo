@@ -18,6 +18,7 @@ namespace XianxiaWorldBox
         float nextSample;
         Texture2D diamond;
         string summary = "尚未读取游戏地图", actorName = "未选中";
+        string mapStatus = "实验地图默认关闭。大世界选项仅影响新建世界，需实机验证。";
 
         protected override void OnModLoad()
         {
@@ -81,8 +82,10 @@ namespace XianxiaWorldBox
         }
         void Update()
         {
-            if(!open||!versionOK||Time.unscaledTime<nextSample)return;
-            nextSample=Time.unscaledTime+.8f; // never do full-map queries every frame
+            if(!open||!versionOK)return;
+            ObserverFrameGuardV12.Tick();
+            if(ObserverFrameGuardV12.Paused||Time.unscaledTime<nextSample)return;
+            nextSample=Time.unscaledTime+ObserverFrameGuardV12.SampleInterval();
             try{Sample();}
             catch(Exception e){
                 summary="地图采样失败 "+e.GetType().Name;
@@ -147,28 +150,36 @@ namespace XianxiaWorldBox
             Rect panel=new Rect((Screen.width-pw)/2,(Screen.height-ph)/2,pw,ph);
             GUI.Box(panel,"第三方 WorldBox MOD 实验 · 微观伪3D（只读）");
             GUI.Label(new Rect(panel.x+12,panel.y+26*ui,pw-24,54*ui),
-                "人物: "+actorName+"  "+summary+"\n角度:"+angle*90+"°   最近邻渲染（不改变原版画质）");
+                "人物: "+actorName+"  "+summary+"\n角度:"+angle*90+"°   观察层: "+Mathf.RoundToInt(ObserverFrameGuardV12.SmoothedFps)+" FPS");
             if(GUI.Button(new Rect(panel.x+12,panel.y+73*ui,143*ui,30*ui),
                 GiantMapOptionsV11.Armed ? "再次确认大地图" : "实验大地图 10-20"))
-                summary=GiantMapOptionsV11.OnTap();
+                mapStatus=GiantMapOptionsV11.OnTap();
+            GUI.Label(new Rect(panel.x+158*ui,panel.y+76*ui,pw-170*ui,29*ui),mapStatus);
             Rect map=new Rect(panel.x+10,panel.y+109*ui,pw-20,Mathf.Max(110,ph-208*ui));
             GUI.Box(map,"");
-            float tw=Mathf.Min((map.width-16)/(2f*radius+1),(map.height-20)/(radius+1));
+            if (ObserverFrameGuardV12.Paused)
+            {
+                GUI.Label(new Rect(map.x+12,map.y+20,map.width-24,120*ui),
+                    ObserverFrameGuardV12.Reason+"\n世界仍在模拟；只暂停万界观察绘制。");
+                return;
+            }
+            int useRadius = ObserverFrameGuardV12.ClampRadius(radius);
+            float tw=Mathf.Min((map.width-16)/(2f*useRadius+1),(map.height-20)/(useRadius+1));
             tw=Mathf.Max(7f,tw);
             float hw=tw*.5f,hh=tw*.25f;
             float ox=map.x+map.width*.5f-hw,oy=map.y+11;
             Color previous=GUI.color;
-            for(int sum=0;sum<=4*radius;sum++)
-                for(int sy=0;sy<=2*radius;sy++){
+            for(int sum=0;sum<=4*useRadius;sum++)
+                for(int sy=0;sy<=2*useRadius;sy++){
                     int sx=sum-sy;
-                    if(sx<0||sx>2*radius)continue;
-                    Vector2 w=Unrot(sx-radius,sy-radius);
+                    if(sx<0||sx>2*useRadius)continue;
+                    Vector2 w=Unrot(sx-useRadius,sy-useRadius);
                     GUI.color=colors[(int)w.x+MaxRadius,(int)w.y+MaxRadius];
                     GUI.DrawTexture(new Rect(ox+(sx-sy)*hw,oy+(sx+sy)*hh,tw,tw*.5f),diamond);
                 }
             for(int i=0;i<peopleCount;i++){
                 Vector2 p=Rot(peopleX[i],peopleY[i]);
-                float sx=p.x+radius,sy=p.y+radius;
+                float sx=p.x+useRadius,sy=p.y+useRadius;
                 GUI.color=new Color(1,.85f,.28f);
                 GUI.DrawTexture(new Rect(ox+(sx-sy)*hw+hw-3,oy+(sx+sy)*hh-4,7,7),Texture2D.whiteTexture);
             }
@@ -188,9 +199,7 @@ namespace XianxiaWorldBox
                 angle=(angle+1)%4;nextSample=0;
             }
             GUI.Label(new Rect(panel.x+12,by+39*ui,pw-24,40*ui),
-                "试验尺寸默认关闭；请先备份存档。FPS "+
-                Mathf.RoundToInt(1f/Mathf.Max(.0001f,Time.smoothDeltaTime))+
-                "  | Android实机仍待验收。");
+                "地图扩容只影响新建世界。低FPS自动降采样、暂停绘制。Android实机仍待验收。");
         }
         void OnDestroy(){if(diamond!=null)Destroy(diamond);target=null;}
     }
