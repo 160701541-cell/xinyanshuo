@@ -1,3 +1,16 @@
+## 2026-10-21 · P0美术路线纠偏：取消低质拼装角色作为交付口径
+
+**用户要求**：继续将蓝色DeepSeek鲸鱼女仆与橙发Claude真实还原为能在游戏里生活、唱歌、演戏的独立AI角色。用户不接受以前采用的Quaternius通用人脸、蓝色球体眼睛、粗糙条带头发、简单球/片服装拼接——v0.9.4的实际Godot近景图已证实该方案不可用。
+
+本轮真实提交：
+- `zhiyin-real3d/tools/install_vrm_pipeline.py`：自动获取并校验V-Sekai `godot-vrm`固定提交`e15199f980064028bfa4fbee5e70dddb82dd55c3`的MIT开源VRM导入器与完整MToon Shader，作为Godot 4.4的正确动漫人物渲染及面部/发束物理技术管线，不能再把GLB着蓝色当高精人物。
+- `project.godot`启用`addons/vrm`与`addons/Godot-MToon-Shader`。GitHub Actions新增真实Godot headless VRM模型导入及结构验收；同时在工程ZIP收录所需插件，不再只打包调用了插件却没有插件文件的项目。
+- `tools/fetch_cc0_anime_base.py`：从`GY19A/jev-stage`固定提交`14168affb0c187441c0fe5fe3e67fbaaa4b6d2cb`拿到pixiv早期VRoid CC0动漫基型，仅用于导入器/眼睛/脸部表情技术验证；需检查文件内嵌CC0元数据、人体骨骼、材质与面部资源。**此素材不能冒充DeepSeek蓝色角色，也不随APK发布**。旧版VRoid beta CC0与当前VRoid Studio官方内置资产的许可证不同，不可混淆。
+- `scenes/vrm_expression_driver.gd`：真正使用VRM MeshInstance3D BlendShape控制表情/眨眼/五元音口型，杜绝额外球体替代眼睛；`scenes/production_vrm_avatar.gd`：生产模型必须是真VRM并拥有完整骨骼/纹理/脸部变形才能加载，同时将DeepSeek和Claude分别绑定独立NPC ID。
+- `tools/verify_avatar_asset.py`：严格检查未来完成的`DeepSeek_Blue.vrm`是否真正包含蓝发、鲸鳍、鲸尾、女仆裙、围裙、头饰、眼部材质和有真实绑定的表情；重命名普通GLB、贴一个蓝色贴图都无法通过检查。**结构验收仍不能替代人工对照用户图进行正侧背和动作验收。**
+- 技术构建验证正在执行。**本轮没有宣称专属DeepSeek/Claude模型已经做好；没有发布新的《知音》正式APK。** 当前红项是实际建模/UV/复杂衣裙/发束表情、真实AI生活集成和实机验收。
+- 验收纪律：只在真实可编辑专业VRM人物参考还原度过关、绑定/口型和动画能在Godot运行、手机验收后发布新版完整APP；禁止再反复交外观不达标的实验包给用户。
+
 ## 2026-10-21 · 蓝色DeepSeek角色真3D原型、视觉验收失败与正确资产管线
 
 **已真实完成**：GitHub独立分支`zhiyin/native-android-prototype`提交`zhiyin-real3d/scenes/deepseek_blue_avatar.gd`，使用65骨骼成品女性角色为动画底座，追加三维网格蓝色分层头发、头饰、左右鲸鳍、鲸尾、蓝白裙摆围裙、蓝眼组件。所有部件在Godot 4.4引擎内实例化为MeshInstance3D，随Head/Pelvis/Spine骨骼挂点运动，非二维贴图假装模型。主场景加入角色近景镜头，角色标识独立为`npc_deepseek_blue`。
