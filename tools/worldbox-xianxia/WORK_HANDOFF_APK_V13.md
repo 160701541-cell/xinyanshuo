@@ -151,3 +151,13 @@ The public Worldbox-OWL index has 0.51.x packages **简单汉化模组修正 v1.
 - 功能对应 GitHub Actions **39448677637 已三项全绿**（离线源码QA、公开Android NML/WorldBox SDK编译/候选MOD包、用户本机用的通用APK检查器编译）。不能宣称手机已加载或已有APK交付。
 - 2026-10-20 再次实际只读检查用户本人原APK（SHA256 c39817…869c4bdc）：`globalgamemanagers`所含原生`cz`与`en`分组分别70/70，原APK嵌套`Managed.zip`未列出NeoModLoader程序集。用户提供的`模组装载器NeoModLoader_1.2.1.1`包内说明为桌面`worldbox_Data/StreamingAssets/mods/`目录，只有`NeoModLoader.dll`，不含移动版`NeoModLoader_mobile.dll`。**不要把它直接作为安卓引导链证据。**
 - 在Work私有整合前，先拿真实Android16设备安装/启动日志确定 Mono旧版NML 或 LemonLoader+移动NML；不能用该桌面说明猜安装路径。先在原版设置实机试原生简中并截图；确认 NML 模组的实际加载后在汉化控制台触发「核验简中」并检查真实code/text样本，再逐页对原版/其他MOD汉化、字体、命名、保存进行验收。真实已签名用户私有APK依然未制作；不碰苍岚main或商用付费验证逻辑。
+
+
+## 2026-10-20 v0.27 Work立即执行交接：最小化汉化误报与正确安卓引导
+- 已通过专用Actions `39451407384`（功能最近三轮源码QA及Android公开SDK编译均三组绿色）；正式用户设备仍`DEVICE_PENDING`。
+- **重要P0修复**：`NativeLocaleBridgeV23.RegisterActualKeys()`不再允许在英文环境基于英语字典推测简中键、覆盖官方`cz`。须先点「一键选择简中」，进入游戏确认原生语言`cz`后方可点「补齐简中漏译」。已有汉字译文/别的MOD译文禁止重复登记。
+- 汉化控制台新增当前活跃UI.Text/TMP_Text中文/纯英文/其他粗计数；请在Android真机先点「核验简中」记录语言码，再逐页人工截屏核查原版世界创建、天道神力、王国、城市、设置、MOD页面。计数不含IMGUI/世界字幕和关着的界面，不是100%汉化率。
+- 增加 `private_loader_audit_v27.py` 公有原创只读诊断器（无需外部依赖）。本轮在用户本人上传APK做过私有静态检查：Mono及IL2CPP共存，但APK和托管归档、DEX未有Neo/Melon/Lemon/FusionCore名称；所给NeoModLoader_1.2.1.1包仅带普通NeoModLoader.dll与桌面目录安装指南，无NeoModLoader_mobile.dll。静态阴性不等于手机不可能外部加载，亦**不允许假称用户APK已注入了新版NML**。
+- 最新本机私有审计JSON `WorldBox_v027_安卓加载器静态审计_私有.json`，SHA256见开发日志。不公开用户商业APK、不涉及任何付费解锁内容。
+- **Work私有集成阻塞：未有安卓16真实NML安装/加载证明、ADB日志与启动截图**。只有NML对应引导链验证后，才能选择`Mods/.../Code/*.cs`传统Mono路线或`NMLMods/.../*.dll`移动IL2CPP路线。若需要安卓安装器，请使用兼容0.51.4的可信移动端Loader及正确的授权原版；先备份原世界存档，不进行不明来源破解版APK重签替换，不把桌面 DLL 当安卓安装器。
+- 本分支v0.27打包仍为MOD候选ZIP，不是已安装可玩的APK。下一阶段先解决这一P0再扩玩法；不得修改《苍岚》main。

@@ -187,3 +187,32 @@ Work仍负责私有APK整合、签名、安卓16真机验收。不得上传商�
 - 本轮安全地从用户文件库实际取回原APK和两份v0.25 MOD ZIP，仅做本地字节哈希、ZIP CRC、资源分组和文件清单检查；原APK SHA256 `c39817efa21e539fe61f318dc1ad4050b424c6120ab8ed384d94148f869c4bdc`，原生`cz`和`en`资源分组均为70。无NML程序集出现在APK内`assets/Mono/Managed.zip`的顶层清单，**但无法凭此排除外部运行时注入**。候选ZIP CRC均无坏项且自身仍非APK。
 - 同时实查用户上传的`模组装载器NeoModLoader_1.2.1.1(适用于0.51.+)(1).zip`：仅有`NeoModLoader.dll`和安装说明，说明明确教用户放至`worldbox_Data/StreamingAssets/mods/`（桌面端路径）；不包含`NeoModLoader_mobile.dll`。**不能把这个独立包冒充已经验证适用于用户Android16 APK的移动NML。**
 - 本机只读QA产物`WorldBox_v026_用户APK与汉化加载器_私有只读审计.json`保存在当前ChatGPT工作输出中，**未加入GitHub、未上传游戏二进制、未制作/重签/安装APK**。当前P0唯一真实红灯仍是设备加载链及APK私有集成验收。之后才能进行真实汉化覆盖统计；玩法路线不变。
+
+
+---
+
+## 2026-10-20 v0.27 原版简中不覆盖修复 + 真实画面汉化统计 + 安卓静态Loader调查
+
+**实际已提交功能代码，且真实GitHub Actions校验成功。** 当前研发分支仍为 `worldbox/external-mod-lab-v22-zh-localization`，全部修改只在 `tools/worldbox-xianxia/` 内。原《苍岚·人生世界》main/官网/Android APK176/PCK零修改。
+
+### 优先修复P0：杜绝“切换中文后反而被词典覆盖”
+- `localization/NativeLocaleBridgeV23.cs`：`RegisterActualKeys()`现在仅在原版实际语言码 **cz** 时允许自动登记已经确认仍显示英文的当前语言键；如果处于en或无法确认，**拒绝从英文表猜测并覆盖尚未加载的原生中文**。在cz时还跳过现有汉字译文，并继续保留其他MOD的既有NML翻译。
+- `OriginalMenuGuideV22.cs`按钮从「登记原版中文」改为更准确的「补齐简中漏译」；`nml-locales/cz.json`、`en.json`两个真实打包语言文件同步。
+- `tests/NativeLocaleScenarioV23.cs`新增自动化验证：当前英文必须拒绝盲目登记、原版中文「王国」不可被我们的「王国列表」词典替换、实际简中下尚未翻译的第三方MOD标签才可补齐、其他作者翻译不覆盖。并保留v26修复的语言切换无效误报测试。
+
+### 运行时界面取证而不是虚报“完整汉化”
+- `localization/RuntimeChineseOverlayV22.cs`每轮5秒受限扫描后返回**目前激活且可被Unity UI.Text / TMP_Text读到的**中文、纯拉丁文字及其他文字数量；对已经翻译过的可见组件也计数，而不是只统计本轮新翻译的数量。
+- 汉化控制台明确提示抽样**不含IMGUI/自绘和完整原版语言资源**；不保存文本、不联网、不统计隐藏UI，也不把当前屏幕数字说成整个游戏汉化覆盖率。
+- `tests/RuntimeChineseScenarioV22.cs`加入C#回归：4条中文+1条未翻译人名的可见画面计数、隐藏组件不计、重扫描不漏计、关闭后不显示陈旧计数。不会把人物姓名强翻译。
+
+### 新增用户APK静态分析工具（仅公有源码、无商业文件）
+- `private_loader_audit_v27.py`新增只读审计：从用户自己的APK检查ARM64 Mono/IL2CPP共存、内嵌Managed.zip是否有Neo/Melon/Lemon/Fusion引导程序集、DEX是否有加载器名称、另行提供的NeoModLoader ZIP究竟含PC DLL还是移动DLL及说明是否PC路径。仅返回布尔值、加载器名称与SHA256；不导出游戏文本/程序集。
+- `test_v27_private_loader_audit.py`用**完全合成APK/ZIP样本**验证：Mono+IL2CPP存在不代表引导成功、就算DEX出现某加载器字符串也不代表兼容、无效文件必须拒绝，绝不将用户商业APK送GitHub测试。
+
+### 真实用户文件本机只读分析结果
+- APK SHA256：`c39817efa21e539fe61f318dc1ad4050b424c6120ab8ed384d94148f869c4bdc`，包含ARM64 Mono、IL2CPP与`assets/Mono/Managed.zip`内的`Assembly-CSharp.dll`。
+- APK内部Mono程序集文件名**未发现**NML/MelonLoader/FusionCore等装载器程序集；classes.dex / classes2.dex / classes3.dex / classes4.dex中这几种加载器的ASCII名称**未命中**；APK其他归档路径也没有这些加载器文件名。此阴性结果**不等于证明玩家手机运行时无法动态注入**，还必须以真机证据决定。
+- 用户所给`模组装载器NeoModLoader_1.2.1.1(适用于0.51.+)(1).zip` SHA256 `a17bb4beccf7f186ef19aa30e2f6308499c08d00c97d478400a6cc434d002721`，内部仅含`NeoModLoader.dll`与桌面目录安装说明，未含`NeoModLoader_mobile.dll`。不可据此声称已经给用户Android 0.51.4安装好了移动NML。
+- 报告在当前用户私有输出`WorldBox_v027_安卓加载器静态审计_私有.json`，**未公开商用游戏二进制、密钥或其他MOD文件**。
+- GitHub Actions **`39451044479`**（保护原版简中）、**`39451248727`**（当前可见汉化统计）、**`39451407384`**（Android静态loader审计）全部三项作业绿灯；这仅是离线单测、真实公开SDK编译与MOD ZIP候选打包，**不是安卓16设备安装验收或私有整合APK**。
+- **P0红灯与后续顺序不变**：由Work或可访问用户设备的私有工作环境确认真实Android启动链→原版内置`cz`逐页截图→其他MOD许可/冲突汉化→私有APK构建签名及真正手机安装/存档/性能验收。完成后才按约定依次实现天道放置、多城王朝、皇城、建筑等级、浮空仙岛、地府。
