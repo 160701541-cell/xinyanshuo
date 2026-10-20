@@ -47,11 +47,19 @@ class Program
         Assert(name.text=="Northridge","unknown dynamic name must not be mangled");
         Assert(hidden.text=="Settings","inactive labels must remain");
         Assert(RuntimeChineseOverlayV22.LiveTranslatedCount==4,"tracked count");
+        Assert(RuntimeChineseOverlayV22.VisibleChinese==4,"four visible Chinese labels");
+        Assert(RuntimeChineseOverlayV22.VisibleLatin==1,"unknown actor name remains Latin text");
+        Assert(RuntimeChineseOverlayV22.VisibleOther==0,"hidden label must not appear in counters");
+        Assert(RuntimeChineseOverlayV22.VisibleAudit.Contains("不等于全量汉化率"),
+            "the limited screen scan must not pretend to prove all MOD localization");
         war.text="World";
         UnityEngine.Time.unscaledTime=20f;
         RuntimeChineseOverlayV22.Tick();
         Assert(war.text=="世界","react to game-created dynamic labels");
+        Assert(RuntimeChineseOverlayV22.VisibleChinese==4,"already translated entries counted on repeat scan");
+        Assert(RuntimeChineseOverlayV22.VisibleLatin==1,"untranslated name remains visible");
         RuntimeChineseOverlayV22.SetEnabled(false);
+        Assert(RuntimeChineseOverlayV22.VisibleChinese==0,"disabled overlay cannot report stale visible audit");
         Assert(kingdoms.text=="Kingdoms"&&war.text=="World"&&mod.text=="Mod Manager"&&numeric.text=="Population: 1,200",
           "disable must restore only MOD-owned overlays without reversing game updates");
         string folder=Path.Combine(UnityEngine.Application.persistentDataPath,"XianxiaModStaging");

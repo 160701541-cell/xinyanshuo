@@ -30,11 +30,37 @@ namespace XianxiaWorldBox
         static float nextScan;
         static int scannedLast;
         static int translatedLast;
+        static int visibleChinese,visibleLatin,visibleOther;
         static int failures;
         public static bool Enabled = true;
         public static int LiveTranslatedCount { get {return Patched.Count;} }
         public static int ScannedLast { get {return scannedLast;} }
         public static int TranslatedLast { get {return translatedLast;} }
+        // Snapshot of currently active UI.Text/TMP labels only; no IMGUI,
+        // sprite text, game save labels or per-page coverage claim.
+        public static int VisibleChinese {get {return visibleChinese;}}
+        public static int VisibleLatin {get {return visibleLatin;}}
+        public static int VisibleOther {get {return visibleOther;}}
+        public static string VisibleAudit
+        {
+            get {return "当前可见文本抽样：中文 "+visibleChinese+
+                "，纯拉丁文字 "+visibleLatin+"，其他 "+visibleOther+
+                "；不含IMGUI/自绘，不等于全量汉化率。";}
+        }
+        static void CountVisible(string value)
+        {
+            bool chinese=false,latin=false;
+            if(string.IsNullOrEmpty(value))return;
+            for(int i=0;i<value.Length&&i<180;i++)
+            {
+                char c=value[i];
+                if(c>=0x3400&&c<=0x9fff)chinese=true;
+                else if(c>='a'&&c<='z'||c>='A'&&c<='Z')latin=true;
+            }
+            if(chinese)visibleChinese++;
+            else if(latin)visibleLatin++;
+            else visibleOther++;
+        }
         public static string Status
         {
             get {return "中文显示："+(Enabled?"开":"关")+
@@ -54,6 +80,7 @@ namespace XianxiaWorldBox
             if(!Enabled||Time.unscaledTime<nextScan)return;
             nextScan=Time.unscaledTime+5f;
             scannedLast=0;translatedLast=0;
+            visibleChinese=0;visibleLatin=0;visibleOther=0;
             try
             {
                 if(resolved==null)
@@ -146,16 +173,22 @@ namespace XianxiaWorldBox
                         if(!object.ReferenceEquals(known.Component,component)||
                             current!=known.Translation)
                             Patched.Remove(key);
-                        else continue;
+                        else
+                        {
+                            CountVisible(current);
+                            continue;
+                        }
                     }
-                    if(Patched.Count>=MaxTracked)continue;
+                    if(Patched.Count>=MaxTracked){CountVisible(current);continue;}
                     string chinese=ChineseLocalizationV22.Translate(current);
                     if(chinese==current||string.IsNullOrEmpty(chinese))
                     {
+                        CountVisible(current);
                         UntranslatedMenuAuditV23.Observe(current);
                         continue;
                     }
                     text.SetValue(component,chinese,null);
+                    CountVisible(chinese);
                     Patched[key]=new Entry {
                         Component=component,TextProperty=text,
                         Original=current,Translation=chinese
@@ -180,6 +213,7 @@ namespace XianxiaWorldBox
                 catch { }
             }
             Patched.Clear();scannedLast=0;translatedLast=0;
+            visibleChinese=0;visibleLatin=0;visibleOther=0;
         }
         public static void Shutdown()
         {

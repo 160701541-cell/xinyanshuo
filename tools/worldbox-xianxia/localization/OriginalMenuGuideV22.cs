@@ -90,7 +90,7 @@ namespace XianxiaWorldBox
             GUI.Label(new Rect(r.x+margin,r.y+204f*scale,w-2f*margin,42f*scale),
                 NativeLocaleBridgeV23.Status+" | 总词条："+ChineseLocalizationV22.DictionarySize,label);
             GUI.Label(new Rect(r.x+margin,r.y+249f*scale,w-2f*margin,44f*scale),
-                UntranslatedMenuAuditV23.Status+" [记录 "+UntranslatedMenuAuditV23.Count+" 项]",label);
+                RuntimeChineseOverlayV22.VisibleAudit+" [漏译记录 "+UntranslatedMenuAuditV23.Count+" 项]",label);
 
             const int perPage=3;
             int pages=(Entries.Length+perPage-1)/perPage;
