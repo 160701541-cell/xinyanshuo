@@ -11,6 +11,7 @@ namespace NeoModLoader.api {
 }
 #endif
 namespace UnityEngine {
+    public class Object {}
     public enum TextureFormat { RGBA32 }
     public enum FilterMode { Point }
     public enum TextureWrapMode { Clamp }
@@ -31,7 +32,7 @@ namespace UnityEngine {
     }
     public class Transform { public Vector3 position; }
     public class Camera { public Transform transform=new Transform(); }
-    public class Texture2D {
+    public class Texture2D : Object {
         public FilterMode filterMode;
         public TextureWrapMode wrapMode;
         public Texture2D(int x,int y,TextureFormat f,bool mipmap) {}
