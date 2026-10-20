@@ -174,3 +174,9 @@ The public Worldbox-OWL index has 0.51.x packages **简单汉化模组修正 v1.
 
 ## 2026-10-21 Work仓库交接（用户要求先上传）
 已更新 `tools/worldbox-xianxia/releases/v0.28/PUBLIC_RELEASE_MANIFEST.json` 和 `tools/worldbox-xianxia/releases/v0.28/README.md` 作为公开GitHub源码发布入口；其中含私有v0.28签名APK的字节数、SHA256、包名、未实机验收状态。原始商业WorldBox APK、第三方二进制和测试签名密钥不得进入公开仓库。专属Actions产出自己的MOD与源码，私人完整APK仍从用户原ChatGPT附件领取。后续继续Android16真实安装、NML加载、简中菜单、存档与性能验收；严禁碰苍岚main。
+
+
+## 2026-10-21 Work跨环境交接：不是停留在临时终端
+- 用户指出“本地终端你不上传Work怎么改”，正确纠偏：已将 **v0.28真实签名APK**（189287005字节）、**v18真实基线APK**（187773264字节）、两份v0.27候选MOD、私有集成静态报告以及本地实际打包工具+单测上传至用户**ChatGPT持久化文件库**专用目录 `/WorldBox-万界仙侠/Work交接/`，并通过`files.list`回读验证成功；随后还上传`WorldBox_Work_交接_2026-10-21.md`完整交接。
+- 本独立分支新增`WORK_LIBRARY_HANDOFF_20261021.md`明确交接文件路径、SHA256、如何让Work访问；不能把原聊天`/mnt/data`与Work的运行容器误认相同。
+- 所有**商业APK仅在私有文件库**，未进入GitHub公开仓库；GitHub负责真实源码、配置、测试与日志。Work若不能直接打开文件库，应在Work会话附加真实文件再操作，不能假装已经获得原始字节。没有Android16实机验收不标已可玩。不得触碰苍岚main。
