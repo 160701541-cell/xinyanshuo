@@ -16,6 +16,9 @@ namespace XianxiaWorldBox
         public const string FiftyId="xianxia_extreme_50";
         public const int FiftyChunks=50;
         public const int FiftyTiles=3200;
+        public const string HundredId="xianxia_extreme_100";
+        public const int HundredChunks=100;
+        public const int HundredTiles=6400;
         static readonly BindingFlags F=BindingFlags.Public|BindingFlags.NonPublic|
             BindingFlags.Static|BindingFlags.Instance;
         static DateTime retryAt=DateTime.MinValue;
@@ -62,9 +65,12 @@ namespace XianxiaWorldBox
             string second=RegisterOne(game,FiftyId,FiftyChunks);
             if(!second.StartsWith("WORLD_SIZE_PRESET_READY",StringComparison.Ordinal))
                 return Status=second;
+            string third=RegisterOne(game,HundredId,HundredChunks);
+            if(!third.StartsWith("WORLD_SIZE_PRESET_READY",StringComparison.Ordinal))
+                return Status=third;
             Ready=true;
-            return Status="WORLD_SIZE_PRESET_READY 32x32 and 50x50 chunks; "+
-                "2048x2048 and 3200x3200 grid; real generation untested";
+            return Status="WORLD_SIZE_PRESET_READY 32x32, 50x50, 100x100 chunks; "+
+                "2048, 3200, 6400 grid; generation, RAM and saves NOT VERIFIED";
         }
         static string RegisterOne(Assembly game,string presetId,int chunks)
         {
