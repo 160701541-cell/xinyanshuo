@@ -26,6 +26,8 @@ jobs:
         with: { dotnet-version: '8.0.x' }
       - name: 'Compile observer syntax against non-shipping contract stubs'
         run: dotnet build tools/worldbox-xianxia/tests/WorldBoxObserver.SourceSyntax.csproj -c Release --verbosity quiet
+      - name: 'Native WorldBox UI reflection scenario - mocks, NOT phone visual certification'
+        run: dotnet run --project tools/worldbox-xianxia/tests/NativeUiScenarioV32.csproj -c Release
       - name: 'Execute Chinese entity names and mutually exclusive panels'
         run: dotnet run --project tools/worldbox-xianxia/tests/WorldNamingScenarioV30.csproj -c Release
       - name: 'Verify giant preset enters cached new-world choices without changing live world'
@@ -109,6 +111,7 @@ jobs:
           python tools/worldbox-xianxia/package_android_mono_source.py \
             --source tools/worldbox-xianxia/nml-observer-v07/Code/XianxiaObserverV07.cs \
             --extra-source tools/worldbox-xianxia/ui/SharedPanelsV30.cs \
+            --extra-source tools/worldbox-xianxia/ui/NativeWorldBoxUiV32.cs \
             --extra-source tools/worldbox-xianxia/ui/PixelFrameV30.cs \
             --extra-source tools/worldbox-xianxia/localization/ChineseWorldNamesV30.cs \
             --extra-source tools/worldbox-xianxia/huge-map-mod/GiantMapOptionsV11.cs \
@@ -199,6 +202,7 @@ jobs:
           cp tools/worldbox-xianxia/nml-observer-v07/Code/XianxiaObserverV07.cs /tmp/worldbox-v22-artifacts/
           cp tools/worldbox-xianxia/huge-map-mod/GiantMapOptionsV11.cs /tmp/worldbox-v22-artifacts/
           cp tools/worldbox-xianxia/huge-map-mod/ObserverFrameGuardV12.cs /tmp/worldbox-v22-artifacts/
+          cp tools/worldbox-xianxia/ui/NativeWorldBoxUiV32.cs /tmp/worldbox-v22-artifacts/
           cp tools/worldbox-xianxia/ui/ModTextAccessibilityV13.cs /tmp/worldbox-v22-artifacts/
           cp tools/worldbox-xianxia/gameplay/CultivationV18.cs /tmp/worldbox-v22-artifacts/
           cp tools/worldbox-xianxia/localization/ChineseLocalizationV22.cs /tmp/worldbox-v22-artifacts/

@@ -24,6 +24,7 @@ namespace XianxiaWorldBox
         protected override void OnModLoad()
         {
             ChineseWorldNamesV30.Report=message=>Debug.LogWarning(message);
+            NativeWorldBoxUiV32.Report=message=>Debug.LogWarning(message);
             Debug.Log("[XIANXIA-V07] INIT_BEGIN version="+Application.version);
             try {
             versionOK = !string.IsNullOrEmpty(Application.version) &&
@@ -163,6 +164,7 @@ namespace XianxiaWorldBox
         void Update()
         {
             if(!versionOK)return;
+            NativeWorldBoxUiV32.Tick(Time.unscaledTime);
             ChineseWorldNamesV30.Tick(World.world,Time.unscaledTime);
             RepairOwnTraitGroups();
             if((!GiantMapOptionsV11.ExtremeChoiceReady||!GiantMapOptionsV11.ExtremeLabelReady)&&Time.unscaledTime>=nextMapChoiceCheck){
@@ -235,6 +237,7 @@ namespace XianxiaWorldBox
         }
         void OnGUI()
         {
+            if(NativeWorldBoxUiV32.Ready)return;
             if(!versionOK||diamond==null) {
                 GUI.Box(new Rect(12,80,Mathf.Min(Screen.width-24,650),90),
                     "万界观察未就绪：游戏版本 "+Application.version+
