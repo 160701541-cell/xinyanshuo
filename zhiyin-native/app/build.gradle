@@ -3,7 +3,7 @@ android {
     namespace 'com.xinyanshuo.zhiyin'
     compileSdk 35
     defaultConfig {
-        applicationId 'com.xinyanshuo.zhiyin'
+        applicationId 'com.xinyanshuo.zhiyin.companion'
         minSdk 26
         targetSdk 35
         versionCode 4
