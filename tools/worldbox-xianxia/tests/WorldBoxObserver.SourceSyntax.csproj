@@ -13,6 +13,8 @@
     <Compile Include="../gameplay/CultivationV18.cs" />
     <Compile Include="../ui/ChineseModManagerV21.cs" />
     <Compile Include="../localization/ChineseLocalizationV22.cs" />
+    <Compile Include="../localization/RuntimeChineseOverlayV22.cs" />
+    <Compile Include="../localization/OriginalMenuGuideV22.cs" />
     
     <Compile Include="stubs/WorldBoxApiStubs.cs" />
   </ItemGroup>
