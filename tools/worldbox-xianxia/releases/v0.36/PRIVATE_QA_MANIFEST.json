@@ -1,0 +1,35 @@
+{
+  "schema": 1,
+  "project": "WORLDBOX_THIRD_PARTY_MOD_DERIVATIVE_TEST",
+  "release": "v0.36",
+  "repo": "160701541-cell/xinyanshuo",
+  "branch": "worldbox/external-mod-lab-v22-zh-localization",
+  "source": "MapBox Kingdom.cities City.zones TileZone.tiles native material snapshots from actual private 0.51.4 reflection inspector",
+  "compiled_economy_kernel_from_actions": 39500142579,
+  "offline_native_api_integration_qa": 39500113925,
+  "private_signed_apk": {
+    "filename": "WorldBox_万界仙侠_v036_真实王国城池土地资源读取_待实机.apk",
+    "size_bytes": 188042919,
+    "sha256": "f59a272ef92fd5b7b97b1f9c4051d22676955a1ad80260affdb2e65f85d58636",
+    "package_name": "com.xinyanshuo.worldbox.lab31",
+    "signer_sha256": "20087dc8c210c7c6a35a4492500324f33f36f7c5eb3a77dc62040c21281c400e",
+    "signatures_verified": [
+      "v1",
+      "v2",
+      "v3"
+    ],
+    "zip_crc": true,
+    "worldbox_original_managed_assembly_unchanged": true,
+    "mono_bridge_unchanged": true,
+    "android_dex_unchanged": true,
+    "original_game_saves_untouched": true
+  },
+  "actual_device_qa": "DEVICE_PENDING",
+  "actual_cities_visible_in_game": "UNVERIFIED",
+  "actual_country_area_visible_in_game": "UNVERIFIED",
+  "npc_fiscal_production_complete": false,
+  "actual_palace_buildings_complete": false,
+  "private_work_folder": "/WorldBox-万界仙侠/Work交接/",
+  "public_commercial_binary": false,
+  "canglan_main_modified": false
+}
