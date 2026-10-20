@@ -18,7 +18,7 @@ concurrency:
 jobs:
   godot-real3d:
     runs-on: ubuntu-latest
-    timeout-minutes: 18
+    timeout-minutes: 35
     defaults:
       run:
         working-directory: zhiyin-real3d
@@ -95,6 +95,53 @@ jobs:
           zip -q -r /tmp/zhiyin-real3d-project.zip project.godot scenes assets ASSET_MANIFEST.json tools tests
           test -s /tmp/zhiyin-real3d-project.zip
           cp /tmp/zhiyin-real3d-project.zip ./zhiyin-real3d-project.zip
+      - name: Export real 3D scene as arm64 Android test APK
+        run: |
+          set -euo pipefail
+          curl --fail --location --retry 3 --connect-timeout 20 --max-time 300 \
+            "https://github.com/godotengine/godot-builds/releases/download/4.4.1-stable/Godot_v4.4.1-stable_export_templates.tpz" \
+            -o /tmp/zhiyin-templates.tpz
+          echo "Official Godot export templates sha256:"
+          sha256sum /tmp/zhiyin-templates.tpz
+          mkdir -p "$HOME/.local/share/godot/export_templates/4.4.1.stable"
+          unzip -j -o /tmp/zhiyin-templates.tpz 'templates/android_debug.apk' \
+            -d "$HOME/.local/share/godot/export_templates/4.4.1.stable/"
+          test -s "$HOME/.local/share/godot/export_templates/4.4.1.stable/android_debug.apk"
+          python3 -m pip install --quiet 'cryptography>=42,<47'
+          python3 ../zhiyin-native/ci/make_lab_signer.py
+          keytool -importkeystore -noprompt \
+            -srckeystore "$RUNNER_TEMP/zhiyin-test-signing.p12" \
+            -srcstoretype PKCS12 -srcstorepass PublicLabOnly2026 \
+            -srcalias zhiyin-lab -destalias zhiyin-lab \
+            -destkeystore "$RUNNER_TEMP/zhiyin-lab.jks" \
+            -deststoretype JKS -deststorepass android -destkeypass android
+          mkdir -p "$HOME/.config/godot" build
+          cat > "$HOME/.config/godot/editor_settings-4.tres" <<EOF
+          [gd_resource type="EditorSettings" format=3]
+
+          [resource]
+          export/android/android_sdk_path = "$ANDROID_HOME"
+          export/android/java_sdk_path = "$JAVA_HOME_17_X64"
+          EOF
+          export GODOT_ANDROID_KEYSTORE_DEBUG_PATH="$RUNNER_TEMP/zhiyin-lab.jks"
+          export GODOT_ANDROID_KEYSTORE_DEBUG_USER="zhiyin-lab"
+          export GODOT_ANDROID_KEYSTORE_DEBUG_PASSWORD="android"
+          timeout 120s /tmp/Godot_v4.4.1-stable_linux.x86_64 --headless \
+            --path . --export-debug Android build/zhiyin-real3d-room-lab.apk \
+            >godot-android-export.log 2>&1 || { cat godot-android-export.log; exit 1; }
+          test -s build/zhiyin-real3d-room-lab.apk
+          "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --print-certs \
+             build/zhiyin-real3d-room-lab.apk
+          "$ANDROID_HOME/build-tools/35.0.0/aapt" dump badging \
+             build/zhiyin-real3d-room-lab.apk | grep -E 'package: name=|launchable-activity'
+          sha256sum build/zhiyin-real3d-room-lab.apk
+          cat godot-android-export.log | tail -60
+      - name: Upload installable Godot real-3D Android LAB APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: zhiyin-real3d-android-lab-apk
+          path: zhiyin-real3d/build/zhiyin-real3d-room-lab.apk
+          if-no-files-found: error
       - name: Upload portable Godot project with actual GLB and PBR texture files
         uses: actions/upload-artifact@v4
         with:
@@ -110,6 +157,7 @@ jobs:
             zhiyin-real3d/ASSET_MANIFEST.json
             zhiyin-real3d/godot-import.log
             zhiyin-real3d/godot-scene-qa.log
+            zhiyin-real3d/godot-android-export.log
             zhiyin-real3d/room-render.log
             zhiyin-real3d/room-qa-render.png
           if-no-files-found: warn
