@@ -10,7 +10,7 @@ on:
 jobs:
   apk:
     runs-on: ubuntu-latest
-    timeout-minutes: 25
+    timeout-minutes: 45
     defaults:
       run:
         working-directory: zhiyin-native
@@ -33,6 +33,15 @@ jobs:
           python3 ci/make_lab_signer.py
           echo "ZHIYIN_SIGNING_FILE=$RUNNER_TEMP/zhiyin-test-signing.p12" >> "$GITHUB_ENV"
           echo "ZHIYIN_SIGNING_PASSWORD=PublicLabOnly2026" >> "$GITHUB_ENV"
+      - name: Install native toolchain
+        run: |
+          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --install "ndk;27.2.12479018" "cmake;3.22.1"
+      - name: Fetch pinned llama.cpp source
+        run: |
+          mkdir -p app/src/main/cpp/llama.cpp
+          git clone --filter=blob:none --no-checkout https://github.com/ggml-org/llama.cpp.git app/src/main/cpp/llama.cpp
+          git -C app/src/main/cpp/llama.cpp checkout 1ba568c5ad5c6c718984bd2bf4e7c71485b706f9
+          git -C app/src/main/cpp/llama.cpp rev-parse HEAD
       - name: Build native Android APK
         run: gradle --no-daemon --stacktrace assembleDebug
       - name: Verify test APK signing
@@ -43,7 +52,7 @@ jobs:
       - name: Upload installable APK
         uses: actions/upload-artifact@v4
         with:
-          name: zhiyin-native-android-v0.4
+          name: zhiyin-native-android-v0.5
           path: zhiyin-native/app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
           retention-days: 30
