@@ -321,7 +321,7 @@ public final class HomeWorldView extends View {
     float dist=(float)Math.hypot(destX-avatarX,destY-avatarY);
     boolean walking=dist>.07;
     if(walking){
-      float speed=Math.min(dist,elapsed*.60f);
+      float speed=Math.min(dist,elapsed*1.02f);
       lookLeft=(destX-avatarX)+(destY-avatarY)>0?1:-1;
       avatarX+=(destX-avatarX)/dist*speed;
       avatarY+=(destY-avatarY)/dist*speed;
@@ -364,7 +364,96 @@ public final class HomeWorldView extends View {
       label(c,"♪",25,-151,0xFF7C799A,19);
     }
     if("COOK".equals(life.action)&&life.phase>=2)label(c,"✦",25,-130,0xFFEAAC72,16);
+    if(!walking)drawActivityProp(c,now);
     c.restore();
+  }
+  /**
+   * No status-only activities: every active chore has an identifiable
+   * on-screen prop (bowl, book, kettle, plant care, broom, etc.).
+   */
+  private void drawActivityProp(Canvas c,long now){
+    float wave=(float)Math.sin(now/180.0);
+    switch(life.action){
+      case "READ":
+        polygon(c,0xFFFFF8E7,new Point(-27,-63),new Point(0,-72),new Point(2,-49),new Point(-25,-41));
+        polygon(c,0xFFF3E0C5,new Point(2,-49),new Point(0,-72),new Point(27,-62),new Point(26,-41));
+        line(c,0,-71,2,-49,1.2f,0xFF9D817F);
+        for(int i=0;i<3;i++){
+          line(c,-21,-59+i*5,-8,-64+i*5,1,0xFFB6A7A0);
+          line(c,10,-62+i*5,23,-56+i*5,1,0xFFB6A7A0);
+        }break;
+      case "WRITE":
+        round(c,-29,-65,27,-46,2,0xFFFFF4E6);
+        line(c,7,-63,13+wave*3,-92+wave*5,3,0xFF8D8395);
+        line(c,-16,-53,9,-53,1,0xFFA7A2A5);
+        break;
+      case "COOK":
+        if(life.phase<2){
+          round(c,-23,-68,25,-45,5,life.phase==0?0xFFE2C195:0xFFD6E5E5);
+          oval(c,-8,-59,10,5,0xFF75A377);oval(c,10,-56,9,5,0xFFB39C68);
+          if(life.phase==1)for(int i=0;i<3;i++)oval(c,-12+i*11,-71+Math.abs(wave)*8,2,4,0xFF7BC2DC);
+        }else if(life.phase==2){
+          round(c,-24,-64,30,-46,5,0xFFC39976);
+          oval(c,0,-53,15,6,0xFF80AB79);
+          line(c,7,-62,23+wave*3,-89+Math.abs(wave)*5,3,0xFF7E7379);
+        }else if(life.phase==3){
+          round(c,-26,-67,27,-45,9,0xFF515C69);
+          oval(c,0,-68,23,8,0xFF91A3AC);
+          for(int k=0;k<3;k++)line(c,-10+k*11,-77,-3+k*11,-95+Math.abs(wave)*4,1.2f,0xCCFFF2DB);
+        }else{
+          oval(c,0,-56,29,12,0xFFFFF3E0);
+          oval(c,0,-60,20,7,0xFFCCA68B);
+          oval(c,7,-63,9,3,0xFF76A976);
+        }break;
+      case "EAT":
+        oval(c,0,-53,25,11,0xFFF6E5D3);
+        oval(c,0,-55,19,7,0xFFCFAF8C);
+        line(c,14,-64,22+wave*3,-98+Math.abs(wave)*7,3,0xFFD7BA97);
+        break;
+      case "WASH":
+        round(c,-20,-65,22,-46,5,0xFFD0ECEE);
+        for(int i=0;i<4;i++)oval(c,-16+i*9,-81+(float)Math.sin(now/230.0+i)*4,2,5,0xFF78BFDB);
+        break;
+      case "WATER":
+        round(c,14,-72,36,-48,5,0xFF9CA8B1);
+        oval(c,27,-73,13,5,0xFFD1DDDC);
+        line(c,35,-70,51,-57,3,0xFF7C969A);
+        for(int i=0;i<4;i++)oval(c,48+i*7,-55+(i%2)*8+Math.abs(wave)*4,2,3,0xFF75C4D7);
+        break;
+      case "CLEAN":
+        line(c,27,-99,40+wave*4,-2,4,0xFF947E70);
+        polygon(c,0xFFD9BCA1,new Point(27+wave*4,-7),new Point(51+wave*4,-7),
+          new Point(53+wave*4,5),new Point(24+wave*4,3));
+        break;
+      case "DRESS":
+        polygon(c,life.phase%2==0?0xFFDAABB0:0xFFC7BEC9,
+          new Point(-26,-77),new Point(22,-79),new Point(24,-45),new Point(-24,-46));
+        line(c,-21,-74,20,-74,2,0xFFF4E2D8);
+        break;
+      case "STRETCH":
+        line(c,-27,-57,-44+wave*3,-98,6,0xFF86ADAD);
+        line(c,25,-57,43-wave*3,-98,6,0xFF86ADAD);
+        break;
+      case "PIANO":
+      case "PRACTICE":
+        label(c,"♪",37,-130+(float)Math.sin(now/340.0)*8,0xFFFFD8B6,20);
+        label(c,"♫",55,-151+(float)Math.sin(now/490.0)*6,0xFFB7C3DA,19);
+        break;
+      case "WORK":
+        if(life.phase==0||life.phase==4){
+          round(c,-23,-60,24,-37,4,0xFFD4B18F);
+          line(c,-13,-61,11,-61,3,0xFF8B7060);
+        }break;
+      case "SHOP":
+        round(c,-21,-63,28,-35,4,0xFFE3C59C);
+        line(c,-10,-64,16,-64,3,0xFF96816B);
+        label(c,"♧",2,-43,0xFF5E9574,15);
+        break;
+      case "CHAT":
+        round(c,-13,-174,24,-155,8,0xDDF3E7D5);
+        label(c,"♥",-5,-160,0xFFBC8491,12);
+        break;
+    }
   }
   @Override public boolean onTouchEvent(MotionEvent e){
     scale.onTouchEvent(e);
@@ -387,9 +476,13 @@ public final class HomeWorldView extends View {
           float px=(e.getX()-centerX-panX)/zoom,py=(e.getY()-centerY-panY)/zoom;
           String chosen="floor";double best=Double.MAX_VALUE;
           for(Thing o:objects){
-            Point q=iso(o.x+o.wide/2,o.y+o.deep/2,37);
-            double dist=Math.hypot((q.x-px), (q.y-py));
-            if(dist<76&&dist<best){chosen=o.id;best=dist;}
+            float maxH=o.id.equals("wardrobe")||o.id.equals("books")?147:
+              o.id.equals("door")?162: o.id.equals("plant")?94:75;
+            for(float z=0;z<=maxH;z+=20){
+              Point q=iso(o.x+o.wide/2,o.y+o.deep/2,z);
+              double dist=Math.hypot((q.x-px), (q.y-py));
+              if(dist<49&&dist<best){chosen=o.id;best=dist;}
+            }
           }
           Point av=iso(avatarX,avatarY,80);
           if(Math.hypot(av.x-px,av.y-py)<37)chosen="character";
