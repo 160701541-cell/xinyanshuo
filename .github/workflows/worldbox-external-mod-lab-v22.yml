@@ -96,7 +96,8 @@ jobs:
           python tools/worldbox-xianxia/package_android_compiled_mod.py \
             --dll tools/worldbox-xianxia/tests/bin/Release/net8.0/XianxiaObserverMobileSDKProbe.dll \
             --manifest tools/worldbox-xianxia/nml-observer-v07/mod.json \
-            --out /tmp/worldbox_v22_android_nml_mod_DEVICE_PENDING.zip
+            --out /tmp/worldbox_v22_android_nml_mod_DEVICE_PENDING.zip \
+            --locales tools/worldbox-xianxia/localization/nml-locales
       - name: 'Package legacy Mono source variant according to actual user-provided APK guide'
         run: |
           python tools/worldbox-xianxia/package_android_mono_source.py \
@@ -114,8 +115,10 @@ jobs:
             --extra-source tools/worldbox-xianxia/localization/UntranslatedMenuAuditV23.cs \
             --extra-source tools/worldbox-xianxia/localization/ChineseKeyPackV24.cs \
             --extra-source tools/worldbox-xianxia/localization/ChineseTextTemplatesV24.cs \
+            --extra-source tools/worldbox-xianxia/localization/OwnLocaleLabelsV25.cs \
             --manifest tools/worldbox-xianxia/nml-observer-v07/mod.json \
-            --out /tmp/worldbox_v22_android_mono_source_DEVICE_PENDING.zip
+            --out /tmp/worldbox_v22_android_mono_source_DEVICE_PENDING.zip \
+            --locales tools/worldbox-xianxia/localization/nml-locales
       - name: 'Validate legacy source-only MOD contains no third-party DLL'
         run: |
           python - <<'PY'
@@ -138,6 +141,13 @@ jobs:
               assert root+'Code/UntranslatedMenuAuditV23.cs' in files
               assert root+'Code/ChineseKeyPackV24.cs' in files
               assert root+'Code/ChineseTextTemplatesV24.cs' in files
+              assert root+'Code/OwnLocaleLabelsV25.cs' in files
+              for lang in ('cz', 'en'):
+                  path=root+'Locales/'+lang+'.json'
+                  assert path in files, path
+                  locale=json.loads(z.read(path))
+                  assert 'xinyanshuo.wb.mod_manager' in locale
+                  assert 'xinyanshuo.wb.one_tap_chinese' in locale
               assert json.loads(z.read(root+'mod.json'))['ModType']==0
               assert all(not p.lower().endswith(('.apk','.dll','.pck')) for p in files)
               assert z.testzip() is None
@@ -160,7 +170,13 @@ jobs:
               checksum=z.read('SHA256SUMS.txt').decode()
               assert hashlib.sha256(z.read(dll[0])).hexdigest() in checksum
               assert 'README_INSTALL_DEVICE_PENDING.txt' in entries
-              assert len(entries)==4,entries
+              for lang in ('cz', 'en'):
+                  path=root+'/Locales/'+lang+'.json'
+                  assert path in entries
+                  translations=json.loads(z.read(path))
+                  assert translations['xinyanshuo.wb.mod_manager']
+                  assert translations['xinyanshuo.wb.one_tap_chinese']
+              assert len(entries)==6,entries
               print('PASS_NML_PRECOMPILED_LOAD_LAYOUT - Android device loading still PENDING')
           PY
       - name: 'Produce cautious Snapdragon 8 Elite world-size pressure candidates'
@@ -184,6 +200,10 @@ jobs:
           cp tools/worldbox-xianxia/localization/UntranslatedMenuAuditV23.cs /tmp/worldbox-v22-artifacts/
           cp tools/worldbox-xianxia/localization/ChineseKeyPackV24.cs /tmp/worldbox-v22-artifacts/
           cp tools/worldbox-xianxia/localization/ChineseTextTemplatesV24.cs /tmp/worldbox-v22-artifacts/
+          cp tools/worldbox-xianxia/localization/OwnLocaleLabelsV25.cs /tmp/worldbox-v22-artifacts/
+          mkdir -p /tmp/worldbox-v22-artifacts/NMLLocales
+          cp tools/worldbox-xianxia/localization/nml-locales/cz.json /tmp/worldbox-v22-artifacts/NMLLocales/
+          cp tools/worldbox-xianxia/localization/nml-locales/en.json /tmp/worldbox-v22-artifacts/NMLLocales/
           cp /tmp/WORLDBOX_PUBLIC_LOCALE_TYPES.json /tmp/worldbox-v22-artifacts/
           cp tools/worldbox-xianxia/nml-observer-v07/mod.json /tmp/worldbox-v22-artifacts/
           cp /tmp/WORLDBOX_PUBLIC_MAP_TYPES.json /tmp/worldbox-v22-artifacts/
