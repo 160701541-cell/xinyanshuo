@@ -36,3 +36,9 @@ One downloadable Android APK that installs and actually runs WorldBox with reada
 - APK and private test builds must remain private to user/Work artifacts.
 - Do not claim on-device test without logs/device evidence.
 - No Work plans, notes, or success claims may be copied into the original Canglan game's development log.
+
+## 2026-10-20 user-approved giant map target (latest requirement)
+- The user explicitly chose **2000 × 2000 terrain tiles** as the map target, superseding earlier 1024 × 1024 recommendations. This is a target, **not an implemented or proven playable size**.
+- Existing experimental map planner treats one chunk as 64 × 64 tiles. Thus 2000 / 64 = 31.25 chunks per side; a chunk-aligned **32 × 32 map is 2048 × 2048 tiles = 4,194,304 tiles**, 16 × the area of the 512 × 512 baseline. The exact 2000 × 2000 size is only appropriate if the actual WorldBox map APIs support non-chunk-aligned dimensions; validate before promising either.
+- This request specifically prioritizes a large map on Snapdragon 8 Elite. The Work integrator should attempt an **opt-in 2048 × 2048 stress-test preset**, without removing smaller defaults, and test world generation, memory, NPC simulation, save-load, battery/thermal behavior. Use conservative population/AI throttling and staged stress tests; do not pretend high-end SoC guarantees this can run.
+- Never change existing saves or silently auto-upscale pre-existing maps. Keep experimental selection off by default until Android device QA passes. If 2048² fails, report measurements and fall back to the largest proven stable preset; do not mislabel smaller sizes as 2000².
