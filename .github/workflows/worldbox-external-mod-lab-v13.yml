@@ -160,6 +160,16 @@ jobs:
           find /usr/share/dotnet/shared/Microsoft.NETCore.App -name netstandard.dll | sort -V | tail -1 | xargs -r -I '{}' cp '{}' /tmp/worldbox-user-private-helper/netstandard.dll
           find /usr/share/dotnet/shared/Microsoft.NETCore.App -name System.Runtime.dll | sort -V | tail -1 | xargs -r -I '{}' cp '{}' /tmp/worldbox-user-private-helper/System.Runtime.dll
           test -s /tmp/worldbox-user-private-helper/netstandard.dll
+          test -n "${ANDROID_HOME:-}" || echo 'ANDROID_HOME unset; cannot include Android signing tool helper'
+          for d in "${ANDROID_HOME:-/usr/local/lib/android/sdk}"/build-tools/*; do
+            if [ -f "$d/lib/apksigner.jar" ] && [ -x "$d/zipalign" ]; then
+              cp "$d/lib/apksigner.jar" /tmp/worldbox-user-private-helper/apksigner.jar
+              cp "$d/zipalign" /tmp/worldbox-user-private-helper/zipalign
+            fi
+          done
+          if [ -f /tmp/worldbox-user-private-helper/apksigner.jar ]; then
+            java -jar /tmp/worldbox-user-private-helper/apksigner.jar version
+          fi
           echo 'NO user-owned APK or commercial game binaries uploaded to public GitHub.'
       - uses: actions/upload-artifact@v4
         with:
