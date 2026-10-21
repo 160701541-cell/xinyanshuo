@@ -4,6 +4,7 @@ import {MAP_VERSION,WORLD_LIMIT,CITY,LANDMARKS,STRUCTURES,TOWN_HOUSES,WALLS,ROUT
 import {FACTIONS,factionById,territoryGrid,territoryBorderPaths,MAP_MODES,mapColor,reputation,standing,securityIndex,ITEMS,itemById,priceOf,inventory,buyItem,sellItem,canTradeHere,bagWeight,contractsFor,acceptContract,completeContract,societyReport} from './society.js';
 import {SpriteBank,lookFor} from './sprites.js';
 import {equip,drill,research,setFormation,FORMATIONS,TECHS,ARMS,unitsReport,purseOf,ensureFin} from './units.js';
+import {ensureState,tickState,reform,stateReport,LEVERS} from './state.js';
 import {ensureCourt,tickCourt,issueOrder,talkTo,courtReport,parseDecree} from './court.js';
 import {ensureMarket,tickMarket,marketReport,releaseGrain,buyToGranary,setTax,setMonopoly,buildPost,GOODS} from './market.js';
 import {ensureWar,levyCapacity,createArmy,warReport,tickWarDay,supplyDays,armyNeeds,deliveredCostKg,emblemOf,authorityReport,setRank,rankOf,rankInfo,takeCommand,joinArmy,issueDecree} from './war.js';
@@ -403,6 +404,10 @@ function handleRecordsClick(e){
  if(t.dataset.levy){const men=Number(t.dataset.men)||50000;
   try{const a=createArmy(w,t.dataset.levy,{combat:men,seed:Date.now()%100000});note(w,'兵事',`${a.name}征发 ${men.toLocaleString()} 战兵、${a.support.toLocaleString()} 辅兵。`);toast(`${a.name}已集结，日耗 ${Math.round(armyNeeds(a).totalKg/1000)} 吨`);profile();scheduleSave();renderWar();}
   catch(err){toast(err.message);}return;}
+ if(t.dataset.reform){const [lever,opt]=t.dataset.reform.split(':');
+  const r=reform(w,lever,opt);
+  toast(r.ok?`改${LEVERS[lever].name}为${LEVERS[lever].options[opt]}${r.resistance?`（阻力 ${Math.round(r.resistance)}）`:''}`:r.error);
+  if(r.ok){profile();scheduleSave();otherPanels('ledger');}return;}
  if(t.dataset.quick){const inp=$('decree');if(inp)inp.value=t.dataset.quick;return;}
  if(t.id==='decreeBtn'||t.dataset.decree){const inp=$('decree');const text=(inp?.value||'').trim();
   if(!text)return;
@@ -462,7 +467,18 @@ function renderLedger(){
   <button data-mkt="post">修驿传</button>
  </p>
  <p><small>盐铁禁榷进钱但抬价；开仓降粮价与民怨；加税立刻进府库、也在攒民变。钱不是天上掉的。</small></p>
- ${(m.log||[]).map(e=>`<article class="entry"><small>第${e.day}日 ${safe(e.type)}</small><p>${safe(e.text)}</p></article>`).join('')}`;
+ ${(m.log||[]).map(e=>`<article class="entry"><small>第${e.day}日 ${safe(e.type)}</small><p>${safe(e.text)}</p></article>`).join('')}
+ ${renderInstitutions()}`;
+}
+function renderInstitutions(){
+ const s=stateReport(w);
+ const rows=Object.entries(s.levers).map(([id,l])=>`<article class="entry"><strong>${safe(l.name)}</strong>：${safe(l.label)}<br>
+  ${l.options.map(([k,label])=>`<button data-reform="${id}:${k}" ${k===l.value?'disabled':''}>${safe(label)}</button>`).join('')}</article>`).join('');
+ return `<h3>制度</h3>
+ <p>制度决定贪腐与执行力，贪腐决定税能不能收上来，收不上来就赈不了灾、发不出饷。</p>
+ <article class="entry">贪腐 ${s.corruption}% · 执行力 ${s.efficiency}% · 合法性 ${s.legitimacy}/100 · 改制阻力 ${s.resistance}<br>
+ 当前结局：<strong>${safe(s.outcome.name)}</strong>——${safe(s.outcome.desc)}</article>
+ ${rows}`;
 }
 function otherPanels(panel){activeTab=panel;for(const n of document.querySelectorAll('[data-view]'))n.classList.toggle('selected',n.dataset.view===panel);
  $('canvasFrame').hidden=panel!=='map';$('records').hidden=panel==='map';$('sheet').hidden=true;if(panel==='map'){drawMap();return;}
@@ -506,6 +522,7 @@ function tickWarIfDayChanged(){
  if(lastWarDay===null){lastWarDay=w.day;return;}
  if(w.day===lastWarDay)return;
  lastWarDay=w.day;
+ if(w.state){w.state=ensureState(w);tickState(w);}
  if(w.market)tickMarket(w);
  if(w.court){const k=tickCourt(w);for(const ev of k.events)note(w,'回话',ev.text);if(activeTab==='court')renderCourt();}
  const r=tickWarDay(w,{distanceToDepot:(a)=>Math.hypot(a.x-0,a.y-0)});

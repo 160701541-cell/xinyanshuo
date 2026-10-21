@@ -208,6 +208,7 @@ export const RANKS={
  '校尉':{decree:false,appoint:false,lead:true,fight:true,note:'领一营，可上阵'},
  '什长':{decree:false,appoint:false,lead:false,fight:true,note:'带十个人，还是会被砍'},
  '小兵':{decree:false,appoint:false,lead:false,fight:true,note:'听令，活着'},
+ '县吏':{decree:true,appoint:false,lead:false,fight:false,note:'吏身：能办事、能改制，调不动兵'},
  '平民':{decree:false,appoint:false,lead:false,fight:false,note:'不在军中'}
 };
 export function rankOf(w){return w.player.rank||'平民';}

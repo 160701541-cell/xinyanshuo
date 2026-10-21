@@ -90,7 +90,9 @@ export function tickCourt(w){
   t.left=(t.left??t.days)-1;
   if(t.left>0)continue;
   if(s.busy)s.busy.days=Math.max(0,(s.busy.days??0)-1);
-  const efficiency=Math.max(.4,Math.min(1,(s.skill/100)-(s.corruption)));
+  // 个人能力之外，还有整套制度的执行力与贪腐在打折
+  const sys=w.state?(w.state.efficiency*0.6+(1-w.state.corruption)*0.4):1;
+  const efficiency=Math.max(.25,Math.min(1,((s.skill/100)-(s.corruption))*sys));
   const out=applyOrder(w,t,efficiency);
   if(s.busy&&s.busy.days<=0)s.busy=null;
   t.done=true;t.result=out;

@@ -32,6 +32,7 @@ function story(w,type,text){const m=ensureMarket(w);m.log.push({type,text,day:m.
 /** 一天的市面：供给看收成与驿传，需求看人口与价格；价格是供需的幂函数。 */
 export function tickMarket(w,{weather=w.weather||'晴',harvest=1}={}){
  const m=ensureMarket(w);
+ if(w.state) {m.corruption=w.state.corruption;}
  const pop=w.people?.length||13680;
  const wt=weather==='旱'?.72:weather==='涝'?.8:weather==='雨'?.94:1;
  const postK=1+((m.post??1)-1)*.2;
@@ -47,7 +48,9 @@ export function tickMarket(w,{weather=w.weather||'晴',harvest=1}={}){
  }
  // 民怨：粮价、税、赈济与禁榷共同决定
  const grainIdx=m.prices.grain/GOODS.grain.base;
- m.unrest=clamp(m.unrest+(grainIdx-1)*20+(m.taxRate-.1)*140-(m.relief||0)*20+((m.monopoly.salt?3:0)+(m.monopoly.iron?3:0)),0,100);
+ // 贪腐本身就在制造民怨：税被吞、赈济被截，百姓只看得到结果
+ const corr=w.state?.corruption??m.corruption??0;
+ m.unrest=clamp(m.unrest+(grainIdx-1)*20+(m.taxRate-.1)*140-(m.relief||0)*20+corr*18+((m.monopoly.salt?3:0)+(m.monopoly.iron?3:0)),0,100);
  m.relief=0;
  // 官营收益与税入进府库（贪腐先抽一道）
  ensureFin(w);const p=w.states.court;

@@ -3,7 +3,7 @@
 import {readFileSync,writeFileSync,mkdirSync,copyFileSync,readdirSync} from 'node:fs';
 import {join,dirname} from 'node:path';
 const ROOT=join(dirname(new URL(import.meta.url).pathname),'..');
-const FILES=['core','spatial','society','sprites','war','units','market','court','overworld','atlas','gesture','overworld-ui'];
+const FILES=['core','spatial','society','sprites','war','units','market','court','state','overworld','atlas','gesture','overworld-ui'];
 const OUT=join(ROOT,'web');mkdirSync(OUT,{recursive:true});
 let bad=0;
 for(const name of FILES){
