@@ -103,23 +103,23 @@ jobs:
       - name: Stage native APK
         run: |
           mkdir -p native-dist
-          cp projects/xianfan-living-world/android-native/app/build/outputs/apk/release/app-release.apk native-dist/xianfan-native-0.59.0.apk
+          cp projects/xianfan-living-world/android-native/app/build/outputs/apk/release/app-release.apk native-dist/xianfan-native-0.60.0.apk
           sha256sum native-dist/*.apk | tee native-dist/SHA256SUMS.txt
           unzip -l native-dist/*.apk | grep -E 'classes.dex|assets/map.png|assets/world.json' | tee native-dist/native-proof.txt
       - uses: actions/upload-artifact@v4
         with:
-          name: xianfan-native-apk-v0.59.0
+          name: xianfan-native-apk-v0.60.0
           path: native-dist/
           retention-days: 30
       - name: Publish native prerelease
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          tag='xianfan-native-v0.59.0'
+          tag='xianfan-native-v0.60.0'
           if gh release view "$tag" >/dev/null 2>&1; then
             gh release upload "$tag" native-dist/* --clobber
           else
             gh release create "$tag" native-dist/* --target "$GITHUB_SHA" --prerelease \
-              --title '仙凡共生·临安县 v0.59.0（原生安卓）' \
+              --title '仙凡共生·临安县 v0.60.0（原生安卓）' \
               --notes '原生 Java + Canvas 版本，不含 WebView。地图预烘焙为 PNG，世界数据为 JSON；移动、时间、体力、妖兽巢穴与讨伐、招募、行囊、纪事均在 Java 侧结算；另含物品五阶品阶、灵根七档、完整战力公式（境界×层数×灵根×装备×状态×道心×丹药）与星域尺度（凡人出不了这颗星，化神以上才谈横渡）。签名沿用本仓库公开测试密钥（xianfan-demo），可与旧测试包并存安装（applicationId 不同）。'
           fi

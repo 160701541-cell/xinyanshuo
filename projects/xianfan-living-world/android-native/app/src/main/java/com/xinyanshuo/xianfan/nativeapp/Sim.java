@@ -681,6 +681,9 @@ public final class Sim {
         return bar < 0 ? key : key.substring(0, bar);
     }
 
+    /** 分档显示（支持 long：行囊估价会超过 int） */
+    public static String coinText(long v) { return coinText((int) Math.min(Integer.MAX_VALUE, Math.max(Integer.MIN_VALUE, v))); }
+
     public boolean isXiu() { return spirit > 60 && karma < 60; }
 
     /** 私兵招募：每人 14 银，上限 60（原生版先给一个人数上限） */
