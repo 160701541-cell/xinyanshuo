@@ -4,7 +4,8 @@ import {MAP_VERSION,WORLD_LIMIT,CITY,LANDMARKS,STRUCTURES,TOWN_HOUSES,WALLS,ROUT
 import {FACTIONS,factionById,territoryGrid,territoryBorderPaths,MAP_MODES,mapColor,reputation,standing,securityIndex,ITEMS,itemById,priceOf,inventory,buyItem,sellItem,canTradeHere,bagWeight,contractsFor,acceptContract,completeContract,societyReport} from './society.js';
 import {SpriteBank,lookFor} from './sprites.js';
 import {equip,drill,research,setFormation,FORMATIONS,TECHS,ARMS,unitsReport,purseOf,ensureFin} from './units.js';
-import {ensureCultivation,xianReport,hireRetainer,raidSect,retainerPower,REALMS,cultivatorDensity} from './cultivation.js';
+import {ensureCurrency,tickCurrency,buyStones,moneyReport,fmtCoins} from './currency.js';
+import {RETAINER_COST,ensureCultivation,xianReport,tickRetainers,resolveAssassination,assassinThreat,courtProtection,sectDefense,hireRetainer,raidSect,retainerPower,REALMS,cultivatorDensity} from './cultivation.js';
 import {ensureState,tickState,reform,stateReport,LEVERS} from './state.js';
 import {ensureCourt,tickCourt,issueOrder,talkTo,courtReport,parseDecree} from './court.js';
 import {ensureMarket,tickMarket,marketReport,releaseGrain,buyToGranary,setTax,setMonopoly,buildPost,GOODS} from './market.js';
@@ -405,6 +406,9 @@ function handleRecordsClick(e){
  if(t.dataset.levy){const men=Number(t.dataset.men)||50000;
   try{const a=createArmy(w,t.dataset.levy,{combat:men,seed:Date.now()%100000});note(w,'兵事',`${a.name}征发 ${men.toLocaleString()} 战兵、${a.support.toLocaleString()} 辅兵。`);toast(`${a.name}已集结，日耗 ${Math.round(armyNeeds(a).totalKg/1000)} 吨`);profile();scheduleSave();renderWar();}
   catch(err){toast(err.message);}return;}
+ if(t.dataset.buystone){const r=buyStones(w,+t.dataset.buystone);
+  toast(r.ok?`兑得 ${r.stones} 块灵石，手续费 ${fmtCoins(r.fee)}`:r.error);
+  if(r.ok){scheduleSave();otherPanels('xian');}return;}
  if(t.dataset.hire){const realm=t.dataset.hire;const r=hireRetainer(w,{sect:'散修',realm,patron:'court'});
   toast(r.ok?`招得${r.retainer.realmName}供奉，耗银 ${r.price.toLocaleString()} 文`:r.error);
   if(r.ok){scheduleSave();otherPanels('xian');}return;}
@@ -455,11 +459,19 @@ function renderXian(){
   <button data-raid="${sx.id}" ${sx.destroyed?'disabled':''}>遣供奉灭门</button></article>`).join('');
  const ret=r.retainers.length?r.retainers.map(x=>`<article class="entry">${safe(x.name)} · 战力 ${x.power} · 月俸 ${x.upkeep.toLocaleString()} 文</article>`).join(''):'<p>尚无供奉。灵根是天生的，供奉是钱买的。</p>';
  const jobs=r.mortals.map(j=>`${j.name} ${j.count} 人（月钱 ${j.wage} 文）`).join(' · ');
- return `<h2>仙门</h2><p>灵气决定修士在哪儿；钱决定修士替谁办事。县城灵气薄，一年也未必出一个筑基。</p>
+ const m=moneyReport(w);const threat=assassinThreat(w);const prot=courtProtection(w);
+ const danger=threat.threat>prot*1.5?`<b style="color:#a33">危：${threat.sect.name} 的战力 ${threat.threat} 已超过护国力量的 1.5 倍——元婴夜入禁宫，皇帝会死。</b>`
+   :threat.threat>prot?`<b>警：${threat.sect.name}（${threat.threat}）已能破宫，护国力量 ${prot} 不足。</b>`
+   :`安：护国力量 ${prot}（禁宫大阵 420 + 供奉 ${prot-420}），${threat.sect?`可挡${threat.sect.name}（${threat.threat}）`:'无外敌'}`;
+ const stoneBox=`<h3>灵石与钱庄</h3><article class="entry">灵石 <b>${m.stones}</b> 块 · 府库 ${fmtCoins(m.coins)} · 本月官庄剩 ${m.quota} 块<br>
+  官庄收 5% 手续费，兑 1 块灵石需 ${fmtCoins(m.stonePrice)}；修士不肯拿灵石换金银，所以这条路人人都知道，但没人爱走。</article>
+  <p class="warbtns">${[1,5,20].map(n=>`<button data-buystone="${n}">兑 ${n} 块灵石（${fmtCoins(m.stonePrice*n)}）</button>`).join('')}</p>
+  <h3>护国</h3><article class="entry">${danger}<br><small>护国力量 = 禁宫大阵 + 御用供奉；宗门战力 = 道众 × 境界 + 护山大阵 + 符箓 + 灵兽。</small></article>`;
+ return `<h2>仙门</h2><p>灵气决定修士在哪儿；修炼资源决定修士替谁办事。县城灵气薄，一年也未必出一个筑基。</p>${stoneBox}
  <article class="entry"><strong>灵气</strong><br>${qi}</article>
  <h3>宗门</h3>${sects}
  <h3>供奉（战力 ${r.retainerPower}）</h3>${ret}
- <p class="warbtns">${Object.entries(REALMS).map(([id,rl])=>`<button data-hire="${id}">招${rl.name}（${(rl.power*300/10000).toFixed(1)}万）</button>`).join('')}</p>
+ <p class="warbtns">${Object.entries(REALMS).map(([id,rl])=>`<button data-hire="${id}">招${rl.name}（${RETAINER_COST[id].stones} 灵石）</button>`).join('')}</p>
  <h3>凡人的营生</h3><article class="entry">${jobs}</article>
  <p><small>灭门不看你的灵根，看你能养几个供奉。役奴没有工钱——这一行从来没有工钱。</small></p>`;
 }
@@ -547,6 +559,12 @@ function tickWarIfDayChanged(){
  lastWarDay=w.day;
  if(w.state){w.state=ensureState(w);tickState(w);}
  if(w.market)tickMarket(w);
+ if(w.currency){
+  tickCurrency(w);tickRetainers(w);
+  const a=resolveAssassination(w);
+  if(a.died){toast(`皇帝死於${a.sect}刺客之手（${a.threat} 对 ${a.protect}），太子继位。`);if(activeTab==='xian')otherPanels('xian');}
+  else if(a.wounded)toast(`${a.sect}刺客被禁宫所阻，皇帝重伤。`);
+ }
  if(w.court){const k=tickCourt(w);for(const ev of k.events)note(w,'回话',ev.text);if(activeTab==='court')renderCourt();}
  const r=tickWarDay(w,{distanceToDepot:(a)=>Math.hypot(a.x-0,a.y-0)});
  if(r.events.length){if(activeTab==='war')renderWar();for(const ev of r.events.slice(-2))note(w,'兵事',ev.text);}

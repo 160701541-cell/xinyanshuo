@@ -5,10 +5,11 @@ import {ensureGeo} from '../overworld.mjs';
 import {ensureFin,purseOf} from '../units.mjs';
 import {ensureState} from '../state.mjs';
 import {setRank} from '../war.mjs';
-import {ensureCultivation,rollRoot,ROOTS,cultivatorDensity,sectPower,hireRetainer,retainerPower,raidSect,mortalWork,xianReport,QI_REGIONS} from '../cultivation.mjs';
+import {ensureCurrency} from '../currency.mjs';
+import {tickRetainers,sectDefense,ensureCultivation,resolveAssassination,assassinThreat,courtProtection,rollRoot,ROOTS,cultivatorDensity,sectPower,hireRetainer,retainerPower,raidSect,mortalWork,xianReport,QI_REGIONS} from '../cultivation.mjs';
 
 function fresh(seed='仙凡'){
- const w=createWorld(seed);ensureGeo(w);ensureFin(w);setRank(w,'皇帝');ensureCultivation(w);return w;
+ const w=createWorld(seed);ensureGeo(w);ensureFin(w);setRank(w,'皇帝');ensureCultivation(w);ensureCurrency(w);return w;
 }
 
 test('灵根稀有：绝大多数人无灵根，天灵根千中无一',()=>{
@@ -33,14 +34,15 @@ test('宗门战力按境界与人数算，金丹宗门远高于散修',()=>{
  assert.ok(sectPower(qy)>sectPower(ls));
 });
 
-test('招供奉要花府库的钱：没钱请不动修士',()=>{
+test('供奉不收金银，只收灵石：没有灵石，钱再多也请不动',()=>{
  const w=fresh();
- ensureFin(w);w.states.court.treasury=0;
- assert.equal(hireRetainer(w,{sect:'散修',realm:'found'}).ok,false);
- ensureFin(w);w.states.court.treasury=5_000_000;
+ ensureFin(w);w.states.court.treasury=99_000_000;
+ w.currency.stones=0;
+ assert.equal(hireRetainer(w,{sect:'散修',realm:'found'}).ok,false,'金银买不动修士');
+ w.currency.stones=3;
  const r=hireRetainer(w,{sect:'散修',realm:'found'});
- assert.equal(r.ok,true);
- assert.ok(retainerPower(w)>0);
+ assert.equal(r.ok,true);assert.equal(r.currency,'灵石');
+ assert.equal(w.currency.stones,2,'筑基耗 1 块灵石');
 });
 
 test('皇族无灵根也能灭宗门：靠供奉的战力，不看自己灵根',()=>{
@@ -48,8 +50,8 @@ test('皇族无灵根也能灭宗门：靠供奉的战力，不看自己灵根',
  assert.ok(retainerPower(w)===0);
  assert.equal(raidSect(w,'qingyun').ok,false,'没有供奉打不下青云');
  // 一个金丹不够；要灭宗门，得养一群高境供奉
- ensureFin(w);w.states.court.treasury=9_000_000;
- const sector=sectPower(ensureCultivation(w).sects[0]);
+ ensureFin(w);w.currency.stones=400;
+ const sector=sectDefense(ensureCultivation(w).sects[0]);
  let guard=0;
  while(retainerPower(w)<sector*1.2&&guard++<20){
   const r=hireRetainer(w,{sect:'散修',realm:'nascent'});
@@ -85,4 +87,32 @@ test('灵根表里没有灵根的人占多数——皇族也一样',()=>{
  const none=ROOTS.none;
  assert.ok(none.p>ROOTS.tian.p*100);
  assert.match(none.note,/皇族/);
+});
+
+test('元婴能杀皇帝：护国力量不足时，皇帝真的会死',()=>{
+ const w=fresh();
+ assert.equal(resolveAssassination(w).died,true,'无供奉无大阵时，一名元婴就够');
+ assert.ok(w.player.name.includes('太子'),'死后由太子继位');
+});
+
+test('皇帝背后有护国供奉：元婴刺客进不来',()=>{
+ const w=fresh();
+ w.currency.stones=300;
+ let guard=0;
+ while(retainerPower(w)<assassinThreat(w).threat/1.5&&guard++<40){
+  assert.equal(hireRetainer(w,{sect:'散修',realm:'nascent'}).ok,true);
+ }
+ const r=resolveAssassination(w);
+ assert.equal(r.died,false);
+ assert.ok(courtProtection(w)>=assassinThreat(w).threat/1.5);
+});
+
+test('供养断了，供奉会走——灵石才是忠诚',()=>{
+ const w=fresh();
+ w.currency.stones=10;
+ hireRetainer(w,{sect:'散修',realm:'found'});
+ w.currency.stones=0;w.day=200;
+ const r=tickRetainers(w,w.day);
+ assert.equal(r.left,1);
+ assert.equal(retainerPower(w),0);
 });
