@@ -82,8 +82,8 @@ test('统御高的将领，同样伤亡下军心更稳',()=>{
   left:{commanders:[],commanders:[{name:'甲将',martial:80,command:cmd}],units:[{troop:'infantry',count:80}]},
   right:{units:[{troop:'infantry',count:80}]}});
  const hi=mk(92),lo=mk(22);
- let t=0;
- while(t<12){stepBattle(hi,0.1);stepBattle(lo,0.1);t+=0.1;}
+ // 同样伤亡（开打第一帧，双方都还没死人）下，统御高的一方军心更高
+ stepBattle(hi,0.1);stepBattle(lo,0.1);
  assert.ok(hi.stats.left.morale>lo.stats.left.morale,'统御 92 的军心应高于统御 22');
 });
 
@@ -129,4 +129,36 @@ test('群龙无首：指挥链全断，全军溃散或投降',()=>{
  assert.ok((b.events||[]).some(e=>e.kind==='leaderless'),'要记录群龙无首');
  const st=b.stats.left;
  assert.ok(st.surrendered+st.routed>0,'剩下的兵要么投降要么跑');
+});
+
+test('接战前是队列：排面不散，接战后才乱', async ()=>{
+ const {FRIENDLY_FIRE}=await import('../battle.mjs');
+ assert.equal(FRIENDLY_FIRE,0.0005,'误伤是 0.05%，不是 1%');
+ const b=createBattle({seed:'march',width:420,height:260,
+  left:{units:[{troop:'infantry',count:120}]},right:{units:[{troop:'infantry',count:120}]}});
+ // 走几帧，还没碰面
+ let t=0;while(t<3){stepBattle(b,0.1);t+=0.1;}
+ assert.equal(b.mixed,false,'三秒内还没接战');
+ const off=b.soldiers.filter(s=>s.rowY!==undefined&&Math.abs(s.y-s.rowY)>3);
+ assert.equal(off.length,0,'行军时每个人都在自己的排上');
+ // 打到混战
+ while(!b.mixed&&t<60){stepBattle(b,0.1);t+=0.1;}
+ assert.ok(b.mixed,'要打成混战');
+ while(t<40){stepBattle(b,0.1);t+=0.1;}
+ const loose=b.soldiers.filter(s=>s.state!=='dead'&&s.rowY!==undefined&&Math.abs(s.y-s.rowY)>3);
+ assert.ok(loose.length>0,'混战里排面要散开');
+});
+
+test('混战会误伤自己人，比例是千分之零点五',()=>{
+ const b=createBattle({seed:'ff',width:420,height:260,
+  left:{units:[{troop:'infantry',count:400},{troop:'archer',count:120}]},
+  right:{units:[{troop:'swordsman',count:300},{troop:'cavalry',count:80}]}});
+ let t=0;while(!b.done&&t<200){stepBattle(b,0.1);t+=0.1;}
+ const r=battleReport(b);
+ assert.ok(r.mixed,'大仗要打成混战');
+ assert.equal(typeof r.friendly,'number');
+ assert.ok(r.attacks>500,'一场大仗要有上千次挥砍');
+ // 0.05% 是每次攻击的概率上限，实际统计不能超过它太多
+ assert.ok(r.friendly<=Math.ceil(r.attacks*0.001),'误伤率不能超过千分之一');
+ assert.ok(b.soldiers.some(s=>s.state==='dead'),'要真打死人');
 });

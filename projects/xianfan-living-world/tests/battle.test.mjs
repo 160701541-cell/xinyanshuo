@@ -62,7 +62,8 @@ test('伤亡会计入战报，且不是零和',()=>{
  const b=run('战报',{left:corps('infantry',120),right:corps('swordsman',120)});
  const r=battleReport(b);
  assert.ok(r.left.dead>0&&r.right.dead>0);
- assert.ok(r.left.alive+r.left.dead===r.left.start);
+ // 存活不再包含投降/溃逃的人，所以要用四段账核对
+ assert.ok(r.left.alive+r.left.dead+r.left.surrendered+r.left.routed===r.left.start);
  assert.ok(r.left.lossRate>0&&r.right.lossRate>0);
  assert.ok(['left','right'].includes(r.winner));
 });

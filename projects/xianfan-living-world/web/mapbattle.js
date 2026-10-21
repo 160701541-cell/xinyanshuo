@@ -124,7 +124,8 @@ export function drawMapBattle(b,ctx,pos,mpp,opts={}){
    if(st.surrendered)extra.push(`${sd==='left'?'左':'右'}降 ${st.surrendered}`);
    if(st.routed)extra.push(`${sd==='left'?'左':'右'}溃 ${st.routed}`);
   }
-  const line=`${b.label} · 左 ${rp.left.alive}(${who('left')}) 右 ${rp.right.alive}(${who('right')})${extra.length?' · '+extra.join(' '):''}${b.done?' · 已分胜负':''}`;
+  const phase=rp.mixed?'混战':`列阵${rp.mixedAt?'':''}`;
+  const line=`${b.label} · ${phase} · 左 ${rp.left.alive}(${who('left')}) 右 ${rp.right.alive}(${who('right')})${extra.length?' · '+extra.join(' '):''}${rp.friendly?` · 误伤 ${rp.friendly}`:''}${b.done?' · 已分胜负':''}`;
   ctx.fillText(line,tl.x+4,tl.y-bh/2-1);
  }
 }

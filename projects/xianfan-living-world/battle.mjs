@@ -3,6 +3,7 @@
 // - 武器有攻击距离与节奏：枪长、刀快、弓远、骑快、术有范围；
 // - 命中会飞箭、溅血、倒地留尸、扬尘；
 // - 伤亡与包围压士气，士气崩了整队溃逃。
+export const FRIENDLY_FIRE=0.0005; // 混战中伤到自己人的概率（0.05%）
 export const BATTLE_VERSION='battle-0.1.0';
 
 function rng(seed){let a=seed>>>0||1;return()=>{a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};}
@@ -93,7 +94,7 @@ export function createBattle({seed='battle',left={},right={},width=680,height=38
  nextId=1;
  const b={version:BATTLE_VERSION,seed:String(seed),w:width,h:height,t:0,day:0,
   sides:{left:{...left,formation:left.formation||'block'},right:{...right,formation:right.formation||'block'}},
-  soldiers:[],effects:[],arrows:[],corpses:[],done:false,
+  soldiers:[],effects:[],arrows:[],corpses:[],done:false,mixed:false,friendly:0,
   stats:{left:{start:0,dead:0,hp:0,morale:100},right:{start:0,dead:0,hp:0,morale:100}}};
  b.soldiers.push(...makeSide(b.sides.left,'left',width,height,rand));
  b.soldiers.push(...makeSide(b.sides.right,'right',width,height,rand));
@@ -176,6 +177,12 @@ export function stepBattle(b,dt=0.1){
  if(b.done)return {done:true};
  b.t+=dt;
  for(const s of b.soldiers)s.attackers=0;
+ // 接战之前是行军队列，撞上以后才散成混战；误伤只在混战里发生
+ if(!b.mixed){
+  // 只有近身接战才算混战；弓弩在射程内就开火，不算
+  const hit=b.soldiers.some(s=>s.state==='fight'&&!((WEAPONS[s.weapon]||{}).ranged||(WEAPONS[s.weapon]||{}).spell));
+  if(hit){b.mixed=true;b.mixedAt=b.t;b.friendly=0;}
+ }
  const events=[];
  for(const s of b.soldiers){
   if(s.state==='dead')continue;
@@ -213,13 +220,22 @@ export function stepBattle(b,dt=0.1){
    // 阵列推进：只向"敌阵前沿"走，横向守自己的排位；这样两军是一道线撞一道线，不是所有人扑向一个点
    const dir=s.side==='left'?1:-1;
    const tx=enemy.x-dir*reach*0.85;
-   const ty=s.rowY!==undefined?(s.rowY*0.75+enemy.y*0.25):enemy.y;
+   // 行军时严格守排面（只朝正前方走，横排位置不动）；接战后排面散掉，各找各的空隙
+   let ty;
+   if(b.mixed){
+    if(s.jy===undefined)s.jy=(b.rand()-0.5)*6;
+    ty=s.rowY!==undefined?s.rowY*0.5+enemy.y*0.5+s.jy:enemy.y+s.jy;
+   }else{
+    ty=s.rowY!==undefined?s.rowY:enemy.y;
+   }
    const vx=tx-s.x, vy=ty-s.y, vd=Math.hypot(vx,vy)||1;
    // 修士被围住就腾挪不开：人海能贴上来，这也是低阶修士会被磨死的原因
    const slow=s.troop==='monk'&&(s.surrounded||0)>=3?0.32:1;
    const k=Math.min(1,t.speed*slow*dt/vd);
-   s.x+=vx*k; s.y+=vy*k;
-   s.face=dir>0?0:Math.PI; s.phase+=dt*8;
+   // 队列：横向只做微调，纵向才走得快
+   const lax=b.mixed?1:0.25;
+   s.x+=vx*k; s.y+=vy*k*lax;
+   s.face=dir>0?0:Math.PI; s.phase+=dt*(b.mixed?8:5);
   }else{
    s.state='fight';
    enemy.attackers=(enemy.attackers|0)+1;
@@ -237,15 +253,19 @@ export function stepBattle(b,dt=0.1){
      s.spirit-=rl.spellCost;
      addEffect(b,'spell',enemy.x,enemy.y,{r:wp.radius*2,ttl:.5});
      for(const e of b.soldiers){
-      if(e.side===s.side||e.state==='dead')continue;
-      if(dist(e,enemy)<=wp.radius)damage(b,e,rl.dmg*(0.6+b.rand()*0.6),s,'spell');
+      if(e.state==='dead')continue;
+      const ffE=e.side===s.side&&b.mixed&&b.rand()<FRIENDLY_FIRE*0.5;
+      if(e.side===s.side&&!ffE)continue;
+      if(dist(e,enemy)<=wp.radius)damage(b,e,rl.dmg*(0.6+b.rand()*0.6),s,ffE?'friendly':'spell');
      }
     }else{
      const dry=s.troop==='monk'&&s.spirit<8?0.55:1;   // 灵力见底的修士，剑也软
-     const hit=damage(b,enemy,wp.dmg*dry*(0.7+b.rand()*0.7),s,'melee');
-     addEffect(b,'slash',(s.x+enemy.x)/2,(s.y+enemy.y)/2,
+     const ff=friendlyFire(b,s,reach*1.3);
+     const victim=ff||enemy;
+     const hit=damage(b,victim,wp.dmg*dry*(0.7+b.rand()*0.7),s,ff?'friendly':'melee');
+     addEffect(b,'slash',(s.x+victim.x)/2,(s.y+victim.y)/2,
       {angle:s.face,arc:wp.arc,ttl:.28,side:s.side,weapon:s.weapon});
-     if(hit)addEffect(b,'blood',enemy.x,enemy.y-6,{ttl:.5,side:s.side});
+     if(hit)addEffect(b,'blood',victim.x,victim.y-6,{ttl:.5,side:s.side});
     }
    }
   }
@@ -328,8 +348,23 @@ function commanderOf(b,side){
  const cur=b.command[side]|0;
  return chain[cur]&&chain[cur].alive?chain[cur]:null;
 }
+function friendlyFire(b,attacker,reach=6){
+ // 只有混战才误伤；规模越大越乱（0.05% 上限）
+ if(!b.mixed)return null;
+ const total=b.soldiers.length;
+ const rate=FRIENDLY_FIRE*Math.min(1,total/600);
+ if(b.rand()>=rate)return null;
+ const allies=b.soldiers.filter(s=>s.side===attacker.side&&s.state!=='dead'&&s.state!=='fled'&&s.state!=='surrendered'&&s.id!==attacker.id&&dist(s,attacker)<=reach);
+ if(!allies.length)return null;
+ const victim=allies[Math.floor(b.rand()*allies.length)];
+ b.friendly=(b.friendly||0)+1;
+ addEffect(b,'friendly',victim.x,victim.y,{ttl:.5,side:victim.side});
+ return victim;
+}
 function damage(b,target,amount,attacker,kind){
  if(target.state==='dead')return false;
+ if(kind==='melee'||kind==='spell')b.attacks=(b.attacks||0)+1;
+ if(kind==='friendly'){b.attacks=(b.attacks||0)+1;}
  const atk=attacker?TROOPS[attacker.troop]||{}:{};
  const def=TROOPS[target.troop]||{};
  const armor=(target.armor||0)*(1-(atk.pierce||0));
@@ -407,6 +442,7 @@ export function battleReport(b){
   left:{...L,lossRate:L.start?+(L.dead/L.start*100).toFixed(1):0},
   right:{...R,lossRate:R.start?+(R.dead/R.start*100).toFixed(1):0},
   corpses:b.corpses.length,effects:b.effects.length,fled:b.fled||0,
+  mixed:!!b.mixed,mixedAt:b.mixedAt!=null?+b.mixedAt.toFixed(1):null,friendly:b.friendly||0,attacks:b.attacks||0,
   leaders,
   command:{left:commandLine(b,'left'),right:commandLine(b,'right')},
   monks:{total:monks.length,alive:monks.filter(s=>s.state!=='dead'&&s.state!=='fled').length,
