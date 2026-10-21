@@ -43,7 +43,55 @@ public final class MainActivity extends Activity {
 
     @Override protected void onCreate(Bundle b) {
         super.onCreate(b);
+        // 第一件事就是装记录器：这行之前出错才拿不到栈
+        new CrashHandler(this, null).install();
+        CrashHandler.stage("onCreate 开始");
         prefs = getSharedPreferences("xianfan-native", MODE_PRIVATE);
+        try {
+            boot(b);
+        } catch (Throwable e) {
+            CrashHandler.stage("onCreate 失败");
+            try { new CrashHandler(this, sim).install(); } catch (Throwable ignored) { }
+            fatal(e);
+        }
+    }
+
+    /** 启动失败也别直接退：把栈写盘，给出复制与重置存档 */
+    private void fatal(Throwable e) {
+        java.io.StringWriter sw = new java.io.StringWriter();
+        e.printStackTrace(new java.io.PrintWriter(sw));
+        String text = "启动失败：" + e + "\n\n" + sw + "\n日志文件（可直接用文件管理器取）：\n" + CrashHandler.externalPath(this);
+        try {
+            TextView tv = new TextView(this);
+            tv.setText(text);
+            tv.setTextSize(11);
+            tv.setTextIsSelectable(true);
+            ScrollView sc = new ScrollView(this);
+            sc.addView(tv);
+            new AlertDialog.Builder(this)
+                .setTitle("启动失败 · 可复制")
+                .setView(sc)
+                .setPositiveButton("复制", (d, w) -> {
+                    android.content.ClipboardManager cm = (android.content.ClipboardManager) getSystemService(CLIPBOARD_SERVICE);
+                    cm.setPrimaryClip(android.content.ClipData.newPlainText("crash", text));
+                })
+                .setNeutralButton("重置存档并重开", (d, w) -> resetSave())
+                .setNegativeButton("退出", (d, w) -> finish())
+                .setCancelable(false)
+                .show();
+        } catch (Throwable ignored) { finish(); }
+    }
+
+    private void resetSave() {
+        prefs.edit().remove("save").apply();
+        try { getSharedPreferences("xianfan-native", MODE_PRIVATE).edit().putString("save", "").apply(); } catch (Throwable ignored) { }
+        toast("存档已清空，重启应用即可");
+        finish();
+    }
+
+    private void boot(Bundle b) {
+        prefs = getSharedPreferences("xianfan-native", MODE_PRIVATE);
+        CrashHandler.stage("读 world.json");
         JSONObject world;
         try (InputStream in = getAssets().open("world.json")) {
             byte[] buf = new byte[in.available()];
@@ -52,9 +100,10 @@ public final class MainActivity extends Activity {
             world = new JSONObject(new String(buf, "UTF-8"));
         } catch (Exception e) { throw new IllegalStateException("缺少 world.json", e); }
         sim = new Sim(world);
+        CrashHandler.setSimLater(sim);
+        CrashHandler.stage("Sim 已建，开始读存档");
         sim.load(prefs.getString("save", ""));
-        // 装上崩溃记录器：下次闪退会留下带 文件:行号 的栈
-        new CrashHandler(this, sim).install();
+        CrashHandler.stage("存档已读：" + sim.debugState());
         models = new ModelStore(this);
 
         FrameLayout root = new FrameLayout(this);
@@ -122,6 +171,7 @@ public final class MainActivity extends Activity {
             });
             root.requestApplyInsets();
         }
+        CrashHandler.stage("界面已建好");
         updateHud();
         ui.post(tick);
         showCrashIfAny();
@@ -496,6 +546,20 @@ public final class MainActivity extends Activity {
             AlertDialog d = new AlertDialog.Builder(this).setTitle("招募").setMessage(sb.toString())
                 .setPositiveButton("招 5 人", (x, w) -> { toast(sim.recruit(5)); updateHud(); }).setNegativeButton("关闭", null).create();
             d.show(); return;
+        }
+        if ("log".equals(what)) {
+            String crash = CrashHandler.read(this);
+            if (crash != null) {
+                new AlertDialog.Builder(this).setTitle("上次闪退")
+                    .setMessage("有崩溃记录，点「复制」发给我。\n文件：" + CrashHandler.externalPath(this))
+                    .setPositiveButton("复制", (d, w) -> {
+                        android.content.ClipboardManager cm = (android.content.ClipboardManager) getSystemService(CLIPBOARD_SERVICE);
+                        cm.setPrimaryClip(android.content.ClipData.newPlainText("crash", crash));
+                        toast("已复制");
+                    })
+                    .setNeutralButton("清除", (d, w) -> CrashHandler.clear(this))
+                    .setNegativeButton("关闭", null).show();
+            }
         }
         new AlertDialog.Builder(this).setTitle(what.equals("people") ? "人物" : what.equals("wild") ? "妖兽巢穴" : what.equals("bag") ? "行囊" : "纪事")
             .setMessage(sb.length() == 0 ? "（空）" : sb.toString()).setPositiveButton("关闭", null).show();

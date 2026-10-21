@@ -19,7 +19,8 @@ public final class CrashHandler implements Thread.UncaughtExceptionHandler {
     public static final String FILE = "crash-last.txt";
     private final Context ctx;
     private final Thread.UncaughtExceptionHandler prev;
-    private final Sim sim;
+    private static CrashHandler current;
+    private Sim sim;
 
     public CrashHandler(Context ctx, Sim sim) {
         this.ctx = ctx.getApplicationContext();
@@ -27,11 +28,21 @@ public final class CrashHandler implements Thread.UncaughtExceptionHandler {
         this.prev = Thread.getDefaultUncaughtExceptionHandler();
     }
 
-    public void install() { Thread.setDefaultUncaughtExceptionHandler(this); }
+    public void install() { current = this; Thread.setDefaultUncaughtExceptionHandler(this); }
+
+    public void setSim(Sim s) { this.sim = s; }
+
+    public static void setSimLater(Sim s) { if (current != null) current.sim = s; }
 
     @Override public void uncaughtException(Thread t, Throwable e) {
         try { write(t, e); } catch (Throwable ignored) { }
         if (prev != null) prev.uncaughtException(t, e);
+    }
+
+    /** 启动阶段打点：闪退在很早期也能知道走到哪一步 */
+    private static final StringBuilder STAGE = new StringBuilder();
+    public static void stage(String s) {
+        STAGE.append(new SimpleDateFormat("HH:mm:ss", Locale.CHINA).format(new Date())).append(' ').append(s).append('\n');
     }
 
     private void write(Thread t, Throwable e) throws Exception {
@@ -52,13 +63,28 @@ public final class CrashHandler implements Thread.UncaughtExceptionHandler {
         } catch (Exception ignored) { }
         b.append("版本　").append(ver).append(" (").append(code).append(")\n");
         if (sim != null) b.append("现场　").append(sim.debugState()).append('\n');
+        if (STAGE.length() > 0) b.append("\n--- 启动阶段 ---\n").append(STAGE);
         b.append("\n--- 最近操作 ---\n");
         if (sim != null) for (String s : sim.recentActions(12)) b.append(s).append('\n');
         b.append("\n--- 堆栈（第一行就是出错位置）---\n").append(sw);
-        File f = new File(ctx.getFilesDir(), FILE);
-        try (FileOutputStream out = new FileOutputStream(f)) {
-            out.write(b.toString().getBytes("UTF-8"));
+        byte[] bytes = b.toString().getBytes("UTF-8");
+        // 两份：应用私有目录 + 外部目录（后者插上电脑或文件管理器就能拿到，不需要 root）
+        try (FileOutputStream out = new FileOutputStream(new File(ctx.getFilesDir(), FILE))) {
+            out.write(bytes);
         }
+        try {
+            File ext = ctx.getExternalFilesDir(null);
+            if (ext != null) {
+                //noinspection ResultOfMethodCallIgnored
+                ext.mkdirs();
+                try (FileOutputStream out = new FileOutputStream(new File(ext, FILE))) { out.write(bytes); }
+            }
+        } catch (Throwable ignored) { }
+    }
+
+    public static String externalPath(Context ctx) {
+        File ext = ctx.getExternalFilesDir(null);
+        return ext == null ? "（外部目录不可用）" : new File(ext, FILE).getAbsolutePath();
     }
 
     public static String read(Context ctx) {
