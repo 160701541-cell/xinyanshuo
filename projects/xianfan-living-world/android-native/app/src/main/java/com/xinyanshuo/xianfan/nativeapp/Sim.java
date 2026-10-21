@@ -210,37 +210,43 @@ public final class Sim {
 
     public String realmName() { return Power.REALM_NAMES[Math.max(0, Math.min(5, realmLevel))]; }
 
-    /** 星域横渡：化神以上肉身过虚空，否则必须造星舰 */
+    /** 星域横渡：银河到仙女座那种距离，只有化神以上谈得上 */
     public String voidGateText() {
-        if (realmLevel >= 5) return "化神：可以肉身横渡虚空";
-        if (ship) return "有星舰：可以走航线";
-        return "不过是" + realmName() + "，过不去——要么修行到化神，要么造一艘星舰";
+        if (realmLevel >= 5) return "化神：肉身可渡虚空，但一趟就是几十年上千年";
+        return "不过是" + realmName() + "。跨星域是银河到仙女座的距离，凡人连这颗星都走不完";
     }
 
+    /** 凡人一辈子能走多远：每天 30 公里、六十年，约 65 万公里 */
+    public String mortalRangeText() {
+        double km = 30 * 365 * 60;
+        double circle = 4375233;
+        return String.format("凡人脚程：一生约 %.0f 万年? %.0f 公里，绕玄黄星 %.2f 圈——走不完，更出不了星域", km / 10000, km, km / circle);
+    }
+
+    /** 星舰：化神押船才有意义，凡人上船等于送死 */
     public String buildShip() {
+        if (realmLevel < 5) return "星舰没有化神押船，开进虚空就是一口活棺材。";
         if (ship) return "已有一艘星舰。";
-        if (stones < 900 || silver < 2000000) return "星舰要 900 灵石 + 200 万银。";
-        stones -= 900; silver -= 2000000; ship = true;
-        note("星舰「玄黄一号」下水。");
-        return "星舰下水，凡人也能过虚空了。";
+        ship = true;
+        note("星舰「玄黄一号」下水，由化神押船。");
+        return "星舰下水。";
     }
 
-    /** 距离用万公里，消耗按距离算灵石；星舰省 65% 灵石，危险减半 */
+    /** 距离单位光年；十万下品灵石起步，越远越贵，耗时以百年计 */
     public String travelDomain(int idx) {
         JSONArray ds = world.optJSONArray("domains");
         if (ds == null || idx < 0 || idx >= ds.length()) return "没有这一域。";
         JSONObject d = ds.optJSONObject(idx);
         if (d.optBoolean("home")) return "你已经在本域。";
-        boolean byShip = ship;
-        if (realmLevel < 5 && !ship) return voidGateText();
-        double wkm = d.optDouble("distWkm");
-        int need = (int) Math.max(20, Math.round(wkm / 4e7) * (byShip ? 0.35 : 1));
-        if (stones < need) return "灵石不够：需 " + need + " 块，你有 " + stones + " 块。";
+        if (realmLevel < 5) return voidGateText();
+        double ly = d.optDouble("ly", d.optDouble("distWkm") / 9.46e8);
+        int need = 100000 + (int) Math.round(ly / 40);
+        if (stones < need) return "下品灵石不够：需 " + need + " 块，你有 " + stones + " 块。";
         stones -= need;
-        int years = (int) Math.max(1, Math.round(wkm / 1.2e9));
+        int years = (int) Math.max(20, Math.round(ly / 1200));
         clock += years * 360.0 * 1440;
         if (!visited.contains(d.optString("id"))) visited.add(d.optString("id"));
-        String line = (byShip ? "乘星舰" : "肉身横渡") + " " + years + " 年，抵" + d.optString("name") + "（耗 " + need + " 灵石）";
+        String line = "横渡 " + years + " 年，抵" + d.optString("name") + "（耗 " + need + " 下品灵石，" + (int) ly + " 光年）";
         note(line);
         return line;
     }

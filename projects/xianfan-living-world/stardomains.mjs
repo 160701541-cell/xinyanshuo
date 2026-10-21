@@ -15,26 +15,28 @@ export const PLANET = {
   note: '一颗与太阳同量级的星球，临安县只是它表面的一粒尘。',
 };
 
-/** 星域：距离单位用万公里；跨星域靠虚空横渡，不靠走 */
+/** 星域：距离用「光年」。跨星域不是走的路，是横渡虚空——银河到仙女系那种量级 */
 export const DOMAINS = [
-  {id:'xuanhuang', name:'玄黄星域', home:true, distWkm:0, qi:1.0, danger:0,
+  {id:'xuanhuang', name:'玄黄星域', home:true, ly:0, qi:1.0, danger:0,
    note:'本域。灵气自星核涌出，修仙界与凡俗王朝共处一颗星。'},
-  {id:'taiXu', name:'太虚星域', distWkm:1.42e9, qi:1.35, danger:0.18,
-   note:'虚空最薄的一域，化神修士常在此试渡；星舰航线也在这里汇。'},
-  {id:'chiXiao', name:'赤霄星域', distWkm:2.6e9, qi:0.9, danger:0.42,
-   note:'恒星近邻，火灵之气暴烈，妖王成群，凡人舰队不敢深入。'},
-  {id:'youDu', name:'幽都星域', distWkm:4.1e9, qi:0.7, danger:0.66,
-   note:'光到不了的地方，魔道大宗盘踞；没有星舰只有死路。'},
-  {id:'kunLun', name:'昆仑星域', distWkm:7.8e9, qi:1.6, danger:0.3,
-   note:'古仙遗迹最多的一域，灵气浓到凝液，也最容易招来劫修。'},
-  {id:'wuJin', name:'无尽星域', distWkm:1.6e10, qi:0.4, danger:0.85,
-   note:'没有星图的地方，据说有比化神更高的东西在游。'},
+  {id:'taiXu', name:'太虚星域', ly:24000, qi:1.35, danger:0.18,
+   note:'本星系臂内侧，化神修士常在此试渡，是最近的邻域。'},
+  {id:'chiXiao', name:'赤霄星域', ly:86000, qi:0.9, danger:0.42,
+   note:'跨过整条旋臂才到，火灵之气暴烈，妖王成群。'},
+  {id:'youDu', name:'幽都星域', ly:1200000, qi:0.7, danger:0.66,
+   note:'光要走上百万年，魔道大宗盘踞其间。'},
+  {id:'kunLun', name:'昆仑星域', ly:2000000, qi:1.6, danger:0.3,
+   note:'古仙遗迹最多的一域，灵气浓到凝液。'},
+  {id:'wuJin', name:'无尽星域', ly:2540000, qi:0.4, danger:0.85,
+   note:'与仙女座同量级，没有星图，据说有比化神更高的东西在游。'},
 ];
 
 /** 横渡所需：境界门槛（化神=第 4 阶以上）或一艘星舰 */
-export const VOID_REALM = 5;                 // 0凡人 1炼气 2筑基 3金丹 4元婴 5化神：只有化神能肉身横渡
-export const SHIP_COST = {stones: 900, silver: 2000000, years: 3};
-export const VOID_COST = {perWkm: 1 / 4e7, minStones: 20}; // 每 4000 万公里耗 1 块灵石
+export const VOID_REALM = 5;                 // 只有化神以上能横渡虚空；凡人、炼气、元婴都不行
+export const VOID_STONES = 100000;           // 十万下品灵石起步，不收银钱
+export const VOID_YEARS_PER_LY = 1 / 1200;   // 1200 光年/年：化神也得走上几十年
+export const MORTAL_KM_PER_DAY = 30;         // 凡人一生脚程：每日 30 公里
+export const MORTAL_YEARS = 60;
 
 export function ensureStar(w) {
   if (w.star) return w.star;
@@ -47,14 +49,13 @@ export function ensureStar(w) {
   return w.star;
 }
 
-/** 化神以上：自己横渡；否则要有星舰 */
+/** 化神以上：肉身横渡；其余境界连门槛都摸不到 */
 export function canVoidTravel(w) {
   ensureStar(w);
   const realm = realmLevel(w);
-  if (realm >= VOID_REALM) return {ok: true, how: '横渡', reason: '境界足够，肉身过虚空'};
-  if (w.star.ship && w.star.ship.built) return {ok: true, how: '星舰', reason: '乘星舰走航线'};
+  if (realm >= VOID_REALM) return {ok: true, how: '横渡', reason: '化神以上，肉身可渡虚空'};
   return {ok: false, how: null,
-    reason: `要去别的星域，要么元婴化神以上（你如今 ${realmName(realm)}），要么先造一艘星舰`};
+    reason: `跨星域是银河到仙女座那种距离，${realmName(realm)}连门都摸不到；至少化神以上才谈得上横渡`};
 }
 
 /** 境界换算：本项目把 5 标为化神；没有修行档案时按凡人算 */
@@ -79,9 +80,9 @@ export function travelCost(w, id) {
   if (!d || d.home) return {ok: false, reason: '你已经在玄黄了'};
   const gate = canVoidTravel(w);
   if (!gate.ok) return {ok: false, reason: gate.reason};
-  const stones = Math.max(VOID_COST.minStones, Math.round(d.distWkm * VOID_COST.perWkm));
-  const years = Math.max(1, Math.round(d.distWkm / 1.2e9));
-  return {ok: true, how: gate.how, stones, years, domain: d, distanceKm: d.distWkm * 10000};
+  const stones = VOID_STONES + Math.round(d.ly / 40);        // 越远越贵，基数是十万
+  const years = Math.max(20, Math.round(d.ly * VOID_YEARS_PER_LY));
+  return {ok: true, how: gate.how, stones, years, domain: d, lightYears: d.ly};
 }
 
 /** 横渡：消耗灵石与年岁，失败则折在虚空里 */
@@ -89,11 +90,10 @@ export function travelTo(w, id) {
   const c = travelCost(w, id);
   if (!c.ok) return c;
   const stones = w.player.stones || 0;
-  const ship = c.how === '星舰';
-  const need = ship ? Math.round(c.stones * 0.35) : c.stones;
-  if (stones < need) return {ok: false, reason: `灵石不够：需 ${need} 块，你有 ${stones} 块`};
+  const need = c.stones;
+  if (stones < need) return {ok: false, reason: `下品灵石不够：需 ${need.toLocaleString()} 块，你有 ${stones.toLocaleString()} 块`};
   w.player.stones = stones - need;
-  const risk = c.domain.danger * (ship ? 0.55 : 1);
+  const risk = c.domain.danger;
   const roll = mulberry(`${w.seed}:void:${id}:${w.day}`)();
   if (roll < risk * 0.35) {
     w.player.hp = Math.max(1, (w.player.hp || 100) - 60);
@@ -101,25 +101,31 @@ export function travelTo(w, id) {
   }
   ensureStar(w);
   if (!w.star.visited.includes(id)) w.star.visited.push(id);
-  if (w.star.ship) w.star.ship.at = id;
   w.day += c.years * 360;
   note(w, '星域', `${c.how}渡虚空，${c.years} 年后抵达${c.domain.name}。`);
   return {ok: true, how: c.how, years: c.years, stones: need, domain: c.domain};
 }
 
-/** 造星舰：凡人也能去别的星域的唯一办法 */
-export function buildShip(w, {stones = 0, silver = 0} = {}) {
+/** 星舰：宗门造的渡船，但船上仍要化神押船；凡人有船也开不动虚空 */
+export function buildShip(w) {
   ensureStar(w);
-  if (w.star.ship && w.star.ship.built) return {ok: false, reason: '已经有一艘了'};
-  const have = (w.player.stones || 0), haveSilver = (w.player.silver || 0);
-  if (stones < SHIP_COST.stones || silver < SHIP_COST.silver)
-    return {ok: false, reason: `星舰要 ${SHIP_COST.stones} 块灵石与 ${SHIP_COST.silver} 银，分期慢慢来`};
-  if (have < stones || haveSilver < silver) return {ok: false, reason: '家底不够付首付'};
-  w.player.stones = have - stones;
-  w.player.silver = haveSilver - silver;
-  w.star.ship = {built: true, name: '玄黄一号', at: 'xuanhuang', years: SHIP_COST.years};
-  note(w, '星域', '星舰「玄黄一号」下水。凡人也能过虚空了。');
+  const realm = realmLevel(w);
+  if (realm < VOID_REALM) return {ok: false, reason: '星舰没有化神押船，开进虚空就是一口活棺材'};
+  if (w.star.ship) return {ok: false, reason: '已经有一艘了'};
+  w.star.ship = {built: true, name: '玄黄一号', at: 'xuanhuang'};
+  note(w, '星域', '星舰「玄黄一号」下水，由化神押船。');
   return {ok: true, ship: w.star.ship};
+}
+
+/** 凡人脚程：一辈子能走多远，这是“走不出这颗星”的硬数字 */
+export function mortalRange() {
+  const km = MORTAL_KM_PER_DAY * 365 * MORTAL_YEARS;
+  return {
+    km,
+    laps: +(km / PLANET.circumferenceKm).toFixed(3),
+    countries: Math.round(km / 800),          // 以八百里见方的小国估
+    note: `凡人一生约 ${MORTAL_YEARS} 年、日行 ${MORTAL_KM_PER_DAY} 公里，总计 ${Math.round(km / 1000)} 万公里不到：走不完这颗星，更出不了星域。`,
+  };
 }
 
 export function starReport(w) {
@@ -128,6 +134,7 @@ export function starReport(w) {
   return {
     planet: PLANET,
     gate,
+    mortal: mortalRange(),
     realm: realmName(realmLevel(w)),
     ship: w.star.ship,
     visited: w.star.visited,

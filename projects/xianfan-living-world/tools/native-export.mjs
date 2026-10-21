@@ -10,7 +10,7 @@ import {PLACES, VERSION} from '../core.mjs';
 import {generateWorld} from '../worldmap.mjs';
 import {paintTown, gridSVG} from '../content/townart.mjs';
 import {BEASTS, beastAt} from '../content/beasts.mjs';
-import {PLANET, DOMAINS, SHIP_COST, VOID_REALM} from '../stardomains.mjs';
+import {PLANET, DOMAINS, VOID_STONES, VOID_REALM, MORTAL_KM_PER_DAY, MORTAL_YEARS} from '../stardomains.mjs';
 
 const OUT = new URL('../android-native/app/src/main/assets/', import.meta.url).pathname;
 mkdirSync(OUT, {recursive: true});
@@ -42,7 +42,7 @@ const world = {
   places, structures, dens,
   landmarks: LANDMARKS.map(l => ({id: l.id, name: l.name, x: l.x, y: l.y, type: l.type, active: !!l.active})),
   routes: ROUTES, streams: STREAMS,
-  planet: PLANET, domains: DOMAINS, shipCost: SHIP_COST, voidRealm: VOID_REALM,
+  planet: PLANET, domains: DOMAINS, voidStones: VOID_STONES, mortalKmPerDay: MORTAL_KM_PER_DAY, mortalYears: MORTAL_YEARS, voidRealm: VOID_REALM,
   metrics: (() => { const m = generateWorld({seed, grid: 96}); return {regions: m.regions.length, km2: m.totalKm2}; })()
 };
 writeFileSync(`${OUT}world.json`, JSON.stringify(world));

@@ -182,12 +182,14 @@ public final class MainActivity extends Activity {
               .append("灵根 ").append(sim.tested ? Roots.name(sim.rootId) : "未测").append("\n")
               .append("气血 ").append(String.format("%.0f", sim.hp)).append(" · 体力 ").append(String.format("%.0f", sim.stamina))
               .append(" · 业力 ").append(sim.karma).append("\n")
-              .append("战力 ").append(sim.power()).append("\n\n").append(sim.powerBreakdown());
+              .append("战力 ").append(sim.power()).append("\n\n").append(sim.powerBreakdown())
+              .append("\n\n").append(sim.mortalRangeText());
         } else if ("cult".equals(what)) {
             sb.append("境界 ").append(sim.realmName()).append(sim.layer > 0 ? "·炼气" + sim.layer + "层" : "").append("\n")
               .append("修为 ").append(String.format("%.0f", sim.practiceProgress)).append("\n")
               .append("灵根 ").append(sim.tested ? Roots.name(sim.rootId) : "未测").append("\n")
-              .append("战力 ").append(sim.power()).append("\n\n").append(sim.powerBreakdown());
+              .append("战力 ").append(sim.power()).append("\n\n").append(sim.powerBreakdown())
+              .append("\n\n").append(sim.mortalRangeText());
             new AlertDialog.Builder(this).setTitle("修行").setMessage(sb.toString())
                 .setPositiveButton("测灵根", (x, w) -> { toast(sim.detectRoot()); updateHud(); })
                 .setNeutralButton("吐纳 4 时辰", (x, w) -> { toast(sim.practice(4)); updateHud(); })

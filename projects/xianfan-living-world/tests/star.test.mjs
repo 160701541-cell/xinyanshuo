@@ -11,26 +11,34 @@ test('世界是一颗和太阳同量级的星球', () => {
   assert.ok(PLANET.circumferenceKm > 4000000, '周长四百万公里以上');
 });
 
-test('凡人过不去虚空，化神可以，星舰也可以', () => {
+test('凡人过不去虚空，化神才行；凡人练不出星舰', () => {
   const w = createWorld('void');
   assert.equal(canVoidTravel(w).ok, false);
+  assert.match(canVoidTravel(w).reason, /凡人/);
   w.player.realmLevel = VOID_REALM;
   assert.equal(canVoidTravel(w).ok, true);
   assert.equal(canVoidTravel(w).how, '横渡');
 
   const m = createWorld('ship');
   m.player.realmLevel = 0;
-  m.player.stones = 2000; m.player.silver = 3000000;
   assert.equal(canVoidTravel(m).ok, false);
-  assert.equal(buildShip(m, {stones: 900, silver: 2000000}).ok, true);
-  assert.equal(canVoidTravel(m).ok, true);
-  assert.equal(canVoidTravel(m).how, '星舰');
+  assert.equal(buildShip(m).ok, false, '没有化神押船，星舰不成立');
+  m.player.realmLevel = VOID_REALM;
+  assert.equal(buildShip(m).ok, true);
+});
+
+test('凡人一生绕不过这颗星：脚程远小于周长', () => {
+  const w = createWorld('foot');
+  const rep = starReport(w);
+  assert.ok(rep.mortal.km < PLANET.circumferenceKm, '凡人一辈子走不完一圈');
+  assert.ok(rep.mortal.laps < 0.5);
+  assert.ok(rep.mortal.countries > 10 && rep.mortal.countries < 2000, '一生能走访几十到上千个八百里小国');
 });
 
 test('越远的星域越贵、越耗年岁', () => {
   const w = createWorld('cost');
   w.player.realmLevel = VOID_REALM;
-  w.player.stones = 5000;
+  w.player.stones = 300000;
   const near = travelCost(w, 'taiXu');
   const far = travelCost(w, 'wuJin');
   assert.ok(near.ok && far.ok);
@@ -41,7 +49,7 @@ test('越远的星域越贵、越耗年岁', () => {
 test('横渡成功会记录去过的地方，并推进世界时间', () => {
   const w = createWorld('go');
   w.player.realmLevel = VOID_REALM;
-  w.player.stones = 8000;
+  w.player.stones = 300000;
   const before = w.day;
   const r = travelTo(w, 'taiXu');
   assert.equal(r.ok, true);
