@@ -81,7 +81,7 @@ public final class MainActivity extends Activity {
         bbg.setColor(Color.argb(240, 244, 240, 230));
         bbg.setCornerRadius(28);
         bar.setBackground(bbg);
-        String[][] tabs = {{"人物", "people"}, {"妖兽", "wild"}, {"行囊", "bag"}, {"纪事", "log"}, {"星域", "star"}};
+        String[][] tabs = {{"人物", "people"}, {"修行", "cult"}, {"妖兽", "wild"}, {"行囊", "bag"}, {"纪事", "log"}, {"星域", "star"}};
         for (String[] t : tabs) {
             Button bt = new Button(this);
             bt.setText(t[0]);
@@ -177,8 +177,22 @@ public final class MainActivity extends Activity {
     private void open(String what) {
         StringBuilder sb = new StringBuilder();
         if ("people".equals(what)) {
-            sb.append("心魇说 · 平民\n气血 ").append(String.format("%.0f", sim.hp)).append(" · 灵力 ").append(String.format("%.0f", sim.spirit))
-              .append("\n体力 ").append(String.format("%.0f", sim.stamina)).append(" · 业力 ").append(sim.karma);
+            sb.append("心魇说 · ").append(sim.realmLevel > 0 ? "修士" : "平民").append("\n")
+              .append("境界 ").append(sim.realmName()).append(sim.layer > 0 ? "·" + sim.layer + "层" : "").append("\n")
+              .append("灵根 ").append(sim.tested ? Roots.name(sim.rootId) : "未测").append("\n")
+              .append("气血 ").append(String.format("%.0f", sim.hp)).append(" · 体力 ").append(String.format("%.0f", sim.stamina))
+              .append(" · 业力 ").append(sim.karma).append("\n")
+              .append("战力 ").append(sim.power()).append("\n\n").append(sim.powerBreakdown());
+        } else if ("cult".equals(what)) {
+            sb.append("境界 ").append(sim.realmName()).append(sim.layer > 0 ? "·炼气" + sim.layer + "层" : "").append("\n")
+              .append("修为 ").append(String.format("%.0f", sim.practiceProgress)).append("\n")
+              .append("灵根 ").append(sim.tested ? Roots.name(sim.rootId) : "未测").append("\n")
+              .append("战力 ").append(sim.power()).append("\n\n").append(sim.powerBreakdown());
+            new AlertDialog.Builder(this).setTitle("修行").setMessage(sb.toString())
+                .setPositiveButton("测灵根", (x, w) -> { toast(sim.detectRoot()); updateHud(); })
+                .setNeutralButton("吐纳 4 时辰", (x, w) -> { toast(sim.practice(4)); updateHud(); })
+                .setNegativeButton("关闭", null).show();
+            return;
         } else if ("wild".equals(what)) {
             for (JSONObject d : sim.dens) {
                 sb.append(sim.cleared.contains(d.optString("id")) ? "✔ " : "· ")

@@ -29,7 +29,11 @@ public final class Sim {
 
     public double px = 0, py = 0, tx = 0, ty = 0;
     public double stamina = 100, hp = 100, spirit = 90;
-    public int silver = 170, karma = 0, men = 0, stones = 0, realmLevel = 0;
+    public int silver = 170, karma = 0, men = 0, stones = 0, realmLevel = 0, layer = 0, pills = 0;
+    public String rootId = "none";
+    public String weaponGrade = "mortal", armorGrade = "mortal", talismanGrade = "mortal";
+    public boolean wounded = false, tested = false;
+    public int morale = 70, bias = 0;
     public boolean ship = false;
     public final List<String> visited = new ArrayList<>();
     public double clock = 7 * 60; // 第 0 天 07:00
@@ -49,7 +53,9 @@ public final class Sim {
         JSONArray l = world.optJSONArray("landmarks");
         if (l != null) for (int i = 0; i < l.length(); i++) landmarks.add(l.optJSONObject(i));
         visited.add("xuanhuang");
-        bag.put("干粮", 3);
+        rootId = Roots.roll(randDouble("root:" + seed));
+        practiceProgress = 0;
+        bag.put("干粮（凡品）", 3);
         note("落籍临安县城东市。");
     }
 
@@ -131,18 +137,22 @@ public final class Sim {
         String[] mats = {"妖皮", "妖骨", "妖肉", "妖筋", "妖牙", "妖鳞"};
         for (int i = 0; i < pieces; i++) {
             String m = mats[r.nextInt(mats.length)];
-            bag.put(m, bag.getOrDefault(m, 0) + 1);
+            String g = Grades.roll(r.nextDouble());
+            String key = m + "（" + Grades.name(g) + "）";
+            bag.put(key, bag.getOrDefault(key, 0) + 1);
         }
         StringBuilder sb = new StringBuilder();
         if (r.nextDouble() < (new double[]{0.30, 0.58, 0.82, 0.96})[Math.min(3, realm)]) {
-            bag.put("妖丹", bag.getOrDefault("妖丹", 0) + 1); sb.append("妖丹×1 ");
+            String g = Grades.roll(0.35 + r.nextDouble() * 0.55);   // 妖丹出货品阶偏高
+            bag.put("妖丹（" + Grades.name(g) + "）", bag.getOrDefault("妖丹（" + Grades.name(g) + "）", 0) + 1);
+            sb.append("妖丹·").append(Grades.name(g)).append(" ");
         }
         if (r.nextDouble() < (new double[]{0.08, 0.16, 0.26, 0.34})[Math.min(3, realm)]) {
             bag.put("精血", bag.getOrDefault("精血", 0) + 1); sb.append("精血×1 ");
         }
         if (realm >= 2 && r.nextDouble() < 0.22) { bag.put("妖卵", bag.getOrDefault("妖卵", 0) + 1); sb.append("妖卵×1 "); }
         if (realm >= 2 && r.nextDouble() < 0.10) { bag.put("幼崽", bag.getOrDefault("幼崽", 0) + 1); sb.append("幼崽×1 "); }
-        int worth = pieces * 8 + (bag.getOrDefault("妖丹", 0) > 0 ? 120 : 0);
+        int worth = pieces * 8 + (bagsWith("妖丹") > 0 ? 120 : 0);
         silver += worth / 3;
         karma += 1;
         String line = "讨平" + den.optString("name") + "：" + pieces + " 件材料 " + sb + "折银 " + (worth / 3);
@@ -150,10 +160,55 @@ public final class Sim {
         return line;
     }
 
-    public String realmName() {
-        String[] n = {"凡人", "炼气", "筑基", "金丹", "元婴", "化神"};
-        return n[Math.max(0, Math.min(5, realmLevel))];
+    /** 完整战力：境界 × 层数 × 灵根 × 装备 × 状态 × 道心 × 丹药 */
+    public int power() {
+        return Power.total(realmLevel, layer, rootId,
+            Grades.mult(weaponGrade), Grades.mult(armorGrade), Grades.mult(talismanGrade),
+            hp, stamina, morale, wounded, karma, bias, pills);
     }
+
+    public String powerBreakdown() {
+        StringBuilder b = new StringBuilder();
+        b.append("境界底数 ").append(Power.REALM_BASE[Math.max(0, Math.min(5, realmLevel))]).append("\n");
+        b.append("层数 ×").append(String.format("%.2f", Power.layerFactor(layer))).append("\n");
+        b.append("灵根 ×").append(String.format("%.2f", Power.rootFactor(rootId))).append("（").append(Roots.name(rootId)).append("）\n");
+        b.append("装备 ×").append(String.format("%.2f", Power.gearFactor(Grades.mult(weaponGrade), Grades.mult(armorGrade), Grades.mult(talismanGrade)))).append("\n");
+        b.append("状态 ×").append(String.format("%.2f", Power.stateFactor(hp, stamina, morale, wounded))).append("\n");
+        b.append("道心 ×").append(String.format("%.2f", Power.daoFactor(karma, bias))).append("\n");
+        b.append("丹药 ×").append(String.format("%.2f", Power.pillFactor(pills))).append("\n");
+        b.append("合计战力 ").append(power());
+        return b.toString();
+    }
+
+    /** 灵根检测：只有灵山或青云能测，一次定终身 */
+    public String detectRoot() {
+        if (tested) return "已测过：" + Roots.name(rootId) + "（吐纳速度 ×" + String.format("%.2f", Roots.speed(rootId)) + "）";
+        if (!(place.contains("灵山") || place.contains("青云"))) return "县城测不了灵根，得去灵山或青云山门。";
+        tested = true;
+        note("测灵根：" + Roots.name(rootId));
+        return "灵根：" + Roots.name(rootId) + "，吐纳速度 ×" + String.format("%.2f", Roots.speed(rootId));
+    }
+
+    /** 吐纳：只有测过灵根才有效，天灵根快三倍 */
+    public String practice(int hours) {
+        if (rootId.equals("none")) return "无灵根，吐纳不进。";
+        if (!tested) return "还没测灵根，不知道该怎么引气。";
+        if (stamina < 20) return "体力不够，先歇。";
+        double gain = hours * Roots.speed(rootId) * 10;
+        stamina = Math.max(0, stamina - hours * 2.5);
+        clock += hours * 60.0;
+        double need = 40 + layer * 30;
+        double cur = practiceProgress + gain;
+        int up = 0;
+        while (cur >= need && layer < 13) { cur -= need; layer++; up++; need = 40 + layer * 30; }
+        practiceProgress = cur;
+        note("吐纳 " + hours + " 时辰" + (up > 0 ? "，突破 " + up + " 层" : ""));
+        return "吐纳 " + hours + " 时辰，" + (up > 0 ? "连破 " + up + " 层（现炼气" + layer + "层）" : "修为 " + (int) cur + "/" + (int) need);
+    }
+
+    public double practiceProgress = 0;
+
+    public String realmName() { return Power.REALM_NAMES[Math.max(0, Math.min(5, realmLevel))]; }
 
     /** 星域横渡：化神以上肉身过虚空，否则必须造星舰 */
     public String voidGateText() {
@@ -203,6 +258,19 @@ public final class Sim {
         return "招到 " + can + " 人，花 " + cost + " 银（现 " + men + " 人）";
     }
 
+    private int bagsWith(String prefix) {
+        int n = 0;
+        for (Map.Entry<String, Integer> e : bag.entrySet()) if (e.getKey().startsWith(prefix)) n += e.getValue();
+        return n;
+    }
+
+    /** 确定性随机：同一个键永远同一个结果（存档可回放） */
+    private double randDouble(String key) {
+        long h = 2166136261L;
+        for (int i = 0; i < key.length(); i++) { h ^= key.charAt(i); h *= 16777619L; }
+        return new java.util.Random(h).nextDouble();
+    }
+
     public String save() {
         try {
             JSONObject o = new JSONObject();
@@ -210,6 +278,10 @@ public final class Sim {
             o.put("stamina", stamina); o.put("hp", hp); o.put("silver", silver);
             o.put("karma", karma); o.put("men", men); o.put("place", place);
             o.put("stones", stones); o.put("realmLevel", realmLevel); o.put("ship", ship);
+            o.put("layer", layer); o.put("rootId", rootId); o.put("tested", tested);
+            o.put("practice", practiceProgress); o.put("pills", pills);
+            o.put("weapon", weaponGrade); o.put("armor", armorGrade); o.put("talisman", talismanGrade);
+            o.put("wounded", wounded); o.put("morale", morale); o.put("bias", bias);
             JSONObject b = new JSONObject(); for (Map.Entry<String, Integer> e : bag.entrySet()) b.put(e.getKey(), e.getValue());
             o.put("bag", b);
             JSONArray c = new JSONArray(); for (String s : cleared) c.put(s); o.put("cleared", c);
@@ -227,6 +299,11 @@ public final class Sim {
             silver = o.optInt("silver", silver); karma = o.optInt("karma", karma); men = o.optInt("men", men);
             place = o.optString("place", place);
             stones = o.optInt("stones", stones); realmLevel = o.optInt("realmLevel", realmLevel); ship = o.optBoolean("ship", ship);
+            layer = o.optInt("layer", layer); rootId = o.optString("rootId", rootId); tested = o.optBoolean("tested", tested);
+            practiceProgress = o.optDouble("practice", practiceProgress); pills = o.optInt("pills", pills);
+            weaponGrade = o.optString("weapon", weaponGrade); armorGrade = o.optString("armor", armorGrade);
+            talismanGrade = o.optString("talisman", talismanGrade);
+            wounded = o.optBoolean("wounded", wounded); morale = o.optInt("morale", morale); bias = o.optInt("bias", bias);
             JSONObject b = o.optJSONObject("bag");
             if (b != null) { bag.clear(); for (java.util.Iterator<String> it = b.keys(); it.hasNext(); ) { String k = it.next(); bag.put(k, b.optInt(k)); } }
             JSONArray c = o.optJSONArray("cleared");
