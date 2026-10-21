@@ -29,6 +29,7 @@ class Program {
     case "inspect-economy-api":
      if(args.Length<2)throw new ArgumentException("inspect-economy-api private Assembly-CSharp.dll");
      InspectEconomyApi(args[1]);return 0;
+    case "inspect-map-real": InspectMapReal(args[1]);return 0;
     case "inspect-map-ui": InspectMapUi(args[1]);return 0;
     case "inspect": Inspect(args[1]);return 0;
     case "compile":
@@ -81,6 +82,36 @@ class Program {
      foreach(var m in type.Methods.Where(x=>new[]{"get","kingdom","city","tile","zone","name","population","area"}
            .Any(k=>x.Name.ToString().Contains(k,StringComparison.OrdinalIgnoreCase))).Take(75))
        Console.WriteLine("  METHOD "+m.Name+" "+m.MethodSig);
+   }
+ }
+ static void InspectMapReal(string path) {
+   // Inspect the ACTUAL user's private 0.51.4 Assembly-CSharp without patching
+   // it or uploading game content. A menu option is NOT evidence of world size.
+   var mod=dnlib.DotNet.ModuleDefMD.Load(path);
+   string[] owners={"MapBox","World","MapGenerator","MapSizeLibrary",
+     "WorldTemplatesWindow","MapChunk","Config","MapGenValues","MapManager"};
+   string[] keys={"size","width","height","tile","chunk","generate","map","world","template"};
+   foreach(var type in mod.Types.Where(x=>owners.Contains(x.Name.ToString()))) {
+     Console.WriteLine("REALMAP TYPE "+type.FullName);
+     foreach(var field in type.Fields.Where(x=>keys.Any(k=>
+       x.Name.ToString().Contains(k,StringComparison.OrdinalIgnoreCase))).Take(55))
+       Console.WriteLine(" REALMAP FIELD "+field.Name+" "+field.FieldType);
+     foreach(var method in type.Methods.Where(m=>m.HasBody&&
+       (keys.Any(k=>m.Name.ToString().Contains(k,StringComparison.OrdinalIgnoreCase))||
+        type.Name.ToString()=="MapSizeLibrary"&&m.Name.ToString()=="isSizeValid")).Take(65)){
+       Console.WriteLine(" REALMAP METHOD "+method.Name+" "+method.MethodSig);
+       foreach(var il in method.Body.Instructions.Take(100))
+         Console.WriteLine("  "+il.OpCode+" "+il.Operand);
+     }
+   }
+   foreach(var type in mod.Types)foreach(var method in type.Methods.Where(m=>m.HasBody)){
+     var calls=method.Body.Instructions.Where(i=>
+        i.Operand?.ToString()?.Contains("MapSizeLibrary::isSizeValid")==true
+        ||i.Operand?.ToString()?.Contains("Config::maxMapSize")==true
+        ||i.Operand?.ToString()?.Contains("MapSizeLibrary::getSize")==true).ToList();
+     if(calls.Count==0)continue;
+     Console.WriteLine("REALMAP CAP_CALLER "+type.FullName+"::"+method.Name);
+     foreach(var call in calls)Console.WriteLine("  "+call.OpCode+" "+call.Operand);
    }
  }
  static void InspectMapUi(string path) {
