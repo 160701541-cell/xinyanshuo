@@ -1,6 +1,6 @@
 // 战斗直接长在天下地图上：坐标是世界米，不是另开一屏。
 // 视野放大到 6 米/像素以内看得到每一个人、每一支箭；缩远了就聚成块并标人数。
-import {createBattle,stepBattle,battleReport,WEAPONS} from './battle.js';
+import {createBattle,stepBattle,battleReport,WEAPONS,TROOPS} from './battle.js';
 
 export const MAPBATTLE_VERSION='mapbattle-0.1.0';
 
@@ -50,19 +50,19 @@ export function drawMapBattle(b,ctx,pos,mpp,opts={}){
  const c=pos({x:origin.x+cw/2,y:origin.y+ch/2});
  if(c.x<-400||c.y<-400||c.x>opts.cssW+400||c.y>opts.cssH+400)return;
  const detail=mpp<=0.9;                     // 0.9 米/像素以内逐人画；再远就是战场一团
- const side={left:'#5d6f8c',right:'#9a5646'};
+ const side={left:'#3f6ea8',right:'#c0452e'};
  // 地面：被踩踏的战场
  const tl=SP(0,0),br=SP(cw,ch);
- ctx.fillStyle='rgba(96,88,62,.20)';ctx.fillRect(tl.x,tl.y,px(cw),px(ch));
+ ctx.fillStyle='rgba(112,92,58,.24)';ctx.fillRect(tl.x,tl.y,px(cw),px(ch));
  if(detail){
   // 尸体
-  ctx.fillStyle='rgba(58,54,42,.55)';
+  ctx.fillStyle='rgba(52,44,32,.62)';
   for(const cd of b.corpses){const p=SP(cd.x,cd.y);ctx.fillRect(p.x-1.5,p.y-1,3,2);}
  } else {
   // 尸体堆：按 40 米格聚合成块
   const cell=40,agg=new Map();
   for(const cd of b.corpses){const k=(Math.floor(cd.x/cell))+','+(Math.floor(cd.y/cell));agg.set(k,(agg.get(k)||0)+1);}
-  ctx.fillStyle='rgba(58,54,42,.5)';
+  ctx.fillStyle='rgba(52,44,32,.58)';
   for(const [k,n] of agg){const [gx,gy]=k.split(',').map(Number);const p=SP(gx*cell+cell/2,gy*cell+cell/2);ctx.fillRect(p.x-2,p.y-1.5,4,3);}
  }
  const body=Math.max(1.4,Math.min(7,9/mpp));      // 小人像素高
@@ -87,9 +87,13 @@ export function drawMapBattle(b,ctx,pos,mpp,opts={}){
     ctx.beginPath();ctx.arc(p.x,p.y,R+2.5,0,6.283);ctx.strokeStyle='rgba(170,150,220,.55)';ctx.lineWidth=1.2;ctx.stroke();
     ctx.beginPath();ctx.arc(p.x,p.y,R,0,6.283);ctx.fillStyle='#9aa2cf';ctx.fill();continue;
    }
+   // 兵种衣色来自 battle.mjs 的 TROOPS.color（v0.32 提饱和），阵营色只做底衬
+   const cloth=TROOPS[s.troop]?.color||side[s.side]||'#666';
    ctx.fillStyle=side[s.side]||'#666';
-   ctx.fillRect(p.x-body/2,p.y-body,p.x===p.x?body:body,body*1.5); // 身
-   ctx.fillStyle='#d9c7a8';ctx.fillRect(p.x-body/2.6,p.y-body*1.9,body/1.3,body/1.3); // 头
+   ctx.fillRect(p.x-body/2-0.6,p.y-body-0.6,body+1.2,body*1.5+1.2);
+   ctx.fillStyle=cloth;
+   ctx.fillRect(p.x-body/2,p.y-body,body,body*1.5); // 身
+   ctx.fillStyle='#e8cfa6';ctx.fillRect(p.x-body/2.6,p.y-body*1.9,body/1.3,body/1.3); // 头
    const dx=Math.cos(s.face||0),dy=Math.sin(s.face||0);
    ctx.strokeStyle=s.weapon==='bow'||s.weapon==='crossbow'?'#8b6f45':'#c9ced6';
    ctx.lineWidth=Math.max(.7,body*.18);

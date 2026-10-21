@@ -7,13 +7,21 @@ const deriveSeed=(str)=>{let h=2166136261;for(let i=0;i<str.length;i++){h^=str.c
 const R=(s)=>{let a=s>>>0;return()=>{a=(a+0x6D2B79F5)>>>0;let t=Math.imul(a^(a>>>15),1|a);t=(t+Math.imul(t^(t>>>7),61|t))^t;return((t^(t>>>14))>>>0)/4294967296;};};
 
 /** 统一画风：画布与预览共用同一组数值，别搞两套美术。 */
+/**
+ * v0.32 提色：之前的色板全是低饱和的灰土色（#8a7d68 一类），
+ * 缩远之后叠在一起就是“雾蒙蒙”，这不是没画清楚，是颜色本身太灰。
+ * 这里整体抬高饱和、明确明暗层次：屋顶按用途分青瓦/灰瓦/木瓦/茅草，
+ * 墙面白灰为主，地面有了草绿/田黄/路沙三个明确色相。
+ */
 export const ART={
- roof:{official:'#6d6f73',temple:'#5d5a58',home:'#8a7d68',shop:'#7d6b52',thatch:'#a8905f'},
- wall:{rammed:'#b3a288',brick:'#9d8f7a',stone:'#8d8b83',plaster:'#cfc4ac'},
- ground:{street:'#c9bda0',yard:'#c0b394',field:'#9fae74',grass:'#a9b184'},
- accent:{eaves:'#5b5347',ridge:'#4b4539',door:'#6a4f38',well:'#7c8892',tree:'#5f7a52',stall:'#b0704f'},
- ink:'#4b4539'
+ roof:{official:'#54687e',temple:'#565a68',home:'#8a6242',shop:'#a86c33',thatch:'#c99a45',warehouse:'#78684e'},
+ wall:{rammed:'#c9b28e',brick:'#b89a76',stone:'#a5a49c',plaster:'#efe8d6'},
+ ground:{street:'#d9c9a2',yard:'#d6c9a8',field:'#b3c14c',grass:'#9fbb60',mud:'#c2ab84'},
+ accent:{eaves:'#4a4234',ridge:'#332e24',door:'#7a4f30',well:'#6f8b98',tree:'#3f7f3a',treeLight:'#6fa854',stall:'#c46436',roofEdge:'#7d6d50'},
+ ink:'#3f3a2e'
 };
+
+function noise01(str,x){let h=2166136261;for(const c of String(str)+'|'+x){h^=c.charCodeAt(0);h=Math.imul(h,16777619);}return ((h>>>0)%1000)/1000;}
 
 /** 街巷：两条大街直（官府定的），四条副街与市场巷带折点（人走出来的）。 */
 export const STREETS=[
@@ -186,7 +194,14 @@ export function layoutTown(seedStr='linan',structures=STRUCTURES){
     const roll=r();
     if(roll<.06)out.push({id:'G'+(++id),kind:'garden',x,y,w,h,parts:[{t:'field',x,y,w,h}],roof:'grass'});
     else if(roll<.09)out.push({id:'P'+(++id),kind:'pond',x,y,w,h,parts:[{t:'pond',x:x+6,y:y+6,w:w-12,h:h-12}],roof:'water'});
-    else out.push({...compound(deriveSeed(`c${k++}`),x,y,w,h,r()<.2?'shop':'home',side==='north'?'north':'south'),id:'B'+(++id)});
+    else{
+     const seedStr=deriveSeed(`c${k++}`);
+     const c=compound(seedStr,x,y,w,h,r()<.2?'shop':'home',side==='north'?'north':'south');
+     // 屋面分材：青瓦给殷实人家，木瓦与茅草给寻常人家，粮行仓房用灰瓦
+     const pick=noise01(seedStr,'roof');
+     if(c.roof==='home')c.roof=pick<.34?'official':pick<.74?'home':'thatch';
+     out.push({...c,id:'B'+(++id)});
+    }
     x+=w+5+Math.floor(r()*7);
    }
   }

@@ -20,12 +20,12 @@ export const WEAPONS={
 };
 export const TROOPS={
  // pierce 破甲（无视多少比例护甲）、block 盾挡概率、vsCavalry 对骑加成、steadiness 溃散时的定力
- infantry:{name:'步卒',weapon:'spear',hp:100,armor:2,speed:5.2,color:'#6f7f96',pierce:0.15,block:0,vsCavalry:1.55,steadiness:1.0},
- swordsman:{name:'刀手',weapon:'shield',hp:115,armor:5,speed:5.6,color:'#8a7a62',pierce:0.0,block:0.26,vsCavalry:1.15,steadiness:1.15},
- archer:{name:'弓手',weapon:'bow',hp:70,armor:0,speed:4.4,color:'#77835f',pierce:0.3,block:0,vsCavalry:0.9,steadiness:0.85},
- crossbow:{name:'弩手',weapon:'crossbow',hp:78,armor:1,speed:4.2,color:'#6b7358',pierce:0.45,block:0,vsCavalry:0.95,steadiness:0.9},
- cavalry:{name:'轻骑',weapon:'lance',hp:135,armor:3,speed:13.0,color:'#93705f',pierce:0.2,block:0.1,vsCavalry:0.8,steadiness:1.0,charge:1.5},
- monk:{name:'修士',weapon:'staff',hp:150,armor:2,speed:7.5,color:'#8b95c4',spirit:70,regen:2.4,spellCost:11,radius:16,pierce:0.6,block:0,vsCavalry:1.2,steadiness:1.25}
+ infantry:{name:'步卒',weapon:'spear',hp:100,armor:2,speed:5.2,color:'#4f6ea8',pierce:0.15,block:0,vsCavalry:1.55,steadiness:1.0},
+ swordsman:{name:'刀手',weapon:'shield',hp:115,armor:5,speed:5.6,color:'#a2703f',pierce:0.0,block:0.26,vsCavalry:1.15,steadiness:1.15},
+ archer:{name:'弓手',weapon:'bow',hp:70,armor:0,speed:4.4,color:'#71903f',pierce:0.3,block:0,vsCavalry:0.9,steadiness:0.85},
+ crossbow:{name:'弩手',weapon:'crossbow',hp:78,armor:1,speed:4.2,color:'#5f7f4a',pierce:0.45,block:0,vsCavalry:0.95,steadiness:0.9},
+ cavalry:{name:'轻骑',weapon:'lance',hp:135,armor:3,speed:13.0,color:'#b25b3e',pierce:0.2,block:0.1,vsCavalry:0.8,steadiness:1.0,charge:1.5},
+ monk:{name:'修士',weapon:'staff',hp:150,armor:2,speed:7.5,color:'#7f6fd0',spirit:70,regen:2.4,spellCost:11,radius:16,pierce:0.6,block:0,vsCavalry:1.2,steadiness:1.25}
 };
 // 境界：人海能磨死炼气，磨不死金丹；突围的概率也跟着境界走
 export const BATTLE_REALMS={
