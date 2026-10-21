@@ -22,14 +22,22 @@ function at(name,x,y,cls,attrs='',label=''){return `<button type="button" class=
 function zoneBoard(){const s=scenery(state),p=s.place;
  const links=s.exits.map(link=>at(link.name,link.x,link.y,link.kind,`data-goto="${E(link.id)}"`,link.kind==='door'?'进入 ↗':'前往 ↗')).join('');
  const items=s.props.map(prop=>`<span class="prop" style="--x:${prop.x}%;--y:${prop.y}%">${E(prop.name)}</span>`).join('');
- const citizens=sceneActors(state,p.id,10);const positions=[[44,28],[62,35],[53,63],[28,46],[73,55],[38,74],[61,79],[48,44],[20,30],[76,32]];
+ const citizens=sceneActors(state,p.id,5);
+ const candidates=[[49,31],[39,50],[61,70],[17,79],[82,78],[24,39],[75,31],[51,78],[18,60],[82,62],[34,75],[65,47]];
+ const positions=[];
+ for(const [x,y] of candidates){
+   if(s.exits.some(d=>Math.abs(d.x-x)<17&&Math.abs(d.y-y)<13))continue;
+   if(positions.some(([px,py])=>Math.abs(px-x)<23&&Math.abs(py-y)<15))continue;
+   positions.push([x,y]);if(positions.length===citizens.length)break;
+ }
+ while(positions.length<citizens.length)positions.push([45,35+positions.length*9]);
  const nps=citizens.map((npc,i)=>{let [x,y]=positions[i];return at(npc.name,x,y,'actor'+(selectedNpc===npc.id?' selected':''),`data-npc="${E(npc.id)}"`,`◦ ${npcActivity(state,npc)}`);}).join('');
  const description=`<div class="scene-story"><span class="scene-summary-label">所见</span>${E(p.detail)}</div>`;
  const board=`<div class="scene-board ${isInterior(p)?'indoor':''} ${p.type==='market'?'market':''}" aria-label="${E(p.name)}可交互场景地图"><div class="scene-road" aria-hidden="true"></div>${items}${links}${nps}<div class="player-mark" title="你的位置"><span>我</span></div><div class="compass">北 ↑</div></div>`;
  const info=selectedNpc?personPanel(citizens.find(n=>n.id===selectedNpc)):selectedPlace?placePanel(getPlace(selectedPlace)):defaultPanel(p,citizens);
  return `${description}<div class="play-field">${board}<aside class="scene-inspector" aria-label="场景详情">${info}</aside></div><div class="scene-footnote">地图上的建筑、道路和人物均可点击。点建筑即进入室内，人物只会出现在其当前所在的场所。</div>`;
 }
-function defaultPanel(place,visible){return `<div class="inspector-eyebrow">当前场所</div><h2>${E(title(place))}</h2><div class="inspector-type">${E(kind[place.type])}</div><p>${E(place.detail)}</p><div class="inspector-divider"></div><p class="muted">看见 ${visible.length} 名人物（场景最多展示10人）</p><p class="muted">点人物查看身份与行为；点建筑或出口直接移动，无需在多个菜单间切换。</p>${place.id==='lianghang'?`<div class="trade"><b>福源粮行</b><p>现粮 ${fmt(state.places.lianghang.merchantGrain)} 斗 · 今日粮价 ${state.price} 文/斗</p><button class="primary" id="buy3">购买三斗粮</button></div>`:''}${place.id==='xianya'?`<div class="trade"><b>县衙事务</b><p>县仓 ${fmt(state.places.xianya.granary)} 斗 · 县库 ${fmt(state.treasury)} 文</p><button class="primary" id="relief" ${state.player.role==='县吏'?'':'disabled'}>调拨100斗赈粮</button></div>`:''}`;}
+function defaultPanel(place,visible){return `<div class="inspector-eyebrow">当前场所</div><h2>${E(title(place))}</h2><div class="inspector-type">${E(kind[place.type])}</div><p>${E(place.detail)}</p><div class="inspector-divider"></div><p class="muted">看见 ${visible.length} 名人物（场景最多展示5人）</p><p class="muted">点人物查看身份与行为；点建筑或出口直接移动，无需在多个菜单间切换。</p>${place.id==='lianghang'?`<div class="trade"><b>福源粮行</b><p>现粮 ${fmt(state.places.lianghang.merchantGrain)} 斗 · 今日粮价 ${state.price} 文/斗</p><button class="primary" id="buy3">购买三斗粮</button></div>`:''}${place.id==='xianya'?`<div class="trade"><b>县衙事务</b><p>县仓 ${fmt(state.places.xianya.granary)} 斗 · 县库 ${fmt(state.treasury)} 文</p><button class="primary" id="relief" ${state.player.role==='县吏'?'':'disabled'}>调拨100斗赈粮</button></div>`:''}`;}
 function personPanel(n){if(!n)return `<h2>人物已离开</h2><p>此人已经不在当前场景。</p><button class="text-action" data-reset>返回场景</button>`;
  const met=state.player.contacts.find(c=>c.id===n.id);return `<div class="inspector-eyebrow">所见人物 / ${E(n.id)}</div><h2>${E(n.name)}</h2><div class="inspector-type">${E(n.job)} · ${n.age} 岁</div><p class="doing"><i></i>${E(npcActivity(state,n))}</p><dl><dt>住处</dt><dd>${E(title(getPlace(n.home)))}</dd><dt>可见气质</dt><dd>${E(n.traits.join('、'))}</dd><dt>你与此人</dt><dd>${met?`初遇第 ${met.firstDay} 日 · 共见 ${met.meetings} 次`:'尚未相识'}</dd></dl><button class="primary" id="greetNpc" data-id="${E(n.id)}">与${E(n.name)}交谈</button><button class="text-action" data-reset>返回场景</button><p class="small muted">交谈不会自动增加好感或产生恋爱关系。</p>`;}
 function placePanel(p){if(!p)return defaultPanel(getPlace(state.player.place),[]);const route=shortestRoute(state.player.place,p.id);return `<div class="inspector-eyebrow">地图地点</div><h2>${E(p.name)}</h2><div class="inspector-type">${E(kind[p.type])}</div><p>${E(p.detail)}</p><p class="muted">${route?`步行连通 ${route.length-1} 段路程`:'尚无已知道路'}</p><button class="primary" id="navigateChosen" data-id="${E(p.id)}">${mode==='sword'?'御剑前往':'沿路前往'}</button><button class="text-action" data-reset>收起</button>`;}
