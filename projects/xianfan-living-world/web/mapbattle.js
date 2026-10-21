@@ -71,6 +71,22 @@ export function drawMapBattle(b,ctx,pos,mpp,opts={}){
   for(const s of b.soldiers){
    if(s.state==='dead')continue;
    const p=SP(s.x,s.y);
+   // 将领与修士：小圆头像（描金边），一眼能在人堆里认出来
+   if(s.isLeader||s.leader){
+    const R=Math.max(8,Math.min(18,px(6)));
+    ctx.beginPath();ctx.arc(p.x,p.y,R,0,6.283);
+    ctx.fillStyle=side[s.side]||'#666';ctx.fill();
+    ctx.lineWidth=2;ctx.strokeStyle='#e8cf8a';ctx.stroke();
+    ctx.fillStyle='#f4ecd8';ctx.font=`${Math.round(R*1.1)}px sans-serif`;ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.fillText((s.name||'将').slice(0,1),p.x,p.y+1);ctx.textAlign='left';
+    if(mpp<1.4){ctx.fillStyle='rgba(24,22,18,.7)';ctx.fillText(s.name||'将',p.x+R+2,p.y-2);}
+    continue;
+   }
+   if(s.troop==='monk'){
+    const R=Math.max(3,Math.min(8,px(4)));
+    ctx.beginPath();ctx.arc(p.x,p.y,R+2.5,0,6.283);ctx.strokeStyle='rgba(170,150,220,.55)';ctx.lineWidth=1.2;ctx.stroke();
+    ctx.beginPath();ctx.arc(p.x,p.y,R,0,6.283);ctx.fillStyle='#9aa2cf';ctx.fill();continue;
+   }
    ctx.fillStyle=side[s.side]||'#666';
    ctx.fillRect(p.x-body/2,p.y-body,p.x===p.x?body:body,body*1.5); // 身
    ctx.fillStyle='#d9c7a8';ctx.fillRect(p.x-body/2.6,p.y-body*1.9,body/1.3,body/1.3); // 头

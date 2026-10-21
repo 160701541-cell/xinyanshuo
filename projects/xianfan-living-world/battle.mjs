@@ -15,7 +15,7 @@ export const WEAPONS={
  bow:{name:'猎弓',reach:120,ranged:true,dmg:9,rate:2.6,arc:0,style:'shot'},
  crossbow:{name:'弩',reach:150,ranged:true,dmg:12,rate:3.6,arc:0,style:'shot'},
  lance:{name:'长槊',reach:3.2,dmg:14,rate:1.6,mounted:true,arc:18,style:'thrust'},
- staff:{name:'桃木剑',reach:3.6,dmg:22,rate:1.9,arc:60,style:'spell',spell:true,radius:14}
+ staff:{name:'桃木剑',reach:60,dmg:6,rate:2.0,arc:60,spell:true,radius:24}
 };
 export const TROOPS={
  infantry:{name:'步卒',weapon:'spear',hp:100,armor:2,speed:5.2,color:'#6f7f96'},
@@ -23,7 +23,15 @@ export const TROOPS={
  archer:{name:'弓手',weapon:'bow',hp:70,armor:0,speed:4.4,color:'#77835f'},
  crossbow:{name:'弩手',weapon:'crossbow',hp:75,armor:1,speed:4.2,color:'#6b7358'},
  cavalry:{name:'轻骑',weapon:'lance',hp:130,armor:3,speed:13.0,color:'#93705f'},
- monk:{name:'修士',weapon:'staff',hp:150,armor:2,speed:7.5,color:'#8b95c4'}
+ monk:{name:'修士',weapon:'staff',hp:150,armor:2,speed:7.5,color:'#8b95c4',spirit:70,regen:2.4,spellCost:11,radius:16}
+};
+// 境界：人海能磨死炼气，磨不死金丹；突围的概率也跟着境界走
+export const BATTLE_REALMS={
+ 1:{name:'炼气',spirit:50,regen:1.8,dmg:17,spellCost:11,surroundResist:0.0,escape:0.12},
+ 2:{name:'炼气二层',spirit:70,regen:2.4,dmg:20,spellCost:12,surroundResist:0.15,escape:0.22},
+ 3:{name:'炼气五层',spirit:95,regen:3.0,dmg:23,spellCost:15,surroundResist:0.32,escape:0.36},
+ 4:{name:'筑基',spirit:150,regen:4.2,dmg:30,spellCost:20,surroundResist:0.55,escape:0.58},
+ 5:{name:'金丹',spirit:260,regen:7.0,dmg:42,spellCost:28,surroundResist:0.78,escape:0.82}
 };
 export const FORMATIONS={
  line:{name:'横阵',colGap:3.0,rowGap:4.2},
@@ -49,10 +57,18 @@ function makeSide(def,side,w,h,rand){
    const y0=h*0.5-(rows-1)*f.rowGap*0.5;
    const x=side==='left'?w*0.26+lane: w*0.74-lane;
    const y=y0+row*f.rowGap;
+   const realmRank=unit.troop==='monk'?(unit.realm||2):0;
+   const rl=realmRank?BATTLE_REALMS[realmRank]:null;
+   const leader=!!unit.leader;
+   const bagCharges=unit.bag===undefined?(unit.troop==='monk'?Math.max(0,(realmRank||2)-1):0):unit.bag;
+   const realmBulk=rl?1+0.32*(realmRank-1):1;
+   const maxHp=Math.round(t.hp*(leader?2.2:1)*realmBulk);
    soldiers.push({id:nextId++,side,troop:unit.troop,weapon:t.weapon,rowY:y,
-    x,y,hp:t.hp,maxHp:t.hp,armor:(t.armor||0)+(wp.armor||0),
+    x,y,hp:maxHp,maxHp,armor:(t.armor||0)+(wp.armor||0),
     morale:100,state:'advance',target:null,cool:rand()*0.5,
-    face:side==='left'?0:Math.PI,phase:rand()*6.28,unit:unit.name||t.name});
+    face:side==='left'?0:Math.PI,phase:rand()*6.28,unit:unit.name||t.name,
+    realm:realmRank||0,realmName:rl?rl.name:'',spirit:rl?rl.spirit:0,maxSpirit:rl?rl.spirit:0,
+    bag:bagCharges,bagStart:bagCharges,leader,isLeader:leader,name:unit.leader||unit.name||''});
    col++;
   }
  }
@@ -78,7 +94,9 @@ function nearestEnemy(b,s){
  let best=null,bd=1e9,second=null,sd=1e9;
  for(const e of b.soldiers){
   if(e.side===s.side||e.state==='dead')continue;
-  const d=dist(s,e)+Math.abs((e.y%40)-(s.y%40))*0.35;
+  // 斩首：修士与骑兵更愿意扑对方首领，普通人也会朝旗号冲
+  const champ=(e.isLeader||e.leader)?(s.troop==='monk'?46:(s.troop==='cavalry'?22:8)):0;
+  const d=dist(s,e)+Math.abs((e.y%40)-(s.y%40))*0.35-champ;
   if(d<bd){second=best;sd=bd;best=e;bd=d;}
   else if(d<sd){second=e;sd=d;}
  }
@@ -131,7 +149,25 @@ export function stepBattle(b,dt=0.1){
   if(!near){s.state='hold';continue;}
   const {enemy,d}=near;
   s.target=enemy.id;
-  const reach=wp.ranged?wp.reach:wp.reach*1.6;
+  const reach=wp.spell?wp.reach:(wp.ranged?wp.reach:wp.reach*1.6);
+  // 被围：身边敌人越多，越难走、越容易被打死
+  if(s.troop==='monk'){
+   const rl=BATTLE_REALMS[s.realm]||BATTLE_REALMS[1];
+   let around=0;
+   for(const e of b.soldiers){if(e.side!==s.side&&e.state!=='dead'&&dist(e,s)<16)around++;}
+   s.surrounded=around;
+   s.spirit=Math.min(s.maxSpirit,(s.spirit||0)+rl.regen*dt*(around>=6?0.45:1));
+   // 丹药/符箓：灵力见底就吃一颗（储物袋里的存货）
+   if(s.spirit<rl.spellCost&&s.bag>0){s.bag--;s.spirit=Math.min(s.maxSpirit,s.spirit+rl.spirit*0.7);
+    addEffect(b,'pill',s.x,s.y-10,{ttl:.6,side:s.side});}
+   // 快死了想走：境界越高越走得掉；被围得死就基本走不掉
+   if(s.hp<s.maxHp*0.28&&s.state!=='fled'){
+    const press=Math.min(1,around/7)*(1-rl.surroundResist);
+    const p=rl.escape*(1-press);
+    if(b.rand()<p*dt*2.2){s.state='fled';s.hp=0;b.fled=(b.fled||0)+1;
+     addEffect(b,'escape',s.x,s.y,{ttl:.7,side:s.side});continue;}
+   }
+  }
   // 士气崩了就跑
   if(s.morale<18){s.state='rout';
    const dx=(s.x<enemy.x?-1:1)*t.speed*1.6*dt;
@@ -158,14 +194,17 @@ export function stepBattle(b,dt=0.1){
      b.arrows.push({id:b.arrows.length+1,x:s.x,y:s.y,vx:Math.cos(ang)*160,vy:Math.sin(ang)*160,
       side:s.side,dmg:wp.dmg,t:0,life:1.6});
      addEffect(b,'shoot',s.x,s.y,{angle:ang,ttl:.2});
-    }else if(wp.spell){
+    }else if(wp.spell&&s.spirit>=(BATTLE_REALMS[s.realm]||BATTLE_REALMS[1]).spellCost){
+     const rl=BATTLE_REALMS[s.realm]||BATTLE_REALMS[1];
+     s.spirit-=rl.spellCost;
      addEffect(b,'spell',enemy.x,enemy.y,{r:wp.radius*2,ttl:.5});
      for(const e of b.soldiers){
       if(e.side===s.side||e.state==='dead')continue;
-      if(dist(e,enemy)<=wp.radius)damage(b,e,wp.dmg*(0.6+b.rand()*0.6),s,'spell');
+      if(dist(e,enemy)<=wp.radius)damage(b,e,rl.dmg*(0.6+b.rand()*0.6),s,'spell');
      }
     }else{
-     const hit=damage(b,enemy,wp.dmg*(0.7+b.rand()*0.7),s,'melee');
+     const dry=s.troop==='monk'&&s.spirit<8?0.55:1;   // 灵力见底的修士，剑也软
+     const hit=damage(b,enemy,wp.dmg*dry*(0.7+b.rand()*0.7),s,'melee');
      addEffect(b,'slash',(s.x+enemy.x)/2,(s.y+enemy.y)/2,
       {angle:s.face,arc:wp.arc,ttl:.28,side:s.side,weapon:s.weapon});
      if(hit)addEffect(b,'blood',enemy.x,enemy.y-6,{ttl:.5,side:s.side});
@@ -197,7 +236,8 @@ export function stepBattle(b,dt=0.1){
   const st=b.stats[side];
   st.dead=dead;st.alive=alive;st.hp=Math.round(mine.reduce((a,s)=>a+Math.max(0,s.hp),0));
   const fatigue=b.t>50?Math.min(18,(b.t-50)*0.3):0;
-  const morale=Math.round(Math.max(0,Math.min(100,100-dead*110/Math.max(1,mine.length)-fatigue)));
+  const leaderHit=(side==='left'?b.stats.left:b.stats.right).leaderDown?22:0;
+  const morale=Math.round(Math.max(0,Math.min(100,100-dead*110/Math.max(1,mine.length)-fatigue-leaderHit)));
   st.morale=morale;
   for(const s of mine){
    if(s.state==='dead')continue;
@@ -219,12 +259,20 @@ export function stepBattle(b,dt=0.1){
 function damage(b,target,amount,attacker,kind){
  if(target.state==='dead')return false;
  const armor=target.armor||0;
- const dmg=Math.max(1,Math.round(amount*2-armor*1.6));
+ // 境界越高，凡兵的刀越难落到要害上
+ const realmGuard=target.realm?1-0.13*(target.realm-1):1;
+ const dmg=Math.max(1,Math.round((amount*2-armor*1.6)*Math.max(0.35,realmGuard)));
  target.hp-=dmg;
  const drop=Math.min(6,Math.max(1,Math.round(dmg/12)));
  target.morale=Math.max(0,target.morale-drop*2);
  if(target.hp<=0){
   target.state='dead';target.hp=0;
+  // 首领一倒，全军士气跟着塌
+  if(target.isLeader||target.leader){
+   const st=target.side==='left'?b.stats.left:b.stats.right;
+   st.leaderDown=true;b.events=b.events||[];
+   b.events.push({t:+b.t.toFixed(1),kind:'leaderDown',side:target.side,name:target.name||'主将'});
+  }
   b.corpses.push({x:target.x,y:target.y,side:target.side,angle:target.face,t:b.t});
   if(b.corpses.length>400)b.corpses.shift();
   addEffect(b,'death',target.x,target.y,{ttl:.6,side:target.side});
@@ -233,8 +281,15 @@ function damage(b,target,amount,attacker,kind){
 }
 export function battleReport(b){
  const L=b.stats.left,R=b.stats.right;
+ const leaders=b.soldiers.filter(s=>s.isLeader).map(s=>({side:s.side,name:s.name,state:s.state,hp:s.hp,maxHp:s.maxHp,realm:s.realmName}));
+ const monks=b.soldiers.filter(s=>s.troop==='monk');
  return {t:Math.round(b.t*10)/10,done:b.done,winner:b.winner||null,
   left:{...L,lossRate:L.start?+(L.dead/L.start*100).toFixed(1):0},
   right:{...R,lossRate:R.start?+(R.dead/R.start*100).toFixed(1):0},
-  corpses:b.corpses.length,effects:b.effects.length};
+  corpses:b.corpses.length,effects:b.effects.length,fled:b.fled||0,
+  leaders,
+  monks:{total:monks.length,alive:monks.filter(s=>s.state!=='dead'&&s.state!=='fled').length,
+   fled:monks.filter(s=>s.state==='fled').length,
+   spentBag:monks.reduce((n,s)=>n+((s.bagStart||0)-(s.bag||0)),0)},
+  events:b.events||[]};
 }
