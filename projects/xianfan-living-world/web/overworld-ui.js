@@ -138,14 +138,57 @@ function hit(p){const scale=camera.mpp;const npcs=(w.mapActors||[]).filter(a=>di
 }
 function zoomAt(factor,screenX=cssW/2,screenY=cssH/2){const before=unpos(screenX,screenY);camera.mpp=clamp(camera.mpp*factor,.25,16000);const after=unpos(screenX,screenY);camera.x+=before.x-after.x;camera.y+=before.y-after.y;profile();scheduleSave();}
 function updateCamera(old,newPt){camera.x-=(newPt.x-old.x)*camera.mpp;camera.y-=(newPt.y-old.y)*camera.mpp;}
-function setupGestures(){canvas.addEventListener('pointerdown',e=>{if(e.button!==0)return;e.preventDefault();try{canvas.setPointerCapture(e.pointerId);}catch{}const pt=pointerPoint(e);pointer.set(e.pointerId,pt);if(pointer.size===1){dragStart=pt;panMoved=false;}else if(pointer.size===2){const a=[...pointer.values()];pinch={dist:Math.hypot(a[0].x-a[1].x,a[0].y-a[1].y)};panMoved=true;}});
- canvas.addEventListener('pointermove',e=>{if(!pointer.has(e.pointerId))return;e.preventDefault();const last=pointer.get(e.pointerId),now=pointerPoint(e);pointer.set(e.pointerId,now);if(pointer.size===2){let a=[...pointer.values()];const d=Math.hypot(a[0].x-a[1].x,a[0].y-a[1].y);const mid={x:(a[0].x+a[1].x)/2,y:(a[0].y+a[1].y)/2};if(pinch?.dist>3&&d>3)zoomAt(pinch.dist/d,mid.x,mid.y);pinch={dist:d};return;}
- if(pointer.size===1){if(dragStart&&Math.hypot(now.x-dragStart.x,now.y-dragStart.y)>9)panMoved=true;if(panMoved){updateCamera(last,now);profile();}}
+function setupGestures(){
+ let gestureStart=0,hadMultitouch=false, suppressTapUntil=0;
+ canvas.style.touchAction='none';
+ canvas.addEventListener('pointerdown',e=>{
+  if(e.pointerType==='mouse'&&e.button!==0)return;
+  e.preventDefault();
+  try{canvas.setPointerCapture(e.pointerId);}catch{}
+  const pt=pointerPoint(e);pointer.set(e.pointerId,pt);
+  if(pointer.size===1){
+   dragStart=pt;panMoved=false;gestureStart=performance.now();
+   hadMultitouch=performance.now()<suppressTapUntil;
+  }else{
+   hadMultitouch=true;panMoved=true;
+   if(pointer.size===2){const a=[...pointer.values()];pinch={dist:Math.hypot(a[0].x-a[1].x,a[0].y-a[1].y)};}
+  }
  });
- const end=e=>{if(!pointer.has(e.pointerId))return;const last=pointer.get(e.pointerId),eligible=pointer.size===1&&!panMoved&&dragStart&&Math.hypot(last.x-dragStart.x,last.y-dragStart.y)<12;
- pointer.delete(e.pointerId);if(!pointer.size){pinch=null;dragStart=null;}if(eligible){const p=unpos(last.x,last.y);showSheet(hit(p));}};
- canvas.addEventListener('pointerup',end);canvas.addEventListener('pointercancel',e=>{pointer.delete(e.pointerId);panMoved=true;pinch=null;dragStart=null;});
- canvas.addEventListener('wheel',e=>{e.preventDefault();const p=pointerPoint(e);zoomAt(e.deltaY<0?.83:1.2,p.x,p.y);},{passive:false});
+ canvas.addEventListener('pointermove',e=>{
+  if(!pointer.has(e.pointerId))return;
+  e.preventDefault();
+  const last=pointer.get(e.pointerId),now=pointerPoint(e);pointer.set(e.pointerId,now);
+  if(pointer.size>=2){
+   hadMultitouch=true;panMoved=true;
+   const a=[...pointer.values()],d=Math.hypot(a[0].x-a[1].x,a[0].y-a[1].y);
+   const mid={x:(a[0].x+a[1].x)/2,y:(a[0].y+a[1].y)/2};
+   if(pinch?.dist>3&&d>3)zoomAt(pinch.dist/d,mid.x,mid.y);
+   pinch={dist:d};return;
+  }
+  if(pointer.size===1){
+   if(dragStart&&Math.hypot(now.x-dragStart.x,now.y-dragStart.y)>8)panMoved=true;
+   if(panMoved){updateCamera(last,now);profile();}
+  }
+ });
+ const end=e=>{
+  if(!pointer.has(e.pointerId))return;
+  const last=pointer.get(e.pointerId),now=performance.now();
+  const eligible=pointer.size===1&&!hadMultitouch&&!panMoved&&
+   now>=suppressTapUntil&&now-gestureStart<500&&dragStart&&
+   Math.hypot(last.x-dragStart.x,last.y-dragStart.y)<8;
+  pointer.delete(e.pointerId);
+  if(hadMultitouch)suppressTapUntil=now+320;
+  if(!pointer.size){pinch=null;dragStart=null;hadMultitouch=false;}
+  if(eligible){const p=unpos(last.x,last.y);showSheet(hit(p));}
+ };
+ canvas.addEventListener('pointerup',end);
+ canvas.addEventListener('pointercancel',e=>{
+  pointer.delete(e.pointerId);panMoved=true;hadMultitouch=true;
+  suppressTapUntil=performance.now()+320;pinch=null;dragStart=null;
+ });
+ canvas.addEventListener('wheel',e=>{
+  e.preventDefault();const p=pointerPoint(e);zoomAt(e.deltaY<0?.83:1.2,p.x,p.y);
+ },{passive:false});
 }
 function otherPanels(panel){activeTab=panel;for(const n of document.querySelectorAll('[data-view]'))n.classList.toggle('selected',n.dataset.view===panel);
  $('canvasFrame').hidden=panel!=='map';$('records').hidden=panel==='map';$('sheet').hidden=true;if(panel==='map')return;
