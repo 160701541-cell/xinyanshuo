@@ -45,6 +45,13 @@ jobs:
         run: dotnet run --project tools/worldbox-xianxia/tests/NativeLocaleScenarioV23.csproj -c Release
       - name: 'Execute opt-in untranslated menu audit C# privacy and export scenario'
         run: dotnet run --project tools/worldbox-xianxia/tests/UntranslatedMenuScenarioV23.csproj -c Release
+      - name: 'Validate ZIP filename normalization without traversal'
+        run: |
+          mkdir -p /tmp/worldbox-v42-paths
+          javac -encoding UTF-8 -d /tmp/worldbox-v42-paths \
+            tools/worldbox-xianxia/private-apk-lab/SafeZipPathsV42.java \
+            tools/worldbox-xianxia/tests/SafeZipPathsV42Test.java
+          java -cp /tmp/worldbox-v42-paths com.xinyanshuo.worldbox.lab13.SafeZipPathsV42Test
       - name: 'Execute real-world ZIP shape regression (no proprietary MOD binaries)'
         run: |
           mkdir -p /tmp/worldbox-v34-modformat-jvm
