@@ -14,6 +14,7 @@ import {interiorAtlas} from './atlas.mjs';
 import {classifyGesture,canSelect} from './gesture.mjs';
 import {layoutTown,streetsFor,ART} from './buildings.mjs';
 import {generateWorld,realmView,regionAt,realmReport,domainShare} from './worldmap.mjs';
+import {ensureDao,daoReport,attitudeOf,seekAlly,shiftDao,taoLabel,STANCES,TAGS,NATIONS,SECTS as DAO_SECTS} from './dao.mjs';
 import {ensureKarma,killPreview,resolveKill,breakthroughChance,attemptBreakthrough,karmaTier,karmaReport,lootFor,JUSTIFY} from './karma.mjs';
 const placeById=getPlace;
 const $=id=>document.getElementById(id);
@@ -541,6 +542,7 @@ function handleRecordsClick(e){
  if(t.dataset.hire){const realm=t.dataset.hire;const r=hireRetainer(w,{sect:'散修',realm,patron:'court'});
   toast(r.ok?`招得${r.retainer.realmName}供奉，耗银 ${r.price.toLocaleString()} 文`:r.error);
   if(r.ok){scheduleSave();otherPanels('xian');}return;}
+ if(t.dataset.ally){const r=seekAlly(w,t.dataset.ally);toast(r.ok?`与${attitudeOf(w,t.dataset.ally).name}结交${r.note?`·${r.note}`:''}`:r.error);if(r.ok){profile();scheduleSave();otherPanels('xian');}return;}
  if(t.dataset.raid){const r=raidSect(w,t.dataset.raid);
   toast(r.ok?`山门已破（供奉 ${r.power} 对 ${r.theirs}）`:r.error);
   if(r.ok){scheduleSave();otherPanels('xian');}return;}
@@ -598,11 +600,18 @@ function renderXian(){
   <h3>征索</h3><p class="warbtns">${(ensureCultivation(w).sects||[]).filter(s=>!s.destroyed).map(s=>`<button data-levy="${s.id}">向${s.name}征 4 块灵石（敌意 +35）</button>`).join('')}</p>
   <h3>护国</h3><article class="entry">${danger}<br><small>护国力量 = 禁宫大阵 + 御用供奉；宗门战力 = 道众 × 境界 + 护山大阵 + 符箓 + 灵兽。</small></article>`;
  const k=karmaReport(w);const bt=k.breakthrough;
+ const dr=daoReport(w);
+ const stanceRows=dr.list.slice(0,8).map(x=>`<article class="entry"><strong>${safe(x.name)}</strong> <small>${safe(x.stance)}</small> · ${x.label}（${x.score}）<br>
+  <small>${safe(x.reason)}</small> ${x.hostile?'<small>死敌</small>':`<button data-ally="${x.id}">结交</button>`}</article>`).join('');
+ const daoBox=`<h3>道心与立场</h3><article class="entry"><strong>${dr.label}</strong> · 道心 ${dr.bias>0?'+':''}${dr.bias} · 把柄 ${dr.exposure}
+  <br><small>业力只是账，道心才是别人眼里的你。魔修自己不觉有业，但除魔卫道的人不这么看；你也别指望两头都占——跟谁走得近，就沾谁的颜色。</small><br>
+  <small>修仙界横跨 ${NATIONS.length} 国，最大的宗门势力不在任何王朝治下。</small></article>
+  <h3>诸方眼中</h3>${stanceRows}`;
  const karmaBox=`<h3>业力</h3><article class="entry"><strong>${k.tier}</strong> · 业力 ${k.value} · 突破成功率 ${Math.round(bt.chance*100)}%${bt.risk?` · <b style="color:#a33">${bt.risk}将临</b>`:''}<br>
   <small>${k.note}。杀修士沾业轻（同类相争，还有灵石丹药可捡），杀无辜凡人最重；有亲仇、护人、执法这等理由，则几乎不沾。</small><br>
   斩杀：修士 ${k.kills.cultivator} · 凡人 ${k.kills.mortal} · 其中师出有名 ${k.kills.justified} · 除害 ${k.kills.evildoer}
   ${k.recent.length?`<br><small>${k.recent.map(r=>`第${r.day}天 ${safe(r.name)}（${r.kind==='cultivator'?'修士':'凡人'}）业力${r.karma>=0?'+':''}${r.karma}${r.reason?`·${r.reason}`:''}`).join('<br>')}</small>`:''}</article>`;
- return `<h2>仙门</h2><p>灵气决定修士在哪儿；修炼资源决定修士替谁办事。县城灵气薄，一年也未必出一个筑基。</p>${karmaBox}${stoneBox}
+ return `<h2>仙门</h2><p>灵气决定修士在哪儿；修炼资源决定修士替谁办事。县城灵气薄，一年也未必出一个筑基。</p>${daoBox}${karmaBox}${stoneBox}
  <article class="entry"><strong>灵气</strong><br>${qi}</article>
  <h3>宗门</h3>${sects}
  <h3>供奉（战力 ${r.retainerPower}）</h3>${ret}
