@@ -50,6 +50,8 @@ public final class MainActivity extends Activity {
         } catch (Exception e) { throw new IllegalStateException("缺少 world.json", e); }
         sim = new Sim(world);
         sim.load(prefs.getString("save", ""));
+        // 装上崩溃记录器：下次闪退会留下带 文件:行号 的栈
+        new CrashHandler(this, sim).install();
 
         FrameLayout root = new FrameLayout(this);
         mapView = new MapView(this, sim);
@@ -118,6 +120,7 @@ public final class MainActivity extends Activity {
         }
         updateHud();
         ui.post(tick);
+        showCrashIfAny();
     }
 
     private final Runnable tick = new Runnable() {
@@ -178,6 +181,30 @@ public final class MainActivity extends Activity {
     }
 
     /** 左上角点开：个人状态，三个页签 */
+    /** 上次闪退留下的报告：全文可看、一键复制 */
+    private void showCrashIfAny() {
+        String report = CrashHandler.read(this);
+        if (report == null) return;
+        ScrollView sc = new ScrollView(this);
+        TextView tv = new TextView(this);
+        tv.setText(report);
+        tv.setTextSize(11);
+        tv.setTextIsSelectable(true);
+        tv.setPadding(24, 24, 24, 24);
+        sc.addView(tv);
+        new AlertDialog.Builder(this)
+            .setTitle("上次闪退了 · 可复制原文")
+            .setMessage("把这段发给我，第一行就是出错的文件与行号。")
+            .setView(sc)
+            .setPositiveButton("复制", (d, w) -> {
+                android.content.ClipboardManager cm = (android.content.ClipboardManager) getSystemService(CLIPBOARD_SERVICE);
+                cm.setPrimaryClip(android.content.ClipData.newPlainText("crash", report));
+                toast("已复制，粘贴给我即可");
+            })
+            .setNeutralButton("删除", (d, w) -> { CrashHandler.clear(this); toast("已清除"); })
+            .setNegativeButton("留着", null).show();
+    }
+
     private void profileDialog() {
         new AlertDialog.Builder(this)
             .setTitle("心魇说")

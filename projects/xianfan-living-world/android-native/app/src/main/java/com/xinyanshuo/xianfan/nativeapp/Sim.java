@@ -802,6 +802,19 @@ public final class Sim {
              + powerBreakdown();
     }
 
+    /** 崩溃时要带上：人在哪、在干什么、还剩多少血钱 */
+    public String debugState() {
+        return String.format("位置 %.0f,%.0f · 在 %s · 目标 %s · 体力 %.0f · 气血 %.0f · 文 %d · 行囊 %d 格 · 私兵 %d",
+            px, py, place, moving ? targetName : "无", stamina, hp, coin, bagCount(), men);
+    }
+
+    /** 最近操作（崩溃报告里给出最后几步，能定位是哪一下炸的） */
+    public java.util.List<String> recentActions(int n) {
+        java.util.List<String> out = new java.util.ArrayList<>();
+        for (int i = Math.max(0, log.size() - n); i < log.size(); i++) out.add(log.get(i));
+        return out;
+    }
+
     public boolean isXiu() { return spirit > 60 && karma < 60; }
 
     /** 私兵招募：每人 14 银，上限 60（原生版先给一个人数上限） */
