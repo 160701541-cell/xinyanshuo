@@ -81,7 +81,7 @@ public final class MainActivity extends Activity {
         bbg.setColor(Color.argb(240, 244, 240, 230));
         bbg.setCornerRadius(28);
         bar.setBackground(bbg);
-        String[][] tabs = {{"人物", "people"}, {"修行", "cult"}, {"妖兽", "wild"}, {"行囊", "bag"}, {"纪事", "log"}, {"星域", "star"}};
+        String[][] tabs = {{"人物", "people"}, {"修行", "cult"}, {"法则", "law"}, {"妖兽", "wild"}, {"行囊", "bag"}, {"纪事", "log"}, {"星域", "star"}};
         for (String[] t : tabs) {
             Button bt = new Button(this);
             bt.setText(t[0]);
@@ -192,7 +192,17 @@ public final class MainActivity extends Activity {
               .append("\n\n").append(sim.mortalRangeText());
             new AlertDialog.Builder(this).setTitle("修行").setMessage(sb.toString())
                 .setPositiveButton("测灵根", (x, w) -> { toast(sim.detectRoot()); updateHud(); })
-                .setNeutralButton("吐纳 4 时辰", (x, w) -> { toast(sim.practice(4)); updateHud(); })
+                .setNeutralButton("参悟空间", (x, w) -> { toast(sim.comprehend("space", 200)); updateHud(); })
+                .setNegativeButton("关闭", null).show();
+            return;
+        } else if ("law".equals(what)) {
+            sb.append("空间法则 ").append(String.format("%.2f", sim.lawSpace)).append("/10\n")
+              .append("时间法则 ").append(String.format("%.2f", sim.lawTime)).append("/10\n")
+              .append("虫洞：").append(sim.wormholeState()).append("\n\n")
+              .append(sim.isGeniusRoot() ? "时空天赋：元婴即可参悟" : "寻常修士：化神才摸得到");
+            new AlertDialog.Builder(this).setTitle("法则与虫洞").setMessage(sb.toString())
+                .setPositiveButton("参悟空间 200", (x, w) -> { toast(sim.comprehend("space", 200)); updateHud(); })
+                .setNeutralButton("参悟时间 200", (x, w) -> { toast(sim.comprehend("time", 200)); updateHud(); })
                 .setNegativeButton("关闭", null).show();
             return;
         } else if ("wild".equals(what)) {

@@ -34,6 +34,7 @@ public final class Sim {
     public String weaponGrade = "mortal", armorGrade = "mortal", talismanGrade = "mortal";
     public boolean wounded = false, tested = false;
     public int morale = 70, bias = 0;
+    public double lawSpace = 0, lawTime = 0;
     public boolean ship = false;
     public final List<String> visited = new ArrayList<>();
     public double clock = 7 * 60; // 第 0 天 07:00
@@ -210,6 +211,40 @@ public final class Sim {
 
     public String realmName() { return Power.REALM_NAMES[Math.max(0, Math.min(5, realmLevel))]; }
 
+    /** 时空法则：正常要化神，空/时灵根的元婴可提前 */
+    public boolean isGeniusRoot() { return "kong".equals(rootId) || "shi".equals(rootId); }
+
+    public String lawGateText() {
+        int gate = isGeniusRoot() ? 4 : 5;
+        if (realmLevel < gate) return "时空法则要" + Power.REALM_NAMES[gate] + "才摸得到" + (isGeniusRoot() ? "（你是时空天赋，可提前）" : "") + "，你如今" + realmName();
+        return "";
+    }
+
+    public String comprehend(String law, int hours) {
+        String gate = lawGateText();
+        if (!gate.isEmpty()) return gate;
+        double speed = (realmLevel - 4 + 1) * 0.0005 * (isGeniusRoot() ? 1.6 : 1);
+        double gain = hours * speed;
+        if ("space".equals(law)) {
+            if (lawSpace >= 10) return "空间法则已圆满。";
+            lawSpace = Math.min(10, lawSpace + gain);
+            note("参悟空间法则 " + String.format("%.2f", lawSpace) + "/10");
+            return "空间法则 " + String.format("%.2f", lawSpace) + "/10";
+        }
+        if (lawTime >= 10) return "时间法则已圆满。";
+        lawTime = Math.min(10, lawTime + gain);
+        note("参悟时间法则 " + String.format("%.2f", lawTime) + "/10");
+        return "时间法则 " + String.format("%.2f", lawTime) + "/10";
+    }
+
+    /** 虫洞阵法：空间六重 + 时间三重 + 十万下品灵石 */
+    public String wormholeState() {
+        if (lawSpace < 6) return "空间法则 " + String.format("%.1f", lawSpace) + "/6";
+        if (lawTime < 3) return "时间法则 " + String.format("%.1f", lawTime) + "/3";
+        if (stones < 100000) return "阵法待开：需十万下品灵石";
+        return "虫洞阵法可激发（稳定）";
+    }
+
     /** 星域横渡：银河到仙女座那种距离，只有化神以上谈得上 */
     public String voidGateText() {
         if (realmLevel >= 5) return "化神：肉身可渡虚空，但一趟就是几十年上千年";
@@ -240,13 +275,14 @@ public final class Sim {
         if (d.optBoolean("home")) return "你已经在本域。";
         if (realmLevel < 5) return voidGateText();
         double ly = d.optDouble("ly", d.optDouble("distWkm") / 9.46e8);
-        int need = 100000 + (int) Math.round(ly / 40);
+        boolean hole = lawSpace >= 6 && lawTime >= 3;
+        int need = hole ? 100000 : 100000 + (int) Math.round(ly / 40);
         if (stones < need) return "下品灵石不够：需 " + need + " 块，你有 " + stones + " 块。";
         stones -= need;
-        int years = (int) Math.max(20, Math.round(ly / 1200));
-        clock += years * 360.0 * 1440;
+        double years = hole ? Math.max(0.05, ly / 480000.0) : Math.max(20, ly / 1200.0);
+        clock += (long) (years * 360.0 * 1440);
         if (!visited.contains(d.optString("id"))) visited.add(d.optString("id"));
-        String line = "横渡 " + years + " 年，抵" + d.optString("name") + "（耗 " + need + " 下品灵石，" + (int) ly + " 光年）";
+        String line = (hole ? "走虫洞 " : "横渡 ") + String.format("%s", years < 1 ? String.format("%.2f", years) : String.valueOf((int) years)) + " 年，抵" + d.optString("name") + "（耗 " + need + " 下品灵石，" + (int) ly + " 光年）";
         note(line);
         return line;
     }
@@ -285,6 +321,7 @@ public final class Sim {
             o.put("karma", karma); o.put("men", men); o.put("place", place);
             o.put("stones", stones); o.put("realmLevel", realmLevel); o.put("ship", ship);
             o.put("layer", layer); o.put("rootId", rootId); o.put("tested", tested);
+            o.put("lawSpace", lawSpace); o.put("lawTime", lawTime);
             o.put("practice", practiceProgress); o.put("pills", pills);
             o.put("weapon", weaponGrade); o.put("armor", armorGrade); o.put("talisman", talismanGrade);
             o.put("wounded", wounded); o.put("morale", morale); o.put("bias", bias);
@@ -306,6 +343,7 @@ public final class Sim {
             place = o.optString("place", place);
             stones = o.optInt("stones", stones); realmLevel = o.optInt("realmLevel", realmLevel); ship = o.optBoolean("ship", ship);
             layer = o.optInt("layer", layer); rootId = o.optString("rootId", rootId); tested = o.optBoolean("tested", tested);
+            lawSpace = o.optDouble("lawSpace", lawSpace); lawTime = o.optDouble("lawTime", lawTime);
             practiceProgress = o.optDouble("practice", practiceProgress); pills = o.optInt("pills", pills);
             weaponGrade = o.optString("weapon", weaponGrade); armorGrade = o.optString("armor", armorGrade);
             talismanGrade = o.optString("talisman", talismanGrade);

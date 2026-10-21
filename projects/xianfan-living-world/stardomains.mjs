@@ -32,11 +32,79 @@ export const DOMAINS = [
 ];
 
 /** 横渡所需：境界门槛（化神=第 4 阶以上）或一艘星舰 */
-export const VOID_REALM = 5;                 // 只有化神以上能横渡虚空；凡人、炼气、元婴都不行
+export const VOID_REALM = 5;                 // 肉身横渡：化神（5）                 // 只有化神以上能横渡虚空；凡人、炼气、元婴都不行
 export const VOID_STONES = 100000;           // 十万下品灵石起步，不收银钱
 export const VOID_YEARS_PER_LY = 1 / 1200;   // 1200 光年/年：化神也得走上几十年
 export const MORTAL_KM_PER_DAY = 30;         // 凡人一生脚程：每日 30 公里
 export const MORTAL_YEARS = 60;
+
+/* ── 时空法则与虫洞 ─────────────────────────────────────────
+ * 虫洞不是船，是空间大能刻出来的阵法：空间为骨、时间为序。
+ * 法则领会normal需化神；天生时空灵根的天才可提前到元婴。
+ * 阵法一成，虫洞稳定，跨星域只要几个月而不是上千年。
+ */
+export const LAWS = {
+  space: {id: 'space', name: '空间法则', max: 10, note: '挪移、折叠、开凿虫洞'},
+  time: {id: 'time', name: '时间法则', max: 10, note: '拖延、加速、让虫洞两端同刻'},
+};
+export const LAW_REALM = 5;          // 正常：化神
+export const LAW_REALM_GENIUS = 4;   // 时空天赋灵根：元婴就能摸到
+export const GENIUS_ROOTS = {kong: '空灵根', shi: '时灵根'};
+export const GENIUS_ROOT_P = 0.004;  // 千分之四，极少见
+export const WORMHOLE = {spaceNeed: 6, timeNeed: 3, stones: 100000, yearsPerLy: 1 / 480000};  // 约 480 万光年/年
+
+/** 时空天赋：灵根里自带“空”或“时”，一生下来就比旁人快一个境界 */
+export function isGenius(w) {
+  const r = w.practice?.rootId || w.player?.rootId || '';
+  return r === 'kong' || r === 'shi';
+}
+
+export function lawGateRealm(w) { return isGenius(w) ? LAW_REALM_GENIUS : LAW_REALM; }
+
+export function ensureLaws(w) {
+  if (!w.laws) w.laws = {space: 0, time: 0, insight: 0, log: []};
+  return w.laws;
+}
+
+/** 能不能开始领会法则：看境界，天才提前一档 */
+export function canComprehend(w) {
+  ensureLaws(w);
+  const realm = realmLevel(w);
+  const gate = lawGateRealm(w);
+  if (realm < gate) {
+    return {ok: false, reason: `时空法则要${realmName(gate)}才摸得到${isGenius(w) ? '（你是时空天赋，可提前）' : ''}，你如今${realmName(realm)}`};
+  }
+  return {ok: true, reason: ''};
+}
+
+/** 闭关领会：越往上越慢，天才快一倍 */
+export function comprehend(w, law, hours) {
+  ensureLaws(w);
+  const g = canComprehend(w);
+  if (!g.ok) return {ok: false, reason: g.reason};
+  const L = LAWS[law];
+  if (!L) return {ok: false, reason: '没有这条法则'};
+  const cur = w.laws[law];
+  if (cur >= L.max) return {ok: false, reason: `${L.name}已经圆满`};
+  // 越高的境界领悟越快：化神每时辰 0.004，天才 ×1.6；一重法则约需一千时辰
+  const speed = (realmLevel(w) - LAW_REALM_GENIUS + 1) * 0.0005 * (isGenius(w) ? 1.6 : 1);   // 化神约千时辰一重
+  const gain = hours * speed;
+  w.laws[law] = Math.min(L.max, +(cur + gain).toFixed(2));
+  w.laws.insight += gain;
+  note(w, '法则', `参悟${L.name}，进境 ${w.laws[law]}/${L.max}`);
+  return {ok: true, law, level: w.laws[law]};
+}
+
+/** 能不能开虫洞：空间 6 重、时间 3 重、十万下品灵石 */
+export function canWormhole(w) {
+  ensureLaws(w);
+  const stones = w.player.stones || 0;
+  const sp = w.laws.space, tm = w.laws.time;
+  if (sp < WORMHOLE.spaceNeed) return {ok: false, reason: `空间法则要 ${WORMHOLE.spaceNeed} 重才撑得住虫洞（现 ${sp}）`};
+  if (tm < WORMHOLE.timeNeed) return {ok: false, reason: `时间法则要 ${WORMHOLE.timeNeed} 重才稳得住两端同刻（现 ${tm}）`};
+  if (stones < WORMHOLE.stones) return {ok: false, reason: `开阵要 ${WORMHOLE.stones.toLocaleString()} 块下品灵石（你有 ${stones.toLocaleString()}）`};
+  return {ok: true, reason: ''};
+}
 
 export function ensureStar(w) {
   if (w.star) return w.star;
@@ -80,9 +148,15 @@ export function travelCost(w, id) {
   if (!d || d.home) return {ok: false, reason: '你已经在玄黄了'};
   const gate = canVoidTravel(w);
   if (!gate.ok) return {ok: false, reason: gate.reason};
+  // 有虫洞阵法就走阵：灵石一样，时间缩到百分之一
+  const wh = canWormhole(w);
+  if (wh.ok) {
+    return {ok: true, how: '虫洞', stones: WORMHOLE.stones, years: Math.max(0.05, +(d.ly * WORMHOLE.yearsPerLy).toFixed(2)),
+            domain: d, lightYears: d.ly, stable: true};
+  }
   const stones = VOID_STONES + Math.round(d.ly / 40);        // 越远越贵，基数是十万
   const years = Math.max(20, Math.round(d.ly * VOID_YEARS_PER_LY));
-  return {ok: true, how: gate.how, stones, years, domain: d, lightYears: d.ly};
+  return {ok: true, how: gate.how, stones, years, domain: d, lightYears: d.ly, stable: false, wormhole: wh.reason};
 }
 
 /** 横渡：消耗灵石与年岁，失败则折在虚空里 */

@@ -10,6 +10,9 @@ const mulberry=(seed)=>{let a=seed>>>0;return()=>{a=(a+0x6D2B79F5)>>>0;let t=Mat
 // 灵根：决定“能不能修、上限多高”，与努力关系不大
 export const ROOTS={
  tian:{name:'天灵根',p:.0006,speed:5.0,note:'百年一见，宗门抢人'},
+ // 时空天赋灵根：自带空间或时间的亲和，法则领悟比常人早一个大境界
+ kong:{name:'空灵根',p:.0002,speed:4.2,note:'生来近空间，虫洞阵法一点就通'},
+ shi:{name:'时灵根',p:.0002,speed:4.2,note:'生来近时间，能拖慢别人的招式'},
  dan:{name:'单灵根',p:.006,speed:3.0},
  shuang:{name:'双灵根',p:.03,speed:2.0},
  san:{name:'三灵根',p:.09,speed:1.4},
