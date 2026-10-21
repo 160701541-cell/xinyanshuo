@@ -40,3 +40,11 @@
 .battle-hud{padding:6px 10px;background:rgba(24,22,18,.82);color:#efe8d6;font-size:13px;line-height:1.45}
 .battle-bar{display:flex;gap:6px;padding:8px 10px calc(8px + env(safe-area-inset-bottom));background:#20241c}
 .battle-bar button{flex:1;min-height:44px;border:1px solid #4b5340;background:#39422f;color:#f0ead8;border-radius:8px;font-size:14px}
+
+/* 家族：人物卡——头像 + 根性 + 寿元，按《修仙家族模拟器》那种“一眼看人”的版式 */
+.fam-card{display:flex;gap:10px;align-items:center;padding:8px 10px;margin:8px 0;border:1px solid #b9ad90;border-radius:10px;background:linear-gradient(180deg,#f7f1e0,#efe6cf)}
+.fam-card img{width:54px;height:54px;border-radius:50%;object-fit:cover;border:2px solid #c6a35c;background:#e8dcc2}
+.fam-card strong{font-size:16px}
+.fam-card p{margin:0 0 0 auto;display:flex;gap:6px}
+.fam-card button{min-height:40px;min-width:64px}
+.fam-card .tag{font-size:12px;padding:1px 6px;border-radius:999px;background:#e7dcc2;color:#5b4a2c}

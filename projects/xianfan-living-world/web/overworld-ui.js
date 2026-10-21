@@ -11,6 +11,7 @@ import {ensureCourt,tickCourt,issueOrder,talkTo,courtReport,parseDecree} from '.
 import {ensureMarket,tickMarket,marketReport,releaseGrain,buyToGranary,setTax,setMonopoly,buildPost,GOODS} from './market.js';
 import {PeopleBank,dirFor,stepOf} from './people.js';
 import {practice,breakLayer,breakRealm,restMeridian,practiceReport,detectRoot} from './cultivation.js';
+import {ensureFamily,familyReport,familyMembers,joinFamily,marry,conceive,candidatesFor,ageFamily,ageOf,ageLeft,rootOfPerson} from './family.js';
 import {ensureCareer,joinPath,advance,canAdvance,recruitMen,recruitCapacity,openShop,sendCaravan,buyLand,tickCareer,recordBattle,careerReport,hireCultivator,PATHS,SHOP_KINDS,MEN_COST} from './careers.js';
 import {ensureWar,levyCapacity,createArmy,warReport,tickWarDay,supplyDays,armyNeeds,deliveredCostKg,emblemOf,authorityReport,setRank,rankOf,rankInfo,takeCommand,joinArmy,issueDecree} from './war.js';
 import {interiorAtlas} from './atlas.js';
@@ -592,6 +593,17 @@ function handleRecordsClick(e){
   toast(r.ok?`招得${r.retainer.realmName}供奉，耗银 ${r.price.toLocaleString()} 文`:r.error);
   if(r.ok){scheduleSave();otherPanels('xian');}return;}
  if(t.dataset.detectroot){const r=detectRoot(w);toast(r.ok?`测出：${r.name}`:r.error);if(r.ok){profile();scheduleSave();otherPanels('xian');}return;}
+ if(t.dataset.adopt){const ids=w.people.filter(p=>p.status==='alive'&&!familyMembers(w).some(m=>m.id===p.id)&&p.age>=16&&p.age<=40&&p.root).slice(0,1);
+  if(!ids.length)return toast('城中暂无合适的散修可收');
+  const r=joinFamily(w,ids[0].id,'收族');toast(r.ok?`${ids[0].name} 入族`:r.error);if(r.ok){scheduleSave();renderFamily();}return;}
+ if(t.dataset.marry){const list=candidatesFor(w,t.dataset.marry);if(!list.length)return toast('没有合适的婚配人选');
+  const best=list.sort((a,b)=>rootRank(w,b)-rootRank(w,a)||ageOf(w,a)-ageOf(w,b))[0];
+  const r=marry(w,t.dataset.marry,best.id);toast(r.ok?`${r.a.name} 与 ${r.b.name} 成亲`:r.error);if(r.ok){scheduleSave();renderFamily();}return;}
+ if(t.dataset.bear){const [a,b]=t.dataset.bear.split(':');const r=conceive(w,a,b);
+  toast(r.ok?`${r.child.name} 出生（${r.rootId==='none'?'无灵根':'有灵根'}）`:r.error);if(r.ok){profile();scheduleSave();renderFamily();}return;}
+ if(t.dataset.famyear){const y=Number(t.dataset.famyear)||1;const r=ageFamily(w,y);
+  toast(`过 ${y} 年：${r.grew} 人长岁${r.died.length?`，${r.died.join('、')}故去`:''}，家业 ${r.income>=0?'+':''}${r.income} 银`);
+  scheduleSave();renderFamily();return;}
  if(t.dataset.practice){const r=practice(w,+t.dataset.practice||1);
   toast(r.ok?`吐纳得修为 +${r.gain}（经脉 ${Math.round(r.meridian)}${r.overload?'·负荷偏高':''}）`:r.error);
   if(r.ok){profile();scheduleSave();otherPanels('xian');}return;}
@@ -763,6 +775,29 @@ function renderInstitutions(){
  当前结局：<strong>${safe(s.outcome.name)}</strong>——${safe(s.outcome.desc)}</article>
  ${rows}`;
 }
+function rootRank(w,p){const order=['none','wu','si','san','shuang','dan','tian'];return Math.max(0,order.indexOf(rootOfPerson(w,p)));}
+
+/** 家族：人物卡 + 血脉 + 婚配生育 + 婚丧与年景。借的是结构，头像与素材还是我们自己的。 */
+function renderFamily(){
+ const r=familyReport(w);
+ const cards=r.cards.map(c=>{
+  const img=c.sex==='女'?'people/han_female.png':'people/han_male.png';
+  const spouse=c.spouse?`<small>婚配：${safe(c.spouse)}</small>`:'<small>未娶未嫁</small>';
+  const bear=c.spouse?`<button data-bear="${c.id}:${(w.family.spouse[c.id]||'')}">生育</button>`:'';
+  const marryBtn=c.spouse||c.age<16?''.replace('','')||'':`<button data-marry="${c.id}">说亲</button>`;
+  return `<article class="fam-card">
+   <img src="${img}" alt="">
+   <div><strong>${safe(c.name)}</strong> <span class="tag">${safe(c.root)}</span><br>
+   <small>${c.sex} · ${c.age} 岁 · 余寿 ${c.left} · ${safe(c.realm)}</small><br>${spouse}</div>
+   <p>${marryBtn}${bear}</p></article>`;}).join('');
+ const logs=r.log.length?r.log.map(l=>`<article class="entry"><small>第${l.day}日</small> ${safe(l.msg)}</article>`).join(''):'<p>族里还没有什么可记的事。</p>';
+ $('records').innerHTML=`<h2>${safe(r.name)} · 第 ${r.generation} 代</h2>
+  <p>族人 <b>${r.members}</b> 口（其中修士 ${r.cultivators} 人） · 声望 <b>${r.prestige}</b> · 田 ${r.estate.mu} 亩 · 族产 ${r.estate.silver} 银</p>
+  <p class="warbtns"><button data-adopt="1">收一名散修入族</button><button data-famyear="1">过一年</button><button data-famyear="10">过十年</button></p>
+  <p><small>血脉：孩子灵根从父母身上抽——双修士最容易出好苗子，两个凡人只会生凡人。</small></p>
+  ${cards}<h3>族中记事</h3>${logs}`;
+}
+
 function otherPanels(panel){activeTab=panel;for(const n of document.querySelectorAll('[data-view]'))n.classList.toggle('selected',n.dataset.view===panel);
  $('canvasFrame').hidden=panel!=='map';$('records').hidden=panel==='map';$('sheet').hidden=true;
  if(panel==='map'){drawMap();return;}
@@ -772,6 +807,7 @@ function otherPanels(panel){activeTab=panel;for(const n of document.querySelecto
  if(panel==='quests')return renderQuests();
  if(panel==='war')return renderWar();
  if(panel==='career')return renderCareer();
+ if(panel==='family')return renderFamily();
  const hist=w.history.slice(-25).reverse();let html=panel==='people'?`<h2>故人谱</h2><p>人物在地图上有位置，只有真正相遇后才记录在这里。</p>${w.player.contacts.map(c=>{const p=w.people.find(x=>x.id===c.id);return `<article class="entry">${safe(p?.name||c.id)} · ${safe(p?.job||'')} · 第${c.firstDay}天相识</article>`;}).join('')||'<p>尚无相识之人。</p>'}`:panel==='ledger'?renderLedger():`<h2>此世纪事</h2>${hist.map(e=>`<article class="entry"><small>第${e.day}日 · ${safe(e.type)}</small><p>${safe(e.message)}</p></article>`).join('')}`;
  $('records').innerHTML=html;}
 function resize(){const r=canvas.getBoundingClientRect();cssW=Math.max(10,r.width);cssH=Math.max(10,r.height);const dpr=Math.min(2,window.devicePixelRatio||1);canvas.width=Math.round(cssW*dpr);canvas.height=Math.round(cssH*dpr);ctx=canvas.getContext('2d');ctx.setTransform(dpr,0,0,dpr,0,0);drawMap();}
