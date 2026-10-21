@@ -204,8 +204,32 @@ namespace XianxiaWorldBox
                 }
             }catch{}
         }
+        static DateTime nextStreamPoll=DateTime.MinValue;
+        static string lastStreamState;
         public static void Tick()
         {
+            // Streaming world is a parallel sparse data layer, NOT MapBox tiles.
+            // Poll once per 10 seconds to keep Android Mono frame budget bounded.
+            if(DateTime.UtcNow>=nextStreamPoll)
+            {
+                nextStreamPoll=DateTime.UtcNow.AddSeconds(10);
+                try {
+                    Assembly streaming=AppDomain.CurrentDomain.GetAssemblies()
+                      .FirstOrDefault(a=>a.GetName().Name=="WorldBoxXianxiaStreamGrid");
+                    Type runtime=streaming?.GetType("XianxiaWorldBox.HugeWorld.WorldGridStreamRuntimeV41");
+                    runtime?.GetMethod("Tick",F)?.Invoke(null,null);
+                    string actual=runtime?.GetField("Status",F)?.GetValue(null)?.ToString();
+                    if(!string.IsNullOrEmpty(actual)&&actual!=lastStreamState)
+                    {
+                        lastStreamState=actual;
+                        Log("[V41-STREAM] "+actual);
+                    }
+                }catch(Exception e){if(lastStreamState!="FAILED_"+e.GetType().Name)
+                {
+                    lastStreamState="FAILED_"+e.GetType().Name;
+                    Log("[V41-STREAM] "+lastStreamState);
+                }}
+            }
             // Audits actual MapBox.width / MapBox.height even after the menu
             // preset has been registered; no tile allocation or map mutation.
             try{
