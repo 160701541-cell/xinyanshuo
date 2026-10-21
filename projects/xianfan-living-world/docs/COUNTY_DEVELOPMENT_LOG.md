@@ -302,3 +302,13 @@
 - `overworld-ui.mjs` 卡片头部渲染 `iconSVG(icon,56)`；`overworld.css` 加 `.sheet-icon`（pixelated）。
 - 测试 198/198（新增 3 项：名字→图标、职业→人像、最长匹配）。
 - 未做：更多图标、状态变体（打烊/夜间）、人物随境界变老、地图标记图标、实机截图。
+
+## 2026-10-22 / v0.40 卡牌背景（按名字生成场景）
+
+用户反馈：图标应当是「卡牌背景」，且原先画得不像。
+
+- 新模块 `content/scenes.mjs`：12 个场景构造器（inn/kitchen/office/forge/herb/gate/dock/field/school/temple/house/generic），64×40 像素格，`roof/window/banner/lantern/person` 等积木；`sceneIdFor()` 整名→最长包含→generic。
+- `engine.cardView()` 返回 `scene`（人物卡为 null）。
+- `overworld-ui.mjs` 卡片右侧 `.sheet-art` 铺场景 SVG data-URI（46% 宽、cover、pixelated），文字区纸色渐变过渡。
+- 测试 201/201（新增 3 项场景用例）。
+- 未做：非手绘、仅 12 类、不随天气/昼夜/营业状态变化、人物无半身立绘、无实机截图。

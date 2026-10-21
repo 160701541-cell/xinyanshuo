@@ -2,6 +2,7 @@
 // 一条规则 = {id, hook, when, then, once, cooldown, weight, tag}；新增玩法 = 加一条数据，不是加一段代码。
 import {note} from './core.mjs';
 import {iconFor, personIcon} from './content/icons.mjs';
+import {sceneFor} from './content/scenes.mjs';
 
 export const ENGINE_VERSION = 'engine-0.1.0';
 
@@ -152,7 +153,9 @@ export function cardView(w, tplId, ctx = {}) {
   const icon = t.kind === 'person'
     ? personIcon(local.person || local)
     : iconFor(local.iconName || local.name || '');
-  return {id: t.id, kind: t.kind, icon, rows, actions};
+  // 卡牌背景：按名字判断场景（客栈→两层楼，厨房→灶台，人物不画场景）
+  const scene = t.kind === 'person' ? null : sceneFor(local.sceneName || local.name || '');
+  return {id: t.id, kind: t.kind, icon, scene, rows, actions};
 }
 
 export function registerRules(list) {

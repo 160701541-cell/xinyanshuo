@@ -100,3 +100,34 @@ test('图标按整名优先、再按最长包含匹配，不会把“客栈掌�
   assert.equal(iconIdFor('厨房后巷'), 'kitchen');
   assert.equal(iconIdFor(''), 'generic');
 });
+
+test('卡牌背景按名字出场景：客栈两层楼、厨房灶台、衙门堂屋', async () => {
+  const {sceneIdFor, sceneFor, W, H} = await import('../content/scenes.mjs');
+  assert.equal(sceneIdFor('望江客栈'), 'inn');
+  assert.equal(sceneIdFor('官厨'), 'kitchen');
+  assert.equal(sceneIdFor('临安县衙'), 'office');
+  assert.equal(sceneIdFor('灵山药圃'), 'herb');
+  assert.equal(sceneIdFor('莫名其妙的地方'), 'generic');
+  const s = sceneFor('望江客栈');
+  assert.equal(s.id, 'inn');
+  assert.equal(s.rows.length, H);
+  assert.equal(s.rows[0].split('\u0001').length, W);
+});
+
+test('卡片视图带 scene；人物卡不画场景，只给头像', async () => {
+  const {createWorld} = await import('../core.mjs');
+  const w = createWorld('scene-card');
+  const inn = cardView(w, 'poi-structure', {item: {name: '望江客栈'}});
+  assert.equal(inn.scene.id, 'inn');
+  const person = cardView(w, 'person-card', {item: {person: {job: '厨娘', sex: '女'}, name: '阿绫'}});
+  assert.equal(person.scene, null);
+  assert.ok(person.icon.rows.length > 0);
+});
+
+test('场景不会因为名称里有“店”就都当成客栈：铁匠铺走 forge', async () => {
+  const {sceneIdFor} = await import('../content/scenes.mjs');
+  assert.equal(sceneIdFor('铁匠铺'), 'forge');
+  assert.equal(sceneIdFor('渡口'), 'dock');
+  assert.equal(sceneIdFor('南门'), 'gate');
+  assert.equal(sceneIdFor('田畴'), 'field');
+});

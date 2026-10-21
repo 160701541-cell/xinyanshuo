@@ -447,7 +447,12 @@ function showSheet(obj){selected=obj;const target=$('sheet');if(!obj){target.hid
  const rows=(view?.rows||[]).map(r=>`<p class="near"><b>${safe(r.label)}</b>：${safe(r.value)}</p>`).join('');
  const buttons=(view?.actions||[]).map(a=>`<button data-action="${a.id}"${a.id==='stop'||a.id==='fly'||a.id==='rest'?' class="quiet"':''}>${safe(a.label)}</button>`).join('');
  const icon = view && view.icon ? `<div class="sheet-icon">${iconSVG(view.icon, 56)}</div>` : '';
- target.innerHTML=`<div class="sheet-header">${icon}<div class="sheet-heading"><small>${escapeHtml(sub)}</small><h3>${escapeHtml(title)}</h3></div><button class="quiet" id="closeSheet" aria-label="关闭地点卡片">✕</button></div><div class="sheet-body">${rows}</div><div class="sheet-actions">${buttons}</div>`;
+ // 卡牌背景：整张场景画在卡片右侧，文字压在同一张卡上
+ const art = view && view.scene
+   ? `<div class="sheet-art" style="background-image:url('data:image/svg+xml;utf8,${encodeURIComponent(sceneSVG(view.scene, 320, 200))}')"></div>`
+   : '';
+ target.classList.toggle('has-art', Boolean(art));
+ target.innerHTML=`${art}<div class="sheet-header">${icon}<div class="sheet-heading"><small>${escapeHtml(sub)}</small><h3>${escapeHtml(title)}</h3></div><button class="quiet" id="closeSheet" aria-label="关闭地点卡片">✕</button></div><div class="sheet-body">${rows}</div><div class="sheet-actions">${buttons}</div>`;
  target.hidden=false;$('closeSheet').onclick=()=>showSheet(null);
  for(const b of target.querySelectorAll('[data-action]'))b.onclick=()=>sheetAction(b.dataset.action);
 }

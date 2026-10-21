@@ -49,6 +49,12 @@
 .fam-card button{min-height:40px;min-width:64px}
 .fam-card .tag{font-size:12px;padding:1px 6px;border-radius:999px;background:#e7dcc2;color:#5b4a2c}
 
+/* 卡牌背景：场景画占右侧，文字区让出 48% */
+.sheet{position:relative;overflow:hidden}
+.sheet-art{position:absolute;right:0;top:0;bottom:0;width:46%;background-size:cover;background-position:center;background-repeat:no-repeat;image-rendering:pixelated;border-left:1px solid rgba(120,104,78,.35)}
+.sheet.has-art .sheet-header,.sheet.has-art .sheet-body,.sheet.has-art .sheet-actions{padding-right:48%}
+.sheet.has-art .sheet-header{background:linear-gradient(90deg,rgba(250,246,236,.96) 55%,rgba(250,246,236,0) 100%)}
+
 /* 卡片图标：16×16 像素画按 56px 放大，整数倍保持硬边 */
 .sheet-header{display:flex;gap:10px;align-items:flex-start}
 .sheet-icon{flex:0 0 auto;line-height:0;border-radius:8px;background:rgba(60,48,32,.08);padding:4px}
