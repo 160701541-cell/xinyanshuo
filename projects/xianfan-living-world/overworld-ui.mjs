@@ -12,6 +12,7 @@ import {ensureMarket,tickMarket,marketReport,releaseGrain,buyToGranary,setTax,se
 import {ensureWar,levyCapacity,createArmy,warReport,tickWarDay,supplyDays,armyNeeds,deliveredCostKg,emblemOf,authorityReport,setRank,rankOf,rankInfo,takeCommand,joinArmy,issueDecree} from './war.mjs';
 import {interiorAtlas} from './atlas.mjs';
 import {classifyGesture,canSelect} from './gesture.mjs';
+import {layoutTown,ART,STREETS as TOWN_STREETS} from './buildings.mjs';
 const placeById=getPlace;
 const $=id=>document.getElementById(id);
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
@@ -173,14 +174,73 @@ function drawRoads(){for(const seg of ROUTES){drawPath(seg);ctx.strokeStyle='#97
  for(const line of [a,b]){drawPath(line);ctx.strokeStyle='#c5bb9c';ctx.lineWidth=clamp(45/camera.mpp,1,65);ctx.stroke();drawPath(line);ctx.strokeStyle='#e7dec5';ctx.lineWidth=clamp(40/camera.mpp,.8,60);ctx.stroke();}}
  ctx.lineCap='round';}
 function drawWall(){if(camera.mpp>40)return;for(const r of WALLS){rect(r.x,r.y,r.w,r.h,'#827e70','#e1c8a0',camera.mpp<8?1:0);}for(const g of CITY.gates){const s=pos(g),r=clamp(45/camera.mpp,2,65);ctx.strokeStyle='#614d3e';ctx.lineWidth=Math.max(1,6/camera.mpp);ctx.beginPath();ctx.arc(s.x,s.y,r,0,Math.PI*2);ctx.stroke();if(camera.mpp<8)screenText('城门',s.x,s.y-24,12);}}
-function drawBuildings(){if(camera.mpp>35)return;for(const b of [...TOWN_HOUSES,...STRUCTURES]){
- const p=pos(b),width=b.w/camera.mpp,height=b.h/camera.mpp;if(p.x+width<0||p.y+height<0||p.x>cssW||p.y>cssH)continue;
- const isHouse=b.id.startsWith('house_'),outline='#756c57',colors={government:'#a99579',forge:'#a97856',grain:'#b9a172',inn:'#8c9580',home:'#a9a18b',school:'#a3b18d',fort:'#8c8d88'};
- rect(b.x,b.y,b.w,b.h,'#ede3cc',outline,clamp(3/camera.mpp,.5,3));rect(b.x+5,b.y+5,b.w-10,b.h-10,colors[b.kind]||'#aaa18a','#7b6d57',clamp(2/camera.mpp,.5,2));
- if(camera.mpp<8){const roof=pos({x:b.x+b.w/2,y:b.y+b.h/2});ctx.strokeStyle='rgba(240,226,186,.5)';ctx.lineWidth=1.5;ctx.beginPath();ctx.moveTo(p.x,p.y);ctx.lineTo(roof.x,roof.y);ctx.lineTo(p.x+width,p.y);ctx.stroke();ctx.beginPath();ctx.moveTo(p.x,p.y+height);ctx.lineTo(roof.x,roof.y);ctx.lineTo(p.x+width,p.y+height);ctx.stroke();}
- if(!isHouse&&camera.mpp<10){text(b.name,{x:b.x+b.w/2,y:b.y+b.h/2},camera.mpp<4?12:10,'#303c34',650);}
- if(b.door&&camera.mpp<12){circle(b.door,clamp(9/camera.mpp,3,10),'#6e513a','#f5e5be',2);if(camera.mpp<4)text('门', {x:b.door.x,y:b.door.y-22},10,'#2a4a36');}
- }}
+const TOWN_LAYOUT=layoutTown();
+/** 街巷：先铺路，再铺房子；路面比地面亮一档，路口压深。 */
+function drawStreets(){
+ if(camera.mpp>600)return;
+ for(const s of TOWN_STREETS){
+  const a=pos({x:s.x1,y:s.y1}),b=pos({x:s.x2,y:s.y2});
+  const w=Math.max(1.2,s.w/camera.mpp);
+  ctx.lineCap='butt';ctx.strokeStyle=ART.ground.street;ctx.lineWidth=w;
+  ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);ctx.stroke();
+  if(camera.mpp<2.2&&w>6){ctx.strokeStyle='rgba(214,203,176,.85)';ctx.lineWidth=w-4;ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);ctx.stroke();}
+ }
+}
+function roofFill(name){const t=ART.roof[name]||ART.roof.home;return t;}
+function shade(hex,d){const n=parseInt(hex.slice(1),16);let r=(n>>16)+d,g=((n>>8)&255)+d,b=(n&255)+d;r=Math.max(0,Math.min(255,r));g=Math.max(0,Math.min(255,g));b=Math.max(0,Math.min(255,b));return `rgb(${r},${g},${b})`;}
+/** 屋顶：双坡，脊线两侧明暗分开；檐口压深；瓦纹只在近景画。 */
+function drawRoof(x,y,w,h,roof,ridgeNs,floors){
+ const base=roofFill(roof),light=shade(base,9),dark=shade(base,-7),mid=ridgeNs?x+w/2:x;
+ rect(x,y,w,h,dark,null,0);
+ if(ridgeNs)rect(x,y,w/2,h,light,null,0);else rect(x,y,w,h/2,light,null,0);
+ if(camera.mpp<16){
+  const lw=Math.max(.6,1.4/camera.mpp);
+  ctx.strokeStyle='rgba(58,52,42,.55)';ctx.lineWidth=lw;
+  const a=pos({x:ridgeNs?x+w/2:x,y:ridgeNs?y:y+h/2}),b=pos({x:ridgeNs?x+w/2:x+w,y:ridgeNs?y+h:y+h/2});
+  ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);ctx.stroke();
+  if(camera.mpp<3.2){
+   ctx.strokeStyle='rgba(45,40,32,.16)';ctx.lineWidth=1;
+   const step=2.6;
+   for(let gx=x+2;gx<x+w-1;gx+=step){const p1=pos({x:gx,y}),p2=pos({x:gx,y:y+h});ctx.beginPath();ctx.moveTo(p1.x,p1.y);ctx.lineTo(p2.x,p2.y);ctx.stroke();}
+  }
+ }
+ rect(x,y,w,h,null,'#4b4539',Math.max(.4,1.2/camera.mpp));
+ // 檐下阴影
+ if(camera.mpp<12)rect(x+w*.04,y+h,w,w*.09,'rgba(60,52,40,.18)',null,0);
+}
+function drawPart(p){
+ const {t}=p;const x=p.x,y=p.y,w=p.w||0,h=p.h||0;
+ if(t==='yard'){rect(x,y,w,h,'#c9bda0',null,0);if(camera.mpp<3){ctx.strokeStyle='rgba(182,169,138,.5)';ctx.lineWidth=1;const step=6;for(let gy=y+3;gy<y+h-2;gy+=step){const a=pos({x:x+2,y:gy}),b=pos({x:x+w-2,y:gy});ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);ctx.stroke();}}}
+ else if(t==='wall'){rect(x,y,w,h,'#a89274','#786650',Math.max(.4,1.2/camera.mpp));}
+ else if(t==='house'||t==='wing'){if(camera.mpp>26){rect(x,y,w,h,roofFill(p.roof||'home'),'#6b6353',1);return;}drawRoof(x,y,w,h,p.roof||'home',(p.ridge||'ns')==='ns',p.floors);}
+ else if(t==='gate'){rect(x,y,w,h,'#6a4f38','#4b4539',Math.max(.4,1/camera.mpp));}
+ else if(t==='well'){const c=pos({x,y});ctx.beginPath();ctx.arc(c.x,c.y,Math.max(1.5,4/camera.mpp),0,Math.PI*2);ctx.fillStyle='#7c8892';ctx.fill();ctx.strokeStyle='#4b4539';ctx.lineWidth=1;ctx.stroke();}
+ else if(t==='tree'){const c=pos({x,y});const rr=Math.max(2,(p.size||5)/camera.mpp*1.2);
+  ctx.beginPath();ctx.ellipse(c.x+rr*.25,c.y+rr*.5,rr*.9,rr*.55,0,0,Math.PI*2);ctx.fillStyle='rgba(60,52,40,.22)';ctx.fill();
+  ctx.beginPath();ctx.arc(c.x,c.y,rr,0,Math.PI*2);ctx.fillStyle='#688458';ctx.fill();ctx.strokeStyle='#46583a';ctx.lineWidth=1;ctx.stroke();
+  if(camera.mpp<5){ctx.beginPath();ctx.arc(c.x-rr*.25,c.y-rr*.28,rr*.5,0,Math.PI*2);ctx.fillStyle='#7e9a68';ctx.fill();}}
+ else if(t==='stall'){rect(x,y,w,h,'#b0704f','#4b4539',Math.max(.4,1/camera.mpp));}
+ else if(t==='field'){rect(x,y,w,h,'#9fae74',null,0);if(camera.mpp<6){ctx.strokeStyle='rgba(140,157,98,.9)';ctx.lineWidth=Math.max(1,1.5);for(let fx=x+2;fx<x+w;fx+=3){const a=pos({x:fx,y:y+2}),b=pos({x:fx,y:y+h-2});ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);ctx.stroke();}}}
+ else if(t==='pond'){rect(x,y,w,h,'#7ea0a6','#608890',Math.max(.6,1.4/camera.mpp));}
+}
+function drawBuildings(){
+ if(camera.mpp>120)return;
+ const k=camera.mpp;
+ for(const b of TOWN_LAYOUT){
+  const p=pos({x:b.x,y:b.y});const bw=b.w/k,bh=b.h/k;
+  if(p.x+bw<-30||p.y+bh<-30||p.x>cssW+30||p.y>cssH+30)continue;
+  if(k>34){rect(b.x,b.y,b.w,b.h,b.kind==='garden'?'#9fae74':'#c3b79c',null,0);continue;}
+  if(k>2.4){ // 中景：一整栋压成一个屋顶块，保留院墙边
+   rect(b.x,b.y,b.w,b.h,'#cfc3a6',null,0);
+   const house=b.parts.find(q=>q.t==='house');
+   if(house)rect(house.x,house.y,house.w,house.h,roofFill(b.roof||house.roof||'home'),'#6b6353',Math.max(.6,1/k));
+   continue;
+  }
+  rect(b.x-2,b.y-2,b.w+4,b.h+4,'rgba(60,52,40,.10)',null,0);
+  for(const part of b.parts)drawPart(part);
+  if(b.public&&k<6){text(b.name,{x:b.x+b.w/2,y:b.y-8},11,'#3d3830',600,true);}
+ }
+}
 function drawTowns(){for(const p of LANDMARKS){if(!visible(p))continue;if(camera.mpp>3500&&p.type!=='capital'&&p.type!=='sect')continue;
  if(camera.mpp>50&&p.active&&['market','street','homes','gate','shop','office','inn'].includes(p.type))continue;
  if(camera.mpp<5&&p.active&&p.type==='village'){// 村庄细部建筑图簇
@@ -230,7 +290,7 @@ function drawPlayer(){const p=pos(w.player.mapPos);
 }
 function drawRoute(){const r=w.player.route;if(!r)return;const points=[w.player.mapPos,...r.path.slice(r.index+1)];drawPath(points.map(p=>[p.x,p.y]));ctx.strokeStyle='rgba(255,250,228,.8)';ctx.lineWidth=6;ctx.stroke();drawPath(points.map(p=>[p.x,p.y]));ctx.strokeStyle='#cc7c40';ctx.lineWidth=3;ctx.setLineDash([8,7]);ctx.stroke();ctx.setLineDash([]);circle(r.goal,6,'#b7653a','#fff0d7',2);}
 function drawSelection(){if(!selected?.point)return;const p=pos(selected.point);ctx.beginPath();ctx.arc(p.x,p.y,24,0,Math.PI*2);ctx.strokeStyle='#bd713f';ctx.lineWidth=2.5;ctx.stroke();ctx.beginPath();ctx.moveTo(p.x-30,p.y);ctx.lineTo(p.x+30,p.y);ctx.moveTo(p.x,p.y-30);ctx.lineTo(p.x,p.y+30);ctx.stroke();}
-function drawMap(){if(!ctx||!w)return;ctx.clearRect(0,0,cssW,cssH);drawGround();drawFactionLayer();drawPolitical();drawRelief();drawWater();drawRoads();drawWall();drawBuildings();drawTowns();drawRoute();drawArmies();drawAvatars();drawPlayer();drawSelection();}
+function drawMap(){if(!ctx||!w)return;ctx.clearRect(0,0,cssW,cssH);drawGround();drawFactionLayer();drawPolitical();drawRelief();drawWater();drawRoads();drawStreets();drawWall();drawBuildings();drawTowns();drawRoute();drawArmies();drawAvatars();drawPlayer();drawSelection();}
 function profile(){const p=w.player,r=worldReport(w),place=placeAt(p.mapPos);
  $('name').textContent=p.name;$('place').textContent=p.indoor?(getPlace(p.indoor)?.name||'室内'):place.name;
  $('time').textContent=currentTime();$('population').textContent=`临安县及周边 ${r.population.toLocaleString('zh-CN')}人`;

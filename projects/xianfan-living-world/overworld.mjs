@@ -1,6 +1,6 @@
 /** 仙凡共生 · v0.7 开放地理原型：米制唯一坐标、不因缩放切场景。 */
 import {PLACES,deriveSeed,note,advanceClock,getPlace,apparentLocation,npcActivity} from './core.mjs';
-export const MAP_VERSION='county-0.8.0';
+export const MAP_VERSION='county-0.9.0';
 export const WORLD_LIMIT=1_350_000;
 // 城池：世俗城池看实力，修仙城池只有御城军可飞（见 flightRuleAt）。
 export const CITIES=[
@@ -86,7 +86,37 @@ export function obstacleAt(p){if(!Number.isFinite(p.x)||!Number.isFinite(p.y))re
 /** 城门洞是唯一可穿过城墙的通道；返回是否处于门洞内。 */
 export function gateAt(p){return CITY.gates.find(g=>dist(p,g)<=52)||null;}
 // 道路、桥梁、玩家均使用同一地图坐标；碰撞只允许走门洞（无穿墙）。
-export function terrainHeight(x,y){const a=Math.sin(x/1250)*Math.cos(y/900),b=Math.sin((x+y)/2300),c=Math.cos(x/390+y/670);return Math.round(135+90*a+65*b+22*c);}
+/** 地形高程：分形噪声（value noise 多倍频）+ 两条大河切出的河谷。
+ *  确定性、平滑、无周期性——纯正弦会在缩远时露出“搓衣板”条纹，这里不用。 */
+function hash2(ix,iy){
+ let h=Math.imul(ix,374761393)^Math.imul(iy,668265263)^0x9E3779B9;
+ h=Math.imul(h^(h>>>13),1274126177);return ((h^(h>>>16))>>>0)/4294967296;
+}
+function smooth(t){return t*t*(3-2*t);}
+function valueNoise(x,y){
+ const ix=Math.floor(x),iy=Math.floor(y),fx=smooth(x-ix),fy=smooth(y-iy);
+ const a=hash2(ix,iy),b=hash2(ix+1,iy),c=hash2(ix,iy+1),d=hash2(ix+1,iy+1);
+ return (a*(1-fx)+b*fx)*(1-fy)+(c*(1-fx)+d*fx)*fy;
+}
+export function terrainHeight(x,y){
+ // 五个倍频：大山脉 → 丘陵 → 沟壑
+ let h=0,amp=1,freq=1/9000;
+ for(let o=0;o<5;o++){h+=valueNoise(x*freq+o*17.3,y*freq-o*9.1)*amp;amp*=.52;freq*=2.05;}
+ h=140+(h-1.0)*230;                    // 归一：约 0 ~ 320 米，均值 140
+ // 河谷：河流沿线压低下切，形成谷地
+ let valley=0;
+ for(const seg of STREAMS){
+  for(let i=0;i<seg.length-1;i++){
+   const [x1,y1]=seg[i],[x2,y2]=seg[i+1];
+   const dx=x2-x1,dy=y2-y1,len2=dx*dx+dy*dy||1;
+   const t=Math.max(0,Math.min(1,((x-x1)*dx+(y-y1)*dy)/len2));
+   const px=x1+dx*t,py=y1+dy*t,dd=Math.hypot(x-px,y-py);
+   if(dd<520)valley=Math.max(valley,1-dd/520);
+  }
+ }
+ h-=valley*70;
+ return Math.max(0,Math.round(h));
+}
 export function placeAt(p){let best={name:'郊野',id:'guanlu',d:Infinity};for(const l of LANDMARKS){if(!l.active||['room','shop','inn','office'].includes(l.type))continue;let d=dist(p,l);if(d<best.d)best={name:l.name,id:l.id,d};}return best;}
 export function placeCoord(id){return PLACE_METERS[id]||{x:0,y:0};}
 export function ensureGeo(w){if(!w.player.mapPos){const base=placeCoord(w.player.place);w.player.mapPos={x:base.x,y:base.y};if(w.player.place==='dongshi')w.player.mapPos={x:0,y:0};}
