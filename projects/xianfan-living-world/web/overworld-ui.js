@@ -10,7 +10,7 @@ import {ensureState,tickState,reform,stateReport,LEVERS} from './state.js';
 import {ensureCourt,tickCourt,issueOrder,talkTo,courtReport,parseDecree} from './court.js';
 import {ensureMarket,tickMarket,marketReport,releaseGrain,buyToGranary,setTax,setMonopoly,buildPost,GOODS} from './market.js';
 import {PeopleBank,dirFor,stepOf} from './people.js';
-import {practice,breakLayer,breakRealm,restMeridian,practiceReport,layerName} from './cultivation.js';
+import {practice,breakLayer,breakRealm,restMeridian,practiceReport,detectRoot} from './cultivation.js';
 import {ensureCareer,joinPath,advance,canAdvance,recruitMen,recruitCapacity,openShop,sendCaravan,buyLand,tickCareer,recordBattle,careerReport,hireCultivator,PATHS,SHOP_KINDS,MEN_COST} from './careers.js';
 import {ensureWar,levyCapacity,createArmy,warReport,tickWarDay,supplyDays,armyNeeds,deliveredCostKg,emblemOf,authorityReport,setRank,rankOf,rankInfo,takeCommand,joinArmy,issueDecree} from './war.js';
 import {interiorAtlas} from './atlas.js';
@@ -591,6 +591,7 @@ function handleRecordsClick(e){
  if(t.dataset.hire){const realm=t.dataset.hire;const r=hireRetainer(w,{sect:'散修',realm,patron:'court'});
   toast(r.ok?`招得${r.retainer.realmName}供奉，耗银 ${r.price.toLocaleString()} 文`:r.error);
   if(r.ok){scheduleSave();otherPanels('xian');}return;}
+ if(t.dataset.detectroot){const r=detectRoot(w);toast(r.ok?`测出：${r.name}`:r.error);if(r.ok){profile();scheduleSave();otherPanels('xian');}return;}
  if(t.dataset.practice){const r=practice(w,+t.dataset.practice||1);
   toast(r.ok?`吐纳得修为 +${r.gain}（经脉 ${Math.round(r.meridian)}${r.overload?'·负荷偏高':''}）`:r.error);
   if(r.ok){profile();scheduleSave();otherPanels('xian');}return;}

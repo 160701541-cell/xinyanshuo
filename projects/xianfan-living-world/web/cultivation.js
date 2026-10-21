@@ -210,7 +210,7 @@ export const BREATHE = {staminaPerHour: 1.4, baseGain: 1, overloadPause: .75};
 
 export function ensurePractice(w) {
   if (w.practice) return w.practice;
-  w.practice = {rootId: null, layer: 0, progress: 0, meridian: 0, lastTried: null, log: []};
+  w.practice = {rootId: null, layer: 0, progress: 0, meridian: 0, lastTried: null, tested: false, log: []};
   return w.practice;
 }
 
@@ -218,11 +218,30 @@ export function rootSpeed(rootId) { return (ROOTS[rootId] || ROOTS.none).speed; 
 export function layerName(layer) { return layer <= 0 ? '凡人' : (BARRIERS[layer] ? BARRIERS[layer].name : `炼气${layer}层`); }
 
 /** 一次吐纳：hours 个世界小时。灵气密度、灵根、经脉负荷一起决定收益。 */
+// 灵根检测台：苍岚时期的老规矩——没亲自测过，就不显示你的根性。
+// 放在灵山与青云山门（有灵脉、有检测法器的两处），别处测不了。
+export function detectRoot(w) {
+  ensurePractice(w);
+  const p = w.practice;
+  const place = w.player.place;
+  if (place !== 'lingshan' && place !== 'qingyun') {
+    return {ok: false, error: '这里没有检测灵根的法器——去灵山药市或青云山门的石台。'};
+  }
+  if (p.tested) return {ok: false, error: `你已经测过了：${ROOTS[p.rootId || w.player.root || 'none'].name}。`};
+  const rootId = p.rootId || w.player.root || 'none';
+  p.rootId = rootId;
+  p.tested = true;
+  note(w, '修仙', `${w.player.name} 在${place === 'lingshan' ? '灵山' : '青云山门'}测出${ROOTS[rootId].name}。`);
+  p.log.push({day: w.day, msg: `测出${ROOTS[rootId].name}`});
+  return {ok: true, rootId, name: ROOTS[rootId].name};
+}
+
 export function practice(w, hours = 1) {
   ensurePractice(w);
   const p = w.practice;
   const rootId = p.rootId || (w.player.root || 'none');
   p.rootId = rootId;
+  if (!p.tested) return {ok: false, error: '你还没测过灵根——去灵山或青云山门的检测台。'};
   const speed = rootSpeed(rootId);
   if (speed <= 0) return {ok: false, error: '你没有灵根，吐纳不进灵气——这条路天生不通。'};
   if (p.layer >= LAYERS) return {ok: false, error: '炼气已到顶，接下来是筑基的事。'};
@@ -304,7 +323,8 @@ export function practiceReport(w) {
   ensurePractice(w);
   const p = w.practice;
   return {
-    root: (ROOTS[p.rootId || w.player.root || 'none']).name,
+    tested: !!p.tested,
+    root: p.tested ? (ROOTS[p.rootId || w.player.root || 'none']).name : '未测',
     layer: p.layer, layerName: layerName(p.layer), progress: p.progress,
     next: BARRIERS[p.layer + 1] || null, meridian: Math.round(p.meridian),
     overloaded: p.meridian >= 60, log: p.log.slice(-6),

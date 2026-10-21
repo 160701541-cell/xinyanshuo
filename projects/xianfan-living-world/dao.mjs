@@ -205,9 +205,14 @@ export function whereOf(person,hour=12){
  const home=homePlaceOf(person);
  if(hour<6||hour>=21)return home;
  // 白天一部分人下山采买，其余留在落脚点；按人定死，不随刷新变
- const spots=['dongshi','xijie','nanmen','lingshan'];
+ // 修士不是都下山赶集：采药的进山、巡山的绕峰、游历的下山见世面、坐镇的不出洞府。
+ // 各自按 id 定死，刷新与读档都不变，方便玩家记住“谁在哪儿”。
+ const role=hashStr('role:'+person.id)%100;
+ const style=role<30?'采药':role<55?'巡山':role<85?'游历':'坐镇';
+ const spots=style==='采药'?['lingshan','songlin']:style==='巡山'?['qingyun','lingshan']:
+             style==='游历'?['dongshi','xijie','nanmen','kezhan']:[home];
  const out=spots[hashStr('biz:'+person.id)%spots.length];
- const goesOut=hashStr('out:'+person.id)%100<42;      // 四成人白天出门，其余在屋里
+ const goesOut=style!=='坐镇'&&hashStr('out:'+person.id)%100<70;   // 坐镇的不出门，其余七成有行迹
  const business=hour>=8&&hour<17;
  return business&&goesOut?out:home;
 }

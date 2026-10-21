@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {sheetFor,dirFor,rowOf,stepOf,WALK_DIRS,SHEETS,PORTRAITS} from '../people.mjs';
 import {createWorld} from '../core.mjs';
-import {ensurePractice,practice,breakLayer,breakRealm,restMeridian,practiceReport,BARRIERS,LAYERS} from '../cultivation.mjs';
+import {ensurePractice,practice,breakLayer,breakRealm,restMeridian,practiceReport,detectRoot,BARRIERS,LAYERS} from '../cultivation.mjs';
 
 test('v0.34 小人走图沿用已验的 CC0 素材，按职业选图', () => {
   assert.equal(Object.keys(SHEETS).length, 4);
@@ -30,7 +30,9 @@ test('v0.34 吐纳：灵根决定速度，没灵根一点都进不去', () => {
   w.player.place = 'qingyun';
   ensurePractice(w);
   w.practice.rootId = 'none';
-  assert.equal(practice(w, 1).ok, false);
+  assert.equal(practice(w, 1).ok, false);   // 未测灵根：先拦下
+  detectRoot(w);
+  assert.equal(practice(w, 1).ok, false);   // 测出无灵根：仍然修不了
   w.practice.rootId = 'san';
   const r = practice(w, 1);
   assert.ok(r.ok && r.gain > 0);
@@ -41,13 +43,15 @@ test('v0.34 灵气密度影响收益：灵山快过县城', () => {
   const a = createWorld('密度a'); a.player.root = 'san'; a.player.place = 'lingshan';
   const b = createWorld('密度b'); b.player.root = 'san'; b.player.place = 'xiancheng';
   ensurePractice(a); ensurePractice(b);
+  detectRoot(a);
+  b.player.place = 'qingyun'; detectRoot(b); b.player.place = 'xiancheng';
   const ga = practice(a, 4).gain, gb = practice(b, 4).gain;
   assert.ok(ga > gb, `灵山 ${ga} 应快过县城 ${gb}`);
 });
 
 test('v0.34 经脉堵死必须歇息，不能无限刷', () => {
   const w = createWorld('经脉'); w.player.root = 'tian'; w.player.place = 'lingshan';
-  ensurePractice(w);
+  ensurePractice(w); detectRoot(w);
   for (let i = 0; i < 80; i++) practice(w, 1);
   assert.ok(w.practice.meridian >= 100);
   const blocked = practice(w, 1);
@@ -59,7 +63,7 @@ test('v0.34 经脉堵死必须歇息，不能无限刷', () => {
 
 test('v0.34 层间突破要够修为，筑基要炼满十三层', () => {
   const w = createWorld('突破'); w.player.root = 'tian'; w.player.place = 'lingshan';
-  ensurePractice(w);
+  ensurePractice(w); detectRoot(w);
   w.practice.progress = BARRIERS[1].need - 1;
   assert.equal(breakLayer(w).ok, false);
   w.practice.progress = BARRIERS[1].need;
@@ -76,7 +80,12 @@ test('v0.34 十三层阶梯是名词表、每层要求递增', () => {
   assert.equal(BARRIERS[LAYERS].name, '炼气十三层');
   const w = createWorld('报告'); w.player.root = 'si';
   ensurePractice(w);
+  assert.equal(practiceReport(w).root, '未测');       // 没测过就不显示，老规矩
+  assert.equal(detectRoot(w).ok, false);              // 县城没有检测台
+  w.player.place = 'qingyun';
+  assert.equal(detectRoot(w).ok, true);
   const r = practiceReport(w);
   assert.equal(r.layerName, '凡人');
   assert.equal(r.root, '四灵根');
+  assert.equal(detectRoot(w).ok, false);              // 不能反复测
 });
