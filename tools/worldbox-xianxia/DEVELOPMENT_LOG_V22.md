@@ -692,3 +692,10 @@ Work下一步：在真实Android16手机运行这一准确SHA256包，收集`MOD
 - 私有APK：`WorldBox_万界仙侠_v044_模组ZIP导入与旧源码清理修复_待实机.apk`，188052893字节，SHA256 `022e8d2195e046c867c2fca7a7614d50ee1d6bbd755a4a2acf0b7324a4c03baf`；已上传用户私有Library`/WorldBox-万界仙侠/Work交接/`，公开仓库只有自有代码与记录，苍岚main未改变。
 
 **P0/实机待验：** 用户仍未提供失败的`凡人修仙传_v1.1.16.zip`实际字节，所以不宣称其能加载；观察MOD由FAILED转LOADED、安卓16启动、旧源代码清理数量，均需要新版本日志才能确认；独立10000×10000分区图**不等于**原版WorldBox真实一亿格可玩地图。第三方Chronicle的CS0009未根治。只允许安卓16设备实测后再标通过。
+
+
+## 2026-10-21 v0.45：大地图跨存档污染防护真实提交
+- v0.41虚拟地块原先使用一个全局持久化文件夹，多个WorldBox存档可能混用同一虚拟资源/地形修改。本轮新增WorldGridSaveScopeV45，对经过验证的唯一存档ID分配私有SHA256隔离目录，冲突世界种子拒绝；无权威游戏存档ID时改用本次运行独立临时预览，旧全局v41目录不再复用。真实WorldBox存档ID获取接口仍未接入，不能写已完成真实跨存档整合。
+- 新增双存档A/B切换、重启保留各自(9999,9999)地块值、失败ID、跨存档不混淆测试。GitHub Actions 39573487066 三个作业通过。
+- 以用户私有v0.44为基线重新集成自有WorldBoxXianxiaStreamGrid.dll，重新签名v0.45 APK。188056990字节，SHA256 0153da4ce0dbc3fda0aef7fc7583e013bb0795c294797783e4080bf950fea131。商业WorldBox程序集、Launcher DEX和安卓Manifest未修改，v0.44的ZIP安全归一化、Observer实验预编译和安全源码清理全部保留。APK v1/v2/v3及CRC验证通过。
+- APK、审计JSON及不含口令的重建脚本已上传私有Work交接库。真实安卓16启动、Observer是否LOADED、实际10000×10000WorldBox游戏地图均未验收；当前地图仍是虚拟数据和预览。与苍岚main严格隔离。
