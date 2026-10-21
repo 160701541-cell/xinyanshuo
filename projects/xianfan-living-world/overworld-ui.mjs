@@ -11,6 +11,8 @@ import {ensureCourt,tickCourt,issueOrder,talkTo,courtReport,parseDecree} from '.
 import {ensureMarket,tickMarket,marketReport,releaseGrain,buyToGranary,setTax,setMonopoly,buildPost,GOODS} from './market.mjs';
 import {PeopleBank,dirFor,stepOf} from './people.mjs';
 import {practice,breakLayer,breakRealm,restMeridian,practiceReport,detectRoot} from './cultivation.mjs';
+import {runRules,ensureEngine} from './engine.mjs';
+import {loadContent} from './content/index.mjs';
 import {ensureFamily,familyReport,familyMembers,joinFamily,marry,conceive,candidatesFor,ageFamily,ageOf,ageLeft,rootOfPerson} from './family.mjs';
 import {ensureCareer,joinPath,advance,canAdvance,recruitMen,recruitCapacity,openShop,sendCaravan,buyLand,tickCareer,recordBattle,careerReport,hireCultivator,PATHS,SHOP_KINDS,MEN_COST} from './careers.mjs';
 import {ensureWar,levyCapacity,createArmy,warReport,tickWarDay,supplyDays,armyNeeds,deliveredCostKg,emblemOf,authorityReport,setRank,rankOf,rankInfo,takeCommand,joinArmy,issueDecree} from './war.mjs';
@@ -877,7 +879,21 @@ function bind(){canvas=$('worldCanvas');setupGestures();$('zoomIn').onclick=()=>
  window.addEventListener('resize',resize);document.addEventListener('visibilitychange',()=>{paused=document.hidden;if(paused)save().catch(()=>{});});
 }
 let stamp=0,profileStamp=0,saveStamp=0;
-function animation(now){clockMs=now;const dt=stamp?Math.min(.12,(now-stamp)/1000):0;stamp=now;if(!paused&&w&&dt>0){const old={...w.player.mapPos};const result=advanceMap(w,dt,travelSpeed);tickWarIfDayChanged();if(result.done){toast('到达目的地；移动时间已累计。');scheduleSave();}
+let lastRuleDay=null;
+/** 每天只跑一次；规则表在 content/ 里，加玩法不用改这里。 */
+function runDailyRules(){
+ if(lastRuleDay===w.day)return [];
+ lastRuleDay=w.day;
+ ensureEngine(w);
+ const fired=runRules(w,'daily',{});
+ if(fired.length)otherPanels(activeTab);
+ return fired;
+}
+function runTravelRules(){
+ ensureEngine(w);
+ runRules(w,'travel',{mode:'foot'});
+}
+function animation(now){clockMs=now;const dt=stamp?Math.min(.12,(now-stamp)/1000):0;stamp=now;if(!paused&&w&&dt>0){const old={...w.player.mapPos};const result=advanceMap(w,dt,travelSpeed);tickWarIfDayChanged();const firedDays=runDailyRules();if(result.done){runTravelRules();toast('到达目的地；移动时间已累计。');scheduleSave();}
  if(result.moved>0){ // 只有实际移动才更新场景名；缩放操作不写入位置。
  camera.x+=w.player.mapPos.x-old.x;camera.y+=w.player.mapPos.y-old.y;
  }
@@ -885,7 +901,8 @@ function animation(now){clockMs=now;const dt=stamp?Math.min(.12,(now-stamp)/1000
  if(now-saveStamp>15000){scheduleSave();saveStamp=now;}}
  if(w){const mb=stepMapBattle(w,dt);if(mb&&mb.done&&!mb.reported){mb.reported=true;const r=mapBattleReport(w);const k=recordBattle(w,{kills:(r.left.dead||0)+(r.right.dead||0),won:(r.left.alive||0)>=(r.right.alive||0)});toast(`战罢：左亡 ${r.left.dead} 右亡 ${r.right.dead} · 战功 +${k.gain}`);scheduleSave();}}
  if(w&&!$('canvasFrame').hidden)drawMap();requestAnimationFrame(animation);}
-async function init(){try{const raw=await load();w=raw?restoreWorld(raw):createWorld();}catch(e){console.warn(e);w=createWorld();toast('旧存档暂时无法读取，当前为临时世界。');}
+async function init(){
+ loadContent();try{const raw=await load();w=raw?restoreWorld(raw):createWorld();}catch(e){console.warn(e);w=createWorld();toast('旧存档暂时无法读取，当前为临时世界。');}
  sprites=new SpriteBank('sprites/');
  await sprites.load().catch(()=>false);
  peopleBank=new PeopleBank('');
