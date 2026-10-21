@@ -24,6 +24,9 @@ final class ExternalModImporterV32 {
         return name;
     }
     static String safeEntry(String value)throws IOException {
+        // v44: normalize harmless Windows separators and redundant dot prefixes.
+        // SafeZipPathsV42 rejects absolute paths, parent traversal and controls first.
+        value=SafeZipPathsV42.normalize(value);
         if(value==null||value.length()>240||value.startsWith("/")||value.contains("\\")||
            value.indexOf('\u0000')>=0||value.matches("^[A-Za-z]:.*"))
             throw new IOException("ZIP路径格式不安全");
