@@ -156,7 +156,7 @@ export function tickActors(w,elapsedWorldSeconds){ensureGeo(w);if(!peopleCaches.
  }else{a.targetX=a.homeX;a.targetY=a.homeY;a.state='归家';}
  a.cooldown=140+s%120;
  }
- const t={x:a.targetX,y:a.targetY}, d=dist(a,t);if(d>0){const travel=Math.min(d,a.speed*step);const n={x:a.x+(a.targetX-a.x)/d*travel,y:a.y+(a.targetY-a.y)/d*travel};if(!obstacleAt(n)){a.x=n.x;a.y=n.y;}else{a.targetX=a.x;a.targetY=a.y;a.cooldown=30;}}
+ const t={x:a.targetX,y:a.targetY}, d=dist(a,t);if(d>0){const travel=Math.min(d,a.speed*step);const n={x:a.x+(a.targetX-a.x)/d*travel,y:a.y+(a.targetY-a.y)/d*travel};if(!obstacleAt(n)){a.dx=n.x-a.x;a.dy=n.y-a.y;a.x=n.x;a.y=n.y;}else{a.dx=0;a.dy=0;a.targetX=a.x;a.targetY=a.y;a.cooldown=30;}}
  }
 }
 // A* 寻路只在局部细网格展开；长距离分割到公共道路上的里程碑，避免对整片天下逐米开数组。

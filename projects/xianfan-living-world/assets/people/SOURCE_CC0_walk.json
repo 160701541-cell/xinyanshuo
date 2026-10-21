@@ -1,0 +1,49 @@
+{
+  "upstream": "https://opengameart.org/content/samurai-sprites",
+  "author": "sebshady",
+  "license": "CC0",
+  "conversion": "crop walking 3x4 48x48, hue-recolor clothing only",
+  "visual_status": "source for working animation, NOT final Chinese HD2D art",
+  "assets": {
+    "hero_walk.png": {
+      "sha256": "9d6574fef3cf30037aedf2c9a490ad1c5ea08c53b85a30c900d352b792b4396e",
+      "bytes": 9001,
+      "frame_px": [
+        48,
+        48
+      ],
+      "columns": 3,
+      "rows": 4
+    },
+    "farmer_walk.png": {
+      "sha256": "dac6c331dc17fea45af5d423c5b27372ce842d56bf1ce5589c7350ecd90fafc2",
+      "bytes": 9091,
+      "frame_px": [
+        48,
+        48
+      ],
+      "columns": 3,
+      "rows": 4
+    },
+    "woodsman_walk.png": {
+      "sha256": "9e7c352f6b6f4e7059d233464a76946e458eb4642462e77b60b8be8b51322222",
+      "bytes": 9080,
+      "frame_px": [
+        48,
+        48
+      ],
+      "columns": 3,
+      "rows": 4
+    },
+    "merchant_walk.png": {
+      "sha256": "836f92b3fcb9de9eff8bdaf139579604f97e81d64901143885f78ba9682af540",
+      "bytes": 9023,
+      "frame_px": [
+        48,
+        48
+      ],
+      "columns": 3,
+      "rows": 4
+    }
+  }
+}\n

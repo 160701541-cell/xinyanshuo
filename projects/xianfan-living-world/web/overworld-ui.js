@@ -9,6 +9,8 @@ import {levySect,RETAINER_COST,ensureCultivation,xianReport,tickRetainers,resolv
 import {ensureState,tickState,reform,stateReport,LEVERS} from './state.js';
 import {ensureCourt,tickCourt,issueOrder,talkTo,courtReport,parseDecree} from './court.js';
 import {ensureMarket,tickMarket,marketReport,releaseGrain,buyToGranary,setTax,setMonopoly,buildPost,GOODS} from './market.js';
+import {PeopleBank,dirFor,stepOf} from './people.js';
+import {practice,breakLayer,breakRealm,restMeridian,practiceReport,layerName} from './cultivation.js';
 import {ensureCareer,joinPath,advance,canAdvance,recruitMen,recruitCapacity,openShop,sendCaravan,buyLand,tickCareer,recordBattle,careerReport,hireCultivator,PATHS,SHOP_KINDS,MEN_COST} from './careers.js';
 import {ensureWar,levyCapacity,createArmy,warReport,tickWarDay,supplyDays,armyNeeds,deliveredCostKg,emblemOf,authorityReport,setRank,rankOf,rankInfo,takeCommand,joinArmy,issueDecree} from './war.js';
 import {interiorAtlas} from './atlas.js';
@@ -22,7 +24,7 @@ const placeById=getPlace;
 const $=id=>document.getElementById(id);
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 const safe=s=>String(s??'').replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','\'':'&#39;','"':'&quot;'}[c]));
-let worldRealm='mortal',w,selected=null,camera={x:0,y:0,mpp:2.7},mapMode='terrain',sprites=null,ctx,canvas,cssW=0,cssH=0,activeTab='map',pointer=new Map(),pinch=null,dragStart=null,gestureMoved=false,multiTouched=false,downAt=0,travelSpeed=30,savePending=0,noticeTimeout=0,paused=false;
+let worldRealm='mortal',w,selected=null,camera={x:0,y:0,mpp:2.7},mapMode='terrain',sprites=null,peopleBank=null,clockMs=0,ctx,canvas,cssW=0,cssH=0,activeTab='map',pointer=new Map(),pinch=null,dragStart=null,gestureMoved=false,multiTouched=false,downAt=0,travelSpeed=30,savePending=0,noticeTimeout=0,paused=false;
 const peopleCaches=new WeakMap();
 const faces=['#537560','#95724d','#607d91','#8e715f','#855f67','#726b91'];
 const currentTime=()=>{const m=Math.floor(w.hour*60);return `承平${3+Math.floor((w.day-1)/360)}年 · 第${(w.day-1)%360+1}日 · ${String(Math.floor(m/60)).padStart(2,'0')}:${String(m%60).padStart(2,'0')}`;};
@@ -363,21 +365,35 @@ function drawAvatars(){if(camera.mpp>350)return;
   const pp=pos(a);if(taken.some(q=>Math.hypot(q.x-pp.x,q.y-pp.y)<(camera.mpp>1.5?26:16)))continue;
   taken.push(pp);const person=people.get(a.id);if(!person)continue;
   const h=a.leader?30:camera.mpp<1.3?24:22;
-  const layers=sprites?sprites.layers(person):null;
   ctx.fillStyle='rgba(15,32,22,.16)';ctx.beginPath();ctx.ellipse(pp.x,pp.y+2,h*.26,h*.12,0,0,Math.PI*2);ctx.fill();
-  const ok=drawSprite(layers,pp.x,pp.y,h);
-  if(!ok){const fill=faces[Number(a.id.slice(-2))%faces.length];ctx.beginPath();ctx.arc(pp.x,pp.y-h*.3,h*.3,0,Math.PI*2);ctx.fillStyle=fill;ctx.fill();}
-  if(a.leader){ctx.strokeStyle='#c8a34e';ctx.lineWidth=2.4;ctx.beginPath();ctx.arc(pp.x,pp.y-h*.42,h*.42,0,Math.PI*2);ctx.stroke();}
+  // 将领与修士在世界图上是头像；其余是走路小人。
+  let ok=false;
+  if(a.leader&&peopleBank&&peopleBank.ready){
+   const r=h*.62;
+   ok=peopleBank.drawPortrait(ctx,person,pp.x,pp.y-h*.55,r);
+   ctx.strokeStyle='#c8a34e';ctx.lineWidth=2.6;ctx.beginPath();ctx.arc(pp.x,pp.y-h*.55,r,0,Math.PI*2);ctx.stroke();
+  }else if(peopleBank&&peopleBank.ready){
+   const dir=dirFor(a.dx,a.dy,'down');const step=stepOf(!!(a.dx||a.dy),clockMs);
+   ok=peopleBank.draw(ctx,person,pp.x,pp.y,h,dir,step);
+  }
+  if(!ok){
+   const layers=sprites?sprites.layers(person):null;
+   ok=drawSprite(layers,pp.x,pp.y,h);
+   if(!ok){const fill=faces[Number(a.id.slice(-2))%faces.length];ctx.beginPath();ctx.arc(pp.x,pp.y-h*.3,h*.3,0,Math.PI*2);ctx.fillStyle=fill;ctx.fill();}
+  }
   if((camera.mpp<.95)||(a.leader&&camera.mpp<2))screenText((a.title?a.title+' · ':'')+person.name+' · '+a.state,pp.x,pp.y+h*.22,a.leader?12:11,a.leader?'#583f30':'#30503d');
   if(selected?.kind==='npc'&&selected.data.id===a.id){ctx.strokeStyle='#bd713f';ctx.lineWidth=2.5;ctx.beginPath();ctx.arc(pp.x,pp.y-h*.4,h*.55,0,Math.PI*2);ctx.stroke();}
  }
 }
 function drawPlayer(){const p=pos(w.player.mapPos);
- const look=sprites?sprites.layers({id:'player',job:w.player.role==='修士'?'修士':w.player.role,age:30,sex:'男',wealth:200}):null;
+ const me={id:'player',job:w.player.role==='修士'?'修士':w.player.role,age:30,sex:'男',wealth:200};
+ const look=sprites?sprites.layers(me):null;
  const h=32;
  ctx.fillStyle='rgba(21,63,52,.18)';ctx.beginPath();ctx.ellipse(p.x,p.y+2,10,4.4,0,0,Math.PI*2);ctx.fill();
  ctx.strokeStyle='#f4d07c';ctx.lineWidth=3;ctx.beginPath();ctx.arc(p.x,p.y-h*.42,h*.46,0,Math.PI*2);ctx.stroke();
- if(!drawSprite(look,p.x,p.y,h)){ctx.beginPath();ctx.arc(p.x,p.y-h*.3,12,0,Math.PI*2);ctx.fillStyle='#153f34';ctx.fill();}
+ const moving=!!w.player.route;
+ const okMe=peopleBank&&peopleBank.ready?peopleBank.draw(ctx,me,p.x,p.y,h,dirFor(w.player.dirX,w.player.dirY,'down'),stepOf(moving,clockMs)):false;
+ if(!okMe&&!drawSprite(look,p.x,p.y,h)){ctx.beginPath();ctx.arc(p.x,p.y-h*.3,12,0,Math.PI*2);ctx.fillStyle='#153f34';ctx.fill();}
  screenText('我',p.x,p.y+8,11,'#3a2f1e',800);
 }
 function drawRoute(){const r=w.player.route;if(!r)return;const points=[w.player.mapPos,...r.path.slice(r.index+1)];drawPath(points.map(p=>[p.x,p.y]));ctx.strokeStyle='rgba(255,250,228,.8)';ctx.lineWidth=6;ctx.stroke();drawPath(points.map(p=>[p.x,p.y]));ctx.strokeStyle='#cc7c40';ctx.lineWidth=3;ctx.setLineDash([8,7]);ctx.stroke();ctx.setLineDash([]);circle(r.goal,6,'#b7653a','#fff0d7',2);}
@@ -575,6 +591,12 @@ function handleRecordsClick(e){
  if(t.dataset.hire){const realm=t.dataset.hire;const r=hireRetainer(w,{sect:'散修',realm,patron:'court'});
   toast(r.ok?`招得${r.retainer.realmName}供奉，耗银 ${r.price.toLocaleString()} 文`:r.error);
   if(r.ok){scheduleSave();otherPanels('xian');}return;}
+ if(t.dataset.practice){const r=practice(w,+t.dataset.practice||1);
+  toast(r.ok?`吐纳得修为 +${r.gain}（经脉 ${Math.round(r.meridian)}${r.overload?'·负荷偏高':''}）`:r.error);
+  if(r.ok){profile();scheduleSave();otherPanels('xian');}return;}
+ if(t.dataset.breaklayer){const r=breakLayer(w);toast(r.ok?`突破：${r.name}`:r.error);if(r.ok){profile();scheduleSave();otherPanels('xian');}return;}
+ if(t.dataset.breakrealm){const r=breakRealm(w,{pill:false});toast(r.ok?'筑基成功':r.error);if(r.ok){profile();scheduleSave();}else{scheduleSave();otherPanels('xian');}return;}
+ if(t.dataset.restmeridian){const r=restMeridian(w,8);toast(`歇了八个时辰，经脉负荷降到 ${Math.round(r.meridian)}`);profile();scheduleSave();otherPanels('xian');return;}
  if(t.dataset.help){const r=helpPerson(w,t.dataset.help);
   toast(r.ok?r.line:r.error);if(r.ok){profile();scheduleSave();otherPanels('xian');}return;}
  if(t.dataset.ally){const r=seekAlly(w,t.dataset.ally);toast(r.ok?`与${attitudeOf(w,t.dataset.ally).name}结交${r.note?`·${r.note}`:''}`:r.error);if(r.ok){profile();scheduleSave();otherPanels('xian');}return;}
@@ -649,6 +671,10 @@ function renderCareer(){
   </article>`;}).join('');
  const goods=`<h3>经商</h3><p class="warbtns">${Object.entries(SHOP_KINDS).map(([k,v])=>`<button data-shop="${k}">开${v.name}（${v.cost} 银）</button>`).join('')}
   ${[10,50,100].map(n=>`<button data-caravan="${n}">押商队 ${n} 担（约 ${n*26} 银）</button>`).join('')}</p>
+  <h3>吐纳与突破</h3>${(()=>{const pr=practiceReport(w);
+   return `<p>${safe(pr.root)} · <b>${safe(pr.layerName)}</b> · 修为 ${pr.progress}${pr.next?` / ${pr.next.need}`:''} · 经脉 ${pr.meridian}${pr.overloaded?'（已伤）':''}</p>
+   <p class="warbtns"><button data-practice="1">吐纳一时辰</button><button data-practice="8">闭关八个时辰</button>
+   <button data-breaklayer="1">突破下一层</button><button data-breakrealm="1">冲击筑基</button><button data-restmeridian="1">歇息养脉</button></p>`;})()}
   <h3>招揽修士（走灵石，不走金银）</h3><p class="warbtns">${['found','core'].map(id=>`<button data-hirec="${id}">聘${id==='found'?'筑基':'金丹'}客卿</button>`).join('')}</p>`;
  const log=r.log.length?r.log.map(l=>`<article class="entry"><small>第${l.day}日</small> ${safe(l.msg)}</article>`).join(''):'<p>还没有什么可记的。</p>';
  $('records').innerHTML=`${sum}${cards}<h3>营生</h3>${goods}<h3>履历</h3>${log}`;
@@ -814,7 +840,7 @@ function bind(){canvas=$('worldCanvas');setupGestures();$('zoomIn').onclick=()=>
  window.addEventListener('resize',resize);document.addEventListener('visibilitychange',()=>{paused=document.hidden;if(paused)save().catch(()=>{});});
 }
 let stamp=0,profileStamp=0,saveStamp=0;
-function animation(now){const dt=stamp?Math.min(.12,(now-stamp)/1000):0;stamp=now;if(!paused&&w&&dt>0){const old={...w.player.mapPos};const result=advanceMap(w,dt,travelSpeed);tickWarIfDayChanged();if(result.done){toast('到达目的地；移动时间已累计。');scheduleSave();}
+function animation(now){clockMs=now;const dt=stamp?Math.min(.12,(now-stamp)/1000):0;stamp=now;if(!paused&&w&&dt>0){const old={...w.player.mapPos};const result=advanceMap(w,dt,travelSpeed);tickWarIfDayChanged();if(result.done){toast('到达目的地；移动时间已累计。');scheduleSave();}
  if(result.moved>0){ // 只有实际移动才更新场景名；缩放操作不写入位置。
  camera.x+=w.player.mapPos.x-old.x;camera.y+=w.player.mapPos.y-old.y;
  }
@@ -825,6 +851,8 @@ function animation(now){const dt=stamp?Math.min(.12,(now-stamp)/1000):0;stamp=no
 async function init(){try{const raw=await load();w=raw?restoreWorld(raw):createWorld();}catch(e){console.warn(e);w=createWorld();toast('旧存档暂时无法读取，当前为临时世界。');}
  sprites=new SpriteBank('sprites/');
  await sprites.load().catch(()=>false);
+ peopleBank=new PeopleBank('');
+ await peopleBank.load().catch(()=>false);
  ensureGeo(w);ensureCareer(w);if(w.mapCamera&&Number.isFinite(w.mapCamera.mpp))camera={...w.mapCamera};else camera={...w.player.mapPos,mpp:3.2};
  bind();profile();updateLegend();otherPanels('map');resize();if(w.player.indoor)showIndoor();requestAnimationFrame(animation);}
 init();

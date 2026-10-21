@@ -3,7 +3,7 @@
 import {readFileSync,writeFileSync,mkdirSync,copyFileSync,readdirSync} from 'node:fs';
 import {join,dirname} from 'node:path';
 const ROOT=join(dirname(new URL(import.meta.url).pathname),'..');
-const FILES=['core','spatial','society','sprites','worldmap','karma','dao','battle','battle-ui','mapbattle','war','units','market','court','state','cultivation','currency','buildings','overworld','atlas','gesture','overworld-ui'];
+const FILES=['people','core','spatial','society','sprites','worldmap','karma','dao','battle','battle-ui','mapbattle','war','units','market','court','state','cultivation','currency','buildings','overworld','atlas','gesture','overworld-ui'];
 const OUT=join(ROOT,'web');mkdirSync(OUT,{recursive:true});
 let bad=0;
 for(const name of FILES){
@@ -25,4 +25,8 @@ mkdirSync(join(OUT,'sprites'),{recursive:true});
 const copyTree=(from,to)=>{mkdirSync(to,{recursive:true});for(const e of readdirSync(from,{withFileTypes:true})){const a=join(from,e.name),b=join(to,e.name);if(e.isDirectory())copyTree(a,b);else copyFileSync(a,b);}};
 copyTree(join(ROOT,'assets','sprites'),join(OUT,'sprites'));
 console.log('[build-web] assets/sprites -> web/sprites');
+// 小人走图与头像：已验过的 CC0 素材，原样复制，不做二次加工。
+mkdirSync(join(OUT,'people'),{recursive:true});
+copyTree(join(ROOT,'assets','people'),join(OUT,'people'));
+console.log('[build-web] assets/people -> web/people');
 process.exit(bad?1:0);

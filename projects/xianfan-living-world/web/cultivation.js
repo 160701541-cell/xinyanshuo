@@ -185,3 +185,128 @@ export function xianReport(w){
   protection:courtProtection(w),
   mortals:mortalWork(w),log:(x.log||[]).slice(-5).reverse()};
 }
+
+// ── 炼气十三层与吐纳 ─────────────────────────────────────────────
+// 苍岚时期已经验过的进阶法：炼气 1–13 层，层与层之间靠真实世界小时吐纳堆修为；
+// 大境界（筑基/金丹）不靠纯堆时间，要修为 + 丹药 + 一次掷骰。
+export const LAYERS = 13;
+export const BARRIERS = {
+  1: {name: '炼气一层', need: 40, meridian: 6},
+  2: {name: '炼气二层', need: 70, meridian: 8},
+  3: {name: '炼气三层', need: 110, meridian: 10},
+  4: {name: '炼气四层', need: 160, meridian: 12},
+  5: {name: '炼气五层', need: 220, meridian: 14},
+  6: {name: '炼气六层', need: 300, meridian: 16},
+  7: {name: '炼气七层', need: 400, meridian: 19},
+  8: {name: '炼气八层', need: 520, meridian: 22},
+  9: {name: '炼气九层', need: 680, meridian: 25},
+  10: {name: '炼气十层', need: 880, meridian: 28},
+  11: {name: '炼气十一层', need: 1120, meridian: 31},
+  12: {name: '炼气十二层', need: 1420, meridian: 35},
+  13: {name: '炼气十三层', need: 1780, meridian: 39},
+};
+// 每小时吐纳：体力消耗、灵气收益系数
+export const BREATHE = {staminaPerHour: 1.4, baseGain: 1, overloadPause: .75};
+
+export function ensurePractice(w) {
+  if (w.practice) return w.practice;
+  w.practice = {rootId: null, layer: 0, progress: 0, meridian: 0, lastTried: null, log: []};
+  return w.practice;
+}
+
+export function rootSpeed(rootId) { return (ROOTS[rootId] || ROOTS.none).speed; }
+export function layerName(layer) { return layer <= 0 ? '凡人' : (BARRIERS[layer] ? BARRIERS[layer].name : `炼气${layer}层`); }
+
+/** 一次吐纳：hours 个世界小时。灵气密度、灵根、经脉负荷一起决定收益。 */
+export function practice(w, hours = 1) {
+  ensurePractice(w);
+  const p = w.practice;
+  const rootId = p.rootId || (w.player.root || 'none');
+  p.rootId = rootId;
+  const speed = rootSpeed(rootId);
+  if (speed <= 0) return {ok: false, error: '你没有灵根，吐纳不进灵气——这条路天生不通。'};
+  if (p.layer >= LAYERS) return {ok: false, error: '炼气已到顶，接下来是筑基的事。'};
+  if (p.meridian >= 100) return {ok: false, error: '经脉堵死了，再吐纳要出人命——先歇息。'};
+  const regionId = regionOfPlace(w.player.place);
+  const qi = (QI_REGIONS[regionId] || QI_REGIONS.xiancheng).qi;
+  const stamina = w.player.stamina ?? w.player.stats?.stamina ?? 100;
+  if (stamina < BREATHE.staminaPerHour * hours) return {ok: false, error: '体力不够了，先歇着。'};
+  const overload = p.meridian >= 60 ? BREATHE.overloadPause : 1;
+  const gain = Math.round(BREATHE.baseGain * hours * speed * (1 + qi) * overload * 10) / 10;
+  p.progress = Math.round((p.progress + gain) * 10) / 10;
+  p.meridian = Math.min(100, p.meridian + hours * 1.6);
+  if (w.player.stamina !== undefined) w.player.stamina = Math.max(0, stamina - BREATHE.staminaPerHour * hours);
+  else if (w.player.stats) w.player.stats.stamina = Math.max(0, stamina - BREATHE.staminaPerHour * hours);
+  if (w.player.route === undefined && w.hour !== undefined) {
+    const before = w.hour;
+    w.hour += hours;
+    while (w.hour >= 24) { w.hour -= 24; w.day += 1; }
+    void before;
+  }
+  return {ok: true, gain, progress: p.progress, need: BARRIERS[p.layer + 1].need, meridian: p.meridian, overload: overload < 1};
+}
+
+/** 层间小突破：够修为就上，不掷骰；经脉太高要先歇。 */
+export function breakLayer(w) {
+  ensurePractice(w);
+  const p = w.practice;
+  const next = BARRIERS[p.layer + 1];
+  if (!next) return {ok: false, error: '炼气已到顶，接下来是筑基的事。'};
+  if (p.progress < next.need) return {ok: false, error: `修为不够：还差 ${Math.round(next.need - p.progress)}`};
+  if (p.meridian > 92) return {ok: false, error: `经脉负荷 ${Math.round(p.meridian)}，再冲会出事，先歇几日。`};
+  p.progress = Math.round((p.progress - next.need) * 10) / 10;
+  p.layer += 1;
+  p.meridian = Math.min(100, p.meridian + next.meridian * .4);
+  note(w, '修为', `${w.player.name} 突破至${next.name}。`);
+  p.log.push({day: w.day, msg: `突破 ${next.name}`});
+  return {ok: true, layer: p.layer, name: next.name};
+}
+
+/** 大境界：修为 + 丹药（可选，加成）+ 一次掷骰；业力会压这一骰。 */
+export function breakRealm(w, {pill = false} = {}) {
+  ensurePractice(w);
+  const p = w.practice;
+  if (p.layer < LAYERS) return {ok: false, error: `炼气${LAYERS}层是门槛，先炼满。`};
+  const k = w.karma ? (w.karma.total || 0) : 0;
+  const karmaPenalty = Math.min(.6, k / 200);
+  const base = .55 + (pill ? .25 : 0) - karmaPenalty;
+  const roll = mulberry((w.seed || 1) ^ (w.day * 7919) ^ (p.lastTried || 0))();
+  p.lastTried = (p.lastTried || 0) + 1;
+  if (roll < base) {
+    p.layer += 1;
+    p.progress = 0;
+    note(w, '修为', `${w.player.name} 筑基成功。`);
+    p.log.push({day: w.day, msg: '筑基'});
+    return {ok: true, chance: base, roll, name: '筑基'};
+  }
+  p.progress = Math.max(0, Math.round((p.progress - 200) * 10) / 10);
+  p.meridian = Math.min(100, p.meridian + 18);
+  return {ok: false, chance: base, roll, error: `筑基未成（成算 ${Math.round(base * 100)}%），经脉受损，修为折损 200。`};
+}
+
+function regionOfPlace(place) {
+  if (place === 'qingyun') return 'qingyun';
+  if (place === 'lingshan') return 'lingshan';
+  if (place === 'songlin' || place === 'hewan' || place === 'qingxi') return 'songlin';
+  return 'xiancheng';
+}
+
+/** 打坐歇息：清经脉负荷，按小时计。 */
+export function restMeridian(w, hours = 6) {
+  ensurePractice(w);
+  const p = w.practice;
+  p.meridian = Math.max(0, p.meridian - hours * 2.2);
+  if (w.hour !== undefined) { w.hour += hours; while (w.hour >= 24) { w.hour -= 24; w.day += 1; } }
+  return {meridian: p.meridian};
+}
+
+export function practiceReport(w) {
+  ensurePractice(w);
+  const p = w.practice;
+  return {
+    root: (ROOTS[p.rootId || w.player.root || 'none']).name,
+    layer: p.layer, layerName: layerName(p.layer), progress: p.progress,
+    next: BARRIERS[p.layer + 1] || null, meridian: Math.round(p.meridian),
+    overloaded: p.meridian >= 60, log: p.log.slice(-6),
+  };
+}
