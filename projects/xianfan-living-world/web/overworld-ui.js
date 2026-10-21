@@ -1,14 +1,18 @@
 /** 仙凡共生 v0.6：连续米制地图客户端。缩放绝不修改玩家坐标。 */
 import {createWorld,restoreWorld,saveableWorld,worldReport,simulateDay,note,getPlace,changeRole} from './core.js';
-import {MAP_VERSION,WORLD_LIMIT,CITY,LANDMARKS,STRUCTURES,TOWN_HOUSES,WALLS,ROUTES,STREAMS,PLACE_METERS,ensureGeo,terrainHeight,dist,obstacleAt,beginJourney,stopJourney,advanceMap,enterStructure,exitStructure,placeAt} from './overworld.js';
+import {MAP_VERSION,WORLD_LIMIT,CITY,LANDMARKS,STRUCTURES,TOWN_HOUSES,WALLS,ROUTES,STREAMS,PLACE_METERS,ensureGeo,terrainHeight,dist,obstacleAt,beginJourney,stopJourney,advanceMap,enterStructure,exitStructure,placeAt,visibleActors,actorVisibility,openingStatus,canEnter,canFly,rest} from './overworld.js';
 import {interiorAtlas} from './atlas.js';
+import {classifyGesture,canSelect} from './gesture.js';
+const placeById=getPlace;
 const $=id=>document.getElementById(id);
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 const safe=s=>String(s??'').replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','\'':'&#39;','"':'&quot;'}[c]));
-let w,selected=null,camera={x:0,y:0,mpp:2.7},ctx,canvas,cssW=0,cssH=0,activeTab='map',pointer=new Map(),pinch=null,panMoved=false,dragStart=null,travelSpeed=30,savePending=0,noticeTimeout=0,paused=false;
+let w,selected=null,camera={x:0,y:0,mpp:2.7},ctx,canvas,cssW=0,cssH=0,activeTab='map',pointer=new Map(),pinch=null,dragStart=null,gestureMoved=false,multiTouched=false,downAt=0,travelSpeed=30,savePending=0,noticeTimeout=0,paused=false;
 const peopleCaches=new WeakMap();
 const faces=['#537560','#95724d','#607d91','#8e715f','#855f67','#726b91'];
 const currentTime=()=>{const m=Math.floor(w.hour*60);return `承平${3+Math.floor((w.day-1)/360)}年 · 第${(w.day-1)%360+1}日 · ${String(Math.floor(m/60)).padStart(2,'0')}:${String(m%60).padStart(2,'0')}`;};
+let profileTimer=0;
+function requestProfile(){if(profileTimer)return;profileTimer=setTimeout(()=>{profileTimer=0;if(w)profile();},90);}
 function toast(t){$('toast').textContent=t;$('toast').classList.add('visible');clearTimeout(noticeTimeout);noticeTimeout=setTimeout(()=>$('toast').classList.remove('visible'),2900);}
 function scheduleSave(){clearTimeout(savePending);savePending=setTimeout(()=>save().catch(console.warn),900);}
 async function store(){return new Promise((ok,err)=>{let r=indexedDB.open('xianfan_county_offline',1);r.onupgradeneeded=()=>r.result.createObjectStore('worlds');r.onsuccess=()=>ok(r.result);r.onerror=()=>err(r.error);});}
@@ -77,17 +81,20 @@ function drawTowns(){for(const p of LANDMARKS){if(!visible(p))continue;if(camera
  if((camera.mpp<130||large) && !(camera.mpp<25&&['market','street','homes','shop','office','inn','gate'].includes(p.type)) )text(title,{x:p.x,y:p.y-(r*camera.mpp+Math.max(30,camera.mpp*9))},nameSize,large?'#5d4936':'#354f3c',large?750:600);
  }}
 function drawAvatars(){if(camera.mpp>350)return;
- if(!peopleCaches.has(w))peopleCaches.set(w,new Map(w.people.map(p=>[p.id,p])));const lookup=peopleCaches.get(w);
- const visibleActors=(w.mapActors||[]).filter(a=>visible(a)).filter(a=>{const p=lookup.get(a.id);return p&&p.status==='alive'&&((w.hour>=6&&w.hour<21)||a.job==='捕快')});
- visibleActors.sort((a,b)=>Number(b.leader)-Number(a.leader)||dist(a,w.player.mapPos)-dist(b,w.player.mapPos));
+ const people=new Map(w.people.map(p=>[p.id,p]));
+ // 只画"世界认为他在那里"的人：位置与所在场所一致，室内与夜间居家者不在街上。
+ const onMap=visibleActors(w).filter(a=>camera.mpp>22?a.leader:true).filter(a=>visible(a));
+ onMap.sort((a,b)=>Number(b.leader)-Number(a.leader)||dist(a,w.player.mapPos)-dist(b,w.player.mapPos));
  const taken=[],max=camera.mpp>60?6:camera.mpp>14?12:camera.mpp>3?20:150;
- for(const a of visibleActors){if(taken.length>=max)break;if(camera.mpp>22&&!a.leader)continue;
- const pp=pos(a);if(taken.some(q=>Math.hypot(q.x-pp.x,q.y-pp.y)<(camera.mpp>1.5?24:14)))continue;
- taken.push(pp);const person=lookup.get(a.id),s=a.leader?14:camera.mpp<1.3?11:10,fill=faces[Number(a.id.slice(-2))%faces.length];
- ctx.fillStyle='rgba(15,32,22,.16)';ctx.beginPath();ctx.ellipse(pp.x,pp.y+4,s+4,s*.5,0,0,Math.PI*2);ctx.fill();
- ctx.beginPath();ctx.arc(pp.x,pp.y,s,0,Math.PI*2);ctx.fillStyle=fill;ctx.fill();ctx.strokeStyle=a.leader?'#ebc777':'#fff2d7';ctx.lineWidth=a.leader?3:2;ctx.stroke();
- ctx.fillStyle='#fff9e4';ctx.font=`700 ${a.leader?11:10}px system-ui`;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(person.name.slice(-1),pp.x,pp.y);
- if((camera.mpp<.95)||(a.leader&&camera.mpp<2))screenText((a.title?a.title+' · ':'')+person.name,pp.x,pp.y-s-12,a.leader?12:11,a.leader?'#583f30':'#30503d');
+ for(const a of onMap){if(taken.length>=max)break;
+  const pp=pos(a);if(taken.some(q=>Math.hypot(q.x-pp.x,q.y-pp.y)<(camera.mpp>1.5?24:14)))continue;
+  taken.push(pp);const person=people.get(a.id);if(!person)continue;
+  const s=a.leader?14:camera.mpp<1.3?11:10,fill=faces[Number(a.id.slice(-2))%faces.length];
+  ctx.fillStyle='rgba(15,32,22,.16)';ctx.beginPath();ctx.ellipse(pp.x,pp.y+4,s+4,s*.5,0,0,Math.PI*2);ctx.fill();
+  ctx.beginPath();ctx.arc(pp.x,pp.y,s,0,Math.PI*2);ctx.fillStyle=fill;ctx.fill();ctx.strokeStyle=a.leader?'#ebc777':'#fff2d7';ctx.lineWidth=a.leader?3:2;ctx.stroke();
+  ctx.fillStyle='#fff9e4';ctx.font=`700 ${a.leader?11:10}px system-ui`;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(person.name.slice(-1),pp.x,pp.y);
+  if((camera.mpp<.95)||(a.leader&&camera.mpp<2))screenText((a.title?a.title+' · ':'')+person.name+' · '+a.state,pp.x,pp.y-s-12,a.leader?12:11,a.leader?'#583f30':'#30503d');
+  if(selected?.kind==='npc'&&selected.data.id===a.id){ctx.strokeStyle='#bd713f';ctx.lineWidth=2.5;ctx.beginPath();ctx.arc(pp.x,pp.y,s+7,0,Math.PI*2);ctx.stroke();}
  }
 }
 function drawPlayer(){const p=pos(w.player.mapPos);ctx.beginPath();ctx.arc(p.x,p.y,17,0,Math.PI*2);ctx.fillStyle='#153f34';ctx.fill();ctx.strokeStyle='#f4d07c';ctx.lineWidth=3.5;ctx.stroke();ctx.fillStyle='#fff4dc';ctx.font='bold 13px system-ui';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('我',p.x,p.y);ctx.fillStyle='#273f35';ctx.font='bold 12px system-ui';ctx.fillText('',p.x,p.y);}
@@ -108,17 +115,35 @@ function profile(){const p=w.player,r=worldReport(w),place=placeAt(p.mapPos);
  $('stop').hidden=!w.player.route;
 }
 function showSheet(obj){selected=obj;const target=$('sheet');if(!obj){target.hidden=true;target.innerHTML='';return;}
- let h='',title='',sub='',body='',buttons='';const player=w.player.mapPos;
- if(obj.kind==='structure'){let b=obj.data;title=b.name;sub=`${Math.round(dist(player,b.door))}米 · ${b.kind==='government'?'官署':b.kind==='home'?'民居':'工商建筑'}`;body=b.desc||'这座建筑暂未开放室内。';
- const near=w.mapActors.filter(a=>dist(a,{x:b.x,y:b.y})<220).slice(0,4);body+=`<p class="near">附近：${near.length?near.map(a=>safe((w.people.find(p=>p.id===a.id)?.name||'行人')+' · '+a.state)).join('、'):'暂未发现正在活动的人物'}</p>`;
- buttons=`<button data-action="go">沿路前往门口</button>${dist(player,b.door)<35&&getPlace(b.id)?'<button data-action="enter">从正门进入</button>':''}`;
- }else if(obj.kind==='landmark'){const b=obj.data;title=b.name;sub=b.faction+(b.active?' · 县域已开放':' · 地理预留区域');body=b.desc;
- buttons=b.active?'<button data-action="go">步行前往</button>':'<button disabled>本区域未开放</button>';
- }else if(obj.kind==='npc'){const a=obj.data,p=w.people.find(x=>x.id===a.id);title=p?.name||'人物';sub=(a.title||p?.job||'行人')+` · ${Math.round(dist(player,a))}米`;body=`当前活动：${a.state}。身份ID：${a.id}。此人物是世界人口档案中的真实ID，轨迹在可观察区域持续更新。`;buttons='<button data-action="go">走近此人</button>';
- }else{title='地面目标';sub=`距你 ${Math.round(dist(player,obj.point))}米 · 海拔 ${terrainHeight(obj.point.x,obj.point.y)}米`;body='这里是同一张连续地图上的一处地点。移动需要时间，障碍物和城墙不能穿过。';buttons='<button data-action="go">前往此处</button>';}
- h=`<div class="sheet-header"><div><small>${safe(sub)}</small><h3>${safe(title)}</h3></div><button class="quiet" id="closeSheet" aria-label="关闭地点卡片">✕</button></div><p>${safe(body).replace(/&lt;p class=&quot;near&quot;&gt;/,'<p class="near">').replace(/&lt;\/p&gt;/,'</p>')}</p><div class="sheet-actions">${buttons}</div>`;
- target.innerHTML=h;target.hidden=false;$('closeSheet').onclick=()=>showSheet(null);target.querySelector('[data-action="go"]')?.addEventListener('click',()=>goTarget());target.querySelector('[data-action="enter"]')?.addEventListener('click',()=>enter());
+ let title='',sub='',body='',buttons='';const player=w.player.mapPos;
+ if(obj.kind==='structure'){const b=obj.data;const st=openingStatus(b.id,w.hour),perm=canEnter(w,b.id);
+  const kindName={government:'官署',home:'民居',forge:'工坊',grain:'粮仓',inn:'客栈',school:'学塾',fort:'营署',sect:'宗门'}[b.kind]||'工商建筑';
+  title=b.name;sub=`${Math.round(dist(player,b.door))}米 · ${kindName} · ${st.label}`;
+  body=`${b.desc||'这座建筑暂未开放室内。'}
+  <p class="near">通行：${perm.ok?'可入':safe(perm.reason)}</p>`;
+  const near=visibleActors(w).filter(a=>dist(a,{x:b.x,y:b.y})<260).slice(0,4);
+  body+=`<p class="near">门前可见：${near.length?near.map(a=>safe((w.people.find(p=>p.id===a.id)?.name||'行人')+'·'+a.state)).join('、'):'此刻无人'}</p>`;
+  const canEnterNow=dist(player,b.door)<35&&getPlace(b.id)&&st.open&&perm.ok;
+  buttons=`<button data-action="go">沿路前往门口</button>${canEnterNow?'<button data-action="enter">从正门进入</button>':''}${w.player.route?'<button data-action="stop" class="quiet">停下</button>':''}`;
+ }else if(obj.kind==='landmark'){const b=obj.data;const st=openingStatus(b.id,w.hour);
+  title=b.name;sub=`${escapeHtml(b.faction||'')}${b.active?' · 已开放':' · 地理预留'} · ${st.label}`;body=b.desc||'';
+  buttons=b.active?`<button data-action="go">步行前往</button>${canFly(w).ok?'<button data-action="fly" class="quiet">御剑前往</button>':''}`:'<button disabled>本区域未开放</button>';
+ }else if(obj.kind==='npc'){const a=obj.data,p=w.people.find(x=>x.id===a.id);const vis=actorVisibility(w,p);
+  title=p?.name||'人物';sub=`${a.title||p?.job||'行人'} · ${Math.round(dist(player,a))}米 · ${a.state}`;
+  body=`${vis.visible?`他/她此刻正在${placeById(vis.where)?.name||vis.where}（${vis.reason}）。`:`${vis.reason}，你现在看不到此人。`}
+  此人物是世界人口档案中的真实ID，位置与行动来自同一套规则，不是随机刷新的装饰。`;
+  buttons=`<button data-action="go">走近此人</button>`;
+ }else{title='地面目标';sub=`距你 ${Math.round(dist(player,obj.point))}米 · 海拔 ${terrainHeight(obj.point.x,obj.point.y)}米`;body='这里是同一张连续地图上的一处地点。移动需要时间，河流、城墙与墙体不能穿过。';buttons=`<button data-action="go">前往此处</button><button data-action="rest" class="quiet">原地歇息一刻</button>`;}
+ const h=`<div class="sheet-header"><div><small>${escapeHtml(sub)}</small><h3>${escapeHtml(title)}</h3></div><button class="quiet" id="closeSheet" aria-label="关闭地点卡片">✕</button></div><div class="sheet-body">${body}</div><div class="sheet-actions">${buttons}</div>`;
+ target.innerHTML=h;target.hidden=false;$('closeSheet').onclick=()=>showSheet(null);
+ target.querySelector('[data-action="go"]')?.addEventListener('click',()=>goTarget());
+ target.querySelector('[data-action="enter"]')?.addEventListener('click',()=>enter());
+ target.querySelector('[data-action="fly"]')?.addEventListener('click',()=>flyTarget());
+ target.querySelector('[data-action="stop"]')?.addEventListener('click',()=>{stopJourney(w);profile();scheduleSave();toast('你停下了。');});
 }
+const escapeHtml=s=>safe(s);
+function flyTarget(){if(!selected)return;const goal=selected.kind==='structure'?selected.data.door:selected.kind==='npc'?{x:selected.data.x,y:selected.data.y}:selected.point;
+ const r=beginFlight(w,goal,selected.data?.id||null);if(!r.ok)return toast(r.error);toast(`御剑而行 · 直线 ${Math.round(r.meters)} 米`);showSheet(null);profile();scheduleSave();}
 function goTarget(){if(!selected)return;const goal=selected.kind==='structure'?selected.data.door:selected.kind==='npc'?{x:selected.data.x,y:selected.data.y}:selected.point;
  if(selected.kind==='landmark'&&!selected.data.active)return toast('此区域尚未开放，暂无可运行的世界实体。');
  const r=beginJourney(w,goal,selected.data?.id||null);if(r.ok){toast(`开始步行 · 路线 ${Math.round(r.meters)} 米`);showSheet(null);scheduleSave();}else toast(r.error);
@@ -130,65 +155,50 @@ function showIndoor(){if(!w.player.indoor)return;const win=$('indoor'),svg=$('in
  svg.onclick=e=>{if(e.target.closest('[data-exit]')){$('exitRoom').click();}else if(e.target.closest('[data-npc]')){const id=e.target.closest('[data-npc]').dataset.npc;const p=w.people.find(x=>x.id===id);toast(`${p?.name||id} · ${p?.job||'人物'}`);}};
 }
 function pointerPoint(e){const rect=canvas.getBoundingClientRect();return{x:e.clientX-rect.left,y:e.clientY-rect.top};}
-function hit(p){const scale=camera.mpp;const npcs=(w.mapActors||[]).filter(a=>dist(a,p)<Math.max(15,18*scale));npcs.sort((a,b)=>dist(a,p)-dist(b,p));if(npcs.length&&(scale<15||npcs[0].leader))return{kind:'npc',point:p,data:npcs[0]};
- // 建筑点击使用世界几何，不依赖HTML按钮位置。
- for(const b of STRUCTURES){if(p.x>b.x-16*scale&&p.x<b.x+b.w+16*scale&&p.y>b.y-16*scale&&p.y<b.y+b.h+16*scale){if(scale<25)return{kind:'structure',point:b.door,data:b};}}
- const lands=LANDMARKS.filter(l=>dist(l,p)<Math.max(40,20*scale)).sort((a,b)=>dist(a,p)-dist(b,p));if(lands.length)return{kind:'landmark',point:lands[0],data:lands[0]};
- return{kind:'ground',point:p};
+/** 命中判定在屏幕空间：手指抬起的位置必须落在标记 22px 以内，缩放与拖动不会命中任何地点。 */
+function nearestScreenMarker(screenPt,worldPt){
+ const cands=[];
+ for(const a of visibleActors(w)){const p2=pos(a);cands.push({kind:'npc',data:a,screen:p2,d:Math.hypot(p2.x-screenPt.x,p2.y-screenPt.y)});}
+ if(camera.mpp<35)for(const b of STRUCTURES){const p2=pos({x:b.x+b.w/2,y:b.y+b.h/2});cands.push({kind:'structure',data:b,screen:p2,point:b.door,d:Math.hypot(p2.x-screenPt.x,p2.y-screenPt.y)});}
+ for(const l of LANDMARKS){if(!l.active)continue;const p2=pos(l);cands.push({kind:'landmark',data:l,screen:p2,d:Math.hypot(p2.x-screenPt.x,p2.y-screenPt.y)});}
+ cands.sort((a,b)=>a.d-b.d);
+ const best=cands[0];if(!best||best.d>22)return null;
+ return{kind:best.kind,data:best.data,point:best.point||best.data.point||best.data};
 }
-function zoomAt(factor,screenX=cssW/2,screenY=cssH/2){const before=unpos(screenX,screenY);camera.mpp=clamp(camera.mpp*factor,.25,16000);const after=unpos(screenX,screenY);camera.x+=before.x-after.x;camera.y+=before.y-after.y;profile();scheduleSave();}
+function hitAt(screenPt,worldPt){return nearestScreenMarker(screenPt,worldPt);}
+function zoomAt(factor,screenX=cssW/2,screenY=cssH/2,silent=false){const before=unpos(screenX,screenY);camera.mpp=clamp(camera.mpp*factor,.25,16000);const after=unpos(screenX,screenY);camera.x+=before.x-after.x;camera.y+=before.y-after.y;if(silent)requestProfile();else{profile();scheduleSave();}}
 function updateCamera(old,newPt){camera.x-=(newPt.x-old.x)*camera.mpp;camera.y-=(newPt.y-old.y)*camera.mpp;}
 function setupGestures(){
- let gestureStart=0,hadMultitouch=false, suppressTapUntil=0;
- canvas.style.touchAction='none';
- canvas.addEventListener('pointerdown',e=>{
-  if(e.pointerType==='mouse'&&e.button!==0)return;
-  e.preventDefault();
-  try{canvas.setPointerCapture(e.pointerId);}catch{}
+ // 手势判定的唯一准则：只有"单指按下后几乎没动、且全程没有第二根手指"才算点击。
+ canvas.addEventListener('pointerdown',e=>{if(e.button!==0)return;e.preventDefault();try{canvas.setPointerCapture(e.pointerId);}catch{}
   const pt=pointerPoint(e);pointer.set(e.pointerId,pt);
-  if(pointer.size===1){
-   dragStart=pt;panMoved=false;gestureStart=performance.now();
-   hadMultitouch=performance.now()<suppressTapUntil;
-  }else{
-   hadMultitouch=true;panMoved=true;
-   if(pointer.size===2){const a=[...pointer.values()];pinch={dist:Math.hypot(a[0].x-a[1].x,a[0].y-a[1].y)};}
-  }
+  if(pointer.size===1){dragStart=pt;gestureMoved=false;multiTouched=false;downAt=performance.now();}
+  else{multiTouched=true;gestureMoved=true;const a=[...pointer.values()];pinch={dist:Math.hypot(a[0].x-a[1].x,a[0].y-a[1].y),mid:{x:(a[0].x+a[1].x)/2,y:(a[0].y+a[1].y)/2}};}
  });
- canvas.addEventListener('pointermove',e=>{
-  if(!pointer.has(e.pointerId))return;
-  e.preventDefault();
+ canvas.addEventListener('pointermove',e=>{if(!pointer.has(e.pointerId))return;e.preventDefault();
   const last=pointer.get(e.pointerId),now=pointerPoint(e);pointer.set(e.pointerId,now);
-  if(pointer.size>=2){
-   hadMultitouch=true;panMoved=true;
-   const a=[...pointer.values()],d=Math.hypot(a[0].x-a[1].x,a[0].y-a[1].y);
-   const mid={x:(a[0].x+a[1].x)/2,y:(a[0].y+a[1].y)/2};
-   if(pinch?.dist>3&&d>3)zoomAt(pinch.dist/d,mid.x,mid.y);
-   pinch={dist:d};return;
-  }
-  if(pointer.size===1){
-   if(dragStart&&Math.hypot(now.x-dragStart.x,now.y-dragStart.y)>8)panMoved=true;
-   if(panMoved){updateCamera(last,now);profile();}
-  }
+  if(pointer.size>=2){multiTouched=true;gestureMoved=true;
+   const a=[...pointer.values()];if(a.length<2)return;
+   const d=Math.hypot(a[0].x-a[1].x,a[0].y-a[1].y);const mid={x:(a[0].x+a[1].x)/2,y:(a[0].y+a[1].y)/2};
+   if(pinch&&pinch.dist>8&&d>8){zoomAt(pinch.dist/d,mid.x,mid.y,true);
+    camera.x-=mid.x-pinch.mid.x;camera.y-=mid.y-pinch.mid.y;}// 双指按住不放时平移跟随，缩放不额外产生位移
+   pinch={dist:d,mid};return;}
+  if(dragStart&&Math.hypot(now.x-dragStart.x,now.y-dragStart.y)>8)gestureMoved=true;
+  if(gestureMoved){const k=camera.mpp;camera.x-=(now.x-last.x)*k;camera.y-=(now.y-last.y)*k;requestProfile();}
  });
- const end=e=>{
-  if(!pointer.has(e.pointerId))return;
-  const last=pointer.get(e.pointerId),now=performance.now();
-  const eligible=pointer.size===1&&!hadMultitouch&&!panMoved&&
-   now>=suppressTapUntil&&now-gestureStart<500&&dragStart&&
-   Math.hypot(last.x-dragStart.x,last.y-dragStart.y)<8;
-  pointer.delete(e.pointerId);
-  if(hadMultitouch)suppressTapUntil=now+320;
-  if(!pointer.size){pinch=null;dragStart=null;hadMultitouch=false;}
-  if(eligible){const p=unpos(last.x,last.y);showSheet(hit(p));}
+ const end=e=>{if(!pointer.has(e.pointerId))return;const last=pointer.get(e.pointerId);
+  const single=pointer.size===1;pointer.delete(e.pointerId);
+  const still=last&&dragStart?Math.hypot(last.x-dragStart.x,last.y-dragStart.y):99;
+  const quick=performance.now()-downAt<600;
+  const g=classifyGesture({pointers:pointer.size+(single?1:0),moved:gestureMoved,multiTouched,still,duration:performance.now()-downAt});
+  const tap=canSelect(g)&&(single||pointer.size===0);
+  if(!pointer.size){pinch=null;dragStart=null;multiTouched=false;gestureMoved=false;}
+  if(tap){const p=unpos(last.x,last.y);const h=hitAt(last,p);if(h)showSheet(h);else showSheet(null);}
  };
  canvas.addEventListener('pointerup',end);
- canvas.addEventListener('pointercancel',e=>{
-  pointer.delete(e.pointerId);panMoved=true;hadMultitouch=true;
-  suppressTapUntil=performance.now()+320;pinch=null;dragStart=null;
- });
- canvas.addEventListener('wheel',e=>{
-  e.preventDefault();const p=pointerPoint(e);zoomAt(e.deltaY<0?.83:1.2,p.x,p.y);
- },{passive:false});
+ canvas.addEventListener('pointercancel',e=>{pointer.delete(e.pointerId);gestureMoved=true;multiTouched=true;pinch=null;dragStart=null;});
+ canvas.addEventListener('wheel',e=>{e.preventDefault();const p=pointerPoint(e);zoomAt(e.deltaY<0?.83:1.2,p.x,p.y);},{passive:false});
+ canvas.addEventListener('contextmenu',e=>e.preventDefault());
 }
 function otherPanels(panel){activeTab=panel;for(const n of document.querySelectorAll('[data-view]'))n.classList.toggle('selected',n.dataset.view===panel);
  $('canvasFrame').hidden=panel!=='map';$('records').hidden=panel==='map';$('sheet').hidden=true;if(panel==='map')return;
@@ -199,7 +209,7 @@ function bind(){canvas=$('worldCanvas');setupGestures();$('zoomIn').onclick=()=>
  $('stop').onclick=()=>{stopJourney(w);profile();toast('你已停下，已经流逝的时间不会退回。');scheduleSave();};
  $('save').onclick=()=>save().then(()=>toast('存档已保存')).catch(()=>toast('存档保存失败'));
  $('fast').onclick=()=>{travelSpeed=travelSpeed===30?120:travelSpeed===120?1:30;$('fast').textContent=travelSpeed+'倍';toast('世界时间倍率 '+travelSpeed+'×');};
- $('realmButton').onclick=()=>toast('御剑需要境界和法器。此版本暂不提供调试瞬移技能。');
+ $('realmButton').onclick=()=>{const g=canFly(w);if(!g.ok)return toast(g.reason);if(!selected)return toast('先在地图上选择一个目的地，再御剑前往。');flyTarget();};
  $('advanceDay').onclick=()=>{if(w.player.route)return toast('行走中，请先停下');simulateDay(w,1);toast('世界推进一日');profile();scheduleSave();};
  $('newWorld').onclick=()=>{if(!confirm('确认创建新世界？当前存档将被新世界替换，原人物不会再次出现。'))return;w=createWorld('县境-'+Date.now());ensureGeo(w);camera={x:0,y:0,mpp:3};selected=null;showSheet(null);otherPanels('map');profile();scheduleSave();};
  for(const btn of document.querySelectorAll('[data-view]'))btn.onclick=()=>otherPanels(btn.dataset.view);

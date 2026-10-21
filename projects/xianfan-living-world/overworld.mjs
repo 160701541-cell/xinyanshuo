@@ -1,6 +1,6 @@
-/** 仙凡共生 · v0.6 开放地理原型：米制唯一坐标、不因缩放切场景。 */
-import {PLACES,deriveSeed,note,advanceClock,getPlace} from './core.mjs';
-export const MAP_VERSION='county-0.6.0';
+/** 仙凡共生 · v0.7 开放地理原型：米制唯一坐标、不因缩放切场景。 */
+import {PLACES,deriveSeed,note,advanceClock,getPlace,apparentLocation,npcActivity} from './core.mjs';
+export const MAP_VERSION='county-0.7.0';
 export const WORLD_LIMIT=1_350_000;
 export const CITY={x:0,y:0,half:720,wall:24,gates:[{id:'north',x:0,y:-720},{id:'south',x:0,y:720},{id:'west',x:-720,y:0},{id:'east',x:720,y:0}]};
 const county=[['dongshi',0,0],['xijie',-340,90],['minju',10,400],['nanmen',0,720],['guanlu',-500,2800],['dukou',-1400,500],['shiqiao',3600,4800],['songlin',6900,-3500],['liantang',-4100,5100],['hewan',-7400,1500],['qingxi',8500,6500],['qingyun',11300,-7200],['lingshan',12000,-8100],['xianya',-350,-420],['lianghang',370,210],['tiepu',300,260],['kezhan',260,-290],['tiepu_houyuan',300,260],['xianya_hou',-350,-420],['lianghang_cang',370,210],['kezhan2',260,-290],['kezhan_chamber',260,-290],['lingshan_yaopu',12000,-8100]];
@@ -50,7 +50,22 @@ export const STREAMS=[
  [[-12000,-3000],[-6600,-1700],[-3700,-650],[-1600,420],[-900,670],[-470,1060],[200,1660],[2150,3900],[6000,5750],[14000,12000]],
  [[-9500,12000],[-8100,7300],[-5600,4400],[-3700,2500],[-1600,420]],
 ];
-export const sqdist=(a,b)=>((a.x-b.x)**2+(a.y-b.y)**2);
+export const RIVER_HALF_WIDTH=58;
+const RIVER_CELL=20;
+const riverCells=new Set();
+const cellKey=(x,y)=>`${Math.round(x/RIVER_CELL)}:${Math.round(y/RIVER_CELL)}`;
+function markDisc(set,x,y,r){const step=RIVER_CELL;for(let dx=-r;dx<=r;dx+=step)for(let dy=-r;dy<=r;dy+=step){if(dx*dx+dy*dy<=r*r)set.add(cellKey(x+dx,y+dy));}}
+function clearDisc(set,x,y,r){const step=RIVER_CELL;for(let dx=-r;dx<=r;dx+=step)for(let dy=-r;dy<=r;dy+=step){if(dx*dx+dy*dy<=r*r)set.delete(cellKey(x+dx,y+dy));}}
+for(const poly of STREAMS){for(let i=1;i<poly.length;i++){const[a,b]=[poly[i-1],poly[i]];const len=Math.hypot(b[0]-a[0],b[1]-a[1]);const steps=Math.max(1,Math.ceil(len/14));for(let s=0;s<=steps;s++){const t=s/steps;markDisc(riverCells,a[0]+(b[0]-a[0])*t,a[1]+(b[1]-a[1])*t,RIVER_HALF_WIDTH);}}}
+/** 河流不可直接涉渡：只有桥梁或渡口所在的一段可以过河。 */
+export function isRiver(p){return riverCells.has(cellKey(p.x,p.y));}
+function segCross(p1,p2,p3,p4){const d=(p2.x-p1.x)*(p4.y-p3.y)-(p2.y-p1.y)*(p4.x-p3.x);if(Math.abs(d)<1e-9)return null;const u=((p3.x-p1.x)*(p4.y-p3.y)-(p3.y-p1.y)*(p4.x-p3.x))/d;const v=((p3.x-p1.x)*(p2.y-p1.y)-(p3.y-p1.y)*(p2.x-p1.x))/d;if(u<0||u>1||v<0||v>1)return null;return{x:p1.x+u*(p2.x-p1.x),y:p1.y+u*(p2.y-p1.y)};}
+// 桥位由真实道路与河道的交点生成，不手画；渡口另作步行过河点。
+export const BRIDGES=(()=>{const out=[];for(const road of ROUTES){for(let i=1;i<road.length;i++){const a={x:road[i-1][0],y:road[i-1][1]},b={x:road[i][0],y:road[i][1]};for(const poly of STREAMS){for(let j=1;j<poly.length;j++){const c={x:poly[j-1][0],y:poly[j-1][1]},d={x:poly[j][0],y:poly[j][1]};const hit=segCross(a,b,c,d);if(hit)out.push({x:Math.round(hit.x),y:Math.round(hit.y),name:'官道石桥'});}}}}
+ const ferry=placeCoord('dukou');out.push({x:ferry.x,y:ferry.y,name:'西河渡口'});return out;})();
+for(const b of BRIDGES)clearDisc(riverCells,b.x,b.y,105);
+// 桥梁/渡口把河道切开，但桥梁半径之外的河面仍然阻挡。
+
 export const dist=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y);
 const clamp=(x,l,h)=>Math.max(l,Math.min(h,x));
 export const isCity=p=>Math.abs(p.x)<=740&&Math.abs(p.y)<=740;
@@ -58,8 +73,11 @@ const inRect=(p,b,pad=0)=>p.x>b.x-pad&&p.x<b.x+b.w+pad&&p.y>b.y-pad&&p.y<b.y+b.h
 function crossRiver(p){const k=(p.x+9000)/3000;const streamY=-2000+1700*Math.sin(k*.45)+p.x*.18;return Math.abs(p.y-streamY)<32&&Math.abs(p.x)>1100;}
 export function obstacleAt(p){if(!Number.isFinite(p.x)||!Number.isFinite(p.y))return '越界';if(Math.abs(p.x)>WORLD_LIMIT||Math.abs(p.y)>WORLD_LIMIT)return '世界边缘';
  if(STRUCTURES.some(b=>inRect(p,b,7))||TOWN_HOUSES.some(b=>inRect(p,b,4)))return '建筑墙体';if(WALLS.some(b=>inRect(p,b,6)))return '城墙';
+ if(isRiver(p))return '河流';
  return null;
 }
+/** 城门洞是唯一可穿过城墙的通道；返回是否处于门洞内。 */
+export function gateAt(p){return CITY.gates.find(g=>dist(p,g)<=52)||null;}
 // 道路、桥梁、玩家均使用同一地图坐标；碰撞只允许走门洞（无穿墙）。
 export function terrainHeight(x,y){const a=Math.sin(x/1250)*Math.cos(y/900),b=Math.sin((x+y)/2300),c=Math.cos(x/390+y/670);return Math.round(135+90*a+65*b+22*c);}
 export function placeAt(p){let best={name:'郊野',id:'guanlu',d:Infinity};for(const l of LANDMARKS){if(!l.active||['room','shop','inn','office'].includes(l.type))continue;let d=dist(p,l);if(d<best.d)best={name:l.name,id:l.id,d};}return best;}
@@ -129,22 +147,87 @@ export function beginJourney(w,goal,selectionId=null){ensureGeo(w);if(w.player.r
  const start={...w.player.mapPos};const target={x:goal.x,y:goal.y};const p=journeyPath(start,target);if(!p.ok)return p;
  const arr=p.path.map(pt=>({...pt}));w.player.route={path:arr,index:0,progress:0,total:p.meters,covered:0,goal:target,selectionId};return{ok:true,meters:p.meters};
 }
+/** 御剑：直线飞行，无视地面障碍但有灵力成本；落点必须是可站立的地面。 */
+export function beginFlight(w,goal,selectionId=null){ensureGeo(w);if(w.player.route)return{ok:false,error:'正在行走，先取消现有路线'};
+ const gate=canFly(w);if(!gate.ok)return gate;
+ if(obstacleAt(goal))return{ok:false,error:`落点无法落脚：${obstacleAt(goal)}`};
+ const start={...w.player.mapPos},meters=dist(start,goal);const cost=meters*.005;
+ if((w.player.spirit??0)<cost)return{ok:false,error:`灵力不足：此程需 ${Math.ceil(cost)} 点，现有 ${Math.floor(w.player.spirit??0)} 点。`};
+ w.player.spirit=Math.max(0,(w.player.spirit??0)-cost);
+ w.player.route={path:[start,{x:goal.x,y:goal.y}],index:0,progress:0,total:meters,covered:0,goal:{x:goal.x,y:goal.y},selectionId,fly:true,seen:[]};
+ return{ok:true,meters};
+}
 export function stopJourney(w){ensureGeo(w);if(!w.player.route)return false;delete w.player.route;return true;}
+/** 体力参与速度，但不会凭空瞬移：走不动就只能慢走，时间照常流逝。 */
+export function walkSpeedFactor(w){const s=w.player.stats?.stamina??100;if(s<=0)return .6;if(s<20)return .8;return 1;}
+export function staminaCost(meters){return meters/9;}
 export function advanceMap(w,realSeconds,speed=30){ensureGeo(w);let dt=clamp(realSeconds,0,.12);const worldSeconds=dt*speed;
  if(worldSeconds<=0)return{moved:0};advanceClock(w,worldSeconds/60);tickActors(w,worldSeconds);
- let moved=0,done=false;const r=w.player.route;
- if(r){let remaining=worldSeconds*1.45;while(remaining>0&&r.index<r.path.length-1){let a=r.path[r.index],b=r.path[r.index+1],length=dist(a,b),left=length-r.progress,step=Math.min(remaining,left);r.progress+=step;r.covered+=step;remaining-=step;moved+=step;
+ let moved=0,done=false;const encounters=[];const r=w.player.route;
+ if(r){const gain=r.fly?1.45*7.5:1.45*walkSpeedFactor(w);let remaining=worldSeconds*gain;while(remaining>0&&r.index<r.path.length-1){let a=r.path[r.index],b=r.path[r.index+1],length=dist(a,b),left=length-r.progress,step=Math.min(remaining,left);r.progress+=step;r.covered+=step;remaining-=step;moved+=step;
  const t=length?Math.min(1,r.progress/length):1;w.player.mapPos={x:a.x+(b.x-a.x)*t,y:a.y+(b.y-a.y)*t};
  if(left-step<.001){r.index++;r.progress=0;}}
+ // 途中真实遇见仍在街上的人：不生成假人物，只读取世界已有的活动者。空中不记录地面相遇。
+ if(!r.fly){r.seen=r.seen||[];
+ for(const a of w.mapActors){if(r.seen.includes(a.id))continue;if(dist(a,w.player.mapPos)>24)continue;const p=w.people.find(q=>q.id===a.id);if(!p||p.status!=='alive')continue;const vis=actorVisibility(w,p);if(!vis.visible)continue;
+  r.seen.push(a.id);encounters.push({id:a.id,name:p.name,state:vis.reason});note(w,'相遇',`路上遇见${p.name}（${p.job}·${vis.reason}）。`,{npc:p.id});}}
+ if(!r.fly)w.player.stats.stamina=Math.max(0,(w.player.stats.stamina??100)-staminaCost(moved));
  if(r.index>=r.path.length-1){w.player.mapPos={...r.goal};delete w.player.route;done=true;w.player.place=placeAt(w.player.mapPos).id;note(w,'行旅',`到达${selectionIdName(r.selectionId)||'目的地'}；实际行走${r.total.toFixed(0)}米。`,{meters:r.total});}
- }
- return{moved,done,position:{...w.player.mapPos}};
+ }else{w.player.stats.stamina=Math.min(w.player.stats.maxStamina,(w.player.stats.stamina??100)+worldSeconds*.22);}
+ return{moved,done,position:{...w.player.mapPos},encounters};
 }
+/** 原地歇息：只恢复体力，世界时间照常流动。 */
+export function rest(w,minutes=30){if(w.player.route)return{ok:false,error:'行走中无法歇息'};advanceClock(w,minutes);const st=w.player.stats;st.stamina=Math.min(st.maxStamina,st.stamina+minutes*.5);st.hp=Math.min(st.maxHp,st.hp+Math.min(6,minutes*.05));note(w,'歇息',`你在原地歇了${minutes}分钟，体力恢复。`,{minutes});return{ok:true,minutes};}
 function selectionIdName(id){return LANDMARKS.find(x=>x.id===id)?.name||STRUCTURES.find(x=>x.id===id)?.name||'';}
+
+/* ---------- 权限：能力由规则判定，界面只负责显示结果 ---------- */
+export const PERMISSIONS={
+ xianya_hou:{roles:['县吏'],reason:'内署是掌印签押处，只有本县吏员可入。'},
+ lingshan_yaopu:{roles:['修士'],reason:'药圃属外门禁地，需有修士名籍。'},
+ kezhan_chamber:{roles:['平民','县吏','修士'],reason:'客房需先向掌柜付钱开房。',requires:'inn-stay'},
+};
+export function canFly(w){const p=w.player;if(p.role!=='修士')return{ok:false,reason:'平民没有御剑之能，需拜师并筑基后方可飞行。'};
+ if((p.stats?.level??1)<2)return{ok:false,reason:'境界不足：御剑需炼气二层以上。'};
+ if((p.spirit??0)<12)return{ok:false,reason:'灵力不足，无法御剑。'};
+ if(p.indoor)return{ok:false,reason:'室内不能起剑，请先出门。'};return{ok:true};}
+export function canEnter(w,placeId){const rule=PERMISSIONS[placeId];if(!rule)return{ok:true};
+ if(rule.roles.includes(w.player.role))return{ok:true};
+ return{ok:false,reason:rule.reason};}
+/** 营业/开放状态来自场所类型与当前时刻，不靠 UI 假装。 */
+export function openingStatus(placeId,hour){
+ const p=getPlace(placeId);if(!p)return{open:false,label:'未知'};
+ const t=p.type;
+ if(['room'].includes(t))return{open:true,label:'可入（需房门钥匙或房客身份）'};
+ if(t==='shop')return hour>=8&&hour<18?{open:true,label:'营业 08:00–18:00'}:{open:false,label:'已打烊（营业 08:00–18:00）'};
+ if(t==='office')return hour>=7&&hour<18?{open:true,label:'办公 07:00–18:00'}:{open:false,label:'已下值（办公 07:00–18:00）'};
+ if(t==='inn')return{open:true,label:'通宵营业，前堂有人值守'};
+ if(t==='market')return hour>=6&&hour<20?{open:true,label:'集市 06:00–20:00'}:{open:false,label:'夜市散尽（集市 06:00–20:00）'};
+ if(t==='gate')return{open:true,label:'城门全天有差役把守'};
+ if(t==='sect')return{open:true,label:'山门有执事守门'};
+ return{open:true,label:'可通行'};
+}
+/* ---------- 人物呈现：显示的位置必须等于世界认定其所在的位置 ---------- */
+const OUTDOOR_TYPES=new Set(['market','street','homes','gate','road','village','port','sect','office','shop','inn']);
+export function actorVisibility(w,p){
+ if(!p||p.status!=='alive')return{visible:false,where:null,reason:'不在世'};
+ const where=apparentLocation(w,p);if(!where)return{visible:false,where:null,reason:'不可见'};
+ const place=getPlace(where);if(!place)return{visible:false,where,reason:'地点未知'};
+ const night=w.hour<6||w.hour>=21;
+ if(night)return p.job==='捕快'?{visible:true,where,reason:'巡夜'}:{visible:false,where,reason:'在家休息'};
+ if(!OUTDOOR_TYPES.has(place.type))return{visible:false,where,reason:'在室内'};
+ if(p.job==='修士'||p.job==='宗门杂役')return{visible:where==='qingyun',where,reason:npcActivity(w,p)};
+ return{visible:true,where,reason:npcActivity(w,p)};
+}
+export function visibleActors(w,limit=999){ensureGeo(w);const out=[];
+ for(const a of w.mapActors){const p=w.people.find(q=>q.id===a.id);const v=actorVisibility(w,p);if(v.visible)out.push({...a,where:v.where,state:v.reason});if(out.length>=limit)break;}
+ return out;}
 export function enterStructure(w,id){ensureGeo(w);const b=STRUCTURES.find(q=>q.id===id);if(!b)return{ok:false,error:'此建筑目前不能进入'};
+ const perm=canEnter(w,id);if(!perm.ok)return{ok:false,error:perm.reason};
  if(dist(w.player.mapPos,b.door)>35)return{ok:false,error:'请先走到门前（距离小于35米）'};
  if(!getPlace(id))return{ok:false,error:'此建筑内部尚未开放'};
+ const gate=openingStatus(id,w.hour);if(!gate.open)return{ok:false,error:gate.label};
  w.player.indoor=id;w.player.place=id;note(w,'场景',`你从${b.name}正门进入。`);return{ok:true};
 }
 export function exitStructure(w){ensureGeo(w);let b=STRUCTURES.find(q=>q.id===w.player.indoor);if(!b)return{ok:false,error:'你现在不在可出入的建筑内'};w.player.mapPos={...b.door};delete w.player.indoor;w.player.place=placeAt(w.player.mapPos).id;return{ok:true};}
 export function isMarkerAccessible(l){return !!l.active;}
+export {apparentLocation,npcActivity};

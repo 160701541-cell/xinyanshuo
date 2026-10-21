@@ -72,7 +72,8 @@ export function travel(w,target,mode='foot'){
  note(w,'行旅',msg,{from:from.id,to:target,mode,minutes,spirit});return {ok:true,description:msg,minutes,spirit};
 }
 export function advanceClock(w,minutes){w.hour+=minutes/60;while(w.hour>=24){w.hour-=24;simulateDay(w,1);}}
-export function changeRole(w,role){if(!['平民','县吏','修士'].includes(role))return false;w.player.role=role;note(w,'人物',`演示身份切换：${role}（原型调试入口，正式版必须经过考试/任命/拜师流程）。`);return true;}
+export function changeRole(w,role){if(!['平民','县吏','修士'].includes(role))return false;w.player.role=role;if(role==='修士'){w.player.spirit=Math.max(w.player.spirit??0,90);if(w.player.stats){w.player.stats.realm='炼气二层';w.player.stats.level=2;}}else if(w.player.stats&&w.player.stats.level<2){w.player.stats.realm='凡人';w.player.stats.level=1;}
+ note(w,'人物',`演示身份切换：${role}（原型调试入口，正式版必须经过考试/任命/拜师流程）。`);return true;}
 export function buyGrain(w,amount=3){if(!Number.isInteger(amount)||amount<=0||amount>99)return {ok:false,error:'无效数量'};
  const store=w.places.lianghang;const price=amount*w.price;
  if(w.player.place!=='lianghang')return {ok:false,error:'请先到东市粮行'};
