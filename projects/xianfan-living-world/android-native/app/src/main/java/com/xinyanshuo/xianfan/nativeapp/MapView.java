@@ -123,15 +123,33 @@ public final class MapView extends View {
                 c.drawText(d.optString("name"), x + 12, y + 9, paint);
             }
         }
-        // 建筑
+        // 街上的人：小点 + 锁定光圈
+        for (JSONObject n : sim.npcs) {
+            float x = worldToScreenX((float) n.optDouble("px")), y = worldToScreenY((float) n.optDouble("py"));
+            if (x < -20 || y < -20 || x > vw + 20 || y > vh + 20) continue;
+            boolean lock = sim.locked != null && sim.locked.equals(n.optString("id"));
+            paint.setColor(lock ? Color.rgb(210, 160, 60) : Color.rgb(58, 46, 34));
+            c.drawCircle(x, y - 6, 4.2f, paint);
+            paint.setColor(lock ? Color.rgb(240, 200, 110) : Color.rgb(96, 78, 56));
+            c.drawRect(x - 3, y - 3, x + 3, y + 5, paint);
+            if (lock) {
+                paint.setStyle(Paint.Style.STROKE); paint.setStrokeWidth(2.5f);
+                paint.setColor(Color.argb(200, 240, 200, 110));
+                c.drawCircle(x, y - 1, 22, paint);
+                paint.setStyle(Paint.Style.FILL);
+            }
+            if (scale > 2.4f) {
+                paint.setTextSize(22); paint.setColor(Color.rgb(44, 34, 22));
+                c.drawText(n.optString("name"), x + 8, y - 10, paint);
+            }
+        }
+        // 建筑：地图上已经画出来了，这里只在放大时标名字
         for (JSONObject s : sim.structures) {
             float x = worldToScreenX((float) s.optDouble("x")), y = worldToScreenY((float) s.optDouble("y"));
-            if (x < -40 || y < -40 || x > vw + 40 || y > vh + 40) continue;
-            paint.setColor(Color.rgb(40, 34, 26));
-            c.drawRect(x - 4, y - 4, x + 4, y + 4, paint);
-            if (scale > 3.0f) {
+            if (x < -60 || y < -60 || x > vw + 60 || y > vh + 60) continue;
+            if (scale > 3.4f) {
                 paint.setTextSize(24); paint.setColor(Color.rgb(38, 30, 20));
-                c.drawText(s.optString("name"), x + 8, y - 8, paint);
+                c.drawText(s.optString("name"), x + 30, y - 26, paint);
             }
         }
         // 玩家

@@ -64,7 +64,7 @@ public final class MainActivity extends Activity {
         hint = new TextView(this);
         hint.setTextColor(Color.argb(235, 250, 246, 236));
         hint.setTextSize(12);
-        hint.setText("拖动看地图 · 双指缩放 · 点建筑或红点");
+        hint.setText("拖动看地图 · 双指缩放 · 点人可接近 · 点建筑或红点");
         hint.setPadding(24, 12, 24, 12);
         GradientDrawable hbg = new GradientDrawable();
         hbg.setColor(Color.argb(120, 20, 32, 24));
@@ -119,6 +119,13 @@ public final class MainActivity extends Activity {
             double dt = lastTick == 0 ? 0.016 : Math.min(0.1, (now - lastTick) / 1000.0);
             lastTick = now;
             sim.tick(dt);
+            // 到了目的地，镜头回到玩家身上（不必再手动拖回来）
+            if (sim.justArrived) { sim.justArrived = false; mapView.centerOn(sim.px, sim.py); }
+            // 锁定一个人时，镜头跟着两人之间的中点走，别让目标跑出画面
+            if (sim.locked != null) {
+                JSONObject n = sim.npcById(sim.locked);
+                if (n != null) mapView.centerOn((sim.px + n.optDouble("px")) / 2, (sim.py + n.optDouble("py")) / 2);
+            }
             mapView.invalidate();
             if (++frames % 6 == 0) updateHud();
             ui.postDelayed(this, 16);
@@ -138,6 +145,8 @@ public final class MainActivity extends Activity {
     }
 
     private void onPick(float wx, float wy) {
+        JSONObject npc = sim.npcNear(wx, wy, Math.max(18, 26 / mapView.zoom()));
+        if (npc != null) { npcDialog(npc); return; }
         JSONObject den = sim.denAt(wx, wy, Math.max(45, 90 / mapView.zoom()));
         if (den != null) { denDialog(den); return; }
         JSONObject s = sim.structureAt(wx, wy, Math.max(40, 60 / mapView.zoom()));
@@ -145,6 +154,18 @@ public final class MainActivity extends Activity {
         sim.goTo(wx, wy, "那儿");
         mapView.centerOn(sim.px, sim.py);
         toast("走过去");
+    }
+
+    private void npcDialog(JSONObject n) {
+        new AlertDialog.Builder(this)
+            .setTitle(n.optString("name") + " · " + n.optString("job"))
+            .setMessage("他就站在街上，手上有活。跟着他，等到他停脚就能搭上话。")
+            .setPositiveButton("接近此人", (d, w) -> { toast(sim.lockNpc(n)); updateHud(); })
+            .setNeutralButton("就在这儿搭话", (d, w) -> {
+                sim.px = n.optDouble("px"); sim.py = n.optDouble("py");
+                toast(sim.talk()); updateHud();
+            })
+            .setNegativeButton("算了", null).show();
     }
 
     private void placeDialog(JSONObject s) {
@@ -183,7 +204,30 @@ public final class MainActivity extends Activity {
               .append("气血 ").append(String.format("%.0f", sim.hp)).append(" · 体力 ").append(String.format("%.0f", sim.stamina))
               .append(" · 业力 ").append(sim.karma).append("\n")
               .append("战力 ").append(sim.power()).append("\n\n").append(sim.powerBreakdown())
-              .append("\n\n").append(sim.mortalRangeText());
+              .append("\n\n").append(sim.mortalRangeText())
+              .append("\n").append(sim.lockedName != null ? "正在跟：" + sim.lockedName : "没跟着谁")
+              .append(sim.flying ? " · 御剑中" : "").append(sim.horse ? " · 有马" : "");
+            String[] acts = {"搭话（就近）", sim.lockedName != null ? "甩开此人" : "跟住最近的人", "御剑起／落", "买一匹马 3000", "去东市"};
+            new AlertDialog.Builder(this).setTitle("人物").setMessage(sb.toString())
+                .setItems(acts, (d, i) -> {
+                    String r;
+                    switch (i) {
+                        case 0: r = sim.talk(); break;
+                        case 1:
+                            if (sim.lockedName != null) { sim.unlock(); r = "不再跟了。"; }
+                            else {
+                                JSONObject n = sim.npcNear(sim.px, sim.py, 1200);
+                                r = n == null ? "附近没人。" : sim.lockNpc(n);
+                            }
+                            break;
+                        case 2: r = sim.toggleFlight(); break;
+                        case 3: r = sim.buyHorse(); break;
+                        default: sim.goTo(0, 0, "东市"); r = "往东市去。";
+                    }
+                    toast(r); updateHud(); mapView.invalidate();
+                })
+                .setNegativeButton("关闭", null).show();
+            return;
         } else if ("cult".equals(what)) {
             sb.append("境界 ").append(sim.realmName()).append(sim.layer > 0 ? "·炼气" + sim.layer + "层" : "").append("\n")
               .append("修为 ").append(String.format("%.0f", sim.practiceProgress)).append("\n")
@@ -199,7 +243,7 @@ public final class MainActivity extends Activity {
             new AlertDialog.Builder(this).setTitle("家业").setMessage(sim.lifeText())
                 .setPositiveButton("打工一日", (x, w) -> { toast(sim.workDay("porter")); updateHud(); })
                 .setNeutralButton("歇息一日", (x, w) -> { toast(sim.restDay(1)); updateHud(); })
-                .setNegativeButton("置宅 420", (x, w) -> { toast(sim.buyHome("room")); updateHud(); }).show();
+                .setNegativeButton("置宅 12000", (x, w) -> { toast(sim.buyHome("room")); updateHud(); }).show();
             return;
         } else if ("build".equals(what)) {
             String[] acts = {"伐木", "割草", "帮工换宿", "盖茅屋", "研究军械", "练长枪兵"};
@@ -260,7 +304,7 @@ public final class MainActivity extends Activity {
                 .setNegativeButton("关闭", null).create();
             dlg.show(); return;
         } else {
-            sb.append("私兵 ").append(sim.men).append(" 人（上限 60）\n每人 14 银，月饷 2.2 银。\n");
+            sb.append("私兵 ").append(sim.men).append(" 人（上限 60）\n每人 300 文，月饷 22 文。\n");
             AlertDialog d = new AlertDialog.Builder(this).setTitle("招募").setMessage(sb.toString())
                 .setPositiveButton("招 5 人", (x, w) -> { toast(sim.recruit(5)); updateHud(); }).setNegativeButton("关闭", null).create();
             d.show(); return;

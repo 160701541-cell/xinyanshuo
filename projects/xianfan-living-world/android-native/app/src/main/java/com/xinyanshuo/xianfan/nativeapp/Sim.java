@@ -23,6 +23,11 @@ public final class Sim {
     public final List<JSONObject> structures = new ArrayList<>();
     public final List<JSONObject> dens = new ArrayList<>();
     public final List<JSONObject> landmarks = new ArrayList<>();
+    /** 街上的人：位置每帧自己走，点一下能搭话 */
+    public final List<JSONObject> npcs = new ArrayList<>();
+    /** 碰撞用的矩形（院墙、主屋），普通人不能穿 */
+    public final List<double[]> blocks = new ArrayList<>();
+    public final List<double[]> roads = new ArrayList<>();
     public final Map<String, Integer> bag = new LinkedHashMap<>();
     public final List<String> log = new ArrayList<>();
     public final HashSet<String> cleared = new HashSet<>();
@@ -49,6 +54,10 @@ public final class Sim {
     public String targetName = "";
     public boolean moving = false;
     public long seed = 20261022L;
+    public String locked = null, lockedName = null;
+    public boolean flying = false, horse = false, justArrived = false;
+    private double approachTimer = 0;
+    private final Map<String, double[]> npcTarget = new LinkedHashMap<>();
 
     public Sim(JSONObject world) {
         this.world = world;
@@ -58,6 +67,28 @@ public final class Sim {
         if (s != null) for (int i = 0; i < s.length(); i++) structures.add(s.optJSONObject(i));
         JSONArray d = world.optJSONArray("dens");
         if (d != null) for (int i = 0; i < d.length(); i++) dens.add(d.optJSONObject(i));
+        JSONArray np = world.optJSONArray("npcs");
+        if (np != null) for (int i = 0; i < np.length(); i++) {
+            JSONObject o = np.optJSONObject(i);
+            o.put("px", o.optDouble("x")); o.put("py", o.optDouble("y"));
+            o.put("hx", o.optDouble("x")); o.put("hy", o.optDouble("y"));
+            npcs.add(o);
+        }
+        JSONArray bl = world.optJSONArray("blocks");
+        if (bl != null) for (int i = 0; i < bl.length(); i++) {
+            JSONObject b = bl.optJSONObject(i);
+            blocks.add(new double[]{b.optDouble("x"), b.optDouble("y"), b.optDouble("w"), b.optDouble("h")});
+        }
+        JSONArray rd = world.optJSONArray("roads");
+        if (rd != null) for (int i = 0; i < rd.length(); i++) {
+            JSONArray line = rd.optJSONArray(i);
+            if (line == null) continue;
+            for (int j = 0; j + 1 < line.length(); j++) {
+                JSONArray a = line.optJSONArray(j), b2 = line.optJSONArray(j + 1);
+                if (a == null || b2 == null) continue;
+                roads.add(new double[]{a.optDouble(0), a.optDouble(1), b2.optDouble(0), b2.optDouble(1)});
+            }
+        }
         JSONArray l = world.optJSONArray("landmarks");
         if (l != null) for (int i = 0; i < l.length(); i++) landmarks.add(l.optJSONObject(i));
         visited.add("xuanhuang");
@@ -84,26 +115,161 @@ public final class Sim {
 
     public void stop() { moving = false; targetName = ""; }
 
-    /** 每帧推进：移动 + 体力 + 世界时钟 */
+    /** 每帧推进：移动 + 体力 + 世界时钟 + 街上的人 + 锁定的目标 */
     public void tick(double dtReal) {
         double dt = Math.min(0.1, Math.max(0, dtReal));
+        tickNpcs(dt);
+        if (locked != null) approachTimer += dt;
+
         if (moving) {
             double dx = tx - px, dy = ty - py;
             double dist = Math.hypot(dx, dy);
-            double step = WALK * dt * (stamina > 20 ? 1 : 0.6);
+            double speed = WALK * speedMul(px, py) * (stamina > 20 ? 1 : 0.6) * (flying ? 2.4 : 1);
+            double step = speed * dt;
             if (dist <= step) {
-                px = tx; py = ty; moving = false;
+                px = tx; py = ty; moving = false; justArrived = true;
                 note("到了" + targetName + "。");
                 targetName = "";
             } else {
-                px += dx / dist * step;
-                py += dy / dist * step;
-                stamina = Math.max(0, stamina - step * 0.09);
+                double nx = px + dx / dist * step, ny = py + dy / dist * step;
+                if (!flying && blocked(nx, ny)) {
+                    // 贴着墙滑动：先试单轴，再退回去
+                    if (!blocked(nx, py)) { py = py; px = nx; }
+                    else if (!blocked(px, ny)) { py = ny; }
+                    else { moving = false; note("前面是墙，走不过去。"); }
+                } else {
+                    px = nx; py = ny;
+                }
+                stamina = Math.max(0, stamina - step * (flying ? 0.02 : 0.09));
+                if (flying) spirit = Math.max(0, spirit - step * 0.02);
             }
         } else {
             stamina = Math.min(100, stamina + dt * 0.5);
+            if (flying) spirit = Math.min(100, spirit + dt * 0.4);
+        }
+
+        // 锁定的人会跑：每半秒按他当前的位置重新规划一次，追不上就报跟丢
+        if (locked != null) {
+            JSONObject npc = npcById(locked);
+            if (npc == null) { locked = null; lockedName = null; moving = false; }
+            else {
+                double d = Math.hypot(npc.optDouble("px") - px, npc.optDouble("py") - py);
+                if (d <= 7) {
+                    note("追上了" + npc.optString("name") + "。");
+                    String name = npc.optString("name");
+                    locked = null; lockedName = null; moving = false;
+                    lastTalk = "你追上" + name + "，他停了脚："+ talkLine(name, npc.optString("job")) + "\n（可以点「搭话」继续）";
+                } else if (d > 600) {
+                    note("跟丢了" + npc.optString("name") + "。");
+                    locked = null; lockedName = null; moving = false;
+                } else if (approachTimer >= 0.5) {
+                    approachTimer = 0;
+                    goTo(npc.optDouble("px"), npc.optDouble("py"), npc.optString("name"));
+                }
+            }
         }
         clock += dt * TIME_SCALE;
+    }
+
+    public String lastTalk = "";
+
+    private String talkLine(String name, String job) {
+        return "“在下" + name + "，" + (job == null || job.isEmpty() ? "混口饭吃" : "做" + job + "营生") + "。听说城里最近不太平。”";
+    }
+
+    /** 街上的人自己走：在住处以北 60 米内晃，慢得像闲逛 */
+    private void tickNpcs(double dt) {
+        for (JSONObject n : npcs) {
+            double x = n.optDouble("px"), y = n.optDouble("py");
+            double hx = n.optDouble("hx"), hy = n.optDouble("hy");
+            double[] t = npcTarget.get(n.optString("id"));
+            if (t == null || Math.hypot(t[0] - x, t[1] - y) < 3) {
+                double r = randDouble("wander:" + n.optString("id") + ":" + (int) (clock / 60));
+                double ang = r * Math.PI * 2;
+                double rad = 25 + randDouble("r:" + n.optString("id") + ":" + (int) (clock / 60)) * 55;
+                t = new double[]{hx + Math.cos(ang) * rad, hy + Math.sin(ang) * rad};
+                npcTarget.put(n.optString("id"), t);
+            }
+            double dx = t[0] - x, dy = t[1] - y, d = Math.hypot(dx, dy);
+            double step = 1.05 * dt;
+            if (d > 0.01) { x += dx / d * Math.min(step, d); y += dy / d * Math.min(step, d); }
+            n.put("px", x); n.put("py", y);
+        }
+    }
+
+    public JSONObject npcById(String id) {
+        for (JSONObject n : npcs) if (n.optString("id").equals(id)) return n;
+        return null;
+    }
+
+    public JSONObject npcNear(double x, double y, double radius) {
+        JSONObject best = null; double bd = radius;
+        for (JSONObject n : npcs) {
+            double d = Math.hypot(n.optDouble("px") - x, n.optDouble("py") - y);
+            if (d < bd) { bd = d; best = n; }
+        }
+        return best;
+    }
+
+    /** 锁定一个人：之后每半秒按他的新位置重算路线，追到 7 米内自动搭话 */
+    public String lockNpc(JSONObject n) {
+        locked = n.optString("id"); lockedName = n.optString("name");
+        approachTimer = 1;
+        goTo(n.optDouble("px"), n.optDouble("py"), lockedName);
+        note("跟上" + lockedName + "。");
+        return "跟着" + lockedName + "走，他停下你就追上了。";
+    }
+
+    public void unlock() { locked = null; lockedName = null; }
+
+    /** 这里能不能站人：院墙与主屋挡住，飞行时无视 */
+    public boolean blocked(double x, double y) {
+        for (double[] r : blocks) {
+            if (x > r[0] && x < r[0] + r[2] && y > r[1] && y < r[1] + r[3]) return true;
+        }
+        return false;
+    }
+
+    /** 官道 1.6 倍，骑马再 1.4 倍 */
+    public double speedMul(double x, double y) {
+        double mul = 1.0;
+        for (double[] r : roads) {
+            if (distToSeg(x, y, r[0], r[1], r[2], r[3]) < 14) { mul *= 1.6; break; }
+        }
+        if (horse) mul *= 1.4;
+        return mul;
+    }
+
+    private static double distToSeg(double px, double py, double x1, double y1, double x2, double y2) {
+        double dx = x2 - x1, dy = y2 - y1;
+        double l2 = dx * dx + dy * dy;
+        double t = l2 == 0 ? 0 : ((px - x1) * dx + (py - y1) * dy) / l2;
+        t = Math.max(0, Math.min(1, t));
+        return Math.hypot(px - (x1 + t * dx), py - (y1 + t * dy));
+    }
+
+    /** 御剑：修士且灵力够；城主（御城军）也能在城内飞 */
+    public String toggleFlight() {
+        if (flying) { flying = false; note("落地。"); return "已落地，普通人绕墙走。"; }
+        if (realmLevel < 2) return "御剑要筑基以上。";
+        if (spirit < 12) return "灵力不足，先吐纳。";
+        flying = true; note("御剑起飞。");
+        return "御剑而行：掠过屋脊，不再被院墙挡。";
+    }
+
+    public String buyHorse() {
+        if (horse) return "已经有一匹了。";
+        if (coin < 3000) return "买马要 " + coinText(3000) + "。";
+        coin -= 3000; horse = true;
+        note("买了一匹脚力。");
+        return "有马了，官道上更快。";
+    }
+
+    public String talk() {
+        JSONObject n = npcNear(px, py, 12);
+        if (n == null) return "附近没有人。点点头，也就过去了。";
+        lastTalk = n.optString("name") + "（" + n.optString("job") + "）：" + talkLine(n.optString("name"), n.optString("job"));
+        return lastTalk;
     }
 
     /** 附近的建筑：40 米内取最近 */

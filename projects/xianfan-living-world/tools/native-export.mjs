@@ -35,11 +35,30 @@ const dens = DEN.map((d, i) => {
     meters: one.meters, hp: one.hp, dmg: one.dmg, move: one.move?.name || '', count: 2 + Math.floor(hash(`den-${i}` + seed) * 4)};
 });
 
+// 街上的真人：从户册里挑，给一个可见的行踪（都在城内，便于遇见）
+const NAMES = ['阿绫','周砚','柳七','何九','陈六娘','王二','苏小满','倪三','沈青','程五'];
+const npcs = NAMES.map((name, i) => {
+  const a = i / NAMES.length * Math.PI * 2;
+  return {id: 'npc-' + i, name, job: ['厨娘','货郎','脚夫','木匠','账房','更夫','药童','织工','茶博士','挑夫'][i],
+    x: Math.round(Math.cos(a) * 260), y: Math.round(Math.sin(a) * 300)};
+});
+
+// 碰撞：院墙与主屋的矩形（米），原生端据此挡住穿模
+const blocks = [];
+for (const b of town) {
+  if (b.kind === 'garden' || b.kind === 'field') continue;
+  for (const part of b.parts) {
+    if (part.t === 'house' || part.t === 'wing' || part.t === 'wall') {
+      blocks.push({x: part.x, y: part.y, w: part.w, h: part.h});
+    }
+  }
+}
+
 const world = {
   version: 'native-0.1.0', game: VERSION, seed,
   extent: 840, cell: 4, imageSize: 2048,
   city: {name: CITY.name || '临安县城', half: CITY.half || 750, gates: CITY.gates || []},
-  places, structures, dens,
+  places, structures, dens, npcs, blocks, roads: ROUTES,
   landmarks: LANDMARKS.map(l => ({id: l.id, name: l.name, x: l.x, y: l.y, type: l.type, active: !!l.active})),
   routes: ROUTES, streams: STREAMS,
   planet: PLANET, domains: DOMAINS, voidStones: VOID_STONES, mortalKmPerDay: MORTAL_KM_PER_DAY, mortalYears: MORTAL_YEARS, voidRealm: VOID_REALM,
