@@ -26,19 +26,20 @@ export const NATIONS=[
  {id:'yunli',name:'云离',cities:2,spanKm2:700_000,tier:'kingdom'},
  {id:'chixiao',name:'赤霄',cities:1,spanKm2:430_000,tier:'duchy'}
 ];
+/** 门派只有门规与人员构成；道行是每个人自己的事。 */
 export const SECTS=[
- {id:'qingyun',name:'青云仙门',stance:'righteous',tags:['zealot'],seat:'qingyun',reach:1,nation:'daning',power:6912,morality:62,hypocrisy:10,note:'境内第一正道，见魔必讨'},
- {id:'lingshan',name:'灵山药市',stance:'pragmatic',tags:['mercantile'],seat:'lingshan',reach:0,nation:'daning',power:1800,morality:12,hypocrisy:30,note:'谁的灵石都收'},
- {id:'xuanyin',name:'玄阴教',stance:'demonic',tags:['demonic_pact'],seat:'xuanjing',reach:2,nation:'xuanjing',power:9400,morality:-35,hypocrisy:40,note:'横跨玄京、越境，专收"业力深重"之人'},
- {id:'wanjian',name:'万剑宗',stance:'righteous',tags:['zealot'],seat:'yuejing',reach:2,nation:'yuejing',power:8200,morality:-18,hypocrisy:58,note:'剑修，除魔不问道理'},
- {id:'tianji',name:'天机阁',stance:'neutral',tags:['duplicitous'],seat:'daning',reach:3,nation:'daning',power:5200,morality:-25,hypocrisy:72,note:'卖消息给两边，黑白通吃'},
- {id:'xuehe',name:'血河宗',stance:'demonic',tags:['demonic_pact'],seat:'xirong',reach:2,nation:'xirong',power:7600,morality:-72,hypocrisy:20,note:'以血炼法，凡人视作天灾'},
- {id:'taixu',name:'太虚观',stance:'neutral',tags:['hermit'],seat:'yunli',reach:1,nation:'yunli',power:6100,morality:55,hypocrisy:0,note:'不涉外事，除非山门被踩'},
- {id:'chiyan',name:'赤炎谷',stance:'demonic',tags:['demonic_pact'],seat:'chixiao',reach:1,nation:'chixiao',power:4300,morality:-55,hypocrisy:15,note:'西域魔道，与血河宗互为表里'},
- {id:'baihua',name:'百花谷',stance:'pragmatic',tags:['mercantile','duplicitous'],seat:'yunli',reach:1,nation:'yunli',power:2900,morality:20,hypocrisy:35,note:'丹药生意，跟谁都笑'},
- {id:'wudang',name:'武当别院',stance:'righteous',tags:[],seat:'daning',reach:0,nation:'daning',power:3500,morality:70,hypocrisy:5,note:'正统但不嗜杀，讲证据'},
- {id:'luofu',name:'罗浮剑派',stance:'neutral',tags:['hermit'],seat:'xuanjing',reach:1,nation:'xuanjing',power:4100,morality:30,hypocrisy:15,note:'只守自己那片山'},
- {id:'guixu',name:'归墟',stance:'demonic',tags:['demonic_pact'],seat:'xirong',reach:3,nation:'xirong',power:12000,morality:38,hypocrisy:60,note:'传说级，不露面，露面即灭门'}
+ {id:'qingyun',name:'青云仙门',stance:'righteous',tags:['zealot'],seat:'qingyun',reach:1,nation:'daning',power:6912,note:'境内第一正道，见魔必讨'},
+ {id:'lingshan',name:'灵山药市',stance:'pragmatic',tags:['mercantile'],seat:'lingshan',reach:0,nation:'daning',power:1800,note:'谁的灵石都收'},
+ {id:'xuanyin',name:'玄阴教',stance:'demonic',tags:['demonic_pact'],seat:'xuanjing',reach:2,nation:'xuanjing',power:9400,note:'横跨玄京、越境，专收"业力深重"之人'},
+ {id:'wanjian',name:'万剑宗',stance:'righteous',tags:['zealot'],seat:'yuejing',reach:2,nation:'yuejing',power:8200,note:'剑修，除魔不问道理'},
+ {id:'tianji',name:'天机阁',stance:'neutral',tags:['duplicitous'],seat:'daning',reach:3,nation:'daning',power:5200,note:'卖消息给两边，黑白通吃'},
+ {id:'xuehe',name:'血河宗',stance:'demonic',tags:['demonic_pact'],seat:'xirong',reach:2,nation:'xirong',power:7600,note:'以血炼法，凡人视作天灾'},
+ {id:'taixu',name:'太虚观',stance:'neutral',tags:['hermit'],seat:'yunli',reach:1,nation:'yunli',power:6100,note:'不涉外事，除非山门被踩'},
+ {id:'chiyan',name:'赤炎谷',stance:'demonic',tags:['demonic_pact'],seat:'chixiao',reach:1,nation:'chixiao',power:4300,note:'西域魔道，与血河宗互为表里'},
+ {id:'baihua',name:'百花谷',stance:'pragmatic',tags:['mercantile','duplicitous'],seat:'yunli',reach:1,nation:'yunli',power:2900,note:'丹药生意，跟谁都笑'},
+ {id:'wudang',name:'武当别院',stance:'righteous',tags:[],seat:'daning',reach:0,nation:'daning',power:3500,note:'正统但不嗜杀，讲证据'},
+ {id:'luofu',name:'罗浮剑派',stance:'neutral',tags:['hermit'],seat:'xuanjing',reach:1,nation:'xuanjing',power:4100,note:'只守自己那片山'},
+ {id:'guixu',name:'归墟',stance:'demonic',tags:['demonic_pact'],seat:'xirong',reach:3,nation:'xirong',power:12000,note:'传说级，不露面，露面即灭门'}
 ];
 export const sectById=id=>SECTS.find(s=>s.id===id)||null;
 /** 势力的道行与立场是两回事：正道里有坏人，魔道里有好人。 */
@@ -85,72 +86,42 @@ export function tieWith(w,sectId,delta){
  d.ties[sectId]=Math.max(-100,Math.min(100,(d.ties[sectId]||0)+delta));
  return d.ties[sectId];
 }
-/** 你在某个势力眼里是什么人。分两件事：
- *  正道按"你做过什么"记账（道行高的真看行径，伪善的只看舆论与把柄）；
- *  魔道根本不按善恶记账——它看你是不是同类、守不守它的规矩、有没有交情。
- *  道行（morality）只决定这个势力的行事底线，不决定它拿什么尺子量你。 */
+/** 门派怎么看你：立场、交情、利害。**门派不给你打善恶分**——门里每个人自己会。 */
 export function attitudeOf(w,sectOrId){
  const s=typeof sectOrId==='string'?sectById(sectOrId):sectOrId;
  const d=ensureDao(w);
  const k=w.karma?.value||0;
- const de=ensureDao(w).deeds;
  const deeds=deedScore(w);
- const m=s.morality??0, hypo=s.hypocrisy??0;
  const tie=d.ties[s.id]||0;
  let score=0;const why=[];
  if(s.stance==='demonic'){
-  // 魔道的尺子：业力、交情、规矩；不给你"做好人"记功
-  score+=k*0.3+tie*0.4;
-  if(m>=25){                              // 有底线的魔道：不认滥杀，也不认你行善
-   score-=de.innocent*3+de.cultivator*0.8;
-   score+=de.evil*1.5;
-   if(de.innocent>=3){why.push('同是魔道，也不齿你滥杀');}
-   else if(de.evil>0){why.push('敬你能收拾该收拾的人');}
-   else why.push('守自己的规矩，不问善恶');
-  }else{                                  // 恶名昭彰：越脏越亲
-   score+=de.innocent*3+de.evil*1.2-de.protect*2;
-   if(de.innocent>0){why.push('同道');}
-   if(de.protect>=3){why.push('你手上太干净，他们不信');}
-  }
-  if(d.bias<-25&&m<25){score+=10;why.push('魔道中人');}
+  score+=k*0.28+tie*0.4;
+  if(d.bias<-25){score+=10;why.push('魔道中人');}
   if(s.tags.includes('demonic_pact')){why.push('魔道同盟');}
+  why.push('看交情与规矩，不问善恶');
  }else if(s.stance==='righteous'){
-  score+=deeds*0.75+d.bias*0.125;
-  if(m>=40&&deeds<-25){score-=28;why.push('除魔卫道，见你即斩');}
-  if(deeds>=30){score+=10;why.push('敬你是条汉子');}
-  if(deeds<-30){score-=10;why.push('你做的事他们看不上');}
-  // 伪善：明面按舆论，暗地记把柄
-  if(hypo>=50){
-   d.exposure=Math.max(0,Math.min(100,d.exposure+(k>40?2:0)+(Math.abs(deeds)>50?1:0)));
-   if(d.exposure>70){score+=(d.bias*0.5-k*0.1)*0.4-20;why.push('底细被捏住，翻脸');}
-   else{score+=Math.max(0,(d.bias*0.5-k*0.1)*0.6);why.push('满口道义');}
-  }else{
-   score-=k*0.2;
-  }
+  score+=d.bias*0.5+tie*0.35-k*0.15+deeds*0.12;
+  if(s.tags.includes('zealot')&&d.bias<-30){score-=35;why.push('门上写着除魔卫道');}
+  why.push('讲名声，不讲你心里怎么想');
  }else if(s.tags.includes('mercantile')||s.stance==='pragmatic'){
   score+=tie*0.6+Math.min(20,(w.player.silver||0)/200);why.push('只看货与钱');
  }else{
   score+=d.bias*0.1+tie*0.5;
   if(s.tags.includes('hermit')){score=Math.min(score,10);why.push('隐世不出');}
-  if(hypo>=50){
-   d.exposure=Math.max(0,Math.min(100,d.exposure+(k>40?2:0)+(Math.abs(deeds)>50?1:0)));
-   if(d.exposure>70){score-=25;why.push('底细被捏住，翻脸');}
-   else why.push('当面称兄道弟');
-  }
  }
- if(tie&&!s.tags.includes('mercantile')&&s.stance!=='demonic'){score+=tie*0.3;why.push('有旧交');}
  score=Math.round(Math.max(-100,Math.min(100,score)));
  const label=score>=40?'盟友':score>=15?'亲近':score>=-15?'平常':score>=-40?'警惕':'死敌';
  return {id:s.id,name:s.name,stance:STANCES[s.stance].label,score,label,hostile:score<=-40,
-  morality:m,moralityLabel:moralityLabel(m),hypocrisy:hypo,masked:hypo>=50&&m<0,
-  reason:why.join('、')||'无特别看法'};
+  creed:s.creed||'',reason:why.join('、')||'无特别看法'};
 }
 export function daoReport(w){
+ const good=findPerson('good',{stance:'demonic'}),bad=findPerson('bad',{stance:'righteous'});
  const list=SECTS.map(s=>attitudeOf(w,s)).sort((a,b)=>b.score-a.score);
  const d=ensureDao(w);
  return {bias:Math.round(d.bias),label:taoLabel(d.bias),exposure:Math.round(d.exposure),deeds:d.deeds,deedScore:deedScore(w),
   allies:list.filter(x=>x.score>=15),enemies:list.filter(x=>x.hostile),neutral:list.filter(x=>x.score>-15&&x.score<15),
-  list,log:d.log.slice(-5).reverse()};
+  list,log:d.log.slice(-5).reverse(),
+  notable:[good&&personAttitude(w,good),bad&&personAttitude(w,bad)].filter(Boolean)};
 }
 /** 结盟：只能跟愿意接纳你的势力结；正道见你业力重就拒。 */
 export function seekAlly(w,sectId){
@@ -161,4 +132,58 @@ export function seekAlly(w,sectId){
  tieWith(w,sectId,10);
  shiftDao(w,s.stance==='demonic'?-6:4,s.stance==='demonic'?`与${s.name}结盟`:`与${s.name}结交`);
  return {ok:true,attitude:attitudeOf(w,s),note:s.stance==='demonic'?'近墨者黑——正道那边已经有人记下你了':'正道记你一功'};
+}
+
+// ── 人：道行挂在每个修士身上，不挂在门派牌匾上 ────────────────────────────
+/** 门派的牌匾只说明它自称什么；这门里坐着什么人，是另一回事。 */
+export const SECT_CREED={
+ qingyun:'见魔必讨，护境内凡人',lingshan:'灵石到账，不问来路',xuanyin:'弱肉强食，但护自己人',
+ wanjian:'剑出无回，除魔不问道理',tianji:'消息无价，两边都卖',xuehe:'血炼通天，凡人如畜',
+ taixu:'不涉外事，守山自足',chiyan:'强者为尊，烧杀由心',baihua:'和气生财，谁的钱都收',
+ wudang:'讲证据，不嗜杀',luofu:'只守自己那片山',guixu:'不滥杀、守契、杀该杀之人'};
+const SUR='沈林陈王李赵张吴周徐唐秦叶谢陆方何苏顾许孙韩邵钱曹马郑杜白柳严蒋钟宁楚燕';
+const GIVEN='玄清虚明尘霜寒松云溪鹤青云岚墨白归远长夜孤鸿临川照影无咎守一知白';
+function hashStr(s){let h=2166136261;for(let i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,16777619)}return h>>>0;}
+function rngOf(seed){let a=hashStr(seed)||1;return()=>{a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};}
+const REALM_LABEL=['炼气三层','炼气七层','筑基初期','筑基后期','金丹初期','金丹后期'];
+/** 一个门派常驻的八个人（确定性生成）：名字、境界、道行、脾气。 */
+export function peopleOf(sectId){
+ const s=sectById(sectId);if(!s)return [];
+ const r=rngOf('people:'+sectId);
+ const out=[];
+ for(let i=0;i<8;i++){
+  // 魔道里三成是好人，正道里两成是坏人——牌匾不决定人
+  let m;
+  if(s.stance==='demonic')m=r()<.30?45+Math.floor(r()*45):-85+Math.floor(r()*65);
+  else if(s.stance==='righteous')m=r()<.22?-60+Math.floor(r()*45):10+Math.floor(r()*60);
+  else m=-30+Math.floor(r()*70);
+  const name=SUR[Math.floor(r()*SUR.length)]+GIVEN[Math.floor(r()*GIVEN.length)]+(r()<.5?GIVEN[Math.floor(r()*GIVEN.length)]:'');
+  out.push({id:`${sectId}-p${i}`,name,sect:s.name,sectId:sectId,stance:s.stance,
+   realm:REALM_LABEL[Math.floor(r()*REALM_LABEL.length)],morality:m,
+   temper:m>=45?'端方':m>=15?'有底线':m>-15?'常人':m>-45?'手段狠辣':'恶名昭彰',
+   creed:SECT_CREED[sectId]||''});
+ }
+ return out;
+}
+/** 这个人怎么看你：看的是他自己的道行，不是门派的牌子。 */
+export function personAttitude(w,person){
+ const d=ensureDao(w);const deeds=deedScore(w);const k=w.karma?.value||0;
+ const m=person.morality;let score=0;const why=[];
+ if(m>=25){score+=deeds*0.7+d.bias*0.1;if(deeds<-25)why.push('他看不惯你做的事');if(deeds>25)why.push('他敬你为人');}
+ else if(m<=-25){score+=-deeds*0.5+k*0.2;if(deeds<-10)why.push('他觉得你够狠');if(deeds>25)why.push('他觉得你假清高');}
+ else{score+=d.bias*0.2;why.push('他不太关心你');}
+ score=Math.round(Math.max(-100,Math.min(100,score)));
+ const label=score>=40?'同道':score>=15?'客气':score>=-15?'无感':score>=-40?'不喜':'仇视';
+ return {id:person.id,name:person.name,sect:person.sect,realm:person.realm,morality:m,
+  temper:person.temper,score,label,reason:why.join('、')||'无感'};
+}
+/** 找一个"牌匾与人不一样"的修士：align='good' 找恶门里的善人，'bad' 找善门里的恶人。 */
+export function findPerson(align,sect=null){
+ const o=typeof sect==='string'?{sectId:sect}:(sect||{});
+ let ids=o.sectId?[o.sectId]:SECTS.map(s=>s.id);
+ if(o.stance)ids=ids.filter(id=>sectById(id).stance===o.stance);
+ const pool=ids.flatMap(id=>peopleOf(id));
+ if(align==='good')return pool.filter(p=>p.morality>=40).sort((a,b)=>b.morality-a.morality)[0]||null;
+ if(align==='bad')return pool.filter(p=>p.morality<=-40).sort((a,b)=>a.morality-b.morality)[0]||null;
+ return pool[0]||null;
 }

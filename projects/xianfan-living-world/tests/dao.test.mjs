@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {createWorld} from '../core.mjs';
 import {ensureKarma,resolveKill} from '../karma.mjs';
-import {ensureDao,shiftDao,attitudeOf,daoReport,seekAlly,SECTS,NATIONS,tieWith,taoLabel,recordDeed,deedScore,moralityLabel} from '../dao.mjs';
+import {ensureDao,shiftDao,attitudeOf,daoReport,seekAlly,SECTS,NATIONS,tieWith,taoLabel,recordDeed,deedScore,peopleOf,personAttitude,findPerson} from '../dao.mjs';
 
 const mk=()=>{const w=createWorld('道心测试');ensureKarma(w);ensureDao(w);
  w.player.stats={level:1,realm:'炼气二层'};w.player.silver=1700;return w;};
@@ -15,74 +15,40 @@ test('魔修自己未必有业力，但除魔卫道的势力照样视你为敌',
  assert.match(q.reason,/除魔卫道|看不上/);
 });
 
-test('魔道里有好人：归墟守着底线，不认滥杀，也不给你行善记功',()=>{
- const good=mk();recordDeed(good,'protect',8);recordDeed(good,'evil',4);
- const bad=mk();recordDeed(bad,'innocent',6);
- const g1=attitudeOf(good,'guixu'),g2=attitudeOf(bad,'guixu');
- assert.ok(g2.score<g1.score,`滥杀 ${g2.score} 应低于行善 ${g1.score}`);
- assert.ok(g2.score<0,'归墟 不齿滥杀');
- // 魔道不按善恶记账：行善换不来盟友，得靠交情
- assert.ok(g1.label!=='盟友',`魔道不该因为你是好人就当盟友（${g1.score}）`);
+test('魔道里有好人：赤炎谷里也坐着行得正的修士，他按你的行径看你',()=>{
+ const good=findPerson('good',{stance:'demonic'});
+ assert.ok(good, '魔道宗门里应有道行高的弟子');
+ assert.ok(good.morality>=40);
+ const a=mk();recordDeed(a,'protect',6);recordDeed(a,'evil',3);
+ const b=mk();recordDeed(b,'innocent',5);
+ assert.ok(personAttitude(a,good).score>personAttitude(b,good).score,'同一个魔修，对善行与滥杀态度不同');
+ assert.ok(personAttitude(b,good).score<0);
 });
 
-test('正道里有坏人：万剑宗嘴上除魔，实际看你有没有钱和把柄',()=>{
- const w=mk();recordDeed(w,'innocent',3);w.player.silver=8000;   // 手上脏，但有钱
- const v=attitudeOf(w,'wanjian');
- assert.ok(v.masked,'万剑宗应被标为伪善');
- assert.ok(v.score>attitudeOf(w,'qingyun').score,'伪善势力反而比真正道更容易接纳你');
+test('正道里有坏人：青云门下的方云，你越狠他越看你顺眼',()=>{
+ const bad=findPerson('bad',{stance:'righteous'});
+ assert.ok(bad&&bad.morality<=-40,'正道宗门里应有恶徒');
+ const dirty=mk();recordDeed(dirty,'innocent',5);ensureKarma(dirty).value=60;
+ const clean=mk();recordDeed(clean,'protect',8);
+ assert.ok(personAttitude(dirty,bad).score>personAttitude(clean,bad).score);
 });
 
-test('行径高于标签：同样业力，做过事与没做过事待遇不同',()=>{
- const clean=mk();const dirty=mk();
- shiftDao(clean,-50,'名声不好');shiftDao(dirty,-50,'名声不好');
- recordDeed(dirty,'innocent',5);
- assert.ok(deedScore(dirty)<deedScore(clean));
- assert.ok(attitudeOf(dirty,'wudang').score<attitudeOf(clean,'wudang').score);
+test('门派本身不给你打善恶分：牌子只看名声与交情',()=>{
+ const clean=mk();recordDeed(clean,'protect',8);
+ const dirty=mk();recordDeed(dirty,'innocent',5);ensureKarma(dirty).value=60;
+ // 同样是魔道，差别只来自业力/交情，不来自"你行善加分"
+ const g1=attitudeOf(clean,'guixu').score,g2=attitudeOf(dirty,'guixu').score;
+ assert.ok(Math.abs(g1-g2)<35,`归墟 ${g1} vs ${g2}，不该按善恶大起大落`);
+ assert.equal(attitudeOf(clean,'qingyun').hostile,false);
+ assert.ok(attitudeOf(dirty,'qingyun').score<attitudeOf(clean,'qingyun').score);
 });
 
-test('业力只是账，道心才招人恨：业力低的魔道中人也被正道拒',()=>{
- const w=mk();shiftDao(w,-50,'结交魔道');
- const q=attitudeOf(w,'wanjian');
- assert.ok(q.score<0);
- assert.notEqual(q.label,'盟友');
-});
-
-test('杀魔道反而让正道亲近，杀无辜凡人让正道疏远',()=>{
- const a=mk();const b=mk();
- resolveKill(a,{target:{id:'m1',name:'恶霸',kind:'mortal',evil:true},reason:'bounty'});
- resolveKill(b,{target:{id:'m2',name:'村民',kind:'mortal'}});
- assert.ok(ensureDao(a).bias>ensureDao(b).bias,`${ensureDao(a).bias} vs ${ensureDao(b).bias}`);
- assert.ok(attitudeOf(a,'qingyun').score>attitudeOf(b,'qingyun').score);
-});
-
-test('近朱者赤：跟魔道结盟只能往魔道那边靠',()=>{
- const w=mk();shiftDao(w,20,'行侠');
- const before=ensureKarma(w).value;
- const r=seekAlly(w,'guixu');           // 守底线的魔道，不滥杀也不排外
- assert.ok(r.ok,r.error);
- assert.ok(ensureDao(w).bias<20,'结盟魔道要掉道心');
- assert.ok(r.note.includes('近墨者黑'));
-});
-
-test('正道死敌不能结盟（除魔卫道的不讲价）',()=>{
- const w=mk();shiftDao(w,-60,'乱杀修士');recordDeed(w,'innocent',6);
- const q=attitudeOf(w,'qingyun');
- assert.ok(q.hostile,`青云 ${q.score}`);
- const r=seekAlly(w,'qingyun');
- assert.equal(r.ok,false);
- assert.match(r.error,/死敌/);
-});
-
-test('两面派：明面称兄道弟，底细被捏住后翻脸',()=>{
- const w=mk();
- recordDeed(w,'protect',10);
- const before=attitudeOf(w,'tianji');
- assert.match(before.reason,/当面|底细|嘴上/);
- ensureKarma(w).value=80;
- for(let i=0;i<40;i++)attitudeOf(w,'tianji');   // 业力重，把柄越积越多
- const after=attitudeOf(w,'tianji');
- assert.ok(ensureDao(w).exposure>60);
- assert.ok(after.score<before.score,`${before.score} → ${after.score}`);
+test('一个门派里的人可以差得很远',()=>{
+ const ps=peopleOf('xuehe');
+ assert.equal(ps.length,8);
+ const ms=ps.map(p=>p.morality);
+ assert.ok(Math.max(...ms)>0&&Math.min(...ms)<-50,'血河宗里既有狠人也有善人');
+ assert.ok(ps.every(p=>p.name&&p.realm&&p.temper&&p.creed));
 });
 
 test('唯利势力看钱不看道心',()=>{
