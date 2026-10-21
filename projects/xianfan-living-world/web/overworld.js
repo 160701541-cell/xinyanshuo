@@ -96,6 +96,11 @@ export function tickActors(w,elapsedWorldSeconds){ensureGeo(w);if(!peopleCaches.
 }
 // A* 寻路只在局部细网格展开；长距离分割到公共道路上的里程碑，避免对整片天下逐米开数组。
 function astar(start,goal,step=20,maxNodes=12500){const src={x:Math.round(start.x/step),y:Math.round(start.y/step)},dst={x:Math.round(goal.x/step),y:Math.round(goal.y/step)};
+ // 精确的门口可能不落在20米整格上；先找与实体目标可直连的可通行栅格。
+ // 末端的真实目标不在格点时，使用实际米制点验证最后一小段。
+ const rawStart={x:start.x,y:start.y},rawGoal={x:goal.x,y:goal.y};
+ const findSnap=(v,real)=>{const a={x:Math.round(v.x/step),y:Math.round(v.y/step)};let cand=null;for(let r=0;r<6;r++){for(let dx=-r;dx<=r;dx++)for(let dy=-r;dy<=r;dy++){if(Math.max(Math.abs(dx),Math.abs(dy))!==r)continue;let p={x:(a.x+dx)*step,y:(a.y+dy)*step};if(obstacleAt(p)||!segmentOK(p,real))continue;let d=dist(p,real);if(!cand||d<cand.d)cand={p:{x:a.x+dx,y:a.y+dy},d};}if(cand)return cand.p;}return a;};
+ Object.assign(src,findSnap(start,rawStart));Object.assign(dst,findSnap(goal,rawGoal));
  const key=(p)=>p.x+','+p.y;const sk=key(src),dk=key(dst), queue=[{...src,g:0,f:dist(src,dst)}],seen=new Map([[sk,0]]),back=new Map(),done=new Set();let loop=0;
  while(queue.length&&loop++<maxNodes){let best=0;for(let i=1;i<queue.length;i++)if(queue[i].f<queue[best].f)best=i;const a=queue.splice(best,1)[0],id=key(a);if(done.has(id))continue;done.add(id);if(id===dk){let path=[];for(let k=id;k;){const[t,u]=k.split(',').map(Number);path.push({x:t*step,y:u*step});k=back.get(k);}path.reverse();return path;}
  for(const[dx,dy]of [[1,0],[-1,0],[0,1],[0,-1],[1,1],[1,-1],[-1,1],[-1,-1]]){const b={x:a.x+dx,y:a.y+dy}, k=key(b),meter={x:b.x*step,y:b.y*step};if(done.has(k)||obstacleAt(meter))continue;

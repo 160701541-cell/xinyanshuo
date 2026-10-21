@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {createWorld,saveableWorld,restoreWorld,getPlace} from '../core.mjs';
-import {MAP_VERSION,PLACE_METERS,ensureGeo,obstacleAt,LANDMARKS,STRUCTURES,WALLS,journeyPath,beginJourney,advanceMap,stopJourney,enterStructure,exitStructure,placeAt,makeActors,terrainHeight} from '../overworld.mjs';
+import {MAP_VERSION,PLACE_METERS,ensureGeo,obstacleAt,dist,LANDMARKS,STRUCTURES,WALLS,journeyPath,beginJourney,advanceMap,stopJourney,enterStructure,exitStructure,placeAt,makeActors,terrainHeight} from '../overworld.mjs';
 const make=(seed='米制地图测试')=>ensureGeo(createWorld(seed));
 test('米坐标与地图缩放无关，已有松林村存档在地图上仍在松林',()=>{const w=make();w.player.place='songlin';delete w.player.mapPos;ensureGeo(w);assert.deepEqual(w.player.mapPos,PLACE_METERS.songlin);w.mapCamera={x:100,y:200,mpp:.5};assert.deepEqual(w.player.mapPos,PLACE_METERS.songlin);const w2=restoreWorld(saveableWorld(w));ensureGeo(w2);assert.deepEqual(w2.player.mapPos,PLACE_METERS.songlin);assert.equal(w2.mapCamera.mpp,.5);});
 test('全国缩放只改变相机，不产生新的玩家地点',()=>{const w=make();let initial=w.player.mapPos;for(let mpp of [.25,1,10,100,1000,10000]){w.mapCamera={x:-360000,y:-180000,mpp};assert.deepEqual(w.player.mapPos,initial);}assert.equal(MAP_VERSION,'county-0.6.0');});
@@ -11,3 +11,6 @@ test('米制步行行程逐帧走动、逐帧消耗世界时间、中断不瞬�
 test('村庄之间可以沿真实公里路线移动，不因靠近城市缩放而传送',()=>{const w=make();w.player.place='songlin';w.player.mapPos={...PLACE_METERS.songlin};const old=w.hour;const goal=PLACE_METERS.shiqiao;const r=beginJourney(w,goal);assert.ok(r.ok,r.error);assert.ok(r.meters>3000);let tick=advanceMap(w,.1,30);assert.ok(tick.moved>0);assert.ok(w.hour>old);assert.ok(Math.hypot(w.player.mapPos.x-goal.x,w.player.mapPos.y-goal.y)>1000);});
 test('重要人物从13,680居民档案关联，不重复伪造独立姓名',()=>{const w=make();const ids=new Set(w.people.map(p=>p.id));assert.ok(w.mapActors.length>40);assert.ok(w.mapActors.some(a=>a.leader));assert.ok(w.mapActors.every(a=>ids.has(a.id)));});
 test('未开放政治地理点与已开放的县域村镇要分开标识',()=>{for(const id of ['ningjing','xuanjing','yuejing','xirong','yunli','chixiao','tianji'])assert.equal(LANDMARKS.find(x=>x.id===id).active,false);assert.equal(LANDMARKS.find(x=>x.id==='songlin').active,true);});
+
+test('城中四座示范建筑均可从街上寻路到正门，县衙入口非网格点也可抵达',()=>{const w=make();for(const id of ['xianya','tiepu','lianghang','kezhan']){const b=STRUCTURES.find(s=>s.id===id);const r=journeyPath(w.player.mapPos,b.door);assert.equal(r.ok,true,`${id}: ${r.error}`);assert.ok(r.meters>0);}});
+test('松林村的玩家从实际松林米坐标能沿外部官道回县衙，而不会瞬移',()=>{const w=make();w.player.place='songlin';w.player.mapPos={...PLACE_METERS.songlin};const y=STRUCTURES.find(x=>x.id==='xianya');const r=journeyPath(w.player.mapPos,y.door);assert.equal(r.ok,true,r.error);assert.ok(r.meters>7000);const t=beginJourney(w,y.door,'xianya');assert.equal(t.ok,true,t.error);advanceMap(w,.12,30);assert.ok(dist(w.player.mapPos,y.door)>1000);assert.ok(dist(w.player.mapPos,PLACE_METERS.songlin)<30);});
