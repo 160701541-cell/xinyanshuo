@@ -39,6 +39,13 @@ public final class Sim {
     public int coin = 1700, karma = 0, men = 0, stones = 0, realmLevel = 0, layer = 0, pills = 0;
     public String rootId = "none";
     public String weaponGrade = "mortal", armorGrade = "mortal", talismanGrade = "mortal";
+    // 移速各来源（加成用乘区，全部可在「个人」页看到）
+    public double bootsBonus = 0;      // 靴子
+    public boolean wings = false;      // 风雷翅
+    public boolean godspeed = false;   // 神行符
+    public String vehicle = "";        // sword / boat
+    public double martial = 0;         // 轻功身法
+    public static final int BAG_SLOTS = 24;
     public boolean wounded = false, tested = false;
     public int morale = 70, bias = 0;
     public double lawSpace = 0, lawTime = 0;
@@ -247,14 +254,68 @@ public final class Sim {
         return false;
     }
 
-    /** 官道 1.6 倍，骑马再 1.4 倍 */
+    /** 官道 1.6 倍（其余在 speed() 里按乘区算） */
+    public boolean onRoad(double x, double y) {
+        for (double[] r : roads) if (distToSeg(x, y, r[0], r[1], r[2], r[3]) < 14) return true;
+        return false;
+    }
+
     public double speedMul(double x, double y) {
+        return speed(x, y) / WALK;
+    }
+
+    /** 完整移速：基础 × 境界 × 靴子 × 翅 × 符 × 坐骑 × 载具 × 轻功 × 官道 × 负重 */
+    public double speed(double x, double y) {
         double mul = 1.0;
-        for (double[] r : roads) {
-            if (distToSeg(x, y, r[0], r[1], r[2], r[3]) < 14) { mul *= 1.6; break; }
-        }
+        mul *= 1 + realmLevel * 0.05;
+        mul *= 1 + bootsBonus;
+        if (wings) mul *= 1.9;
+        if (godspeed) mul *= 1.25;
         if (horse) mul *= 1.4;
-        return mul;
+        if ("sword".equals(vehicle)) mul *= 2.4;
+        else if ("boat".equals(vehicle)) mul *= 2.0;
+        mul *= 1 + martial;
+        if (onRoad(x, y)) mul *= 1.6;
+        int over = Math.max(0, bagSlots() - bagCap());
+        if (over > 0) mul *= 1.0 / (1 + 0.2 * over);
+        return WALK * mul;
+    }
+
+    /** 速度逐项，给「个人」页列出来 */
+    public String speedText(double x, double y) {
+        StringBuilder b = new StringBuilder();
+        b.append(String.format("%.2f 米/秒\n", speed(x, y)));
+        b.append("境界 ×").append(String.format("%.2f", 1 + realmLevel * 0.05)).append("\n");
+        if (bootsBonus > 0) b.append("靴子 ×").append(String.format("%.2f", 1 + bootsBonus)).append("\n");
+        if (wings) b.append("风雷翅 ×1.90\n");
+        if (godspeed) b.append("神行符 ×1.25\n");
+        if (horse) b.append("坐骑 ×1.40\n");
+        if ("sword".equals(vehicle)) b.append("御飞剑 ×2.40\n");
+        else if ("boat".equals(vehicle)) b.append("飞舟 ×2.00\n");
+        if (martial > 0) b.append("轻功 ×").append(String.format("%.2f", 1 + martial)).append("\n");
+        if (onRoad(x, y)) b.append("官道 ×1.60\n");
+        b.append("负重 ").append(bagSlots()).append("/").append(bagCap()).append(" 格");
+        int over = Math.max(0, bagSlots() - bagCap());
+        if (over > 0) b.append("（超 ").append(over).append(" 格，×").append(String.format("%.2f", 1.0 / (1 + 0.2 * over))).append("）");
+        return b.toString();
+    }
+
+    public int bagSlots() { return bagCount(); }
+
+    public int bagCap() { return BAG_SLOTS; }
+
+    /** 一键整理：按 id 合并，件数多的排前面 */
+    public String tidyBag() {
+        java.util.Map<String, Integer> merged = new LinkedHashMap<>();
+        for (Map.Entry<String, Integer> e : bag.entrySet()) {
+            String id = iconId(e.getKey());
+            merged.merge(id, e.getValue(), Integer::sum);
+        }
+        java.util.List<Map.Entry<String, Integer>> list = new ArrayList<>(merged.entrySet());
+        list.sort((a, b) -> b.getValue() - a.getValue());
+        bag.clear();
+        for (Map.Entry<String, Integer> e : list) bag.put(e.getKey(), e.getValue());
+        return "整理完毕，共 " + bagCount() + " 件。";
     }
 
     private static double distToSeg(double px, double py, double x1, double y1, double x2, double y2) {
@@ -267,10 +328,10 @@ public final class Sim {
 
     /** 御剑：修士且灵力够；城主（御城军）也能在城内飞 */
     public String toggleFlight() {
-        if (flying) { flying = false; note("落地。"); return "已落地，普通人绕墙走。"; }
+        if (flying) { flying = false; vehicle = ""; note("落地。"); return "已落地，普通人绕墙走。"; }
         if (realmLevel < 2) return "御剑要筑基以上。";
         if (spirit < 12) return "灵力不足，先吐纳。";
-        flying = true; note("御剑起飞。");
+        flying = true; vehicle = "sword"; note("御剑起飞。");
         return "御剑而行：掠过屋脊，不再被院墙挡。";
     }
 
@@ -633,7 +694,10 @@ public final class Sim {
         return b.toString();
     }
 
-    public void addItem(String id, int n) { bag.merge(id, n, Integer::sum); }
+    public void addItem(String id, int n) {
+        if (bagCount() + n > bagCap()) return;   // 一件一格，满了装不下
+        bag.merge(id, n, Integer::sum);
+    }
 
     public JSONObject itemById(String id) {
         for (JSONObject o : items) if (id.equals(o.optString("id"))) return o;
@@ -684,6 +748,24 @@ public final class Sim {
     /** 分档显示（支持 long：行囊估价会超过 int） */
     public static String coinText(long v) { return coinText((int) Math.min(Integer.MAX_VALUE, Math.max(Integer.MIN_VALUE, v))); }
 
+    public String buyBoots() {
+        if (bootsBonus > 0) return "已经有靴子了。";
+        if (coin < 600) return "靴子要 600 文。";
+        coin -= 600; bootsBonus = 0.1; return "买了一双快靴（+10%）。";
+    }
+
+    public String buyGodspeedTalisman() {
+        if (godspeed) return "神行符还在生效。";
+        if (coin < 120) return "神行符要 120 文。";
+        coin -= 120; godspeed = true; return "贴了一张神行符（×1.25）。";
+    }
+
+    public String learnQinggong() {
+        if (martial > 0) return "轻功已经会了。";
+        if (coin < 3000) return "学轻功要 3000 文束脩。";
+        coin -= 3000; martial = 0.2; return "跟武师学了轻功（+20%）。";
+    }
+
     /** 从行囊里把兵器/甲/符换上身，品阶决定加成 */
     public String equip(String key) {
         int bar = key.indexOf('|');
@@ -708,7 +790,8 @@ public final class Sim {
          .append("身份　").append(sectName == null || sectName.isEmpty() ? "白身" : sectName).append("\n")
          .append("私兵　").append(men).append(" 人　马 ").append(horse ? "有" : "无").append("\n")
          .append("钱　　文 ").append(coin).append("　灵石 ").append(stones).append("\n")
-         .append("行囊　").append(bagCount()).append(" 件 · ").append(String.format("%.1f", bagWeight())).append(" 斤 · 值 ").append(coinText(bagWorth()));
+         .append("行囊　").append(bagCount()).append("/").append(bagCap()).append(" 格 · 值 ").append(coinText(bagWorth())).append("\n")
+         .append("移速　").append(speedText(px, py));
         return b.toString();
     }
 
@@ -763,6 +846,7 @@ public final class Sim {
             o.put("techArms", techArms); o.put("techFarm", techFarm); o.put("techFort", techFort); o.put("sectName", sectName);
             o.put("disciples", disciples); o.put("throne", throne);
             o.put("practice", practiceProgress); o.put("pills", pills);
+            o.put("boots", bootsBonus); o.put("wings", wings); o.put("godspeed", godspeed); o.put("vehicle", vehicle); o.put("martial", martial);
             o.put("weapon", weaponGrade); o.put("armor", armorGrade); o.put("talisman", talismanGrade);
             o.put("wounded", wounded); o.put("morale", morale); o.put("bias", bias);
             JSONArray c = new JSONArray(); for (String s : cleared) c.put(s); o.put("cleared", c);
@@ -815,6 +899,9 @@ public final class Sim {
             disciples = o.optInt("disciples", disciples);
             throne = o.has("throne") ? o.optString("throne", null) : throne;
             practiceProgress = o.optDouble("practice", practiceProgress); pills = o.optInt("pills", pills);
+            bootsBonus = o.optDouble("boots", bootsBonus); wings = o.optBoolean("wings", wings);
+            godspeed = o.optBoolean("godspeed", godspeed); vehicle = o.optString("vehicle", vehicle);
+            martial = o.optDouble("martial", martial);
             weaponGrade = o.optString("weapon", weaponGrade); armorGrade = o.optString("armor", armorGrade);
             talismanGrade = o.optString("talisman", talismanGrade);
             wounded = o.optBoolean("wounded", wounded); morale = o.optInt("morale", morale); bias = o.optInt("bias", bias);

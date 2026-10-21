@@ -239,8 +239,9 @@ public final class MainActivity extends Activity {
         }
         scroll.addView(grid);
         new AlertDialog.Builder(this)
-            .setTitle("行囊 · " + sim.bagCount() + " 件 · " + Sim.coinText(sim.bagWorth()))
+            .setTitle("行囊 " + sim.bagCount() + "/" + sim.bagCap() + " 格 · " + Sim.coinText(sim.bagWorth()))
             .setView(scroll)
+            .setPositiveButton("整理", (d, w) -> { toast(sim.tidyBag()); bagDialog(); })
             .setNegativeButton("关闭", null).show();
     }
 
@@ -295,7 +296,7 @@ public final class MainActivity extends Activity {
               .append("\n\n").append(sim.mortalRangeText())
               .append("\n").append(sim.lockedName != null ? "正在跟：" + sim.lockedName : "没跟着谁")
               .append(sim.flying ? " · 御剑中" : "").append(sim.horse ? " · 有马" : "");
-            String[] acts = {"搭话（就近）", sim.lockedName != null ? "甩开此人" : "跟住最近的人", "御剑起／落", "买一匹马 3000", "去东市"};
+            String[] acts = {"搭话（就近）", sim.lockedName != null ? "甩开此人" : "跟住最近的人", "御剑起／落", "买一匹马 3000", "买快靴 600", "贴神行符 120", "学轻功 3000", "去东市"};
             new AlertDialog.Builder(this).setTitle("人物").setMessage(sb.toString())
                 .setItems(acts, (d, i) -> {
                     String r;
@@ -310,6 +311,9 @@ public final class MainActivity extends Activity {
                             break;
                         case 2: r = sim.toggleFlight(); break;
                         case 3: r = sim.buyHorse(); break;
+                        case 4: r = sim.buyBoots(); break;
+                        case 5: r = sim.buyGodspeedTalisman(); break;
+                        case 6: r = sim.learnQinggong(); break;
                         default: sim.goTo(0, 0, "东市"); r = "往东市去。";
                     }
                     toast(r); updateHud(); mapView.invalidate();
