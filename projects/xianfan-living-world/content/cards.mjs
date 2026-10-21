@@ -23,6 +23,7 @@ export const CARDS = [
   },
   {
     id: 'poi-structure', kind: 'poi',
+    icon: 'by-name',
     fields: [
       {key: 'name', label: '建筑'},
       {key: 'kindName', label: '类别'},
@@ -39,6 +40,7 @@ export const CARDS = [
   },
   {
     id: 'person-card', kind: 'person',
+    icon: 'by-job',
     fields: [
       {key: 'name', label: '姓名'},
       {key: 'job', label: '营生'},

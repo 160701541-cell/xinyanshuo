@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {createWorld} from '../core.mjs';
 import {RULES, CARD_TEMPLATES, validateRule, checkCond, applyEffects, runRules, ensureEngine, registerRules, cardView} from '../engine.mjs';
 import {loadContent} from '../content/index.mjs';
+import {iconIdFor} from '../content/icons.mjs';
 
 loadContent();
 
@@ -73,4 +74,29 @@ test('卡片模板按条件出字段，界面不用自己挑', () => {
   assert.ok(withPop.rows.some(r => r.label === '人口'));
   assert.ok(withPop.actions.some(a => a.id === 'go'), '有路可走时应出现前往按钮');
   assert.equal(cardView(w, 'nope'), null);
+});
+
+test('卡片自带图标：客栈出 inn，厨房出 kitchen，名字认不出就落 generic', async () => {
+  const {createWorld} = await import('../core.mjs');
+  const w = createWorld('icon');
+  const inn = cardView(w, 'poi-structure', {item: {name: '望江客栈'}});
+  assert.equal(inn.icon.id, 'inn');
+  assert.equal(inn.icon.rows.length, 16, '图标是 16×16 的像素网格');
+  assert.equal(cardView(w, 'poi-structure', {item: {name: '官厨'}}).icon.id, 'kitchen');
+  assert.equal(cardView(w, 'poi-structure', {item: {name: '不知名的地方'}}).icon.id, 'generic');
+});
+
+test('人物卡按职业画头像，不是查建筑名', async () => {
+  const {createWorld} = await import('../core.mjs');
+  const w = createWorld('icon-person');
+  const 商 = cardView(w, 'person-card', {item: {person: {job: '掌柜', sex: '男'}, name: '张三'}});
+  const 农 = cardView(w, 'person-card', {item: {person: {job: '农夫', sex: '女'}, name: '李四'}});
+  assert.equal(商.icon.rows.length, 16);
+  assert.notEqual(商.icon.palette['1'], 农.icon.palette['1'], '不同职业衣色不同');
+});
+
+test('图标按整名优先、再按最长包含匹配，不会把“客栈掌柜”认成“栈”', () => {
+  assert.equal(iconIdFor('客栈掌柜'), 'inn');
+  assert.equal(iconIdFor('厨房后巷'), 'kitchen');
+  assert.equal(iconIdFor(''), 'generic');
 });

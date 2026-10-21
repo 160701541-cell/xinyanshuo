@@ -1,6 +1,7 @@
 // 内容引擎：把“事件/条件/后果”从一堆 if 里抽出来，做成可校验、可批量产出的数据。
 // 一条规则 = {id, hook, when, then, once, cooldown, weight, tag}；新增玩法 = 加一条数据，不是加一段代码。
 import {note} from './core.js';
+import {iconFor, personIcon} from './content/icons.js';
 
 export const ENGINE_VERSION = 'engine-0.1.0';
 
@@ -147,7 +148,11 @@ export function cardView(w, tplId, ctx = {}) {
     .map(f => ({label: f.label, value: local[f.key] ?? ''}))
     .filter(r => r.value !== '' && r.value != null);
   const actions = (t.actions || []).filter(a => !a.when || checkCond(w, a.when, local, true)).map(a => ({id: a.id, label: a.label}));
-  return {id: t.id, kind: t.kind, rows, actions};
+  // 图标也是数据：人物按职业查人像，其余按名字查图（客栈→inn、厨房→kitchen）
+  const icon = t.kind === 'person'
+    ? personIcon(local.person || local)
+    : iconFor(local.iconName || local.name || '');
+  return {id: t.id, kind: t.kind, icon, rows, actions};
 }
 
 export function registerRules(list) {

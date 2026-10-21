@@ -446,7 +446,8 @@ function showSheet(obj){selected=obj;const target=$('sheet');if(!obj){target.hid
  const view=cardView(w,tpl,ctx);
  const rows=(view?.rows||[]).map(r=>`<p class="near"><b>${safe(r.label)}</b>：${safe(r.value)}</p>`).join('');
  const buttons=(view?.actions||[]).map(a=>`<button data-action="${a.id}"${a.id==='stop'||a.id==='fly'||a.id==='rest'?' class="quiet"':''}>${safe(a.label)}</button>`).join('');
- target.innerHTML=`<div class="sheet-header"><div><small>${escapeHtml(sub)}</small><h3>${escapeHtml(title)}</h3></div><button class="quiet" id="closeSheet" aria-label="关闭地点卡片">✕</button></div><div class="sheet-body">${rows}</div><div class="sheet-actions">${buttons}</div>`;
+ const icon = view && view.icon ? `<div class="sheet-icon">${iconSVG(view.icon, 56)}</div>` : '';
+ target.innerHTML=`<div class="sheet-header">${icon}<div class="sheet-heading"><small>${escapeHtml(sub)}</small><h3>${escapeHtml(title)}</h3></div><button class="quiet" id="closeSheet" aria-label="关闭地点卡片">✕</button></div><div class="sheet-body">${rows}</div><div class="sheet-actions">${buttons}</div>`;
  target.hidden=false;$('closeSheet').onclick=()=>showSheet(null);
  for(const b of target.querySelectorAll('[data-action]'))b.onclick=()=>sheetAction(b.dataset.action);
 }

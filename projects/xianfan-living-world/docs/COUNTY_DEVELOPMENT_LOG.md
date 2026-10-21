@@ -294,3 +294,11 @@
 - 素材沿用已验 CC0 头像，未引入 TapTap 素材。
 - 测试 188/188（新增 6 项家族用例）。
 - 未做：族学族规族产经营、招婿过继分家、按境界换装头像、实机截图。
+
+## 2026-10-22 / v0.39 按名字生成卡片图标
+
+- 新模块 `content/icons.mjs`：13 张 16×16 字符画图标 + 5 套配色 + `iconIdFor()`（整名命中 → 最长包含匹配 → generic）+ `iconSVG()`/`drawIcon()` + `personIcon()` 按职业画头肩像。
+- `engine.cardView()` 增加 icon 解析：人物卡走 `personIcon`，其余走 `iconFor(name)`。
+- `overworld-ui.mjs` 卡片头部渲染 `iconSVG(icon,56)`；`overworld.css` 加 `.sheet-icon`（pixelated）。
+- 测试 198/198（新增 3 项：名字→图标、职业→人像、最长匹配）。
+- 未做：更多图标、状态变体（打烊/夜间）、人物随境界变老、地图标记图标、实机截图。

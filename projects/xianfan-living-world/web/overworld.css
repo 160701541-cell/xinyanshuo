@@ -48,3 +48,9 @@
 .fam-card p{margin:0 0 0 auto;display:flex;gap:6px}
 .fam-card button{min-height:40px;min-width:64px}
 .fam-card .tag{font-size:12px;padding:1px 6px;border-radius:999px;background:#e7dcc2;color:#5b4a2c}
+
+/* 卡片图标：16×16 像素画按 56px 放大，整数倍保持硬边 */
+.sheet-header{display:flex;gap:10px;align-items:flex-start}
+.sheet-icon{flex:0 0 auto;line-height:0;border-radius:8px;background:rgba(60,48,32,.08);padding:4px}
+.sheet-icon svg{image-rendering:pixelated;display:block}
+.sheet-heading{flex:1 1 auto;min-width:0}
