@@ -7,12 +7,12 @@
 // 金 → 下品灵石：100:1
 // 下品 → 中品：1000:1
 // 中品 → 上品：1000:1
-// 极品是特例：1 颗极品 = 10000 中品（= 10 上品）
+// 1 极品 = 10000 上品
 export const COIN = {wen: 1, silver: 100, gold: 10000};
 COIN.stoneLow = COIN.gold * 100;          // 1,000,000 文
 COIN.stoneMid = COIN.stoneLow * 1000;     // 1,000,000,000 文
 COIN.stoneHigh = COIN.stoneMid * 1000;    // 1,000,000,000,000 文
-COIN.stonePeak = COIN.stoneMid * 10000;   // 10,000,000,000,000 文
+COIN.stonePeak = COIN.stoneHigh * 10000;  // 10,000,000,000,000,000 文
 /** 旧代码里的 stone 指下品灵石 */
 COIN.stone = COIN.stoneLow;
 

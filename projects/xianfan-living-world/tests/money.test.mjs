@@ -3,14 +3,14 @@ import assert from 'node:assert/strict';
 import {COIN, fmt, monthWage, dayWage, ensureCoin, spend, earn} from '../money.mjs';
 import {createWorld} from '../core.mjs';
 
-test('七级钱币：文→银→金→下品各百进，下品→中品→上品千进，极品一万中品', () => {
+test('七级钱币：文→银→金→下品各百进，下品→中品→上品千进，极品一万上品', () => {
   assert.equal(COIN.silver / COIN.wen, 100);
   assert.equal(COIN.gold / COIN.silver, 100);
   assert.equal(COIN.stoneLow / COIN.gold, 100);
   assert.equal(COIN.stoneMid / COIN.stoneLow, 1000);
   assert.equal(COIN.stoneHigh / COIN.stoneMid, 1000);
-  assert.equal(COIN.stonePeak / COIN.stoneMid, 10000);
-  assert.equal(COIN.stonePeak / COIN.stoneHigh, 10);
+  assert.equal(COIN.stonePeak / COIN.stoneHigh, 10000);
+  assert.equal(COIN.stonePeak / COIN.stoneMid, 10000000);
 });
 
 test('月钱与日薪落在 150–300 / 120–220 文之间', () => {
@@ -38,5 +38,5 @@ test('金额显示按档位折行，不堆一串文', () => {
   assert.equal(fmt(12345), '1 两金 23 两银 45 文');
   assert.match(fmt(1e6), /下品灵石/);
   assert.match(fmt(1e9), /中品灵石/);
-  assert.match(fmt(1e13), /极品灵石/);
+  assert.match(fmt(1e16), /极品灵石/);
 });
