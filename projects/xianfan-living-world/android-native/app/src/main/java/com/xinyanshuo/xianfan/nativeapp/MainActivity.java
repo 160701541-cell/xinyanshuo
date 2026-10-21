@@ -12,6 +12,12 @@ import android.view.Gravity;
 import android.view.View;
 import android.view.WindowInsets;
 import android.widget.Button;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.widget.ImageView;
+import android.widget.ScrollView;
+import android.widget.TableLayout;
+import android.widget.TableRow;
 import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 import android.widget.TextView;
@@ -156,6 +162,70 @@ public final class MainActivity extends Activity {
         toast("走过去");
     }
 
+    private final java.util.HashMap<String, Bitmap> iconCache = new java.util.HashMap<>();
+
+    private Bitmap iconBitmap(String id) {
+        if (iconCache.containsKey(id)) return iconCache.get(id);
+        try (InputStream in = getAssets().open("items/" + id + ".png")) {
+            Bitmap bm = BitmapFactory.decodeStream(in);
+            iconCache.put(id, bm);
+            return bm;
+        } catch (Exception e) {
+            iconCache.put(id, null);
+            return null;
+        }
+    }
+
+    /** 行囊：格子 + 图标 + 件数，点一格看说明 */
+    private void bagDialog() {
+        java.util.List<String[]> rows = sim.bagRows();
+        ScrollView scroll = new ScrollView(this);
+        TableLayout grid = new TableLayout(this);
+        grid.setPadding(18, 18, 18, 18);
+        grid.setBackgroundColor(Color.rgb(58, 50, 38));
+        int cols = 4;
+        TableRow row = null;
+        for (int i = 0; i < rows.size(); i++) {
+            if (i % cols == 0) { row = new TableRow(this); grid.addView(row); }
+            final String id = rows.get(i)[0], name = rows.get(i)[1], count = rows.get(i)[2];
+            LinearLayout cell = new LinearLayout(this);
+            cell.setOrientation(LinearLayout.VERTICAL);
+            cell.setGravity(Gravity.CENTER);
+            cell.setBackgroundColor(Color.rgb(84, 72, 54));
+            TableRow.LayoutParams lp = new TableRow.LayoutParams(0, 190, 1f);
+            lp.setMargins(6, 6, 6, 6);
+            cell.setLayoutParams(lp);
+            ImageView iv = new ImageView(this);
+            Bitmap bm = iconBitmap(id);
+            if (bm != null) iv.setImageBitmap(bm);
+            iv.setLayoutParams(new LinearLayout.LayoutParams(112, 112));
+            TextView tv = new TextView(this);
+            tv.setText(name + "\n×" + count);
+            tv.setTextSize(11);
+            tv.setGravity(Gravity.CENTER);
+            tv.setTextColor(Color.rgb(248, 240, 220));
+            cell.addView(iv); cell.addView(tv);
+            cell.setOnClickListener(v -> {
+                JSONObject meta = sim.itemById(id);
+                String note = meta != null ? meta.optString("note") : "";
+                int value = meta != null ? meta.optInt("value") : 0;
+                double weight = meta != null ? meta.optDouble("weight", 0) : 0;
+                new AlertDialog.Builder(this)
+                    .setTitle(name + " ×" + count)
+                    .setMessage((meta != null ? "单价 " + Sim.coinText(value) + "\n重量 " + weight + " 斤/件\n" : "")
+                        + "行囊共 " + sim.bagCount() + " 件 · " + String.format("%.1f", sim.bagWeight()) + " 斤 · 值 " + Sim.coinText(sim.bagWorth())
+                        + "\n\n" + note)
+                    .setPositiveButton("知道了", null).show();
+            });
+            row.addView(cell);
+        }
+        scroll.addView(grid);
+        new AlertDialog.Builder(this)
+            .setTitle("行囊 · " + sim.bagCount() + " 件 · " + Sim.coinText(sim.bagWorth()))
+            .setView(scroll)
+            .setNegativeButton("关闭", null).show();
+    }
+
     private void npcDialog(JSONObject n) {
         new AlertDialog.Builder(this)
             .setTitle(n.optString("name") + " · " + n.optString("job"))
@@ -279,7 +349,8 @@ public final class MainActivity extends Activity {
                   .append("（妖").append(d.optInt("realm") + 1).append("）×").append(d.optInt("count")).append("\n");
             }
         } else if ("bag".equals(what)) {
-            for (Map.Entry<String, Integer> e : sim.bag.entrySet()) sb.append(e.getKey()).append(" ×").append(e.getValue()).append("\n");
+            bagDialog();
+            return;
         } else if ("log".equals(what)) {
             int from = Math.max(0, sim.log.size() - 18);
             for (int i = sim.log.size() - 1; i >= from; i--) sb.append(sim.log.get(i)).append("\n");

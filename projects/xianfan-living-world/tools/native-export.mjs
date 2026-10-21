@@ -3,12 +3,14 @@
  * 原生 Java 只读这两样，不再跑 WebView、不再解析 JS。
  */
 import {writeFileSync, mkdirSync} from 'node:fs';
+import path from 'node:path';
 import {execFileSync} from 'node:child_process';
 import {layoutTown, streetsFor, ART} from '../buildings.mjs';
 import {STRUCTURES, STREAMS, CITY, LANDMARKS, ROUTES, PLACE_METERS} from '../overworld.mjs';
 import {PLACES, VERSION} from '../core.mjs';
 import {generateWorld} from '../worldmap.mjs';
 import {paintTown, gridSVG} from '../content/townart.mjs';
+import {ITEM_IDS, itemArtSVG} from '../content/itemart.mjs';
 import {BEASTS, beastAt} from '../content/beasts.mjs';
 import {PLANET, DOMAINS, VOID_STONES, VOID_REALM, MORTAL_KM_PER_DAY, MORTAL_YEARS} from '../stardomains.mjs';
 
@@ -54,11 +56,34 @@ for (const b of town) {
   }
 }
 
+// 物品图标：SVG 交给 CI 用 rsvg 转 PNG，原生端按 id 贴图
+const ROOT = process.cwd();
+const itemDir = path.join(ROOT, 'android-native/app/src/main/assets/items');
+mkdirSync(itemDir, {recursive: true});
+for (const id of ITEM_IDS) writeFileSync(path.join(itemDir, id + '.svg'), itemArtSVG(id, 96));
+const ITEM_META = {
+  grain: ['干粮', 6, 0.5, '路上充饥，一顿一份'],
+  water: ['清水', 2, 1.0, '水囊，渴了喝一口'],
+  meat: ['兽肉', 10, 0.8, '烤着吃，也可喂兽'],
+  herb: ['草药', 14, 0.2, '止血、配药'],
+  blade: ['刀剑', 260, 1.2, '兵器，换掉手上的家伙'],
+  armor: ['皮甲', 180, 3.0, '护身，轻便'],
+  iron: ['铁矿', 30, 2.0, '打铁、修兵器'],
+  wood: ['木料', 8, 3.0, '盖房、做柄'],
+  stone: ['石料', 6, 5.0, '垒墙、铺路'],
+  pill: ['丹药', 120, 0.1, '疗伤、冲关'],
+  core: ['妖丹', 260, 0.3, '炼丹、供奉、抵灵石'],
+  skin: ['兽皮', 26, 1.5, '制甲、出售'],
+  bone: ['骨牙', 12, 0.4, '磨器、入药'],
+  talisman: ['符箓', 80, 0.1, '一次性术法'],
+};
+
 const world = {
   version: 'native-0.1.0', game: VERSION, seed,
   extent: 840, cell: 4, imageSize: 2048,
   city: {name: CITY.name || '临安县城', half: CITY.half || 750, gates: CITY.gates || []},
   places, structures, dens, npcs, blocks, roads: ROUTES,
+  items: ITEM_IDS.map(id => ({id, name: ITEM_META[id][0], value: ITEM_META[id][1], weight: ITEM_META[id][2], note: ITEM_META[id][3]})),
   landmarks: LANDMARKS.map(l => ({id: l.id, name: l.name, x: l.x, y: l.y, type: l.type, active: !!l.active})),
   routes: ROUTES, streams: STREAMS,
   planet: PLANET, domains: DOMAINS, voidStones: VOID_STONES, mortalKmPerDay: MORTAL_KM_PER_DAY, mortalYears: MORTAL_YEARS, voidRealm: VOID_REALM,

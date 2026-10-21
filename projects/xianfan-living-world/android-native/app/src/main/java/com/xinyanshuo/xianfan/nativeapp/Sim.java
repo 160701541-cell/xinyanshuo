@@ -78,6 +78,8 @@ public final class Sim {
             npcPos.put(id, new double[]{o.optDouble("x"), o.optDouble("y")});
             npcHome.put(id, new double[]{o.optDouble("x"), o.optDouble("y")});
         }
+        JSONArray it = world.optJSONArray("items");
+        if (it != null) for (int i = 0; i < it.length(); i++) items.add(it.optJSONObject(i));
         JSONArray bl = world.optJSONArray("blocks");
         if (bl != null) for (int i = 0; i < bl.length(); i++) {
             JSONObject b = bl.optJSONObject(i);
@@ -321,21 +323,21 @@ public final class Sim {
         int realm = den.optInt("realm", 0);
         int[] per = {2, 4, 7, 11};
         int pieces = per[Math.min(3, realm)];
-        String[] mats = {"妖皮", "妖骨", "妖肉", "妖筋", "妖牙", "妖鳞"};
+        // 尸体就是材料：按物种给皮/骨/肉，带品阶
+        String[] mats = {"skin", "bone", "meat", "bone", "skin", "meat"};
         for (int i = 0; i < pieces; i++) {
             String m = mats[r.nextInt(mats.length)];
             String g = Grades.roll(r.nextDouble());
-            String key = m + "（" + Grades.name(g) + "）";
-            bag.put(key, bag.getOrDefault(key, 0) + 1);
+            bag.merge(m + "|" + g, 1, Integer::sum);
         }
         StringBuilder sb = new StringBuilder();
         if (r.nextDouble() < (new double[]{0.30, 0.58, 0.82, 0.96})[Math.min(3, realm)]) {
             String g = Grades.roll(0.35 + r.nextDouble() * 0.55);   // 妖丹出货品阶偏高
-            bag.put("妖丹（" + Grades.name(g) + "）", bag.getOrDefault("妖丹（" + Grades.name(g) + "）", 0) + 1);
+            bag.merge("core|" + g, 1, Integer::sum);
             sb.append("妖丹·").append(Grades.name(g)).append(" ");
         }
         if (r.nextDouble() < (new double[]{0.08, 0.16, 0.26, 0.34})[Math.min(3, realm)]) {
-            bag.put("精血", bag.getOrDefault("精血", 0) + 1); sb.append("精血×1 ");
+            bag.merge("pill|low", 1, Integer::sum); sb.append("精血×1 ");
         }
         if (realm >= 2 && r.nextDouble() < 0.22) { bag.put("妖卵", bag.getOrDefault("妖卵", 0) + 1); sb.append("妖卵×1 "); }
         if (realm >= 2 && r.nextDouble() < 0.10) { bag.put("幼崽", bag.getOrDefault("幼崽", 0) + 1); sb.append("幼崽×1 "); }
@@ -556,13 +558,13 @@ public final class Sim {
 
     public String chopWood() {
         if (stamina < 8) return "体力不够，先歇。";
-        stamina -= 8; resWood += 3; clock += 90 * 60L;
+        stamina -= 8; resWood += 3; addItem("wood", 2); clock += 90 * 60L;
         return "砍了一趟，木头 " + resWood + "。";
     }
 
     public String cutStraw() {
         if (stamina < 5) return "体力不够，先歇。";
-        stamina -= 5; resStraw += 5; clock += 45 * 60L;
+        stamina -= 5; resStraw += 5; if (stamina < 30) addItem("herb", 1); clock += 45 * 60L;
         return "割了一趟草，稻草 " + resStraw + "。";
     }
 
@@ -667,6 +669,9 @@ public final class Sim {
             o.put("homeLevel", homeLevel); o.put("workDays", workDays);
             o.put("resWood", resWood); o.put("resStraw", resStraw); o.put("resStone", resStone);
             o.put("resClay", resClay); o.put("resIron", resIron); o.put("huts", huts);
+            StringBuilder bg = new StringBuilder();
+            for (Map.Entry<String, Integer> e : bag.entrySet()) bg.append(e.getKey()).append(':').append(e.getValue()).append(';');
+            o.put("bag", bg.toString());
             o.put("techArms", techArms); o.put("techFarm", techFarm); o.put("techFort", techFort); o.put("sectName", sectName);
             o.put("disciples", disciples); o.put("throne", throne);
             o.put("practice", practiceProgress); o.put("pills", pills);
@@ -695,7 +700,13 @@ public final class Sim {
             resWood = o.optInt("resWood", resWood); resStraw = o.optInt("resStraw", resStraw);
             resStone = o.optInt("resStone", resStone); resClay = o.optInt("resClay", resClay);
             resIron = o.optInt("resIron", resIron); huts = o.optInt("huts", huts);
-            techArms = o.optInt("techArms", techArms); techFarm = o.optInt("techFarm", techFarm);
+            techArms = o.optInt("techArms", techArms);
+            bag.clear();
+            for (String kv : o.optString("bag", "").split(";")) {
+                if (kv.isEmpty()) continue;
+                int c = kv.lastIndexOf(':');
+                if (c > 0) bag.put(kv.substring(0, c), Integer.parseInt(kv.substring(c + 1)));
+            } techFarm = o.optInt("techFarm", techFarm);
             techFort = o.optInt("techFort", techFort);
             sectName = o.has("sectName") ? o.optString("sectName", null) : sectName;
             disciples = o.optInt("disciples", disciples);
