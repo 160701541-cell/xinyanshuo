@@ -48,7 +48,38 @@ function text(label,p,size=13,color='#263b33',weight=600,halo=true,align='center
 function screenText(label,x,y,size=12,color='#334f40',weight=600){ctx.font=`${weight} ${size}px system-ui`;ctx.textBaseline='middle';ctx.textAlign='center';ctx.lineWidth=2;ctx.strokeStyle='#f5eddb';ctx.strokeText(label,x,y);ctx.fillStyle=color;ctx.fillText(label,x,y);}
 const noise=(a,b)=>{let x=(Math.imul(Math.floor(a),374761393)+Math.imul(Math.floor(b),668265263)+987643211)>>>0;x=Math.imul(x^x>>>13,1274126177)>>>0;return ((x^x>>>16)>>>0)/4294967296;};
 const hills=(x,y)=>Math.sin(x/52000)*Math.cos(y/74000)+Math.sin((x-y)/21000)*.5;
+// 城内地面用与卡牌同一套像素画风：一次性烘焙成离屏画布，之后按世界坐标贴图
+let townBaked=null,townBakeAt=0;
+function bakeTown(){
+ if(townBaked)return townBaked;
+ if(typeof document==='undefined'||!document.createElement)return null;
+ try{
+ const t0=performance.now();
+ const grid=paintTown(TOWN_LAYOUT,{streets:TOWN_STREETS,streams:STREAMS,walls:{half:750},gates:CITY.gates});
+ const N=Math.round((TOWN_EXTENT*2)/TOWN_CELL);
+ const cv=document.createElement('canvas');cv.width=N;cv.height=N;
+ const c2=cv.getContext('2d');const img=c2.createImageData(N,N);
+ for(let i=0;i<N*N;i++){const hex=grid.c[i];const r=parseInt(hex.slice(1,3),16),g=parseInt(hex.slice(3,5),16),b=parseInt(hex.slice(5,7),16);
+  img.data[i*4]=r;img.data[i*4+1]=g;img.data[i*4+2]=b;img.data[i*4+3]=255;}
+ c2.putImageData(img,0,0);
+ townBaked={canvas:cv,ms:performance.now()-t0};
+ return townBaked;
+ }catch(err){townBaked={canvas:null,ms:0,error:String(err)};return townBaked;}
+}
+
 function drawGround(){ctx.fillStyle='#c8d2a4';ctx.fillRect(0,0,cssW,cssH);
+ // 近景城内：贴烘焙好的像素城（与卡牌同一套画风）；远景仍用色块地形
+ if(camera.mpp<=14){
+  const baked=bakeTown();
+  if(baked&&baked.canvas){
+  const a=pos({x:-TOWN_EXTENT,y:-TOWN_EXTENT}),b=pos({x:TOWN_EXTENT,y:TOWN_EXTENT});
+  if(a.x<cssW&&b.x>0&&a.y<cssH&&b.y>0){
+   ctx.imageSmoothingEnabled=false;
+   ctx.drawImage(baked.canvas,a.x,a.y,b.x-a.x,b.y-a.y);
+   ctx.imageSmoothingEnabled=true;
+  }
+  }
+ }
  const step=camera.mpp>1500?45000:camera.mpp>100?9000:camera.mpp>16?900:camera.mpp>3?175:42;
  const min=unpos(-10,-10),max=unpos(cssW+10,cssH+10);const x0=Math.floor(min.x/step),x1=Math.ceil(max.x/step),y0=Math.floor(min.y/step),y1=Math.ceil(max.y/step);
  if((x1-x0)*(y1-y0)>80000)return;

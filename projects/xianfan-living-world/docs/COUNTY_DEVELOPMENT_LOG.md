@@ -312,3 +312,14 @@
 - `overworld-ui.mjs` 卡片右侧 `.sheet-art` 铺场景 SVG data-URI（46% 宽、cover、pixelated），文字区纸色渐变过渡。
 - 测试 201/201（新增 3 项场景用例）。
 - 未做：非手绘、仅 12 类、不随天气/昼夜/营业状态变化、人物无半身立绘、无实机截图。
+
+## 2026-10-22 / v0.41 地图改用同一套像素积木
+
+用户：美术风格就定这种，试试地图能不能这样拼。
+
+- 新模块 `content/townart.mjs`：4 米一格、420×420 格，`Grid` 提供 roof/tree/well/lineTo/frame；`paintTown()` 按 草皮→田→河→街→院落→城墙 的顺序合成；与卡牌共用色相。
+- `overworld-ui.mjs` 新增 `bakeTown()`：首次进入近景（mpp≤14）烘焙 420×420 离屏画布，之后 `drawImage` 贴图；失败（无 canvas）自动回退旧渲染。
+- 实测：烘焙 65ms / 176,400 格。
+- 测试 207/207（新增 6 项城镇像素用例）。
+- 预览 docs/preview/town-pixel.png、town-pixel-zoom.png。
+- 未做：屋顶只有两坡、树无品种、街上无摊位行人、14 米/像素处有风格跳变、村落与山门未拼、无实机截图。
