@@ -29,6 +29,12 @@ class Program {
     case "inspect-economy-api":
      if(args.Length<2)throw new ArgumentException("inspect-economy-api private Assembly-CSharp.dll");
      InspectEconomyApi(args[1]);return 0;
+    case "patch-memory-safe-boot":
+     if(args.Length<4)throw new ArgumentException("patch-memory-safe-boot own-bridge.dll output.dll");
+     PatchMemorySafeBoot(args[1],args[2]);return 0;
+    case "verify-memory-safe-boot":
+     if(args.Length<4)throw new ArgumentException("verify-memory-safe-boot own-original-bridge.dll safe-bridge.dll");
+     VerifyMemorySafeBoot(args[1],args[2]);return 0;
     case "inspect-map-real": InspectMapReal(args[1]);return 0;
     case "inspect-map-ui": InspectMapUi(args[1]);return 0;
     case "inspect": Inspect(args[1]);return 0;
@@ -341,6 +347,73 @@ class Program {
    if(before.Types.Count!=after.Types.Count)
       throw new InvalidOperationException("unrelated original types were altered");
    Console.WriteLine("PASS_MAP_BRIDGE_APPEND_CALL_ONLY originalInstructions="+aa.Count);
+ }
+ static void PatchMemorySafeBoot(string original,string output) {
+   // Emergency recovery for Android's memory-kill report. Only edits OUR
+   // injected XianxiaMonoBridge assembly; no commercial WorldBox patch.
+   using var own=AssemblyDefinition.ReadAssembly(original,Resolved(original));
+   var bootstrap=own.MainModule.Types.Single(t=>
+       t.FullName=="XianxiaMonoBridge.IntegratedModBootstrap");
+   var boot=bootstrap.Methods.Single(m=>m.Name=="Boot"&&m.HasBody);
+   var instructions=boot.Body.Instructions;
+   int loaded=-1;
+   for(int i=1;i<instructions.Count;i++){
+     if((instructions[i].Operand as MethodReference)?.FullName
+          ?.Contains("System.Reflection.Assembly System.Reflection.Assembly::LoadFrom(System.String)") == true) {
+       loaded=i;break;
+     }
+   }
+   if(loaded<1)throw new InvalidOperationException("safe cutoff not found: Assembly.LoadFrom");
+   var before=instructions[loaded-1];
+   if(!before.OpCode.Name.StartsWith("ldloc"))
+     throw new InvalidOperationException("safe cutoff stack must be empty before path ldloc");
+   var log=own.MainModule.Types.Single(t=>t.FullName=="XianxiaMonoBridge.DiagnosticLog")
+      .Methods.Single(m=>m.Name=="Write"&&m.Parameters.Count==1&&m.IsStatic);
+   var il=boot.Body.GetILProcessor();
+   il.InsertBefore(before,il.Create(OpCodes.Ldstr,
+        "[XYS-SAFEBOOT-v46] NML auto launch PAUSED after vanilla ModLoader is disabled; no existing saves changed"));
+   il.InsertBefore(before,il.Create(OpCodes.Call,log));
+   il.InsertBefore(before,il.Create(OpCodes.Ret));
+   foreach(var ins in boot.Body.Instructions)
+     if(ins.OpCode==OpCodes.Ldstr && ins.Operand is string text &&
+        text.Contains("正在启动NeoModLoader"))
+        ins.Operand="MOD安全启动：自动模组暂停（诊断内存）";
+   var overlay=own.MainModule.Types.Single(t=>t.FullName=="XianxiaMonoBridge.Overlay");
+   foreach(string name in new[]{"Update","OnGUI"}){
+     var m=overlay.Methods.Single(x=>x.Name==name&&x.HasBody);
+     m.Body.GetILProcessor().InsertBefore(m.Body.Instructions[0],
+        Instruction.Create(OpCodes.Ret));
+   }
+   Directory.CreateDirectory(Path.GetDirectoryName(Path.GetFullPath(output))!);
+   own.Write(output,new WriterParameters{WriteSymbols=false});
+   Console.WriteLine("P0_SAFEBOOT_OWN_BRIDGE_ONLY NML_BOOT_PAUSED MAP_PRESET_AND_VIRTUAL_GUI_PAUSED "+output);
+ }
+ static void VerifyMemorySafeBoot(string original,string candidate) {
+   using var old=AssemblyDefinition.ReadAssembly(original);
+   using var now=AssemblyDefinition.ReadAssembly(candidate);
+   if(old.MainModule.Types.Count!=now.MainModule.Types.Count)
+     throw new InvalidOperationException("not same own plugin types");
+   var a=old.MainModule.Types.Single(t=>t.FullName=="XianxiaMonoBridge.IntegratedModBootstrap")
+     .Methods.Single(m=>m.Name=="Boot");
+   var b=now.MainModule.Types.Single(t=>t.FullName=="XianxiaMonoBridge.IntegratedModBootstrap")
+     .Methods.Single(m=>m.Name=="Boot");
+   if(b.Body.Instructions.Count!=a.Body.Instructions.Count+3)
+     throw new InvalidOperationException("unsafe boot IL delta");
+   bool found=false;
+   for(int i=0;i<b.Body.Instructions.Count-2;i++) {
+     var ins=b.Body.Instructions;
+     if(ins[i].OpCode==OpCodes.Ldstr &&
+        (ins[i].Operand as string)?.Contains("XYS-SAFEBOOT-v46")==true &&
+        ins[i+1].OpCode==OpCodes.Call && ins[i+2].OpCode==OpCodes.Ret)found=true;
+   }
+   if(!found)throw new InvalidOperationException("memory safe NML cutoff absent");
+   var type=now.MainModule.Types.Single(t=>t.FullName=="XianxiaMonoBridge.Overlay");
+   foreach(string name in new[]{"Update","OnGUI"}){
+     var m=type.Methods.Single(x=>x.Name==name&&x.HasBody);
+     if(m.Body.Instructions[0].OpCode!=OpCodes.Ret)
+       throw new InvalidOperationException("expensive overlay "+name+" still active");
+   }
+   Console.WriteLine("PASS_SAFEBOOT_V46 NML_BOOT_SKIPPED GUI_MAP_PRESETS_SKIPPED; Android runtime pending");
  }
  static void CecilPatch(string original,string plugin,string output) {
    using var game=AssemblyDefinition.ReadAssembly(original,Resolved(original));
