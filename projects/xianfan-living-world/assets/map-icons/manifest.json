@@ -1,0 +1,48 @@
+{
+  "schema": 1,
+  "origin": "self-authored SVG vectors in atlas.mjs",
+  "license": "Original project artwork",
+  "count": 8,
+  "icons": [
+    {
+      "id": "yamen",
+      "path": "assets/map-icons/yamen.svg",
+      "sha256": "093b8305848834e4db19ba98176d31498ba0bf00a7748763187b20d356c2dde5"
+    },
+    {
+      "id": "sect",
+      "path": "assets/map-icons/sect.svg",
+      "sha256": "8f10b0cd607e15f6c911972664da1cb4a81583c7d51fcfb22110ef8ef272bd3b"
+    },
+    {
+      "id": "market",
+      "path": "assets/map-icons/market.svg",
+      "sha256": "7fa9aebeac95d6357cdb9d00600be4684a6c8d48c46e653efe2ced1194b00420"
+    },
+    {
+      "id": "fort",
+      "path": "assets/map-icons/fort.svg",
+      "sha256": "853f0f9f0510ec29282775d7ca8f16744f5170af5b362da6c53847d9e50a180c"
+    },
+    {
+      "id": "home",
+      "path": "assets/map-icons/home.svg",
+      "sha256": "664f97b1b56d390299c382fdcf357333fd056f83666df2e8b08ad7e1ea5c8fab"
+    },
+    {
+      "id": "port",
+      "path": "assets/map-icons/port.svg",
+      "sha256": "12ad7b4d87b64ef900c388eb493208d6c142ac59d18e180929d4c880f25671f8"
+    },
+    {
+      "id": "grain",
+      "path": "assets/map-icons/grain.svg",
+      "sha256": "27412d6fd967a93fd1be71ebfad6bbf19cb4ad0e6e34c72f7302d0933ef7a9f3"
+    },
+    {
+      "id": "forge",
+      "path": "assets/map-icons/forge.svg",
+      "sha256": "cedf9a4ffc146b4fac95bf6c87ba3c8f7f164115b850c14715a7dfb1a8f730c8"
+    }
+  ]
+}

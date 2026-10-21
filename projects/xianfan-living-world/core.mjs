@@ -1,5 +1,5 @@
 /** 《仙凡共生》独立县城实验 v0.1. 纯规则核心，不依赖页面/AI模型。 */
-export const VERSION = 'county-0.4';
+export const VERSION = 'county-0.5';
 export const POP_TARGET = 13680;
 export const PLACES = [
   {id:'dongshi', name:'临安县·东市', type:'market',x:48,y:49,zone:'城郭', population:1160, detail:'商贩沿街摆摊，粮行、铁铺和客栈开在一起。',links:['xianya','xijie','minju','lianghang','tiepu','kezhan']},

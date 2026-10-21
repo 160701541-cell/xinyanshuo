@@ -77,3 +77,103 @@ export function outdoorActors(w,limit=12){let active=[];if(w.hour<5||w.hour>=21)
  active.push({person:p,...options[slot],action});}
  return active;
 }
+
+/** v0.5 逐帧行程：世界时钟随位移持续前进，而非点击后一次性结算。 */
+export function beginRoadJourney(w,target,opts={}){
+ if (!['dongshi','xijie','minju','xianya','nanmen'].includes(w.player.place))return {ok:false,error:'当前不在街道；请先出门。'};
+ if (w.player.journey)return {ok:false,error:'正在移动，请先停止现有行程。'};
+ let building=null,destination=target;
+ if (opts.buildingId){building=BUILDINGS.find(b=>b.id===opts.buildingId);if(!building)return {ok:false,error:'找不到该建筑入口'};destination={x:building.door[0],y:building.door[1]};}
+ const start=getRoadPosition(w),end=nearestRoad(destination.x,destination.y),path=roadPath(start,end);
+ if (!path)return {ok:false,error:'此路尚未连通'};
+ if (path.length===1){if(building){const entry=navigate(w,building.id,'foot');return entry.ok?{ok:true,arrived:true,buildingId:building.id}:entry;}return {ok:true,arrived:true};}
+ const distance=(path.length-1)*10;
+ // 步行约每65地图单位/游戏分钟，演示加速映射：约每秒走72单位。
+ const durationSeconds=Math.max(0.35,distance/72);
+ w.player.journey={path,elapsedSeconds:0,durationSeconds,worldMinutes:distance/65,from:start,to:end,buildingId:building?.id||null};
+ return {ok:true,arrived:false,distance,durationSeconds,worldMinutes:distance/65};
+}
+export function visualRoadPosition(w){const j=w.player.journey;if(!j)return getRoadPosition(w);
+ const rate=Math.max(0,Math.min(1,j.elapsedSeconds/j.durationSeconds)),offset=rate*(j.path.length-1),i=Math.min(j.path.length-2,Math.floor(offset)),t=offset-i;
+ const a=j.path[i],b=j.path[i+1];return {x:a.x+(b.x-a.x)*t,y:a.y+(b.y-a.y)*t};
+}
+export function tickRoadJourney(w,seconds){const j=w.player.journey;
+ if(!j)return {ok:false,error:'没有正在进行的行程'};
+ if(!Number.isFinite(seconds)||seconds<0)throw new Error('时间增量必须非负且有限');
+ const dt=Math.min(seconds,Math.max(0,j.durationSeconds-j.elapsedSeconds));
+ if(dt<=0)return {ok:true,arrived:false,position:visualRoadPosition(w)};
+ j.elapsedSeconds+=dt;
+ advanceClock(w,j.worldMinutes*dt/j.durationSeconds);
+ const pos=visualRoadPosition(w);
+ // 每跨过一个格点，就保存真实已走到的格点。不会提前传送至终点。
+ const index=Math.floor((j.elapsedSeconds/j.durationSeconds)*(j.path.length-1));
+ w.player.roadPos={...j.path[index]};
+ if(j.elapsedSeconds+1e-7<j.durationSeconds)return {ok:true,arrived:false,position:pos,progress:j.elapsedSeconds/j.durationSeconds};
+ w.player.roadPos={...j.to};w.player.place=districtFor(j.to);delete w.player.journey;
+ note(w,'行旅',`沿道路行走 ${(j.path.length-1)*10} 地图单位，实际历时 ${j.worldMinutes.toFixed(1)} 分钟。`,{from:j.from,to:j.to,minutes:j.worldMinutes});
+ if(j.buildingId){const result=navigate(w,j.buildingId,'foot');if(!result.ok)return {ok:false,arrived:true,error:result.error};}
+ return {ok:true,arrived:true,buildingId:j.buildingId,position:{...j.to},progress:1};
+}
+export function cancelRoadJourney(w){const j=w.player.journey;if(!j)return false;
+ w.player.roadPos=nearestRoad(visualRoadPosition(w).x,visualRoadPosition(w).y);
+ w.player.place=districtFor(w.player.roadPos);delete w.player.journey;
+ note(w,'行旅','你在途中停下脚步，行程已消耗的时间不会退回。');return true;
+}
+/** 地图景物的行为必须与当前世界时间/地点一致，不将居家NPC画在街道。 */
+export function occupantsAt(w,placeId,limit=5){const out=[];for(const p of w.people){if(p.status!=='alive'||apparentLocation(w,p)!==placeId)continue;
+ if(['tiepu','lianghang','xianya','kezhan'].includes(placeId)){
+   const jobs={tiepu:['铁匠','木匠'],lianghang:['粮行伙计','账房'],xianya:['县吏','捕快'],kezhan:['厨娘','商贩']};
+   if(!jobs[placeId].includes(p.job)||w.hour<6||w.hour>=20)continue;
+ }
+ out.push(p);if(out.length>=limit)break;}return out;
+}
+
+/** 县域跨村镇/御剑旅程：同一世界时钟在每次动画帧内推进。 */
+export function beginRegionJourney(w,target,mode='foot'){
+ if(w.player.journey||w.player.regionJourney)return {ok:false,error:'请先停止当前行程'};
+ const from=getPlace(w.player.place),to=getPlace(target);
+ if(!from||!to)return {ok:false,error:'未知位置'};
+ if(['room','shop','inn'].includes(from.type)||['room','shop','inn'].includes(to.type))return {ok:false,error:'区域旅行请先离开建筑，前往城门或官道'};
+ if(mode==='sword'&&w.player.role!=='修士')return {ok:false,error:'御剑需要修士身份'};
+ const route=mode==='sword'?[from.id,to.id]:shortestRoute(from.id,to.id);
+ if(!route)return {ok:false,error:'官道尚未连通'};
+ if(route.length<=1)return {ok:true,arrived:true};
+ let minutes=0;const legs=[];
+ for(let i=1;i<route.length;i++){
+   const a=getPlace(route[i-1]),b=getPlace(route[i]);
+   let d=Math.max(1,Math.hypot(a.x-b.x,a.y-b.y));
+   let m=mode==='sword'?Math.max(2,d*.6):Math.max(4,d*7);
+   legs.push({from:a.id,to:b.id,start:minutes,end:minutes+m});minutes+=m;
+ }
+ const spirit=mode==='sword'?Math.ceil(minutes/9):0;
+ if(spirit>w.player.spirit)return {ok:false,error:'灵力不足'};
+ const durationSeconds=Math.max(1,Math.min(15,minutes/95));
+ w.player.regionJourney={route,mode,legs,minutes,spirit,charged:0,elapsedSeconds:0,durationSeconds,target};
+ return {ok:true,arrived:false,minutes,durationSeconds};
+}
+export function regionJourneyPosition(w){const j=w.player.regionJourney;if(!j){const p=getPlace(w.player.place);return p?{x:p.x*10,y:p.y*10}:null;}
+ const elapsed=j.minutes*Math.min(1,j.elapsedSeconds/j.durationSeconds);
+ const leg=j.legs.find(l=>elapsed<=l.end)||j.legs.at(-1);
+ const a=getPlace(leg.from),b=getPlace(leg.to),f=Math.max(0,Math.min(1,(elapsed-leg.start)/(leg.end-leg.start)));
+ return {x:(a.x+(b.x-a.x)*f)*10,y:(a.y+(b.y-a.y)*f)*10};
+}
+export function tickRegionJourney(w,seconds){const j=w.player.regionJourney;if(!j)return {ok:false,error:'没有县域旅程'};
+ if(!Number.isFinite(seconds)||seconds<0)throw new Error('时间增量非法');
+ const dt=Math.min(seconds,Math.max(0,j.durationSeconds-j.elapsedSeconds));
+ if(dt<=0)return {ok:true,arrived:false,position:regionJourneyPosition(w)};
+ j.elapsedSeconds+=dt;advanceClock(w,j.minutes*dt/j.durationSeconds);
+ // 灵力随飞行进程消耗，中止旅程已消耗部分不返还。
+ const spent=Math.floor(j.spirit*j.elapsedSeconds/j.durationSeconds);
+ w.player.spirit-=Math.max(0,spent-j.charged);j.charged=spent;
+ const position=regionJourneyPosition(w);
+ if(j.elapsedSeconds+1e-7<j.durationSeconds)return {ok:true,arrived:false,progress:j.elapsedSeconds/j.durationSeconds,position};
+ w.player.place=j.target;delete w.player.regionJourney;
+ note(w,'行旅',`${j.mode==='sword'?'御剑':'沿官道'}到达${getPlace(j.target).name}，沿途经过${j.route.length-2}处，游戏时间流逝${j.minutes.toFixed(1)}分钟。`);
+ return {ok:true,arrived:true,position,progress:1};
+}
+export function cancelRegionJourney(w){const j=w.player.regionJourney;if(!j)return false;
+ const spentM=j.minutes*j.elapsedSeconds/j.durationSeconds;
+ let reached=j.route[0];for(const leg of j.legs)if(spentM>=leg.end)reached=leg.to;
+ w.player.place=reached;delete w.player.regionJourney;
+ note(w,'行旅',`途中停下，停留在${getPlace(reached).name}，已流逝的时间与消耗不可返还。`);return true;
+}
