@@ -47,9 +47,22 @@ final class ModDeployment {
             InputStream in=context.getAssets().open(ASSETS+target);
             try { atomicCopy(in,out,f.getString("sha256")); } finally { in.close(); }
         }
+        // v44: only delete our old Observer Code/*.cs if byte-for-byte
+        // identical to an APK-owned v42 source. Never affect player worlds,
+        // user edits or another MOD. This unblocks the compiled NML layout.
+        int oldSourcesCleaned=0,oldSourcesPreserved=0;
+        JSONArray obsolete=manifest.optJSONArray("obsolete_owned_files");
+        if(obsolete!=null)for(int k=0;k<obsolete.length();k++){
+            JSONObject item=obsolete.getJSONObject(k);
+            if(OwnedModSourceCleanupV44.removeOriginal(root,
+                    item.getString("target"),item.getString("sha256")))
+                oldSourcesCleaned++;
+            else oldSourcesPreserved++;
+        }
         if(!context.getSharedPreferences("worldbox_mod_deployment",0).edit().putString("build",build).commit())
             throw new IOException("模组安装状态保存失败");
         return "MOD_DEPLOY_OK build="+build+" managed="+managed+" payloadFiles="+files.length()+
+            "; obsoleteOwnCodeRemoved="+oldSourcesCleaned+" preserved="+oldSourcesPreserved+
             "; NeoModLoader1.2.1.1 / CombatGods1.0.5 / Frontiers2.0.1; runtime load still pending";
     }
     private static void atomicCopy(InputStream in,File out,String expected) throws Exception {
