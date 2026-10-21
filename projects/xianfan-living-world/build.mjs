@@ -3,6 +3,7 @@
  * 开局先砍十根木头、捡五十捆稻草，才有资格谈“盖房子”。
  */
 import {note, advanceClock, getPlace} from './core.mjs';
+import {readCoin, spend, earn, fmt} from './money.mjs';
 
 export const BUILD_VERSION = 'build-0.1.0';
 
@@ -128,11 +129,11 @@ export function craft(w, id) {
 
 /* ── 科技树：国产科技影响产量、解锁配方与兵种 ─────────── */
 export const TECH = {
-  farm: {name: '农政', max: 5, cost: {silver: 200, straw: 20}, effect: '粮产 +12%/级、可开田'},
-  fort: {name: '筑城', max: 5, cost: {silver: 300, stone: 30}, effect: '可修院墙、城墙耐久 +15%/级'},
-  arms: {name: '军械', max: 5, cost: {silver: 350, iron: 10}, effect: '解锁兵种与铁器，杀伤 +10%/级'},
-  alchemy: {name: '丹道', max: 5, cost: {silver: 400, straw: 10}, effect: '丹药成率 +8%/级'},
-  array: {name: '阵法', max: 5, cost: {silver: 500, stone: 20}, effect: '护山阵强度 +20%/级'},
+  farm: {name: '农政', max: 5, cost: {coin: 20000, straw: 20}, effect: '粮产 +12%/级、可开田'},
+  fort: {name: '筑城', max: 5, cost: {coin: 30000, stone: 30}, effect: '可修院墙、城墙耐久 +15%/级'},
+  arms: {name: '军械', max: 5, cost: {coin: 35000, iron: 10}, effect: '解锁兵种与铁器，杀伤 +10%/级'},
+  alchemy: {name: '丹道', max: 5, cost: {coin: 40000, straw: 10}, effect: '丹药成率 +8%/级'},
+  array: {name: '阵法', max: 5, cost: {coin: 50000, stone: 20}, effect: '护山阵强度 +20%/级'},
 };
 
 export function techLevel(w, line) { return (ensureBuild(w).tech[line] || 0); }
@@ -145,13 +146,13 @@ export function research(w, line) {
   if (lv >= t.max) return {ok: false, reason: `${t.name}已到顶`};
   const cost = {};
   for (const [k, v] of Object.entries(t.cost)) cost[k] = Math.round(v * (lv + 1));
-  if ((w.player.silver || 0) < (cost.silver || 0)) return {ok: false, reason: `银不够：要 ${cost.silver}`};
+  if (readCoin(w) < (cost.coin || 0)) return {ok: false, reason: `钱不够：要 ${fmt(cost.coin)}`};
   for (const [k, v] of Object.entries(cost)) {
-    if (k === 'silver') continue;
+    if (k === 'coin') continue;
     if (resCount(w, k) < v) return {ok: false, reason: `缺${resName(k)} ${v - resCount(w, k)}`};
   }
-  w.player.silver -= cost.silver || 0;
-  for (const [k, v] of Object.entries(cost)) if (k !== 'silver') addRes(w, k, -v);
+  spend(w, cost.coin || 0);
+  for (const [k, v] of Object.entries(cost)) if (k !== 'coin') addRes(w, k, -v);
   b.tech[line] = lv + 1;
   note(w, '科技', `${t.name}提升到 ${lv + 1} 级`);
   return {ok: true, line, level: lv + 1};
@@ -159,11 +160,11 @@ export function research(w, line) {
 
 /* ── 兵种树 ─────────────────────────────────────────── */
 export const UNITS = [
-  {id: 'militia', name: '乡勇', arms: 0, cost: {silver: 14}, power: 1.0},
-  {id: 'spear', name: '长枪兵', arms: 1, cost: {silver: 40, wood: 4}, power: 1.5},
-  {id: 'sword', name: '刀盾兵', arms: 2, cost: {silver: 70, iron: 3}, power: 2.2},
-  {id: 'archer', name: '弓手', arms: 2, cost: {silver: 90, wood: 6, hemp: 4}, power: 2.6},
-  {id: 'cavalry', name: '轻骑', arms: 4, cost: {silver: 320, iron: 8}, power: 4.2},
+  {id: 'militia', name: '乡勇', arms: 0, cost: {coin: 300}, power: 1.0},
+  {id: 'spear', name: '长枪兵', arms: 1, cost: {coin: 800, wood: 4}, power: 1.5},
+  {id: 'sword', name: '刀盾兵', arms: 2, cost: {coin: 1400, iron: 3}, power: 2.2},
+  {id: 'archer', name: '弓手', arms: 2, cost: {coin: 1800, wood: 6, hemp: 4}, power: 2.6},
+  {id: 'cavalry', name: '轻骑', arms: 4, cost: {coin: 9000, iron: 8}, power: 4.2},
 ];
 
 export function unitsOf(w) { return UNITS.filter(u => techLevel(w, 'arms') >= u.arms); }
@@ -174,10 +175,10 @@ export function trainUnit(w, id, n = 1) {
   if (techLevel(w, 'arms') < u.arms) return {ok: false, reason: `需要军械 ${u.arms} 级`};
   const need = {};
   for (const [k, v] of Object.entries(u.cost)) need[k] = v * n;
-  if ((w.player.silver || 0) < (need.silver || 0)) return {ok: false, reason: `银不够：要 ${need.silver}`};
-  for (const [k, v] of Object.entries(need)) if (k !== 'silver' && resCount(w, k) < v) return {ok: false, reason: `缺${resName(k)}`};
-  w.player.silver -= need.silver || 0;
-  for (const [k, v] of Object.entries(need)) if (k !== 'silver') addRes(w, k, -v);
+  if (readCoin(w) < (need.coin || 0)) return {ok: false, reason: `钱不够：要 ${fmt(need.coin)}`};
+  for (const [k, v] of Object.entries(need)) if (k !== 'silver' && k !== 'coin' && resCount(w, k) < v) return {ok: false, reason: `缺${resName(k)}`};
+  spend(w, need.coin || 0);
+  for (const [k, v] of Object.entries(need)) if (k !== 'coin') addRes(w, k, -v);
   w.player.units = w.player.units || {};
   w.player.units[id] = (w.player.units[id] || 0) + n;
   return {ok: true, unit: u, count: w.player.units[id]};

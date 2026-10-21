@@ -29,7 +29,7 @@ public final class Sim {
 
     public double px = 0, py = 0, tx = 0, ty = 0;
     public double stamina = 100, hp = 100, spirit = 90;
-    public int silver = 170, karma = 0, men = 0, stones = 0, realmLevel = 0, layer = 0, pills = 0;
+    public int coin = 17000, karma = 0, men = 0, stones = 0, realmLevel = 0, layer = 0, pills = 0;
     public String rootId = "none";
     public String weaponGrade = "mortal", armorGrade = "mortal", talismanGrade = "mortal";
     public boolean wounded = false, tested = false;
@@ -161,7 +161,7 @@ public final class Sim {
         if (realm >= 2 && r.nextDouble() < 0.22) { bag.put("妖卵", bag.getOrDefault("妖卵", 0) + 1); sb.append("妖卵×1 "); }
         if (realm >= 2 && r.nextDouble() < 0.10) { bag.put("幼崽", bag.getOrDefault("幼崽", 0) + 1); sb.append("幼崽×1 "); }
         int worth = pieces * 8 + (bagsWith("妖丹") > 0 ? 120 : 0);
-        silver += worth / 3;
+        coin += worth;
         karma += 1;
         String line = "讨平" + den.optString("name") + "：" + pieces + " 件材料 " + sb + "折银 " + (worth / 3);
         note(line);
@@ -297,13 +297,13 @@ public final class Sim {
     /* ── 家业 ─────────────────────────────────────── */
 
     public String stayInn(int days) {
-        int cost = 30 * days;
-        if (silver < cost) return "住店要 " + cost + " 银，你只有 " + silver + " 银。";
-        silver -= cost;
+        int cost = 3000 * days;
+        if (coin < cost) return "住店要 " + coinText(cost) + "，你只有 " + coinText(coin) + "。";
+        coin -= cost;
         hp = Math.min(100, hp + 45 * days);
         stamina = Math.min(100, stamina + 60 * days);
         clock += days * 480 * 60L / 60L;
-        return "住店 " + days + " 天，付 " + cost + " 银，气力回来一些。";
+        return "住店 " + days + " 天，付 " + coinText(cost) + "，气力回来一些。";
     }
 
     public String restDay(int days) {
@@ -315,10 +315,10 @@ public final class Sim {
     }
 
     public String buyHome(String kind) {
-        int price = "yard".equals(kind) ? 6000 : "house".equals(kind) ? 1500 : 420;
+        int price = "yard".equals(kind) ? 600000 : "house".equals(kind) ? 150000 : 42000;
         if (homeLevel > 0) return "你已经有宅子了。";
-        if (silver < price) return "要 " + price + " 银，你只有 " + silver + " 银。";
-        silver -= price;
+        if (coin < price) return "要 " + coinText(price) + "，你只有 " + coinText(coin) + "。";
+        coin -= price;
         homeLevel = "yard".equals(kind) ? 3 : "house".equals(kind) ? 2 : 1;
         note("置下宅子，住得起 " + recruitCap() + " 个人");
         return "置下宅子，能养 " + recruitCap() + " 人。";
@@ -328,21 +328,21 @@ public final class Sim {
 
     public String workDay(String job) {
         int pay, need;
-        if ("clerk".equals(job)) { pay = 18; need = 6; }
-        else if ("guard".equals(job)) { pay = 25; need = 14; }
-        else if ("herb".equals(job)) { pay = 20; need = 22; }
-        else { pay = 12; need = 18; }
+        if ("clerk".equals(job)) { pay = 1800; need = 6; }
+        else if ("guard".equals(job)) { pay = 2500; need = 14; }
+        else if ("herb".equals(job)) { pay = 2000; need = 22; }
+        else { pay = 1200; need = 18; }
         if (stamina < need) return "体力不够，先歇着。";
-        stamina -= need; silver += pay; workDays++;
+        stamina -= need; coin += pay; workDays++;
         clock += 8 * 60 * 60L;
-        return "做了一天活，得 " + pay + " 银（累计 " + workDays + " 天）。";
+        return "做了一天活，得 " + coinText(pay) + "（累计 " + workDays + " 天）。";
     }
 
     public String hire(int n) {
         if (men + n > recruitCap()) return "住处只养得起 " + recruitCap() + " 人，先置宅。";
-        int cost = n * 45;
-        if (silver < cost) return "招 " + n + " 人要 " + cost + " 银。";
-        silver -= cost; men += n;
+        int cost = n * 4500;
+        if (coin < cost) return "招 " + n + " 人要 " + coinText(cost) + "。";
+        coin -= cost; men += n;
         note("招了 " + n + " 名护院");
         return "招了 " + n + " 人，现共 " + men + " 人。";
     }
@@ -350,18 +350,18 @@ public final class Sim {
     public String foundSect(String name) {
         if (sectName != null) return "你已经有一处山门。";
         if (realmLevel < 2) return "筑基以上才配开山立派。";
-        if (silver < 3000) return "开山要 3000 银。";
+        if (coin < 300000) return "开山要 " + coinText(300000) + "。";
         if (stones < 50) return "要 50 块下品灵石布护山大阵。";
-        silver -= 3000; stones -= 50; sectName = name;
+        coin -= 300000; stones -= 50; sectName = name;
         note("开辟山门，立「" + name + "」");
         return "「" + name + "」立起来了。";
     }
 
     public String takeDisciple(int n) {
         if (sectName == null) return "还没有山门。";
-        int cost = n * 120;
-        if (silver < cost) return "收徒要置办行头，每人 120 银。";
-        silver -= cost; disciples += n;
+        int cost = n * 12000;
+        if (coin < cost) return "收徒要置办行头，每人 " + coinText(12000) + "。";
+        coin -= cost; disciples += n;
         return "收 " + n + " 名弟子，门下共 " + disciples + " 人。";
     }
 
@@ -369,8 +369,8 @@ public final class Sim {
         if (throne != null) return "你已经是" + throne + "了。";
         if (realmLevel < 3) return "金丹以上才镇得住一方。";
         if (men < 60) return "至少 60 兵。";
-        if (silver < 20000) return "要 20000 银。";
-        silver -= 20000; throne = title;
+        if (coin < 2000000) return "要 " + coinText(2000000) + "。";
+        coin -= 2000000; throne = title;
         note("于临安县衙称「" + title + "」");
         return "你称「" + title + "」，自立一方。";
     }
@@ -403,38 +403,50 @@ public final class Sim {
     }
 
     public String researchArms() {
-        int cost = 350 * (techArms + 1);
+        int cost = 35000 * (techArms + 1);
         int iron = 10 * (techArms + 1);
         if (techArms >= 5) return "军械已到顶。";
-        if (silver < cost) return "要 " + cost + " 银。";
+        if (coin < cost) return "要 " + coinText(cost) + "。";
         if (resIron < iron) return "要 " + iron + " 生铁。";
-        silver -= cost; resIron -= iron; techArms++;
+        coin -= cost; resIron -= iron; techArms++;
         return "军械提升到 " + techArms + " 级。";
     }
 
     public String trainSpear() {
         if (techArms < 1) return "需要军械 1 级。";
-        if (silver < 40) return "要 40 银。";
+        if (coin < 4000) return "要 " + coinText(4000) + "。";
         if (resWood < 4) return "要 4 根木头。";
-        silver -= 40; resWood -= 4; men++;
+        coin -= 4000; resWood -= 4; men++;
         return "练出一名长枪兵，现共 " + men + " 人。";
     }
 
     public String buildText() {
         return "木头 " + resWood + " · 稻草 " + resStraw + " · 石 " + resStone + " · 土 " + resClay + " · 铁 " + resIron
             + "\n茅屋 " + huts + " 间 · 军械 " + techArms + " 级\n\n"
-            + "茅屋 = 10 木 + 50 草\n长枪兵 = 40 银 + 4 木（需军械 1）";
+            + "茅屋 = 10 木 + 50 草\n长枪兵 = " + coinText(4000) + " + 4 木（需军械 1）";
     }
 
     public String lifeText() {
         StringBuilder b = new StringBuilder();
         b.append("住处　").append(homeLevel == 0 ? "无（睡客栈或街边）" : homeLevel == 1 ? "一间小屋" : homeLevel == 2 ? "一所瓦房" : "一座宅院").append("\n");
         b.append("能养　").append(recruitCap()).append(" 人 · 现有 ").append(men).append(" 人\n");
-        b.append("银钱　").append(silver).append(" · 下品灵石 ").append(stones).append("\n");
+        b.append("银钱　").append(coinText(coin)).append(" · 下品灵石 ").append(stones).append("\n");
         b.append("打工　").append(workDays).append(" 天\n");
         b.append("山门　").append(sectName == null ? "无" : sectName + "（弟子 " + disciples + "）").append("\n");
         b.append("名分　").append(throne == null ? "布衣" : throne).append("\n\n");
-        b.append("打工 12 银/日 · 置宅 420 起 · 招人 45/人 · 立宗 3000 银 + 50 灵石 · 称王 20000 银 + 60 兵");
+        b.append("打工 1 两 2 钱银/日 · 置宅 4 两 2 钱银起 · 招人 45 文/人 · 立宗 30 两银 + 50 灵石 · 称王 200 两银 + 60 兵");
+        return b.toString();
+    }
+
+    /** 钱的显示：文 / 两银 / 两金 / 灵石，不堆一串零 */
+    public static String coinText(int wen) {
+        long n = Math.max(0, wen);
+        if (n >= 1000000L) return (n / 1000000L) + " 下品灵石";
+        long jin = n / 10000L, yin = (n % 10000L) / 100L, rest = n % 100L;
+        StringBuilder b = new StringBuilder();
+        if (jin > 0) b.append(jin).append(" 两金");
+        if (yin > 0) b.append(b.length() > 0 ? " " : "").append(yin).append(" 两银");
+        if (rest > 0 || b.length() == 0) b.append(b.length() > 0 ? " " : "").append(rest).append(" 文");
         return b.toString();
     }
 
@@ -443,12 +455,12 @@ public final class Sim {
     /** 私兵招募：每人 14 银，上限 60（原生版先给一个人数上限） */
     public String recruit(int n) {
         int can = Math.min(n, Math.max(0, 60 - men));
-        int cost = can * 14;
+        int cost = can * 1400;
         if (can <= 0) return "私兵到顶了。";
-        if (silver < cost) return "银不够，还差 " + (cost - silver) + "。";
-        silver -= cost; men += can;
-        note("招了 " + can + " 名私兵，花 " + cost + " 银。");
-        return "招到 " + can + " 人，花 " + cost + " 银（现 " + men + " 人）";
+        if (coin < cost) return "钱不够，还差 " + coinText(cost - coin) + "。";
+        coin -= cost; men += can;
+        note("招了 " + can + " 名私兵，花 " + coinText(cost) + "。");
+        return "招到 " + can + " 人，花 " + coinText(cost) + "（现 " + men + " 人）";
     }
 
     private int bagsWith(String prefix) {
@@ -468,7 +480,7 @@ public final class Sim {
         try {
             JSONObject o = new JSONObject();
             o.put("px", px); o.put("py", py); o.put("clock", clock);
-            o.put("stamina", stamina); o.put("hp", hp); o.put("silver", silver);
+            o.put("stamina", stamina); o.put("hp", hp); o.put("coin", coin);
             o.put("karma", karma); o.put("men", men); o.put("place", place);
             o.put("stones", stones); o.put("realmLevel", realmLevel); o.put("ship", ship);
             o.put("layer", layer); o.put("rootId", rootId); o.put("tested", tested);
@@ -495,7 +507,7 @@ public final class Sim {
             JSONObject o = new JSONObject(raw);
             px = o.optDouble("px", px); py = o.optDouble("py", py); clock = o.optDouble("clock", clock);
             stamina = o.optDouble("stamina", stamina); hp = o.optDouble("hp", hp);
-            silver = o.optInt("silver", silver); karma = o.optInt("karma", karma); men = o.optInt("men", men);
+            coin = o.optInt("coin", coin); karma = o.optInt("karma", karma); men = o.optInt("men", men);
             place = o.optString("place", place);
             stones = o.optInt("stones", stones); realmLevel = o.optInt("realmLevel", realmLevel); ship = o.optBoolean("ship", ship);
             layer = o.optInt("layer", layer); rootId = o.optString("rootId", rootId); tested = o.optBoolean("tested", tested);

@@ -128,7 +128,7 @@ public final class MainActivity extends Activity {
 
     private void updateHud() {
         hud.setText(String.format("%s · %s\n银 %d · 灵石 %d · 私兵 %d · 体力 %.0f\n%s",
-            sim.timeText(), sim.realmName(), sim.silver, sim.stones, sim.men, sim.stamina,
+            sim.timeText(), sim.realmName(), Sim.coinText(sim.coin), sim.stones, sim.men, sim.stamina,
             sim.moving ? "前往：" + sim.targetName : "在" + nearestName()));
     }
 

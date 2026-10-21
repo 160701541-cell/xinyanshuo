@@ -53,7 +53,7 @@ test('科技树按等级解锁配方，兵种树跟军械走', () => {
   const w = createWorld('tech');
   ensureBuild(w);
   assert.equal(canCraft(w, 'forge').ok, false, '没军械 1 级不能修铁匠炉');
-  w.player.silver = 5000;
+  w.player.coin = 600000; w.player.silver = 6000;
   w.build.res.stone = 100; w.build.res.iron = 60; w.build.res.clay = 40; w.build.res.wood = 40;
   assert.equal(research(w, 'arms').ok, true);
   assert.equal(techLevel(w, 'arms'), 1);

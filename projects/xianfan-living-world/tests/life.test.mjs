@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {createWorld} from '../core.mjs';
+import {readCoin} from '../money.mjs';
 import {
   ensureLife, statsOf, stayInn, workDay, buyHouse, upgradeHome, hire, recruitCap,
   foundSect, takeDisciple, canTakeThrone, takeThrone, lifeReport, sellGoods, restDay,
@@ -11,23 +12,23 @@ test('开局睡客栈：付钱、回体力、推进时间', () => {
   statsOf(w).stamina = 30;
   const r = stayInn(w, 1);
   assert.equal(r.ok, true);
-  assert.equal(w.player.silver, 140);
+  assert.equal(w.player.coin, 16985);
   assert.ok(statsOf(w).stamina > 60);
 });
 
 test('打工能挣钱，体力不够就干不了', () => {
   const w = createWorld('work');
-  const before = w.player.silver;
+  const before = readCoin(w);
   const r = workDay(w, 'clerk');
   assert.equal(r.ok, true);
-  assert.equal(w.player.silver, before + 18);
+  assert.equal(readCoin(w), before + 10);
   statsOf(w).stamina = 1;
   assert.equal(workDay(w, 'guard').ok, false);
 });
 
 test('先有宅子才养得起人，招人有人数上限', () => {
   const w = createWorld('home');
-  w.player.silver = 5000;
+  w.player.coin = 500000;
   assert.equal(recruitCap(w), 2);
   assert.equal(buyHouse(w, 'room').ok, true);
   assert.equal(recruitCap(w), 6);
@@ -38,7 +39,7 @@ test('先有宅子才养得起人，招人有人数上限', () => {
 
 test('加盖宅子提高上限，最多三级', () => {
   const w = createWorld('up');
-  w.player.silver = 20000;
+  w.player.coin = 2000000;
   buyHouse(w, 'room');
   assert.equal(upgradeHome(w).ok, true);
   assert.equal(upgradeHome(w).ok, true);
@@ -51,8 +52,8 @@ test('立宗要筑基、银钱、灵石三样齐；缺一样都报出来', () =>
   ensureLife(w);
   assert.match(foundSect(w, '听雪宗').reason, /筑基/);
   w.player.realmLevel = 2;
-  assert.match(foundSect(w, '听雪宗').reason, /3000/);
-  w.player.silver = 5000;
+  assert.match(foundSect(w, '听雪宗').reason, /开山要/);
+  w.player.coin = 500000;
   assert.match(foundSect(w, '听雪宗').reason, /灵石/);
   w.player.stones = 60;
   assert.equal(foundSect(w, '听雪宗').ok, true);
@@ -64,7 +65,7 @@ test('称王要县令位份、六十兵、名望、两万银', () => {
   ensureLife(w);
   assert.match(canTakeThrone(w).reason, /县令/);
   w.career = {ranks: {office: 2}, fame: 200};
-  w.player.men = 60; w.player.silver = 25000;
+  w.player.men = 60; w.player.coin = 2500000;
   assert.equal(canTakeThrone(w).ok, true);
   assert.equal(takeThrone(w, '临安王').ok, true);
   assert.equal(lifeReport(w).realm.title, '临安王');
@@ -87,7 +88,7 @@ test('歇息能回体力，有宅子回得更快', () => {
   restDay(w, 1);
   const street = statsOf(w).stamina;
   statsOf(w).stamina = 0;
-  w.player.silver = 5000;
+  w.player.coin = 500000;
   buyHouse(w, 'room');
   restDay(w, 1);
   assert.ok(statsOf(w).stamina > street, '自家歇息应比睡街边快');
