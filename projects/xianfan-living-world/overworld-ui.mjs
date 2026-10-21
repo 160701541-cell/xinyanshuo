@@ -3,6 +3,7 @@ import {createWorld,restoreWorld,saveableWorld,worldReport,simulateDay,note,getP
 import {MAP_VERSION,WORLD_LIMIT,CITY,LANDMARKS,STRUCTURES,TOWN_HOUSES,WALLS,ROUTES,STREAMS,PLACE_METERS,ensureGeo,terrainHeight,dist,obstacleAt,beginJourney,stopJourney,advanceMap,enterStructure,exitStructure,placeAt,visibleActors,actorVisibility,openingStatus,canEnter,canFly,flightRuleAt,rest} from './overworld.mjs';
 import {FACTIONS,factionById,territoryGrid,territoryBorderPaths,MAP_MODES,mapColor,reputation,standing,securityIndex,ITEMS,itemById,priceOf,inventory,buyItem,sellItem,canTradeHere,bagWeight,contractsFor,acceptContract,completeContract,societyReport} from './society.mjs';
 import {SpriteBank,lookFor} from './sprites.mjs';
+import {ensureWar,levyCapacity,createArmy,warReport,tickWarDay,supplyDays,armyNeeds,deliveredCostKg} from './war.mjs';
 import {interiorAtlas} from './atlas.mjs';
 import {classifyGesture,canSelect} from './gesture.mjs';
 const placeById=getPlace;
@@ -120,6 +121,22 @@ function drawFactionLayer(){
 function securityLabel(){
  const s=securityIndex(w);return s>=70?'治安尚可':s>=45?'盗匪偶发':'盗匪横行';
 }
+/** 军团旗：一旗=一支军，旗上写万人数字，与账本一一对应；虚线是行军目标。 */
+function drawArmies(){
+ if(!w.war)return;
+ for(const a of w.war.armies){
+  if(!visible(a))continue;
+  const p=pos(a),f=factionById(a.faction),big=a.combat+a.support;
+  const size=clamp(Math.sqrt(big)/22,12,48);
+  if(a.goal){const g=pos(a.goal);ctx.setLineDash([7,7]);ctx.strokeStyle='rgba(126,52,40,.55)';ctx.lineWidth=1.5;ctx.beginPath();ctx.moveTo(p.x,p.y);ctx.lineTo(g.x,g.y);ctx.stroke();ctx.setLineDash([]);}
+  ctx.strokeStyle='#3d3427';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(p.x,p.y);ctx.lineTo(p.x,p.y-size*1.7);ctx.stroke();
+  ctx.fillStyle=a.routed?'#9a9384':(f?.color||'#999');
+  ctx.beginPath();ctx.moveTo(p.x,p.y-size*1.7);ctx.lineTo(p.x+size*1.15,p.y-size*1.3);ctx.lineTo(p.x,p.y-size*.95);ctx.closePath();
+  ctx.fill();ctx.strokeStyle='rgba(40,36,28,.75)';ctx.lineWidth=1;ctx.stroke();
+  ctx.fillStyle='rgba(40,34,26,.9)';
+  if(camera.mpp<600)text(`${Math.round(big/10000)}万`,{x:a.x,y:a.y},Math.min(18,Math.max(10,size*.4)),'#3b3226',700);
+ }
+}
 function drawRelief(){if(camera.mpp>1500)return;const min=unpos(-20,-20),max=unpos(cssW+20,cssH+20);const inc=camera.mpp>80?15000:camera.mpp>10?3200:camera.mpp>2?400:160;
  let count=0;for(let x=Math.floor(min.x/inc)*inc;x<max.x;x+=inc)for(let y=Math.floor(min.y/inc)*inc;y<max.y;y+=inc){if(count++>8000)return;let z=terrainHeight(x,y);if(z<180)continue;const q=pos({x,y}),sz=Math.max(2,Math.min(21,inc/camera.mpp*.18));ctx.beginPath();ctx.moveTo(q.x-sz,q.y+sz*.8);ctx.lineTo(q.x,q.y-sz*.7);ctx.lineTo(q.x+sz,q.y+sz*.8);ctx.closePath();ctx.fillStyle=z>240?'rgba(103,114,102,.15)':'rgba(86,118,88,.10)';ctx.fill();}}
 function drawWater(){for(const river of STREAMS){drawPath(river);ctx.strokeStyle='#7fa8a8';ctx.lineWidth=clamp(100/camera.mpp,1,60);ctx.lineCap='round';ctx.lineJoin='round';ctx.stroke();drawPath(river);ctx.strokeStyle='#c3ded1';ctx.lineWidth=clamp(25/camera.mpp,.5,9);ctx.stroke();}}
@@ -188,7 +205,7 @@ function drawPlayer(){const p=pos(w.player.mapPos);
 }
 function drawRoute(){const r=w.player.route;if(!r)return;const points=[w.player.mapPos,...r.path.slice(r.index+1)];drawPath(points.map(p=>[p.x,p.y]));ctx.strokeStyle='rgba(255,250,228,.8)';ctx.lineWidth=6;ctx.stroke();drawPath(points.map(p=>[p.x,p.y]));ctx.strokeStyle='#cc7c40';ctx.lineWidth=3;ctx.setLineDash([8,7]);ctx.stroke();ctx.setLineDash([]);circle(r.goal,6,'#b7653a','#fff0d7',2);}
 function drawSelection(){if(!selected?.point)return;const p=pos(selected.point);ctx.beginPath();ctx.arc(p.x,p.y,24,0,Math.PI*2);ctx.strokeStyle='#bd713f';ctx.lineWidth=2.5;ctx.stroke();ctx.beginPath();ctx.moveTo(p.x-30,p.y);ctx.lineTo(p.x+30,p.y);ctx.moveTo(p.x,p.y-30);ctx.lineTo(p.x,p.y+30);ctx.stroke();}
-function drawMap(){if(!ctx||!w)return;ctx.clearRect(0,0,cssW,cssH);drawGround();drawFactionLayer();drawPolitical();drawRelief();drawWater();drawRoads();drawWall();drawBuildings();drawTowns();drawRoute();drawAvatars();drawPlayer();drawSelection();}
+function drawMap(){if(!ctx||!w)return;ctx.clearRect(0,0,cssW,cssH);drawGround();drawFactionLayer();drawPolitical();drawRelief();drawWater();drawRoads();drawWall();drawBuildings();drawTowns();drawRoute();drawArmies();drawAvatars();drawPlayer();drawSelection();}
 function profile(){const p=w.player,r=worldReport(w),place=placeAt(p.mapPos);
  $('name').textContent=p.name;$('place').textContent=p.indoor?(getPlace(p.indoor)?.name||'室内'):place.name;
  $('time').textContent=currentTime();$('population').textContent=`临安县及周边 ${r.population.toLocaleString('zh-CN')}人`;
@@ -312,17 +329,41 @@ function renderQuests(){
  $('records').innerHTML=`<h2>官府与商会的委托</h2><p>委托由当日世界状态生成，不是写死的任务表；同一天重开也只是同一批。</p>
  ${mine.map(c=>card(c,true)).join('')||''}${open.map(c=>card(c,false)).join('')||'<p>今日没有新的委托。</p>'}`;
 }
+function renderWar(){
+ ensureWar(w);
+ const r=warReport(w);
+ const rows=r.field.map(a=>`<article class="war-row"><header><strong>${safe(a.name)}</strong><span class="tag">${safe(factionById(a.faction)?.name||'')}</span></header>
+  <p>战兵 ${a.combat.toLocaleString()} · 辅兵 ${a.support.toLocaleString()} · 士气 ${a.morale} · ${safe(a.state)}</p>
+  <small>日耗 ${(a.needKg/1000).toFixed(0)} 吨 · 自携粮 ${a.supplyDays} 日 · 战损 战兵/辅兵</small><br>
+  <button data-march="${a.id}">开赴县城</button><button data-return="${a.id}">回师</button></article>`).join('')||'<p>天下暂无出征之军。</p>';
+ const levy=FACTIONS.map(f=>{
+  const c=levyCapacity(w,f.id);
+  return `<article class="entry"><strong>${safe(f.name)}</strong> 可征 ${c.combat.toLocaleString()} 战兵（辅兵 ${Math.round(c.combat*3).toLocaleString()}）<br>
+  <button data-levy="${f.id}" data-men="50000" ${c.combat>=50000?'':'disabled'}>征 5 万</button>
+  <button data-levy="${f.id}" data-men="150000" ${c.combat>=150000?'':'disabled'}>征 15 万</button></article>`;
+ }).join('');
+ const log=(w.war.log||[]).slice(-10).reverse();
+ $('records').innerHTML=`<h2>天下兵事 · 第 ${r.day} 日</h2><p>屏上一面旗就是账本里一支军；粮道断了，仗就打不下去。</p>
+ <p>在册兵马合计 ${r.total.toLocaleString()} 人（战兵+辅兵），出征 ${r.armies} 军。</p>${rows}
+ <h3>征发</h3>${levy}<h3>战报</h3>${log.map(e=>`<article class="entry"><small>${safe(e.type)}</small> ${safe(e.text)}</article>`).join('')||'<p>尚未接战。</p>'}`;
+}
 function handleRecordsClick(e){
  const t=e.target.closest('button');if(!t)return;
  if(t.dataset.buy){const r=buyItem(w,t.dataset.buy,1);toast(r.ok?`买下${itemById(t.dataset.buy).name}，花 ${r.cost} 文`:r.error);if(r.ok){profile();scheduleSave();renderGoods();}return;}
  if(t.dataset.sell){const r=sellItem(w,t.dataset.sell,1);toast(r.ok?`卖出，得 ${r.gain} 文`:r.error);if(r.ok){profile();scheduleSave();renderGoods();}return;}
  if(t.dataset.accept){const r=acceptContract(w,t.dataset.accept);toast(r.ok?`接下了「${r.contract.title}」`:r.error);if(r.ok){scheduleSave();renderQuests();}return;}
+ if(t.dataset.levy){const men=Number(t.dataset.men)||50000;
+  try{const a=createArmy(w,t.dataset.levy,{combat:men,seed:Date.now()%100000});note(w,'兵事',`${a.name}征发 ${men.toLocaleString()} 战兵、${a.support.toLocaleString()} 辅兵。`);toast(`${a.name}已集结，日耗 ${Math.round(armyNeeds(a).totalKg/1000)} 吨`);profile();scheduleSave();renderWar();}
+  catch(err){toast(err.message);}return;}
+ if(t.dataset.march){const a=w.war.armies.find(x=>x.id===Number(t.dataset.march));if(!a)return;a.goal={x:0,y:0};a.state='行军';toast(`${a.name}开拔，向县城行军`);scheduleSave();renderWar();return;}
+ if(t.dataset.return){const a=w.war.armies.find(x=>x.id===Number(t.dataset.return));if(!a)return;const seat=LANDMARKS.find(l=>l.id===factionById(a.faction)?.seat);a.goal=seat?{x:seat.x,y:seat.y}:{x:a.x,y:a.y};a.state='行军';toast(`${a.name}回师`);scheduleSave();renderWar();return;}
  if(t.dataset.complete){const r=completeContract(w,t.dataset.complete);toast(r.ok?`交差，得 ${r.pay} 文`:r.error);if(r.ok){profile();scheduleSave();renderQuests();}return;}
 }
 function otherPanels(panel){activeTab=panel;for(const n of document.querySelectorAll('[data-view]'))n.classList.toggle('selected',n.dataset.view===panel);
  $('canvasFrame').hidden=panel!=='map';$('records').hidden=panel==='map';$('sheet').hidden=true;if(panel==='map'){drawMap();return;}
  if(panel==='goods')return renderGoods();
  if(panel==='quests')return renderQuests();
+ if(panel==='war')return renderWar();
  const hist=w.history.slice(-25).reverse();let html=panel==='people'?`<h2>故人谱</h2><p>人物在地图上有位置，只有真正相遇后才记录在这里。</p>${w.player.contacts.map(c=>{const p=w.people.find(x=>x.id===c.id);return `<article class="entry">${safe(p?.name||c.id)} · ${safe(p?.job||'')} · 第${c.firstDay}天相识</article>`;}).join('')||'<p>尚无相识之人。</p>'}`:panel==='ledger'?`<h2>县治账本</h2><p>县城及周边有 ${worldReport(w).population} 位人口档案，经济仍采用县级结算，尚不是每人完整的AI模拟。</p><article class="entry">粮价：${w.price} 文/斗<br>县库：${w.treasury} 文<br>县境总粮：${worldReport(w).grain} 斗</article>`:`<h2>此世纪事</h2>${hist.map(e=>`<article class="entry"><small>第${e.day}日 · ${safe(e.type)}</small><p>${safe(e.message)}</p></article>`).join('')}`;
  $('records').innerHTML=html;}
 function resize(){const r=canvas.getBoundingClientRect();cssW=Math.max(10,r.width);cssH=Math.max(10,r.height);const dpr=Math.min(2,window.devicePixelRatio||1);canvas.width=Math.round(cssW*dpr);canvas.height=Math.round(cssH*dpr);ctx=canvas.getContext('2d');ctx.setTransform(dpr,0,0,dpr,0,0);drawMap();}
@@ -352,6 +393,16 @@ function updateLegend(){
 function setMapMode(mode){mapMode=MAP_MODES.some(m=>m.id===mode)?mode:'terrain';
  for(const b of document.querySelectorAll('[data-mode]'))b.classList.toggle('selected',b.dataset.mode===mapMode);
  updateLegend();drawMap();}
+let lastWarDay=null;
+/** 战争按“世界日”结算，不跟着帧走：暂停时仗不会偷偷打。 */
+function tickWarIfDayChanged(){
+ if(!w||!w.war)return;
+ if(lastWarDay===null){lastWarDay=w.day;return;}
+ if(w.day===lastWarDay)return;
+ lastWarDay=w.day;
+ const r=tickWarDay(w,{distanceToDepot:(a)=>Math.hypot(a.x-0,a.y-0)});
+ if(r.events.length){if(activeTab==='war')renderWar();for(const ev of r.events.slice(-2))note(w,'兵事',ev.text);}
+}
 function bind(){canvas=$('worldCanvas');setupGestures();$('zoomIn').onclick=()=>zoomAt(.72);$('zoomOut').onclick=()=>zoomAt(1/.72);$('locate').onclick=()=>{camera.x=w.player.mapPos.x;camera.y=w.player.mapPos.y;camera.mpp=Math.min(camera.mpp,4);profile();scheduleSave();};
  $('stop').onclick=()=>{stopJourney(w);profile();toast('你已停下，已经流逝的时间不会退回。');scheduleSave();};
  $('save').onclick=()=>save().then(()=>toast('存档已保存')).catch(()=>toast('存档保存失败'));
@@ -365,7 +416,7 @@ function bind(){canvas=$('worldCanvas');setupGestures();$('zoomIn').onclick=()=>
  window.addEventListener('resize',resize);document.addEventListener('visibilitychange',()=>{paused=document.hidden;if(paused)save().catch(()=>{});});
 }
 let stamp=0,profileStamp=0,saveStamp=0;
-function animation(now){const dt=stamp?Math.min(.12,(now-stamp)/1000):0;stamp=now;if(!paused&&w&&dt>0){const old={...w.player.mapPos};const result=advanceMap(w,dt,travelSpeed);if(result.done){toast('到达目的地；移动时间已累计。');scheduleSave();}
+function animation(now){const dt=stamp?Math.min(.12,(now-stamp)/1000):0;stamp=now;if(!paused&&w&&dt>0){const old={...w.player.mapPos};const result=advanceMap(w,dt,travelSpeed);tickWarIfDayChanged();if(result.done){toast('到达目的地；移动时间已累计。');scheduleSave();}
  if(result.moved>0){ // 只有实际移动才更新场景名；缩放操作不写入位置。
  camera.x+=w.player.mapPos.x-old.x;camera.y+=w.player.mapPos.y-old.y;
  }
