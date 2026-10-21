@@ -85,49 +85,64 @@ export function tieWith(w,sectId,delta){
  d.ties[sectId]=Math.max(-100,Math.min(100,(d.ties[sectId]||0)+delta));
  return d.ties[sectId];
 }
-/** 你在某个势力眼里是什么人。立场只决定"它怎么说"，道行与行径决定"它怎么看你"。 */
+/** 你在某个势力眼里是什么人。分两件事：
+ *  正道按"你做过什么"记账（道行高的真看行径，伪善的只看舆论与把柄）；
+ *  魔道根本不按善恶记账——它看你是不是同类、守不守它的规矩、有没有交情。
+ *  道行（morality）只决定这个势力的行事底线，不决定它拿什么尺子量你。 */
 export function attitudeOf(w,sectOrId){
  const s=typeof sectOrId==='string'?sectById(sectOrId):sectOrId;
  const d=ensureDao(w);
  const k=w.karma?.value||0;
+ const de=ensureDao(w).deeds;
  const deeds=deedScore(w);
  const m=s.morality??0, hypo=s.hypocrisy??0;
  const tie=d.ties[s.id]||0;
  let score=0;const why=[];
- // 道行高的势力看行径，道行低的看利害；中间的各打一半
- const wDeed=m>=25?0.75:m<=-25?0.25:0.5;
- score+=deeds*wDeed;
- score+=d.bias*(1-wDeed)*0.5;
- if(m>=25&&deeds<-30){score-=10;why.push('你做的事他们看不上');}
- if(m>=25&&deeds>=30){score+=10;why.push('敬你是条汉子');}
- if(m<=-25){
-  // 恶名昭彰的势力反着记账：你越脏它越亲，你越干净它越疑
-  score=-deeds*0.35-d.bias*0.2+k*0.1;
-  if(deeds<-20){why.push('同道');}
-  if(deeds>40){why.push('你太干净，他们不信');}
- }
- // 除魔卫道只属于"道行也高"的那些人；只喊口号的另算
- if(s.stance==='righteous'&&s.tags.includes('zealot')&&m>=40&&deeds<-25){score-=28;why.push('除魔卫道，见你即斩');}
- if(s.stance==='demonic'&&m>20&&deeds>=0){why.push('虽是魔道，却有底线');}
- // 伪善：明面按舆论，暗地记把柄；真被捏住就翻脸
- if(hypo>=50){
-  d.exposure=Math.max(0,Math.min(100,d.exposure+(k>40?2:0)+(Math.abs(deeds)>50?1:0)));
-  if(d.exposure>70){score+=(d.bias*0.5-k*0.1)*0.4-20;why.push('底细被捏住，翻脸');}
-  else{score+=Math.max(0,(d.bias*0.5-k*0.1)*0.6);why.push(m>=0?'满口道义':'嘴上客气');}
+ if(s.stance==='demonic'){
+  // 魔道的尺子：业力、交情、规矩；不给你"做好人"记功
+  score+=k*0.3+tie*0.4;
+  if(m>=25){                              // 有底线的魔道：不认滥杀，也不认你行善
+   score-=de.innocent*3+de.cultivator*0.8;
+   score+=de.evil*1.5;
+   if(de.innocent>=3){why.push('同是魔道，也不齿你滥杀');}
+   else if(de.evil>0){why.push('敬你能收拾该收拾的人');}
+   else why.push('守自己的规矩，不问善恶');
+  }else{                                  // 恶名昭彰：越脏越亲
+   score+=de.innocent*3+de.evil*1.2-de.protect*2;
+   if(de.innocent>0){why.push('同道');}
+   if(de.protect>=3){why.push('你手上太干净，他们不信');}
+  }
+  if(d.bias<-25&&m<25){score+=10;why.push('魔道中人');}
+  if(s.tags.includes('demonic_pact')){why.push('魔道同盟');}
+ }else if(s.stance==='righteous'){
+  score+=deeds*0.75+d.bias*0.125;
+  if(m>=40&&deeds<-25){score-=28;why.push('除魔卫道，见你即斩');}
+  if(deeds>=30){score+=10;why.push('敬你是条汉子');}
+  if(deeds<-30){score-=10;why.push('你做的事他们看不上');}
+  // 伪善：明面按舆论，暗地记把柄
+  if(hypo>=50){
+   d.exposure=Math.max(0,Math.min(100,d.exposure+(k>40?2:0)+(Math.abs(deeds)>50?1:0)));
+   if(d.exposure>70){score+=(d.bias*0.5-k*0.1)*0.4-20;why.push('底细被捏住，翻脸');}
+   else{score+=Math.max(0,(d.bias*0.5-k*0.1)*0.6);why.push('满口道义');}
+  }else{
+   score-=k*0.2;
+  }
+ }else if(s.tags.includes('mercantile')||s.stance==='pragmatic'){
+  score+=tie*0.6+Math.min(20,(w.player.silver||0)/200);why.push('只看货与钱');
  }else{
-  score-=k*(s.stance==='righteous'?0.2:0.05);
+  score+=d.bias*0.1+tie*0.5;
+  if(s.tags.includes('hermit')){score=Math.min(score,10);why.push('隐世不出');}
+  if(hypo>=50){
+   d.exposure=Math.max(0,Math.min(100,d.exposure+(k>40?2:0)+(Math.abs(deeds)>50?1:0)));
+   if(d.exposure>70){score-=25;why.push('底细被捏住，翻脸');}
+   else why.push('当面称兄道弟');
+  }
  }
- if(s.tags.includes('mercantile')||s.stance==='pragmatic'){
-  score+=Math.min(20,(w.player.silver||0)/200);
-  score+=tie*.6;why.push('只看货与钱');
- }
- if(s.tags.includes('hermit')){score=Math.min(score,10);why.push('隐世不出');}
- if(tie&&!s.tags.includes('mercantile')){score+=tie*(s.stance==='demonic'?.4:.3);why.push('有旧交');}
+ if(tie&&!s.tags.includes('mercantile')&&s.stance!=='demonic'){score+=tie*0.3;why.push('有旧交');}
  score=Math.round(Math.max(-100,Math.min(100,score)));
  const label=score>=40?'盟友':score>=15?'亲近':score>=-15?'平常':score>=-40?'警惕':'死敌';
  return {id:s.id,name:s.name,stance:STANCES[s.stance].label,score,label,hostile:score<=-40,
-  morality:m,moralityLabel:moralityLabel(m),hypocrisy:hypo,
-  masked:hypo>=50&&m<0,
+  morality:m,moralityLabel:moralityLabel(m),hypocrisy:hypo,masked:hypo>=50&&m<0,
   reason:why.join('、')||'无特别看法'};
 }
 export function daoReport(w){

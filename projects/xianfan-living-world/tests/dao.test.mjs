@@ -15,12 +15,14 @@ test('魔修自己未必有业力，但除魔卫道的势力照样视你为敌',
  assert.match(q.reason,/除魔卫道|看不上/);
 });
 
-test('魔道里有好人：归墟守着底线，你行得正它也认',()=>{
- const w=mk();recordDeed(w,'protect',8);recordDeed(w,'evil',4);   // 护人、除害
- const g=attitudeOf(w,'guixu');
- assert.ok(g.hostile===false,`归墟 ${g.score}`);
- assert.ok(g.score>-20,`归墟 ${g.score}`);
- assert.match(g.reason,/底线|汉子/);
+test('魔道里有好人：归墟守着底线，不认滥杀，也不给你行善记功',()=>{
+ const good=mk();recordDeed(good,'protect',8);recordDeed(good,'evil',4);
+ const bad=mk();recordDeed(bad,'innocent',6);
+ const g1=attitudeOf(good,'guixu'),g2=attitudeOf(bad,'guixu');
+ assert.ok(g2.score<g1.score,`滥杀 ${g2.score} 应低于行善 ${g1.score}`);
+ assert.ok(g2.score<0,'归墟 不齿滥杀');
+ // 魔道不按善恶记账：行善换不来盟友，得靠交情
+ assert.ok(g1.label!=='盟友',`魔道不该因为你是好人就当盟友（${g1.score}）`);
 });
 
 test('正道里有坏人：万剑宗嘴上除魔，实际看你有没有钱和把柄',()=>{
@@ -73,7 +75,7 @@ test('正道死敌不能结盟（除魔卫道的不讲价）',()=>{
 
 test('两面派：明面称兄道弟，底细被捏住后翻脸',()=>{
  const w=mk();
- recordDeed(w,'innocent',6);
+ recordDeed(w,'protect',10);
  const before=attitudeOf(w,'tianji');
  assert.match(before.reason,/当面|底细|嘴上/);
  ensureKarma(w).value=80;
