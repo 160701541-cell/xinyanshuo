@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {createWorld} from '../core.mjs';
 import {
   ensureLife, statsOf, stayInn, workDay, buyHouse, upgradeHome, hire, recruitCap,
-  foundSect, takeDisciple, canTakeThrone, takeThrone, lifeReport, sellGoods,
+  foundSect, takeDisciple, canTakeThrone, takeThrone, lifeReport, sellGoods, restDay,
 } from '../life.mjs';
 
 test('开局睡客栈：付钱、回体力、推进时间', () => {
@@ -78,4 +78,17 @@ test('卖东西只值六成，行囊会扣数', () => {
   assert.equal(r.ok, true);
   assert.equal(r.gain, 72);
   assert.equal(w.player.bag['妖丹'], 1);
+});
+
+test('歇息能回体力，有宅子回得更快', () => {
+  const w = createWorld('rest');
+  ensureLife(w);
+  statsOf(w).stamina = 0;
+  restDay(w, 1);
+  const street = statsOf(w).stamina;
+  statsOf(w).stamina = 0;
+  w.player.silver = 5000;
+  buyHouse(w, 'room');
+  restDay(w, 1);
+  assert.ok(statsOf(w).stamina > street, '自家歇息应比睡街边快');
 });

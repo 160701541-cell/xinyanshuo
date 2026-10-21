@@ -303,6 +303,14 @@ public final class Sim {
         return "住店 " + days + " 天，付 " + cost + " 银，气力回来一些。";
     }
 
+    public String restDay(int days) {
+        double bonus = homeLevel > 0 ? 1.5 : 1.0;
+        stamina = Math.min(100, stamina + 45 * days * bonus);
+        hp = Math.min(100, hp + 20 * days * bonus);
+        clock += days * 720 * 60L;
+        return "歇了 " + days + " 天，体力 " + String.format("%.0f", stamina) + (homeLevel > 0 ? "（自家歇得快）" : "（睡街边，恢复慢）");
+    }
+
     public String buyHome(String kind) {
         int price = "yard".equals(kind) ? 6000 : "house".equals(kind) ? 1500 : 420;
         if (homeLevel > 0) return "你已经有宅子了。";

@@ -66,6 +66,17 @@ export function upgradeHome(w) {
   return {ok: true, level: h.level};
 }
 
+/** 歇息：不出工也不花钱，养回体力；有宅子回得更多 */
+export function restDay(w, days = 1) {
+  ensureLife(w);
+  const st = statsOf(w);
+  const bonus = w.life.home ? 1.5 : 1;
+  st.stamina = Math.min(100, st.stamina + 45 * days * bonus);
+  st.hp = Math.min(100, st.hp + 20 * days * bonus);
+  advanceClock(w, 12 * 60 * days);
+  return {ok: true, stamina: Math.round(st.stamina)};
+}
+
 /* ── 打工与卖货 ─────────────────────────────────────── */
 export const JOBS = {
   porter: {name: '脚夫', pay: 12, hours: 8, stamina: 18},

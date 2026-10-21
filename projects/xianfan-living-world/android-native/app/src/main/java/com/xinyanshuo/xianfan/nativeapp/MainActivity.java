@@ -198,8 +198,8 @@ public final class MainActivity extends Activity {
         } else if ("life".equals(what)) {
             new AlertDialog.Builder(this).setTitle("家业").setMessage(sim.lifeText())
                 .setPositiveButton("打工一日", (x, w) -> { toast(sim.workDay("porter")); updateHud(); })
-                .setNeutralButton("置宅 420", (x, w) -> { toast(sim.buyHome("room")); updateHud(); })
-                .setNegativeButton("关闭", null).show();
+                .setNeutralButton("歇息一日", (x, w) -> { toast(sim.restDay(1)); updateHud(); })
+                .setNegativeButton("置宅 420", (x, w) -> { toast(sim.buyHome("room")); updateHud(); }).show();
             return;
         } else if ("law".equals(what)) {
             sb.append("空间法则 ").append(String.format("%.2f", sim.lawSpace)).append("/10\n")
