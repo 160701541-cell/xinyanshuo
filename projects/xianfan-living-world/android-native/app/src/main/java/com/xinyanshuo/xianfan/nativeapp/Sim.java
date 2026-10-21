@@ -29,6 +29,8 @@ public final class Sim {
     public final List<double[]> blocks = new ArrayList<>();
     public final List<double[]> roads = new ArrayList<>();
     public final Map<String, Integer> bag = new LinkedHashMap<>();
+    /** 物品元数据（world.json 的 items）：id/name/value/weight/note */
+    public final List<JSONObject> items = new ArrayList<>();
     public final List<String> log = new ArrayList<>();
     public final HashSet<String> cleared = new HashSet<>();
 
@@ -100,7 +102,7 @@ public final class Sim {
         visited.add("xuanhuang");
         rootId = Roots.roll(randDouble("root:" + seed));
         practiceProgress = 0;
-        bag.put("干粮（凡品）", 3);
+        addItem("grain|mortal", 3);
         note("落籍临安县城东市。");
     }
 
@@ -339,8 +341,8 @@ public final class Sim {
         if (r.nextDouble() < (new double[]{0.08, 0.16, 0.26, 0.34})[Math.min(3, realm)]) {
             bag.merge("pill|low", 1, Integer::sum); sb.append("精血×1 ");
         }
-        if (realm >= 2 && r.nextDouble() < 0.22) { bag.put("妖卵", bag.getOrDefault("妖卵", 0) + 1); sb.append("妖卵×1 "); }
-        if (realm >= 2 && r.nextDouble() < 0.10) { bag.put("幼崽", bag.getOrDefault("幼崽", 0) + 1); sb.append("幼崽×1 "); }
+        if (realm >= 2 && r.nextDouble() < 0.22) { bag.merge("pill|low", 1, Integer::sum); sb.append("妖卵×1 "); }
+        if (realm >= 2 && r.nextDouble() < 0.10) { bag.merge("meat|low", 1, Integer::sum); sb.append("幼崽×1 "); }
         int worth = pieces * 8 + (bagsWith("妖丹") > 0 ? 120 : 0);
         coin += worth;
         karma += 1;
@@ -631,6 +633,54 @@ public final class Sim {
         return b.toString();
     }
 
+    public void addItem(String id, int n) { bag.merge(id, n, Integer::sum); }
+
+    public JSONObject itemById(String id) {
+        for (JSONObject o : items) if (id.equals(o.optString("id"))) return o;
+        return null;
+    }
+
+    public int bagCount() { int n = 0; for (int v : bag.values()) n += v; return n; }
+
+    public long bagWorth() {
+        long v = 0;
+        for (Map.Entry<String, Integer> e : bag.entrySet()) {
+            JSONObject o = itemById(iconId(e.getKey()));
+            if (o != null) v += (long) o.optInt("value") * e.getValue();
+        }
+        return v;
+    }
+
+    public double bagWeight() {
+        double w = 0;
+        for (Map.Entry<String, Integer> e : bag.entrySet()) {
+            JSONObject o = itemById(iconId(e.getKey()));
+            if (o != null) w += o.optDouble("weight", 0) * e.getValue();
+        }
+        return w;
+    }
+
+    /** 行囊一行：[图标 id, 显示名, 件数] */
+    public java.util.List<String[]> bagRows() {
+        java.util.List<String[]> rows = new java.util.ArrayList<>();
+        for (Map.Entry<String, Integer> e : bag.entrySet()) {
+            String key = e.getKey();
+            int bar = key.indexOf('|');
+            String id = iconId(key);
+            String grade = bar < 0 ? "" : key.substring(bar + 1);
+            JSONObject meta = itemById(id);
+            String name = meta != null ? meta.optString("name") : key;
+            if (!grade.isEmpty()) name += "·" + Grades.name(grade);
+            rows.add(new String[]{id, name, String.valueOf(e.getValue())});
+        }
+        return rows;
+    }
+
+    private String iconId(String key) {
+        int bar = key.indexOf('|');
+        return bar < 0 ? key : key.substring(0, bar);
+    }
+
     public boolean isXiu() { return spirit > 60 && karma < 60; }
 
     /** 私兵招募：每人 14 银，上限 60（原生版先给一个人数上限） */
@@ -677,8 +727,6 @@ public final class Sim {
             o.put("practice", practiceProgress); o.put("pills", pills);
             o.put("weapon", weaponGrade); o.put("armor", armorGrade); o.put("talisman", talismanGrade);
             o.put("wounded", wounded); o.put("morale", morale); o.put("bias", bias);
-            JSONObject b = new JSONObject(); for (Map.Entry<String, Integer> e : bag.entrySet()) b.put(e.getKey(), e.getValue());
-            o.put("bag", b);
             JSONArray c = new JSONArray(); for (String s : cleared) c.put(s); o.put("cleared", c);
             JSONArray l = new JSONArray(); for (String s : log) l.put(s); o.put("log", l);
             return o.toString();
