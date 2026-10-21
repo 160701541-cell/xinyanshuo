@@ -299,3 +299,10 @@ Work下一步：在真实Android16手机运行这一准确SHA256包，收集`MOD
 - 私有APK：`WorldBox_万界仙侠_v044_模组ZIP导入与旧源码清理修复_待实机.apk`，188052893字节，SHA256 `022e8d2195e046c867c2fca7a7614d50ee1d6bbd755a4a2acf0b7324a4c03baf`；已上传用户私有Library`/WorldBox-万界仙侠/Work交接/`，公开仓库只有自有代码与记录，苍岚main未改变。
 
 **P0/实机待验：** 用户仍未提供失败的`凡人修仙传_v1.1.16.zip`实际字节，所以不宣称其能加载；观察MOD由FAILED转LOADED、安卓16启动、旧源代码清理数量，均需要新版本日志才能确认；独立10000×10000分区图**不等于**原版WorldBox真实一亿格可玩地图。第三方Chronicle的CS0009未根治。只允许安卓16设备实测后再标通过。
+
+
+## Work交接 v0.45（2026-10-21）
+- 最新私有签名包已上传：/WorldBox-万界仙侠/Work交接/WorldBox_万界仙侠_v045_10000地图跨存档隔离_待实机.apk（188056990字节，SHA256 0153da4ce0dbc3fda0aef7fc7583e013bb0795c294797783e4080bf950fea131）。同目录有WorldBox_v045_独立世界存档安全隔离_私有验收.json与wb_v45_build_private.py。
+- 本轮源码StreamGrid新增按权威真实WorldBox存档ID哈希隔离的WorldGridSaveScopeV45，未解析到真正存档ID则每次启动全新临时虚拟预览，防止旧v41固定文件夹造成跨存档污染。安卓16设备加载该新程序集仍待实测。原版WorldBox存档ID自动绑定/1亿个真实WorldTile尚未完成。
+- CI 39573487066三作业成功；私有APK签名、CRC、原APK DEX/Manifest/商业WorldBox程序集均验过。保留v0.44安全ZIP导入和预编译观察MOD候选。
+- 用户此前手机日志NML加载器正常，但自家Observer FAILED/CS0009。新设备日志应先检查本自有MOD状态和build token；第三方Chronicle仍可能因无效引用失败。请勿称已实机通过，不要删除任何旧存档。
