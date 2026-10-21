@@ -5,7 +5,7 @@ import {FACTIONS,factionById,territoryGrid,territoryBorderPaths,MAP_MODES,mapCol
 import {SpriteBank,lookFor} from './sprites.js';
 import {equip,drill,research,setFormation,FORMATIONS,TECHS,ARMS,unitsReport,purseOf,ensureFin} from './units.js';
 import {ensureCurrency,tickCurrency,buyStones,moneyReport,fmtCoins} from './currency.js';
-import {RETAINER_COST,ensureCultivation,xianReport,tickRetainers,resolveAssassination,assassinThreat,courtProtection,sectDefense,hireRetainer,raidSect,retainerPower,REALMS,cultivatorDensity} from './cultivation.js';
+import {levySect,RETAINER_COST,ensureCultivation,xianReport,tickRetainers,resolveAssassination,assassinThreat,courtProtection,sectDefense,hireRetainer,raidSect,retainerPower,REALMS,cultivatorDensity} from './cultivation.js';
 import {ensureState,tickState,reform,stateReport,LEVERS} from './state.js';
 import {ensureCourt,tickCourt,issueOrder,talkTo,courtReport,parseDecree} from './court.js';
 import {ensureMarket,tickMarket,marketReport,releaseGrain,buyToGranary,setTax,setMonopoly,buildPost,GOODS} from './market.js';
@@ -406,6 +406,9 @@ function handleRecordsClick(e){
  if(t.dataset.levy){const men=Number(t.dataset.men)||50000;
   try{const a=createArmy(w,t.dataset.levy,{combat:men,seed:Date.now()%100000});note(w,'兵事',`${a.name}征发 ${men.toLocaleString()} 战兵、${a.support.toLocaleString()} 辅兵。`);toast(`${a.name}已集结，日耗 ${Math.round(armyNeeds(a).totalKg/1000)} 吨`);profile();scheduleSave();renderWar();}
   catch(err){toast(err.message);}return;}
+ if(t.dataset.levy){const r=levySect(w,t.dataset.levy,4);
+  toast(r.ok?`征得 ${r.stones} 块灵石，敌意升至 ${r.hostility}`:r.error);
+  if(r.ok){scheduleSave();otherPanels('xian');}return;}
  if(t.dataset.buystone){const r=buyStones(w,+t.dataset.buystone);
   toast(r.ok?`兑得 ${r.stones} 块灵石，手续费 ${fmtCoins(r.fee)}`:r.error);
   if(r.ok){scheduleSave();otherPanels('xian');}return;}
@@ -466,6 +469,7 @@ function renderXian(){
  const stoneBox=`<h3>灵石与钱庄</h3><article class="entry">灵石 <b>${m.stones}</b> 块 · 府库 ${fmtCoins(m.coins)} · 本月官庄剩 ${m.quota} 块<br>
   官庄收 5% 手续费，兑 1 块灵石需 ${fmtCoins(m.stonePrice)}；修士不肯拿灵石换金银，所以这条路人人都知道，但没人爱走。</article>
   <p class="warbtns">${[1,5,20].map(n=>`<button data-buystone="${n}">兑 ${n} 块灵石（${fmtCoins(m.stonePrice*n)}）</button>`).join('')}</p>
+  <h3>征索</h3><p class="warbtns">${(ensureCultivation(w).sects||[]).filter(s=>!s.destroyed).map(s=>`<button data-levy="${s.id}">向${s.name}征 4 块灵石（敌意 +35）</button>`).join('')}</p>
   <h3>护国</h3><article class="entry">${danger}<br><small>护国力量 = 禁宫大阵 + 御用供奉；宗门战力 = 道众 × 境界 + 护山大阵 + 符箓 + 灵兽。</small></article>`;
  return `<h2>仙门</h2><p>灵气决定修士在哪儿；修炼资源决定修士替谁办事。县城灵气薄，一年也未必出一个筑基。</p>${stoneBox}
  <article class="entry"><strong>灵气</strong><br>${qi}</article>

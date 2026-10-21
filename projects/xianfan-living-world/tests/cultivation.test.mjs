@@ -6,7 +6,7 @@ import {ensureFin,purseOf} from '../units.mjs';
 import {ensureState} from '../state.mjs';
 import {setRank} from '../war.mjs';
 import {ensureCurrency} from '../currency.mjs';
-import {tickRetainers,sectDefense,ensureCultivation,resolveAssassination,assassinThreat,courtProtection,rollRoot,ROOTS,cultivatorDensity,sectPower,hireRetainer,retainerPower,raidSect,mortalWork,xianReport,QI_REGIONS} from '../cultivation.mjs';
+import {levySect,tickRetainers,sectDefense,ensureCultivation,resolveAssassination,assassinThreat,courtProtection,rollRoot,ROOTS,cultivatorDensity,sectPower,hireRetainer,retainerPower,raidSect,mortalWork,xianReport,QI_REGIONS} from '../cultivation.mjs';
 
 function fresh(seed='仙凡'){
  const w=createWorld(seed);ensureGeo(w);ensureFin(w);setRank(w,'皇帝');ensureCultivation(w);ensureCurrency(w);return w;
@@ -91,13 +91,16 @@ test('灵根表里没有灵根的人占多数——皇族也一样',()=>{
 
 test('元婴能杀皇帝：护国力量不足时，皇帝真的会死',()=>{
  const w=fresh();
- assert.equal(resolveAssassination(w).died,true,'无供奉无大阵时，一名元婴就够');
+ assert.equal(resolveAssassination(w).died,false,'宗门未敌对时不会动手');
+ levySect(w,'qingyun',4);
+ assert.equal(resolveAssassination(w).died,true,'征了宗门的灵石，元婴就会来');
  assert.ok(w.player.name.includes('太子'),'死后由太子继位');
 });
 
 test('皇帝背后有护国供奉：元婴刺客进不来',()=>{
  const w=fresh();
  w.currency.stones=300;
+ levySect(w,'qingyun',1);
  let guard=0;
  while(retainerPower(w)<assassinThreat(w).threat/1.5&&guard++<40){
   assert.equal(hireRetainer(w,{sect:'散修',realm:'nascent'}).ok,true);

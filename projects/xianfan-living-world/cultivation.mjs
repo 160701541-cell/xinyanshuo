@@ -42,9 +42,9 @@ export function ensureCultivation(w){
   const rng=mulberry(20261021);
   // 宗门的底气不只是人：护山大阵、符箓、丹药、灵兽都在算账
   const sects=[{id:'qingyun',name:'青云仙门',qi:1.0,disciples:64,realm:'core',patron:false,
-                formation:.55,talismans:9,pills:24,beasts:5},
+                formation:.55,talismans:9,pills:24,beasts:5,hostility:0},
                {id:'lingshan',name:'灵山散修',qi:1.35,disciples:23,realm:'found',patron:false,
-                formation:.18,talismans:2,pills:6,beasts:2}];
+                formation:.18,talismans:2,pills:6,beasts:2,hostility:0}];
   w.xian={sects,retainers:[],patrons:{},mortals:{},day:0,log:[]};
   // 凡人依附人口：按县里宗门附近的聚落估
   w.xian.mortals={guard:24,cleaner:80,planter:140,keeper:36,slave:12};
@@ -123,7 +123,8 @@ export function raidSect(w,sectId,{patron='court'}={}){
  if(!sect.patron){/* 可打 */}
  const mine=retainerPower(w,patron);
  const theirs=sectDefense(sect);
- if(mine<theirs*1.2)return {ok:false,error:`供奉战力 ${mine} 不足以撼动${sect.name}（${theirs}），需 ${Math.ceil(theirs*1.2)}`};
+ if(mine<theirs*1.2){sect.hostility=Math.min(100,(sect.hostility||0)+45);
+  return {ok:false,error:`供奉战力 ${mine} 不足以撼动${sect.name}（${theirs}），需 ${Math.ceil(theirs*1.2)}；你这一动手，${sect.name}已记恨上你。`};}
  sect.destroyed=true;sect.disciples=Math.round(sect.disciples*.2);
  sect.formation=0;sect.talismans=0;sect.beasts=0;
  note(w,'灭门',`${sect.name}山门被破：${mine} 对 ${theirs}（含护山大阵、符箓与灵兽），道众十不存二。灭门的是供奉，不是灵根。`);
@@ -132,7 +133,8 @@ export function raidSect(w,sectId,{patron='court'}={}){
 /** 元婴能不能杀皇帝？能。但要看皇帝背后站着谁。 */
 export function assassinThreat(w){
  const x=ensureCultivation(w);
- const hostile=x.sects.filter(s=>!s.destroyed&&s.patron!=='court');
+ // 宗门不是天生就想杀皇帝：只有被逼到敌对（征灵石、灭门未遂、断供）才会动手
+ const hostile=x.sects.filter(s=>!s.destroyed&&s.patron!=='court'&&(s.hostility||0)>=30);
  if(!hostile.length)return {threat:0,sect:null};
  const top=hostile.map(s=>({sect:s,power:sectDefense(s)})).sort((a,b)=>b.power-a.power)[0];
  return {threat:top.power,sect:top.sect};
@@ -158,6 +160,18 @@ export function resolveAssassination(w){
  }
  note(w,'护卫',`${sect.name}遣人窥伺禁宫，见护国供奉 ${protect} 而退。`);
  return {died:false,threat,protect,sect:sect.name};
+}
+/** 朝廷向宗门征灵石：来钱最快，也最快招来元婴刺客。 */
+export function levySect(w,sectId,stones=4){
+ const x=ensureCultivation(w),c=ensureCurrency(w);
+ const sect=x.sects.find(s=>s.id===sectId);
+ if(!sect||sect.destroyed)return {ok:false,error:'没有这个宗门'};
+ if(sect.patron==='court')return {ok:false,error:'该宗门已受朝廷节制，按月进贡即可，不必征'};
+ const take=Math.min(stones,sect.pills>0?stones:0);
+ c.stones+=take;
+ sect.hostility=Math.min(100,(sect.hostility||0)+35);
+ note(w,'征索',`朝廷向${sect.name}征 ${take} 块灵石。灵石入库，敌意上升。`);
+ return {ok:true,stones:take,hostility:sect.hostility};
 }
 export function mortalWork(w){
  const x=ensureCultivation(w);
