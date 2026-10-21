@@ -11,6 +11,7 @@ namespace XianxiaWorldBox.HugeWorld
         static WorldGridExactV41 world;
         static DateTime next=DateTime.MinValue;
         public static string Status="10000x10000虚拟区块层等待启动（不是Unity地图）";
+        public static WorldGridExactV41 World { get { return world; } }
         public static long LogicalTileCount { get { return WorldGridExactV41.LogicalTileCount; } }
         public static int MemoryBudgetChunks { get { return 12; } }
         public static void Tick()

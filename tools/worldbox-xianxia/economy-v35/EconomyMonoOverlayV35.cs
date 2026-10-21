@@ -46,6 +46,15 @@ namespace XianxiaWorldBox.Economy {
    else if(box!=null)box.Invoke(null,new[]{r,(object)title});
   }
   public static void Draw() {
+   // Reuse already-tested Mono OnGUI lifecycle, no new original game hook.
+   try {
+    foreach(var loaded in AppDomain.CurrentDomain.GetAssemblies()) {
+     if(loaded.GetName().Name!="WorldBoxXianxiaStreamGrid")continue;
+     var viewer=loaded.GetType("XianxiaWorldBox.HugeWorld.WorldGridGuiV42");
+     viewer?.GetMethod("Draw",F)?.Invoke(null,null);
+     break;
+    }
+   }catch(Exception){}
    try{
     Setup();
     if(btn==null||width==null||height==null)return;
