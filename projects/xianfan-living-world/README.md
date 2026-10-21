@@ -1,21 +1,25 @@
-# 仙凡共生 / 临安县活世界 Android 测试版 v0.2
+# 《仙凡共生》临安县 v0.3.0 — 独立文字世界实验
 
-本目录 **严格独立于《苍岚》及 WorldBox 游戏**。代码和APK均使用完全不同的 Android applicationId；在仓库内仅共享Git托管空间。
+> **严格隔离声明**：本目录只属于全新独立文字游戏。仓库是代码托管容器，不能把此项目合并进《苍岚》正式主线或 WorldBox；不触碰原版APK/PCK签名渠道。
 
-- 独立分支：`xianfan/independent-living-county-v0.1`，禁止直接合并至《苍岚》正式 `main`。
-- Android应用ID：`com.xinyanshuo.xianfan.county`，正式安装包的Android升级需要**相同应用ID + 相同签名证书 + 更高versionCode**。
-- 本试验版 APK versionCode **2**、versionName **0.2.0**；后续包在保留签名证书的同时递增versionCode。
-- **警告：当前使用公开的仅供测试的签名证书，它不能证明官方发布者身份，不适合用于真正商业分发。正式发行应使用私有、受保护的签名密钥，并提前规划包名/升级迁移。切勿给旧《苍岚》APK覆盖安装。**
-- Android实现：离线Android WebView + WebViewAssetLoader，从APK本地assets安全加载现代ES modules和IndexedDB；不需要打开聊天软件里的 HTML 链接。
-- 核心：13,680名持久化居民；18个区域及建筑入口；有限行为、时间、粮食交易、县衙赈济、修士御剑、初遇历史与离线存档。**人口记录 != 1.3万人已经具备自主智能。**
-- 基于浏览器的体验版数据与Android应用各自独立，不自动同步。覆盖升级安卓APK时不卸载、不清除应用数据才可能保留存档。
+## 产品原则
+- **地图即场景**。县域 → 街巷 → 建筑 → 房间是同一套真实位置和出口；点门直接进屋，点道路自动经过拓扑路径，不再以「地图列表 + 人物列表」假装世界。
+- **NPC直接存在于场景**。当前场景上的NPC按钮引用世界中有ID的个体，显示职业时段行为；点击后从场景中交谈，人物信息不能脱离场景凭空列出。故人簿只记录玩家实际相识的人。
+- **同一时间轴**：出行消费游戏时间；御剑有灵力消耗和室外起降要求。经济、人口和县志还处于区域简化阶段。
+- 13,680人是可持久化户籍记录，非13,680个完整自主决策体。当前部分职业作息是规则推导，不是NPC实时行动或本地LLM。
 
-## 构建
+## 现有功能
+- 初始13,680位人物身份、3,000余户、人口和仓粮账本。
+- 23个有拓扑关系的场所（原18处加5处内院、后仓、内署、客房、药圃），其中17处有登记人口。
+- 东市可直接点粮行、铁铺、客栈进入；建筑中点房间或返回街道。
+- 人物实体附着在场景地图上；初次交谈记录地点与日期；地图县域缩放、自动循路步行、室外御剑旅行。
+- 老v0.2存档schema1读取迁移为schema2，保持IndexedDB名`xianfan_county_offline`。
 
-GitHub Actions `.github/workflows/xianfan-county-android.yml` 在本独立分支推送Android相关源码时调用Gradle构建和独立测试，发布 `xianfan-county-0.2.0-demo.apk` 到 GitHub Actions Artifact，并尝试发布专属 GitHub 预发行版。两者都不能冒充已经通过 Android 真机验收。
+## 安卓构建与升级
+- 分支：`xianfan/independent-living-county-v0.1`；Android ID `com.xinyanshuo.xianfan.county`，`versionName=0.3.0`，`versionCode=3`。
+- Android离线WebView应用位于`android/`，`web/`包含打包所需静态文件。GitHub Actions工作流在独立分支提交时运行JS测试并构建Demo APK。
+- 只能用**同签名和相同applicationId**对v0.2覆盖安装。当前仅供测试的公钥/签名材料不适合商业发行；不能当成安全的正式更新体系。
+- 测试：`node --test projects/xianfan-living-world/tests/world.test.mjs`；本地规则测试13项通过。浏览器真实布局与Android手机实测尚未通过验收。
 
-本地：`cd projects/xianfan-living-world/android && gradle :app:assembleRelease`（依赖 Android SDK 35 和 JDK17），产出 `app/build/outputs/apk/release/app-release.apk`。
-
-## 验收
-
-`node --test projects/xianfan-living-world/tests/world.test.mjs`。还需实机检查 WebView 加载、离线、存档、从此版本**覆盖升级到后续versionCode**。原游戏无升级关系。
+## 明确的缺口
+室内布局仍是可交互的场景示意而非经过充分审美验收的高质量县城图；人物职业行为是简化规则，尚无逐人NPC自主决策和真实路线活动；房屋所有权、家族关系、完整经济、科举和婚恋均为后续工作。人物标签附近可能拥挤，手机多分辨率布局必须进一步实测。
