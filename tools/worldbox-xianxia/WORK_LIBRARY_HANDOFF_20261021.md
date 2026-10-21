@@ -282,3 +282,20 @@ Work下一步：在真实Android16手机运行这一准确SHA256包，收集`MOD
 - 真实APK、集成审计JSON、私有复制签名脚本已上传`/WorldBox-万界仙侠/Work交接/`；公开GitHub独立分支仅保存自有C#源码、自动化测试和记录，不发布商业WorldBox APK、个人私钥；苍岚main未动。
 - **阻断项仍在**：现实WorldBox`MapBox`并未扩展为10000×10000，用户没法在本轮真实跨10000个游戏地块行动。观察MOD V07此前手机日志FAILED，原Mono桥进游戏能否工作尚待完整日志和手机验证，跨原生WorldBox存档ID的正式隔离也未完成。不能把这张“虚拟地图预览”与“已可探索真实巨世界”混为一谈。
 - 下一步：在真实手机完成启动与窗口可视性验收后，研究原游戏的WorldTilemap/MapChunkManager承载方式，实施“可见区真实映射+远区分层账本”的技术原型，且首先完善每WorldBox世界存档隔离与防坏档保护，再考虑扩大实时地图本体。
+
+
+---
+
+
+## 2026-10-21 v0.44：ZIP安全归一化 + 预编译观察MOD旧源码受哈希保护清理
+
+**用户实机v41报告**显示NML已初始化、Frontiers/Sakuga等成功加载，但自有Observer=FAILED，动态源码编译出现CS0009 Invalid public key；另有凡人修仙传ZIP报路径格式不安全。v0.43以预编译观察MOD替代源码，但旧手机安装目录残留原19个C#文件。
+
+本轮已完成并入真实lab31私人APK：
+- `ExternalModImporterV32.java`实际接入`SafeZipPathsV42.normalize`：能规范安全相对路径中反斜杠、点前缀、重复斜杠与大小写mod.json；仍拦截Zip Slip绝对路径、..父目录、控制字符、标准化后路径冲突、未知可执行和异常解压体积。
+- `OwnedModSourceCleanupV44.java`仅删除固定本项目Observer/Code目录中与原v0.41/v0.42 APK确切文件SHA256一致的19个历史源码；变化过的用户文件、其他MOD、存档绝不删除。部署器显示清理/保留数量。
+- 新增纯Java合成安全测试：ZIP路径允许安全Windows分隔符但禁止穿越，旧源码的SHA不一致不删除、第三方文件不删除、SHA一致才删除。Actions `39565890856`三项任务全部成功，编译结果是**真实Android DEX**，不是只有文档。
+- v0.44以原v0.43签名整合包为输入，仅更换自有`classes5.dex`和`install.json`，在最终DEX统一lab31类名并修复SHA1/Adler32；游戏`Assembly-CSharp`、Mono桥、171图标、虚拟分区图、自有Observer预编译DLL字节不变。APK完整ZIP CRC和v1/v2/v3签名均通过。
+- 私有APK：`WorldBox_万界仙侠_v044_模组ZIP导入与旧源码清理修复_待实机.apk`，188052893字节，SHA256 `022e8d2195e046c867c2fca7a7614d50ee1d6bbd755a4a2acf0b7324a4c03baf`；已上传用户私有Library`/WorldBox-万界仙侠/Work交接/`，公开仓库只有自有代码与记录，苍岚main未改变。
+
+**P0/实机待验：** 用户仍未提供失败的`凡人修仙传_v1.1.16.zip`实际字节，所以不宣称其能加载；观察MOD由FAILED转LOADED、安卓16启动、旧源代码清理数量，均需要新版本日志才能确认；独立10000×10000分区图**不等于**原版WorldBox真实一亿格可玩地图。第三方Chronicle的CS0009未根治。只允许安卓16设备实测后再标通过。
