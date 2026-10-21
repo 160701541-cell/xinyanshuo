@@ -1,5 +1,5 @@
 /** 《仙凡共生》独立县城实验 v0.1. 纯规则核心，不依赖页面/AI模型。 */
-export const VERSION = 'county-0.3';
+export const VERSION = 'county-0.4';
 export const POP_TARGET = 13680;
 export const PLACES = [
   {id:'dongshi', name:'临安县·东市', type:'market',x:48,y:49,zone:'城郭', population:1160, detail:'商贩沿街摆摊，粮行、铁铺和客栈开在一起。',links:['xianya','xijie','minju','lianghang','tiepu','kezhan']},
@@ -71,7 +71,7 @@ export function travel(w,target,mode='foot'){
  const msg=`你${mode==='sword'?'御剑穿云':'沿路步行'} ${dist} 里，耗时 ${minutes} 分钟，抵达${dest.name}。`;
  note(w,'行旅',msg,{from:from.id,to:target,mode,minutes,spirit});return {ok:true,description:msg,minutes,spirit};
 }
-function advanceClock(w,minutes){w.hour+=minutes/60;while(w.hour>=24){w.hour-=24;simulateDay(w,1);}}
+export function advanceClock(w,minutes){w.hour+=minutes/60;while(w.hour>=24){w.hour-=24;simulateDay(w,1);}}
 export function changeRole(w,role){if(!['平民','县吏','修士'].includes(role))return false;w.player.role=role;note(w,'人物',`演示身份切换：${role}（原型调试入口，正式版必须经过考试/任命/拜师流程）。`);return true;}
 export function buyGrain(w,amount=3){if(!Number.isInteger(amount)||amount<=0||amount>99)return {ok:false,error:'无效数量'};
  const store=w.places.lianghang;const price=amount*w.price;
@@ -102,10 +102,12 @@ export function apparentLocation(w,p){if(p.status!=='alive')return null;
  if(['农户','渔户','船工'].includes(p.job))return p.home;
  if(p.job==='商贩'&&hour>=8&&hour<18)return 'dongshi';
  if(['粮行伙计','账房'].includes(p.job)&&hour>=8&&hour<18)return 'lianghang';
- if(['县吏','捕快'].includes(p.job)&&hour>=7&&hour<18)return 'xianya';
+ if(p.job==='县吏'&&hour>=7&&hour<18)return 'xianya';
+ if(p.job==='捕快'&&(hour>=7&&hour<20||hour<5&&deriveSeed(p.id)%15===0))return 'dongshi';
  if(['修士','宗门杂役'].includes(p.job))return p.home;
  if(['铁匠','木匠'].includes(p.job)&&hour>=8&&hour<18)return 'tiepu';
- if(['脚夫','厨娘'].includes(p.job)&&hour>=9&&hour<19)return 'kezhan';
+ if(p.job==='脚夫'&&hour>=6&&hour<20)return 'dongshi';
+ if(p.job==='厨娘'&&hour>=9&&hour<19)return 'kezhan';
  if(p.home==='guanlu'&&hour>=8&&hour<=19)return hv%2?'nanmen':'guanlu';
  return p.home;
 }

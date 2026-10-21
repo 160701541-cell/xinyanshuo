@@ -5,6 +5,7 @@ import android.os.Bundle;
 import android.graphics.Color;
 import android.view.View;
 import android.view.WindowInsets;
+import android.widget.FrameLayout;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
@@ -35,13 +36,17 @@ public final class CountyActivity extends Activity {
                 return loader.shouldInterceptRequest(request.getUrl());
             }
         });
-        setContentView(view);
+        FrameLayout root = new FrameLayout(this);
+        root.addView(view, new FrameLayout.LayoutParams(-1, -1));
+        setContentView(root);
         if (android.os.Build.VERSION.SDK_INT >= 35) {
-            getWindow().getDecorView().setOnApplyWindowInsetsListener((v, insets) -> {
+            // Target SDK 35 enforces edge-to-edge: pad the parent layout, not WebView text.
+            root.setOnApplyWindowInsetsListener((v, insets) -> {
                 android.graphics.Insets bars = insets.getInsets(WindowInsets.Type.systemBars());
-                view.setPadding(bars.left, bars.top, bars.right, bars.bottom);
+                root.setPadding(bars.left, bars.top, bars.right, bars.bottom);
                 return insets;
             });
+            root.requestApplyInsets();
         }
         view.loadUrl("https://appassets.androidplatform.net/assets/index.html");
     }
