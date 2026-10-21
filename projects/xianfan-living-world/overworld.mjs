@@ -1,7 +1,14 @@
 /** 仙凡共生 · v0.7 开放地理原型：米制唯一坐标、不因缩放切场景。 */
 import {PLACES,deriveSeed,note,advanceClock,getPlace,apparentLocation,npcActivity} from './core.mjs';
-export const MAP_VERSION='county-0.7.0';
+export const MAP_VERSION='county-0.8.0';
 export const WORLD_LIMIT=1_350_000;
+// 城池：世俗城池看实力，修仙城池只有御城军可飞（见 flightRuleAt）。
+export const CITIES=[
+ {id:'linan',name:'临安县城',kind:'mortal',x:0,y:0,half:720,hold:'court'},
+ {id:'qingyun',name:'青云山城',kind:'cultivation',x:11300,y:-7200,half:620,hold:'sect'},
+ {id:'lingshan',name:'灵山药市',kind:'cultivation',x:12000,y:-8100,half:300,hold:'sect'},
+];
+export function cityAt(p){let best=null;for(const c of CITIES){const d=Math.hypot(p.x-c.x,p.y-c.y);if(d<=c.half*1.42&&(!best||d<best.d))best={...c,d};}return best;}
 export const CITY={x:0,y:0,half:720,wall:24,gates:[{id:'north',x:0,y:-720},{id:'south',x:0,y:720},{id:'west',x:-720,y:0},{id:'east',x:720,y:0}]};
 const county=[['dongshi',0,0],['xijie',-340,90],['minju',10,400],['nanmen',0,720],['guanlu',-500,2800],['dukou',-1400,500],['shiqiao',3600,4800],['songlin',6900,-3500],['liantang',-4100,5100],['hewan',-7400,1500],['qingxi',8500,6500],['qingyun',11300,-7200],['lingshan',12000,-8100],['xianya',-350,-420],['lianghang',370,210],['tiepu',300,260],['kezhan',260,-290],['tiepu_houyuan',300,260],['xianya_hou',-350,-420],['lianghang_cang',370,210],['kezhan2',260,-290],['kezhan_chamber',260,-290],['lingshan_yaopu',12000,-8100]];
 export const PLACE_METERS=Object.fromEntries(county.map(([id,x,y])=>[id,{x,y}]));
@@ -151,6 +158,8 @@ export function beginJourney(w,goal,selectionId=null){ensureGeo(w);if(w.player.r
 export function beginFlight(w,goal,selectionId=null){ensureGeo(w);if(w.player.route)return{ok:false,error:'正在行走，先取消现有路线'};
  const gate=canFly(w);if(!gate.ok)return gate;
  if(obstacleAt(goal))return{ok:false,error:`落点无法落脚：${obstacleAt(goal)}`};
+ const dest=flightRuleAt(w,goal);if(!dest.ok)return{ok:false,error:dest.reason};
+ const crossed=flightBlockedBetween(w,w.player.mapPos,goal);if(crossed)return{ok:false,error:crossed.reason};
  const start={...w.player.mapPos},meters=dist(start,goal);const cost=meters*.005;
  if((w.player.spirit??0)<cost)return{ok:false,error:`灵力不足：此程需 ${Math.ceil(cost)} 点，现有 ${Math.floor(w.player.spirit??0)} 点。`};
  w.player.spirit=Math.max(0,(w.player.spirit??0)-cost);
@@ -186,10 +195,33 @@ export const PERMISSIONS={
  lingshan_yaopu:{roles:['修士'],reason:'药圃属外门禁地，需有修士名籍。'},
  kezhan_chamber:{roles:['平民','县吏','修士'],reason:'客房需先向掌柜付钱开房。',requires:'inn-stay'},
 };
+export const REALM_NAMES={1:'凡人',2:'炼气二层',3:'炼气五层',4:'筑基初期',5:'筑基后期',6:'金丹'};
+export function isGuard(w){return (w.player.titles||[]).includes('御城军')||w.player.faction==='guard';}
+/** 空域规则：野地不限；修仙城池唯御城军可飞；世俗城池按实力（筑基以上）放行。 */
+export function flightRuleAt(w,p){
+ const c=cityAt(p);
+ if(!c)return{ok:true,zone:'野外空域'};
+ if(c.kind==='cultivation'&&!isGuard(w))return{ok:false,zone:c.name,reason:`${c.name}为修仙城池，城内上空禁飞；唯御城军可御剑巡城。`};
+ const level=w.player.stats?.level??1;
+ if(c.kind==='mortal'&&level<4)return{ok:false,zone:c.name,reason:`${c.name}是世俗城池，不设明令禁飞，但${REALM_NAMES[level]||'凡人'}的实力压不住城隍阵，需筑基以上。`};
+ return{ok:true,zone:c.name};
+}
+function segmentHitsCity(a,b,c){
+ const vx=b.x-a.x,vy=b.y-a.y,len2=vx*vx+vy*vy||1;
+ let t=((c.x-a.x)*vx+(c.y-a.y)*vy)/len2;t=Math.max(0,Math.min(1,t));
+ const px=a.x+vx*t,py=a.y+vy*t;
+ return Math.hypot(px-c.x,py-c.y)<=c.half*1.42;
+}
+export function flightBlockedBetween(w,a,b){
+ for(const c of CITIES){if(!segmentHitsCity(a,b,c))continue;const probe={x:c.x,y:c.y};const r=flightRuleAt(w,probe);if(!r.ok)return r;}
+ return null;
+}
 export function canFly(w){const p=w.player;if(p.role!=='修士')return{ok:false,reason:'平民没有御剑之能，需拜师并筑基后方可飞行。'};
  if((p.stats?.level??1)<2)return{ok:false,reason:'境界不足：御剑需炼气二层以上。'};
  if((p.spirit??0)<12)return{ok:false,reason:'灵力不足，无法御剑。'};
- if(p.indoor)return{ok:false,reason:'室内不能起剑，请先出门。'};return{ok:true};}
+ if(p.indoor)return{ok:false,reason:'室内不能起剑，请先出门。'};
+ const here=flightRuleAt(w,p.mapPos||{x:0,y:0});if(!here.ok)return{ok:false,reason:here.reason};
+ return{ok:true};}
 export function canEnter(w,placeId){const rule=PERMISSIONS[placeId];if(!rule)return{ok:true};
  if(rule.roles.includes(w.player.role))return{ok:true};
  return{ok:false,reason:rule.reason};}

@@ -39,8 +39,12 @@ test('v0.7 御剑需要身份、灵力与可落脚点',()=>{
  const w=make();
  assert.equal(canFly(w).ok,false);
  assert.equal(beginFlight(w,PLACE_METERS.qingyun).ok,false);
- changeRole(w,'修士');assert.equal(canFly(w).ok,true);
- const spirit=w.player.spirit;const r=beginFlight(w,PLACE_METERS.qingyun,'qingyun');
+ changeRole(w,'修士');
+ // 城内禁飞：世俗城池需筑基以上，炼气修士在临安城里起不了剑。
+ assert.equal(canFly(w).ok,false);
+ w.player.mapPos={x:0,y:4200};// 出城到官道
+ assert.equal(canFly(w).ok,true);
+ const spirit=w.player.spirit;const r=beginFlight(w,PLACE_METERS.songlin,'songlin');
  assert.equal(r.ok,true,r.error);assert.ok(w.player.spirit<spirit);
  const before={...w.player.mapPos};advanceMap(w,.12,30);
  assert.ok(dist(w.player.mapPos,before)>0);

@@ -1,0 +1,1434 @@
+{
+ "version": "sprites-0.2.0",
+ "size": {
+  "w": 32,
+  "h": 44
+ },
+ "palettes": [
+  {
+   "id": "official",
+   "name": "官",
+   "robe": "#4a5a76",
+   "trim": "#c9b071",
+   "skin": "#e6c9a8",
+   "hair": "#26262b"
+  },
+  {
+   "id": "merchant",
+   "name": "商",
+   "robe": "#7d5a3a",
+   "trim": "#d8b06a",
+   "skin": "#e5c6a4",
+   "hair": "#2b241f"
+  },
+  {
+   "id": "farmer",
+   "name": "农",
+   "robe": "#6f7a52",
+   "trim": "#c6bda1",
+   "skin": "#e0c09a",
+   "hair": "#2a2622"
+  },
+  {
+   "id": "cultivator",
+   "name": "道",
+   "robe": "#7fa2b4",
+   "trim": "#e8eef0",
+   "skin": "#ead2b6",
+   "hair": "#1f2026"
+  },
+  {
+   "id": "guard",
+   "name": "军",
+   "robe": "#6a5f80",
+   "trim": "#b9a86a",
+   "skin": "#e3c5a2",
+   "hair": "#23202a"
+  },
+  {
+   "id": "wanderer",
+   "name": "流",
+   "robe": "#8a7a63",
+   "trim": "#cfc1a3",
+   "skin": "#dcbc96",
+   "hair": "#2d2620"
+  },
+  {
+   "id": "child",
+   "name": "童",
+   "robe": "#b08a6a",
+   "trim": "#f0dcc0",
+   "skin": "#f0d2b0",
+   "hair": "#332a24"
+  },
+  {
+   "id": "noble",
+   "name": "贵",
+   "robe": "#8d3b3b",
+   "trim": "#e0c47a",
+   "skin": "#eccdb0",
+   "hair": "#241f26"
+  }
+ ],
+ "hair": [
+  {
+   "id": "bun",
+   "name": "髻"
+  },
+  {
+   "id": "topknot",
+   "name": "束发"
+  },
+  {
+   "id": "loose",
+   "name": "披发"
+  },
+  {
+   "id": "shaved",
+   "name": "僧"
+  }
+ ],
+ "hats": [
+  {
+   "id": "none",
+   "name": "无"
+  },
+  {
+   "id": "scarf",
+   "name": "巾"
+  },
+  {
+   "id": "straw",
+   "name": "笠"
+  },
+  {
+   "id": "crown",
+   "name": "冠"
+  }
+ ],
+ "held": [
+  {
+   "id": "none",
+   "name": "空手"
+  },
+  {
+   "id": "sword",
+   "name": "剑"
+  },
+  {
+   "id": "basket",
+   "name": "篮"
+  },
+  {
+   "id": "staff",
+   "name": "杖"
+  },
+  {
+   "id": "book",
+   "name": "卷"
+  }
+ ],
+ "shapes": [
+  {
+   "id": "slim",
+   "name": "瘦"
+  },
+  {
+   "id": "stout",
+   "name": "壮"
+  },
+  {
+   "id": "small",
+   "name": "矮"
+  }
+ ],
+ "people": [
+  {
+   "id": "official_bun_slim",
+   "file": "people/official_bun_slim.svg",
+   "traits": {
+    "palette": "official",
+    "hair": "bun",
+    "shape": {
+     "id": "slim",
+     "name": "瘦"
+    }
+   }
+  },
+  {
+   "id": "official_bun_stout",
+   "file": "people/official_bun_stout.svg",
+   "traits": {
+    "palette": "official",
+    "hair": "bun",
+    "shape": {
+     "id": "stout",
+     "name": "壮"
+    }
+   }
+  },
+  {
+   "id": "official_bun_small",
+   "file": "people/official_bun_small.svg",
+   "traits": {
+    "palette": "official",
+    "hair": "bun",
+    "shape": {
+     "id": "small",
+     "name": "矮"
+    }
+   }
+  },
+  {
+   "id": "official_topknot_slim",
+   "file": "people/official_topknot_slim.svg",
+   "traits": {
+    "palette": "official",
+    "hair": "topknot",
+    "shape": {
+     "id": "slim",
+     "name": "瘦"
+    }
+   }
+  },
+  {
+   "id": "official_topknot_stout",
+   "file": "people/official_topknot_stout.svg",
+   "traits": {
+    "palette": "official",
+    "hair": "topknot",
+    "shape": {
+     "id": "stout",
+     "name": "壮"
+    }
+   }
+  },
+  {
+   "id": "official_topknot_small",
+   "file": "people/official_topknot_small.svg",
+   "traits": {
+    "palette": "official",
+    "hair": "topknot",
+    "shape": {
+     "id": "small",
+     "name": "矮"
+    }
+   }
+  },
+  {
+   "id": "official_loose_slim",
+   "file": "people/official_loose_slim.svg",
+   "traits": {
+    "palette": "official",
+    "hair": "loose",
+    "shape": {
+     "id": "slim",
+     "name": "瘦"
+    }
+   }
+  },
+  {
+   "id": "official_loose_stout",
+   "file": "people/official_loose_stout.svg",
+   "traits": {
+    "palette": "official",
+    "hair": "loose",
+    "shape": {
+     "id": "stout",
+     "name": "壮"
+    }
+   }
+  },
+  {
+   "id": "official_loose_small",
+   "file": "people/official_loose_small.svg",
+   "traits": {
+    "palette": "official",
+    "hair": "loose",
+    "shape": {
+     "id": "small",
+     "name": "矮"
+    }
+   }
+  },
+  {
+   "id": "official_shaved_slim",
+   "file": "people/official_shaved_slim.svg",
+   "traits": {
+    "palette": "official",
+    "hair": "shaved",
+    "shape": {
+     "id": "slim",
+     "name": "瘦"
+    }
+   }
+  },
+  {
+   "id": "official_shaved_stout",
+   "file": "people/official_shaved_stout.svg",
+   "traits": {
+    "palette": "official",
+    "hair": "shaved",
+    "shape": {
+     "id": "stout",
+     "name": "壮"
+    }
+   }
+  },
+  {
+   "id": "official_shaved_small",
+   "file": "people/official_shaved_small.svg",
+   "traits": {
+    "palette": "official",
+    "hair": "shaved",
+    "shape": {
+     "id": "small",
+     "name": "矮"
+    }
+   }
+  },
+  {
+   "id": "merchant_bun_slim",
+   "file": "people/merchant_bun_slim.svg",
+   "traits": {
+    "palette": "merchant",
+    "hair": "bun",
+    "shape": {
+     "id": "slim",
+     "name": "瘦"
+    }
+   }
+  },
+  {
+   "id": "merchant_bun_stout",
+   "file": "people/merchant_bun_stout.svg",
+   "traits": {
+    "palette": "merchant",
+    "hair": "bun",
+    "shape": {
+     "id": "stout",
+     "name": "壮"
+    }
+   }
+  },
+  {
+   "id": "merchant_bun_small",
+   "file": "people/merchant_bun_small.svg",
+   "traits": {
+    "palette": "merchant",
+    "hair": "bun",
+    "shape": {
+     "id": "small",
+     "name": "矮"
+    }
+   }
+  },
+  {
+   "id": "merchant_topknot_slim",
+   "file": "people/merchant_topknot_slim.svg",
+   "traits": {
+    "palette": "merchant",
+    "hair": "topknot",
+    "shape": {
+     "id": "slim",
+     "name": "瘦"
+    }
+   }
+  },
+  {
+   "id": "merchant_topknot_stout",
+   "file": "people/merchant_topknot_stout.svg",
+   "traits": {
+    "palette": "merchant",
+    "hair": "topknot",
+    "shape": {
+     "id": "stout",
+     "name": "壮"
+    }
+   }
+  },
+  {
+   "id": "merchant_topknot_small",
+   "file": "people/merchant_topknot_small.svg",
+   "traits": {
+    "palette": "merchant",
+    "hair": "topknot",
+    "shape": {
+     "id": "small",
+     "name": "矮"
+    }
+   }
+  },
+  {
+   "id": "merchant_loose_slim",
+   "file": "people/merchant_loose_slim.svg",
+   "traits": {
+    "palette": "merchant",
+    "hair": "loose",
+    "shape": {
+     "id": "slim",
+     "name": "瘦"
+    }
+   }
+  },
+  {
+   "id": "merchant_loose_stout",
+   "file": "people/merchant_loose_stout.svg",
+   "traits": {
+    "palette": "merchant",
+    "hair": "loose",
+    "shape": {
+     "id": "stout",
+     "name": "壮"
+    }
+   }
+  },
+  {
+   "id": "merchant_loose_small",
+   "file": "people/merchant_loose_small.svg",
+   "traits": {
+    "palette": "merchant",
+    "hair": "loose",
+    "shape": {
+     "id": "small",
+     "name": "矮"
+    }
+   }
+  },
+  {
+   "id": "merchant_shaved_slim",
+   "file": "people/merchant_shaved_slim.svg",
+   "traits": {
+    "palette": "merchant",
+    "hair": "shaved",
+    "shape": {
+     "id": "slim",
+     "name": "瘦"
+    }
+   }
+  },
+  {
+   "id": "merchant_shaved_stout",
+   "file": "people/merchant_shaved_stout.svg",
+   "traits": {
+    "palette": "merchant",
+    "hair": "shaved",
+    "shape": {
+     "id": "stout",
+     "name": "壮"
+    }
+   }
+  },
+  {
+   "id": "merchant_shaved_small",
+   "file": "people/merchant_shaved_small.svg",
+   "traits": {
+    "palette": "merchant",
+    "hair": "shaved",
+    "shape": {
+     "id": "small",
+     "name": "矮"
+    }
+   }
+  },
+  {
+   "id": "farmer_bun_slim",
+   "file": "people/farmer_bun_slim.svg",
+   "traits": {
+    "palette": "farmer",
+    "hair": "bun",
+    "shape": {
+     "id": "slim",
+     "name": "瘦"
+    }
+   }
+  },
+  {
+   "id": "farmer_bun_stout",
+   "file": "people/farmer_bun_stout.svg",
+   "traits": {
+    "palette": "farmer",
+    "hair": "bun",
+    "shape": {
+     "id": "stout",
+     "name": "壮"
+    }
+   }
+  },
+  {
+   "id": "farmer_bun_small",
+   "file": "people/farmer_bun_small.svg",
+   "traits": {
+    "palette": "farmer",
+    "hair": "bun",
+    "shape": {
+     "id": "small",
+     "name": "矮"
+    }
+   }
+  },
+  {
+   "id": "farmer_topknot_slim",
+   "file": "people/farmer_topknot_slim.svg",
+   "traits": {
+    "palette": "farmer",
+    "hair": "topknot",
+    "shape": {
+     "id": "slim",
+     "name": "瘦"
+    }
+   }
+  },
+  {
+   "id": "farmer_topknot_stout",
+   "file": "people/farmer_topknot_stout.svg",
+   "traits": {
+    "palette": "farmer",
+    "hair": "topknot",
+    "shape": {
+     "id": "stout",
+     "name": "壮"
+    }
+   }
+  },
+  {
+   "id": "farmer_topknot_small",
+   "file": "people/farmer_topknot_small.svg",
+   "traits": {
+    "palette": "farmer",
+    "hair": "topknot",
+    "shape": {
+     "id": "small",
+     "name": "矮"
+    }
+   }
+  },
+  {
+   "id": "farmer_loose_slim",
+   "file": "people/farmer_loose_slim.svg",
+   "traits": {
+    "palette": "farmer",
+    "hair": "loose",
+    "shape": {
+     "id": "slim",
+     "name": "瘦"
+    }
+   }
+  },
+  {
+   "id": "farmer_loose_stout",
+   "file": "people/farmer_loose_stout.svg",
+   "traits": {
+    "palette": "farmer",
+    "hair": "loose",
+    "shape": {
+     "id": "stout",
+     "name": "壮"
+    }
+   }
+  },
+  {
+   "id": "farmer_loose_small",
+   "file": "people/farmer_loose_small.svg",
+   "traits": {
+    "palette": "farmer",
+    "hair": "loose",
+    "shape": {
+     "id": "small",
+     "name": "矮"
+    }
+   }
+  },
+  {
+   "id": "farmer_shaved_slim",
+   "file": "people/farmer_shaved_slim.svg",
+   "traits": {
+    "palette": "farmer",
+    "hair": "shaved",
+    "shape": {
+     "id": "slim",
+     "name": "瘦"
+    }
+   }
+  },
+  {
+   "id": "farmer_shaved_stout",
+   "file": "people/farmer_shaved_stout.svg",
+   "traits": {
+    "palette": "farmer",
+    "hair": "shaved",
+    "shape": {
+     "id": "stout",
+     "name": "壮"
+    }
+   }
+  },
+  {
+   "id": "farmer_shaved_small",
+   "file": "people/farmer_shaved_small.svg",
+   "traits": {
+    "palette": "farmer",
+    "hair": "shaved",
+    "shape": {
+     "id": "small",
+     "name": "矮"
+    }
+   }
+  },
+  {
+   "id": "cultivator_bun_slim",
+   "file": "people/cultivator_bun_slim.svg",
+   "traits": {
+    "palette": "cultivator",
+    "hair": "bun",
+    "shape": {
+     "id": "slim",
+     "name": "瘦"
+    }
+   }
+  },
+  {
+   "id": "cultivator_bun_stout",
+   "file": "people/cultivator_bun_stout.svg",
+   "traits": {
+    "palette": "cultivator",
+    "hair": "bun",
+    "shape": {
+     "id": "stout",
+     "name": "壮"
+    }
+   }
+  },
+  {
+   "id": "cultivator_bun_small",
+   "file": "people/cultivator_bun_small.svg",
+   "traits": {
+    "palette": "cultivator",
+    "hair": "bun",
+    "shape": {
+     "id": "small",
+     "name": "矮"
+    }
+   }
+  },
+  {
+   "id": "cultivator_topknot_slim",
+   "file": "people/cultivator_topknot_slim.svg",
+   "traits": {
+    "palette": "cultivator",
+    "hair": "topknot",
+    "shape": {
+     "id": "slim",
+     "name": "瘦"
+    }
+   }
+  },
+  {
+   "id": "cultivator_topknot_stout",
+   "file": "people/cultivator_topknot_stout.svg",
+   "traits": {
+    "palette": "cultivator",
+    "hair": "topknot",
+    "shape": {
+     "id": "stout",
+     "name": "壮"
+    }
+   }
+  },
+  {
+   "id": "cultivator_topknot_small",
+   "file": "people/cultivator_topknot_small.svg",
+   "traits": {
+    "palette": "cultivator",
+    "hair": "topknot",
+    "shape": {
+     "id": "small",
+     "name": "矮"
+    }
+   }
+  },
+  {
+   "id": "cultivator_loose_slim",
+   "file": "people/cultivator_loose_slim.svg",
+   "traits": {
+    "palette": "cultivator",
+    "hair": "loose",
+    "shape": {
+     "id": "slim",
+     "name": "瘦"
+    }
+   }
+  },
+  {
+   "id": "cultivator_loose_stout",
+   "file": "people/cultivator_loose_stout.svg",
+   "traits": {
+    "palette": "cultivator",
+    "hair": "loose",
+    "shape": {
+     "id": "stout",
+     "name": "壮"
+    }
+   }
+  },
+  {
+   "id": "cultivator_loose_small",
+   "file": "people/cultivator_loose_small.svg",
+   "traits": {
+    "palette": "cultivator",
+    "hair": "loose",
+    "shape": {
+     "id": "small",
+     "name": "矮"
+    }
+   }
+  },
+  {
+   "id": "cultivator_shaved_slim",
+   "file": "people/cultivator_shaved_slim.svg",
+   "traits": {
+    "palette": "cultivator",
+    "hair": "shaved",
+    "shape": {
+     "id": "slim",
+     "name": "瘦"
+    }
+   }
+  },
+  {
+   "id": "cultivator_shaved_stout",
+   "file": "people/cultivator_shaved_stout.svg",
+   "traits": {
+    "palette": "cultivator",
+    "hair": "shaved",
+    "shape": {
+     "id": "stout",
+     "name": "壮"
+    }
+   }
+  },
+  {
+   "id": "cultivator_shaved_small",
+   "file": "people/cultivator_shaved_small.svg",
+   "traits": {
+    "palette": "cultivator",
+    "hair": "shaved",
+    "shape": {
+     "id": "small",
+     "name": "矮"
+    }
+   }
+  },
+  {
+   "id": "guard_bun_slim",
+   "file": "people/guard_bun_slim.svg",
+   "traits": {
+    "palette": "guard",
+    "hair": "bun",
+    "shape": {
+     "id": "slim",
+     "name": "瘦"
+    }
+   }
+  },
+  {
+   "id": "guard_bun_stout",
+   "file": "people/guard_bun_stout.svg",
+   "traits": {
+    "palette": "guard",
+    "hair": "bun",
+    "shape": {
+     "id": "stout",
+     "name": "壮"
+    }
+   }
+  },
+  {
+   "id": "guard_bun_small",
+   "file": "people/guard_bun_small.svg",
+   "traits": {
+    "palette": "guard",
+    "hair": "bun",
+    "shape": {
+     "id": "small",
+     "name": "矮"
+    }
+   }
+  },
+  {
+   "id": "guard_topknot_slim",
+   "file": "people/guard_topknot_slim.svg",
+   "traits": {
+    "palette": "guard",
+    "hair": "topknot",
+    "shape": {
+     "id": "slim",
+     "name": "瘦"
+    }
+   }
+  },
+  {
+   "id": "guard_topknot_stout",
+   "file": "people/guard_topknot_stout.svg",
+   "traits": {
+    "palette": "guard",
+    "hair": "topknot",
+    "shape": {
+     "id": "stout",
+     "name": "壮"
+    }
+   }
+  },
+  {
+   "id": "guard_topknot_small",
+   "file": "people/guard_topknot_small.svg",
+   "traits": {
+    "palette": "guard",
+    "hair": "topknot",
+    "shape": {
+     "id": "small",
+     "name": "矮"
+    }
+   }
+  },
+  {
+   "id": "guard_loose_slim",
+   "file": "people/guard_loose_slim.svg",
+   "traits": {
+    "palette": "guard",
+    "hair": "loose",
+    "shape": {
+     "id": "slim",
+     "name": "瘦"
+    }
+   }
+  },
+  {
+   "id": "guard_loose_stout",
+   "file": "people/guard_loose_stout.svg",
+   "traits": {
+    "palette": "guard",
+    "hair": "loose",
+    "shape": {
+     "id": "stout",
+     "name": "壮"
+    }
+   }
+  },
+  {
+   "id": "guard_loose_small",
+   "file": "people/guard_loose_small.svg",
+   "traits": {
+    "palette": "guard",
+    "hair": "loose",
+    "shape": {
+     "id": "small",
+     "name": "矮"
+    }
+   }
+  },
+  {
+   "id": "guard_shaved_slim",
+   "file": "people/guard_shaved_slim.svg",
+   "traits": {
+    "palette": "guard",
+    "hair": "shaved",
+    "shape": {
+     "id": "slim",
+     "name": "瘦"
+    }
+   }
+  },
+  {
+   "id": "guard_shaved_stout",
+   "file": "people/guard_shaved_stout.svg",
+   "traits": {
+    "palette": "guard",
+    "hair": "shaved",
+    "shape": {
+     "id": "stout",
+     "name": "壮"
+    }
+   }
+  },
+  {
+   "id": "guard_shaved_small",
+   "file": "people/guard_shaved_small.svg",
+   "traits": {
+    "palette": "guard",
+    "hair": "shaved",
+    "shape": {
+     "id": "small",
+     "name": "矮"
+    }
+   }
+  },
+  {
+   "id": "wanderer_bun_slim",
+   "file": "people/wanderer_bun_slim.svg",
+   "traits": {
+    "palette": "wanderer",
+    "hair": "bun",
+    "shape": {
+     "id": "slim",
+     "name": "瘦"
+    }
+   }
+  },
+  {
+   "id": "wanderer_bun_stout",
+   "file": "people/wanderer_bun_stout.svg",
+   "traits": {
+    "palette": "wanderer",
+    "hair": "bun",
+    "shape": {
+     "id": "stout",
+     "name": "壮"
+    }
+   }
+  },
+  {
+   "id": "wanderer_bun_small",
+   "file": "people/wanderer_bun_small.svg",
+   "traits": {
+    "palette": "wanderer",
+    "hair": "bun",
+    "shape": {
+     "id": "small",
+     "name": "矮"
+    }
+   }
+  },
+  {
+   "id": "wanderer_topknot_slim",
+   "file": "people/wanderer_topknot_slim.svg",
+   "traits": {
+    "palette": "wanderer",
+    "hair": "topknot",
+    "shape": {
+     "id": "slim",
+     "name": "瘦"
+    }
+   }
+  },
+  {
+   "id": "wanderer_topknot_stout",
+   "file": "people/wanderer_topknot_stout.svg",
+   "traits": {
+    "palette": "wanderer",
+    "hair": "topknot",
+    "shape": {
+     "id": "stout",
+     "name": "壮"
+    }
+   }
+  },
+  {
+   "id": "wanderer_topknot_small",
+   "file": "people/wanderer_topknot_small.svg",
+   "traits": {
+    "palette": "wanderer",
+    "hair": "topknot",
+    "shape": {
+     "id": "small",
+     "name": "矮"
+    }
+   }
+  },
+  {
+   "id": "wanderer_loose_slim",
+   "file": "people/wanderer_loose_slim.svg",
+   "traits": {
+    "palette": "wanderer",
+    "hair": "loose",
+    "shape": {
+     "id": "slim",
+     "name": "瘦"
+    }
+   }
+  },
+  {
+   "id": "wanderer_loose_stout",
+   "file": "people/wanderer_loose_stout.svg",
+   "traits": {
+    "palette": "wanderer",
+    "hair": "loose",
+    "shape": {
+     "id": "stout",
+     "name": "壮"
+    }
+   }
+  },
+  {
+   "id": "wanderer_loose_small",
+   "file": "people/wanderer_loose_small.svg",
+   "traits": {
+    "palette": "wanderer",
+    "hair": "loose",
+    "shape": {
+     "id": "small",
+     "name": "矮"
+    }
+   }
+  },
+  {
+   "id": "wanderer_shaved_slim",
+   "file": "people/wanderer_shaved_slim.svg",
+   "traits": {
+    "palette": "wanderer",
+    "hair": "shaved",
+    "shape": {
+     "id": "slim",
+     "name": "瘦"
+    }
+   }
+  },
+  {
+   "id": "wanderer_shaved_stout",
+   "file": "people/wanderer_shaved_stout.svg",
+   "traits": {
+    "palette": "wanderer",
+    "hair": "shaved",
+    "shape": {
+     "id": "stout",
+     "name": "壮"
+    }
+   }
+  },
+  {
+   "id": "wanderer_shaved_small",
+   "file": "people/wanderer_shaved_small.svg",
+   "traits": {
+    "palette": "wanderer",
+    "hair": "shaved",
+    "shape": {
+     "id": "small",
+     "name": "矮"
+    }
+   }
+  },
+  {
+   "id": "child_bun_slim",
+   "file": "people/child_bun_slim.svg",
+   "traits": {
+    "palette": "child",
+    "hair": "bun",
+    "shape": {
+     "id": "slim",
+     "name": "瘦"
+    }
+   }
+  },
+  {
+   "id": "child_bun_stout",
+   "file": "people/child_bun_stout.svg",
+   "traits": {
+    "palette": "child",
+    "hair": "bun",
+    "shape": {
+     "id": "stout",
+     "name": "壮"
+    }
+   }
+  },
+  {
+   "id": "child_bun_small",
+   "file": "people/child_bun_small.svg",
+   "traits": {
+    "palette": "child",
+    "hair": "bun",
+    "shape": {
+     "id": "small",
+     "name": "矮"
+    }
+   }
+  },
+  {
+   "id": "child_topknot_slim",
+   "file": "people/child_topknot_slim.svg",
+   "traits": {
+    "palette": "child",
+    "hair": "topknot",
+    "shape": {
+     "id": "slim",
+     "name": "瘦"
+    }
+   }
+  },
+  {
+   "id": "child_topknot_stout",
+   "file": "people/child_topknot_stout.svg",
+   "traits": {
+    "palette": "child",
+    "hair": "topknot",
+    "shape": {
+     "id": "stout",
+     "name": "壮"
+    }
+   }
+  },
+  {
+   "id": "child_topknot_small",
+   "file": "people/child_topknot_small.svg",
+   "traits": {
+    "palette": "child",
+    "hair": "topknot",
+    "shape": {
+     "id": "small",
+     "name": "矮"
+    }
+   }
+  },
+  {
+   "id": "child_loose_slim",
+   "file": "people/child_loose_slim.svg",
+   "traits": {
+    "palette": "child",
+    "hair": "loose",
+    "shape": {
+     "id": "slim",
+     "name": "瘦"
+    }
+   }
+  },
+  {
+   "id": "child_loose_stout",
+   "file": "people/child_loose_stout.svg",
+   "traits": {
+    "palette": "child",
+    "hair": "loose",
+    "shape": {
+     "id": "stout",
+     "name": "壮"
+    }
+   }
+  },
+  {
+   "id": "child_loose_small",
+   "file": "people/child_loose_small.svg",
+   "traits": {
+    "palette": "child",
+    "hair": "loose",
+    "shape": {
+     "id": "small",
+     "name": "矮"
+    }
+   }
+  },
+  {
+   "id": "child_shaved_slim",
+   "file": "people/child_shaved_slim.svg",
+   "traits": {
+    "palette": "child",
+    "hair": "shaved",
+    "shape": {
+     "id": "slim",
+     "name": "瘦"
+    }
+   }
+  },
+  {
+   "id": "child_shaved_stout",
+   "file": "people/child_shaved_stout.svg",
+   "traits": {
+    "palette": "child",
+    "hair": "shaved",
+    "shape": {
+     "id": "stout",
+     "name": "壮"
+    }
+   }
+  },
+  {
+   "id": "child_shaved_small",
+   "file": "people/child_shaved_small.svg",
+   "traits": {
+    "palette": "child",
+    "hair": "shaved",
+    "shape": {
+     "id": "small",
+     "name": "矮"
+    }
+   }
+  },
+  {
+   "id": "noble_bun_slim",
+   "file": "people/noble_bun_slim.svg",
+   "traits": {
+    "palette": "noble",
+    "hair": "bun",
+    "shape": {
+     "id": "slim",
+     "name": "瘦"
+    }
+   }
+  },
+  {
+   "id": "noble_bun_stout",
+   "file": "people/noble_bun_stout.svg",
+   "traits": {
+    "palette": "noble",
+    "hair": "bun",
+    "shape": {
+     "id": "stout",
+     "name": "壮"
+    }
+   }
+  },
+  {
+   "id": "noble_bun_small",
+   "file": "people/noble_bun_small.svg",
+   "traits": {
+    "palette": "noble",
+    "hair": "bun",
+    "shape": {
+     "id": "small",
+     "name": "矮"
+    }
+   }
+  },
+  {
+   "id": "noble_topknot_slim",
+   "file": "people/noble_topknot_slim.svg",
+   "traits": {
+    "palette": "noble",
+    "hair": "topknot",
+    "shape": {
+     "id": "slim",
+     "name": "瘦"
+    }
+   }
+  },
+  {
+   "id": "noble_topknot_stout",
+   "file": "people/noble_topknot_stout.svg",
+   "traits": {
+    "palette": "noble",
+    "hair": "topknot",
+    "shape": {
+     "id": "stout",
+     "name": "壮"
+    }
+   }
+  },
+  {
+   "id": "noble_topknot_small",
+   "file": "people/noble_topknot_small.svg",
+   "traits": {
+    "palette": "noble",
+    "hair": "topknot",
+    "shape": {
+     "id": "small",
+     "name": "矮"
+    }
+   }
+  },
+  {
+   "id": "noble_loose_slim",
+   "file": "people/noble_loose_slim.svg",
+   "traits": {
+    "palette": "noble",
+    "hair": "loose",
+    "shape": {
+     "id": "slim",
+     "name": "瘦"
+    }
+   }
+  },
+  {
+   "id": "noble_loose_stout",
+   "file": "people/noble_loose_stout.svg",
+   "traits": {
+    "palette": "noble",
+    "hair": "loose",
+    "shape": {
+     "id": "stout",
+     "name": "壮"
+    }
+   }
+  },
+  {
+   "id": "noble_loose_small",
+   "file": "people/noble_loose_small.svg",
+   "traits": {
+    "palette": "noble",
+    "hair": "loose",
+    "shape": {
+     "id": "small",
+     "name": "矮"
+    }
+   }
+  },
+  {
+   "id": "noble_shaved_slim",
+   "file": "people/noble_shaved_slim.svg",
+   "traits": {
+    "palette": "noble",
+    "hair": "shaved",
+    "shape": {
+     "id": "slim",
+     "name": "瘦"
+    }
+   }
+  },
+  {
+   "id": "noble_shaved_stout",
+   "file": "people/noble_shaved_stout.svg",
+   "traits": {
+    "palette": "noble",
+    "hair": "shaved",
+    "shape": {
+     "id": "stout",
+     "name": "壮"
+    }
+   }
+  },
+  {
+   "id": "noble_shaved_small",
+   "file": "people/noble_shaved_small.svg",
+   "traits": {
+    "palette": "noble",
+    "hair": "shaved",
+    "shape": {
+     "id": "small",
+     "name": "矮"
+    }
+   }
+  }
+ ],
+ "hatLayers": [
+  {
+   "id": "none",
+   "name": "无",
+   "file": "hats/none.svg"
+  },
+  {
+   "id": "scarf",
+   "name": "巾",
+   "file": "hats/scarf.svg"
+  },
+  {
+   "id": "straw",
+   "name": "笠",
+   "file": "hats/straw.svg"
+  },
+  {
+   "id": "crown",
+   "name": "冠",
+   "file": "hats/crown.svg"
+  }
+ ],
+ "heldLayers": [
+  {
+   "id": "none",
+   "name": "空手",
+   "file": "held/none.svg"
+  },
+  {
+   "id": "sword",
+   "name": "剑",
+   "file": "held/sword.svg"
+  },
+  {
+   "id": "basket",
+   "name": "篮",
+   "file": "held/basket.svg"
+  },
+  {
+   "id": "staff",
+   "name": "杖",
+   "file": "held/staff.svg"
+  },
+  {
+   "id": "book",
+   "name": "卷",
+   "file": "held/book.svg"
+  }
+ ],
+ "items": [
+  {
+   "id": "grain",
+   "name": "米袋",
+   "kind": "food",
+   "kindLabel": "food",
+   "file": "items/grain.svg"
+  },
+  {
+   "id": "tea",
+   "name": "茶砖",
+   "kind": "food",
+   "kindLabel": "food",
+   "file": "items/tea.svg"
+  },
+  {
+   "id": "cloth",
+   "name": "粗布",
+   "kind": "craft",
+   "kindLabel": "craft",
+   "file": "items/cloth.svg"
+  },
+  {
+   "id": "herb",
+   "name": "草药",
+   "kind": "medicine",
+   "kindLabel": "medicine",
+   "file": "items/herb.svg"
+  },
+  {
+   "id": "pill",
+   "name": "回气丹",
+   "kind": "medicine",
+   "kindLabel": "medicine",
+   "file": "items/pill.svg"
+  },
+  {
+   "id": "talisman",
+   "name": "黄符",
+   "kind": "ritual",
+   "kindLabel": "ritual",
+   "file": "items/talisman.svg"
+  },
+  {
+   "id": "iron",
+   "name": "生铁",
+   "kind": "craft",
+   "kindLabel": "craft",
+   "file": "items/iron.svg"
+  },
+  {
+   "id": "knife",
+   "name": "柴刀",
+   "kind": "tool",
+   "kindLabel": "tool",
+   "file": "items/knife.svg"
+  },
+  {
+   "id": "sword",
+   "name": "青锋剑",
+   "kind": "weapon",
+   "kindLabel": "weapon",
+   "file": "items/sword.svg"
+  },
+  {
+   "id": "rope",
+   "name": "麻绳",
+   "kind": "tool",
+   "kindLabel": "tool",
+   "file": "items/rope.svg"
+  },
+  {
+   "id": "paper",
+   "name": "黄纸",
+   "kind": "ritual",
+   "kindLabel": "ritual",
+   "file": "items/paper.svg"
+  },
+  {
+   "id": "wine",
+   "name": "土酒",
+   "kind": "food",
+   "kindLabel": "food",
+   "file": "items/wine.svg"
+  }
+ ]
+}

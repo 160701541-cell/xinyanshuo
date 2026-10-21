@@ -1,13 +1,15 @@
 /** 仙凡共生 v0.6：连续米制地图客户端。缩放绝不修改玩家坐标。 */
 import {createWorld,restoreWorld,saveableWorld,worldReport,simulateDay,note,getPlace,changeRole} from './core.mjs';
-import {MAP_VERSION,WORLD_LIMIT,CITY,LANDMARKS,STRUCTURES,TOWN_HOUSES,WALLS,ROUTES,STREAMS,PLACE_METERS,ensureGeo,terrainHeight,dist,obstacleAt,beginJourney,stopJourney,advanceMap,enterStructure,exitStructure,placeAt,visibleActors,actorVisibility,openingStatus,canEnter,canFly,rest} from './overworld.mjs';
+import {MAP_VERSION,WORLD_LIMIT,CITY,LANDMARKS,STRUCTURES,TOWN_HOUSES,WALLS,ROUTES,STREAMS,PLACE_METERS,ensureGeo,terrainHeight,dist,obstacleAt,beginJourney,stopJourney,advanceMap,enterStructure,exitStructure,placeAt,visibleActors,actorVisibility,openingStatus,canEnter,canFly,flightRuleAt,rest} from './overworld.mjs';
+import {FACTIONS,factionById,territoryGrid,territoryBorderPaths,MAP_MODES,mapColor,reputation,standing,securityIndex,ITEMS,itemById,priceOf,inventory,buyItem,sellItem,canTradeHere,bagWeight,contractsFor,acceptContract,completeContract,societyReport} from './society.mjs';
+import {SpriteBank,lookFor} from './sprites.mjs';
 import {interiorAtlas} from './atlas.mjs';
 import {classifyGesture,canSelect} from './gesture.mjs';
 const placeById=getPlace;
 const $=id=>document.getElementById(id);
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 const safe=s=>String(s??'').replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','\'':'&#39;','"':'&quot;'}[c]));
-let w,selected=null,camera={x:0,y:0,mpp:2.7},ctx,canvas,cssW=0,cssH=0,activeTab='map',pointer=new Map(),pinch=null,dragStart=null,gestureMoved=false,multiTouched=false,downAt=0,travelSpeed=30,savePending=0,noticeTimeout=0,paused=false;
+let w,selected=null,camera={x:0,y:0,mpp:2.7},mapMode='terrain',sprites=null,ctx,canvas,cssW=0,cssH=0,activeTab='map',pointer=new Map(),pinch=null,dragStart=null,gestureMoved=false,multiTouched=false,downAt=0,travelSpeed=30,savePending=0,noticeTimeout=0,paused=false;
 const peopleCaches=new WeakMap();
 const faces=['#537560','#95724d','#607d91','#8e715f','#855f67','#726b91'];
 const currentTime=()=>{const m=Math.floor(w.hour*60);return `承平${3+Math.floor((w.day-1)/360)}年 · 第${(w.day-1)%360+1}日 · ${String(Math.floor(m/60)).padStart(2,'0')}:${String(m%60).padStart(2,'0')}`;};
@@ -40,7 +42,7 @@ function drawGround(){ctx.fillStyle='#dcdcc5';ctx.fillRect(0,0,cssW,cssH);
  if(camera.mpp<3&&n>.70){const s=pos({x:x+step/2,y:y+step/2});ctx.strokeStyle='rgba(67,104,70,.35)';ctx.lineWidth=1.4;ctx.beginPath();ctx.moveTo(s.x-2,s.y+2);ctx.lineTo(s.x,s.y-2);ctx.lineTo(s.x+3,s.y+1);ctx.stroke();}
  }
 }
-function drawPolitical(){if(camera.mpp<180)return;
+function drawPolitical(){if(camera.mpp<180||mapMode!=='terrain')return;
  const polys=[
  {name:'大宁王朝',fill:'rgba(209,207,165,.33)',points:[[-550000,-440000],[100000,-550000],[490000,-70000],[540000,340000],[-300000,490000],[-700000,140000]]},
  {name:'北朔汗庭',fill:'rgba(192,203,183,.42)',points:[[-400000,-1300000],[520000,-1300000],[630000,-650000],[80000,-470000],[-550000,-410000]]},
@@ -49,6 +51,74 @@ function drawPolitical(){if(camera.mpp<180)return;
  {name:'云离',fill:'rgba(166,195,181,.34)',points:[[-180000,400000],[450000,380000],[950000,1300000],[-500000,1300000]]}
  ];
  for(const f of polys){drawPath(f.points,true);ctx.fillStyle=f.fill;ctx.fill();ctx.strokeStyle='#8a806b';ctx.lineWidth=1.25;ctx.setLineDash([7,5]);ctx.stroke();ctx.setLineDash([]);let av={x:f.points.reduce((n,p)=>n+p[0],0)/f.points.length,y:f.points.reduce((n,p)=>n+p[1],0)/f.points.length};if(visible(av))text(f.name,av,15,'#5a5846',700);}
+}
+const factionFills={};
+function fillOf(f,alpha){const key=f+alpha;if(!factionFills[key])factionFills[key]=hexA(factionById(f)?.color||'#e5dcc2',alpha);return factionFills[key];}
+const hexA=(hex,a)=>{const n=parseInt(hex.slice(1),16);return `rgba(${(n>>16)&255},${(n>>8)&255},${n&255},${a})`;};
+/** P 社式政治图层：先给领土烤一张一次性位图（双线性拉伸，边界不留锯齿），再叠界线。只读世界，不改状态。 */
+let factionRaster=null;
+function rasterOf(grid){
+ const c=document.createElement('canvas');c.width=grid.n;c.height=grid.n;
+ const cx=c.getContext('2d'),img=cx.createImageData(grid.n,grid.n);
+ const pal=grid.ids.map(id=>{const hex=factionById(id)?.color||'#e5dcc2';return [parseInt(hex.slice(1,3),16),parseInt(hex.slice(3,5),16),parseInt(hex.slice(5,7),16)];});
+ for(let i=0;i<grid.cells.length;i++){const rgb=pal[grid.cells[i]]||[229,220,194],o=i*4;img.data[o]=rgb[0];img.data[o+1]=rgb[1];img.data[o+2]=rgb[2];img.data[o+3]=232;}
+ cx.putImageData(img,0,0);
+ return c;
+}
+/** 两级领土位图：远场 12 公里（覆盖整张世界）、近场 2 公里（县域精细）。一次烤好，之后每帧只是两次 drawImage。 */
+function factionRasterFor(){
+ if(factionRaster)return factionRaster;
+ const far=territoryGrid(12000,WORLD_LIMIT),near=territoryGrid();
+ factionRaster={far,farCanvas:rasterOf(far),near,nearCanvas:rasterOf(near),
+  farPaths:territoryBorderPaths(12000,WORLD_LIMIT),nearPaths:territoryBorderPaths()};
+ return factionRaster;
+}
+function paintGrid(grid,canvas){
+ const a=pos({x:grid.origin,y:grid.origin}),b=pos({x:grid.origin+grid.n*grid.step,y:grid.origin+grid.n*grid.step});
+ ctx.drawImage(canvas,0,0,grid.n,grid.n,a.x,a.y,b.x-a.x,b.y-a.y);
+}
+/** 折线过中点画二次曲线：把 12 公里的锯齿边界揉成自然的海岸线。 */
+function strokePaths(paths,width,alpha){
+ ctx.strokeStyle=`rgba(58,62,46,${alpha})`;ctx.lineWidth=width;ctx.lineCap='round';ctx.lineJoin='round';
+ for(const pts of paths){
+  const first=pos({x:pts[0][0],y:pts[0][1]});
+  ctx.beginPath();ctx.moveTo(first.x,first.y);
+  for(let i=1;i<pts.length-1;i++){
+   const c=pos({x:pts[i][0],y:pts[i][1]}),n=pos({x:pts[i+1][0],y:pts[i+1][1]});
+   ctx.quadraticCurveTo(c.x,c.y,(c.x+n.x)/2,(c.y+n.y)/2);
+  }
+  const last=pos({x:pts[pts.length-1][0],y:pts[pts.length-1][1]});
+  ctx.lineTo(last.x,last.y);
+  ctx.stroke();
+ }
+}
+function drawFactionLayer(){
+ if(mapMode==='terrain')return;
+ const min=unpos(-40,-40),max=unpos(cssW+40,cssH+40);
+ if(mapMode!=='faction'){
+  const inc=camera.mpp>1500?12000:camera.mpp>400?4000:camera.mpp>90?1200:300;
+  const sx=Math.floor(min.x/inc)*inc,sy=Math.floor(min.y/inc)*inc;
+  for(let x=sx;x<=max.x;x+=inc)for(let y=sy;y<=max.y;y+=inc){
+   const fill=mapColor(w,mapMode,x+inc/2,y+inc/2);if(!fill)continue;
+   const p=pos({x,y}),px=inc/camera.mpp;
+   if(p.x>cssW||p.y>cssH||p.x+px<0||p.y+px<0)continue;
+   ctx.fillStyle=fill;ctx.fillRect(p.x,p.y,px+1,px+1);
+  }
+  return;
+ }
+ const r=factionRasterFor();
+ ctx.save();ctx.globalAlpha=.5;ctx.imageSmoothingEnabled=true;
+ paintGrid(r.far,r.farCanvas);
+ paintGrid(r.near,r.nearCanvas);
+ ctx.restore();
+ strokePaths(r.farPaths,Math.max(1,Math.min(2.5,900/camera.mpp)),.3);
+ strokePaths(r.nearPaths,clamp(300/camera.mpp,1.2,4),.62);
+ if(camera.mpp>700){
+  for(const f of FACTIONS){const seat=LANDMARKS.find(l=>l.id===f.seat)||{x:0,y:0};if(visible(seat))text(f.name,seat,Math.min(26,Math.max(12,900/camera.mpp)),'#3d4437',800);}
+ }
+}
+function securityLabel(){
+ const s=securityIndex(w);return s>=70?'治安尚可':s>=45?'盗匪偶发':'盗匪横行';
 }
 function drawRelief(){if(camera.mpp>1500)return;const min=unpos(-20,-20),max=unpos(cssW+20,cssH+20);const inc=camera.mpp>80?15000:camera.mpp>10?3200:camera.mpp>2?400:160;
  let count=0;for(let x=Math.floor(min.x/inc)*inc;x<max.x;x+=inc)for(let y=Math.floor(min.y/inc)*inc;y<max.y;y+=inc){if(count++>8000)return;let z=terrainHeight(x,y);if(z<180)continue;const q=pos({x,y}),sz=Math.max(2,Math.min(21,inc/camera.mpp*.18));ctx.beginPath();ctx.moveTo(q.x-sz,q.y+sz*.8);ctx.lineTo(q.x,q.y-sz*.7);ctx.lineTo(q.x+sz,q.y+sz*.8);ctx.closePath();ctx.fillStyle=z>240?'rgba(103,114,102,.15)':'rgba(86,118,88,.10)';ctx.fill();}}
@@ -80,6 +150,15 @@ function drawTowns(){for(const p of LANDMARKS){if(!visible(p))continue;if(camera
  if(camera.mpp>200&&p.active&&p.id!=='songlin'&&p.id!=='qingyun')continue;
  if((camera.mpp<130||large) && !(camera.mpp<25&&['market','street','homes','shop','office','inn','gate'].includes(p.type)) )text(title,{x:p.x,y:p.y-(r*camera.mpp+Math.max(30,camera.mpp*9))},nameSize,large?'#5d4936':'#354f3c',large?750:600);
  }}
+/** 小人素材：底衣层 + 头饰层 + 持物层，三层同一画布对齐；缺素材时退回圆形标记。 */
+function drawSprite(layers,x,y,h){
+ const bank=sprites;const wpx=h*32/44;
+ if(!bank||!layers||!layers.base){ctx.beginPath();ctx.arc(x,y,h*.36,0,Math.PI*2);ctx.fillStyle='#6d7f6a';ctx.fill();return false;}
+ ctx.drawImage(layers.base,x-wpx/2,y-h+4,wpx,h);
+ if(layers.hat)ctx.drawImage(layers.hat,x-wpx/2,y-h+4,wpx,h);
+ if(layers.held)ctx.drawImage(layers.held,x-wpx/2,y-h+4,wpx,h);
+ return true;
+}
 function drawAvatars(){if(camera.mpp>350)return;
  const people=new Map(w.people.map(p=>[p.id,p]));
  // 只画"世界认为他在那里"的人：位置与所在场所一致，室内与夜间居家者不在街上。
@@ -87,24 +166,34 @@ function drawAvatars(){if(camera.mpp>350)return;
  onMap.sort((a,b)=>Number(b.leader)-Number(a.leader)||dist(a,w.player.mapPos)-dist(b,w.player.mapPos));
  const taken=[],max=camera.mpp>60?6:camera.mpp>14?12:camera.mpp>3?20:150;
  for(const a of onMap){if(taken.length>=max)break;
-  const pp=pos(a);if(taken.some(q=>Math.hypot(q.x-pp.x,q.y-pp.y)<(camera.mpp>1.5?24:14)))continue;
+  const pp=pos(a);if(taken.some(q=>Math.hypot(q.x-pp.x,q.y-pp.y)<(camera.mpp>1.5?26:16)))continue;
   taken.push(pp);const person=people.get(a.id);if(!person)continue;
-  const s=a.leader?14:camera.mpp<1.3?11:10,fill=faces[Number(a.id.slice(-2))%faces.length];
-  ctx.fillStyle='rgba(15,32,22,.16)';ctx.beginPath();ctx.ellipse(pp.x,pp.y+4,s+4,s*.5,0,0,Math.PI*2);ctx.fill();
-  ctx.beginPath();ctx.arc(pp.x,pp.y,s,0,Math.PI*2);ctx.fillStyle=fill;ctx.fill();ctx.strokeStyle=a.leader?'#ebc777':'#fff2d7';ctx.lineWidth=a.leader?3:2;ctx.stroke();
-  ctx.fillStyle='#fff9e4';ctx.font=`700 ${a.leader?11:10}px system-ui`;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(person.name.slice(-1),pp.x,pp.y);
-  if((camera.mpp<.95)||(a.leader&&camera.mpp<2))screenText((a.title?a.title+' · ':'')+person.name+' · '+a.state,pp.x,pp.y-s-12,a.leader?12:11,a.leader?'#583f30':'#30503d');
-  if(selected?.kind==='npc'&&selected.data.id===a.id){ctx.strokeStyle='#bd713f';ctx.lineWidth=2.5;ctx.beginPath();ctx.arc(pp.x,pp.y,s+7,0,Math.PI*2);ctx.stroke();}
+  const h=a.leader?30:camera.mpp<1.3?24:22;
+  const layers=sprites?sprites.layers(person):null;
+  ctx.fillStyle='rgba(15,32,22,.16)';ctx.beginPath();ctx.ellipse(pp.x,pp.y+2,h*.26,h*.12,0,0,Math.PI*2);ctx.fill();
+  const ok=drawSprite(layers,pp.x,pp.y,h);
+  if(!ok){const fill=faces[Number(a.id.slice(-2))%faces.length];ctx.beginPath();ctx.arc(pp.x,pp.y-h*.3,h*.3,0,Math.PI*2);ctx.fillStyle=fill;ctx.fill();}
+  if(a.leader){ctx.strokeStyle='#c8a34e';ctx.lineWidth=2.4;ctx.beginPath();ctx.arc(pp.x,pp.y-h*.42,h*.42,0,Math.PI*2);ctx.stroke();}
+  if((camera.mpp<.95)||(a.leader&&camera.mpp<2))screenText((a.title?a.title+' · ':'')+person.name+' · '+a.state,pp.x,pp.y+h*.22,a.leader?12:11,a.leader?'#583f30':'#30503d');
+  if(selected?.kind==='npc'&&selected.data.id===a.id){ctx.strokeStyle='#bd713f';ctx.lineWidth=2.5;ctx.beginPath();ctx.arc(pp.x,pp.y-h*.4,h*.55,0,Math.PI*2);ctx.stroke();}
  }
 }
-function drawPlayer(){const p=pos(w.player.mapPos);ctx.beginPath();ctx.arc(p.x,p.y,17,0,Math.PI*2);ctx.fillStyle='#153f34';ctx.fill();ctx.strokeStyle='#f4d07c';ctx.lineWidth=3.5;ctx.stroke();ctx.fillStyle='#fff4dc';ctx.font='bold 13px system-ui';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('我',p.x,p.y);ctx.fillStyle='#273f35';ctx.font='bold 12px system-ui';ctx.fillText('',p.x,p.y);}
+function drawPlayer(){const p=pos(w.player.mapPos);
+ const look=sprites?sprites.layers({id:'player',job:w.player.role==='修士'?'修士':w.player.role,age:30,sex:'男',wealth:200}):null;
+ const h=32;
+ ctx.fillStyle='rgba(21,63,52,.18)';ctx.beginPath();ctx.ellipse(p.x,p.y+2,10,4.4,0,0,Math.PI*2);ctx.fill();
+ ctx.strokeStyle='#f4d07c';ctx.lineWidth=3;ctx.beginPath();ctx.arc(p.x,p.y-h*.42,h*.46,0,Math.PI*2);ctx.stroke();
+ if(!drawSprite(look,p.x,p.y,h)){ctx.beginPath();ctx.arc(p.x,p.y-h*.3,12,0,Math.PI*2);ctx.fillStyle='#153f34';ctx.fill();}
+ screenText('我',p.x,p.y+8,11,'#3a2f1e',800);
+}
 function drawRoute(){const r=w.player.route;if(!r)return;const points=[w.player.mapPos,...r.path.slice(r.index+1)];drawPath(points.map(p=>[p.x,p.y]));ctx.strokeStyle='rgba(255,250,228,.8)';ctx.lineWidth=6;ctx.stroke();drawPath(points.map(p=>[p.x,p.y]));ctx.strokeStyle='#cc7c40';ctx.lineWidth=3;ctx.setLineDash([8,7]);ctx.stroke();ctx.setLineDash([]);circle(r.goal,6,'#b7653a','#fff0d7',2);}
 function drawSelection(){if(!selected?.point)return;const p=pos(selected.point);ctx.beginPath();ctx.arc(p.x,p.y,24,0,Math.PI*2);ctx.strokeStyle='#bd713f';ctx.lineWidth=2.5;ctx.stroke();ctx.beginPath();ctx.moveTo(p.x-30,p.y);ctx.lineTo(p.x+30,p.y);ctx.moveTo(p.x,p.y-30);ctx.lineTo(p.x,p.y+30);ctx.stroke();}
-function drawMap(){if(!ctx||!w)return;ctx.clearRect(0,0,cssW,cssH);drawGround();drawPolitical();drawRelief();drawWater();drawRoads();drawWall();drawBuildings();drawTowns();drawRoute();drawAvatars();drawPlayer();drawSelection();}
+function drawMap(){if(!ctx||!w)return;ctx.clearRect(0,0,cssW,cssH);drawGround();drawFactionLayer();drawPolitical();drawRelief();drawWater();drawRoads();drawWall();drawBuildings();drawTowns();drawRoute();drawAvatars();drawPlayer();drawSelection();}
 function profile(){const p=w.player,r=worldReport(w),place=placeAt(p.mapPos);
  $('name').textContent=p.name;$('place').textContent=p.indoor?(getPlace(p.indoor)?.name||'室内'):place.name;
  $('time').textContent=currentTime();$('population').textContent=`临安县及周边 ${r.population.toLocaleString('zh-CN')}人`;
  $('role').textContent=`${p.role} · ${p.stats.realm}`;
+ const purse=$('purse');if(purse)purse.textContent=`银 ${p.silver??0} · 货 ${bagWeight(w)}斤`;
  $('hpBar').style.width=`${clamp(p.stats.hp/p.stats.maxHp*100,0,100)}%`;$('staminaBar').style.width=`${clamp(p.stats.stamina/p.stats.maxStamina*100,0,100)}%`;
  $('hpTxt').textContent=`${p.stats.hp}/${p.stats.maxHp}`;$('staminaTxt').textContent=`${Math.round(p.stats.stamina)}/${p.stats.maxStamina}`;
  $('position').textContent=`坐标 ${Math.round(p.mapPos.x)},${Math.round(p.mapPos.y)}m · 海拔 ${terrainHeight(p.mapPos.x,p.mapPos.y)}m`;
@@ -127,7 +216,11 @@ function showSheet(obj){selected=obj;const target=$('sheet');if(!obj){target.hid
   buttons=`<button data-action="go">沿路前往门口</button>${canEnterNow?'<button data-action="enter">从正门进入</button>':''}${w.player.route?'<button data-action="stop" class="quiet">停下</button>':''}`;
  }else if(obj.kind==='landmark'){const b=obj.data;const st=openingStatus(b.id,w.hour);
   title=b.name;sub=`${escapeHtml(b.faction||'')}${b.active?' · 已开放':' · 地理预留'} · ${st.label}`;body=b.desc||'';
-  buttons=b.active?`<button data-action="go">步行前往</button>${canFly(w).ok?'<button data-action="fly" class="quiet">御剑前往</button>':''}`:'<button disabled>本区域未开放</button>';
+  const flyGate=canFly(w),zoneRule=flightRuleAt(w,{x:b.x,y:b.y});
+  if(b.active&&!flyGate.ok)body+=`<p class="near">御剑：${safe(flyGate.reason)}</p>`;
+  else if(b.active&&!zoneRule.ok)body+=`<p class="near">空域：${safe(zoneRule.reason)}</p>`;
+  else if(b.active&&zoneRule.ok&&zoneRule.zone!=='野外空域')body+=`<p class="near">空域：${safe(zoneRule.zone)}，此处可起剑。</p>`;
+  buttons=b.active?`<button data-action="go">步行前往</button>${flyGate.ok&&zoneRule.ok?'<button data-action="fly" class="quiet">御剑前往</button>':''}`:'<button disabled>本区域未开放</button>';
  }else if(obj.kind==='npc'){const a=obj.data,p=w.people.find(x=>x.id===a.id);const vis=actorVisibility(w,p);
   title=p?.name||'人物';sub=`${a.title||p?.job||'行人'} · ${Math.round(dist(player,a))}米 · ${a.state}`;
   body=`${vis.visible?`他/她此刻正在${placeById(vis.where)?.name||vis.where}（${vis.reason}）。`:`${vis.reason}，你现在看不到此人。`}
@@ -200,14 +293,70 @@ function setupGestures(){
  canvas.addEventListener('wheel',e=>{e.preventDefault();const p=pointerPoint(e);zoomAt(e.deltaY<0?.83:1.2,p.x,p.y);},{passive:false});
  canvas.addEventListener('contextmenu',e=>e.preventDefault());
 }
+function itemIcon(id){const img=sprites?.item(id);return img?`<img src="${sprites.base+sprites.files.get('item:'+id)}" alt="${safe(itemById(id)?.name||'')}">`:'<span class="sw"></span>';}
+function renderGoods(){
+ const here=canTradeHere(w),place=placeById(w.player.place)?.name||'';
+ const rows=ITEMS.map(it=>{
+  const price=priceOf(w,it.id),have=inventory(w)[it.id]||0;
+  return `<article class="shop-item">${itemIcon(it.id)}<div class="meta"><strong>${safe(it.name)}</strong><span>${price} 文/${safe(it.unit)} · 身带 ${have}</span></div>
+  <button data-buy="${it.id}" ${here?'':'disabled'}>买1</button><button data-sell="${it.id}" ${here&&have>0?'':'disabled'}>卖1</button></article>`;
+ }).join('');
+ $('records').innerHTML=`<h2>物产与市价</h2><p>${here?`你正在${safe(place)}，可以议价。`:'这里不是市集——东市、粮行、铁铺一带才能买卖。'}</p>
+ <article class="entry">银钱 ${w.player.silver??0} 两的铜钱数 · 负重 ${bagWeight(w)} 斤 · 米价 ${w.price} 文/斗</article>${rows}`;
+}
+function renderQuests(){
+ const open=contractsFor(w),mine=w.player.contracts||[];
+ const card=(c,accepted)=>`<article class="quest"><header><strong>${safe(c.title)}</strong><span class="tag">${safe(factionById(c.faction)?.name||'')}</span></header>
+  <p>${safe(c.text)}</p><small>地点：${safe(placeById(c.target)?.name||c.target)} · 酬劳 ${c.pay} 文 · 第${c.expireDay}日过期</small><br>
+  ${accepted?`<button data-complete="${c.id}">交差</button>`:`<button data-accept="${c.id}">接下</button>`}</article>`;
+ $('records').innerHTML=`<h2>官府与商会的委托</h2><p>委托由当日世界状态生成，不是写死的任务表；同一天重开也只是同一批。</p>
+ ${mine.map(c=>card(c,true)).join('')||''}${open.map(c=>card(c,false)).join('')||'<p>今日没有新的委托。</p>'}`;
+}
+function handleRecordsClick(e){
+ const t=e.target.closest('button');if(!t)return;
+ if(t.dataset.buy){const r=buyItem(w,t.dataset.buy,1);toast(r.ok?`买下${itemById(t.dataset.buy).name}，花 ${r.cost} 文`:r.error);if(r.ok){profile();scheduleSave();renderGoods();}return;}
+ if(t.dataset.sell){const r=sellItem(w,t.dataset.sell,1);toast(r.ok?`卖出，得 ${r.gain} 文`:r.error);if(r.ok){profile();scheduleSave();renderGoods();}return;}
+ if(t.dataset.accept){const r=acceptContract(w,t.dataset.accept);toast(r.ok?`接下了「${r.contract.title}」`:r.error);if(r.ok){scheduleSave();renderQuests();}return;}
+ if(t.dataset.complete){const r=completeContract(w,t.dataset.complete);toast(r.ok?`交差，得 ${r.pay} 文`:r.error);if(r.ok){profile();scheduleSave();renderQuests();}return;}
+}
 function otherPanels(panel){activeTab=panel;for(const n of document.querySelectorAll('[data-view]'))n.classList.toggle('selected',n.dataset.view===panel);
- $('canvasFrame').hidden=panel!=='map';$('records').hidden=panel==='map';$('sheet').hidden=true;if(panel==='map')return;
+ $('canvasFrame').hidden=panel!=='map';$('records').hidden=panel==='map';$('sheet').hidden=true;if(panel==='map'){drawMap();return;}
+ if(panel==='goods')return renderGoods();
+ if(panel==='quests')return renderQuests();
  const hist=w.history.slice(-25).reverse();let html=panel==='people'?`<h2>故人谱</h2><p>人物在地图上有位置，只有真正相遇后才记录在这里。</p>${w.player.contacts.map(c=>{const p=w.people.find(x=>x.id===c.id);return `<article class="entry">${safe(p?.name||c.id)} · ${safe(p?.job||'')} · 第${c.firstDay}天相识</article>`;}).join('')||'<p>尚无相识之人。</p>'}`:panel==='ledger'?`<h2>县治账本</h2><p>县城及周边有 ${worldReport(w).population} 位人口档案，经济仍采用县级结算，尚不是每人完整的AI模拟。</p><article class="entry">粮价：${w.price} 文/斗<br>县库：${w.treasury} 文<br>县境总粮：${worldReport(w).grain} 斗</article>`:`<h2>此世纪事</h2>${hist.map(e=>`<article class="entry"><small>第${e.day}日 · ${safe(e.type)}</small><p>${safe(e.message)}</p></article>`).join('')}`;
  $('records').innerHTML=html;}
 function resize(){const r=canvas.getBoundingClientRect();cssW=Math.max(10,r.width);cssH=Math.max(10,r.height);const dpr=Math.min(2,window.devicePixelRatio||1);canvas.width=Math.round(cssW*dpr);canvas.height=Math.round(cssH*dpr);ctx=canvas.getContext('2d');ctx.setTransform(dpr,0,0,dpr,0,0);drawMap();}
+function updateLegend(){
+ const el=$('legend');if(!el)return;
+ if(mapMode==='terrain'){el.hidden=true;return;}
+ el.hidden=false;
+ const title=MAP_MODES.find(m=>m.id===mapMode)?.name||'';
+ if(mapMode==='faction'){
+  el.innerHTML=`<b>势力范围 · ${title}</b>`+FACTIONS.map(f=>{
+   const seat=LANDMARKS.find(l=>l.id===f.seat);
+   return `<div class="row"><span><i class="sw" style="background:${f.color}"></i>${safe(f.name)}</span><em>${standing(w,f.id)} ${reputation(w,f.id)}</em></div>`;
+  }).join('');
+  return;
+ }
+ if(mapMode==='population'){
+  el.innerHTML=`<b>人口分布</b><div class="row"><span><i class="sw" style="background:#8d5a3c"></i>千人以上</span><em>县治、东市</em></div><div class="row"><span><i class="sw" style="background:#d19a63"></i>数百人</span><em>村落</em></div><div class="row"><span><i class="sw" style="background:#efd9b4"></i>零星</span><em>山道</em></div>`;
+  return;
+ }
+ if(mapMode==='security'){
+  const s=securityIndex(w);
+  el.innerHTML=`<b>治安 · ${securityLabel()}（${s}）</b><div class="row"><span><i class="sw" style="background:#9cc49b"></i>安定</span><em>官府声望高</em></div><div class="row"><span><i class="sw" style="background:#d99a8b"></i>不靖</span><em>盗匪、流民事件多</em></div>`;
+  return;
+ }
+ el.innerHTML=`<b>${title}</b><div class="row"><span><i class="sw" style="background:#8ab4c8"></i>宗门属地</span><em>外门不纳税</em></div><div class="row"><span><i class="sw" style="background:#cdb768"></i>官府属地</span><em>纳粮服役</em></div>`;
+}
+function setMapMode(mode){mapMode=MAP_MODES.some(m=>m.id===mode)?mode:'terrain';
+ for(const b of document.querySelectorAll('[data-mode]'))b.classList.toggle('selected',b.dataset.mode===mapMode);
+ updateLegend();drawMap();}
 function bind(){canvas=$('worldCanvas');setupGestures();$('zoomIn').onclick=()=>zoomAt(.72);$('zoomOut').onclick=()=>zoomAt(1/.72);$('locate').onclick=()=>{camera.x=w.player.mapPos.x;camera.y=w.player.mapPos.y;camera.mpp=Math.min(camera.mpp,4);profile();scheduleSave();};
  $('stop').onclick=()=>{stopJourney(w);profile();toast('你已停下，已经流逝的时间不会退回。');scheduleSave();};
  $('save').onclick=()=>save().then(()=>toast('存档已保存')).catch(()=>toast('存档保存失败'));
+ for(const b of document.querySelectorAll('[data-mode]'))b.onclick=()=>setMapMode(b.dataset.mode);
+ const rec=$('records');if(rec)rec.onclick=handleRecordsClick;
  $('fast').onclick=()=>{travelSpeed=travelSpeed===30?120:travelSpeed===120?1:30;$('fast').textContent=travelSpeed+'倍';toast('世界时间倍率 '+travelSpeed+'×');};
  $('realmButton').onclick=()=>{const g=canFly(w);if(!g.ok)return toast(g.reason);if(!selected)return toast('先在地图上选择一个目的地，再御剑前往。');flyTarget();};
  $('advanceDay').onclick=()=>{if(w.player.route)return toast('行走中，请先停下');simulateDay(w,1);toast('世界推进一日');profile();scheduleSave();};
@@ -224,6 +373,8 @@ function animation(now){const dt=stamp?Math.min(.12,(now-stamp)/1000):0;stamp=no
  if(now-saveStamp>15000){scheduleSave();saveStamp=now;}}
  if(w&&!$('canvasFrame').hidden)drawMap();requestAnimationFrame(animation);}
 async function init(){try{const raw=await load();w=raw?restoreWorld(raw):createWorld();}catch(e){console.warn(e);w=createWorld();toast('旧存档暂时无法读取，当前为临时世界。');}
+ sprites=new SpriteBank('sprites/');
+ await sprites.load().catch(()=>false);
  ensureGeo(w);if(w.mapCamera&&Number.isFinite(w.mapCamera.mpp))camera={...w.mapCamera};else camera={...w.player.mapPos,mpp:3.2};
- bind();profile();otherPanels('map');resize();if(w.player.indoor)showIndoor();requestAnimationFrame(animation);}
+ bind();profile();updateLegend();otherPanels('map');resize();if(w.player.indoor)showIndoor();requestAnimationFrame(animation);}
 init();
