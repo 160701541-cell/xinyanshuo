@@ -8,7 +8,7 @@ import {ensureCoin, readCoin, spend, earn, fmt, dayWage} from './money.mjs';
 export const LIFE_VERSION = 'life-0.1.0';
 
 /* ── 住处 ───────────────────────────────────────────── */
-export const RENT = {inn: 15, room: 300, yard: 800};       // 文（铜钱）
+export const RENT = {inn: 20, room: 300, yard: 800};       // 文（铜钱）
 export const HOUSE_PRICE = {room: 12000, house: 45000, yard: 180000};  // 文
 
 /** 玩家状态：core 里只有 player.stats 的一部分，缺的补齐 */
@@ -123,7 +123,7 @@ export function hire(w, n = 1, kind = '护院') {
   ensureLife(w);
   const cap = recruitCap(w);
   if ((w.player.men || 0) + n > cap) return {ok: false, reason: `住处只养得起 ${cap} 人，先置宅或加盖`};
-  const cost = n * 300;                               // 安家费 300 文/人
+  const cost = n * 1000;                              // 安家费 1000 文/人
   if (!spend(w, cost)) return {ok: false, reason: `招 ${n} 人要 ${fmt(cost)}`};
   w.player.men = (w.player.men || 0) + n;
   w.player.retainers = w.player.retainers || [];
@@ -133,7 +133,7 @@ export function hire(w, n = 1, kind = '护院') {
 }
 
 /* ── 立宗 ───────────────────────────────────────────── */
-export const SECT_FOUND = {coin: 300000, stones: 50, minRealm: 2, land: 'lingshan'};
+export const SECT_FOUND = {coin: 60000, stones: 50, minRealm: 2, land: 'lingshan'};
 
 export function foundSect(w, name = '青云别院') {
   ensureLife(w);
@@ -161,7 +161,7 @@ export function takeDisciple(w, n = 1) {
 }
 
 /* ── 自立为王 ───────────────────────────────────────── */
-export const THRONE = {officeRank: 2, men: 60, fame: 120, coin: 2000000, place: 'xianya'};
+export const THRONE = {officeRank: 2, men: 60, fame: 120, coin: 300000, place: 'xianya'};
 
 export function canTakeThrone(w) {
   ensureLife(w);

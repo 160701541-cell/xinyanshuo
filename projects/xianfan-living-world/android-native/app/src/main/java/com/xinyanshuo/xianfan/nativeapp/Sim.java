@@ -29,7 +29,7 @@ public final class Sim {
 
     public double px = 0, py = 0, tx = 0, ty = 0;
     public double stamina = 100, hp = 100, spirit = 90;
-    public int coin = 17000, karma = 0, men = 0, stones = 0, realmLevel = 0, layer = 0, pills = 0;
+    public int coin = 1700, karma = 0, men = 0, stones = 0, realmLevel = 0, layer = 0, pills = 0;
     public String rootId = "none";
     public String weaponGrade = "mortal", armorGrade = "mortal", talismanGrade = "mortal";
     public boolean wounded = false, tested = false;
@@ -297,7 +297,7 @@ public final class Sim {
     /* ── 家业 ─────────────────────────────────────── */
 
     public String stayInn(int days) {
-        int cost = 3000 * days;
+        int cost = 20 * days;
         if (coin < cost) return "住店要 " + coinText(cost) + "，你只有 " + coinText(coin) + "。";
         coin -= cost;
         hp = Math.min(100, hp + 45 * days);
@@ -315,7 +315,7 @@ public final class Sim {
     }
 
     public String buyHome(String kind) {
-        int price = "yard".equals(kind) ? 600000 : "house".equals(kind) ? 150000 : 42000;
+        int price = "yard".equals(kind) ? 150000 : "house".equals(kind) ? 40000 : 12000;
         if (homeLevel > 0) return "你已经有宅子了。";
         if (coin < price) return "要 " + coinText(price) + "，你只有 " + coinText(coin) + "。";
         coin -= price;
@@ -328,10 +328,10 @@ public final class Sim {
 
     public String workDay(String job) {
         int pay, need;
-        if ("clerk".equals(job)) { pay = 1800; need = 6; }
-        else if ("guard".equals(job)) { pay = 2500; need = 14; }
-        else if ("herb".equals(job)) { pay = 2000; need = 22; }
-        else { pay = 1200; need = 18; }
+        if ("clerk".equals(job)) { pay = 9; need = 6; }
+        else if ("guard".equals(job)) { pay = 14; need = 14; }
+        else if ("herb".equals(job)) { pay = 11; need = 22; }
+        else { pay = 6; need = 18; }
         if (stamina < need) return "体力不够，先歇着。";
         stamina -= need; coin += pay; workDays++;
         clock += 8 * 60 * 60L;
@@ -340,7 +340,7 @@ public final class Sim {
 
     public String hire(int n) {
         if (men + n > recruitCap()) return "住处只养得起 " + recruitCap() + " 人，先置宅。";
-        int cost = n * 4500;
+        int cost = n * 1000;
         if (coin < cost) return "招 " + n + " 人要 " + coinText(cost) + "。";
         coin -= cost; men += n;
         note("招了 " + n + " 名护院");
@@ -350,17 +350,17 @@ public final class Sim {
     public String foundSect(String name) {
         if (sectName != null) return "你已经有一处山门。";
         if (realmLevel < 2) return "筑基以上才配开山立派。";
-        if (coin < 300000) return "开山要 " + coinText(300000) + "。";
+        if (coin < 60000) return "开山要 " + coinText(60000) + "。";
         if (stones < 50) return "要 50 块下品灵石布护山大阵。";
-        coin -= 300000; stones -= 50; sectName = name;
+        coin -= 60000; stones -= 50; sectName = name;
         note("开辟山门，立「" + name + "」");
         return "「" + name + "」立起来了。";
     }
 
     public String takeDisciple(int n) {
         if (sectName == null) return "还没有山门。";
-        int cost = n * 12000;
-        if (coin < cost) return "收徒要置办行头，每人 " + coinText(12000) + "。";
+        int cost = n * 1200;
+        if (coin < cost) return "收徒要置办行头，每人 " + coinText(1200) + "。";
         coin -= cost; disciples += n;
         return "收 " + n + " 名弟子，门下共 " + disciples + " 人。";
     }
@@ -369,8 +369,8 @@ public final class Sim {
         if (throne != null) return "你已经是" + throne + "了。";
         if (realmLevel < 3) return "金丹以上才镇得住一方。";
         if (men < 60) return "至少 60 兵。";
-        if (coin < 2000000) return "要 " + coinText(2000000) + "。";
-        coin -= 2000000; throne = title;
+        if (coin < 300000) return "要 " + coinText(300000) + "。";
+        coin -= 300000; throne = title;
         note("于临安县衙称「" + title + "」");
         return "你称「" + title + "」，自立一方。";
     }
@@ -403,7 +403,7 @@ public final class Sim {
     }
 
     public String researchArms() {
-        int cost = 35000 * (techArms + 1);
+        int cost = 3500 * (techArms + 1);
         int iron = 10 * (techArms + 1);
         if (techArms >= 5) return "军械已到顶。";
         if (coin < cost) return "要 " + coinText(cost) + "。";
@@ -414,16 +414,16 @@ public final class Sim {
 
     public String trainSpear() {
         if (techArms < 1) return "需要军械 1 级。";
-        if (coin < 4000) return "要 " + coinText(4000) + "。";
+        if (coin < 400) return "要 " + coinText(400) + "。";
         if (resWood < 4) return "要 4 根木头。";
-        coin -= 4000; resWood -= 4; men++;
+        coin -= 400; resWood -= 4; men++;
         return "练出一名长枪兵，现共 " + men + " 人。";
     }
 
     public String buildText() {
         return "木头 " + resWood + " · 稻草 " + resStraw + " · 石 " + resStone + " · 土 " + resClay + " · 铁 " + resIron
             + "\n茅屋 " + huts + " 间 · 军械 " + techArms + " 级\n\n"
-            + "茅屋 = 10 木 + 50 草\n长枪兵 = " + coinText(4000) + " + 4 木（需军械 1）";
+            + "茅屋 = 10 木 + 50 草\n长枪兵 = " + coinText(400) + " + 4 木（需军械 1）";
     }
 
     public String lifeText() {
@@ -434,7 +434,7 @@ public final class Sim {
         b.append("打工　").append(workDays).append(" 天\n");
         b.append("山门　").append(sectName == null ? "无" : sectName + "（弟子 " + disciples + "）").append("\n");
         b.append("名分　").append(throne == null ? "布衣" : throne).append("\n\n");
-        b.append("打工 1 两 2 钱银/日 · 置宅 4 两 2 钱银起 · 招人 45 文/人 · 立宗 30 两银 + 50 灵石 · 称王 200 两银 + 60 兵");
+        b.append("打工 6–14 文/日 · 住店 20 文/日 · 置宅 12,000 文起 · 招人 1,000 文/人 · 立宗 60,000 文 + 50 灵石 · 称王 300,000 文 + 60 兵");
         return b.toString();
     }
 
@@ -455,7 +455,7 @@ public final class Sim {
     /** 私兵招募：每人 14 银，上限 60（原生版先给一个人数上限） */
     public String recruit(int n) {
         int can = Math.min(n, Math.max(0, 60 - men));
-        int cost = can * 1400;
+        int cost = can * 300;
         if (can <= 0) return "私兵到顶了。";
         if (coin < cost) return "钱不够，还差 " + coinText(cost - coin) + "。";
         coin -= cost; men += can;

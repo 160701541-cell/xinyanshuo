@@ -12,7 +12,7 @@ test('开局睡客栈：付钱、回体力、推进时间', () => {
   statsOf(w).stamina = 30;
   const r = stayInn(w, 1);
   assert.equal(r.ok, true);
-  assert.equal(w.player.coin, 16985);
+  assert.equal(w.player.coin, 16980);
   assert.ok(statsOf(w).stamina > 60);
 });
 
@@ -53,7 +53,7 @@ test('立宗要筑基、银钱、灵石三样齐；缺一样都报出来', () =>
   assert.match(foundSect(w, '听雪宗').reason, /筑基/);
   w.player.realmLevel = 2;
   assert.match(foundSect(w, '听雪宗').reason, /开山要/);
-  w.player.coin = 500000;
+  w.player.coin = 80000;
   assert.match(foundSect(w, '听雪宗').reason, /灵石/);
   w.player.stones = 60;
   assert.equal(foundSect(w, '听雪宗').ok, true);
@@ -65,7 +65,7 @@ test('称王要县令位份、六十兵、名望、两万银', () => {
   ensureLife(w);
   assert.match(canTakeThrone(w).reason, /县令/);
   w.career = {ranks: {office: 2}, fame: 200};
-  w.player.men = 60; w.player.coin = 2500000;
+  w.player.men = 60; w.player.coin = 300000;
   assert.equal(canTakeThrone(w).ok, true);
   assert.equal(takeThrone(w, '临安王').ok, true);
   assert.equal(lifeReport(w).realm.title, '临安王');
