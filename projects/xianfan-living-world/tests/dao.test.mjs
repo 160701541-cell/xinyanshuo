@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {createWorld} from '../core.mjs';
 import {ensureKarma,resolveKill} from '../karma.mjs';
-import {ensureDao,shiftDao,attitudeOf,daoReport,seekAlly,SECTS,NATIONS,tieWith,taoLabel,recordDeed,deedScore,peopleOf,personAttitude,findPerson} from '../dao.mjs';
+import {ensureDao,shiftDao,attitudeOf,daoReport,seekAlly,SECTS,NATIONS,tieWith,taoLabel,recordDeed,deedScore,peopleOf,personAttitude,findPerson,attachPeople,peopleAt,helpPerson,bondBetween,homePlaceOf,whereOf} from '../dao.mjs';
 
 const mk=()=>{const w=createWorld('道心测试');ensureKarma(w);ensureDao(w);
  w.player.stats={level:1,realm:'炼气二层'};w.player.silver=1700;return w;};
@@ -65,4 +65,36 @@ test('世界够大：修仙界横跨六国，十二个势力各有立场与标�
  assert.ok(rep.label&&Array.isArray(rep.list)&&rep.list.length===12);
  assert.ok(rep.list.every(x=>typeof x.score==='number'));
  assert.equal(taoLabel(90),'道心通明');assert.equal(taoLabel(-90),'魔头');
+});
+
+test('人在地图上有落脚点，白天出门夜里回去（确定性，不随刷新变）',()=>{
+ const w=mk();const ps=attachPeople(w);
+ assert.equal(ps.length,96);
+ assert.equal(attachPeople(w).length,96,'重复接入不会翻倍');
+ const homes=new Set(ps.map(p=>homePlaceOf(p)));
+ assert.ok([...homes].every(h=>['qingyun','lingshan','kezhan','kezhan2','xijie','dongshi','nanmen'].includes(h)),[...homes].join(','));
+ const market=peopleAt(w,'dongshi',10);
+ assert.ok(market.length>0&&market.length<=24,`东市白天 ${market.length} 人`);
+ assert.equal(peopleAt(w,'dongshi',10).length,peopleAt(w,'dongshi',10).length);
+ // 同一个人的行踪两次调用一致
+ const one=market[0];
+ assert.equal(whereOf(one,10),whereOf(one,10));
+});
+
+test('帮过他一次，好感实打实地上来，态度跟着变',()=>{
+ const w=mk();const p=findPerson('good',{stance:'demonic'});
+ const before=personAttitude(w,p).score;
+ const r=helpPerson(w,p.id);
+ assert.ok(r.ok);
+ assert.equal(r.person.bond,12);
+ const after=personAttitude(w,r.person);
+ assert.ok(after.score>before,`${before} → ${after.score}`);
+ assert.match(after.reason,/帮过他/);
+});
+
+test('同门未必同心：善人与恶人在一个山门里互相看不顺眼',()=>{
+ const good=findPerson('good',{stance:'demonic'});
+ const sameSect=peopleOf(good.sectId).filter(p=>p.morality<=-25)[0];
+ assert.ok(sameSect,'该门里应有狠角色');
+ assert.ok(bondBetween(good,sameSect)<0);
 });

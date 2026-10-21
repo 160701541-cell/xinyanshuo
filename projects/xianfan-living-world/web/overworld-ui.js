@@ -14,7 +14,7 @@ import {interiorAtlas} from './atlas.js';
 import {classifyGesture,canSelect} from './gesture.js';
 import {layoutTown,streetsFor,ART} from './buildings.js';
 import {generateWorld,realmView,regionAt,realmReport,domainShare} from './worldmap.js';
-import {ensureDao,daoReport,attitudeOf,seekAlly,shiftDao,taoLabel,STANCES,TAGS,NATIONS,SECTS as DAO_SECTS} from './dao.js';
+import {ensureDao,daoReport,attitudeOf,seekAlly,shiftDao,taoLabel,STANCES,TAGS,NATIONS,SECTS as DAO_SECTS,attachPeople,peopleAt,helpPerson,personAttitude} from './dao.js';
 import {ensureKarma,killPreview,resolveKill,breakthroughChance,attemptBreakthrough,karmaTier,karmaReport,lootFor,JUSTIFY} from './karma.js';
 const placeById=getPlace;
 const $=id=>document.getElementById(id);
@@ -524,6 +524,9 @@ function renderWar(){
  <p><small>大宁府库 ${(purseOf(w,'court')||0).toLocaleString()} 文 · 钱从府库出，不从天降</small></p>
  <h3>征发（需圣旨）</h3>${levy}<h3>战报</h3>${log.map(e=>`<article class="entry"><small>${safe(e.type)}</small> ${safe(e.text)}</article>`).join('')||'<p>尚未接战。</p>'}`;
 }
+function personLine(w,p){
+ try{const a=personAttitude(w,p);return `${a.reason} → ${a.label}`;}catch{return p.temper||'';}
+}
 function canLead(){try{return !!rankInfo(w).lead;}catch{return false;}}
 function handleRecordsClick(e){
  const t=e.target.closest('button');if(!t)return;
@@ -542,6 +545,8 @@ function handleRecordsClick(e){
  if(t.dataset.hire){const realm=t.dataset.hire;const r=hireRetainer(w,{sect:'散修',realm,patron:'court'});
   toast(r.ok?`招得${r.retainer.realmName}供奉，耗银 ${r.price.toLocaleString()} 文`:r.error);
   if(r.ok){scheduleSave();otherPanels('xian');}return;}
+ if(t.dataset.help){const r=helpPerson(w,t.dataset.help);
+  toast(r.ok?r.line:r.error);if(r.ok){profile();scheduleSave();otherPanels('xian');}return;}
  if(t.dataset.ally){const r=seekAlly(w,t.dataset.ally);toast(r.ok?`与${attitudeOf(w,t.dataset.ally).name}结交${r.note?`·${r.note}`:''}`:r.error);if(r.ok){profile();scheduleSave();otherPanels('xian');}return;}
  if(t.dataset.raid){const r=raidSect(w,t.dataset.raid);
   toast(r.ok?`山门已破（供奉 ${r.power} 对 ${r.theirs}）`:r.error);
@@ -606,6 +611,9 @@ function renderXian(){
  const daoBox=`<h3>道心与立场</h3><article class="entry"><strong>${dr.label}</strong> · 道心 ${dr.bias>0?'+':''}${dr.bias} · 把柄 ${dr.exposure}
   <br><small>立场是它怎么说，道行是它怎么做：正道里也有手段狠辣的，魔道里也有守底线的。真正决定别人怎么看你的是<b>行径</b>（护人 ${dr.deeds.protect} · 除害 ${dr.deeds.evil} · 杀无辜 ${dr.deeds.innocent} · 杀修士 ${dr.deeds.cultivator}，行径分 ${dr.deedScore}）。</small><br>
   <small>修仙界横跨 ${NATIONS.length} 国，最大的宗门势力不在任何王朝治下。</small></article>
+  <h3>街上的人</h3>${(()=>{const here=w.player.place;const folks=peopleAt(w,here);
+   return folks.length?folks.slice(0,6).map(p=>`<article class="entry"><strong>${safe(p.name)}</strong> <small>${safe(p.sect)}·${safe(p.temper)}·${safe(p.realm)}</small>
+   <br><small>${safe(personLine(w,p))}</small> <button data-help="${p.id}">相助</button></article>`).join(''):'<p>此地没有修士走动。</p>';})()}
   <h3>牌匾与人</h3>${(dr.notable||[]).map(p=>`<article class="entry"><strong>${safe(p.name)}</strong> <small>${safe(p.sect)}·${safe(p.temper)}（道行 ${p.morality}）</small><br>
   <small>${safe(p.reason)} → <strong>${p.label}</strong></small></article>`).join('')||'<p>尚无往来。</p>'}
   <small>门派牌匾只决定它怎么对外说话；门里坐着的人，各自有自己的道行。</small>

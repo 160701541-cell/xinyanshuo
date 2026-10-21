@@ -169,9 +169,12 @@ export function peopleOf(sectId){
 export function personAttitude(w,person){
  const d=ensureDao(w);const deeds=deedScore(w);const k=w.karma?.value||0;
  const m=person.morality;let score=0;const why=[];
+ const live=attachPeople(w).find(x=>x.id===person.id);
+ const bond=live?.bond||0;
  if(m>=25){score+=deeds*0.7+d.bias*0.1;if(deeds<-25)why.push('他看不惯你做的事');if(deeds>25)why.push('他敬你为人');}
  else if(m<=-25){score+=-deeds*0.5+k*0.2;if(deeds<-10)why.push('他觉得你够狠');if(deeds>25)why.push('他觉得你假清高');}
  else{score+=d.bias*0.2;why.push('他不太关心你');}
+ if(bond){score+=bond*0.6;why.push(bond>0?'记着你帮过他':'记着旧怨');}
  score=Math.round(Math.max(-100,Math.min(100,score)));
  const label=score>=40?'同道':score>=15?'客气':score>=-15?'无感':score>=-40?'不喜':'仇视';
  return {id:person.id,name:person.name,sect:person.sect,realm:person.realm,morality:m,
@@ -186,4 +189,59 @@ export function findPerson(align,sect=null){
  if(align==='good')return pool.filter(p=>p.morality>=40).sort((a,b)=>b.morality-a.morality)[0]||null;
  if(align==='bad')return pool.filter(p=>p.morality<=-40).sort((a,b)=>a.morality-b.morality)[0]||null;
  return pool[0]||null;
+}
+
+// ── 人在地图上有位置、有作息、也有来往 ──────────────────────────────────
+/** 每个修士挂在某个门派的落脚点上；没有山门的就在县城或药市。 */
+const LODGINGS=['kezhan','kezhan2','xijie','dongshi','nanmen'];
+export function homePlaceOf(person){
+ const s=sectById(person.sectId);
+ if(!s)return 'dongshi';
+ if(s.seat==='qingyun'||s.seat==='lingshan')return s.seat;      // 县境内的山门
+ return LODGINGS[hashStr('home:'+person.id)%LODGINGS.length];   // 外来的分散住下
+}
+/** 作息：白天在落脚点或下山采买，夜里回山门/客房。 */
+export function whereOf(person,hour=12){
+ const home=homePlaceOf(person);
+ if(hour<6||hour>=21)return home;
+ // 白天一部分人下山采买，其余留在落脚点；按人定死，不随刷新变
+ const spots=['dongshi','xijie','nanmen','lingshan'];
+ const out=spots[hashStr('biz:'+person.id)%spots.length];
+ const goesOut=hashStr('out:'+person.id)%100<42;      // 四成人白天出门，其余在屋里
+ const business=hour>=8&&hour<17;
+ return business&&goesOut?out:home;
+}
+/** 把门派里的人落到世界里一次，之后他们有自己的行迹与交情。 */
+export function attachPeople(w){
+ const d=ensureDao(w);
+ if(d.people)return d.people;
+ d.people=[];
+ for(const s of SECTS){
+  for(const p of peopleOf(s.id)){
+   d.people.push({...p,home:homePlaceOf(p),bond:0,met:0,helped:0});
+  }
+ }
+ return d.people;
+}
+export function peopleAt(w,placeId,hour=null){
+ const h=hour??w.hour;
+ return attachPeople(w).filter(p=>whereOf(p,h)===placeId);
+}
+/** 帮过他一次：好感实打实地上来，之后他替你说话。 */
+export function helpPerson(w,personId){
+ const p=attachPeople(w).find(x=>x.id===personId);
+ if(!p)return {ok:false,error:'没有这个人'};
+ p.helped++;p.bond=Math.max(-100,Math.min(100,p.bond+12));
+ recordDeed(w,'protect');
+ const line=p.morality>=25?`${p.name}记下这份情。`:`${p.name}笑了一下：「有点意思。」`;
+ return {ok:true,person:p,line};
+}
+/** 同门之间的亲疏：同门未必同心，仇怨与交情都是预先长出来的。 */
+export function bondBetween(personA,personB){
+ if(personA.sectId!==personB.sectId)return 0;
+ const h=hashStr('bond:'+[personA.id,personB.id].sort().join('|'));
+ const r=(h%200)/100-1;
+ if(personA.morality>=25&&personB.morality<=-25)return -0.8;
+ if(personA.morality<=-25&&personB.morality>=25)return -0.8;
+ return Math.round(r*0.6*100)/100;
 }
