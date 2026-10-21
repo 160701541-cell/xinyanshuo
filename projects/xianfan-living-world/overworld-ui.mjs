@@ -11,7 +11,7 @@ import {ensureCourt,tickCourt,issueOrder,talkTo,courtReport,parseDecree} from '.
 import {ensureMarket,tickMarket,marketReport,releaseGrain,buyToGranary,setTax,setMonopoly,buildPost,GOODS} from './market.mjs';
 import {PeopleBank,dirFor,stepOf} from './people.mjs';
 import {practice,breakLayer,breakRealm,restMeridian,practiceReport,detectRoot} from './cultivation.mjs';
-import {runRules,ensureEngine} from './engine.mjs';
+import {runRules,ensureEngine,cardView} from './engine.mjs';
 import {loadContent} from './content/index.mjs';
 import {ensureFamily,familyReport,familyMembers,joinFamily,marry,conceive,candidatesFor,ageFamily,ageOf,ageLeft,rootOfPerson} from './family.mjs';
 import {ensureCareer,joinPath,advance,canAdvance,recruitMen,recruitCapacity,openShop,sendCaravan,buyLand,tickCareer,recordBattle,careerReport,hireCultivator,PATHS,SHOP_KINDS,MEN_COST} from './careers.mjs';
@@ -418,37 +418,49 @@ function profile(){const p=w.player,r=worldReport(w),place=placeAt(p.mapPos);
  $('stop').hidden=!w.player.route;
 }
 function showSheet(obj){selected=obj;const target=$('sheet');if(!obj){target.hidden=true;target.innerHTML='';return;}
- let title='',sub='',body='',buttons='';const player=w.player.mapPos;
- if(obj.kind==='structure'){const b=obj.data;const st=openingStatus(b.id,w.hour),perm=canEnter(w,b.id);
+ const player=w.player.mapPos;const far=(a,b=player)=>Math.round(dist(a,b));
+ let title='',sub='',tpl='',ctx={};
+ if(obj.kind==='structure'){
+  const b=obj.data,st=openingStatus(b.id,w.hour),perm=canEnter(w,b.id);
   const kindName={government:'官署',home:'民居',forge:'工坊',grain:'粮仓',inn:'客栈',school:'学塾',fort:'营署',sect:'宗门'}[b.kind]||'工商建筑';
-  title=b.name;sub=`${Math.round(dist(player,b.door))}米 · ${kindName} · ${st.label}`;
-  body=`${b.desc||'这座建筑暂未开放室内。'}
-  <p class="near">通行：${perm.ok?'可入':safe(perm.reason)}</p>`;
   const near=visibleActors(w).filter(a=>dist(a,{x:b.x,y:b.y})<260).slice(0,4);
-  body+=`<p class="near">门前可见：${near.length?near.map(a=>safe((w.people.find(p=>p.id===a.id)?.name||'行人')+'·'+a.state)).join('、'):'此刻无人'}</p>`;
-  const canEnterNow=dist(player,b.door)<35&&getPlace(b.id)&&st.open&&perm.ok;
-  buttons=`<button data-action="go">沿路前往门口</button>${canEnterNow?'<button data-action="enter">从正门进入</button>':''}${w.player.route?'<button data-action="stop" class="quiet">停下</button>':''}`;
- }else if(obj.kind==='landmark'){const b=obj.data;const st=openingStatus(b.id,w.hour);
-  title=b.name;sub=`${escapeHtml(b.faction||'')}${b.active?' · 已开放':' · 地理预留'} · ${st.label}`;body=b.desc||'';
-  const flyGate=canFly(w),zoneRule=flightRuleAt(w,{x:b.x,y:b.y});
-  if(b.active&&!flyGate.ok)body+=`<p class="near">御剑：${safe(flyGate.reason)}</p>`;
-  else if(b.active&&!zoneRule.ok)body+=`<p class="near">空域：${safe(zoneRule.reason)}</p>`;
-  else if(b.active&&zoneRule.ok&&zoneRule.zone!=='野外空域')body+=`<p class="near">空域：${safe(zoneRule.zone)}，此处可起剑。</p>`;
-  buttons=b.active?`<button data-action="go">步行前往</button>${flyGate.ok&&zoneRule.ok?'<button data-action="fly" class="quiet">御剑前往</button>':''}`:'<button disabled>本区域未开放</button>';
- }else if(obj.kind==='npc'){const a=obj.data,p=w.people.find(x=>x.id===a.id);const vis=actorVisibility(w,p);
-  title=p?.name||'人物';sub=`${a.title||p?.job||'行人'} · ${Math.round(dist(player,a))}米 · ${a.state}`;
-  body=`${vis.visible?`他/她此刻正在${placeById(vis.where)?.name||vis.where}（${vis.reason}）。`:`${vis.reason}，你现在看不到此人。`}
-  此人物是世界人口档案中的真实ID，位置与行动来自同一套规则，不是随机刷新的装饰。`;
-  buttons=`<button data-action="go">走近此人</button>`;
- }else{title='地面目标';sub=`距你 ${Math.round(dist(player,obj.point))}米 · 海拔 ${terrainHeight(obj.point.x,obj.point.y)}米`;body='这里是同一张连续地图上的一处地点。移动需要时间，河流、城墙与墙体不能穿过。';buttons=`<button data-action="go">前往此处</button><button data-action="rest" class="quiet">原地歇息一刻</button>`;}
- const h=`<div class="sheet-header"><div><small>${escapeHtml(sub)}</small><h3>${escapeHtml(title)}</h3></div><button class="quiet" id="closeSheet" aria-label="关闭地点卡片">✕</button></div><div class="sheet-body">${body}</div><div class="sheet-actions">${buttons}</div>`;
- target.innerHTML=h;target.hidden=false;$('closeSheet').onclick=()=>showSheet(null);
- target.querySelector('[data-action="go"]')?.addEventListener('click',()=>goTarget());
- target.querySelector('[data-action="enter"]')?.addEventListener('click',()=>enter());
- target.querySelector('[data-action="fly"]')?.addEventListener('click',()=>flyTarget());
- target.querySelector('[data-action="closeregion"]')?.addEventListener('click',()=>showSheet(null));
- target.querySelector('[data-action="gotoregion"]')?.addEventListener('click',()=>goTarget());
- target.querySelector('[data-action="stop"]')?.addEventListener('click',()=>{stopJourney(w);profile();scheduleSave();toast('你停下了。');});
+  title=b.name;sub=`${far(b.door)}米 · ${kindName} · ${st.label}`;tpl='poi-structure';
+  ctx={item:{name:b.name,kindName,open:st.label,access:perm.ok?'可入':perm.reason,near:near.length?near.map(a=>((w.people.find(p=>p.id===a.id)?.name||'行人')+'·'+a.state)).join('、'):'此刻无人',desc:b.desc||'这座建筑暂未开放室内。'},
+   canGo:true,canEnter:far(b.door)<35&&getPlace(b.id)&&st.open&&perm.ok,traveling:!!w.player.route};
+ }else if(obj.kind==='landmark'){
+  const b=obj.data,st=openingStatus(b.id,w.hour),flyGate=canFly(w),zoneRule=flightRuleAt(w,{x:b.x,y:b.y});
+  title=b.name;sub=`${b.faction||''}${b.active?' · 已开放':' · 地理预留'} · ${st.label}`;tpl='poi-place';
+  const zone=!b.active?'尚未开放':!flyGate.ok?`御剑：${flyGate.reason}`:!zoneRule.ok?`空域：${zoneRule.reason}`:`空域：${zoneRule.zone}`;
+  ctx={item:{name:b.name,typeName:b.faction||'地点',population:b.population||0,open:st.label,access:zone,near:'',alt:'',detail:b.desc||''},
+   canGo:!!b.active,canFly:!!b.active&&flyGate.ok&&zoneRule.ok,canRest:true,traveling:!!w.player.route};
+ }else if(obj.kind==='npc'){
+  const a=obj.data,p=w.people.find(x=>x.id===a.id),vis=actorVisibility(w,p);
+  title=p?.name||'人物';sub=`${a.title||p?.job||'行人'} · ${far(a)}米 · ${a.state}`;tpl='person-card';
+  ctx={item:{name:p?.name||'人物',job:p?.job||'行人',root:p?.rootId?({wu:'五灵根',si:'四灵根',san:'三灵根',shuang:'双灵根',dan:'单灵根',tian:'天灵根'})[p.rootId]:'',where:vis.visible?`${placeById(vis.where)?.name||vis.where}（${vis.reason}）`:'看不到',state:a.state,near:`${far(a)}米`},
+   canGo:true,canGreet:far(a)<60};
+ }else{
+  const pt=obj.point||obj.data;title='地面目标';sub=`距你 ${far(pt)}米 · 海拔 ${terrainHeight(pt.x,pt.y)}米`;tpl='poi-place';
+  ctx={item:{name:'野外地面',typeName:'地面',population:0,open:'—',access:'',near:'',alt:`${terrainHeight(pt.x,pt.y)}米`,detail:'同一张连续地图上的一处地点：移动要时间，河流、城墙与墙体不能穿过。'},
+   canGo:true,canRest:true,traveling:!!w.player.route};
+ }
+ const view=cardView(w,tpl,ctx);
+ const rows=(view?.rows||[]).map(r=>`<p class="near"><b>${safe(r.label)}</b>：${safe(r.value)}</p>`).join('');
+ const buttons=(view?.actions||[]).map(a=>`<button data-action="${a.id}"${a.id==='stop'||a.id==='fly'||a.id==='rest'?' class="quiet"':''}>${safe(a.label)}</button>`).join('');
+ target.innerHTML=`<div class="sheet-header"><div><small>${escapeHtml(sub)}</small><h3>${escapeHtml(title)}</h3></div><button class="quiet" id="closeSheet" aria-label="关闭地点卡片">✕</button></div><div class="sheet-body">${rows}</div><div class="sheet-actions">${buttons}</div>`;
+ target.hidden=false;$('closeSheet').onclick=()=>showSheet(null);
+ for(const b of target.querySelectorAll('[data-action]'))b.onclick=()=>sheetAction(b.dataset.action);
+}
+/** 模板只声明动作 id，具体做什么仍由游戏决定——数据描述“有什么按钮”，代码负责“按钮做什么”。 */
+function sheetAction(id){
+ switch(id){
+  case 'go':return goTarget();
+  case 'enter':return enter();
+  case 'fly':return flyTarget();
+  case 'rest':{const r=rest(w,30);toast(r.ok?`歇了一刻，体力回到 ${Math.round(w.player.stats.stamina)}`:(r.error||'此刻无法歇息'));profile();scheduleSave();return;}
+  case 'stop':stopJourney(w);profile();scheduleSave();toast('你停下了。');return;
+  case 'greet':{const p=selected?.data?.id;if(!p)return;const r=greet(w,p);toast(r.ok?r.line:r.error);profile();scheduleSave();return;}
+  default:return;
+ }
 }
 const escapeHtml=s=>safe(s);
 function flyTarget(){if(!selected)return;const goal=selected.kind==='structure'?selected.data.door:selected.kind==='npc'?{x:selected.data.x,y:selected.data.y}:selected.point;

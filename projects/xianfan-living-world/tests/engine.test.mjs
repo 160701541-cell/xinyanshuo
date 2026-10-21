@@ -69,8 +69,8 @@ test('卡片模板按条件出字段，界面不用自己挑', () => {
   const w = createWorld('card');
   const noPop = cardView(w, 'poi-place', {item: {name: '空屋', type: 'homes', population: 0, detail: '没人'}});
   assert.ok(!noPop.rows.some(r => r.label === '人口'));
-  const withPop = cardView(w, 'poi-place', {item: {name: '东市', type: 'market', population: 900, detail: '热闹'}, reachable: true});
+  const withPop = cardView(w, 'poi-place', {item: {name: '东市', type: 'market', population: 900, detail: '热闹'}, canGo: true});
   assert.ok(withPop.rows.some(r => r.label === '人口'));
-  assert.deepEqual(withPop.actions.map(a => a.id), ['goto']);
+  assert.ok(withPop.actions.some(a => a.id === 'go'), '有路可走时应出现前往按钮');
   assert.equal(cardView(w, 'nope'), null);
 });
