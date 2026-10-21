@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // 内容流水线：校验 → 试跑 → 出清单。加一条规则后跑这个，错在数据里就当场报出来。
 import {writeFileSync} from 'node:fs';
-import {createWorld} from '../core.mjs';
+import {createWorld,advanceClock} from '../core.mjs';
 import {RULES, CARD_TEMPLATES, validateRule, runRules} from '../engine.mjs';
 import {loadContent} from '../content/index.mjs';
 
@@ -17,7 +17,7 @@ const w = createWorld('lint');
 let fired = 0;
 try {
   for (let d = 0; d < 180; d++) {
-    w.day += 1;
+    advanceClock(w, 24 * 60);
     fired += runRules(w, 'daily', {}).length;
     if (d % 30 === 0) fired += runRules(w, 'travel', {mode: 'foot'}).length;
     if (d % 45 === 0) { w.karma = {value: 70}; fired += runRules(w, 'kill', {}).length; }

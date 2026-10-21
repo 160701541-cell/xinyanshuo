@@ -3,10 +3,10 @@
 export const RULES = [
   {
     id: 'harvest-drought', hook: 'daily', tag: '农事',
-    when: {all: [{path: 'weather', op: 'eq', value: '旱'}, {path: 'day', op: 'mod', value: 7}]},
+    when: {all: [{path: 'weather', op: 'eq', value: '大风'}, {path: 'day', op: 'mod', value: 7}]},
     then: [
       {do: 'add', path: 'price', by: 6},
-      {do: 'note', type: '农事', text: '天旱第七日，粮价又涨，{{player}}看着东市的米斗直摇头。'}
+      {do: 'note', type: '农事', text: '连日大风，田里倒伏，粮价又涨，{{player}}看着东市的米斗直摇头。'}
     ]
   },
   {
@@ -51,7 +51,7 @@ export const RULES = [
   },
   {
     id: 'plague', hook: 'daily', tag: '灾疫', once: true,
-    when: {all: [{path: 'day', op: 'gte', value: 90}, {path: 'weather', op: 'eq', value: '雨'}]},
+    when: {all: [{path: 'day', op: 'gte', value: 90}, {path: 'weather', op: 'eq', value: '小雨'}]},
     then: [
       {do: 'add', path: 'price', by: 15},
       {do: 'note', type: '灾疫', text: '梅雨过后疫气入城，药价翻了三倍。'}
@@ -77,6 +77,53 @@ export const RULES = [
     when: {all: [{path: 'karma', op: 'gte', value: 60}]},
     then: [
       {do: 'note', type: '天道', text: '心口一阵滞涩——业力缠身，突破会越来越难。'}
+    ]
+  },
+  {
+    id: 'rain-market', hook: 'daily', tag: '市井', cooldown: 8,
+    when: {all: [{path: 'weather', op: 'eq', value: '小雨'}, {path: 'player.place', op: 'eq', value: 'dongshi'}]},
+    then: [
+      {do: 'add', path: 'price', by: 2},
+      {do: 'note', type: '市井', text: '落雨，东市摊子收了一半，米价悄然涨了两文。'}
+    ]
+  },
+  {
+    id: 'inn-night-talk', hook: 'daily', tag: '江湖', cooldown: 15,
+    when: {all: [{path: 'player.place', op: 'eq', value: 'kezhan'}, {path: 'day', op: 'mod', value: 3}]},
+    then: [
+      {do: 'note', type: '江湖', text: '客栈夜话，邻桌说青云山门又要收人了——散修都往灵山去。'}
+    ]
+  },
+  {
+    id: 'night-watch', hook: 'daily', tag: '治安', cooldown: 12,
+    when: {all: [{path: 'player.place', op: 'eq', value: 'nanmen'}, {path: 'hour', op: 'gte', value: 20}]},
+    then: [
+      {do: 'add', path: 'career.fame', by: 2},
+      {do: 'note', type: '治安', text: '你在南门帮着巡了一夜，捕快记你个情。'}
+    ]
+  },
+  {
+    id: 'spirit-pulse', hook: 'daily', tag: '仙门', cooldown: 25,
+    when: {all: [{path: 'player.place', op: 'eq', value: 'lingshan'}]},
+    then: [
+      {do: 'add', path: 'player.spirit', by: 6},
+      {do: 'note', type: '仙门', text: '灵山灵脉翻身，你趁时吐纳，灵力涨了六分。'}
+    ]
+  },
+  {
+    id: 'rent-day', hook: 'daily', tag: '家族', cooldown: 300,
+    when: {all: [{path: 'day', op: 'gte', value: 30}, {path: 'family.estate.mu', op: 'gte', value: 20}]},
+    then: [
+      {do: 'add', path: 'family.estate.silver', by: 45},
+      {do: 'note', type: '家族', text: '佃户送租，族产进项四十五银。'}
+    ]
+  },
+  {
+    id: 'war-wage', hook: 'daily', tag: '兵事', cooldown: 30,
+    when: {all: [{path: 'career.men', op: 'gte', value: 10}]},
+    then: [
+      {do: 'add', path: 'player.silver', by: -15},
+      {do: 'note', type: '兵事', text: '部曲月饷扣去十五银，人不散靠的就是这一口粮。'}
     ]
   }
 ];
