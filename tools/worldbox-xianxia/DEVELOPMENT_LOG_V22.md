@@ -631,3 +631,14 @@ Work下一步：在真实Android16手机运行这一准确SHA256包，收集`MOD
 - 将完整v0.39私有APK、真实签名/根因校验JSON、签名重建脚本成功上传用户Work Library /WorldBox-万界仙侠/Work交接/。不要上传商业APK/密钥到公开仓库。
 - 新增源代码硬门禁 private-apk-lab/verify_android_package_consistency_v39.py 和 test_v39_manifest_dex_gate.py，CI里加入合成包回归：Manifest是lab31而DEX是lab13必须明确失败，防止重犯。GitHub公有CI只用模拟文件，不包含商业APK或私钥。
 - **真实验收级别**：P0启动崩溃根因已静态确认并修复签名包，但v0.39尚未在用户PKR110上实机启动成功；优先安装v0.39尝试覆盖同证书lab31。如果依然闪退，需新版本导出android崩溃记录以定位其它根因；绝不继续宣称用户手机已正常运行。与苍岚main严格隔离。
+
+
+
+## 2026-10-21 v0.40：纠正大地图“选项≠面积”的错误验收，并正式明确10000×10000格目标
+- 用户实机反馈100×100依然很小，追问10000×10000。**规范目标明确为真正10000×10000个WorldBox地块，而非新建地图菜单里多一个叫“100×100”的档位。** 10000²=1亿个地块；旧100个地图区块按WorldBox每区块64格推算是6400×6400=4096万格，两者不是同一尺寸。
+- **这次实际解析了用户原始WorldBox 0.51.4商业托管DLL，只读dnlib探针inspect-map-real：** `MapSizeAsset.size`是整数区块数；原版`MapBox.setMapSize(zoneX,zoneY)`将`MapBox.width=Config.ZONE_AMOUNT_X*64`、`height=Y*64`；`MapBox.<generateNewMap>b__157_0`从`Config.customMapSize`取`MapSizeLibrary.getSize`并走`addClearWorld`，之后`b__157_2`进入`setMapSize`。所以100区块**如果真实生效**应是6400×6400；先前只验证选项11/11根本不足以证明生成了它。
+- 同一IL看到首次生成`MapBox._first_gen`可能重置`Config.customMapSize=Config.customMapSizeDefault`，需要区分第一次自动生成、切换档位但仍使用原旧世界、相机自动适配屏幕和真正生成了大地图。**不能凭屏幕显示看起来小就猜失败根因。**
+- `MapSizeLibrary.isSizeValid`会把size与`Config.maxMapSize`比较，但已看到原版生成路径并不直接调用该方法（在Workshop上传地图路径可调用）；该上限不宜在没有实际调用链时乱说成地图生成被强制缩小。
+- 真实代码已更新`MapPresetBridgeV32.cs`：定期从真实`MapBox.width/height`读取地图长宽，输出`[SIZE-AUDIT] WORLD_REAL_DIMENSIONS preset=... width=... height=... tiles=... expected=... status=MATCH/MISMATCH`；只读且变化才打印，没有对10000²执行危险的全地图遍历。回归`MapPresetBridgeV32.Tests.cs`明确验证**当菜单选100但MapBox实际上512×512时标为MISMATCH**、实际6400²才是MATCH。这是之前QA验收缺失，现在补上。
+- 10000×10000物理格需接近`ceil(10000/64)=157`个区块边长，即原版不支持“精确10000”整倍数区块，只能以10048×10048的区块预设或修改引擎边缘裁剪实现精确长宽。但10048²≈1.0096亿地块；每格都是WorldTile等多个实时对象，安卓直接整图实例化有OOM/严重卡顿风险。**不能再直接塞一个157档APK后宣称超大地图完成**。必须设计按区块加载、远区低频模拟与存档流式化、内存预算和手机逐级负载验收。与苍岚main严格隔离。
+- 当前本次真实提交为**尺寸审计代码+单测**，尚未打包新APK，现有v0.39仍不显示尺寸诊断。10000²地图尚未实现，不得标通过。
