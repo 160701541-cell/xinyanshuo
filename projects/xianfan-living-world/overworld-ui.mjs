@@ -4,6 +4,7 @@ import {MAP_VERSION,WORLD_LIMIT,CITY,LANDMARKS,STRUCTURES,TOWN_HOUSES,WALLS,ROUT
 import {FACTIONS,factionById,territoryGrid,territoryBorderPaths,MAP_MODES,mapColor,reputation,standing,securityIndex,ITEMS,itemById,priceOf,inventory,buyItem,sellItem,canTradeHere,bagWeight,contractsFor,acceptContract,completeContract,societyReport} from './society.mjs';
 import {SpriteBank,lookFor} from './sprites.mjs';
 import {equip,drill,research,setFormation,FORMATIONS,TECHS,ARMS,unitsReport,purseOf,ensureFin} from './units.mjs';
+import {ensureCourt,tickCourt,issueOrder,talkTo,courtReport,parseDecree} from './court.mjs';
 import {ensureMarket,tickMarket,marketReport,releaseGrain,buyToGranary,setTax,setMonopoly,buildPost,GOODS} from './market.mjs';
 import {ensureWar,levyCapacity,createArmy,warReport,tickWarDay,supplyDays,armyNeeds,deliveredCostKg,emblemOf,authorityReport,setRank,rankOf,rankInfo,takeCommand,joinArmy,issueDecree} from './war.mjs';
 import {interiorAtlas} from './atlas.mjs';
@@ -402,6 +403,13 @@ function handleRecordsClick(e){
  if(t.dataset.levy){const men=Number(t.dataset.men)||50000;
   try{const a=createArmy(w,t.dataset.levy,{combat:men,seed:Date.now()%100000});note(w,'兵事',`${a.name}征发 ${men.toLocaleString()} 战兵、${a.support.toLocaleString()} 辅兵。`);toast(`${a.name}已集结，日耗 ${Math.round(armyNeeds(a).totalKg/1000)} 吨`);profile();scheduleSave();renderWar();}
   catch(err){toast(err.message);}return;}
+ if(t.dataset.quick){const inp=$('decree');if(inp)inp.value=t.dataset.quick;return;}
+ if(t.id==='decreeBtn'||t.dataset.decree){const inp=$('decree');const text=(inp?.value||'').trim();
+  if(!text)return;
+  const r=issueOrder(w,text);
+  toast(r.ok?r.reply:r.error);if(r.ok){profile();scheduleSave();otherPanels('court');}return;}
+ if(t.dataset.talk){const text=prompt('问什么？（粮价/府库/军情/贪墨/民怨）')||'近来如何';
+  const r=talkTo(w,t.dataset.talk,text);toast(`${r.staff}：${r.say}`);return;}
  if(t.dataset.mkt){
   const k=t.dataset.mkt;
   const r=k==='release'?releaseGrain(w,2000):k==='buy'?buyToGranary(w,2000):
@@ -428,6 +436,17 @@ function handleRecordsClick(e){
  if(t.dataset.return){const a=w.war.armies.find(x=>x.id===Number(t.dataset.return));if(!a)return;const seat=LANDMARKS.find(l=>l.id===factionById(a.faction)?.seat);a.goal=seat?{x:seat.x,y:seat.y}:{x:a.x,y:a.y};a.state='行军';toast(`${a.name}回师`);scheduleSave();renderWar();return;}
  if(t.dataset.complete){const r=completeContract(w,t.dataset.complete);toast(r.ok?`交差，得 ${r.pay} 文`:r.error);if(r.ok){profile();scheduleSave();renderQuests();}return;}
 }
+function renderCourt(){
+ const c=courtReport(w);
+ return `<h2>朝堂</h2><p>你说话，手下办事。旨意按人办、按人打折：能力高的快，贪得多的少。</p>
+ <article class="entry"><strong>颁旨</strong><br>
+ <input id="decree" placeholder="例：开仓放粮三千石 / 加税 / 盐铁官营 / 修驿传 / 征发五万兵马" />
+ <button id="decreeBtn">颁旨</button></article>
+ <p class="warbtns">${['开仓放粮三千石','加税','减税','盐铁官营','修驿传','征发五万兵马'].map(x=>`<button data-quick="${x}">${x}</button>`).join('')}</p>
+ ${c.staff.map(s=>`<article class="entry"><strong>${safe(s.name)}</strong> · 能力 ${s.skill} · 贪墨 ${s.corruption}% · 忠诚 ${s.loyalty}<br><small>${safe(s.busy)}</small><br>
+  <button data-talk="${s.id}">问话</button></article>`).join('')}
+ <h3>回话</h3>${(c.log||[]).map(e=>`<article class="entry">${safe(e.text)}</article>`).join('')||'<p>还没有回话。</p>'}`;
+}
 function renderLedger(){
  ensureFin(w);ensureMarket(w);const m=marketReport(w);
  const goods=m.goods.map(g=>`${g.name} ${g.price} 文/${g.unit}（${g.ratio>=1.4?'贵':g.ratio<=.7?'贱':'平'} ${(g.ratio*100).toFixed(0)}%）`).join(' · ');
@@ -447,6 +466,7 @@ function renderLedger(){
 }
 function otherPanels(panel){activeTab=panel;for(const n of document.querySelectorAll('[data-view]'))n.classList.toggle('selected',n.dataset.view===panel);
  $('canvasFrame').hidden=panel!=='map';$('records').hidden=panel==='map';$('sheet').hidden=true;if(panel==='map'){drawMap();return;}
+ if(panel==='court')return renderCourt();
  if(panel==='goods')return renderGoods();
  if(panel==='quests')return renderQuests();
  if(panel==='war')return renderWar();
@@ -487,6 +507,7 @@ function tickWarIfDayChanged(){
  if(w.day===lastWarDay)return;
  lastWarDay=w.day;
  if(w.market)tickMarket(w);
+ if(w.court){const k=tickCourt(w);for(const ev of k.events)note(w,'回话',ev.text);if(activeTab==='court')renderCourt();}
  const r=tickWarDay(w,{distanceToDepot:(a)=>Math.hypot(a.x-0,a.y-0)});
  if(r.events.length){if(activeTab==='war')renderWar();for(const ev of r.events.slice(-2))note(w,'兵事',ev.text);}
 }
