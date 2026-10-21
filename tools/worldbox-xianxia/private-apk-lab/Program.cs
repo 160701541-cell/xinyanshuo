@@ -30,10 +30,10 @@ class Program {
      if(args.Length<2)throw new ArgumentException("inspect-economy-api private Assembly-CSharp.dll");
      InspectEconomyApi(args[1]);return 0;
     case "patch-memory-safe-boot":
-     if(args.Length<4)throw new ArgumentException("patch-memory-safe-boot own-bridge.dll output.dll");
+     if(args.Length<3)throw new ArgumentException("patch-memory-safe-boot own-bridge.dll output.dll");
      PatchMemorySafeBoot(args[1],args[2]);return 0;
     case "verify-memory-safe-boot":
-     if(args.Length<4)throw new ArgumentException("verify-memory-safe-boot own-original-bridge.dll safe-bridge.dll");
+     if(args.Length<3)throw new ArgumentException("verify-memory-safe-boot own-original-bridge.dll safe-bridge.dll");
      VerifyMemorySafeBoot(args[1],args[2]);return 0;
     case "inspect-map-real": InspectMapReal(args[1]);return 0;
     case "inspect-map-ui": InspectMapUi(args[1]);return 0;
