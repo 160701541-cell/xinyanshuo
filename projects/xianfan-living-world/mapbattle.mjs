@@ -57,7 +57,7 @@ export function drawMapBattle(b,ctx,pos,mpp,opts={}){
  if(detail){
   // 尸体
   ctx.fillStyle='rgba(52,44,32,.62)';
-  for(const cd of b.corpses){const p=SP(cd.x,cd.y);ctx.fillRect(p.x-1.5,p.y-1,3,2);}
+  for(const cd of b.corpses){const p=SP(cd.x,cd.y);const sz=Math.max(1,(cd.size||1));ctx.fillRect(p.x-1.5*sz,p.y-1*sz,3*sz,2*sz);}
  } else {
   // 尸体堆：按 40 米格聚合成块
   const cell=40,agg=new Map();
@@ -108,7 +108,8 @@ export function drawMapBattle(b,ctx,pos,mpp,opts={}){
    const p=SP(e.x,e.y),k=e.kind;
    if(k==='slash'){ctx.strokeStyle=`rgba(255,250,214,${Math.max(0,e.ttl/0.4)*.85})`;ctx.lineWidth=1.4;ctx.beginPath();ctx.arc(p.x,p.y,Math.max(2,px(9)),(e.angle||0)-.7,(e.angle||0)+.7);ctx.stroke();}
    else if(k==='blood'){ctx.fillStyle='rgba(150,44,38,.75)';ctx.fillRect(p.x-1,p.y-1,2,2);}
-   else if(k==='spell'){const r=Math.max(3,px(e.r||18));ctx.strokeStyle='rgba(180,160,230,.6)';ctx.lineWidth=1.5;ctx.beginPath();ctx.arc(p.x,p.y,r,0,6.283);ctx.stroke();}
+   else if(k==='beastfall'){const r=Math.max(6,px(e.r||20));ctx.strokeStyle='rgba(200,150,80,.55)';ctx.lineWidth=2;ctx.beginPath();ctx.arc(p.x,p.y,r,0,6.283);ctx.stroke();}
+  else if(k==='spell'){const r=Math.max(3,px(e.r||18));ctx.strokeStyle='rgba(180,160,230,.6)';ctx.lineWidth=1.5;ctx.beginPath();ctx.arc(p.x,p.y,r,0,6.283);ctx.stroke();}
   }
  } else {
   // 缩远：一团一团，写人数
@@ -132,7 +133,7 @@ export function drawMapBattle(b,ctx,pos,mpp,opts={}){
    if(st.routed)extra.push(`${sd==='left'?'左':'右'}溃 ${st.routed}`);
   }
   const phase=rp.mixed?'混战':`列阵${rp.mixedAt?'':''}`;
-  const line=`${b.label} · ${phase} · 左 ${rp.left.alive}(${who('left')}) 右 ${rp.right.alive}(${who('right')})${extra.length?' · '+extra.join(' '):''}${rp.friendly?` · 误伤 ${rp.friendly}`:''}${b.done?' · 已分胜负':''}`;
+  const line=`${b.label} · ${phase} · 左 ${rp.left.alive}(${who('left')}) 右 ${rp.right.alive}(${who('right')})${extra.length?' · '+extra.join(' '):''}${rp.friendly?` · 误伤 ${rp.friendly}`:''}${rp.lootLine?` · 得 ${rp.lootLine}`:''}${b.done?' · 已分胜负':''}`;
   ctx.fillText(line,tl.x+4,tl.y-bh/2-1);
  }
 }

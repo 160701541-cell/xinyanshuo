@@ -213,3 +213,41 @@ test('妖王形态带金纹与血瞳，五个物种都有', async () => {
     assert.notEqual(svg, plain, `${id} 妖王形态应当与凡兽不同`);
   }
 });
+
+test('妖兽掉落：尸体材料必出，境界越高件数越多', async () => {
+  const L = await import('../content/loot.mjs');
+  const a = L.lootFor('wolf', 0, {seed: 'a'});
+  const c = L.lootFor('wolf', 3, {seed: 'a'});
+  const parts = x => x.filter(i => ['hide','bone','meat','sinew','fang'].includes(i.id));
+  assert.ok(parts(a).length >= 4, '尸体至少出面骨肉筋牙');
+  assert.ok(L.lootWorth(c) > L.lootWorth(a) * 2, '妖王的东西明显更值钱');
+  assert.ok(L.lootWeight(c) > L.lootWeight(a));
+});
+
+test('妖丹看概率与品级，卵和幼崽只在妖将以上', async () => {
+  const L = await import('../content/loot.mjs');
+  let core0 = 0, core3 = 0, egg = 0, cub = 0;
+  for (let i = 0; i < 200; i++) {
+    if (L.lootFor('tiger', 0, {seed: 's' + i}).some(x => x.id === 'core')) core0++;
+    const hi = L.lootFor('tiger', 3, {seed: 'h' + i});
+    if (hi.some(x => x.id === 'core')) core3++;
+    if (hi.some(x => x.id === 'egg')) egg++;
+    if (hi.some(x => x.id === 'cub')) cub++;
+    assert.ok(!L.lootFor('tiger', 0, {seed: 'e' + i}).some(x => x.id === 'egg'), '凡兽不会掉卵');
+  }
+  assert.ok(core3 > core0 * 3, `妖丹概率应随境界升高：${core0} → ${core3}`);
+  assert.ok(egg > 0 && cub > 0, '妖王应当偶尔出卵与幼崽');
+  assert.ok(cub < egg, '幼崽比卵更稀有');
+});
+
+test('战斗里打死妖兽会结算掉落', async () => {
+  const B = await import('../battle.mjs');
+  const b = B.createBattle({seed: 'drop1', left: {units: [{troop: 'beast', count: 1, beastId: 'wolf', realm: 1, size: 2.5, hp: 180, dmg: 26}]}, right: {units: [{troop: 'infantry', count: 16}]}});
+  let t = 0;
+  while (!b.done && t < 150) { B.stepBattle(b, 0.1); t += 0.1; }
+  const r = B.battleReport(b);
+  assert.equal(r.left.alive, 0, '这一场妖兽应当被打死');
+  assert.ok(r.loot.length >= 4, `掉落太少：${r.loot.length}`);
+  assert.ok(r.lootWorth > 0);
+  assert.ok(r.lootLine.includes('兽皮'));
+});

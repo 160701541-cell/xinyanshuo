@@ -4,6 +4,7 @@
 // - 命中会飞箭、溅血、倒地留尸、扬尘；
 // - 伤亡与包围压士气，士气崩了整队溃逃。
 export const FRIENDLY_FIRE=0.0005; // 混战中伤到自己人的概率（0.05%）
+import {lootFor,lootWorth,lootLine} from './content/loot.mjs';
 export const BATTLE_VERSION='battle-0.1.0';
 
 function rng(seed){let a=seed>>>0||1;return()=>{a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};}
@@ -73,7 +74,8 @@ function makeSide(def,side,w,h,rand){
     face:side==='left'?0:Math.PI,phase:rand()*6.28,unit:unit.name||t.name,
     realm:realmRank||0,realmName:rl?rl.name:'',spirit:rl?rl.spirit:0,maxSpirit:rl?rl.spirit:0,
     bag:bagCharges,bagStart:bagCharges,leader,isLeader:leader,name:unit.leader||unit.name||'',
-    size:unit.size||t.size||1,dmgOverride:unit.dmg||0,move:unit.move||''});
+    size:unit.size||t.size||1,dmgOverride:unit.dmg||0,move:unit.move||'',
+    beastId:unit.beastId||'',beastRealm:unit.realm||0});
    col++;
   }
  }
@@ -413,8 +415,17 @@ function damage(b,target,amount,attacker,kind){
     b.events.push({t:+b.t.toFixed(1),kind:'leaderless',side:target.side});
    }
   }
-  b.corpses.push({x:target.x,y:target.y,side:target.side,angle:target.face,t:b.t});
+  b.corpses.push({x:target.x,y:target.y,side:target.side,angle:target.face,t:b.t,size:target.size||1,beast:target.beastId||''});
   if(b.corpses.length>400)b.corpses.shift();
+  // 妖兽尸体本身就是原料：按物种与境界结算掉落
+  if(target.beastId){
+   b.loot=b.loot||[];
+   for(const item of lootFor(target.beastId,target.beastRealm||0,{seed:`${b.seed}:${target.id}`})){
+    const hit=b.loot.find(x=>x.id===item.id&&x.quality===item.quality);
+    if(hit)hit.count+=item.count;else b.loot.push({...item});
+   }
+   addEffect(b,'beastfall',target.x,target.y,{ttl:1.1,side:target.side,r:Math.round((target.size||1)*10)});
+  }
   addEffect(b,'death',target.x,target.y,{ttl:.6,side:target.side});
  }
  return true;
@@ -442,6 +453,9 @@ export function battleReport(b){
  const leaders=b.soldiers.filter(s=>s.isLeader).map(s=>({side:s.side,name:s.name,state:s.state,hp:s.hp,maxHp:s.maxHp,realm:s.realmName}));
  const monks=b.soldiers.filter(s=>s.troop==='monk');
  return {t:Math.round(b.t*10)/10,done:b.done,winner:b.winner||null,
+  loot:(b.loot||[]).map(x=>({id:x.id,name:x.name,count:x.count,quality:x.quality||'',price:x.price,weight:x.weight})),
+  lootWorth:(b.loot||[]).reduce((sum,x)=>sum+x.price*x.count,0),
+  lootLine:(b.loot&&b.loot.length)?lootLine(b.loot):'',
   left:{...L,lossRate:L.start?+(L.dead/L.start*100).toFixed(1):0},
   right:{...R,lossRate:R.start?+(R.dead/R.start*100).toFixed(1):0},
   corpses:b.corpses.length,effects:b.effects.length,fled:b.fled||0,

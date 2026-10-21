@@ -352,3 +352,11 @@
 - `battle.mjs`：新增 `beast` 兵种与 `claw` 爪牙兵器；单位支持 hp/dmg/size 覆盖。`mapbattle.mjs` 按体型放大绘制。
 - 测试 217/217（新增 4 项）。预览 docs/preview/beast-realms.png。
 - 未做：妖皇/化形、骨架级变形、世界里生成与掉落。
+
+## 2026-10-22 / v0.45 妖兽掉落与材料
+
+- 新模块 `content/loot.mjs`（loot-0.1.0）：11 种材料（皮/骨/肉/筋/牙/鳞/胆/妖丹/精血/兽卵/幼崽）、`lootFor/lootWorth/lootWeight/lootLine`；种子由战斗种子+士兵 id 决定，可复现。
+- `battle.mjs`：妖兽阵亡结算掉落并合并同类；战报加 `loot/lootWorth/lootLine`；尸体带 `size` 与 `beast`。
+- `mapbattle.mjs`：妖兽尸体按体型放大、新增 `beastfall` 扩散环、战况条显示「得 …」。
+- 测试 220/220（新增 3 项）。
+- 未做：材料无加工与市场价波动、卵/幼崽不可孵养、妖兽仍不进世界。
