@@ -81,7 +81,7 @@ public final class MainActivity extends Activity {
         bbg.setColor(Color.argb(240, 244, 240, 230));
         bbg.setCornerRadius(28);
         bar.setBackground(bbg);
-        String[][] tabs = {{"人物", "people"}, {"修行", "cult"}, {"法则", "law"}, {"妖兽", "wild"}, {"行囊", "bag"}, {"纪事", "log"}, {"星域", "star"}};
+        String[][] tabs = {{"人物", "people"}, {"修行", "cult"}, {"家业", "life"}, {"法则", "law"}, {"妖兽", "wild"}, {"行囊", "bag"}, {"纪事", "log"}, {"星域", "star"}};
         for (String[] t : tabs) {
             Button bt = new Button(this);
             bt.setText(t[0]);
@@ -193,6 +193,12 @@ public final class MainActivity extends Activity {
             new AlertDialog.Builder(this).setTitle("修行").setMessage(sb.toString())
                 .setPositiveButton("测灵根", (x, w) -> { toast(sim.detectRoot()); updateHud(); })
                 .setNeutralButton("参悟空间", (x, w) -> { toast(sim.comprehend("space", 200)); updateHud(); })
+                .setNegativeButton("关闭", null).show();
+            return;
+        } else if ("life".equals(what)) {
+            new AlertDialog.Builder(this).setTitle("家业").setMessage(sim.lifeText())
+                .setPositiveButton("打工一日", (x, w) -> { toast(sim.workDay("porter")); updateHud(); })
+                .setNeutralButton("置宅 420", (x, w) -> { toast(sim.buyHome("room")); updateHud(); })
                 .setNegativeButton("关闭", null).show();
             return;
         } else if ("law".equals(what)) {

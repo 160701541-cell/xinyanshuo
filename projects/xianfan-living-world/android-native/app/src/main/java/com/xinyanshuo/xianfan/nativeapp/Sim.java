@@ -35,6 +35,10 @@ public final class Sim {
     public boolean wounded = false, tested = false;
     public int morale = 70, bias = 0;
     public double lawSpace = 0, lawTime = 0;
+    // 家业：住处等级 0 无 / 1 小屋 / 2 瓦房 / 3 宅院；宗门与王位
+    public int homeLevel = 0, workDays = 0;
+    public String sectName = null, throne = null;
+    public int disciples = 0;
     public boolean ship = false;
     public final List<String> visited = new ArrayList<>();
     public double clock = 7 * 60; // 第 0 天 07:00
@@ -287,6 +291,91 @@ public final class Sim {
         return line;
     }
 
+    /* ── 家业 ─────────────────────────────────────── */
+
+    public String stayInn(int days) {
+        int cost = 30 * days;
+        if (silver < cost) return "住店要 " + cost + " 银，你只有 " + silver + " 银。";
+        silver -= cost;
+        hp = Math.min(100, hp + 45 * days);
+        stamina = Math.min(100, stamina + 60 * days);
+        clock += days * 480 * 60L / 60L;
+        return "住店 " + days + " 天，付 " + cost + " 银，气力回来一些。";
+    }
+
+    public String buyHome(String kind) {
+        int price = "yard".equals(kind) ? 6000 : "house".equals(kind) ? 1500 : 420;
+        if (homeLevel > 0) return "你已经有宅子了。";
+        if (silver < price) return "要 " + price + " 银，你只有 " + silver + " 银。";
+        silver -= price;
+        homeLevel = "yard".equals(kind) ? 3 : "house".equals(kind) ? 2 : 1;
+        note("置下宅子，住得起 " + recruitCap() + " 个人");
+        return "置下宅子，能养 " + recruitCap() + " 人。";
+    }
+
+    public int recruitCap() { return homeLevel == 0 ? 2 : homeLevel == 1 ? 6 : homeLevel == 2 ? 14 : 30; }
+
+    public String workDay(String job) {
+        int pay, need;
+        if ("clerk".equals(job)) { pay = 18; need = 6; }
+        else if ("guard".equals(job)) { pay = 25; need = 14; }
+        else if ("herb".equals(job)) { pay = 20; need = 22; }
+        else { pay = 12; need = 18; }
+        if (stamina < need) return "体力不够，先歇着。";
+        stamina -= need; silver += pay; workDays++;
+        clock += 8 * 60 * 60L;
+        return "做了一天活，得 " + pay + " 银（累计 " + workDays + " 天）。";
+    }
+
+    public String hire(int n) {
+        if (men + n > recruitCap()) return "住处只养得起 " + recruitCap() + " 人，先置宅。";
+        int cost = n * 45;
+        if (silver < cost) return "招 " + n + " 人要 " + cost + " 银。";
+        silver -= cost; men += n;
+        note("招了 " + n + " 名护院");
+        return "招了 " + n + " 人，现共 " + men + " 人。";
+    }
+
+    public String foundSect(String name) {
+        if (sectName != null) return "你已经有一处山门。";
+        if (realmLevel < 2) return "筑基以上才配开山立派。";
+        if (silver < 3000) return "开山要 3000 银。";
+        if (stones < 50) return "要 50 块下品灵石布护山大阵。";
+        silver -= 3000; stones -= 50; sectName = name;
+        note("开辟山门，立「" + name + "」");
+        return "「" + name + "」立起来了。";
+    }
+
+    public String takeDisciple(int n) {
+        if (sectName == null) return "还没有山门。";
+        int cost = n * 120;
+        if (silver < cost) return "收徒要置办行头，每人 120 银。";
+        silver -= cost; disciples += n;
+        return "收 " + n + " 名弟子，门下共 " + disciples + " 人。";
+    }
+
+    public String takeThrone(String title) {
+        if (throne != null) return "你已经是" + throne + "了。";
+        if (realmLevel < 3) return "金丹以上才镇得住一方。";
+        if (men < 60) return "至少 60 兵。";
+        if (silver < 20000) return "要 20000 银。";
+        silver -= 20000; throne = title;
+        note("于临安县衙称「" + title + "」");
+        return "你称「" + title + "」，自立一方。";
+    }
+
+    public String lifeText() {
+        StringBuilder b = new StringBuilder();
+        b.append("住处　").append(homeLevel == 0 ? "无（睡客栈或街边）" : homeLevel == 1 ? "一间小屋" : homeLevel == 2 ? "一所瓦房" : "一座宅院").append("\n");
+        b.append("能养　").append(recruitCap()).append(" 人 · 现有 ").append(men).append(" 人\n");
+        b.append("银钱　").append(silver).append(" · 下品灵石 ").append(stones).append("\n");
+        b.append("打工　").append(workDays).append(" 天\n");
+        b.append("山门　").append(sectName == null ? "无" : sectName + "（弟子 " + disciples + "）").append("\n");
+        b.append("名分　").append(throne == null ? "布衣" : throne).append("\n\n");
+        b.append("打工 12 银/日 · 置宅 420 起 · 招人 45/人 · 立宗 3000 银 + 50 灵石 · 称王 20000 银 + 60 兵");
+        return b.toString();
+    }
+
     public boolean isXiu() { return spirit > 60 && karma < 60; }
 
     /** 私兵招募：每人 14 银，上限 60（原生版先给一个人数上限） */
@@ -322,6 +411,8 @@ public final class Sim {
             o.put("stones", stones); o.put("realmLevel", realmLevel); o.put("ship", ship);
             o.put("layer", layer); o.put("rootId", rootId); o.put("tested", tested);
             o.put("lawSpace", lawSpace); o.put("lawTime", lawTime);
+            o.put("homeLevel", homeLevel); o.put("workDays", workDays); o.put("sectName", sectName);
+            o.put("disciples", disciples); o.put("throne", throne);
             o.put("practice", practiceProgress); o.put("pills", pills);
             o.put("weapon", weaponGrade); o.put("armor", armorGrade); o.put("talisman", talismanGrade);
             o.put("wounded", wounded); o.put("morale", morale); o.put("bias", bias);
@@ -344,6 +435,10 @@ public final class Sim {
             stones = o.optInt("stones", stones); realmLevel = o.optInt("realmLevel", realmLevel); ship = o.optBoolean("ship", ship);
             layer = o.optInt("layer", layer); rootId = o.optString("rootId", rootId); tested = o.optBoolean("tested", tested);
             lawSpace = o.optDouble("lawSpace", lawSpace); lawTime = o.optDouble("lawTime", lawTime);
+            homeLevel = o.optInt("homeLevel", homeLevel); workDays = o.optInt("workDays", workDays);
+            sectName = o.has("sectName") ? o.optString("sectName", null) : sectName;
+            disciples = o.optInt("disciples", disciples);
+            throne = o.has("throne") ? o.optString("throne", null) : throne;
             practiceProgress = o.optDouble("practice", practiceProgress); pills = o.optInt("pills", pills);
             weaponGrade = o.optString("weapon", weaponGrade); armorGrade = o.optString("armor", armorGrade);
             talismanGrade = o.optString("talisman", talismanGrade);
