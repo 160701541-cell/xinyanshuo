@@ -54,6 +54,8 @@ jobs:
           java -cp /tmp/worldbox-v34-modformat-jvm com.xinyanshuo.worldbox.lab13.ModFormatV34Test
       - name: 'Execute money, production, district and borders conservation tests'
         run: dotnet run --project tools/worldbox-xianxia/tests/EconomyScenarioV35.csproj -c Release
+      - name: 'Verify interactive bounded 10000-square preview pan-zoom and memory'
+        run: dotnet run --project tools/worldbox-xianxia/stream-world-v41/tests/WorldGridViewportTestsV42.csproj -c Release
       - name: 'Verify exact 10000x10000 virtual world sparse chunks, edge persistence, checksum and LRU budget'
         run: dotnet run --project tools/worldbox-xianxia/stream-world-v41/tests/WorldGridTestsV41.csproj -c Release
       - name: 'Execute 2048-square world-size preset and actual menu-list simulation'
