@@ -1,0 +1,46 @@
+{
+  "version": "v0.42",
+  "project": "WORLD_BOX_0514_EXTERNAL_MOD_LAB_NOT_CANG_LAN",
+  "private_apk": "WorldBox_万界仙侠_v042_可视10000x10000虚拟分区地图_待实机.apk",
+  "bytes": 188059356,
+  "sha256": "727dd6b9ed1346ef44b8ffcf81314016abc024ee3acc41b418320f482dfa4296",
+  "package_id": "com.xinyanshuo.worldbox.lab31",
+  "cert_sha256": "20087dc8c210c7c6a35a4492500324f33f36f7c5eb3a77dc62040c21281c400e",
+  "native_launcher_unchanged": true,
+  "changes": [
+    "WorldBoxXianxiaStreamGrid.dll",
+    "WorldBoxXianxiaEconomy.dll",
+    "install.json"
+  ],
+  "whole_game_Assembly_CSharp_dll_unchanged": true,
+  "v1_v2_v3_signature_valid": true,
+  "zip_crc_valid": true,
+  "android_install_tested": false,
+  "features": {
+    "virtual_grid_width": 10000,
+    "virtual_grid_height": 10000,
+    "visible_sample_cells": 160,
+    "camera_pan_zoom_actions": true,
+    "original_worldbox_MapBox_10000x10000": false,
+    "original_world_actual_width_height_display_attempted": true,
+    "virtual_overview_only": true,
+    "existing_economy_gui_hook_reused": true,
+    "texture_vanilla_style_device_QA": "PENDING"
+  },
+  "automated_ci": {
+    "run_id": 39562894755,
+    "three_jobs_passed": true,
+    "sparse_world_regression": true,
+    "viewport_pan_zoom_regression": true,
+    "mobile_sdk_compile": true
+  },
+  "unresolved_critical": [
+    "Old Observer V07 is FAILED on supplied phone log",
+    "Whether existing Mono Gui hook renders on PKR110 is unknown",
+    "virtual landscape is not native playable WorldBox tiles",
+    "per actual WorldBox save isolation not verified",
+    "no Android device screenshot or real user world save/reload QA"
+  ],
+  "private_library_path": "/WorldBox-万界仙侠/Work交接/",
+  "commercial_worldbox_public_upload": false
+}
