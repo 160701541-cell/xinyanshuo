@@ -13,6 +13,7 @@ namespace XianxiaWorldBox.HugeWorld
         readonly int limit;
         WorldGridExactV41 current;
         string activeKey;
+        uint activeSeed;
         public WorldGridExactV41 World { get { return current; } }
         public string WorldHash { get { return activeKey; } }
         public bool BoundToNamedSave { get { return activeKey!=null; } }
@@ -46,7 +47,11 @@ namespace XianxiaWorldBox.HugeWorld
         public WorldGridExactV41 BindAuthoritativeSave(string saveId,uint gameWorldSeed)
         {
             string key=SafeSaveKey(saveId);
-            if(current!=null&&key==activeKey)return current;
+            if(current!=null&&key==activeKey)
+            {
+                if(activeSeed!=gameWorldSeed)throw new InvalidOperationException("World identity reused with a different seed");
+                return current;
+            }
             // Flush old WORLD before switching; if disk fails old remains active.
             if(current!=null)current.Dispose();
             current=null;
@@ -54,6 +59,7 @@ namespace XianxiaWorldBox.HugeWorld
             string folder=Path.Combine(root,key);
             current=new WorldGridExactV41(folder,gameWorldSeed,limit);
             activeKey=key;
+            activeSeed=gameWorldSeed;
             return current;
         }
         public void Unbind()
@@ -61,6 +67,7 @@ namespace XianxiaWorldBox.HugeWorld
             if(current!=null)current.Dispose();
             current=null;
             activeKey=null;
+            activeSeed=0;
         }
         public void Dispose(){Unbind();}
     }
