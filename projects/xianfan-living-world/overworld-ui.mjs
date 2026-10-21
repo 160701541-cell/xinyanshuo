@@ -4,6 +4,7 @@ import {MAP_VERSION,WORLD_LIMIT,CITY,LANDMARKS,STRUCTURES,TOWN_HOUSES,WALLS,ROUT
 import {FACTIONS,factionById,territoryGrid,territoryBorderPaths,MAP_MODES,mapColor,reputation,standing,securityIndex,ITEMS,itemById,priceOf,inventory,buyItem,sellItem,canTradeHere,bagWeight,contractsFor,acceptContract,completeContract,societyReport} from './society.mjs';
 import {SpriteBank,lookFor} from './sprites.mjs';
 import {equip,drill,research,setFormation,FORMATIONS,TECHS,ARMS,unitsReport,purseOf,ensureFin} from './units.mjs';
+import {ensureCultivation,xianReport,hireRetainer,raidSect,retainerPower,REALMS,cultivatorDensity} from './cultivation.mjs';
 import {ensureState,tickState,reform,stateReport,LEVERS} from './state.mjs';
 import {ensureCourt,tickCourt,issueOrder,talkTo,courtReport,parseDecree} from './court.mjs';
 import {ensureMarket,tickMarket,marketReport,releaseGrain,buyToGranary,setTax,setMonopoly,buildPost,GOODS} from './market.mjs';
@@ -404,6 +405,12 @@ function handleRecordsClick(e){
  if(t.dataset.levy){const men=Number(t.dataset.men)||50000;
   try{const a=createArmy(w,t.dataset.levy,{combat:men,seed:Date.now()%100000});note(w,'兵事',`${a.name}征发 ${men.toLocaleString()} 战兵、${a.support.toLocaleString()} 辅兵。`);toast(`${a.name}已集结，日耗 ${Math.round(armyNeeds(a).totalKg/1000)} 吨`);profile();scheduleSave();renderWar();}
   catch(err){toast(err.message);}return;}
+ if(t.dataset.hire){const realm=t.dataset.hire;const r=hireRetainer(w,{sect:'散修',realm,patron:'court'});
+  toast(r.ok?`招得${r.retainer.realmName}供奉，耗银 ${r.price.toLocaleString()} 文`:r.error);
+  if(r.ok){scheduleSave();otherPanels('xian');}return;}
+ if(t.dataset.raid){const r=raidSect(w,t.dataset.raid);
+  toast(r.ok?`山门已破（供奉 ${r.power} 对 ${r.theirs}）`:r.error);
+  if(r.ok){scheduleSave();otherPanels('xian');}return;}
  if(t.dataset.reform){const [lever,opt]=t.dataset.reform.split(':');
   const r=reform(w,lever,opt);
   toast(r.ok?`改${LEVERS[lever].name}为${LEVERS[lever].options[opt]}${r.resistance?`（阻力 ${Math.round(r.resistance)}）`:''}`:r.error);
@@ -440,6 +447,21 @@ function handleRecordsClick(e){
  if(t.dataset.march){const a=w.war.armies.find(x=>x.id===Number(t.dataset.march));if(!a)return;a.goal={x:0,y:0};a.state='行军';toast(`${a.name}开拔，向县城行军`);scheduleSave();renderWar();return;}
  if(t.dataset.return){const a=w.war.armies.find(x=>x.id===Number(t.dataset.return));if(!a)return;const seat=LANDMARKS.find(l=>l.id===factionById(a.faction)?.seat);a.goal=seat?{x:seat.x,y:seat.y}:{x:a.x,y:a.y};a.state='行军';toast(`${a.name}回师`);scheduleSave();renderWar();return;}
  if(t.dataset.complete){const r=completeContract(w,t.dataset.complete);toast(r.ok?`交差，得 ${r.pay} 文`:r.error);if(r.ok){profile();scheduleSave();renderQuests();}return;}
+}
+function renderXian(){
+ const r=xianReport(w);
+ const qi=r.regions.map(g=>`${g.name} 灵气 ${g.qi}（每万人 ${g.density} 名修士）`).join(' · ');
+ const sects=r.sects.map(sx=>`<article class="entry"><strong>${safe(sx.name)}</strong> · 道众 ${sx.disciples} · 战力 ${sx.power}${sx.destroyed?' · 已破':''}<br>
+  <button data-raid="${sx.id}" ${sx.destroyed?'disabled':''}>遣供奉灭门</button></article>`).join('');
+ const ret=r.retainers.length?r.retainers.map(x=>`<article class="entry">${safe(x.name)} · 战力 ${x.power} · 月俸 ${x.upkeep.toLocaleString()} 文</article>`).join(''):'<p>尚无供奉。灵根是天生的，供奉是钱买的。</p>';
+ const jobs=r.mortals.map(j=>`${j.name} ${j.count} 人（月钱 ${j.wage} 文）`).join(' · ');
+ return `<h2>仙门</h2><p>灵气决定修士在哪儿；钱决定修士替谁办事。县城灵气薄，一年也未必出一个筑基。</p>
+ <article class="entry"><strong>灵气</strong><br>${qi}</article>
+ <h3>宗门</h3>${sects}
+ <h3>供奉（战力 ${r.retainerPower}）</h3>${ret}
+ <p class="warbtns">${Object.entries(REALMS).map(([id,rl])=>`<button data-hire="${id}">招${rl.name}（${(rl.power*300/10000).toFixed(1)}万）</button>`).join('')}</p>
+ <h3>凡人的营生</h3><article class="entry">${jobs}</article>
+ <p><small>灭门不看你的灵根，看你能养几个供奉。役奴没有工钱——这一行从来没有工钱。</small></p>`;
 }
 function renderCourt(){
  const c=courtReport(w);
@@ -483,6 +505,7 @@ function renderInstitutions(){
 function otherPanels(panel){activeTab=panel;for(const n of document.querySelectorAll('[data-view]'))n.classList.toggle('selected',n.dataset.view===panel);
  $('canvasFrame').hidden=panel!=='map';$('records').hidden=panel==='map';$('sheet').hidden=true;if(panel==='map'){drawMap();return;}
  if(panel==='court')return renderCourt();
+ if(panel==='xian')return renderXian();
  if(panel==='goods')return renderGoods();
  if(panel==='quests')return renderQuests();
  if(panel==='war')return renderWar();
