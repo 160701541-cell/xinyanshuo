@@ -29,3 +29,6 @@
 .war-row{border:1px solid rgba(120,104,74,.28);border-radius:8px;padding:8px 10px;margin:8px 0;background:rgba(255,252,242,.6)}
 .war-row header{display:flex;align-items:center;gap:6px;margin-bottom:4px}
 .war-row p{margin:2px 0;font-size:12px;line-height:1.5}
+
+.war-row .arms{font-size:12px;color:#5e563d}
+.war-row .warbtns button{font-size:11px;padding:4px 7px;margin:2px 3px 0 0}

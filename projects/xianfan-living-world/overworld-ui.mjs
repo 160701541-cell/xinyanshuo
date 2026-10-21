@@ -3,6 +3,7 @@ import {createWorld,restoreWorld,saveableWorld,worldReport,simulateDay,note,getP
 import {MAP_VERSION,WORLD_LIMIT,CITY,LANDMARKS,STRUCTURES,TOWN_HOUSES,WALLS,ROUTES,STREAMS,PLACE_METERS,ensureGeo,terrainHeight,dist,obstacleAt,beginJourney,stopJourney,advanceMap,enterStructure,exitStructure,placeAt,visibleActors,actorVisibility,openingStatus,canEnter,canFly,flightRuleAt,rest} from './overworld.mjs';
 import {FACTIONS,factionById,territoryGrid,territoryBorderPaths,MAP_MODES,mapColor,reputation,standing,securityIndex,ITEMS,itemById,priceOf,inventory,buyItem,sellItem,canTradeHere,bagWeight,contractsFor,acceptContract,completeContract,societyReport} from './society.mjs';
 import {SpriteBank,lookFor} from './sprites.mjs';
+import {equip,drill,research,setFormation,FORMATIONS,TECHS,ARMS,unitsReport,purseOf} from './units.mjs';
 import {ensureWar,levyCapacity,createArmy,warReport,tickWarDay,supplyDays,armyNeeds,deliveredCostKg,emblemOf,authorityReport,setRank,rankOf,rankInfo,takeCommand,joinArmy,issueDecree} from './war.mjs';
 import {interiorAtlas} from './atlas.mjs';
 import {classifyGesture,canSelect} from './gesture.mjs';
@@ -362,7 +363,15 @@ function renderWar(){
   return `<article class="war-row"><header><strong>${a.emblem?`<span class="glyph">${safe(a.emblem.glyph)}</span>`:''}${safe(a.corps)}</strong><span class="tag">${safe(factionById(a.faction)?.name||'')}</span></header>
   <p>将 ${safe(a.commander)} · 战历 ${a.veteran??0}（%越低越像炮灰）· 士气 ${a.morale} · ${safe(a.state)}</p>
   <p>战兵 ${a.combat.toLocaleString()} · 辅兵 ${a.support.toLocaleString()} · 战损 ${a.losses.combat.toLocaleString()}/${a.losses.support.toLocaleString()}</p>
-  <small>日耗 ${(a.needKg/1000).toFixed(0)} 吨 · 自携粮 ${a.supplyDays} 日</small><br>
+  <small>日耗 ${(a.needKg/1000).toFixed(0)} 吨 · 自携粮 ${a.supplyDays} 日</small>
+  <p class="arms">${(a.digest?.arms||[]).map(x=>`${x.name} ${x.share}%`).join(' · ')}</p>
+  <p><small>${safe(a.digest?.armor||'')} · ${safe(a.digest?.weapon||'')} · 训练 ${a.digest?.train??30} · 阵 ${safe(a.digest?.formation||'横阵')} · 战力 ×${a.digest?.quality??1}</small></p>
+  <p class="warbtns">
+   <button data-gear="${a.id}:1:1">皮甲+铁枪</button>
+   <button data-gear="${a.id}:2:1">札甲+铁枪</button>
+   <button data-drill="${a.id}">操练至 60</button>
+   ${Object.entries(FORMATIONS).map(([k,v])=>`<button data-form="${a.id}:${k}">${v.name}</button>`).join('')}
+  </p><br>
   <button data-march="${a.id}">开赴县城</button><button data-return="${a.id}">回师</button>${cmd}${join}</article>`;
  }).join('')||'<p>天下暂无出征之军。</p>';
  const levy=FACTIONS.map(f=>{
@@ -375,6 +384,12 @@ function renderWar(){
  $('records').innerHTML=`<h2>天下兵事 · 第 ${r.day} 日</h2>${identity}
  <p>屏上一面旗就是账本里一支军：旗形是国别，旗字是国徽，旗号是番号，旗色是国色。</p>
  <p>在册 〔${r.total.toLocaleString()}〕 人（战兵+辅兵），出征 ${r.armies} 军。</p>${rows}
+ <h3>兵种与装备</h3><p>兵种配比由国情决定：乡野多步卒、商会多弓骑、御城重甲、青云出剑修。换装按比例付钱，先武装前军。</p>
+ <p>科技：${Object.entries(TECHS).map(([k,t])=>{
+  const own=!!w.tech?.[k];
+  return `<button data-tech="${k}" ${own?'disabled':''}>${own?'已习':''}${t.name}（${(t.cost/10000).toFixed(0)}万）</button>`;
+ }).join('')}</p>
+ <p><small>大宁府库 ${(purseOf(w,'court')||0).toLocaleString()} 文 · 钱从府库出，不从天降</small></p>
  <h3>征发（需圣旨）</h3>${levy}<h3>战报</h3>${log.map(e=>`<article class="entry"><small>${safe(e.type)}</small> ${safe(e.text)}</article>`).join('')||'<p>尚未接战。</p>'}`;
 }
 function canLead(){try{return !!rankInfo(w).lead;}catch{return false;}}
@@ -386,6 +401,17 @@ function handleRecordsClick(e){
  if(t.dataset.levy){const men=Number(t.dataset.men)||50000;
   try{const a=createArmy(w,t.dataset.levy,{combat:men,seed:Date.now()%100000});note(w,'兵事',`${a.name}征发 ${men.toLocaleString()} 战兵、${a.support.toLocaleString()} 辅兵。`);toast(`${a.name}已集结，日耗 ${Math.round(armyNeeds(a).totalKg/1000)} 吨`);profile();scheduleSave();renderWar();}
   catch(err){toast(err.message);}return;}
+ if(t.dataset.gear){const [id,armor,weapon]=t.dataset.gear.split(':').map(Number);
+  const a=w.war.armies.find(x=>x.id===id);if(!a)return;
+  const r=equip(w,a,{armor,weapon,share:.5});
+  toast(r.ok?`换装 ${Math.round((r.share||0)*100)}%，耗银 ${r.cost.toLocaleString()} 文`:r.error);
+  if(r.ok){profile();scheduleSave();renderWar();}return;}
+ if(t.dataset.drill){const a=w.war.armies.find(x=>x.id===Number(t.dataset.drill));if(!a)return;
+  const r=drill(w,a,60);toast(r.ok?`操练至 60，耗银 ${r.cost.toLocaleString()} 文`:r.error);
+  if(r.ok){scheduleSave();renderWar();}return;}
+ if(t.dataset.form){const [id,form]=t.dataset.form.split(':');const a=w.war.armies.find(x=>x.id===Number(id));if(!a)return;
+  const r=setFormation(w,a,form);toast(r.ok?`列${FORMATIONS[form].name}`:r.error);if(r.ok){scheduleSave();renderWar();}return;}
+ if(t.dataset.tech){const r=research(w,t.dataset.tech,'court');toast(r.ok?'习得技艺':r.error);if(r.ok){scheduleSave();renderWar();}return;}
  if(t.dataset.rank){setRank(w,t.dataset.rank);toast(`身份：${t.dataset.rank}`);profile();scheduleSave();renderWar();return;}
  if(t.dataset.lead){const r=takeCommand(w,Number(t.dataset.lead));toast(r.ok?'你已接管这一军':r.error);scheduleSave();renderWar();return;}
  if(t.dataset.join){const r=joinArmy(w,Number(t.dataset.join));toast(r.ok?'你编入行伍，只是其中一人':r.error);scheduleSave();renderWar();return;}

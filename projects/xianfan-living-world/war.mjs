@@ -1,7 +1,8 @@
 // 《仙凡共生》战争与后勤：百万规模的账本推演。纯逻辑，不碰 DOM，可回放。
 // 设计原则：屏幕上的旗不是装饰品，它对应这里的 men 数字；数字对不上，界面就不许显示。
-import {FACTIONS,factionById} from './society.mjs';
+import {FACTIONS,factionById,POPULATION} from './society.mjs';
 import {note} from './core.mjs';
+import {compositionFor,quality,armyDigest,ARMS,FORMATIONS} from './units.mjs';
 
 export const WAR_VERSION='war-0.1.0';
 /** 1 石 = 60 公斤（书中简化为 120 斤，未按明代 94 公斤换算）。 */
@@ -21,11 +22,11 @@ const SEAT={court:{x:0,y:0},merchant:{x:0,y:0},folk:{x:6900,y:-3500},sect:{x:113
 
 /** 各国/各势力的户籍人口。县域 13680 人只是这张表里的一粒沙。 */
 export const REALM={
- court:{people:12000000,name:'大宁',note:'户籍在册的编户齐民'},
- merchant:{people:3800000,name:'临安商户',note:'商籍与附籍，粮在手里但人不归县衙'},
- folk:{people:16000000,name:'乡野编户',note:'天下大多数人口在此，税重、分散、难征'},
- sect:{people:600000,name:'青云道众',note:'道士、道童与依附的山民'},
- guard:{people:300000,name:'御城军籍',note:'军户世代当兵，不事农桑'}
+ court:{people:POPULATION.court.people,name:'大宁',note:'户籍在册的编户齐民'},
+ merchant:{people:POPULATION.merchant.people,name:'临安商户',note:'商籍与附籍，粮在手里但人不归县衙'},
+ folk:{people:POPULATION.folk.people,name:'乡野编户',note:'天下大多数人口在此，税重、分散、难征'},
+ sect:{people:POPULATION.sect.people,name:'青云道众',note:'道士、道童与依附的山民'},
+ guard:{people:POPULATION.guard.people,name:'御城军籍',note:'军户世代当兵，不事农桑'}
 };
 
 const mulberry=(seed)=>{let a=seed>>>0;return()=>{a=(a+0x6D2B79F5)>>>0;let t=Math.imul(a^(a>>>15),1|a);t=(t+Math.imul(t^(t>>>7),61|t))^t;return((t^(t>>>14))>>>0)/4294967296;};};
@@ -69,7 +70,7 @@ export function armyNeeds(a){
  const totalKg=rationKg+beastKg;
  return{beast,rationKg,beastKg,totalKg,dan:totalKg/KG_PER_DAN,beastPerDay:beast};
 }
-export function createArmy(w,faction,{combat=100000,support=null,x=null,y=null,name=null,seed=1,commander=null,veteran=null}={}){
+export function createArmy(w,faction,{combat=100000,support=null,x=null,y=null,name=null,seed=1,commander=null,veteran=null,units=null}={}){
  ensureWar(w);
  const cap=levyCapacity(w,faction);
  if(combat<=0)throw new Error('兵力必须为正');
@@ -82,6 +83,7 @@ export function createArmy(w,faction,{combat=100000,support=null,x=null,y=null,n
   commander:commander||generalName(w,faction,corpsNo),veteran:veteran??8,
   combat,support:sup,x:x??seat.x,y:y??seat.y,goal:null,
   morale:80,state:'集',routed:false,seed,days:0,emblem:emblemOf(faction),
+  units:units||compositionFor(faction),kit:{armor:0,weapon:0},train:30,experience:0,formation:'line',
   losses:{combat:0,support:0},battles:0};
  army.supplyKg=armyNeeds(army).totalKg*CARRY_DAYS;
  w.war.armies.push(army);
@@ -134,7 +136,7 @@ export function consumeDay(a){
 }
 /** 两支军相遇：兰开斯特线性律 + 士气与补给修正，逐日推演。 */
 export function battleDay(a,b,rng=mulberry(1)){
- const pa=warPower(a),pb=warPower(b);
+ const pa=warPower(a)*quality(a,b),pb=warPower(b)*quality(b,a);
  const intensity=.06;
  const rawA=b.combat*intensity*(pb/Math.max(pa,1)),rawB=a.combat*intensity*(pa/Math.max(pb,1));
  // 新兵先死：训练与战历决定谁被消耗。老兵的伤亡乘数更低，新兵更高。
@@ -147,7 +149,7 @@ export function battleDay(a,b,rng=mulberry(1)){
  a.losses.support+=supA;b.losses.support+=supB;
  a.morale=clamp(a.morale-(lossA/Math.max(a.combat+lossA,1))*90+(rng()-.5)*2,0,100);
  b.morale=clamp(b.morale-(lossB/Math.max(b.combat+lossB,1))*90+(rng()-.5)*2,0,100);
- a.battles++;b.battles++;a.veteran=Math.min(100,(a.veteran??0)+3);b.veteran=Math.min(100,(b.veteran??0)+3);
+ a.battles++;b.battles++;a.veteran=Math.min(100,(a.veteran??0)+3);b.veteran=Math.min(100,(b.veteran??0)+3);a.experience=Math.min(200,(a.experience??0)+6);b.experience=Math.min(200,(b.experience??0)+6);
  return{lossA,lossB};
 }
 function routArmy(a){if(a.routed)return; a.routed=true;a.state='溃散';a.goal=null;}
@@ -194,7 +196,7 @@ export function warReport(w){
  const war=ensureWar(w);
  const total=war.armies.reduce((n,a)=>n+a.combat+a.support,0);
  return{day:war.day,armies:war.armies.length,total,
-  field:war.armies.filter(a=>!a.routed).map(a=>({id:a.id,name:a.corps||a.name,corps:a.corps,commander:a.commander,veteran:a.veteran??0,emblem:a.emblem||emblemOf(a.faction),losses:{...a.losses},faction:a.faction,combat:a.combat,support:a.support,morale:Math.round(a.morale),state:a.state,supplyDays:+supplyDays(a).toFixed(1),needKg:Math.round(armyNeeds(a).totalKg)}))};
+  field:war.armies.filter(a=>!a.routed).map(a=>({id:a.id,name:a.corps||a.name,corps:a.corps,commander:a.commander,veteran:a.veteran??0,emblem:a.emblem||emblemOf(a.faction),losses:{...a.losses},faction:a.faction,combat:a.combat,support:a.support,morale:Math.round(a.morale),state:a.state,supplyDays:+supplyDays(a).toFixed(1),needKg:Math.round(armyNeeds(a).totalKg),digest:armyDigest(a)}))};
 }
 
 // ---------------------------------------------------------------------------

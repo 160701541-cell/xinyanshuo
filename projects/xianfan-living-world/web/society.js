@@ -14,6 +14,14 @@ export const FACTIONS=[
  {id:'sect',name:'青云仙门',color:'#8ab4c8',ink:'#456b7e',kind:'cultivation',seat:'qingyun',weight:.94,blurb:'山门修士，御剑往来，不奉世俗律。'},
  {id:'guard',name:'御城军',color:'#9d92bd',ink:'#544a72',kind:'cultivation',seat:'qingyun',weight:.7,blurb:'修仙城池的守城军，城内唯一被允许御剑升空者。'},
 ];
+// 人口是府库与征兵的唯一分母（war.mjs 的 REALM、units.mjs 的军费都从这里取）
+export const POPULATION={
+ court:{people:12000000,name:'大宁'},
+ merchant:{people:3800000,name:'临安商户'},
+ folk:{people:16000000,name:'乡野编户'},
+ sect:{people:600000,name:'青云道众'},
+ guard:{people:300000,name:'御城军籍'}
+};
 export const factionById=id=>FACTIONS.find(f=>f.id===id)||null;
 
 // —— 势力领土：加权最近锚点的硬边界（P 社式色块），单元格边长 6000 米。

@@ -46,8 +46,10 @@ test('断粮会掉士气、跑人、战力折损，不是只弹一行字',()=>{
 
 test('同等兵力的两支军对撞，双方伤亡接近（兰开斯特对称性）',()=>{
  const w=make();
- const a=createArmy(w,'court',{combat:100000,x:0,y:0});
- const b=createArmy(w,'folk',{combat:100000,x:100000,y:0});
+ // 兵种不同就是对位不同：“同等兵力”要先同等编制，才谈得上对称
+ const same={units:{inf:.6,arc:.2,cav:.15,heavy:.05}};
+ const a=createArmy(w,'court',{combat:100000,x:0,y:0,...same});
+ const b=createArmy(w,'folk',{combat:100000,x:100000,y:0,...same});
  for(let d=0;d<3;d++)battleDay(a,b,()=>.5);
  assert.ok(Math.abs(a.losses.combat-b.losses.combat)<a.losses.combat*.08,'对称推演不应差出一成');
  assert.ok(a.support<b.support+1,'辅兵也会随主力伤亡');
