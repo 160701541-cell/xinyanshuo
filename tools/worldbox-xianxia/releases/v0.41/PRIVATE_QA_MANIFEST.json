@@ -1,0 +1,63 @@
+{
+  "schema": 1,
+  "project": "WORLDBOX_EXTERNAL_MOD_NOT_CANG_LAN",
+  "release": "v0.41",
+  "date": "2026-10-21",
+  "goal": "Exact 10000×10000 logical tile data layer, 100 million coordinate-addressable positions",
+  "implemented": "Sparse procedural data grid only, NOT 100 million live WorldBox tiles",
+  "dimensions": {
+    "width": 10000,
+    "height": 10000,
+    "logical_tiles": 100000000,
+    "edge": 128,
+    "chunks_x": 79,
+    "chunks_y": 79,
+    "total_chunks": 6241,
+    "rightmost_tiles": 16,
+    "bottommost_tiles": 16
+  },
+  "bounded_memory": {
+    "max_active_chunk_slots": 12,
+    "full_world_tile_array_allocated": false,
+    "modified_chunk_delta_files": true
+  },
+  "save_and_integrity": {
+    "format": "WBX41TIL v1",
+    "sha256_per_chunk": true,
+    "same_filesystem_file_replace": true,
+    "world_save_isolation": false,
+    "real_worldbox_save_compatibility": "NOT_IMPLEMENTED"
+  },
+  "integration": {
+    "apk_payload_changes": [
+      "assets/Mono/Managed.zip",
+      "assets/worldbox-xianxia/v18/install.json"
+    ],
+    "mono_helper": "WorldBoxXianxiaMapPreset.dll",
+    "added_assembly": "WorldBoxXianxiaStreamGrid.dll",
+    "runtime_poll": "every 10 seconds; status logged if changed",
+    "actual_worldbox_mapbox_dimensions_10000": false,
+    "unity_rendering": false,
+    "gameplay_entities": false
+  },
+  "CI": {
+    "run_id": 39550983219,
+    "source_tests": "PASS",
+    "android_public_sdk": "PASS",
+    "private_toolkit": "PASS",
+    "device_android16": "PENDING"
+  },
+  "artifact": {
+    "filename": "WorldBox_万界仙侠_v041_10000x10000分区世界底层_待实机.apk",
+    "bytes": 188051159,
+    "sha256": "b5e0d1f259477990752e555d53a2911b0eef170643f8ec20e5b0ae822f65b46f",
+    "package_name": "com.xinyanshuo.worldbox.lab31",
+    "certificate_sha256": "20087dc8c210c7c6a35a4492500324f33f36f7c5eb3a77dc62040c21281c400e",
+    "v1_v2_v3_verified": true,
+    "zip_crc_verified": true,
+    "commercial_game_assets_modified": false
+  },
+  "private_library": "/WorldBox-万界仙侠/Work交接/",
+  "public_game_apk_uploaded": false,
+  "main_canglan_modified": false
+}
