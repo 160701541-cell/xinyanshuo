@@ -172,3 +172,44 @@ test('妖兽卡会带出对应的妖兽画', async () => {
   const view = cardView(w, 'poi-structure', {item: {name: '青鬃狼'}});
   assert.equal(view.beast.id, 'wolf');
 });
+
+test('妖兽随境界变大变强，招式逐境解锁', async () => {
+  const B = await import('../content/beasts.mjs');
+  const s0 = B.sizeAt('wolf', 0), s1 = B.sizeAt('wolf', 1), s3 = B.sizeAt('wolf', 3);
+  assert.ok(s1 > s0 && s3 > s1, '体型应当随境界递增');
+  assert.equal(B.movesAt('wolf', 0).length, 1);
+  assert.equal(B.movesAt('wolf', 1).length, 2);
+  assert.equal(B.movesAt('wolf', 2).length, 3);
+  const w0 = B.beastAt('wolf', 0), w2 = B.beastAt('wolf', 2);
+  assert.ok(w2.hp > w0.hp * 1.6, '血量应当明显变厚');
+  assert.ok(w2.dmg > w0.dmg * 1.6, '伤害应当明显变高');
+  assert.equal(w2.move.name, '狼嚎');
+  assert.ok(B.beastAt('tiger', 3).move.mult > B.beastAt('tiger', 0).move.mult);
+});
+
+test('体型是米数换算的：妖王境的狼比凡兽境高出一截', async () => {
+  const B = await import('../content/beasts.mjs');
+  const a = B.beastAt('wolf', 0), b = B.beastAt('wolf', 3);
+  assert.ok(b.meters > a.meters + 1.0, `${a.meters} → ${b.meters}`);
+  assert.ok(b.size > a.size);
+  assert.ok(b.meters / B.HUMAN_HEIGHT === b.size || Math.abs(b.meters / B.HUMAN_HEIGHT - b.size) < 0.01);
+});
+
+test('境界越高样子也在进化，不是只放大', async () => {
+  const A = await import('../content/beastart.mjs');
+  const arts = [0, 1, 2, 3].map(r => A.beastArt('wolf', r).rows.join('\n'));
+  assert.equal(new Set(arts).size, 4, '四个境界应当四张不同的画');
+  const filled = r => A.beastArt('wolf', r).rows.join('').replace(/\./g, '').length;
+  assert.ok(filled(1) > filled(0), '妖兵比凡兽多出妖气');
+  assert.ok(filled(2) > filled(1), '妖将再多出角与骨刺');
+});
+
+test('妖王形态带金纹与血瞳，五个物种都有', async () => {
+  const A = await import('../content/beastart.mjs');
+  for (const id of ['wolf', 'boar', 'ape', 'serpent', 'tiger']) {
+    const svg = A.beastArtSVG(id, 96, 3);
+    assert.ok(svg.includes('#e0b34e'), `${id} 缺金纹`);
+    const plain = A.beastArtSVG(id, 96, 0);
+    assert.notEqual(svg, plain, `${id} 妖王形态应当与凡兽不同`);
+  }
+});

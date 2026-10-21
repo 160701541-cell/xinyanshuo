@@ -65,8 +65,8 @@ export function drawMapBattle(b,ctx,pos,mpp,opts={}){
   ctx.fillStyle='rgba(52,44,32,.58)';
   for(const [k,n] of agg){const [gx,gy]=k.split(',').map(Number);const p=SP(gx*cell+cell/2,gy*cell+cell/2);ctx.fillRect(p.x-2,p.y-1.5,4,3);}
  }
- const body=Math.max(1.4,Math.min(7,9/mpp));      // 小人像素高
- const staff=Math.max(2,Math.min(14,20/mpp));    // 武器长度
+ const baseBody=Math.max(1.4,Math.min(7,9/mpp));  // 小人像素高
+ const baseStaff=Math.max(2,Math.min(14,20/mpp));// 武器长度
  if(detail){
   for(const s of b.soldiers){
    if(s.state==='dead')continue;
@@ -88,7 +88,10 @@ export function drawMapBattle(b,ctx,pos,mpp,opts={}){
     ctx.beginPath();ctx.arc(p.x,p.y,R,0,6.283);ctx.fillStyle='#9aa2cf';ctx.fill();continue;
    }
    // 兵种衣色来自 battle.mjs 的 TROOPS.color（v0.32 提饱和），阵营色只做底衬
-   const cloth=TROOPS[s.troop]?.color||side[s.side]||'#666';
+   const many=TROOPS[s.troop]||{};
+   const cloth=many.color||side[s.side]||'#666';
+   const bsz=Math.max(1,s.size||many.size||1);       // 妖兽按体型放大
+   const body=baseBody*bsz, staff=baseStaff*Math.min(2.2,bsz);
    ctx.fillStyle=side[s.side]||'#666';
    ctx.fillRect(p.x-body/2-0.6,p.y-body-0.6,body+1.2,body*1.5+1.2);
    ctx.fillStyle=cloth;

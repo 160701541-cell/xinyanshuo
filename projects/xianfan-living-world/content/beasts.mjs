@@ -49,6 +49,55 @@ export function sizeRatio(id) {
   return b ? +(b.size / HUMAN_HEIGHT).toFixed(2) : 1;
 }
 
+/** 招式：境界越高，能用的招式越多、越狠 */
+export const MOVES = {
+  wolf:   [{id:'rend',name:'裂风爪',realm:3,mult:2.0,area:1},{id:'bite',name:'撕咬',realm:0,mult:1.0,area:0},{id:'pounce',name:'扑击',realm:1,mult:1.5,area:1},{id:'howl',name:'狼嚎',realm:2,mult:0.6,area:4,fear:true}],
+  boar:   [{id:'ruin',name:'山崩撞',realm:3,mult:2.2,area:2},{id:'charge',name:'冲撞',realm:0,mult:1.1,area:0},{id:'tusk',name:'獠牙挑',realm:1,mult:1.6,area:0},{id:'quake',name:'践地',realm:2,mult:0.9,area:3}],
+  ape:    [{id:'hurl',name:'掷峰',realm:3,mult:2.1,area:2},{id:'fist',name:'双拳砸',realm:0,mult:1.1,area:0},{id:'throw',name:'掷石',realm:1,mult:1.2,area:1},{id:'roar',name:'猿啸',realm:2,mult:0.7,area:4,fear:true}],
+  serpent:[{id:'wrap',name:'缠绕',realm:0,mult:1.2,area:0},{id:'venom',name:'毒息',realm:1,mult:1.0,area:2},{id:'swallow',name:'吞咬',realm:3,mult:2.4,area:0}],
+  tiger:  [{id:'claw',name:'扑剪',realm:0,mult:1.2,area:0},{id:'tailsweep',name:'尾扫',realm:1,mult:0.9,area:2},{id:'roar',name:'虎啸',realm:2,mult:0.8,area:4,fear:true},{id:'king',name:'山君临世',realm:3,mult:2.2,area:3}],
+};
+
+/** 体型随境界变大：每境 +18%，凡兽 2.1 米，妖王能到三米多 */
+export function sizeAt(id, realm = 0) {
+  const b = beastById(id);
+  if (!b) return 0;
+  return +(b.size * Math.pow(1.18, realm)).toFixed(2);
+}
+
+/** 境界越高解锁越多招式 */
+export function movesAt(id, realm = 0) {
+  return (MOVES[id] || []).filter(m => m.realm <= realm).sort((a, b) => a.realm - b.realm || a.mult - b.mult);
+}
+
+/** 一场战斗里它最狠的那一招 */
+export function bestMove(id, realm = 0) {
+  const list = movesAt(id, realm);
+  if (!list.length) return null;
+  // 取境界最高、威力最大的那一招
+  return list.slice().sort((a, b) => b.realm - a.realm || b.mult - a.mult)[0];
+}
+
+/** 某境界下的完整妖兽：体型、血、伤、招式都在这里 */
+export function beastAt(id, realm = 0) {
+  const b = beastById(id);
+  if (!b) return null;
+  const f = asFighter(id);
+  const move = bestMove(id, realm);
+  const mult = move ? move.mult : 1;
+  return {
+    ...f,
+    id: b.id, name: b.name,
+    size: +(sizeAt(id, realm) / HUMAN_HEIGHT).toFixed(2),
+    meters: sizeAt(id, realm),
+    hp: Math.round(f.hp * Math.pow(1.45, realm)),
+    dmg: Math.round(f.dmg * Math.pow(1.5, realm) * (0.85 + mult * 0.15)),
+    move,
+    moves: movesAt(id, realm),
+    realm,
+  };
+}
+
 /** 给战斗用的属性：血、伤害都是甲士的四倍上下 */
 export const SOLDIER_REF = { hp: 100, dmg: 11 };
 export function asFighter(id) {

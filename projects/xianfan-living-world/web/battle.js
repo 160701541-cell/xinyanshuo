@@ -10,6 +10,7 @@ function rng(seed){let a=seed>>>0||1;return()=>{a|=0;a=a+0x6D2B79F5|0;let t=Math
 function hash(s){let h=2166136261;for(let i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,16777619);}return h>>>0;}
 
 export const WEAPONS={
+ claw:{name:'爪牙',reach:2.4,dmg:34,rate:1.15,arc:0.9,armor:0},
  spear:{name:'长枪',reach:2.8,dmg:11,rate:1.05,arc:22,style:'thrust'},
  sword:{name:'环首刀',reach:1.7,dmg:13,rate:1.5,arc:46,style:'slash'},
  shield:{name:'刀盾',reach:1.8,dmg:10,rate:1.35,armor:6,arc:40,style:'slash'},
@@ -25,6 +26,7 @@ export const TROOPS={
  archer:{name:'弓手',weapon:'bow',hp:70,armor:0,speed:4.4,color:'#71903f',pierce:0.3,block:0,vsCavalry:0.9,steadiness:0.85},
  crossbow:{name:'弩手',weapon:'crossbow',hp:78,armor:1,speed:4.2,color:'#5f7f4a',pierce:0.45,block:0,vsCavalry:0.95,steadiness:0.9},
  cavalry:{name:'轻骑',weapon:'lance',hp:135,armor:3,speed:13.0,color:'#b25b3e',pierce:0.2,block:0.1,vsCavalry:0.8,steadiness:1.0,charge:1.5},
+ beast:{name:'妖兽',weapon:'claw',hp:400,armor:6,speed:9.5,color:'#8a6a3f',pierce:0.4,block:0,vsCavalry:1.4,steadiness:1.3,size:2.2},
  monk:{name:'修士',weapon:'staff',hp:150,armor:2,speed:7.5,color:'#7f6fd0',spirit:70,regen:2.4,spellCost:11,radius:16,pierce:0.6,block:0,vsCavalry:1.2,steadiness:1.25}
 };
 // 境界：人海能磨死炼气，磨不死金丹；突围的概率也跟着境界走
@@ -64,13 +66,14 @@ function makeSide(def,side,w,h,rand){
    const leader=false; // 真正的首领身份由指挥链绑定决定，不能整队都是将
    const bagCharges=unit.bag===undefined?(unit.troop==='monk'?Math.max(0,(realmRank||2)-1):0):unit.bag;
    const realmBulk=rl?1+0.32*(realmRank-1):1;
-   const maxHp=Math.round(t.hp*(leader?2.2:1)*realmBulk);
+   const maxHp=Math.round((unit.hp||t.hp)*(leader?2.2:1)*realmBulk*(unit.hpMul||1));
    soldiers.push({id:nextId++,side,troop:unit.troop,weapon:t.weapon,rowY:y,
     x,y,hp:maxHp,maxHp,armor:(t.armor||0)+(wp.armor||0),
     morale:100,state:'advance',target:null,cool:rand()*0.5,
     face:side==='left'?0:Math.PI,phase:rand()*6.28,unit:unit.name||t.name,
     realm:realmRank||0,realmName:rl?rl.name:'',spirit:rl?rl.spirit:0,maxSpirit:rl?rl.spirit:0,
-    bag:bagCharges,bagStart:bagCharges,leader,isLeader:leader,name:unit.leader||unit.name||''});
+    bag:bagCharges,bagStart:bagCharges,leader,isLeader:leader,name:unit.leader||unit.name||'',
+    size:unit.size||t.size||1,dmgOverride:unit.dmg||0,move:unit.move||''});
    col++;
   }
  }
@@ -262,7 +265,7 @@ export function stepBattle(b,dt=0.1){
      const dry=s.troop==='monk'&&s.spirit<8?0.55:1;   // 灵力见底的修士，剑也软
      const ff=friendlyFire(b,s,reach*1.3);
      const victim=ff||enemy;
-     const hit=damage(b,victim,wp.dmg*dry*(0.7+b.rand()*0.7),s,ff?'friendly':'melee');
+     const hit=damage(b,victim,(s.dmgOverride||wp.dmg)*dry*(0.7+b.rand()*0.7),s,ff?'friendly':'melee');
      addEffect(b,'slash',(s.x+victim.x)/2,(s.y+victim.y)/2,
       {angle:s.face,arc:wp.arc,ttl:.28,side:s.side,weapon:s.weapon});
      if(hit)addEffect(b,'blood',victim.x,victim.y-6,{ttl:.5,side:s.side});

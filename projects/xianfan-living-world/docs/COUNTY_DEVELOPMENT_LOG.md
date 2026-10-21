@@ -342,3 +342,13 @@
 - 预览：`docs/preview/beast-scale.png`（甲士 1.72 m 与五种妖兽同尺对比，1 米 = 34 像素）。
 - 测试 213/213（新增 2 项：五张画互不相同且有内容、妖兽卡带出对应画）。
 - 未做：朝向与行走帧、受伤/扑咬帧、世界里生成与掉落、远景剪影降级。
+
+## 2026-10-22 / v0.44 妖兽随境界变形
+
+用户要求“别光长体型，样子都应该进化”。
+
+- `content/beastart.mjs`：新增 `evolve(g,id,realm)`，四层变形（妖兵妖气/妖将角与骨刺/妖王金纹血瞳气环）；`beastArt(id,realm)`、`beastArtSVG(id,size,realm)` 接受境界，描边最后统一跑。
+- `content/beasts.mjs`：`sizeAt` 1.18^realm、`movesAt` 逐境解锁、`beastAt` 输出 {meters,hp,dmg,size,move,moves}；补妖王境绝招（裂风爪/山崩撞/掷峰/吞咬/山君临世）。
+- `battle.mjs`：新增 `beast` 兵种与 `claw` 爪牙兵器；单位支持 hp/dmg/size 覆盖。`mapbattle.mjs` 按体型放大绘制。
+- 测试 217/217（新增 4 项）。预览 docs/preview/beast-realms.png。
+- 未做：妖皇/化形、骨架级变形、世界里生成与掉落。

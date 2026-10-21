@@ -13,6 +13,10 @@ const PAL = {
   '5': '#4a3a24', // 眼/爪
   '6': '#a63a2e', // 口/血纹
   '7': '#6d7f4a', // 藤/鳞点缀
+  '8': '#6fd0c4', // 妖气青
+  '9': '#e0b34e', // 妖王金
+  'a': '#8a5ab0', // 魔纹紫
+  'b': '#c0392b', // 血瞳
 };
 
 class Canvas {
@@ -155,17 +159,57 @@ function tiger(g) {
 }
 
 const PAINTERS = { wolf, boar, ape, serpent, tiger };
+const HEADS = { wolf: [36, 22], boar: [35, 26], ape: [23, 16], serpent: [34, 14], tiger: [35, 22] };
+const EYES = [['wolf', [34.6, 20.6]], ['wolf', [37.4, 20.6]]];
 
-export function beastArt(id) {
+/** 境界越高，样子本身在变：妖兵起有妖气纹，妖将生角与骨刺，妖王披金纹、双瞳血红 */
+function evolve(g, id, realm = 0) {
+  if (realm <= 0) return;
+  const [hx, hy] = HEADS[id] || [24, 16];
+
+  if (realm >= 1) {
+    // 妖气：眼睛发青光，身侧浮起几缕青丝
+    g.rect(hx - 1.4, hy - 0.6, 2, 2, '8');
+    g.rect(hx + 1.6, hy - 0.6, 2, 2, '8');
+    for (let i = 0; i < 3; i++) g.set(8 + i * 3, 20 - i, '8');
+    g.set(hx - 5, hy + 5, '8');
+    g.set(hx + 5, hy + 6, '8');
+  }
+  if (realm >= 2) {
+    // 妖将：额生独角、背脊骨刺、爪尖泛青
+    g.line(hx, hy - 4.6, hx - 1.6, hy - 8.4, '9', 2);
+    g.line(hx + 0.6, hy - 4.6, hx + 2.2, hy - 7.6, '9', 1);
+    for (let i = 0; i < 4; i++) g.line(10 + i * 4, 21, 9.4 + i * 4, 17.6, 'a', 1);
+    for (const cx of [12, 17, 27, 32]) g.rect(cx, 40, 4, 2, '8');
+  }
+  if (realm >= 3) {
+    // 妖王：骨甲镶金、瞳色转血、周身妖气环
+    g.line(hx - 3.4, hy + 1.6, hx + 3.4, hy + 1.6, '9', 1);
+    g.rect(hx - 2.4, hy + 2.6, 1.6, 1.6, 'b');
+    g.rect(hx + 2.4, hy + 2.6, 1.6, 1.6, 'b');
+    // 妖气环：只在身侧与身后，不在脸上乱点
+    for (const [ax, ay] of [[hx - 10, hy - 4], [hx - 11, hy + 2], [hx - 9, hy + 7], [hx + 9, hy - 3], [hx + 10, hy + 3], [5, hy + 6], [3, hy + 1]]) {
+      if (ax > 1 && ay > 1) g.set(ax, ay, 'a');
+    }
+    // 脊背镶金 + 尾尖镶金
+    g.line(11, 21.4, 29, 21.4, '9', 1);
+    g.set(2, 14, '9'); g.set(3, 15, '9');
+    g.line(hx - 6, hy - 2, hx - 4, hy - 5, '9', 1);
+    g.line(hx + 6, hy - 2, hx + 4, hy - 5, '9', 1);
+  }
+}
+
+export function beastArt(id, realm = 0) {
   const paint = PAINTERS[id];
   if (!paint) return null;
   const g = new Canvas();
   paint(g);
-  return { id, w: GW, h: GH, rows: g.out() };
+  evolve(g, id, Math.max(0, Math.min(3, realm)));
+  return { id, realm, w: GW, h: GH, rows: g.out() };
 }
 
-export function beastArtSVG(id, size = 128) {
-  const art = beastArt(id);
+export function beastArtSVG(id, size = 128, realm = 0) {
+  const art = beastArt(id, realm);
   if (!art) return '';
   const px = size / GW;
   const parts = [];
