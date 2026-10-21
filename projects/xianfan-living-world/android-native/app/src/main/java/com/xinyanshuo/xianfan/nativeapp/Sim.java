@@ -660,7 +660,7 @@ public final class Sim {
         return w;
     }
 
-    /** 行囊一行：[图标 id, 显示名, 件数] */
+    /** 行囊一行：[图标 id, 显示名, 件数, 原键（含品阶）] */
     public java.util.List<String[]> bagRows() {
         java.util.List<String[]> rows = new java.util.ArrayList<>();
         for (Map.Entry<String, Integer> e : bag.entrySet()) {
@@ -671,7 +671,7 @@ public final class Sim {
             JSONObject meta = itemById(id);
             String name = meta != null ? meta.optString("name") : key;
             if (!grade.isEmpty()) name += "·" + Grades.name(grade);
-            rows.add(new String[]{id, name, String.valueOf(e.getValue())});
+            rows.add(new String[]{id, name, String.valueOf(e.getValue()), key});
         }
         return rows;
     }
@@ -683,6 +683,41 @@ public final class Sim {
 
     /** 分档显示（支持 long：行囊估价会超过 int） */
     public static String coinText(long v) { return coinText((int) Math.min(Integer.MAX_VALUE, Math.max(Integer.MIN_VALUE, v))); }
+
+    /** 从行囊里把兵器/甲/符换上身，品阶决定加成 */
+    public String equip(String key) {
+        int bar = key.indexOf('|');
+        String id = bar < 0 ? key : key.substring(0, bar);
+        String grade = bar < 0 ? "mortal" : key.substring(bar + 1);
+        if ("blade".equals(id)) { weaponGrade = grade; return "换上兵器：" + Grades.name(grade); }
+        if ("armor".equals(id)) { armorGrade = grade; return "换上甲：" + Grades.name(grade); }
+        if ("talisman".equals(id)) { talismanGrade = grade; return "换上符：" + Grades.name(grade); }
+        return "这件不能装备。";
+    }
+
+    /** 个人状态：一行一项，给「个人」页用 */
+    public String profileText() {
+        StringBuilder b = new StringBuilder();
+        b.append("心魇说 · ").append(realmLevel > 0 ? "修士" : "凡人").append("\n")
+         .append("境界　").append(realmName()).append(layer > 0 ? "·炼气" + layer + "层" : "").append("\n")
+         .append("灵根　").append(tested ? Roots.name(rootId) : "未测").append("\n")
+         .append("气血　").append(String.format("%.0f/100", hp)).append("　体力 ").append(String.format("%.0f/100", stamina)).append("\n")
+         .append("战力　").append(power()).append("\n")
+         .append("业力　").append(karma).append("\n")
+         .append("住处　").append(homeLevel > 0 ? "自有宅院（" + homeLevel + " 间）" : "客店 / 借住").append("\n")
+         .append("身份　").append(sectName == null || sectName.isEmpty() ? "白身" : sectName).append("\n")
+         .append("私兵　").append(men).append(" 人　马 ").append(horse ? "有" : "无").append("\n")
+         .append("钱　　文 ").append(coin).append("　灵石 ").append(stones).append("\n")
+         .append("行囊　").append(bagCount()).append(" 件 · ").append(String.format("%.1f", bagWeight())).append(" 斤 · 值 ").append(coinText(bagWorth()));
+        return b.toString();
+    }
+
+    public String gearText() {
+        return "兵器　" + Grades.name(weaponGrade) + "（×" + Grades.mult(weaponGrade) + "）\n"
+             + "甲　　" + Grades.name(armorGrade) + "（×" + Grades.mult(armorGrade) + "）\n"
+             + "符　　" + Grades.name(talismanGrade) + "（×" + Grades.mult(talismanGrade) + "）\n\n"
+             + powerBreakdown();
+    }
 
     public boolean isXiu() { return spirit > 60 && karma < 60; }
 
@@ -753,10 +788,27 @@ public final class Sim {
             resIron = o.optInt("resIron", resIron); huts = o.optInt("huts", huts);
             techArms = o.optInt("techArms", techArms);
             bag.clear();
-            for (String kv : o.optString("bag", "").split(";")) {
-                if (kv.isEmpty()) continue;
-                int c = kv.lastIndexOf(':');
-                if (c > 0) bag.put(kv.substring(0, c), Integer.parseInt(kv.substring(c + 1)));
+            String rawBag = o.optString("bag", "");
+            if (rawBag.startsWith("{")) {
+                // 旧存档把行囊存成 JSON 对象，迁到 id|品阶 记账
+                try {
+                    JSONObject old = new JSONObject(rawBag);
+                    for (java.util.Iterator<String> it = old.keys(); it.hasNext(); ) {
+                        String k = it.next();
+                        String id = k.contains("妖丹") ? "core" : k.contains("精血") ? "pill"
+                            : k.contains("皮") ? "skin" : k.contains("骨") ? "bone"
+                            : k.contains("肉") ? "meat" : k.contains("干粮") ? "grain" : "grain";
+                        bag.merge(id, old.optInt(k, 1), Integer::sum);
+                    }
+                } catch (Exception ignored) { }
+            } else {
+                for (String kv : rawBag.split(";")) {
+                    if (kv.isEmpty()) continue;
+                    int c = kv.lastIndexOf(':');
+                    if (c <= 0) continue;
+                    try { bag.merge(kv.substring(0, c), Integer.parseInt(kv.substring(c + 1)), Integer::sum); }
+                    catch (NumberFormatException ignored) { }
+                }
             } techFarm = o.optInt("techFarm", techFarm);
             techFort = o.optInt("techFort", techFort);
             sectName = o.has("sectName") ? o.optString("sectName", null) : sectName;

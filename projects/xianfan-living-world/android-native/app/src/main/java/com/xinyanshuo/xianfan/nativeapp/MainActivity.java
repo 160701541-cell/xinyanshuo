@@ -65,6 +65,7 @@ public final class MainActivity extends Activity {
         hud.setBackground(bg);
         FrameLayout.LayoutParams hlp = new FrameLayout.LayoutParams(-2, -2, Gravity.TOP | Gravity.START);
         hlp.setMargins(24, 40, 24, 0);
+        hud.setOnClickListener(v -> profileDialog());
         root.addView(hud, hlp);
 
         hint = new TextView(this);
@@ -176,6 +177,19 @@ public final class MainActivity extends Activity {
         }
     }
 
+    /** 左上角点开：个人状态，三个页签 */
+    private void profileDialog() {
+        new AlertDialog.Builder(this)
+            .setTitle("心魇说")
+            .setMessage(sim.profileText())
+            .setPositiveButton("装备栏", (d, w) -> new AlertDialog.Builder(this)
+                .setTitle("装备 · 战力 " + sim.power())
+                .setMessage(sim.gearText())
+                .setPositiveButton("关闭", null).show())
+            .setNeutralButton("行囊", (d, w) -> bagDialog())
+            .setNegativeButton("关闭", null).show();
+    }
+
     /** 行囊：格子 + 图标 + 件数，点一格看说明 */
     private void bagDialog() {
         java.util.List<String[]> rows = sim.bagRows();
@@ -187,7 +201,7 @@ public final class MainActivity extends Activity {
         TableRow row = null;
         for (int i = 0; i < rows.size(); i++) {
             if (i % cols == 0) { row = new TableRow(this); grid.addView(row); }
-            final String id = rows.get(i)[0], name = rows.get(i)[1], count = rows.get(i)[2];
+            final String id = rows.get(i)[0], name = rows.get(i)[1], count = rows.get(i)[2], key = rows.get(i)[3];
             LinearLayout cell = new LinearLayout(this);
             cell.setOrientation(LinearLayout.VERTICAL);
             cell.setGravity(Gravity.CENTER);
@@ -215,7 +229,11 @@ public final class MainActivity extends Activity {
                     .setMessage((meta != null ? "单价 " + Sim.coinText(value) + "\n重量 " + weight + " 斤/件\n" : "")
                         + "行囊共 " + sim.bagCount() + " 件 · " + String.format("%.1f", sim.bagWeight()) + " 斤 · 值 " + Sim.coinText(sim.bagWorth())
                         + "\n\n" + note)
-                    .setPositiveButton("知道了", null).show();
+                    .setPositiveButton("装备", (dd, ww) -> {
+                        String r = sim.equip(key);
+                        toast(r); bagDialog();
+                    })
+                    .setNegativeButton("知道了", null).show();
             });
             row.addView(cell);
         }
