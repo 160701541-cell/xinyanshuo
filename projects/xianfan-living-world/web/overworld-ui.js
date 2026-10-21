@@ -601,10 +601,10 @@ function renderXian(){
   <h3>护国</h3><article class="entry">${danger}<br><small>护国力量 = 禁宫大阵 + 御用供奉；宗门战力 = 道众 × 境界 + 护山大阵 + 符箓 + 灵兽。</small></article>`;
  const k=karmaReport(w);const bt=k.breakthrough;
  const dr=daoReport(w);
- const stanceRows=dr.list.slice(0,8).map(x=>`<article class="entry"><strong>${safe(x.name)}</strong> <small>${safe(x.stance)}</small> · ${x.label}（${x.score}）<br>
+ const stanceRows=dr.list.slice(0,8).map(x=>`<article class="entry"><strong>${safe(x.name)}</strong> <small>${safe(x.stance)}·${safe(x.moralityLabel)}${x.masked?'·伪善':''}</small> · ${x.label}（${x.score}）<br>
   <small>${safe(x.reason)}</small> ${x.hostile?'<small>死敌</small>':`<button data-ally="${x.id}">结交</button>`}</article>`).join('');
  const daoBox=`<h3>道心与立场</h3><article class="entry"><strong>${dr.label}</strong> · 道心 ${dr.bias>0?'+':''}${dr.bias} · 把柄 ${dr.exposure}
-  <br><small>业力只是账，道心才是别人眼里的你。魔修自己不觉有业，但除魔卫道的人不这么看；你也别指望两头都占——跟谁走得近，就沾谁的颜色。</small><br>
+  <br><small>立场是它怎么说，道行是它怎么做：正道里也有手段狠辣的，魔道里也有守底线的。真正决定别人怎么看你的是<b>行径</b>（护人 ${dr.deeds.protect} · 除害 ${dr.deeds.evil} · 杀无辜 ${dr.deeds.innocent} · 杀修士 ${dr.deeds.cultivator}，行径分 ${dr.deedScore}）。</small><br>
   <small>修仙界横跨 ${NATIONS.length} 国，最大的宗门势力不在任何王朝治下。</small></article>
   <h3>诸方眼中</h3>${stanceRows}`;
  const karmaBox=`<h3>业力</h3><article class="entry"><strong>${k.tier}</strong> · 业力 ${k.value} · 突破成功率 ${Math.round(bt.chance*100)}%${bt.risk?` · <b style="color:#a33">${bt.risk}将临</b>`:''}<br>

@@ -2,7 +2,7 @@
 // - 修士有掉落：灵石、丹药、法器，杀了是赚；
 // - 凡人没有掉落，且杀之沾业最重，突破时业力会来索；
 // - 有正当理由（亲眷/友人被杀、护人、自卫、该杀之人）则业力极轻，甚至除害反减。
-import {shiftDao} from './dao.mjs';
+import {shiftDao,recordDeed} from './dao.mjs';
 export const KARMA_VERSION='karma-0.1.0';
 
 export const JUSTIFY={
@@ -113,6 +113,10 @@ export function resolveKill(w,opts={}){
  // 道心跟着走：误入歧途不是想干什么就干什么，是身边的人开始换
  const dshift=t.kind==='cultivator'?(p.justified?0:-1):(t.evil?4:(p.justified?0:-8));
  if(dshift)shiftDao(w,dshift,p.justified?`处置${t.name||''}`:`杀${t.name||''}`);
+ // 行径账：立场可以装，做过的事装不了
+ if(t.kind==='cultivator')recordDeed(w,'cultivator');
+ else if(t.evil)recordDeed(w,'evil');
+ else if(!p.justified)recordDeed(w,'innocent');
  const dmg=p.tierAfter==='clean'?'':`　${karmaTier(k.value).note}`;
  return {...p,drops,karmaAfter:k.value,tierLabel:karmaTier(k.value).label,summary:`杀${t.kind==='cultivator'?'修士':'凡人'}${t.name||''}：业力${p.karma>=0?'+':''}${p.karma}${dmg}`};
 }
