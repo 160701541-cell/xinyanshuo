@@ -18,12 +18,13 @@ export const WEAPONS={
  staff:{name:'桃木剑',reach:60,dmg:6,rate:2.0,arc:60,spell:true,radius:24}
 };
 export const TROOPS={
- infantry:{name:'步卒',weapon:'spear',hp:100,armor:2,speed:5.2,color:'#6f7f96'},
- swordsman:{name:'刀手',weapon:'shield',hp:110,armor:4,speed:5.6,color:'#8a7a62'},
- archer:{name:'弓手',weapon:'bow',hp:70,armor:0,speed:4.4,color:'#77835f'},
- crossbow:{name:'弩手',weapon:'crossbow',hp:75,armor:1,speed:4.2,color:'#6b7358'},
- cavalry:{name:'轻骑',weapon:'lance',hp:130,armor:3,speed:13.0,color:'#93705f'},
- monk:{name:'修士',weapon:'staff',hp:150,armor:2,speed:7.5,color:'#8b95c4',spirit:70,regen:2.4,spellCost:11,radius:16}
+ // pierce 破甲（无视多少比例护甲）、block 盾挡概率、vsCavalry 对骑加成、steadiness 溃散时的定力
+ infantry:{name:'步卒',weapon:'spear',hp:100,armor:2,speed:5.2,color:'#6f7f96',pierce:0.15,block:0,vsCavalry:1.55,steadiness:1.0},
+ swordsman:{name:'刀手',weapon:'shield',hp:115,armor:5,speed:5.6,color:'#8a7a62',pierce:0.0,block:0.26,vsCavalry:1.15,steadiness:1.15},
+ archer:{name:'弓手',weapon:'bow',hp:70,armor:0,speed:4.4,color:'#77835f',pierce:0.3,block:0,vsCavalry:0.9,steadiness:0.85},
+ crossbow:{name:'弩手',weapon:'crossbow',hp:78,armor:1,speed:4.2,color:'#6b7358',pierce:0.45,block:0,vsCavalry:0.95,steadiness:0.9},
+ cavalry:{name:'轻骑',weapon:'lance',hp:135,armor:3,speed:13.0,color:'#93705f',pierce:0.2,block:0.1,vsCavalry:0.8,steadiness:1.0,charge:1.5},
+ monk:{name:'修士',weapon:'staff',hp:150,armor:2,speed:7.5,color:'#8b95c4',spirit:70,regen:2.4,spellCost:11,radius:16,pierce:0.6,block:0,vsCavalry:1.2,steadiness:1.25}
 };
 // 境界：人海能磨死炼气，磨不死金丹；突围的概率也跟着境界走
 export const BATTLE_REALMS={
@@ -59,7 +60,7 @@ function makeSide(def,side,w,h,rand){
    const y=y0+row*f.rowGap;
    const realmRank=unit.troop==='monk'?(unit.realm||2):0;
    const rl=realmRank?BATTLE_REALMS[realmRank]:null;
-   const leader=!!unit.leader;
+   const leader=false; // 真正的首领身份由指挥链绑定决定，不能整队都是将
    const bagCharges=unit.bag===undefined?(unit.troop==='monk'?Math.max(0,(realmRank||2)-1):0):unit.bag;
    const realmBulk=rl?1+0.32*(realmRank-1):1;
    const maxHp=Math.round(t.hp*(leader?2.2:1)*realmBulk);
@@ -74,6 +75,19 @@ function makeSide(def,side,w,h,rand){
  }
  return soldiers;
 }
+function chainOf(def,side){
+ // 指挥链：主将 → 副将 → 校尉。全死光就是群龙无首。
+ const given=Array.isArray(def.commanders)?def.commanders:[];
+ if(!given.length){
+  const n=def.leader||null;
+  given.push({name:n||(side==='left'?'主将':'主将'),martial:def.martial??58,command:def.command??60});
+  if(def.deputies!==0){
+   given.push({name:(n?n+'麾下副将':'副将'),martial:(def.martial??58)*0.68,command:(def.command??60)*0.72});
+   given.push({name:'随军校尉',martial:(def.martial??58)*0.5,command:(def.command??60)*0.55});
+  }
+ }
+ return given.map((c,i)=>({...c,rank:i,alive:true}));
+}
 export function createBattle({seed='battle',left={},right={},width=680,height=380}={}){
  const rand=rng(hash(String(seed)));
  nextId=1;
@@ -83,6 +97,26 @@ export function createBattle({seed='battle',left={},right={},width=680,height=38
   stats:{left:{start:0,dead:0,hp:0,morale:100},right:{start:0,dead:0,hp:0,morale:100}}};
  b.soldiers.push(...makeSide(b.sides.left,'left',width,height,rand));
  b.soldiers.push(...makeSide(b.sides.right,'right',width,height,rand));
+ b.chain={left:chainOf(b.sides.left,'left'),right:chainOf(b.sides.right,'right')};
+ b.command={left:0,right:0};
+ // 把指挥链落到具体士兵身上：主将 → 副将 → 校尉，依次挂 isLeader/rankCmd
+ for(const side of ['left','right']){
+  const chain=b.chain[side];
+  const mine=b.soldiers.filter(s=>s.side===side);
+  // 将领站在后排：按离敌方阵线的远近排序，越远越可能是指挥
+  const rear=mine.slice().sort((a,b)=>side==='left'?b.x-a.x:a.x-b.x);
+  const explicit=rear.filter(s=>s.isLeader||s.leader);
+  const picks=explicit.slice(0,chain.length);
+  const boosted=new Set(picks.map(s=>s.id));
+  while(picks.length<chain.length){const c=rear.find(s=>!picks.includes(s));if(!c)break;picks.push(c);}
+  chain.forEach((c,i)=>{
+   const s=picks[i];if(!s)return;
+   s.isLeader=true;s.rankCmd=i;s.name=c.name;
+   if(boosted.has(s.id)){s.maxHp=Math.round(s.maxHp*(i===0?2.0:1.35));s.hp=s.maxHp;}
+   c.soldier=s.id;
+  });
+  b.command[side]=0;
+ }
  b.stats.left.start=b.soldiers.filter(s=>s.side==='left').length;
  b.stats.right.start=b.soldiers.filter(s=>s.side==='right').length;
  b.rand=rand;
@@ -102,7 +136,9 @@ function nearestEnemy(b,s){
  }
  if(!best)return null;
  const taken=best.attackers|0;
- return {enemy:taken<2?best:(second||best),d:taken<2?bd:sd};
+ // 修士会被围：同一个修士身上能挂 6–11 把刀，普通兵只有 2 个人能并排砍
+ const cap=2;
+ return {enemy:taken<cap?best:(second||best),d:taken<cap?bd:sd};
 }
 function addEffect(b,kind,x,y,extra={}){
  const e={id:b.effects.length+1,kind,x,y,t:b.t,ttl:extra.ttl||0.45,...extra};
@@ -179,7 +215,9 @@ export function stepBattle(b,dt=0.1){
    const tx=enemy.x-dir*reach*0.85;
    const ty=s.rowY!==undefined?(s.rowY*0.75+enemy.y*0.25):enemy.y;
    const vx=tx-s.x, vy=ty-s.y, vd=Math.hypot(vx,vy)||1;
-   const k=Math.min(1,t.speed*dt/vd);
+   // 修士被围住就腾挪不开：人海能贴上来，这也是低阶修士会被磨死的原因
+   const slow=s.troop==='monk'&&(s.surrounded||0)>=3?0.32:1;
+   const k=Math.min(1,t.speed*slow*dt/vd);
    s.x+=vx*k; s.y+=vy*k;
    s.face=dir>0?0:Math.PI; s.phase+=dt*8;
   }else{
@@ -236,8 +274,15 @@ export function stepBattle(b,dt=0.1){
   const st=b.stats[side];
   st.dead=dead;st.alive=alive;st.hp=Math.round(mine.reduce((a,s)=>a+Math.max(0,s.hp),0));
   const fatigue=b.t>50?Math.min(18,(b.t-50)*0.3):0;
-  const leaderHit=(side==='left'?b.stats.left:b.stats.right).leaderDown?22:0;
-  const morale=Math.round(Math.max(0,Math.min(100,100-dead*110/Math.max(1,mine.length)-fatigue-leaderHit)));
+  const cmd=commanderOf(b,side);
+  // 统御高=军心稳；副将接手时按能力差扣一次；全死光=群龙无首，军心持续漏
+  const cmdBonus=cmd?((cmd.command||50)-50)*0.16:0;
+  const takeover=(b.takeoverHit&&b.takeoverHit[side])||0;
+  const noLeader=st.leaderless?Math.min(46,18+(b.t-(st.noLeaderAt||b.t))*2.2):0;
+  let morale=Math.round(Math.max(0,Math.min(100,100-dead*110/Math.max(1,mine.length)-fatigue+cmdBonus-takeover-noLeader)));
+  // 对面只剩几个人时，再慌也不会崩：一个修士挡不住一百个人往前推
+  const foeFighters=b.soldiers.filter(x=>x.side!==side&&!['dead','surrendered','fled','rout'].includes(x.state)).length;
+  if(foeFighters<mine.length*0.12)morale=Math.max(morale,45);
   st.morale=morale;
   for(const s of mine){
    if(s.state==='dead')continue;
@@ -246,38 +291,113 @@ export function stepBattle(b,dt=0.1){
    s.morale=Math.round(s.morale+ (Math.abs(gap)<2?gap:Math.sign(gap)*Math.min(Math.abs(gap),8)));
    if(s.morale<18)s.state='rout';
    else if(s.state==='rout'&&s.morale>40)s.state='advance';
+   // 群龙无首 + 军心见底：有人丢下兵器投降，有人转身就跑
+   // 只有在已经吃了亏、且对面还有人的时候，才会成建制投降；否则再慌也会硬着头皮打
+   const lost=st.dead/Math.max(1,mine.length);
+   const foes=b.soldiers.filter(x=>x.side!==side&&x.state!=='dead'&&x.state!=='surrendered'&&x.state!=='fled').length;
+   // 对面只剩一个人时，没人会向他投降——人多的那边只会继续围殴
+   const foeCredible=foes>=Math.max(2,mine.length*0.3);
+   if(st.leaderless&&morale<=22&&lost>0.12&&foeCredible&&s.state!=='dead'){
+    const steady=(TROOPS[s.troop]||{}).steadiness||1;
+    s.state=b.rand()<0.55/steady?'surrendered':'fled';
+    s.hp=Math.max(1,s.hp);
+   }
   }
  }
- const a=b.stats.left.alive||0,c=b.stats.right.alive||0;
- if(a===0||c===0||b.stats.left.morale<10||b.stats.right.morale<10){
-  b.done=true;b.winner=c===0?'left':a===0?'right':(b.stats.left.morale>=b.stats.right.morale?'left':'right');
+ for(const side of ['left','right']){
+  const st=b.stats[side];
+  st.surrendered=b.soldiers.filter(s=>s.side===side&&s.state==='surrendered').length;
+  st.routed=b.soldiers.filter(s=>s.side===side&&(s.state==='rout'||s.state==='fled')).length;
+  st.alive=b.soldiers.filter(s=>s.side===side&&s.state!=='dead'&&s.state!=='surrendered'&&s.state!=='fled').length;
+ }
+ const fighting=side=>b.soldiers.filter(s=>s.side===side&&!['dead','surrendered','fled','rout'].includes(s.state)).length;
+ b.stats.left.fighters=fighting('left');b.stats.right.fighters=fighting('right');
+ const a=b.stats.left.fighters,c=b.stats.right.fighters;
+ // 溃散不等于打赢：对面只剩几个人的时候，人多的那边会继续打，不会因为首领没了就整体跑光
+ const leftGone=a===0||(b.stats.left.surrendered+b.stats.left.routed>=b.stats.left.start&&c>=b.stats.left.start*0.15);
+ const rightGone=c===0||(b.stats.right.surrendered+b.stats.right.routed>=b.stats.right.start&&a>=b.stats.right.start*0.15);
+ if(leftGone||rightGone||(b.stats.left.morale<10&&rightGone)||(b.stats.right.morale<10&&leftGone)){
+  b.done=true;b.winner=rightGone?'left':leftGone?'right':(b.stats.left.morale>=b.stats.right.morale?'left':'right');
  }
  events.push({t:Math.round(b.t*10)/10,left:b.stats.left.alive,right:b.stats.right.alive,
   fx:b.effects.length,arrows:b.arrows.length});
  return events[events.length-1];
 }
+function commanderOf(b,side){
+ const chain=b.chain[side];
+ const cur=b.command[side]|0;
+ return chain[cur]&&chain[cur].alive?chain[cur]:null;
+}
 function damage(b,target,amount,attacker,kind){
  if(target.state==='dead')return false;
- const armor=target.armor||0;
+ const atk=attacker?TROOPS[attacker.troop]||{}:{};
+ const def=TROOPS[target.troop]||{};
+ const armor=(target.armor||0)*(1-(atk.pierce||0));
  // 境界越高，凡兵的刀越难落到要害上
  const realmGuard=target.realm?1-0.13*(target.realm-1):1;
- const dmg=Math.max(1,Math.round((amount*2-armor*1.6)*Math.max(0.35,realmGuard)));
+ // 统御高的将领，同一把刀砍得更准
+ const cmd=commanderOf(b,target.side==='left'?'right':'left');
+ const cmdBonus=cmd?1+(cmd.martial||50)/500:1;
+ // 盾手有概率架住
+ if(def.block&&b.rand()<def.block){
+  addEffect(b,'block',target.x,target.y,{ttl:.25,side:target.side});
+  target.morale=Math.max(0,target.morale-1);
+  return true;
+ }
+ // 克制：长枪拒马、骑兵冲阵、弓弩远程
+ let counter=1;
+ if(target.troop==='cavalry')counter*=atk.vsCavalry||1;
+ if(atk.charge&&target.troop!=='cavalry'&&(attacker.state==='advance'))counter*=atk.charge;
+ const dmg=Math.max(1,Math.round((amount*2*cmdBonus*counter-armor*1.6)*Math.max(0.35,realmGuard)));
  target.hp-=dmg;
  const drop=Math.min(6,Math.max(1,Math.round(dmg/12)));
  target.morale=Math.max(0,target.morale-drop*2);
  if(target.hp<=0){
   target.state='dead';target.hp=0;
-  // 首领一倒，全军士气跟着塌
   if(target.isLeader||target.leader){
    const st=target.side==='left'?b.stats.left:b.stats.right;
-   st.leaderDown=true;b.events=b.events||[];
-   b.events.push({t:+b.t.toFixed(1),kind:'leaderDown',side:target.side,name:target.name||'主将'});
+   const chain=b.chain[target.side];
+   const rank=target.rankCmd|0;
+   if(chain[rank])chain[rank].alive=false;
+   b.events=b.events||[];
+   b.events.push({t:+b.t.toFixed(1),kind:'leaderDown',side:target.side,name:target.name||'主将',rank});
+   const next=chain.findIndex(c=>c.alive);
+   if(next>=0){
+    // 副将接手：能力差多少，军心就掉多少
+    const prev=chain[rank],nw=chain[next];
+    const gap=Math.max(0,(prev.command||50)-(nw.command||50))*0.5+Math.max(0,(prev.martial||50)-(nw.martial||50))*0.3;
+    b.command[target.side]=next;
+    b.takeoverHit=b.takeoverHit||{left:0,right:0};
+    b.takeoverHit[target.side]=Math.min(30,gap);
+    b.events.push({t:+b.t.toFixed(1),kind:'commandChange',side:target.side,from:prev.name,to:nw.name,gap:Math.round(gap)});
+   }else{
+    st.leaderless=true;st.noLeaderAt=b.t;
+    b.events.push({t:+b.t.toFixed(1),kind:'leaderless',side:target.side});
+   }
   }
   b.corpses.push({x:target.x,y:target.y,side:target.side,angle:target.face,t:b.t});
   if(b.corpses.length>400)b.corpses.shift();
   addEffect(b,'death',target.x,target.y,{ttl:.6,side:target.side});
  }
  return true;
+}
+// 剧情/刺杀用：直接点掉某个人（走正常的阵亡流程，会触发换将与群龙无首）
+export function slay(b,id,{cause='slay'}={}){
+ const s=b.soldiers.find(x=>x.id===id);
+ if(!s||s.state==='dead')return false;
+ return damage(b,s,99999,null,cause);
+}
+function commandLine(b,side){
+ const chain=b.chain[side]||[];
+ const cur=chain[b.command[side]|0];
+ return {
+  inCharge:cur&&cur.alive?cur.name:null,
+  martial:cur&&cur.alive?Math.round(cur.martial||0):0,
+  command:cur&&cur.alive?Math.round(cur.command||0):0,
+  chain:chain.map(c=>({name:c.name,martial:Math.round(c.martial||0),command:Math.round(c.command||0),alive:c.alive})),
+  leaderless:!!b.stats[side].leaderless,
+  takeoverHit:Math.round((b.takeoverHit&&b.takeoverHit[side])||0)
+ };
 }
 export function battleReport(b){
  const L=b.stats.left,R=b.stats.right;
@@ -288,6 +408,7 @@ export function battleReport(b){
   right:{...R,lossRate:R.start?+(R.dead/R.start*100).toFixed(1):0},
   corpses:b.corpses.length,effects:b.effects.length,fled:b.fled||0,
   leaders,
+  command:{left:commandLine(b,'left'),right:commandLine(b,'right')},
   monks:{total:monks.length,alive:monks.filter(s=>s.state!=='dead'&&s.state!=='fled').length,
    fled:monks.filter(s=>s.state==='fled').length,
    spentBag:monks.reduce((n,s)=>n+((s.bagStart||0)-(s.bag||0)),0)},

@@ -117,6 +117,14 @@ export function drawMapBattle(b,ctx,pos,mpp,opts={}){
   const bw=px(cw),bh=Math.max(14,px(26));
   ctx.fillRect(tl.x,tl.y-bh-2,bw,bh+2);
   ctx.fillStyle='#e6dcc4';ctx.font=`${Math.max(9,Math.min(12,px(22)))}px sans-serif`;ctx.textBaseline='middle';
-  ctx.fillText(`${b.label} · 左 ${rp.left.alive} 右 ${rp.right.alive}${b.done?' · 已分胜负':''}`,tl.x+4,tl.y-bh/2-1);
+  const who=side=>rp.command[side].leaderless?'群龙无首':(rp.command[side].inCharge||'—');
+  const extra=[];
+  for(const sd of ['left','right']){
+   const st=rp[sd];
+   if(st.surrendered)extra.push(`${sd==='left'?'左':'右'}降 ${st.surrendered}`);
+   if(st.routed)extra.push(`${sd==='left'?'左':'右'}溃 ${st.routed}`);
+  }
+  const line=`${b.label} · 左 ${rp.left.alive}(${who('left')}) 右 ${rp.right.alive}(${who('right')})${extra.length?' · '+extra.join(' '):''}${b.done?' · 已分胜负':''}`;
+  ctx.fillText(line,tl.x+4,tl.y-bh/2-1);
  }
 }
