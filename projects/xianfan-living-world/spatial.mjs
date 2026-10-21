@@ -1,5 +1,5 @@
 /** 《仙凡共生》v0.4：可通行道路图与地图空间。以真实格点而非标签模拟步行。 */
-import {note, advanceClock, getPlace, navigate, shortestRoute, apparentLocation, npcActivity, deriveSeed} from './core.mjs';
+import {note, advanceClock, getPlace, navigate, linked, shortestRoute, apparentLocation, npcActivity, deriveSeed} from './core.mjs';
 export const STREET_LIMITS={x0:250,y0:240,x1:735,y1:790};
 export const R_VERTICAL=[280,340,390,480,530,570,690];
 export const R_HORIZONTAL=[270,370,430,490,550,610,740];
@@ -78,6 +78,13 @@ export function outdoorActors(w,limit=12){let active=[];if(w.hour<5||w.hour>=21)
  return active;
 }
 
+/** 室内入口与道路相接，不再让常规navigate()给已走到门口的人二次计算八分钟旅行。 */
+function passBuildingDoor(w,building){
+  if(!linked(w.player.place,building.id))return {ok:false,error:'建筑入口与此街巷不连通'};
+  advanceClock(w,.5);w.player.place=building.id;
+  note(w,'场景',`你经过${building.name}门口，推门进入内堂。`,{building:building.id});
+  return {ok:true,arrived:true,buildingId:building.id};
+}
 /** v0.5 逐帧行程：世界时钟随位移持续前进，而非点击后一次性结算。 */
 export function beginRoadJourney(w,target,opts={}){
  if (!['dongshi','xijie','minju','xianya','nanmen'].includes(w.player.place))return {ok:false,error:'当前不在街道；请先出门。'};
@@ -86,7 +93,7 @@ export function beginRoadJourney(w,target,opts={}){
  if (opts.buildingId){building=BUILDINGS.find(b=>b.id===opts.buildingId);if(!building)return {ok:false,error:'找不到该建筑入口'};destination={x:building.door[0],y:building.door[1]};}
  const start=getRoadPosition(w),end=nearestRoad(destination.x,destination.y),path=roadPath(start,end);
  if (!path)return {ok:false,error:'此路尚未连通'};
- if (path.length===1){if(building){const entry=navigate(w,building.id,'foot');return entry.ok?{ok:true,arrived:true,buildingId:building.id}:entry;}return {ok:true,arrived:true};}
+ if (path.length===1){if(building){return passBuildingDoor(w,building);}return {ok:true,arrived:true};}
  const distance=(path.length-1)*10;
  // 步行约每65地图单位/游戏分钟，演示加速映射：约每秒走72单位。
  const durationSeconds=Math.max(0.35,distance/72);
@@ -111,7 +118,7 @@ export function tickRoadJourney(w,seconds){const j=w.player.journey;
  if(j.elapsedSeconds+1e-7<j.durationSeconds)return {ok:true,arrived:false,position:pos,progress:j.elapsedSeconds/j.durationSeconds};
  w.player.roadPos={...j.to};w.player.place=districtFor(j.to);delete w.player.journey;
  note(w,'行旅',`沿道路行走 ${(j.path.length-1)*10} 地图单位，实际历时 ${j.worldMinutes.toFixed(1)} 分钟。`,{from:j.from,to:j.to,minutes:j.worldMinutes});
- if(j.buildingId){const result=navigate(w,j.buildingId,'foot');if(!result.ok)return {ok:false,arrived:true,error:result.error};}
+ if(j.buildingId){const building=BUILDINGS.find(b=>b.id===j.buildingId);const result=passBuildingDoor(w,building);if(!result.ok)return {ok:false,arrived:true,error:result.error};}
  return {ok:true,arrived:true,buildingId:j.buildingId,position:{...j.to},progress:1};
 }
 export function cancelRoadJourney(w){const j=w.player.journey;if(!j)return false;

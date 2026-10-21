@@ -23,7 +23,7 @@ test('every marked road segment can be clicked, closest snapped to truly walkabl
 test('on-road movement changes persistent player coordinates and time and is reversible',()=>{const w=newWorld();w.player.roadPos={x:480,y:490};const before=w.hour;const a=walkRoad(w,{x:480,y:270});assert.ok(a.ok);assert.ok(a.path.length>20);assert.deepEqual(getRoadPosition(w),{x:480,y:270});assert.ok(w.hour>before);const b=walkRoad(w,{x:480,y:490});assert.ok(b.ok);assert.deepEqual(getRoadPosition(w),{x:480,y:490});assert.deepEqual(validateWorld(w),[]);});
 test('streets never show NPCs sleeping at home, and late night street is mostly quiet',()=>{const w=newWorld();w.hour=1;const night=outdoorActors(w,12);assert.ok(night.length<5);assert.ok(night.every(a=>a.action==='值夜巡更'));w.hour=12;const noon=outdoorActors(w,10);assert.ok(noon.length>0);assert.ok(noon.every(a=>a.action!=='在家休息'&&a.person.status==='alive'));});
 test('building approach walks by street doors and returns outside, including second floor',()=>{const w=newWorld();const r=enterStreetBuilding(w,'kezhan');assert.ok(r.ok,r.error);assert.equal(w.player.place,'kezhan');assert.deepEqual(getRoadPosition(w),{x:480,y:430});const nested=navigate(w,'kezhan_chamber');assert.ok(nested.ok);const out=exitStreetBuilding(w);assert.ok(out.ok,out.error);assert.equal(w.player.place,'dongshi');assert.deepEqual(getRoadPosition(w),{x:480,y:430});});
-test('road position survives original schema2 save, version is 0.4',()=>{const w=newWorld();walkRoad(w,{x:390,y:490});const restored=restoreWorld(saveableWorld(w));assert.deepEqual(restored.player.roadPos,w.player.roadPos);assert.equal(VERSION,'county-0.5');assert.equal(BUILDINGS.length,4);});
+test('road position survives original schema2 save, version is 0.4',()=>{const w=newWorld();walkRoad(w,{x:390,y:490});const restored=restoreWorld(saveableWorld(w));assert.deepEqual(restored.player.roadPos,w.player.roadPos);assert.equal(VERSION,'county-0.5.1');assert.equal(BUILDINGS.length,4);});
 
 import {beginRoadJourney,tickRoadJourney,visualRoadPosition,cancelRoadJourney,beginRegionJourney,tickRegionJourney,regionJourneyPosition,occupantsAt} from '../spatial.mjs';
 import {streetAtlas,countyAtlas,provinceAtlas,worldAtlas,interiorAtlas} from '../atlas.mjs';
@@ -51,4 +51,12 @@ test('v0.5 geography layers have elevation, fortification, river, sect and reada
 });
 test('v0.5 map actor population consists of actual living location-matched NPCs',()=>{
  const w=newWorld();w.hour=12;const at=occupantsAt(w,'xianya');assert.ok(at.every(p=>p.status==='alive'&&['县吏','捕快'].includes(p.job)));w.hour=1;assert.equal(occupantsAt(w,'xianya').length,0);
+});
+
+test('v0.5 journey never double-bills travel time when entering government doorway',()=>{
+ const w=newWorld(),hour=w.hour;
+ const t=beginRoadJourney(w,{x:0,y:0},{buildingId:'xianya'});
+ assert.ok(t.ok&&!t.arrived);tickRoadJourney(w,t.durationSeconds);
+ assert.equal(w.player.place,'xianya');const minutes=(w.hour-hour)*60;
+ assert.ok(Math.abs(minutes-(t.worldMinutes+.5))<1e-6,`double count: ${minutes} vs ${t.worldMinutes}`);
 });
