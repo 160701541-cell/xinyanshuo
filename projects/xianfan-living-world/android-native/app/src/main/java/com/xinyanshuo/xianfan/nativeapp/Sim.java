@@ -37,6 +37,9 @@ public final class Sim {
     public double lawSpace = 0, lawTime = 0;
     // 家业：住处等级 0 无 / 1 小屋 / 2 瓦房 / 3 宅院；宗门与王位
     public int homeLevel = 0, workDays = 0;
+    // 建造：资源、建筑、科技、兵种
+    public int resWood = 0, resStraw = 0, resStone = 0, resClay = 0, resIron = 0;
+    public int huts = 0, techFarm = 0, techArms = 0, techFort = 0;
     public String sectName = null, throne = null;
     public int disciples = 0;
     public boolean ship = false;
@@ -372,6 +375,57 @@ public final class Sim {
         return "你称「" + title + "」，自立一方。";
     }
 
+    public String chopWood() {
+        if (stamina < 8) return "体力不够，先歇。";
+        stamina -= 8; resWood += 3; clock += 90 * 60L;
+        return "砍了一趟，木头 " + resWood + "。";
+    }
+
+    public String cutStraw() {
+        if (stamina < 5) return "体力不够，先歇。";
+        stamina -= 5; resStraw += 5; clock += 45 * 60L;
+        return "割了一趟草，稻草 " + resStraw + "。";
+    }
+
+    public String helpElder() {
+        stamina = Math.min(100, stamina + 60);
+        hp = Math.min(100, hp + 30);
+        resStraw += 8; clock += 360 * 60L;
+        return "帮村长干了一天，管饭管住，捎回 8 捆稻草（没工钱）。";
+    }
+
+    public String buildHut() {
+        if (resWood < 10 || resStraw < 50) return "还缺：木头 " + Math.max(0, 10 - resWood) + "、稻草 " + Math.max(0, 50 - resStraw);
+        resWood -= 10; resStraw -= 50; huts++;
+        clock += 360 * 60L;
+        note("盖起第一间茅屋");
+        return "茅屋盖好了，共 " + huts + " 间。";
+    }
+
+    public String researchArms() {
+        int cost = 350 * (techArms + 1);
+        int iron = 10 * (techArms + 1);
+        if (techArms >= 5) return "军械已到顶。";
+        if (silver < cost) return "要 " + cost + " 银。";
+        if (resIron < iron) return "要 " + iron + " 生铁。";
+        silver -= cost; resIron -= iron; techArms++;
+        return "军械提升到 " + techArms + " 级。";
+    }
+
+    public String trainSpear() {
+        if (techArms < 1) return "需要军械 1 级。";
+        if (silver < 40) return "要 40 银。";
+        if (resWood < 4) return "要 4 根木头。";
+        silver -= 40; resWood -= 4; men++;
+        return "练出一名长枪兵，现共 " + men + " 人。";
+    }
+
+    public String buildText() {
+        return "木头 " + resWood + " · 稻草 " + resStraw + " · 石 " + resStone + " · 土 " + resClay + " · 铁 " + resIron
+            + "\n茅屋 " + huts + " 间 · 军械 " + techArms + " 级\n\n"
+            + "茅屋 = 10 木 + 50 草\n长枪兵 = 40 银 + 4 木（需军械 1）";
+    }
+
     public String lifeText() {
         StringBuilder b = new StringBuilder();
         b.append("住处　").append(homeLevel == 0 ? "无（睡客栈或街边）" : homeLevel == 1 ? "一间小屋" : homeLevel == 2 ? "一所瓦房" : "一座宅院").append("\n");
@@ -419,7 +473,10 @@ public final class Sim {
             o.put("stones", stones); o.put("realmLevel", realmLevel); o.put("ship", ship);
             o.put("layer", layer); o.put("rootId", rootId); o.put("tested", tested);
             o.put("lawSpace", lawSpace); o.put("lawTime", lawTime);
-            o.put("homeLevel", homeLevel); o.put("workDays", workDays); o.put("sectName", sectName);
+            o.put("homeLevel", homeLevel); o.put("workDays", workDays);
+            o.put("resWood", resWood); o.put("resStraw", resStraw); o.put("resStone", resStone);
+            o.put("resClay", resClay); o.put("resIron", resIron); o.put("huts", huts);
+            o.put("techArms", techArms); o.put("techFarm", techFarm); o.put("techFort", techFort); o.put("sectName", sectName);
             o.put("disciples", disciples); o.put("throne", throne);
             o.put("practice", practiceProgress); o.put("pills", pills);
             o.put("weapon", weaponGrade); o.put("armor", armorGrade); o.put("talisman", talismanGrade);
@@ -444,6 +501,11 @@ public final class Sim {
             layer = o.optInt("layer", layer); rootId = o.optString("rootId", rootId); tested = o.optBoolean("tested", tested);
             lawSpace = o.optDouble("lawSpace", lawSpace); lawTime = o.optDouble("lawTime", lawTime);
             homeLevel = o.optInt("homeLevel", homeLevel); workDays = o.optInt("workDays", workDays);
+            resWood = o.optInt("resWood", resWood); resStraw = o.optInt("resStraw", resStraw);
+            resStone = o.optInt("resStone", resStone); resClay = o.optInt("resClay", resClay);
+            resIron = o.optInt("resIron", resIron); huts = o.optInt("huts", huts);
+            techArms = o.optInt("techArms", techArms); techFarm = o.optInt("techFarm", techFarm);
+            techFort = o.optInt("techFort", techFort);
             sectName = o.has("sectName") ? o.optString("sectName", null) : sectName;
             disciples = o.optInt("disciples", disciples);
             throne = o.has("throne") ? o.optString("throne", null) : throne;

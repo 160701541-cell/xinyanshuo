@@ -81,7 +81,7 @@ public final class MainActivity extends Activity {
         bbg.setColor(Color.argb(240, 244, 240, 230));
         bbg.setCornerRadius(28);
         bar.setBackground(bbg);
-        String[][] tabs = {{"人物", "people"}, {"修行", "cult"}, {"家业", "life"}, {"法则", "law"}, {"妖兽", "wild"}, {"行囊", "bag"}, {"纪事", "log"}, {"星域", "star"}};
+        String[][] tabs = {{"人物", "people"}, {"修行", "cult"}, {"家业", "life"}, {"营造", "build"}, {"法则", "law"}, {"妖兽", "wild"}, {"行囊", "bag"}, {"纪事", "log"}, {"星域", "star"}};
         for (String[] t : tabs) {
             Button bt = new Button(this);
             bt.setText(t[0]);
@@ -200,6 +200,23 @@ public final class MainActivity extends Activity {
                 .setPositiveButton("打工一日", (x, w) -> { toast(sim.workDay("porter")); updateHud(); })
                 .setNeutralButton("歇息一日", (x, w) -> { toast(sim.restDay(1)); updateHud(); })
                 .setNegativeButton("置宅 420", (x, w) -> { toast(sim.buyHome("room")); updateHud(); }).show();
+            return;
+        } else if ("build".equals(what)) {
+            String[] acts = {"伐木", "割草", "帮工换宿", "盖茅屋", "研究军械", "练长枪兵"};
+            new AlertDialog.Builder(this).setTitle("营造").setMessage(sim.buildText())
+                .setItems(acts, (d, i) -> {
+                    String r;
+                    switch (i) {
+                        case 0: r = sim.chopWood(); break;
+                        case 1: r = sim.cutStraw(); break;
+                        case 2: r = sim.helpElder(); break;
+                        case 3: r = sim.buildHut(); break;
+                        case 4: r = sim.researchArms(); break;
+                        default: r = sim.trainSpear();
+                    }
+                    toast(r); updateHud();
+                })
+                .setNegativeButton("关闭", null).show();
             return;
         } else if ("law".equals(what)) {
             sb.append("空间法则 ").append(String.format("%.2f", sim.lawSpace)).append("/10\n")
