@@ -51,7 +51,7 @@ namespace XianxiaWorldBox.HugeWorld {
       .FirstOrDefault(a=>a.GetName().Name=="Assembly-CSharp");
     var map=assembly?.GetType("MapBox");
     if(map==null)return "原版地图尺寸：读取失败";
-    var w=map.GetField("width",F),h=map.GetField("height",F);
+    var w=map.GetField("width",F);var h=map.GetField("height",F);
     if(w==null||h==null)return "原版地图尺寸：暂无读数";
     string size=Convert.ToString(w.GetValue(null))+"×"+Convert.ToString(h.GetValue(null));
     return "原版实际地图："+size+"格";
