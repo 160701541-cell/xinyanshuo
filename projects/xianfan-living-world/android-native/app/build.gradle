@@ -1,0 +1,25 @@
+plugins { id 'com.android.application' }
+android {
+  namespace 'com.xinyanshuo.xianfan.nativeapp'
+  compileSdk 35
+  defaultConfig {
+    applicationId 'com.xinyanshuo.xianfan.nativeapp'
+    minSdk 26
+    targetSdk 35
+    versionCode 47
+    versionName '0.47.0-native'
+  }
+  signingConfigs {
+    prototype {
+      storeFile file('../../android/demo-signing/xianfan-demo.jks')
+      storePassword 'DEMO_ONLY_XIANFAN_2026'
+      keyAlias 'xianfan-demo'
+      keyPassword 'DEMO_ONLY_XIANFAN_2026'
+    }
+  }
+  buildTypes {
+    release { minifyEnabled false; shrinkResources false; signingConfig signingConfigs.prototype }
+  }
+  compileOptions { sourceCompatibility JavaVersion.VERSION_17; targetCompatibility JavaVersion.VERSION_17 }
+}
+dependencies { }
