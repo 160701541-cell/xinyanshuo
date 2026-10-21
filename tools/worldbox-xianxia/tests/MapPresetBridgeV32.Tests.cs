@@ -32,6 +32,12 @@ public class MapSizeLibrary{
     _mapSizes=list.ConvertAll(x=>x.id).ToArray();
   }
 }
+public static class Config {
+  public static string customMapSize="xianxia_extreme_100";
+}
+public static class MapBox {
+  public static int width=512,height=512;
+}
 public static class AssetManager{
   public static MapSizeLibrary map_sizes=new MapSizeLibrary();
 }
@@ -63,6 +69,13 @@ public static class Program{
     Assert(MapPresetBridgeV32.FiftyTiles==3200,"50 chunks x 64 = 3200 tiles");
     Assert(MapPresetBridgeV32.HundredChunks==100,"100x100 chunks");
     Assert(MapPresetBridgeV32.HundredTiles==6400,"100 chunks x 64 = 6400 tiles");
+    string failed=MapPresetBridgeV32.InspectActualMap(asm);
+    Assert(failed.Contains("width=512")&&failed.Contains("status=MISMATCH"),
+       "visible 100x100 preset must fail if game actually created tiny 512 tile map");
+    MapBox.width=6400;MapBox.height=6400;
+    string valid=MapPresetBridgeV32.InspectActualMap(asm);
+    Assert(valid.Contains("status=MATCH")&&valid.Contains("tiles=40960000"),
+       "only actual 6400x6400 world can pass huge map reality gate");
     Console.WriteLine("PASS_REALISTIC_0514_MAP_UI_REBUILD 8 -> 11; 100x100 chunks; original list preserved; device pending");
   }
 }

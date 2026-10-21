@@ -160,6 +160,40 @@ namespace XianxiaWorldBox
             }
             return "WORLD_SIZE_PRESET_READY "+presetId+" "+chunks+" chunks";
         }
+        // Verified against the user's actual WorldBox 0.51.4 Mono IL:
+        // MapBox.setMapSize(zoneX,zoneY) writes width=zoneX*64 and height=zoneY*64.
+        // Menu selection is NOT proof of generated tiles; read actual runtime dimensions.
+        static string lastWorldDimensions;
+        static DateTime nextWorldAudit=DateTime.MinValue;
+        public static string InspectActualMap(Assembly game)
+        {
+            if(game==null)return "WORLD_REAL_SIZE_UNAVAILABLE game assembly";
+            Type map=game.GetType("MapBox");
+            Type config=game.GetType("Config");
+            object width=Member(map,"width"),height=Member(map,"height");
+            object selected=Member(config,"customMapSize");
+            if(width==null||height==null)return "WORLD_REAL_SIZE_UNAVAILABLE map fields";
+            long w=Convert.ToInt64(width),h=Convert.ToInt64(height);
+            if(w<1||h<1)return "WORLD_REAL_SIZE_NOT_INITIALIZED";
+            string id=selected==null?"":selected.ToString();
+            int expected=0;
+            if(id==Id)expected=Tiles;
+            if(id==FiftyId)expected=FiftyTiles;
+            if(id==HundredId)expected=HundredTiles;
+            string match=expected<=0?"UNKNOWN_PRESET":w==expected&&h==expected?
+                "MATCH":"MISMATCH";
+            return "WORLD_REAL_DIMENSIONS preset="+id+" width="+w+" height="+h+
+                " tiles="+(w*h)+" expected="+expected+" status="+match;
+        }
+        static void AuditActualMap(Assembly game)
+        {
+            if(DateTime.UtcNow<nextWorldAudit)return;
+            nextWorldAudit=DateTime.UtcNow.AddSeconds(10);
+            string current=InspectActualMap(game);
+            if(current==lastWorldDimensions)return;
+            lastWorldDimensions=current;
+            Log("[SIZE-AUDIT] "+current);
+        }
         static void Log(string message)
         {
             try {
@@ -172,6 +206,13 @@ namespace XianxiaWorldBox
         }
         public static void Tick()
         {
+            // Audits actual MapBox.width / MapBox.height even after the menu
+            // preset has been registered; no tile allocation or map mutation.
+            try{
+                Assembly live=AppDomain.CurrentDomain.GetAssemblies()
+                    .FirstOrDefault(a=>a.GetName().Name=="Assembly-CSharp");
+                AuditActualMap(live);
+            }catch(Exception){}
             // One verified existing Mono update hook also advances the
             // isolated v35 economy reader. It never invents stock or borders.
             try {
