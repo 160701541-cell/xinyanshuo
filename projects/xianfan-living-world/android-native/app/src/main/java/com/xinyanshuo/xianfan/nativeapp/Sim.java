@@ -29,7 +29,9 @@ public final class Sim {
 
     public double px = 0, py = 0, tx = 0, ty = 0;
     public double stamina = 100, hp = 100, spirit = 90;
-    public int silver = 170, karma = 0, men = 0;
+    public int silver = 170, karma = 0, men = 0, stones = 0, realmLevel = 0;
+    public boolean ship = false;
+    public final List<String> visited = new ArrayList<>();
     public double clock = 7 * 60; // 第 0 天 07:00
     public String place = "东市";
     public String targetName = "";
@@ -46,6 +48,7 @@ public final class Sim {
         if (d != null) for (int i = 0; i < d.length(); i++) dens.add(d.optJSONObject(i));
         JSONArray l = world.optJSONArray("landmarks");
         if (l != null) for (int i = 0; i < l.length(); i++) landmarks.add(l.optJSONObject(i));
+        visited.add("xuanhuang");
         bag.put("干粮", 3);
         note("落籍临安县城东市。");
     }
@@ -147,6 +150,46 @@ public final class Sim {
         return line;
     }
 
+    public String realmName() {
+        String[] n = {"凡人", "炼气", "筑基", "金丹", "元婴", "化神"};
+        return n[Math.max(0, Math.min(5, realmLevel))];
+    }
+
+    /** 星域横渡：化神以上肉身过虚空，否则必须造星舰 */
+    public String voidGateText() {
+        if (realmLevel >= 5) return "化神：可以肉身横渡虚空";
+        if (ship) return "有星舰：可以走航线";
+        return "不过是" + realmName() + "，过不去——要么修行到化神，要么造一艘星舰";
+    }
+
+    public String buildShip() {
+        if (ship) return "已有一艘星舰。";
+        if (stones < 900 || silver < 2000000) return "星舰要 900 灵石 + 200 万银。";
+        stones -= 900; silver -= 2000000; ship = true;
+        note("星舰「玄黄一号」下水。");
+        return "星舰下水，凡人也能过虚空了。";
+    }
+
+    /** 距离用万公里，消耗按距离算灵石；星舰省 65% 灵石，危险减半 */
+    public String travelDomain(int idx) {
+        JSONArray ds = world.optJSONArray("domains");
+        if (ds == null || idx < 0 || idx >= ds.length()) return "没有这一域。";
+        JSONObject d = ds.optJSONObject(idx);
+        if (d.optBoolean("home")) return "你已经在本域。";
+        boolean byShip = ship;
+        if (realmLevel < 5 && !ship) return voidGateText();
+        double wkm = d.optDouble("distWkm");
+        int need = (int) Math.max(20, Math.round(wkm / 4e7) * (byShip ? 0.35 : 1));
+        if (stones < need) return "灵石不够：需 " + need + " 块，你有 " + stones + " 块。";
+        stones -= need;
+        int years = (int) Math.max(1, Math.round(wkm / 1.2e9));
+        clock += years * 360.0 * 1440;
+        if (!visited.contains(d.optString("id"))) visited.add(d.optString("id"));
+        String line = (byShip ? "乘星舰" : "肉身横渡") + " " + years + " 年，抵" + d.optString("name") + "（耗 " + need + " 灵石）";
+        note(line);
+        return line;
+    }
+
     public boolean isXiu() { return spirit > 60 && karma < 60; }
 
     /** 私兵招募：每人 14 银，上限 60（原生版先给一个人数上限） */
@@ -166,6 +209,7 @@ public final class Sim {
             o.put("px", px); o.put("py", py); o.put("clock", clock);
             o.put("stamina", stamina); o.put("hp", hp); o.put("silver", silver);
             o.put("karma", karma); o.put("men", men); o.put("place", place);
+            o.put("stones", stones); o.put("realmLevel", realmLevel); o.put("ship", ship);
             JSONObject b = new JSONObject(); for (Map.Entry<String, Integer> e : bag.entrySet()) b.put(e.getKey(), e.getValue());
             o.put("bag", b);
             JSONArray c = new JSONArray(); for (String s : cleared) c.put(s); o.put("cleared", c);
@@ -182,6 +226,7 @@ public final class Sim {
             stamina = o.optDouble("stamina", stamina); hp = o.optDouble("hp", hp);
             silver = o.optInt("silver", silver); karma = o.optInt("karma", karma); men = o.optInt("men", men);
             place = o.optString("place", place);
+            stones = o.optInt("stones", stones); realmLevel = o.optInt("realmLevel", realmLevel); ship = o.optBoolean("ship", ship);
             JSONObject b = o.optJSONObject("bag");
             if (b != null) { bag.clear(); for (java.util.Iterator<String> it = b.keys(); it.hasNext(); ) { String k = it.next(); bag.put(k, b.optInt(k)); } }
             JSONArray c = o.optJSONArray("cleared");

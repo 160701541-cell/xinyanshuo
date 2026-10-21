@@ -17,6 +17,7 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import org.json.JSONArray;
 import org.json.JSONObject;
 
 import java.io.InputStream;
@@ -80,7 +81,7 @@ public final class MainActivity extends Activity {
         bbg.setColor(Color.argb(240, 244, 240, 230));
         bbg.setCornerRadius(28);
         bar.setBackground(bbg);
-        String[][] tabs = {{"人物", "people"}, {"妖兽", "wild"}, {"行囊", "bag"}, {"纪事", "log"}, {"招募", "recruit"}};
+        String[][] tabs = {{"人物", "people"}, {"妖兽", "wild"}, {"行囊", "bag"}, {"纪事", "log"}, {"星域", "star"}};
         for (String[] t : tabs) {
             Button bt = new Button(this);
             bt.setText(t[0]);
@@ -126,8 +127,8 @@ public final class MainActivity extends Activity {
     private int frames;
 
     private void updateHud() {
-        hud.setText(String.format("%s\n银 %d · 私兵 %d · 体力 %.0f · 业力 %d\n%s",
-            sim.timeText(), sim.silver, sim.men, sim.stamina, sim.karma,
+        hud.setText(String.format("%s · %s\n银 %d · 灵石 %d · 私兵 %d · 体力 %.0f\n%s",
+            sim.timeText(), sim.realmName(), sim.silver, sim.stones, sim.men, sim.stamina,
             sim.moving ? "前往：" + sim.targetName : "在" + nearestName()));
     }
 
@@ -189,6 +190,26 @@ public final class MainActivity extends Activity {
         } else if ("log".equals(what)) {
             int from = Math.max(0, sim.log.size() - 18);
             for (int i = sim.log.size() - 1; i >= from; i--) sb.append(sim.log.get(i)).append("\n");
+        } else if ("star".equals(what)) {
+            JSONArray ds = sim.world.optJSONArray("domains");
+            sb.append(sim.voidGateText()).append("\n\n");
+            sb.append("行星：").append(sim.world.optJSONObject("planet").optString("name"))
+              .append("，半径 ").append(sim.world.optJSONObject("planet").optInt("radiusKm")).append(" 公里\n\n");
+            if (ds != null) for (int i = 0; i < ds.length(); i++) {
+                JSONObject d = ds.optJSONObject(i);
+                sb.append(d.optBoolean("home") ? "◎ " : "　").append(d.optString("name"));
+                if (!d.optBoolean("home")) {
+                    int need = (int) Math.max(20, Math.round(d.optDouble("distWkm") / 4e7));
+                    sb.append("　").append(String.format("%.1f", d.optDouble("distWkm") / 10000.0)).append(" 万公里")
+                      .append("　约 ").append(need).append(" 灵石");
+                }
+                sb.append("\n");
+            }
+            AlertDialog dlg = new AlertDialog.Builder(this).setTitle("星域与虚空").setMessage(sb.toString())
+                .setPositiveButton("造星舰", (x, w) -> { toast(sim.buildShip()); updateHud(); })
+                .setNeutralButton("看太虚", (x, w) -> { toast(sim.travelDomain(1)); updateHud(); })
+                .setNegativeButton("关闭", null).create();
+            dlg.show(); return;
         } else {
             sb.append("私兵 ").append(sim.men).append(" 人（上限 60）\n每人 14 银，月饷 2.2 银。\n");
             AlertDialog d = new AlertDialog.Builder(this).setTitle("招募").setMessage(sb.toString())
