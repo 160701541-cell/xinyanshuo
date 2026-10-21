@@ -52,6 +52,13 @@ jobs:
             tools/worldbox-xianxia/private-apk-lab/SafeZipPathsV42.java \
             tools/worldbox-xianxia/tests/SafeZipPathsV42Test.java
           java -cp /tmp/worldbox-v42-paths com.xinyanshuo.worldbox.lab13.SafeZipPathsV42Test
+      - name: 'Verify migration removes only SHA-matched self-owned observer files'
+        run: |
+          mkdir -p /tmp/worldbox-v44-cleaner
+          javac -encoding UTF-8 -d /tmp/worldbox-v44-cleaner \
+            tools/worldbox-xianxia/private-apk-lab/OwnedModSourceCleanupV44.java \
+            tools/worldbox-xianxia/tests/OwnedModSourceCleanupV44Test.java
+          java -cp /tmp/worldbox-v44-cleaner com.xinyanshuo.worldbox.lab13.OwnedModSourceCleanupV44Test
       - name: 'Execute real-world ZIP shape regression (no proprietary MOD binaries)'
         run: |
           mkdir -p /tmp/worldbox-v34-modformat-jvm
@@ -331,7 +338,8 @@ jobs:
                           '-cp',jar,'-d','/tmp/worldbox-diagnostics-classes',
                           root+'DiagnosticReport.java',root+'DiagnosticsActivity.java',
                           root+'ModDeployment.java',root+'ExternalModImporterV32.java',
-                          root+'ModFormatV34.java'],check=True)
+                          root+'ModFormatV34.java',root+'SafeZipPathsV42.java',
+                          root+'OwnedModSourceCleanupV44.java'],check=True)
           from pathlib import Path
           import hashlib
           dexers=glob.glob(sdk+'/build-tools/*/d8')
@@ -353,6 +361,8 @@ jobs:
           cp tools/worldbox-xianxia/private-apk-lab/ModDeployment.java /tmp/worldbox-user-private-helper/
           cp tools/worldbox-xianxia/private-apk-lab/ExternalModImporterV32.java /tmp/worldbox-user-private-helper/
           cp tools/worldbox-xianxia/private-apk-lab/ModFormatV34.java /tmp/worldbox-user-private-helper/
+          cp tools/worldbox-xianxia/private-apk-lab/SafeZipPathsV42.java /tmp/worldbox-user-private-helper/
+          cp tools/worldbox-xianxia/private-apk-lab/OwnedModSourceCleanupV44.java /tmp/worldbox-user-private-helper/
       - uses: actions/upload-artifact@v4
         with:
           name: 'worldbox-v22-generic-private-apk-assembly-toolkit-linux-x64'
