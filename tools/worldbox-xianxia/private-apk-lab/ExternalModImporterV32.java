@@ -139,7 +139,7 @@ final class ExternalModImporterV32 {
                 for(ZipEntry entry:entries){
                     String name=safeEntry(entry.getName());
                     if(all.put(name,entry)!=null)throw new IOException("MOD包存在重复文件："+name);
-                    if(entry.isDirectory())continue;
+                    if(entry.isDirectory() || name.endsWith("/"))continue;
                     if(entry.getSize()<0 || entry.getSize()>MAX_EXPANDED)
                         throw new IOException("MOD条目大小不明或异常："+name);
                     expanded+=entry.getSize();
@@ -232,7 +232,7 @@ final class ExternalModImporterV32 {
                         for(Map.Entry<String,ZipEntry> kv:all.entrySet()){
                             if(!kv.getKey().startsWith(prefix))continue;
                             String rel=kv.getKey().substring(prefix.length());
-                            if(rel.isEmpty()||kv.getValue().isDirectory())continue;
+                            if(rel.isEmpty()||rel.endsWith("/")||kv.getValue().isDirectory())continue;
                             safeEntry(rel);
                             if(++fileCount>MAX_FILES)throw new IOException("MOD文件数超限");
                             File file=new File(staging,rel).getCanonicalFile();
@@ -253,6 +253,13 @@ final class ExternalModImporterV32 {
                                     throw new IOException("MOD文件大小校验失败");
                                 out.getFD().sync();
                             }
+                        }
+                        String actualManifest=path.substring(prefix.length());
+                        if(!actualManifest.equals("mod.json")){
+                            File originalManifest=new File(staging,actualManifest);
+                            File canonicalManifest=new File(staging,"mod.json");
+                            if(canonicalManifest.exists()||!originalManifest.renameTo(canonicalManifest))
+                                throw new IOException("无法归一化mod.json文件名");
                         }
                         if(!new File(staging,"mod.json").isFile())
                             throw new IOException("MOD结构缺失描述文件");
