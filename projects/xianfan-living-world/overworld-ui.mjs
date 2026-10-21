@@ -14,7 +14,7 @@ import {interiorAtlas} from './atlas.mjs';
 import {classifyGesture,canSelect} from './gesture.mjs';
 import {layoutTown,streetsFor,ART} from './buildings.mjs';
 import {generateWorld,realmView,regionAt,realmReport,domainShare} from './worldmap.mjs';
-import {createBattleView} from './battle-ui.mjs';
+import {spawnMapBattle,stepMapBattle,drawMapBattle,mapBattleReport,mapBattle,endMapBattle} from './mapbattle.mjs';
 import {ensureDao,daoReport,attitudeOf,seekAlly,shiftDao,taoLabel,STANCES,TAGS,NATIONS,SECTS as DAO_SECTS,attachPeople,peopleAt,helpPerson,personAttitude} from './dao.mjs';
 import {ensureKarma,killPreview,resolveKill,breakthroughChance,attemptBreakthrough,karmaTier,karmaReport,lootFor,JUSTIFY} from './karma.mjs';
 const placeById=getPlace;
@@ -353,7 +353,7 @@ function drawPlayer(){const p=pos(w.player.mapPos);
 }
 function drawRoute(){const r=w.player.route;if(!r)return;const points=[w.player.mapPos,...r.path.slice(r.index+1)];drawPath(points.map(p=>[p.x,p.y]));ctx.strokeStyle='rgba(255,250,228,.8)';ctx.lineWidth=6;ctx.stroke();drawPath(points.map(p=>[p.x,p.y]));ctx.strokeStyle='#cc7c40';ctx.lineWidth=3;ctx.setLineDash([8,7]);ctx.stroke();ctx.setLineDash([]);circle(r.goal,6,'#b7653a','#fff0d7',2);}
 function drawSelection(){if(!selected?.point)return;const p=pos(selected.point);ctx.beginPath();ctx.arc(p.x,p.y,24,0,Math.PI*2);ctx.strokeStyle='#bd713f';ctx.lineWidth=2.5;ctx.stroke();ctx.beginPath();ctx.moveTo(p.x-30,p.y);ctx.lineTo(p.x+30,p.y);ctx.moveTo(p.x,p.y-30);ctx.lineTo(p.x,p.y+30);ctx.stroke();}
-function drawMap(){if(!ctx)return;ctx.clearRect(0,0,cssW,cssH);drawGround();if(camera.mpp>=26&&mapMode==='terrain'){drawWorldLayer();return;}drawFactionLayer();drawPolitical();drawRelief();drawWater();drawRoads();drawStreets();drawWall();drawBuildings();drawTowns();drawRoute();drawArmies();drawAvatars();drawPlayer();drawSelection();}
+function drawMap(){if(!ctx)return;ctx.clearRect(0,0,cssW,cssH);drawGround();if(camera.mpp>=26&&mapMode==='terrain'){drawWorldLayer();return;}drawFactionLayer();drawPolitical();drawRelief();drawWater();drawRoads();drawStreets();drawWall();drawBuildings();drawTowns();drawRoute();drawArmies();drawAvatars();{const mb=mapBattle(w);if(mb)drawMapBattle(mb,ctx,pos,camera.mpp,{cssW,cssH});}drawPlayer();drawSelection();}
 function profile(){const p=w.player,r=worldReport(w),place=placeAt(p.mapPos);
  $('name').textContent=p.name;$('place').textContent=p.indoor?(getPlace(p.indoor)?.name||'室内'):place.name;
  $('time').textContent=currentTime();$('population').textContent=`临安县及周边 ${r.population.toLocaleString('zh-CN')}人`;
@@ -670,18 +670,8 @@ function renderInstitutions(){
  当前结局：<strong>${safe(s.outcome.name)}</strong>——${safe(s.outcome.desc)}</article>
  ${rows}`;
 }
-let battleView=null;
-function battleScreenShow(on){
- const el=$('battleScreen');if(el)el.hidden=!on;
- if(on){
-  if(!battleView&&$('battleCanvas'))battleView=createBattleView({canvas:$('battleCanvas'),hud:$('battleHud'),world:w});
-  battleView.begin();battleView.updateHud();
- }else if(battleView)battleView.pause();
-}
 function otherPanels(panel){activeTab=panel;for(const n of document.querySelectorAll('[data-view]'))n.classList.toggle('selected',n.dataset.view===panel);
  $('canvasFrame').hidden=panel!=='map';$('records').hidden=panel==='map';$('sheet').hidden=true;
- battleScreenShow(panel==='battle');
- if(panel==='battle'){return;}
  if(panel==='map'){drawMap();return;}
  if(panel==='court')return renderCourt();
  if(panel==='xian')return renderXian();
@@ -747,10 +737,12 @@ function bind(){canvas=$('worldCanvas');setupGestures();$('zoomIn').onclick=()=>
  $('advanceDay').onclick=()=>{if(w.player.route)return toast('行走中，请先停下');simulateDay(w,1);toast('世界推进一日');profile();scheduleSave();};
  $('newWorld').onclick=()=>{if(!confirm('确认创建新世界？当前存档将被新世界替换，原人物不会再次出现。'))return;w=createWorld('县境-'+Date.now());ensureGeo(w);camera={x:0,y:0,mpp:3};selected=null;showSheet(null);otherPanels('map');profile();scheduleSave();};
  for(const btn of document.querySelectorAll('[data-view]'))btn.onclick=()=>otherPanels(btn.dataset.view);
- const bs=$('bStart'),bp=$('bPause'),bb=$('bBack'),bspeed=$('bSpeed');
- if(bs)bs.onclick=()=>{if(!battleView)battleView=createBattleView({canvas:$('battleCanvas'),hud:$('battleHud'),world:w});battleView.begin();toast('开战');};
- if(bp)bp.onclick=()=>{if(!battleView)return;battleView.pause();toast('暂停');};
- if(bb)bb.onclick=()=>otherPanels('map');
+ const fb=$('fieldBattle');
+ if(fb)fb.onclick=()=>{
+  if(mapBattle(w)&&!mapBattle(w).done){endMapBattle(w);toast('收兵');}
+  else{const at={x:w.player.mapPos.x+140,y:w.player.mapPos.y+(Math.random()*80-40)};spawnMapBattle(w,{at});toast('列阵开战：就在你眼前');}
+  drawMap();
+ };
  window.addEventListener('resize',resize);document.addEventListener('visibilitychange',()=>{paused=document.hidden;if(paused)save().catch(()=>{});});
 }
 let stamp=0,profileStamp=0,saveStamp=0;
@@ -760,6 +752,7 @@ function animation(now){const dt=stamp?Math.min(.12,(now-stamp)/1000):0;stamp=no
  }
  if(now-profileStamp>260){profile();profileStamp=now;}
  if(now-saveStamp>15000){scheduleSave();saveStamp=now;}}
+ if(w){const mb=stepMapBattle(w,dt);if(mb&&mb.done&&!mb.reported){mb.reported=true;const r=mapBattleReport(w);toast(`战罢：左亡 ${r.left.dead} 右亡 ${r.right.dead}`);}}
  if(w&&!$('canvasFrame').hidden)drawMap();requestAnimationFrame(animation);}
 async function init(){try{const raw=await load();w=raw?restoreWorld(raw):createWorld();}catch(e){console.warn(e);w=createWorld();toast('旧存档暂时无法读取，当前为临时世界。');}
  sprites=new SpriteBank('sprites/');

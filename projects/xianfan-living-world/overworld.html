@@ -4,15 +4,9 @@
 <main class="game-body"><div id="canvasFrame" class="canvas-frame"><canvas id="worldCanvas" role="img" aria-label="连续地图：拖动浏览、双指缩放，点击建筑或人物查看信息；点击后再决定前往"></canvas>
 <div class="map-badge"><strong>山河同图 · 无缝缩放</strong><span id="mapScale">米/像素</span></div>
 <div class="map-modes" id="mapModes" role="group" aria-label="地图图层"><button data-mode="terrain" class="selected">地形</button><button data-mode="faction">势力</button><button data-mode="population">人口</button><button data-mode="security">治安</button><button data-realm="cultivation">只看仙域</button></div>
-<div class="legend" id="legend" hidden></div><div class="map-tools"><button id="zoomIn" aria-label="放大">＋</button><button id="zoomOut" aria-label="缩小">−</button><button id="locate" class="locate" aria-label="定位当前人物">◎我</button></div>
+<div class="legend" id="legend" hidden></div><div class="map-tools" data-battle-host="1"><button id="zoomIn" aria-label="放大">＋</button><button id="zoomOut" aria-label="缩小">−</button><button id="fieldBattle" class="locate" aria-label="在当前位置列阵开战">⚔列阵</button><button id="locate" class="locate" aria-label="定位当前人物">◎我</button></div>
 <div class="map-foot"><span>●头像为人物 · 进屋走正门 · 城墙不穿越</span><button id="stop" hidden>停止行走</button></div></div>
 <section id="records" class="record-frame" hidden></section><section id="sheet" class="sheet" hidden></section>
-<section id="battleScreen" class="battle-screen" hidden>
- <canvas id="battleCanvas"></canvas>
- <div id="battleHud" class="battle-hud">未开战</div>
- <div class="battle-bar">
-  <button id="bStart">开战</button><button id="bPause">暂停</button><button id="bSpeed">3×速</button><button id="bBack">回地图</button>
- </div>
-</section></main>
-<div class="info-row"><strong id="speed">未移动</strong><span id="position">坐标 0,0m</span><button id="fast">30倍</button><button id="advanceDay">过一天</button></div><nav class="controlbar"><button data-view="map" class="selected">天下地图</button><button data-view="people">故人</button><button data-view="ledger">治理</button><button data-view="goods">物产</button><button data-view="quests">委托</button><button data-view="war">兵事</button><button data-view="battle">临阵</button><button data-view="court">朝堂</button><button data-view="xian">仙门</button><button data-view="history">纪事</button></nav>
+</main>
+<div class="info-row"><strong id="speed">未移动</strong><span id="position">坐标 0,0m</span><button id="fast">30倍</button><button id="advanceDay">过一天</button></div><nav class="controlbar"><button data-view="map" class="selected">天下地图</button><button data-view="people">故人</button><button data-view="ledger">治理</button><button data-view="goods">物产</button><button data-view="quests">委托</button><button data-view="war">兵事</button><button data-view="court">朝堂</button><button data-view="xian">仙门</button><button data-view="history">纪事</button></nav>
 <div class="indoor" id="indoor" hidden><header><strong id="indoorName">建筑</strong><button id="exitRoom">出门回地图</button></header><svg id="indoorMap" viewBox="0 0 500 650"></svg></div></div><div id="toast" class="toast" role="status" aria-live="polite"></div><script type="module" src="overworld-ui.js"></script></body></html>

@@ -26,8 +26,8 @@ export const TROOPS={
  monk:{name:'修士',weapon:'staff',hp:150,armor:2,speed:7.5,color:'#8b95c4'}
 };
 export const FORMATIONS={
- line:{name:'横阵',colGap:3,rowGap:3.4},
- block:{name:'方阵',colGap:2.4,rowGap:2.4},
+ line:{name:'横阵',colGap:3.0,rowGap:4.2},
+ block:{name:'方阵',colGap:4.4,rowGap:4.4},
  wedge:{name:'楔形',colGap:3,rowGap:3,shape:'wedge'}
 };
 
@@ -35,7 +35,7 @@ let nextId=1;
 function makeSide(def,side,w,h,rand){
  const f=FORMATIONS[def.formation||'block'];
  const soldiers=[];
- let row=0,col=0;const width=Math.min(12,Math.max(6,Math.round(Math.sqrt(def.count||120)*1.6)));
+ let row=0,col=0;const width=Math.min(40,Math.max(8,Math.round(Math.sqrt(def.count||120)*2.4)));
  for(const unit of def.units||[]){
   for(let i=0;i<unit.count;i++){
    const t=TROOPS[unit.troop]||TROOPS.infantry;
@@ -44,11 +44,13 @@ function makeSide(def,side,w,h,rand){
    const cols=wedge?4:width;
    if(col>=cols){col=0;row++;}
    const lane=(col-(cols-1)/2)*f.colGap;
-   const depth=row*f.rowGap;
-   const x=side==='left'?w*0.24+lane: w*0.76-lane;
-   const y=h*0.5-row*f.rowGap*0.5; // 以中线为轴向两侧排开
+   // 阵型以中线对称展开：第 0 排在最后，最后一排顶到前面
+   const rows=Math.max(1,Math.ceil((def.count||1)/cols));
+   const y0=h*0.5-(rows-1)*f.rowGap*0.5;
+   const x=side==='left'?w*0.26+lane: w*0.74-lane;
+   const y=y0+row*f.rowGap;
    soldiers.push({id:nextId++,side,troop:unit.troop,weapon:t.weapon,rowY:y,
-    x,y:y+depth*0.9,hp:t.hp,maxHp:t.hp,armor:(t.armor||0)+(wp.armor||0),
+    x,y,hp:t.hp,maxHp:t.hp,armor:(t.armor||0)+(wp.armor||0),
     morale:100,state:'advance',target:null,cool:rand()*0.5,
     face:side==='left'?0:Math.PI,phase:rand()*6.28,unit:unit.name||t.name});
    col++;
@@ -128,7 +130,6 @@ export function stepBattle(b,dt=0.1){
   const near=nearestEnemy(b,s);
   if(!near){s.state='hold';continue;}
   const {enemy,d}=near;
-  if(d<12)enemy.attackers=(enemy.attackers|0)+1;
   s.target=enemy.id;
   const reach=wp.ranged?wp.reach:wp.reach*1.6;
   // 士气崩了就跑
@@ -137,11 +138,17 @@ export function stepBattle(b,dt=0.1){
    s.x+= dx; s.face=dx>0?0:Math.PI; s.phase+=dt*10;
   }else if(d>reach){
    s.state='advance';
-   const k=t.speed*dt/d;
-   s.x+=(enemy.x-s.x)*k; s.y+=(enemy.y-s.y)*k+(s.rowY!==undefined?(s.rowY-s.y)*dt*0.9:0);
-   s.face=Math.atan2(enemy.y-s.y,enemy.x-s.x); s.phase+=dt*8;
+   // 阵列推进：只向"敌阵前沿"走，横向守自己的排位；这样两军是一道线撞一道线，不是所有人扑向一个点
+   const dir=s.side==='left'?1:-1;
+   const tx=enemy.x-dir*reach*0.85;
+   const ty=s.rowY!==undefined?(s.rowY*0.75+enemy.y*0.25):enemy.y;
+   const vx=tx-s.x, vy=ty-s.y, vd=Math.hypot(vx,vy)||1;
+   const k=Math.min(1,t.speed*dt/vd);
+   s.x+=vx*k; s.y+=vy*k;
+   s.face=dir>0?0:Math.PI; s.phase+=dt*8;
   }else{
    s.state='fight';
+   enemy.attackers=(enemy.attackers|0)+1;
    s.face=Math.atan2(enemy.y-s.y,enemy.x-s.x);
    s.cool-=dt;
    if(s.cool<=0){
