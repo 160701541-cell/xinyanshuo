@@ -15,6 +15,9 @@ import {runRules,ensureEngine,cardView} from './engine.js';
 import {loadContent} from './content/index.js';
 import {atmosphereOf, cloudShadowAt} from './content/atmos.js';
 import {beastArtSVG} from './content/beastart.js';
+import {ensureWild, tickWild, densOf, denInfo, huntPreview, huntDen, wildReport} from './wildbeasts.js';
+import {ensureEconomy, wageBill, payWages, bribe, hireGuild, silverReport, SILVER_USES} from './economy.js';
+import {RECIPES, canCraft, craft, hatchEgg, tameCub} from './craft.js';
 import {ensureFamily,familyReport,familyMembers,joinFamily,marry,conceive,candidatesFor,ageFamily,ageOf,ageLeft,rootOfPerson} from './family.js';
 import {ensureCareer,joinPath,advance,canAdvance,recruitMen,recruitCapacity,openShop,sendCaravan,buyLand,tickCareer,recordBattle,careerReport,hireCultivator,PATHS,SHOP_KINDS,MEN_COST} from './careers.js';
 import {ensureWar,levyCapacity,createArmy,warReport,tickWarDay,supplyDays,armyNeeds,deliveredCostKg,emblemOf,authorityReport,setRank,rankOf,rankInfo,takeCommand,joinArmy,issueDecree} from './war.js';
@@ -669,6 +672,13 @@ function personLine(w,p){
 function canLead(){try{return !!rankInfo(w).lead;}catch{return false;}}
 function handleRecordsClick(e){
  const t=e.target.closest('button');if(!t)return;
+ if(t.dataset.hunt){const r=huntDen(w,t.dataset.hunt);toast(r.ok?`讨平巢穴，得 ${r.line}`:r.reason);profile();scheduleSave();renderWild();return;}
+ if(t.dataset.craft){const r=craft(w,t.dataset.craft);toast(r.ok?`做成 ${r.made.name}`:r.reason);scheduleSave();renderWild();return;}
+ if(t.dataset.hatch){const r=hatchEgg(w);toast(r.ok?(r.hatched?'孵出一只幼崽':r.reason):r.reason);scheduleSave();renderWild();return;}
+ if(t.dataset.tame){const r=tameCub(w);toast(r.ok?(r.tamed?'养熟了，跟你走':r.reason):r.reason);scheduleSave();renderWild();return;}
+ if(t.dataset.pay){const r=payWages(w);toast(r.paid?`发了 ${r.paid} 银军饷`:(r.flee?`欠饷，跑了 ${r.flee} 人`:'无兵可养'));profile();scheduleSave();renderWild();return;}
+ if(t.dataset.bribe){const r=bribe(w,Number(t.dataset.bribe));toast(r.ok?`打点 ${r.target}，好感 +${r.gain}`:r.reason);profile();scheduleSave();renderWild();return;}
+ if(t.dataset.hire){const r=hireGuild(w,t.dataset.hire,1);toast(r.ok?`雇下 ${r.kind}，付 ${r.cost} 银`:r.reason);profile();scheduleSave();renderWild();return;}
  if(t.dataset.buy){const r=buyItem(w,t.dataset.buy,1);toast(r.ok?`买下${itemById(t.dataset.buy).name}，花 ${r.cost} 文`:r.error);if(r.ok){profile();scheduleSave();renderGoods();}return;}
  if(t.dataset.sell){const r=sellItem(w,t.dataset.sell,1);toast(r.ok?`卖出，得 ${r.gain} 文`:r.error);if(r.ok){profile();scheduleSave();renderGoods();}return;}
  if(t.dataset.accept){const r=acceptContract(w,t.dataset.accept);toast(r.ok?`接下了「${r.contract.title}」`:r.error);if(r.ok){scheduleSave();renderQuests();}return;}
@@ -890,6 +900,33 @@ function renderFamily(){
   ${cards}<h3>族中记事</h3>${logs}`;
 }
 
+function renderWild(){
+ ensureWild(w);ensureEconomy(w);
+ const r=wildReport(w);
+ const dens=r.dens.map(d=>{
+  if(!d.alive)return `<article class="entry dim"><b>${safe(d.name)}</b><br><small>已讨平</small></article>`;
+  const p=huntPreview(w,d.id);
+  return `<article class="entry"><b>${safe(d.name)}</b> · ${safe(p.beast)}（${['凡兽','妖兵','妖将','妖王'][p.realm]||'妖兽'}）<br>
+   <small>${p.meters} 米 · ${p.count} 只 · 绝招 ${safe(p.move||'')} · 己方 ${p.party} 对 ${p.pack}，胜算 ${p.odds}</small>
+   <div><button data-hunt="${d.id}">讨伐</button></div></article>`;
+ }).join('');
+ const bag=(w.player.bag||[]).map(b=>`<li>${safe(b.name)}${b.quality?`(${safe(b.quality)})`:''} ×${b.count}</li>`).join('')||'<li>袋子是空的</li>';
+ const recipes=RECIPES.map(x=>{
+  const ok=canCraft(w,x.id);
+  return `<article class="entry"><b>${safe(x.name)}</b> <small>${Object.entries(x.cost).map(([k,n])=>`${k}×${n}`).join(' + ')}</small>
+   <div><button data-craft="${x.id}" ${ok.ok?'':'disabled'}>${ok.ok?'制作':ok.reason}</button></div></article>`;
+ }).join('');
+ const sr=silverReport(w);
+ return `<h2>妖兽与材料</h2>
+  <p>野外有 ${r.alive} 处巢穴，累计下山 ${r.raids} 次。打下来的皮骨肉筋牙可以做成甲、器、丹药；银子养兵、雇人、打点、置田，但换不来修士的东西。</p>
+  <article class="entry">银 <b>${sr.silver}</b> · 月饷 <b>${sr.wage}</b>（兵 ${sr.men}）<div><button data-pay="1">发饷</button><button data-bribe="60">打点门子</button><button data-hire="guard">雇护院</button></div></article>
+  <h3>巢穴</h3>${dens}
+  <h3>行囊</h3><ul>${bag}</ul>
+  <h3>加工</h3>${recipes}
+  <h3>孵养</h3><div><button data-hatch="1">孵卵</button><button data-tame="1">驯崽</button></div>
+  <h3>银子的用处</h3>${SILVER_USES.map(u=>`<article class="entry"><b>${safe(u.name)}</b><br><small>${safe(u.note)}</small></article>`).join('')}`;
+}
+
 function otherPanels(panel){activeTab=panel;for(const n of document.querySelectorAll('[data-view]'))n.classList.toggle('selected',n.dataset.view===panel);
  $('canvasFrame').hidden=panel!=='map';$('records').hidden=panel==='map';$('sheet').hidden=true;
  if(panel==='map'){drawMap();return;}
@@ -900,8 +937,10 @@ function otherPanels(panel){activeTab=panel;for(const n of document.querySelecto
  if(panel==='war')return renderWar();
  if(panel==='career')return renderCareer();
  if(panel==='family')return renderFamily();
+ if(panel==='wild')return renderWild();
  const hist=w.history.slice(-25).reverse();let html=panel==='people'?`<h2>故人谱</h2><p>人物在地图上有位置，只有真正相遇后才记录在这里。</p>${w.player.contacts.map(c=>{const p=w.people.find(x=>x.id===c.id);return `<article class="entry">${safe(p?.name||c.id)} · ${safe(p?.job||'')} · 第${c.firstDay}天相识</article>`;}).join('')||'<p>尚无相识之人。</p>'}`:panel==='ledger'?renderLedger():`<h2>此世纪事</h2>${hist.map(e=>`<article class="entry"><small>第${e.day}日 · ${safe(e.type)}</small><p>${safe(e.message)}</p></article>`).join('')}`;
- $('records').innerHTML=html;}
+ const back=document.createElement('button');back.className='record-back';back.textContent='返 回 地 图';back.onclick=()=>otherPanels('map');
+ $('records').innerHTML='';$('records').appendChild(back);$('records').insertAdjacentHTML('beforeend',html);}
 function resize(){const r=canvas.getBoundingClientRect();cssW=Math.max(10,r.width);cssH=Math.max(10,r.height);const dpr=Math.min(2,window.devicePixelRatio||1);canvas.width=Math.round(cssW*dpr);canvas.height=Math.round(cssH*dpr);ctx=canvas.getContext('2d');ctx.setTransform(dpr,0,0,dpr,0,0);drawMap();}
 function updateLegend(){
  const el=$('legend');if(!el)return;

@@ -61,3 +61,25 @@
 .sheet-icon{flex:0 0 auto;line-height:0;border-radius:8px;background:rgba(60,48,32,.08);padding:4px}
 .sheet-icon svg{image-rendering:pixelated;display:block}
 .sheet-heading{flex:1 1 auto;min-width:0}
+
+/* ── 手游壳：不是网页 ───────────────────────────── */
+html,body{margin:0;height:100%;overflow:hidden;overscroll-behavior:none;-webkit-tap-highlight-color:transparent;-webkit-user-select:none;user-select:none;touch-action:manipulation}
+body{background:#0e1712}
+.shell{height:100dvh;max-height:100dvh}
+/* 顶部状态压成半透明贴片，地图从它下面透出来 */
+.status{background:linear-gradient(180deg,#f8f4e9f2 60%,#f8f4e9d0);box-shadow:0 3px 14px #16261c2e}
+.world-row{background:#e6ebdfee;backdrop-filter:blur(6px)}
+/* 左右两侧留出安全区，避免刘海与手势条压住按钮 */
+.status,.world-row,.controlbar,.info-row{padding-left:max(12px,env(safe-area-inset-left));padding-right:max(12px,env(safe-area-inset-right))}
+/* 底部主导航：手机上要能盲按，最小 44px */
+.controlbar{min-height:58px;gap:2px;background:#f3f0e8f7;backdrop-filter:blur(8px)}
+.controlbar button{min-height:44px;font-size:12px;border-radius:11px;padding:6px 2px}
+.controlbar button.selected{box-shadow:inset 0 0 0 1px #d9cba4}
+.map-tools button{width:46px;height:46px}
+.map-foot button{min-height:44px;font-size:13px}
+.sheet-actions button{min-height:44px}
+/* 面板：像游戏里的全屏页，而不是文档页 */
+.record-frame{padding:16px 14px 26px;background:#f4f1e7}
+.record-frame h2{position:sticky;top:-16px;background:#f4f1e7;padding:10px 0;margin:0 0 8px;font-size:20px;z-index:2;border-bottom:1px solid #e0dcc9}
+.entry{background:#fffdf5;box-shadow:0 1px 0 #e7e3d2}
+.record-back{position:sticky;top:-16px;float:right;z-index:3;min-height:38px;padding:6px 12px;border-radius:10px;border:1px solid #c0c7b3;background:#fbf8ee;color:#27493a;font-weight:700}

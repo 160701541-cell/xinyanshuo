@@ -44,14 +44,14 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p xianfan-dist
-          cp projects/xianfan-living-world/android/app/build/outputs/apk/release/app-release.apk xianfan-dist/xianfan-county-0.6.0-demo.apk
+          cp projects/xianfan-living-world/android/app/build/outputs/apk/release/app-release.apk xianfan-dist/xianfan-county-0.46.0-demo.apk
           sha256sum xianfan-dist/*.apk | tee xianfan-dist/SHA256SUMS.txt
           unzip -l xianfan-dist/*.apk | grep -E 'index.html|core.js|overworld.js|overworld-ui.js|overworld.css' > xianfan-dist/asset-proof.txt
           test "$(wc -l < xianfan-dist/asset-proof.txt)" -ge 5
       - name: Upload APK (GitHub Actions artifact)
         uses: actions/upload-artifact@v4
         with:
-          name: xianfan-county-android-v0.6.0
+          name: xianfan-county-android-v0.46.0
           path: xianfan-dist/
           retention-days: 30
           if-no-files-found: error
@@ -61,12 +61,12 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          tag='xianfan-county-v0.6.0-demo'
+          tag='xianfan-county-v0.46.0-demo'
           if gh release view "$tag" >/dev/null 2>&1; then
             gh release upload "$tag" xianfan-dist/* --clobber
           else
             gh release create "$tag" xianfan-dist/* \
               --target "$GITHUB_SHA" --prerelease \
-              --title '仙凡共生·临安县 v0.6.0（独立测试APK）' \
+              --title '仙凡共生·临安县 v0.46.0（独立测试APK）' \
               --notes '本测试包不属于苍岚或WorldBox，不得覆盖原游戏。当前签名是公开测试密钥，仅供内部体验。离线运行；13,680居民档案；改为唯一米制地理坐标与连续缩放，不再依地图层级重设人物所在地点；可点击建筑查看卡片并走近正门，建筑与城墙碰撞；NPC地图头像、关键角色位置、地方与天下势力地理标记（外县/他国/宗门为地理占位，并非完整已模拟城市）；移动与世界时间同步。旧存档不强制清除；仅本地自动化测试，手机实机待验收。'
           fi
