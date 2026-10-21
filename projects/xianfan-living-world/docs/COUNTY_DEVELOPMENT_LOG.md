@@ -323,3 +323,12 @@
 - 测试 207/207（新增 6 项城镇像素用例）。
 - 预览 docs/preview/town-pixel.png、town-pixel-zoom.png。
 - 未做：屋顶只有两坡、树无品种、街上无摊位行人、14 米/像素处有风格跳变、村落与山门未拼、无实机截图。
+
+## 2026-10-22 / v0.42 天光云影雨与妖兽体型
+
+- 新模块 `content/atmos.mjs`（atmos-0.1.0）：`sunAt/shadowOf/cloudShadowAt/weatherFx/rainDrops/atmosphereOf`；日出 5.6、日落 18.4；云影两层值噪声对向飘动；天气表 晴/多云/阴/小雨/大风。
+- `overworld-ui.mjs` 新增 `drawAtmosphere()`：云影（54px 网格采样）→ 天光色调 → 雨丝 + 湿地，画在建筑之上、人物之下。
+- 新模块 `content/beasts.mjs`（beast-0.1.0）：5 种妖兽（2.1–4.2 米），`beastScore/cultivatorScore/versusAt/sizeRatio/asFighter`；妖兽 1.32^境界、人修 2.2^境界，凡人境 4:1、金丹 0.86、化神 0.31。
+- 测试 211/211（新增 4 项）。
+- 预览 docs/preview/weather-preview.png（黄昏小雨的县城 + 体型对照条）。
+- 未做：柔软云边、雨落地积水与雷闪、天气影响行军、妖兽巢穴与参战。

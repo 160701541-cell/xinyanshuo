@@ -13,6 +13,7 @@ import {PeopleBank,dirFor,stepOf} from './people.mjs';
 import {practice,breakLayer,breakRealm,restMeridian,practiceReport,detectRoot} from './cultivation.mjs';
 import {runRules,ensureEngine,cardView} from './engine.mjs';
 import {loadContent} from './content/index.mjs';
+import {atmosphereOf, cloudShadowAt} from './content/atmos.mjs';
 import {ensureFamily,familyReport,familyMembers,joinFamily,marry,conceive,candidatesFor,ageFamily,ageOf,ageLeft,rootOfPerson} from './family.mjs';
 import {ensureCareer,joinPath,advance,canAdvance,recruitMen,recruitCapacity,openShop,sendCaravan,buyLand,tickCareer,recordBattle,careerReport,hireCultivator,PATHS,SHOP_KINDS,MEN_COST} from './careers.mjs';
 import {ensureWar,levyCapacity,createArmy,warReport,tickWarDay,supplyDays,armyNeeds,deliveredCostKg,emblemOf,authorityReport,setRank,rankOf,rankInfo,takeCommand,joinArmy,issueDecree} from './war.mjs';
@@ -419,6 +420,43 @@ function drawAvatars(){if(camera.mpp>350)return;
   if(selected?.kind==='npc'&&selected.data.id===a.id){ctx.strokeStyle='#bd713f';ctx.lineWidth=2.5;ctx.beginPath();ctx.arc(pp.x,pp.y-h*.4,h*.55,0,Math.PI*2);ctx.stroke();}
  }
 }
+/** 天光、云影、雨：都画在场景之上、人物之下 */
+function drawAtmosphere(){
+  const octx=ctx; if(!octx) return;
+  const W0=cssW, H0=cssH;
+  const area=atmosphereOf({hour:w.hour, weather:w.weather, seconds:clockMs});
+  const W=W0, H=H0;
+  // 1) 云影：按屏幕网格采样世界坐标，云往东南飘
+  const step=54;
+  for(let sy=0;sy<H;sy+=step){
+    for(let sx=0;sx<W;sx+=step){
+      const wx=camera.x+(sx-W/2)*camera.mpp*1.6, wy=camera.y+(sy-H/2)*camera.mpp*1.6;
+      const v=cloudShadowAt(wx,wy,clockMs,camera.mpp>12?6:1);
+      if(v>0.02){
+        octx.fillStyle=`rgba(26,32,40,${(v*0.20).toFixed(3)})`;
+        octx.fillRect(sx,sy,step,step);
+      }
+    }
+  }
+  // 2) 天光：晨昏暖、正午白、夜里青
+  octx.fillStyle=`rgba(${area.tint.r},${area.tint.g},${area.tint.b},${area.tint.a})`;
+  octx.fillRect(0,0,W,H);
+  // 3) 雨丝
+  if(area.rain>0){
+    octx.strokeStyle=`rgba(206,224,238,${(0.22+area.rain*0.35).toFixed(2)})`;
+    octx.lineWidth=1;
+    octx.beginPath();
+    for(const d of area.rainDrops){
+      const x=d.x*W, y=d.y*H, l=d.len*H;
+      octx.moveTo(x,y); octx.lineTo(x-2.5,y+l);
+    }
+    octx.stroke();
+    // 湿地：地面上压一层暗青，雨越大越重
+    octx.fillStyle=`rgba(52,74,92,${(area.wet*0.16).toFixed(3)})`;
+    octx.fillRect(0,0,W,H);
+  }
+}
+
 function drawPlayer(){const p=pos(w.player.mapPos);
  const me={id:'player',job:w.player.role==='修士'?'修士':w.player.role,age:30,sex:'男',wealth:200};
  const look=sprites?sprites.layers(me):null;
@@ -432,7 +470,7 @@ function drawPlayer(){const p=pos(w.player.mapPos);
 }
 function drawRoute(){const r=w.player.route;if(!r)return;const points=[w.player.mapPos,...r.path.slice(r.index+1)];drawPath(points.map(p=>[p.x,p.y]));ctx.strokeStyle='rgba(255,250,228,.8)';ctx.lineWidth=6;ctx.stroke();drawPath(points.map(p=>[p.x,p.y]));ctx.strokeStyle='#cc7c40';ctx.lineWidth=3;ctx.setLineDash([8,7]);ctx.stroke();ctx.setLineDash([]);circle(r.goal,6,'#b7653a','#fff0d7',2);}
 function drawSelection(){if(!selected?.point)return;const p=pos(selected.point);ctx.beginPath();ctx.arc(p.x,p.y,24,0,Math.PI*2);ctx.strokeStyle='#bd713f';ctx.lineWidth=2.5;ctx.stroke();ctx.beginPath();ctx.moveTo(p.x-30,p.y);ctx.lineTo(p.x+30,p.y);ctx.moveTo(p.x,p.y-30);ctx.lineTo(p.x,p.y+30);ctx.stroke();}
-function drawMap(){if(!ctx)return;ctx.clearRect(0,0,cssW,cssH);drawGround();if(camera.mpp>=26&&mapMode==='terrain'){drawWorldLayer();return;}drawFactionLayer();drawPolitical();drawRelief();drawFields();drawWater();drawRoads();drawStreets();drawWall();drawBuildings();drawTowns();drawRoute();drawArmies();drawAvatars();{const mb=mapBattle(w);if(mb)drawMapBattle(mb,ctx,pos,camera.mpp,{cssW,cssH});}drawPlayer();drawSelection();}
+function drawMap(){if(!ctx)return;ctx.clearRect(0,0,cssW,cssH);drawGround();if(camera.mpp>=26&&mapMode==='terrain'){drawWorldLayer();return;}drawFactionLayer();drawPolitical();drawRelief();drawFields();drawWater();drawRoads();drawStreets();drawWall();drawBuildings();drawTowns();drawRoute();drawArmies();drawAtmosphere();drawAvatars();{const mb=mapBattle(w);if(mb)drawMapBattle(mb,ctx,pos,camera.mpp,{cssW,cssH});}drawPlayer();drawSelection();}
 function profile(){const p=w.player,r=worldReport(w),place=placeAt(p.mapPos);
  $('name').textContent=p.name;$('place').textContent=p.indoor?(getPlace(p.indoor)?.name||'室内'):place.name;
  $('time').textContent=currentTime();$('population').textContent=`临安县及周边 ${r.population.toLocaleString('zh-CN')}人`;

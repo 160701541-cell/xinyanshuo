@@ -131,3 +131,21 @@ test('场景不会因为名称里有“店”就都当成客栈：铁匠铺走 f
   assert.equal(sceneIdFor('南门'), 'gate');
   assert.equal(sceneIdFor('田畴'), 'field');
 });
+
+test('妖兽比人大一圈，对寻常甲士约四倍', async () => {
+  const B = await import('../content/beasts.mjs');
+  assert.ok(B.sizeRatio('wolf') > 1.15, '狼应当比人高');
+  assert.ok(B.sizeRatio('tiger') > 2.2, '山君应当接近两倍人高');
+  const s = B.beastScore('wolf', 0);
+  assert.ok(s >= 3.6 && s <= 4.6, `狼对甲士应在四倍上下，实际 ${s}`);
+  const f = B.asFighter('wolf');
+  assert.ok(f.hp >= 380 && f.hp <= 420);
+});
+
+test('境界越高妖兽涨得慢、人修涨得快，大后期人修反超', async () => {
+  const B = await import('../content/beasts.mjs');
+  const low = B.versusAt(0), mid = B.versusAt(2), high = B.versusAt(5);
+  assert.ok(low.ratio > 3, `炼气：妖兽应远强于人修，实际 ${low.ratio}`);
+  assert.ok(high.ratio < 0.5, `化神：人修应远强于妖兽，实际 ${high.ratio}`);
+  assert.ok(low.ratio > mid.ratio && mid.ratio > high.ratio, '比值应当一路下降');
+});
