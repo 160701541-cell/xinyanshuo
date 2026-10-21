@@ -9,6 +9,7 @@ import {levySect,RETAINER_COST,ensureCultivation,xianReport,tickRetainers,resolv
 import {ensureState,tickState,reform,stateReport,LEVERS} from './state.mjs';
 import {ensureCourt,tickCourt,issueOrder,talkTo,courtReport,parseDecree} from './court.mjs';
 import {ensureMarket,tickMarket,marketReport,releaseGrain,buyToGranary,setTax,setMonopoly,buildPost,GOODS} from './market.mjs';
+import {ensureCareer,joinPath,advance,canAdvance,recruitMen,recruitCapacity,openShop,sendCaravan,buyLand,tickCareer,recordBattle,careerReport,hireCultivator,PATHS,SHOP_KINDS,MEN_COST} from './careers.mjs';
 import {ensureWar,levyCapacity,createArmy,warReport,tickWarDay,supplyDays,armyNeeds,deliveredCostKg,emblemOf,authorityReport,setRank,rankOf,rankInfo,takeCommand,joinArmy,issueDecree} from './war.mjs';
 import {interiorAtlas} from './atlas.mjs';
 import {classifyGesture,canSelect} from './gesture.mjs';
@@ -615,8 +616,45 @@ function handleRecordsClick(e){
  if(t.dataset.join){const r=joinArmy(w,Number(t.dataset.join));toast(r.ok?'你编入行伍，只是其中一人':r.error);scheduleSave();renderWar();return;}
  if(t.dataset.march){const a=w.war.armies.find(x=>x.id===Number(t.dataset.march));if(!a)return;a.goal={x:0,y:0};a.state='行军';toast(`${a.name}开拔，向县城行军`);scheduleSave();renderWar();return;}
  if(t.dataset.return){const a=w.war.armies.find(x=>x.id===Number(t.dataset.return));if(!a)return;const seat=LANDMARKS.find(l=>l.id===factionById(a.faction)?.seat);a.goal=seat?{x:seat.x,y:seat.y}:{x:a.x,y:a.y};a.state='行军';toast(`${a.name}回师`);scheduleSave();renderWar();return;}
+ if(t.dataset.advance){const r=advance(w,t.dataset.advance);toast(r.ok?`升${r.rank}：${r.grant}`:r.error);if(r.ok){profile();scheduleSave();renderCareer();}return;}
+ if(t.dataset.path&&PATHS[t.dataset.path]){const r=joinPath(w,t.dataset.path);toast(r.ok?`入${PATHS[t.dataset.path].name}，从「${r.rank.name}」做起`:r.error);if(r.ok){scheduleSave();renderCareer();}return;}
+ if(t.dataset.recmode){const r=recruitMen(w,10);toast(r.ok?`募得 ${r.men} 名部曲（上限 ${r.cap}）`:r.error);if(r.ok){profile();scheduleSave();renderCareer();}return;}
+ if(t.dataset.land){const r=buyLand(w,Number(t.dataset.land)||10);toast(r.ok?`买田 ${r.land} 亩`:r.error);if(r.ok){profile();scheduleSave();renderCareer();}return;}
+ if(t.dataset.shop){const r=openShop(w,t.dataset.shop);toast(r.ok?`${r.shop.name}开张`:r.error);if(r.ok){scheduleSave();renderCareer();}return;}
+ if(t.dataset.caravan){const r=sendCaravan(w,{qty:Number(t.dataset.caravan)||10,days:12});toast(r.ok?'商队已出发':r.error);if(r.ok){scheduleSave();renderCareer();}return;}
+ if(t.dataset.hirec){const r=hireCultivator(w,{realm:t.dataset.hirec});toast(r.ok?`${r.retainer.name}入你门下`:r.error);if(r.ok){scheduleSave();renderCareer();}return;}
+ if(t.dataset.careertick){const r=tickCareer(w);toast(r.skipped?'本月已结（未满三十日）':`结算：铺面 ${r.shops>=0?'+':''}${r.shops} 银，田租 +${r.land}，军饷 -${r.wage}`);if(!r.skipped){scheduleSave();renderCareer();}return;}
  if(t.dataset.complete){const r=completeContract(w,t.dataset.complete);toast(r.ok?`交差，得 ${r.pay} 文`:r.error);if(r.ok){profile();scheduleSave();renderQuests();}return;}
 }
+
+/** 出身：五道并行。每一道都有“下一步要什么”，说清楚了才叫玩法，不然就是刷数值。 */
+function renderCareer(){
+ const r=careerReport(w);
+ const sum=`<h2>出身与晋升</h2>
+  <p>五道都能走到顶，但“顶”不是一回事：军功看战功与人头，官身看名望（也可以拿钱铺路），商贾看本钱与周转，仙途看灵根与灵石，乡望看田产与乡亲口碑。</p>
+  <article class="entry">名望 <b>${r.fame}</b> · 战功 <b>${r.merit}</b> · 本钱 <b>${r.capital}</b> 银 · 田产 <b>${r.land}</b> 亩<br>
+   私兵 <b>${r.men}</b>／上限 ${r.cap}（军饷 ${MEN_COST.upkeep} 银/人·月）· 铺面 ${r.shops} · 欠下人情债 <b>${r.debt}</b> 银
+   ${r.top?'<br><b>你已在某一道登顶。</b>':''}</article>
+  <p class="warbtns">${PATHLIST.map(p=>`<button data-path="${p.id}" ${w.career.ranks[p.id]>=0?'disabled':''}>入${safe(p.name)}</button>`).join('')}
+   <button data-recmode="1">募兵 10 人（${10*(MEN_COST.enlist+MEN_COST.gear)} 银）</button>
+   <button data-land="20">买田 20 亩（${20*18} 银）</button>
+   <button data-careertick="1">结算本月</button></p>`;
+ const cards=r.paths.map(p=>{
+  const rows=p.next?`<small>下一步：${safe(p.next)} — 需 ${Object.entries(p.nextNeed||{}).map(([k,v])=>`${({merit:'战功',fame:'名望',capital:'本钱',land:'田产',qi:'道行'})[k]} ${v}`).join(' · ')||'无门槛'}</small>`:'<small>已登顶。</small>';
+  return `<article class="entry" style="border-left:4px solid ${p.color}">
+   <strong>${safe(p.name)} · ${safe(p.rank)}</strong> <span class="tag">${p.ready?'可晋升':'未达门槛'}</span><br>
+   ${rows}<br><small>${safe(p.grant)}</small>
+   ${p.ready?`<br><button data-advance="${p.id}">晋升${p.nextPay?`（付 ${p.nextPay} 银）`:''}</button>`:''}
+   ${p.missing&&p.missing.length?`<br><small>还差：${p.missing.map(safe).join('、')}</small>`:''}
+  </article>`;}).join('');
+ const goods=`<h3>经商</h3><p class="warbtns">${Object.entries(SHOP_KINDS).map(([k,v])=>`<button data-shop="${k}">开${v.name}（${v.cost} 银）</button>`).join('')}
+  ${[10,50,100].map(n=>`<button data-caravan="${n}">押商队 ${n} 担（约 ${n*26} 银）</button>`).join('')}</p>
+  <h3>招揽修士（走灵石，不走金银）</h3><p class="warbtns">${['found','core'].map(id=>`<button data-hirec="${id}">聘${id==='found'?'筑基':'金丹'}客卿</button>`).join('')}</p>`;
+ const log=r.log.length?r.log.map(l=>`<article class="entry"><small>第${l.day}日</small> ${safe(l.msg)}</article>`).join(''):'<p>还没有什么可记的。</p>';
+ $('records').innerHTML=`${sum}${cards}<h3>营生</h3>${goods}<h3>履历</h3>${log}`;
+}
+const PATHLIST=[{id:'military',name:'军功'},{id:'office',name:'官身'},{id:'merchant',name:'商贾'},{id:'xian',name:'仙途'},{id:'folk',name:'乡望'}];
+
 function renderXian(){
  const r=xianReport(w);
  const qi=r.regions.map(g=>`${g.name} 灵气 ${g.qi}（每万人 ${g.density} 名修士）`).join(' · ');
@@ -706,6 +744,7 @@ function otherPanels(panel){activeTab=panel;for(const n of document.querySelecto
  if(panel==='goods')return renderGoods();
  if(panel==='quests')return renderQuests();
  if(panel==='war')return renderWar();
+ if(panel==='career')return renderCareer();
  const hist=w.history.slice(-25).reverse();let html=panel==='people'?`<h2>故人谱</h2><p>人物在地图上有位置，只有真正相遇后才记录在这里。</p>${w.player.contacts.map(c=>{const p=w.people.find(x=>x.id===c.id);return `<article class="entry">${safe(p?.name||c.id)} · ${safe(p?.job||'')} · 第${c.firstDay}天相识</article>`;}).join('')||'<p>尚无相识之人。</p>'}`:panel==='ledger'?renderLedger():`<h2>此世纪事</h2>${hist.map(e=>`<article class="entry"><small>第${e.day}日 · ${safe(e.type)}</small><p>${safe(e.message)}</p></article>`).join('')}`;
  $('records').innerHTML=html;}
 function resize(){const r=canvas.getBoundingClientRect();cssW=Math.max(10,r.width);cssH=Math.max(10,r.height);const dpr=Math.min(2,window.devicePixelRatio||1);canvas.width=Math.round(cssW*dpr);canvas.height=Math.round(cssH*dpr);ctx=canvas.getContext('2d');ctx.setTransform(dpr,0,0,dpr,0,0);drawMap();}
@@ -746,6 +785,7 @@ function tickWarIfDayChanged(){
  if(w.market)tickMarket(w);
  if(w.currency){
   tickCurrency(w);tickRetainers(w);
+  if(w.career)tickCareer(w);
   const a=resolveAssassination(w);
   if(a.died){toast(`皇帝死於${a.sect}刺客之手（${a.threat} 对 ${a.protect}），太子继位。`);if(activeTab==='xian')otherPanels('xian');}
   else if(a.wounded)toast(`${a.sect}刺客被禁宫所阻，皇帝重伤。`);
@@ -780,11 +820,11 @@ function animation(now){const dt=stamp?Math.min(.12,(now-stamp)/1000):0;stamp=no
  }
  if(now-profileStamp>260){profile();profileStamp=now;}
  if(now-saveStamp>15000){scheduleSave();saveStamp=now;}}
- if(w){const mb=stepMapBattle(w,dt);if(mb&&mb.done&&!mb.reported){mb.reported=true;const r=mapBattleReport(w);toast(`战罢：左亡 ${r.left.dead} 右亡 ${r.right.dead}`);}}
+ if(w){const mb=stepMapBattle(w,dt);if(mb&&mb.done&&!mb.reported){mb.reported=true;const r=mapBattleReport(w);const k=recordBattle(w,{kills:(r.left.dead||0)+(r.right.dead||0),won:(r.left.alive||0)>=(r.right.alive||0)});toast(`战罢：左亡 ${r.left.dead} 右亡 ${r.right.dead} · 战功 +${k.gain}`);scheduleSave();}}
  if(w&&!$('canvasFrame').hidden)drawMap();requestAnimationFrame(animation);}
 async function init(){try{const raw=await load();w=raw?restoreWorld(raw):createWorld();}catch(e){console.warn(e);w=createWorld();toast('旧存档暂时无法读取，当前为临时世界。');}
  sprites=new SpriteBank('sprites/');
  await sprites.load().catch(()=>false);
- ensureGeo(w);if(w.mapCamera&&Number.isFinite(w.mapCamera.mpp))camera={...w.mapCamera};else camera={...w.player.mapPos,mpp:3.2};
+ ensureGeo(w);ensureCareer(w);if(w.mapCamera&&Number.isFinite(w.mapCamera.mpp))camera={...w.mapCamera};else camera={...w.player.mapPos,mpp:3.2};
  bind();profile();updateLegend();otherPanels('map');resize();if(w.player.indoor)showIndoor();requestAnimationFrame(animation);}
 init();
