@@ -13,11 +13,12 @@ import {ensureWar,levyCapacity,createArmy,warReport,tickWarDay,supplyDays,armyNe
 import {interiorAtlas} from './atlas.js';
 import {classifyGesture,canSelect} from './gesture.js';
 import {layoutTown,streetsFor,ART} from './buildings.js';
+import {generateRealm,regionAt,realmReport} from './worldmap.js';
 const placeById=getPlace;
 const $=id=>document.getElementById(id);
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 const safe=s=>String(s??'').replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','\'':'&#39;','"':'&quot;'}[c]));
-let w,selected=null,camera={x:0,y:0,mpp:2.7},mapMode='terrain',sprites=null,ctx,canvas,cssW=0,cssH=0,activeTab='map',pointer=new Map(),pinch=null,dragStart=null,gestureMoved=false,multiTouched=false,downAt=0,travelSpeed=30,savePending=0,noticeTimeout=0,paused=false;
+let worldRealm='mortal',w,selected=null,camera={x:0,y:0,mpp:2.7},mapMode='terrain',sprites=null,ctx,canvas,cssW=0,cssH=0,activeTab='map',pointer=new Map(),pinch=null,dragStart=null,gestureMoved=false,multiTouched=false,downAt=0,travelSpeed=30,savePending=0,noticeTimeout=0,paused=false;
 const peopleCaches=new WeakMap();
 const faces=['#537560','#95724d','#607d91','#8e715f','#855f67','#726b91'];
 const currentTime=()=>{const m=Math.floor(w.hour*60);return `承平${3+Math.floor((w.day-1)/360)}年 · 第${(w.day-1)%360+1}日 · ${String(Math.floor(m/60)).padStart(2,'0')}:${String(m%60).padStart(2,'0')}`;};
@@ -72,6 +73,50 @@ function rasterOf(grid){
  for(let i=0;i<grid.cells.length;i++){const rgb=pal[grid.cells[i]]||[229,220,194],o=i*4;img.data[o]=rgb[0];img.data[o+1]=rgb[1];img.data[o+2]=rgb[2];img.data[o+3]=232;}
  cx.putImageData(img,0,0);
  return c;
+}
+/** 整界版图：一次烤成 108×108 位图，缩到几十公里/像素时铺满全屏。凡界/仙界同尺寸、各一套地块。 */
+const realmMaps={},realmRasters={};
+function realmMap(r){if(!realmMaps[r])realmMaps[r]=generateRealm({realm:r,grid:108});return realmMaps[r];}
+function realmRaster(r){
+ if(realmRasters[r])return realmRasters[r];
+ const map=realmMap(r),n=map.grid,c=document.createElement('canvas');
+ c.width=n;c.height=n;const cx=c.getContext('2d'),img=cx.createImageData(n,n);
+ const pal=map.regions.map(rg=>[parseInt(rg.color.slice(1,3),16),parseInt(rg.color.slice(3,5),16),parseInt(rg.color.slice(5,7),16)]);
+ for(let i=0;i<map.owner.length;i++){const rgb=pal[map.owner[i]]||[214,204,176],o=i*4;
+  img.data[o]=rgb[0];img.data[o+1]=rgb[1];img.data[o+2]=rgb[2];img.data[o+3]=255;}
+ cx.putImageData(img,0,0);realmRasters[r]=c;return c;
+}
+function drawWorldLayer(){
+ if(camera.mpp<26)return;
+ const map=realmMap(worldRealm),ras=realmRaster(worldRealm);
+ const a=pos({x:-map.extent,y:-map.extent}),b=pos({x:map.extent,y:map.extent});
+ ctx.save();ctx.imageSmoothingEnabled=false;ctx.globalAlpha=.96;
+ ctx.drawImage(ras,a.x,a.y,b.x-a.x,b.y-a.y);
+ ctx.restore();
+ if(camera.mpp>110){
+  const size=clamp(900/(camera.mpp*.9),10,15);
+  for(const rg of map.regions){
+   if(rg.areaKm2<12000)continue;
+   if(Math.abs(rg.x)>map.extent*0.94||Math.abs(rg.y)>map.extent*0.94)continue;
+   if(!visible(rg))continue;
+   text(`${rg.name}·${rg.land}`,rg,size,'#3b3528',520);
+  }
+  for(const c of LANDMARKS){if(!visible(c))continue;text(c.name,c,size+1.5,'#2f2a1e',760);}
+ }
+ if(!w)return;
+ const here=regionAt(map,w.player.mapPos||{x:0,y:0});
+ if(here&&camera.mpp>200){
+  text(`${worldRealm==='mortal'?'凡界':'仙界'} · ${here.name}`,{x:camera.x,y:camera.y-cssH*.5/camera.mpp+120},13,'#4a4130',800);
+ }
+}
+function realmSheet(obj){
+ const rg=obj.data;const realm=worldRealm==='mortal'?'凡界':'仙界';
+ let title=rg.name,sub=`${rg.land} · ${realm} · ${rg.areaKm2}平方公里`;
+ let body=`<p class="near">产出 ${rg.resource==='grain'?'粮':rg.resource==='timber'?'木':rg.resource==='qi'?'灵气':rg.resource==='herb'?'药':rg.resource==='beast'?'兽':rg.resource==='stone'?'石':rg.resource==='iron'?'铁':rg.resource==='salt'?'盐':rg.resource==='fish'?'鱼':rg.resource==='reed'?'苇':'杂'}：储量 ${Math.round(rg.stock)}，年出 ${rg.yearly}　危险 ${rg.danger}级</p>`;
+ const here=w.player.mapPos||{x:0,y:0};
+ body+=`<p class="near">距你 ${Math.round(Math.hypot(rg.x-here.x,rg.y-here.y)/1000)}公里 · 一块地约 ${Math.round(Math.sqrt(rg.areaKm2))}公里见方</p>`;
+ const buttons=`<button data-action="gotoregion">朝这块地走</button><button data-action="closeregion" class="quiet">收起</button>`;
+ return {kind:'region',data:rg,title,sub,body,buttons};
 }
 /** 两级领土位图：远场 12 公里（覆盖整张世界）、近场 2 公里（县域精细）。一次烤好，之后每帧只是两次 drawImage。 */
 function factionRasterFor(){
@@ -291,7 +336,7 @@ function drawPlayer(){const p=pos(w.player.mapPos);
 }
 function drawRoute(){const r=w.player.route;if(!r)return;const points=[w.player.mapPos,...r.path.slice(r.index+1)];drawPath(points.map(p=>[p.x,p.y]));ctx.strokeStyle='rgba(255,250,228,.8)';ctx.lineWidth=6;ctx.stroke();drawPath(points.map(p=>[p.x,p.y]));ctx.strokeStyle='#cc7c40';ctx.lineWidth=3;ctx.setLineDash([8,7]);ctx.stroke();ctx.setLineDash([]);circle(r.goal,6,'#b7653a','#fff0d7',2);}
 function drawSelection(){if(!selected?.point)return;const p=pos(selected.point);ctx.beginPath();ctx.arc(p.x,p.y,24,0,Math.PI*2);ctx.strokeStyle='#bd713f';ctx.lineWidth=2.5;ctx.stroke();ctx.beginPath();ctx.moveTo(p.x-30,p.y);ctx.lineTo(p.x+30,p.y);ctx.moveTo(p.x,p.y-30);ctx.lineTo(p.x,p.y+30);ctx.stroke();}
-function drawMap(){if(!ctx||!w)return;ctx.clearRect(0,0,cssW,cssH);drawGround();drawFactionLayer();drawPolitical();drawRelief();drawWater();drawRoads();drawStreets();drawWall();drawBuildings();drawTowns();drawRoute();drawArmies();drawAvatars();drawPlayer();drawSelection();}
+function drawMap(){if(!ctx)return;ctx.clearRect(0,0,cssW,cssH);drawGround();if(camera.mpp>=26&&mapMode==='terrain'){drawWorldLayer();return;}drawFactionLayer();drawPolitical();drawRelief();drawWater();drawRoads();drawStreets();drawWall();drawBuildings();drawTowns();drawRoute();drawArmies();drawAvatars();drawPlayer();drawSelection();}
 function profile(){const p=w.player,r=worldReport(w),place=placeAt(p.mapPos);
  $('name').textContent=p.name;$('place').textContent=p.indoor?(getPlace(p.indoor)?.name||'室内'):place.name;
  $('time').textContent=currentTime();$('population').textContent=`临安县及周边 ${r.population.toLocaleString('zh-CN')}人`;
@@ -335,12 +380,14 @@ function showSheet(obj){selected=obj;const target=$('sheet');if(!obj){target.hid
  target.querySelector('[data-action="go"]')?.addEventListener('click',()=>goTarget());
  target.querySelector('[data-action="enter"]')?.addEventListener('click',()=>enter());
  target.querySelector('[data-action="fly"]')?.addEventListener('click',()=>flyTarget());
+ target.querySelector('[data-action="closeregion"]')?.addEventListener('click',()=>showSheet(null));
+ target.querySelector('[data-action="gotoregion"]')?.addEventListener('click',()=>goTarget());
  target.querySelector('[data-action="stop"]')?.addEventListener('click',()=>{stopJourney(w);profile();scheduleSave();toast('你停下了。');});
 }
 const escapeHtml=s=>safe(s);
 function flyTarget(){if(!selected)return;const goal=selected.kind==='structure'?selected.data.door:selected.kind==='npc'?{x:selected.data.x,y:selected.data.y}:selected.point;
  const r=beginFlight(w,goal,selected.data?.id||null);if(!r.ok)return toast(r.error);toast(`御剑而行 · 直线 ${Math.round(r.meters)} 米`);showSheet(null);profile();scheduleSave();}
-function goTarget(){if(!selected)return;const goal=selected.kind==='structure'?selected.data.door:selected.kind==='npc'?{x:selected.data.x,y:selected.data.y}:selected.point;
+function goTarget(){if(!selected)return;const goal=selected.kind==='structure'?selected.data.door:selected.kind==='npc'?{x:selected.data.x,y:selected.data.y}:selected.kind==='region'?{x:selected.data.x,y:selected.data.y}:selected.point;
  if(selected.kind==='landmark'&&!selected.data.active)return toast('此区域尚未开放，暂无可运行的世界实体。');
  const r=beginJourney(w,goal,selected.data?.id||null);if(r.ok){toast(`开始步行 · 路线 ${Math.round(r.meters)} 米`);showSheet(null);scheduleSave();}else toast(r.error);
 }
@@ -389,7 +436,9 @@ function setupGestures(){
   const g=classifyGesture({pointers:pointer.size+(single?1:0),moved:gestureMoved,multiTouched,still,duration:performance.now()-downAt});
   const tap=canSelect(g)&&(single||pointer.size===0);
   if(!pointer.size){pinch=null;dragStart=null;multiTouched=false;gestureMoved=false;}
-  if(tap){const p=unpos(last.x,last.y);const h=hitAt(last,p);if(h)showSheet(h);else showSheet(null);}
+  if(tap){const p=unpos(last.x,last.y);
+   if(camera.mpp>=26&&mapMode==='terrain'){const rg=regionAt(realmMap(worldRealm),p);if(rg){showSheet(realmSheet({data:rg}));}else showSheet(null);return;}
+   const h=hitAt(last,p);if(h)showSheet(h);else showSheet(null);}
  };
  canvas.addEventListener('pointerup',end);
  canvas.addEventListener('pointercancel',e=>{pointer.delete(e.pointerId);gestureMoved=true;multiTouched=true;pinch=null;dragStart=null;});
@@ -638,6 +687,7 @@ function bind(){canvas=$('worldCanvas');setupGestures();$('zoomIn').onclick=()=>
  $('stop').onclick=()=>{stopJourney(w);profile();toast('你已停下，已经流逝的时间不会退回。');scheduleSave();};
  $('save').onclick=()=>save().then(()=>toast('存档已保存')).catch(()=>toast('存档保存失败'));
  for(const b of document.querySelectorAll('[data-mode]'))b.onclick=()=>setMapMode(b.dataset.mode);
+ for(const b of document.querySelectorAll('[data-realm]'))b.onclick=()=>{worldRealm=b.dataset.realm;for(const x of document.querySelectorAll('[data-realm]'))x.classList.toggle('selected',x===b);showSheet(null);requestProfile();};
  const rec=$('records');if(rec)rec.onclick=handleRecordsClick;
  $('fast').onclick=()=>{travelSpeed=travelSpeed===30?120:travelSpeed===120?1:30;$('fast').textContent=travelSpeed+'倍';toast('世界时间倍率 '+travelSpeed+'×');};
  $('realmButton').onclick=()=>{const g=canFly(w);if(!g.ok)return toast(g.reason);if(!selected)return toast('先在地图上选择一个目的地，再御剑前往。');flyTarget();};
