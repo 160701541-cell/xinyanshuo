@@ -45,23 +45,29 @@ function field(tab,x,y,scale){return noise2(tab,x/scale,y/scale)*.65+noise2(tab,
 
 /** 用抖动网格撒种，再由最近种决定归属：整张图被无缝铺满。 */
 export function generateRealm({realm='mortal',seed='临安',extent=1_350_000,sides=36,grid=54}={}){
- const rnd=mulberry(hash(realm+':'+seed));
- const types=realm==='mortal'?MORTAL_TYPES:XIAN_TYPES;
- const keys=Object.keys(types);
- // 撒种：36×36，地类由高程/湿润/蛮荒三个场决定，相邻地块成片
+ if(realm==='world')return generateWorld({seed,extent,sides,grid});
+ return realmView(generateWorld({seed,extent,sides,grid}),realm);
+}
+
+/** 同一张世界图：凡界与修仙界交错在同一片地面上，不分成两张图。
+ *  灵气浓的地方才成修仙界（灵脉、药山、妖兽域），其余是凡界的县、田、山林。 */
+export const DOMAIN_QI=0.68;
+export function generateWorld({seed='临安',extent=1_350_000,sides=36,grid=54}={}){
+ const rnd=mulberry(hash('world:'+seed));
  const step=(extent*2)/sides;
- const tabA=lattice('elev:'+realm+seed),tabB=lattice('moist:'+realm+seed),tabC=lattice('wild:'+realm+seed),tabD=lattice('qi:'+realm+seed);
+ const tabA=lattice('elev:'+seed),tabB=lattice('moist:'+seed),tabC=lattice('wild:'+seed),tabD=lattice('qi:'+seed);
  const seeds=[];
  for(let j=0;j<sides;j++)for(let i=0;i<sides;i++){
   const x=-extent+step*(i+.5)+(rnd()-.5)*step*.8;
   const y=-extent+step*(j+.5)+(rnd()-.5)*step*.8;
   const e=field(tabA,x,y,420000),m=field(tabB,x,y,360000),w=field(tabC,x,y,300000),q=field(tabD,x,y,380000);
-  const type=pickType(realm,{e,m,w,q});
+  const domain=q>=DOMAIN_QI?'cultivation':'mortal';
+  const type=pickType(domain==='cultivation'?'xian':'mortal',{e,m,w,q});
   const name=NAME_A[(rnd()*NAME_A.length)|0]+NAME_B[(rnd()*NAME_B.length)|0]+suffixOf(type);
-  seeds.push({id:`${realm}-${i}-${j}`,x:Math.round(x),y:Math.round(y),type,name,e:Math.round(e*100)/100,m:Math.round(m*100)/100});
+  seeds.push({id:`world-${i}-${j}`,x:Math.round(x),y:Math.round(y),type,name,domain,
+   e:Math.round(e*100)/100,m:Math.round(m*100)/100,qi:Math.round(q*100)/100});
  }
- // 归属：粗网格采样（每格 5 万米），算每块地的面积与储量
- const G=grid,cellArea=Math.pow((extent*2)/G/1000,2);   // km²
+ const G=grid,cellArea=Math.pow((extent*2)/G/1000,2);
  const owner=new Int16Array(G*G);
  for(let gj=0;gj<G;gj++)for(let gi=0;gi<G;gi++){
   const x=-extent+(gi+.5)*((extent*2)/G),y=-extent+(gj+.5)*((extent*2)/G);
@@ -69,18 +75,38 @@ export function generateRealm({realm='mortal',seed='临安',extent=1_350_000,sid
   for(let k=0;k<seeds.length;k++){const d=(seeds[k].x-x)**2+(seeds[k].y-y)**2;if(d<bd){bd=d;best=k;}}
   owner[gj*G+gi]=best;
  }
- const areas=new Float64Array(seeds.length),cells=new Int32Array(seeds.length);
- for(let c=0;c<owner.length;c++){areas[owner[c]]+=cellArea;cells[owner[c]]++;}
+ const areas=new Float64Array(seeds.length);
+ for(let c=0;c<owner.length;c++)areas[owner[c]]+=cellArea;
  const regions=seeds.map((s,k)=>{
-  const t=types[s.type];
+  const t=(s.domain==='cultivation'?XIAN_TYPES:MORTAL_TYPES)[s.type];
   const area=Math.max(1,Math.round(areas[k]));
-  return {...s,realm,land:t.name,color:t.color,areaKm2:area,
+  return {...s,realm:s.domain,land:t.name,color:t.color,areaKm2:area,
    resource:t.res,stock:Math.round(area*t.per*100)/100,
-   yearly:Math.round(area*t.per),danger:t.danger,
-   county:null};
+   yearly:Math.round(area*t.per),danger:t.danger,county:null};
  });
- return {realm,seed,extent,sides,regions,owner,grid:G,cellArea,
+ return {realm:'world',seed,extent,sides,regions,owner,grid:G,cellArea,
   totalKm2:Math.round(Math.pow((extent*2)/1000,2))};
+}
+
+/** 从同一张世界图里取一界的视角：坐标不动，只把另一界的地块留白。 */
+export function realmView(world,domain){
+ const keep=world.regions.filter(r=>r.domain===domain);
+ const pos=new Map(keep.map((r,i)=>[r.id,i]));
+ const owner=new Int16Array(world.owner.length);
+ let covered=0;
+ for(let i=0;i<world.owner.length;i++){
+  const r=world.regions[world.owner[i]];
+  const k=r&&r.domain===domain?pos.get(r.id):undefined;
+  if(k===undefined){owner[i]=-1;continue;}
+  owner[i]=k;covered++;
+ }
+ return {realm:domain,seed:world.seed,extent:world.extent,sides:world.sides,
+  grid:world.grid,cellArea:world.cellArea,regions:keep,owner,
+  totalKm2:world.totalKm2,coverage:covered/world.owner.length};
+}
+export function domainShare(world){
+ let cult=0;for(const r of world.regions)if(r.domain==='cultivation')cult++;
+ return {cultivation:cult/world.regions.length,mortal:1-cult/world.regions.length};
 }
 
 /** 某个坐标落在哪块地。 */
@@ -115,15 +141,13 @@ export function pickType(realm,{e,m,w,q=0}){
   return w>.7?'marsh':'forest';
  }
  // 仙界：灵气是底子，地类是灵气浓度、地势与蛮荒三个场叠出来的
- if(w>.86&&q>.55)return 'mijing';
- if(w>.66&&q>.40)return 'yaodao';
- if(e>.74&&q>.50)return 'yaoshan';
- if(m>.72&&q>.46)return 'spring';
- if(q>.62)return 'lingmai';
- if(q<.22&&e<.5)return 'wasteland';
- if(e>.58)return 'yaoshan';
- if(m>.55)return 'spring';
- if(q>.45)return 'sects';
- return 'wasteland';
+ if(w>.88&&q>.62)return 'mijing';
+ if(e>.70)return 'yaoshan';
+ if(w>.62)return 'yaodao';
+ if(m>.58)return 'spring';
+ if(q>.76)return 'lingmai';
+ if(e<.30)return 'wasteland';
+ if(w>.46)return 'sects';
+ return 'lingmai';
 }
 const suffixOf=type=>type==='lake'||type==='spring'?'湖':(type==='mountain'||type==='yaoshan'?'山':type==='forest'||type==='bamboo'?'林':'');

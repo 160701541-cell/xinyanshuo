@@ -13,7 +13,8 @@ import {ensureWar,levyCapacity,createArmy,warReport,tickWarDay,supplyDays,armyNe
 import {interiorAtlas} from './atlas.js';
 import {classifyGesture,canSelect} from './gesture.js';
 import {layoutTown,streetsFor,ART} from './buildings.js';
-import {generateRealm,regionAt,realmReport} from './worldmap.js';
+import {generateWorld,realmView,regionAt,realmReport,domainShare} from './worldmap.js';
+import {ensureKarma,killPreview,resolveKill,breakthroughChance,attemptBreakthrough,karmaTier,karmaReport,lootFor,JUSTIFY} from './karma.js';
 const placeById=getPlace;
 const $=id=>document.getElementById(id);
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
@@ -75,42 +76,56 @@ function rasterOf(grid){
  return c;
 }
 /** 整界版图：一次烤成 108×108 位图，缩到几十公里/像素时铺满全屏。凡界/仙界同尺寸、各一套地块。 */
-const realmMaps={},realmRasters={};
-function realmMap(r){if(!realmMaps[r])realmMaps[r]=generateRealm({realm:r,grid:108});return realmMaps[r];}
-function realmRaster(r){
- if(realmRasters[r])return realmRasters[r];
- const map=realmMap(r),n=map.grid,c=document.createElement('canvas');
+let WORLD_MAP=null,worldRasterCache=null,cultMask=null,highlightCult=false;
+function realmMap(){if(!WORLD_MAP)WORLD_MAP=generateWorld({grid:108});return WORLD_MAP;}
+function realmRaster(){
+ if(worldRasterCache)return worldRasterCache;
+ const map=realmMap(),n=map.grid,c=document.createElement('canvas');
  c.width=n;c.height=n;const cx=c.getContext('2d'),img=cx.createImageData(n,n);
  const pal=map.regions.map(rg=>[parseInt(rg.color.slice(1,3),16),parseInt(rg.color.slice(3,5),16),parseInt(rg.color.slice(5,7),16)]);
  for(let i=0;i<map.owner.length;i++){const rgb=pal[map.owner[i]]||[214,204,176],o=i*4;
   img.data[o]=rgb[0];img.data[o+1]=rgb[1];img.data[o+2]=rgb[2];img.data[o+3]=255;}
- cx.putImageData(img,0,0);realmRasters[r]=c;return c;
-}
+ cx.putImageData(img,0,0);worldRasterCache=c;return c;}
+/** “只看仙域”用：凡界压暗，修仙界留亮。 */
+function cultivationMask(map){
+ const n=map.grid,c=document.createElement('canvas');c.width=n;c.height=n;
+ const cx=c.getContext('2d'),img=cx.createImageData(n,n);
+ for(let i=0;i<map.owner.length;i++){
+  const r=map.regions[map.owner[i]],o=i*4;
+  img.data[o]=24;img.data[o+1]=20;img.data[o+2]=30;
+  img.data[o+3]=r.domain==='cultivation'?0:170;
+ }
+ cx.putImageData(img,0,0);return c;}
 function drawWorldLayer(){
  if(camera.mpp<26)return;
- const map=realmMap(worldRealm),ras=realmRaster(worldRealm);
+ const map=realmMap(),ras=realmRaster();
  const a=pos({x:-map.extent,y:-map.extent}),b=pos({x:map.extent,y:map.extent});
  ctx.save();ctx.imageSmoothingEnabled=false;ctx.globalAlpha=.96;
  ctx.drawImage(ras,a.x,a.y,b.x-a.x,b.y-a.y);
  ctx.restore();
+ if(highlightCult){
+  if(!cultMask)cultMask=cultivationMask(map);
+  ctx.save();ctx.globalAlpha=.62;ctx.imageSmoothingEnabled=false;
+  ctx.drawImage(cultMask,a.x,a.y,b.x-a.x,b.y-a.y);ctx.restore();
+ }
  if(camera.mpp>110){
   const size=clamp(900/(camera.mpp*.9),10,15);
   for(const rg of map.regions){
    if(rg.areaKm2<12000)continue;
    if(Math.abs(rg.x)>map.extent*0.94||Math.abs(rg.y)>map.extent*0.94)continue;
    if(!visible(rg))continue;
-   text(`${rg.name}·${rg.land}`,rg,size,'#3b3528',520);
+   if(!highlightCult||rg.domain==='cultivation')text(`${rg.name}·${rg.land}`,rg,size,rg.domain==='cultivation'?'#3f3a63':'#3b3528',520);
   }
   for(const c of LANDMARKS){if(!visible(c))continue;text(c.name,c,size+1.5,'#2f2a1e',760);}
  }
  if(!w)return;
  const here=regionAt(map,w.player.mapPos||{x:0,y:0});
  if(here&&camera.mpp>200){
-  text(`${worldRealm==='mortal'?'凡界':'仙界'} · ${here.name}`,{x:camera.x,y:camera.y-cssH*.5/camera.mpp+120},13,'#4a4130',800);
+  text(`${here.domain==='cultivation'?'修仙界':'凡界'} · ${here.name}`,{x:camera.x,y:camera.y-cssH*.5/camera.mpp+120},13,'#4a4130',800);
  }
 }
 function realmSheet(obj){
- const rg=obj.data;const realm=worldRealm==='mortal'?'凡界':'仙界';
+ const rg=obj.data;const realm=rg.domain==='cultivation'?'修仙界':'凡界';
  let title=rg.name,sub=`${rg.land} · ${realm} · ${rg.areaKm2}平方公里`;
  let body=`<p class="near">产出 ${rg.resource==='grain'?'粮':rg.resource==='timber'?'木':rg.resource==='qi'?'灵气':rg.resource==='herb'?'药':rg.resource==='beast'?'兽':rg.resource==='stone'?'石':rg.resource==='iron'?'铁':rg.resource==='salt'?'盐':rg.resource==='fish'?'鱼':rg.resource==='reed'?'苇':'杂'}：储量 ${Math.round(rg.stock)}，年出 ${rg.yearly}　危险 ${rg.danger}级</p>`;
  const here=w.player.mapPos||{x:0,y:0};
@@ -348,6 +363,7 @@ function profile(){const p=w.player,r=worldReport(w),place=placeAt(p.mapPos);
  $('speed').textContent=w.player.route?`行走中 · ${Math.round(w.player.route.covered)}/${Math.round(w.player.route.total)}m`:'未移动';
  $('mapScale').textContent=camera.mpp<1?`${Math.round(camera.mpp*100)}厘米/像素`:camera.mpp<1000?`${Math.round(camera.mpp)}米/像素`:`${(camera.mpp/1000).toFixed(1)}公里/像素`;
  $('travelMode').textContent='步行';$('travelMode').hidden=false;
+ const kk=karmaReport(w);if($('karma')){$('karma').textContent=kk.value;$('karma').title=`${kk.tier}：突破成功率 ${Math.round(kk.breakthrough.chance*100)}%`;}
  $('realmButton').hidden=p.role!=='修士';
  $('stop').hidden=!w.player.route;
 }
@@ -437,7 +453,7 @@ function setupGestures(){
   const tap=canSelect(g)&&(single||pointer.size===0);
   if(!pointer.size){pinch=null;dragStart=null;multiTouched=false;gestureMoved=false;}
   if(tap){const p=unpos(last.x,last.y);
-   if(camera.mpp>=26&&mapMode==='terrain'){const rg=regionAt(realmMap(worldRealm),p);if(rg){showSheet(realmSheet({data:rg}));}else showSheet(null);return;}
+   if(camera.mpp>=26&&mapMode==='terrain'){const rg=regionAt(realmMap(),p);if(rg){showSheet(realmSheet({data:rg}));}else showSheet(null);return;}
    const h=hitAt(last,p);if(h)showSheet(h);else showSheet(null);}
  };
  canvas.addEventListener('pointerup',end);
@@ -581,7 +597,12 @@ function renderXian(){
   <p class="warbtns">${[1,5,20].map(n=>`<button data-buystone="${n}">兑 ${n} 块灵石（${fmtCoins(m.stonePrice*n)}）</button>`).join('')}</p>
   <h3>征索</h3><p class="warbtns">${(ensureCultivation(w).sects||[]).filter(s=>!s.destroyed).map(s=>`<button data-levy="${s.id}">向${s.name}征 4 块灵石（敌意 +35）</button>`).join('')}</p>
   <h3>护国</h3><article class="entry">${danger}<br><small>护国力量 = 禁宫大阵 + 御用供奉；宗门战力 = 道众 × 境界 + 护山大阵 + 符箓 + 灵兽。</small></article>`;
- return `<h2>仙门</h2><p>灵气决定修士在哪儿；修炼资源决定修士替谁办事。县城灵气薄，一年也未必出一个筑基。</p>${stoneBox}
+ const k=karmaReport(w);const bt=k.breakthrough;
+ const karmaBox=`<h3>业力</h3><article class="entry"><strong>${k.tier}</strong> · 业力 ${k.value} · 突破成功率 ${Math.round(bt.chance*100)}%${bt.risk?` · <b style="color:#a33">${bt.risk}将临</b>`:''}<br>
+  <small>${k.note}。杀修士沾业轻（同类相争，还有灵石丹药可捡），杀无辜凡人最重；有亲仇、护人、执法这等理由，则几乎不沾。</small><br>
+  斩杀：修士 ${k.kills.cultivator} · 凡人 ${k.kills.mortal} · 其中师出有名 ${k.kills.justified} · 除害 ${k.kills.evildoer}
+  ${k.recent.length?`<br><small>${k.recent.map(r=>`第${r.day}天 ${safe(r.name)}（${r.kind==='cultivator'?'修士':'凡人'}）业力${r.karma>=0?'+':''}${r.karma}${r.reason?`·${r.reason}`:''}`).join('<br>')}</small>`:''}</article>`;
+ return `<h2>仙门</h2><p>灵气决定修士在哪儿；修炼资源决定修士替谁办事。县城灵气薄，一年也未必出一个筑基。</p>${karmaBox}${stoneBox}
  <article class="entry"><strong>灵气</strong><br>${qi}</article>
  <h3>宗门</h3>${sects}
  <h3>供奉（战力 ${r.retainerPower}）</h3>${ret}
@@ -687,7 +708,7 @@ function bind(){canvas=$('worldCanvas');setupGestures();$('zoomIn').onclick=()=>
  $('stop').onclick=()=>{stopJourney(w);profile();toast('你已停下，已经流逝的时间不会退回。');scheduleSave();};
  $('save').onclick=()=>save().then(()=>toast('存档已保存')).catch(()=>toast('存档保存失败'));
  for(const b of document.querySelectorAll('[data-mode]'))b.onclick=()=>setMapMode(b.dataset.mode);
- for(const b of document.querySelectorAll('[data-realm]'))b.onclick=()=>{worldRealm=b.dataset.realm;for(const x of document.querySelectorAll('[data-realm]'))x.classList.toggle('selected',x===b);showSheet(null);requestProfile();};
+ for(const b of document.querySelectorAll('[data-realm]'))b.onclick=()=>{highlightCult=!highlightCult;for(const x of document.querySelectorAll('[data-realm]'))x.classList.toggle('selected',x.dataset.realm==='cultivation'&&highlightCult);showSheet(null);requestProfile();};
  const rec=$('records');if(rec)rec.onclick=handleRecordsClick;
  $('fast').onclick=()=>{travelSpeed=travelSpeed===30?120:travelSpeed===120?1:30;$('fast').textContent=travelSpeed+'倍';toast('世界时间倍率 '+travelSpeed+'×');};
  $('realmButton').onclick=()=>{const g=canFly(w);if(!g.ok)return toast(g.reason);if(!selected)return toast('先在地图上选择一个目的地，再御剑前往。');flyTarget();};

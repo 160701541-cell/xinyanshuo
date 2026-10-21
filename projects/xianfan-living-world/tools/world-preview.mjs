@@ -1,14 +1,13 @@
 // 生成整界版图预览：一界铺满 1296 块，森林/山脉只作为一个带面积与出产的地块。
 // node tools/world-preview.mjs   → docs/preview/world-<realm>.svg
 import fs from 'node:fs';
-import {generateRealm} from '../worldmap.mjs';
+import {generateWorld,domainShare} from '../worldmap.mjs';
 
 const EXTENT=1_350_000, GRID=216, S=1000, PX=S/(EXTENT*2);
-const [realm]=process.argv.slice(2);
-const realms=realm?[realm]:['mortal','xian'];
+const realms=['world'];
 for(const r of realms){
  const lines=[];
- const g=generateRealm({realm:r,grid:GRID});
+ const g=generateWorld({grid:GRID});
  const byId=g.regions; // owner 里存的是 1 起的下标
 
  const f=(v)=>v.toFixed(1);
@@ -21,6 +20,18 @@ for(const r of realms){
   const rg=byId[v-1];
   const px=(i+0.5)*cw-EXTENT, py=(j+0.5)*cw-EXTENT;
   lines.push(`<rect x="${f((px+EXTENT)*PX-cw*PX/2)}" y="${f((py+EXTENT)*PX-cw*PX/2)}" width="${f(cw*PX+0.4)}" height="${f(cw*PX+0.4)}" fill="${rg.color}"/>`);
+
+ }
+ // 域边界：只在凡界/修仙界交界处画线，不做逐格描边
+ const P=(v)=>(v+EXTENT)*PX;
+ for(let j=0;j<GRID;j++)for(let i=0;i<GRID;i++){
+  const d1=byId[g.owner[j*GRID+i]].domain==='cultivation';
+  if(i<GRID-1){const d2=byId[g.owner[j*GRID+i+1]].domain==='cultivation';
+   if(d1!==d2){const x=P(-EXTENT+(i+1)*cw),y0=P(-EXTENT+j*cw),y1=y0+cw*PX;
+    lines.push(`<line x1="${f(x)}" y1="${f(y0)}" x2="${f(x)}" y2="${f(y1)}" stroke="#55527d" stroke-width="1.6" stroke-opacity=".8"/>`);}}
+  if(j<GRID-1){const d2=byId[g.owner[(j+1)*GRID+i]].domain==='cultivation';
+   if(d1!==d2){const y=P(-EXTENT+(j+1)*cw),x0=P(-EXTENT+i*cw),x1=x0+cw*PX;
+    lines.push(`<line x1="${f(x0)}" y1="${f(y)}" x2="${f(x1)}" y2="${f(y)}" stroke="#55527d" stroke-width="1.6" stroke-opacity=".8"/>`);}}
  }
  // 州县与宗门标记
  for(const c of [['临安县城',0,0,'#7a5a48'],...(r==='xian'?[['青云山城',11_300,-7_200,'#4a6a80'],['灵山药市',12_000,-8_100,'#4a6a80']]:[])]){
@@ -37,7 +48,7 @@ for(const r of realms){
  }
  // 标题与统计
  lines.push(`<rect x="0" y="0" width="${S}" height="44" fill="#f6efdc" fill-opacity=".86"/>`);
- lines.push(`<text x="14" y="20" font-size="16" fill="#2e281c">${r==='mortal'?'凡界·大宁王畿':'仙界·青云山脉'}　2700 × 2700 公里</text>`);
+ lines.push(`<text x="14" y="20" font-size="16" fill="#2e281c">${r==='mortal'?'凡界·大宁王畿':'凡界与修仙界交错'}　2700 × 2700 公里</text>`);
  lines.push(`<text x="14" y="37" font-size="11" fill="#5a5040">${g.regions.length} 块地铺满　·　${(g.totalKm2/10000).toFixed(0)} 万平方公里</text>`);
  // 图例
  const byLand=new Map();

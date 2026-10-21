@@ -150,3 +150,12 @@
 - `tools/world-preview.mjs` 出图：world-mortal.png / world-xian.png。
 - 测试 125/125（新增 worldmap 6 项）。
 - 未做：地块边界矢量化、地块产出未接入经济、无飞升/下界规则、妖兽不实际刷新。
+
+## 2026-10-21 / v0.21 一世界 + 业力
+
+用户指出凡界与修仙界是同一个世界，交错复杂；修士忌业力，杀修士轻（有掉落），杀无辜凡人重，有正当理由则不沾，业力高影响突破。
+
+- `worldmap.mjs`：改为单张世界图 `generateWorld()`，每块地带 `domain`（mortal/cultivation），灵气场阈值 0.68，修仙界占 19.1%；`realmView()` 只留白另一界，不换坐标。
+- 新增 `karma.mjs`：业力权重（修士 +2、无辜凡人 +14、有理由 +1、该杀 −3）、掉落（修士灵石/丹药/法器/符箓，凡人铜钱）、五档业力段位、突破惩罚（0/−8/−24/−42/−62%）、心魔/天劫、`killPreview`/`resolveKill`/`breakthroughChance`/`attemptBreakthrough`/`karmaReport`。
+- UI：HUD 业力、仙门页业力卡、地图「只看仙域」、地块卡片标 domain。
+- 测试 133/133（新增 karma 8 项，worldmap 6 项改写）。
