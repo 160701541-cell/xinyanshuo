@@ -14,6 +14,7 @@ import {practice,breakLayer,breakRealm,restMeridian,practiceReport,detectRoot} f
 import {runRules,ensureEngine,cardView} from './engine.js';
 import {loadContent} from './content/index.js';
 import {atmosphereOf, cloudShadowAt} from './content/atmos.js';
+import {beastArtSVG} from './content/beastart.js';
 import {ensureFamily,familyReport,familyMembers,joinFamily,marry,conceive,candidatesFor,ageFamily,ageOf,ageLeft,rootOfPerson} from './family.js';
 import {ensureCareer,joinPath,advance,canAdvance,recruitMen,recruitCapacity,openShop,sendCaravan,buyLand,tickCareer,recordBattle,careerReport,hireCultivator,PATHS,SHOP_KINDS,MEN_COST} from './careers.js';
 import {ensureWar,levyCapacity,createArmy,warReport,tickWarDay,supplyDays,armyNeeds,deliveredCostKg,emblemOf,authorityReport,setRank,rankOf,rankInfo,takeCommand,joinArmy,issueDecree} from './war.js';
@@ -517,7 +518,9 @@ function showSheet(obj){selected=obj;const target=$('sheet');if(!obj){target.hid
  const buttons=(view?.actions||[]).map(a=>`<button data-action="${a.id}"${a.id==='stop'||a.id==='fly'||a.id==='rest'?' class="quiet"':''}>${safe(a.label)}</button>`).join('');
  const icon = view && view.icon ? `<div class="sheet-icon">${iconSVG(view.icon, 56)}</div>` : '';
  // 卡牌背景：整张场景画在卡片右侧，文字压在同一张卡上
- const art = view && view.scene
+ const art = view && view.beast
+   ? `<div class="sheet-art sheet-beast" style="background-image:url('data:image/svg+xml;utf8,${encodeURIComponent(beastArtSVG(view.beast.id, 240))}')"></div>`
+   : view && view.scene
    ? `<div class="sheet-art" style="background-image:url('data:image/svg+xml;utf8,${encodeURIComponent(sceneSVG(view.scene, 320, 200))}')"></div>`
    : '';
  target.classList.toggle('has-art', Boolean(art));

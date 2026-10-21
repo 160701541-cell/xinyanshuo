@@ -16,6 +16,7 @@ export const BEASTS = [
 ];
 
 export function beastById(id) { return BEASTS.find(b => b.id === id) || null; }
+export function beastByName(name) { return BEASTS.find(b => b.name === name || (name || '').includes(b.name)) || null; }
 
 /** 妖兽随境界的增长：1.32^tier，越往上越慢 */
 export function beastGrowth(tier = 0) { return Math.pow(1.32, tier); }

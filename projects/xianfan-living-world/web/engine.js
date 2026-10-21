@@ -3,6 +3,7 @@
 import {note} from './core.js';
 import {iconFor, personIcon} from './content/icons.js';
 import {sceneFor} from './content/scenes.js';
+import {beastByName} from './content/beasts.js';
 
 export const ENGINE_VERSION = 'engine-0.1.0';
 
@@ -155,7 +156,9 @@ export function cardView(w, tplId, ctx = {}) {
     : iconFor(local.iconName || local.name || '');
   // 卡牌背景：按名字判断场景（客栈→两层楼，厨房→灶台，人物不画场景）
   const scene = t.kind === 'person' ? null : sceneFor(local.sceneName || local.name || '');
-  return {id: t.id, kind: t.kind, icon, scene, rows, actions};
+  // 妖兽：名字对上就用妖兽自己的画（体型更大，卡上能看出是什么）
+  const beast = t.kind === 'person' ? null : beastByName(local.name || local.title || '');
+  return {id: t.id, kind: t.kind, icon, scene, beast, rows, actions};
 }
 
 export function registerRules(list) {

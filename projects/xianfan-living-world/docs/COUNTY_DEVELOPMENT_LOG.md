@@ -332,3 +332,13 @@
 - 测试 211/211（新增 4 项）。
 - 预览 docs/preview/weather-preview.png（黄昏小雨的县城 + 体型对照条）。
 - 未做：柔软云边、雨落地积水与雷闪、天气影响行军、妖兽巢穴与参战。
+
+## 2026-10-22 / v0.43 妖兽像素画重画
+
+用户反馈“妖兽太敷衍，体型大了那么多”。改法：
+
+- 新模块 `content/beastart.mjs`（beastart-0.1.0）：48×48 像素格，`Canvas{rect,ell,line,outline}`；五张侧身像（狼/豕/猿/蟒/山君），统一墨色描边。
+- 卡牌：`engine.cardView` 增 `beast` 字段，命中妖兽名就用妖兽画；`overworld.css` 增 `.sheet-beast`（contain 居中）。
+- 预览：`docs/preview/beast-scale.png`（甲士 1.72 m 与五种妖兽同尺对比，1 米 = 34 像素）。
+- 测试 213/213（新增 2 项：五张画互不相同且有内容、妖兽卡带出对应画）。
+- 未做：朝向与行走帧、受伤/扑咬帧、世界里生成与掉落、远景剪影降级。

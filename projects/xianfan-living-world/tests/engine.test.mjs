@@ -149,3 +149,26 @@ test('境界越高妖兽涨得慢、人修涨得快，大后期人修反超', as
   assert.ok(high.ratio < 0.5, `化神：人修应远强于妖兽，实际 ${high.ratio}`);
   assert.ok(low.ratio > mid.ratio && mid.ratio > high.ratio, '比值应当一路下降');
 });
+
+test('妖兽有自己的像素画，五张互不相同', async () => {
+  const A = await import('../content/beastart.mjs');
+  const ids = ['wolf', 'boar', 'ape', 'serpent', 'tiger'];
+  const seen = new Set();
+  for (const id of ids) {
+    const art = A.beastArt(id);
+    assert.equal(art.rows.length, A.GH);
+    const filled = art.rows.join('').replace(/\./g, '').length;
+    assert.ok(filled > 250, `${id} 画得太空：${filled}`);
+    seen.add(art.rows.join('\n'));
+    assert.ok(A.beastArtSVG(id, 128).includes('<rect'));
+  }
+  assert.equal(seen.size, ids.length, '五张应当各不相同');
+});
+
+test('妖兽卡会带出对应的妖兽画', async () => {
+  const {createWorld} = await import('../core.mjs');
+  const {cardView} = await import('../engine.mjs');
+  const w = createWorld('beast-card');
+  const view = cardView(w, 'poi-structure', {item: {name: '青鬃狼'}});
+  assert.equal(view.beast.id, 'wolf');
+});
