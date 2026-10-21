@@ -350,6 +350,22 @@ public final class Sim {
         return lastTalk;
     }
 
+    /** 带模型的对话：模型可用就走模型，否则回落街谈；返回 [对白, 来源] */
+    public String[] talkWith(String modelPath, String playerLine) {
+        JSONObject n = npcNear(px, py, 90);
+        if (n == null) return new String[]{"附近没有人。", "none"};
+        String name = n.optString("name"), job = n.optString("job");
+        String persona = name + "是临安县城的" + job + "，说话简短、带点" + (n.optString("tone", "plain")) + "的口气。";
+        String prompt = persona + "你是" + name + "，对方说：「" + playerLine + "」请用一两句话回答，不要旁白。";
+        String text = LlmBridge.generate(modelPath, prompt);
+        if (text != null && !text.trim().isEmpty()) {
+            lastTalk = name + "：" + text.trim();
+            return new String[]{lastTalk, "model"};
+        }
+        lastTalk = name + "：" + talkLine(name, job);
+        return new String[]{lastTalk, "template"};
+    }
+
     /** 附近的建筑：40 米内取最近 */
     public JSONObject structureAt(double x, double y, double radius) {
         JSONObject best = null; double bd = radius;

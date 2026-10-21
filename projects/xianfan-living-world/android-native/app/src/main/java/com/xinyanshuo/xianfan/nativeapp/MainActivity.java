@@ -15,6 +15,7 @@ import android.widget.Button;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.widget.ImageView;
+import android.widget.EditText;
 import android.widget.ScrollView;
 import android.widget.TableLayout;
 import android.widget.TableRow;
@@ -37,6 +38,8 @@ public final class MainActivity extends Activity {
     private final Handler ui = new Handler(Looper.getMainLooper());
     private long lastTick;
     private SharedPreferences prefs;
+    private ModelStore models;
+    private boolean askedModel = false;
 
     @Override protected void onCreate(Bundle b) {
         super.onCreate(b);
@@ -52,6 +55,7 @@ public final class MainActivity extends Activity {
         sim.load(prefs.getString("save", ""));
         // 装上崩溃记录器：下次闪退会留下带 文件:行号 的栈
         new CrashHandler(this, sim).install();
+        models = new ModelStore(this);
 
         FrameLayout root = new FrameLayout(this);
         mapView = new MapView(this, sim);
@@ -90,7 +94,7 @@ public final class MainActivity extends Activity {
         bbg.setColor(Color.argb(240, 244, 240, 230));
         bbg.setCornerRadius(28);
         bar.setBackground(bbg);
-        String[][] tabs = {{"人物", "people"}, {"修行", "cult"}, {"家业", "life"}, {"营造", "build"}, {"法则", "law"}, {"妖兽", "wild"}, {"行囊", "bag"}, {"纪事", "log"}, {"星域", "star"}};
+        String[][] tabs = {{"人物", "people"}, {"修行", "cult"}, {"家业", "life"}, {"营造", "build"}, {"法则", "law"}, {"妖兽", "wild"}, {"对话", "chat"}, {"行囊", "bag"}, {"纪事", "log"}, {"星域", "star"}};
         for (String[] t : tabs) {
             Button bt = new Button(this);
             bt.setText(t[0]);
@@ -121,6 +125,7 @@ public final class MainActivity extends Activity {
         updateHud();
         ui.post(tick);
         showCrashIfAny();
+        maybeOfferModel();
     }
 
     private final Runnable tick = new Runnable() {
@@ -181,6 +186,66 @@ public final class MainActivity extends Activity {
     }
 
     /** 左上角点开：个人状态，三个页签 */
+    /** 首次启动问一次：要不要下载本地模型（约 398MB） */
+    private void maybeOfferModel() {
+        if (models == null || models.ready() || askedModel) return;
+        if (prefs.getBoolean("model_declined", false)) return;
+        askedModel = true;
+        new AlertDialog.Builder(this)
+            .setTitle("本地模型（可选）")
+            .setMessage("下载一个 398 MB 的小模型，对白改成离线生成。\n\n"
+                + (LlmBridge.available()
+                    ? "推理内核已就位，下完即可用。"
+                    : "注意：这一版的推理内核（llama.cpp JNI）还没编进来，下完仍走模板——可以现在下，等下一版启用。")
+                + "\n不下载也能玩，不影响任何玩法；可断点续传，建议 Wi-Fi。")
+            .setPositiveButton(LlmBridge.available() ? "下载" : "仍然下载", (d, w) -> startModelDownload())
+            .setNeutralButton("以后再说", null)
+            .setNegativeButton("不再提示", (d, w) -> prefs.edit().putBoolean("model_declined", true).apply())
+            .show();
+    }
+
+    private void startModelDownload() {
+        toast("开始下载，可在「对话」里看进度");
+        models.download(ModelStore.DEFAULT_URL, () -> toast("模型就绪：" + models.sizeText()));
+    }
+
+    /** 对话：有模型走模型，没有就模板；顶部显示模型状态与进度 */
+    private void chatDialog() {
+        LinearLayout box = new LinearLayout(this);
+        box.setOrientation(LinearLayout.VERTICAL);
+        box.setPadding(24, 20, 24, 12);
+        TextView status = new TextView(this);
+        String st = models.ready() ? "模型 " + models.sizeText() + (LlmBridge.available() ? " · 推理可用" : " · 推理待接入（走模板）")
+            : models.downloading ? "下载中 " + models.percent + "%" : "未下载模型 · 用模板对白";
+        status.setText(st);
+        status.setTextSize(12);
+        EditText input = new EditText(this);
+        input.setHint("对身边的人说点什么…");
+        Button send = new Button(this);
+        send.setText("说");
+        send.setAllCaps(false);
+        TextView out = new TextView(this);
+        out.setTextSize(14);
+        out.setPadding(0, 16, 0, 8);
+        box.addView(status); box.addView(input); box.addView(send); box.addView(out);
+        AlertDialog dlg = new AlertDialog.Builder(this)
+            .setTitle("对话")
+            .setView(box)
+            .setPositiveButton("下载模型", (d, w) -> startModelDownload())
+            .setNegativeButton("关闭", null)
+            .create();
+        send.setOnClickListener(v -> {
+            String line = input.getText().toString().trim();
+            if (line.isEmpty()) return;
+            String[] r = sim.talkWith(models.file().getAbsolutePath(), line);
+            out.setText(sim.lastTalk + "\n（" + ("model".equals(r[1]) ? "模型生成" : "模板对白") + "）");
+            status.setText(models.ready() ? "模型 " + models.sizeText() + (LlmBridge.available() ? " · 推理可用" : " · 推理待接入（走模板）")
+                : models.downloading ? "下载中 " + models.percent + "%" : "未下载模型 · 用模板对白");
+            input.setText("");
+        });
+        dlg.show();
+    }
+
     /** 上次闪退留下的报告：全文可看、一键复制 */
     private void showCrashIfAny() {
         String report = CrashHandler.read(this);
@@ -397,6 +462,9 @@ public final class MainActivity extends Activity {
                   .append(d.optString("name")).append("　").append(d.optString("beast"))
                   .append("（妖").append(d.optInt("realm") + 1).append("）×").append(d.optInt("count")).append("\n");
             }
+        } else if ("chat".equals(what)) {
+            chatDialog();
+            return;
         } else if ("bag".equals(what)) {
             bagDialog();
             return;
