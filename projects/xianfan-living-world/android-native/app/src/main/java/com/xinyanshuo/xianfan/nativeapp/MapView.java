@@ -125,7 +125,7 @@ public final class MapView extends View {
         }
         // 街上的人：小点 + 锁定光圈
         for (JSONObject n : sim.npcs) {
-            float x = worldToScreenX((float) n.optDouble("px")), y = worldToScreenY((float) n.optDouble("py"));
+            float x = worldToScreenX((float) sim.npcX(n.optString("id"))), y = worldToScreenY((float) sim.npcY(n.optString("id")));
             if (x < -20 || y < -20 || x > vw + 20 || y > vh + 20) continue;
             boolean lock = sim.locked != null && sim.locked.equals(n.optString("id"));
             paint.setColor(lock ? Color.rgb(210, 160, 60) : Color.rgb(58, 46, 34));

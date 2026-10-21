@@ -58,6 +58,9 @@ public final class Sim {
     public boolean flying = false, horse = false, justArrived = false;
     private double approachTimer = 0;
     private final Map<String, double[]> npcTarget = new LinkedHashMap<>();
+    /** 街上的人的位置（不用 JSONObject.put，省得每帧都在 try/catch 里） */
+    public final Map<String, double[]> npcPos = new LinkedHashMap<>();
+    public final Map<String, double[]> npcHome = new LinkedHashMap<>();
 
     public Sim(JSONObject world) {
         this.world = world;
@@ -70,9 +73,10 @@ public final class Sim {
         JSONArray np = world.optJSONArray("npcs");
         if (np != null) for (int i = 0; i < np.length(); i++) {
             JSONObject o = np.optJSONObject(i);
-            o.put("px", o.optDouble("x")); o.put("py", o.optDouble("y"));
-            o.put("hx", o.optDouble("x")); o.put("hy", o.optDouble("y"));
             npcs.add(o);
+            String id = o.optString("id");
+            npcPos.put(id, new double[]{o.optDouble("x"), o.optDouble("y")});
+            npcHome.put(id, new double[]{o.optDouble("x"), o.optDouble("y")});
         }
         JSONArray bl = world.optJSONArray("blocks");
         if (bl != null) for (int i = 0; i < bl.length(); i++) {
@@ -153,7 +157,7 @@ public final class Sim {
             JSONObject npc = npcById(locked);
             if (npc == null) { locked = null; lockedName = null; moving = false; }
             else {
-                double d = Math.hypot(npc.optDouble("px") - px, npc.optDouble("py") - py);
+                double d = Math.hypot(npcX(locked) - px, npcY(locked) - py);
                 if (d <= 7) {
                     note("追上了" + npc.optString("name") + "。");
                     String name = npc.optString("name");
@@ -164,7 +168,7 @@ public final class Sim {
                     locked = null; lockedName = null; moving = false;
                 } else if (approachTimer >= 0.5) {
                     approachTimer = 0;
-                    goTo(npc.optDouble("px"), npc.optDouble("py"), npc.optString("name"));
+                    goTo(npcX(locked), npcY(locked), npc.optString("name"));
                 }
             }
         }
@@ -177,25 +181,32 @@ public final class Sim {
         return "“在下" + name + "，" + (job == null || job.isEmpty() ? "混口饭吃" : "做" + job + "营生") + "。听说城里最近不太平。”";
     }
 
-    /** 街上的人自己走：在住处以北 60 米内晃，慢得像闲逛 */
+    /** 街上的人自己走：在住处周围 80 米内晃，慢得像闲逛 */
     private void tickNpcs(double dt) {
         for (JSONObject n : npcs) {
-            double x = n.optDouble("px"), y = n.optDouble("py");
-            double hx = n.optDouble("hx"), hy = n.optDouble("hy");
-            double[] t = npcTarget.get(n.optString("id"));
-            if (t == null || Math.hypot(t[0] - x, t[1] - y) < 3) {
-                double r = randDouble("wander:" + n.optString("id") + ":" + (int) (clock / 60));
+            String id = n.optString("id");
+            double[] pos = npcPos.get(id);
+            double[] home = npcHome.get(id);
+            if (pos == null || home == null) continue;
+            double[] t = npcTarget.get(id);
+            if (t == null || Math.hypot(t[0] - pos[0], t[1] - pos[1]) < 3) {
+                double r = randDouble("wander:" + id + ":" + (int) (clock / 60));
                 double ang = r * Math.PI * 2;
-                double rad = 25 + randDouble("r:" + n.optString("id") + ":" + (int) (clock / 60)) * 55;
-                t = new double[]{hx + Math.cos(ang) * rad, hy + Math.sin(ang) * rad};
-                npcTarget.put(n.optString("id"), t);
+                double rad = 25 + randDouble("r:" + id + ":" + (int) (clock / 60)) * 55;
+                t = new double[]{home[0] + Math.cos(ang) * rad, home[1] + Math.sin(ang) * rad};
+                npcTarget.put(id, t);
             }
-            double dx = t[0] - x, dy = t[1] - y, d = Math.hypot(dx, dy);
+            double dx = t[0] - pos[0], dy = t[1] - pos[1], d = Math.hypot(dx, dy);
             double step = 1.05 * dt;
-            if (d > 0.01) { x += dx / d * Math.min(step, d); y += dy / d * Math.min(step, d); }
-            n.put("px", x); n.put("py", y);
+            if (d > 0.01) {
+                pos[0] += dx / d * Math.min(step, d);
+                pos[1] += dy / d * Math.min(step, d);
+            }
         }
     }
+
+    public double npcX(String id) { double[] p = npcPos.get(id); return p == null ? 0 : p[0]; }
+    public double npcY(String id) { double[] p = npcPos.get(id); return p == null ? 0 : p[1]; }
 
     public JSONObject npcById(String id) {
         for (JSONObject n : npcs) if (n.optString("id").equals(id)) return n;
@@ -205,7 +216,9 @@ public final class Sim {
     public JSONObject npcNear(double x, double y, double radius) {
         JSONObject best = null; double bd = radius;
         for (JSONObject n : npcs) {
-            double d = Math.hypot(n.optDouble("px") - x, n.optDouble("py") - y);
+            double[] p = npcPos.get(n.optString("id"));
+            if (p == null) continue;
+            double d = Math.hypot(p[0] - x, p[1] - y);
             if (d < bd) { bd = d; best = n; }
         }
         return best;
@@ -215,7 +228,7 @@ public final class Sim {
     public String lockNpc(JSONObject n) {
         locked = n.optString("id"); lockedName = n.optString("name");
         approachTimer = 1;
-        goTo(n.optDouble("px"), n.optDouble("py"), lockedName);
+        goTo(npcX(locked), npcY(locked), lockedName);
         note("跟上" + lockedName + "。");
         return "跟着" + lockedName + "走，他停下你就追上了。";
     }

@@ -124,7 +124,7 @@ public final class MainActivity extends Activity {
             // 锁定一个人时，镜头跟着两人之间的中点走，别让目标跑出画面
             if (sim.locked != null) {
                 JSONObject n = sim.npcById(sim.locked);
-                if (n != null) mapView.centerOn((sim.px + n.optDouble("px")) / 2, (sim.py + n.optDouble("py")) / 2);
+                if (n != null) mapView.centerOn((sim.px + sim.npcX(sim.locked)) / 2, (sim.py + sim.npcY(sim.locked)) / 2);
             }
             mapView.invalidate();
             if (++frames % 6 == 0) updateHud();
@@ -162,7 +162,7 @@ public final class MainActivity extends Activity {
             .setMessage("他就站在街上，手上有活。跟着他，等到他停脚就能搭上话。")
             .setPositiveButton("接近此人", (d, w) -> { toast(sim.lockNpc(n)); updateHud(); })
             .setNeutralButton("就在这儿搭话", (d, w) -> {
-                sim.px = n.optDouble("px"); sim.py = n.optDouble("py");
+                sim.px = sim.npcX(n.optString("id")); sim.py = sim.npcY(n.optString("id"));
                 toast(sim.talk()); updateHud();
             })
             .setNegativeButton("算了", null).show();
