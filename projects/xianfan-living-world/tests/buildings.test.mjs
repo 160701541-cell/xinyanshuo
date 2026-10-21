@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {layoutTown,layoutVillage,townReport,buildingAt,STREETS,ART} from '../buildings.mjs';
+import {layoutTown,layoutVillage,townReport,buildingAt,blockedByBuildings,STREETS,streetsFor,ART} from '../buildings.mjs';
+import {STRUCTURES} from '../overworld.mjs';
 
 const town=layoutTown();
 
@@ -31,12 +32,26 @@ test('民居之间不重叠（8 米防火间距）',()=>{
  }
 });
 
-test('街巷不被房屋占住：主街中线是空的',()=>{
- for(const s of STREETS){
-  const mid={x:(s.x1+s.x2)/2,y:(s.y1+s.y2)/2};
-  const hit=town.find(b=>!b.public&&mid.x>b.x&&mid.x<b.x+b.w&&mid.y>b.y&&mid.y<b.y+b.h);
-  assert.ok(!hit,`${s.id} 被 ${hit?.id} 占了`);
+test('街巷整条可走：沿每条街采样，不被院墙与屋顶挡住',()=>{
+ for(const s of streetsFor(STRUCTURES)){
+  const len=Math.hypot(s.x2-s.x1,s.y2-s.y1);
+  for(let t=0;t<=1;t+=10/len){
+   const p={x:s.x1+(s.x2-s.x1)*t,y:s.y1+(s.y2-s.y1)*t};
+   assert.ok(!blockedByBuildings(town,p,0),`${s.id} 在 (${p.x.toFixed(0)},${p.y.toFixed(0)}) 被建筑挡住`);
+  }
  }
+});
+
+test('院墙挡人、院门能过',()=>{
+ const b=town.find(x=>x.kind==='home'&&!x.public);
+ const gate=b.parts.find(p=>p.t==='gate');
+ const gateMid={x:gate.x+gate.w/2,y:gate.y+gate.h/2};
+ assert.equal(blockedByBuildings(town,gateMid),false,'门口应当能进');
+ const wall=b.parts.find(p=>p.t==='wall'&&p.h>=b.h-1);   // 竖着的侧墙，避开门洞
+ const wallMid={x:wall.x+wall.w/2,y:wall.y+3};
+ assert.equal(blockedByBuildings(town,wallMid),true,'墙上不可走');
+ const house=b.parts.find(p=>p.t==='house');
+ assert.equal(blockedByBuildings(town,{x:house.x+house.w/2,y:house.y+house.h/2}),true,'屋顶不可走');
 });
 
 test('城里既有民居也有集市、菜地与水塘——不是清一色',()=>{

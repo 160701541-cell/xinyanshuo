@@ -12,7 +12,7 @@ import {ensureMarket,tickMarket,marketReport,releaseGrain,buyToGranary,setTax,se
 import {ensureWar,levyCapacity,createArmy,warReport,tickWarDay,supplyDays,armyNeeds,deliveredCostKg,emblemOf,authorityReport,setRank,rankOf,rankInfo,takeCommand,joinArmy,issueDecree} from './war.mjs';
 import {interiorAtlas} from './atlas.mjs';
 import {classifyGesture,canSelect} from './gesture.mjs';
-import {layoutTown,ART,STREETS as TOWN_STREETS} from './buildings.mjs';
+import {layoutTown,streetsFor,ART} from './buildings.mjs';
 const placeById=getPlace;
 const $=id=>document.getElementById(id);
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
@@ -174,7 +174,8 @@ function drawRoads(){for(const seg of ROUTES){drawPath(seg);ctx.strokeStyle='#97
  for(const line of [a,b]){drawPath(line);ctx.strokeStyle='#c5bb9c';ctx.lineWidth=clamp(45/camera.mpp,1,65);ctx.stroke();drawPath(line);ctx.strokeStyle='#e7dec5';ctx.lineWidth=clamp(40/camera.mpp,.8,60);ctx.stroke();}}
  ctx.lineCap='round';}
 function drawWall(){if(camera.mpp>40)return;for(const r of WALLS){rect(r.x,r.y,r.w,r.h,'#827e70','#e1c8a0',camera.mpp<8?1:0);}for(const g of CITY.gates){const s=pos(g),r=clamp(45/camera.mpp,2,65);ctx.strokeStyle='#614d3e';ctx.lineWidth=Math.max(1,6/camera.mpp);ctx.beginPath();ctx.arc(s.x,s.y,r,0,Math.PI*2);ctx.stroke();if(camera.mpp<8)screenText('城门',s.x,s.y-24,12);}}
-const TOWN_LAYOUT=layoutTown();
+const TOWN_LAYOUT=layoutTown('linan',STRUCTURES);
+const TOWN_STREETS=streetsFor(STRUCTURES);
 /** 街巷：先铺路，再铺房子；路面比地面亮一档，路口压深。 */
 function drawStreets(){
  if(camera.mpp>600)return;

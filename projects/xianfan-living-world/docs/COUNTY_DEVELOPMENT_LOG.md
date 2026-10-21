@@ -128,3 +128,14 @@
 - 预览流水线：`tools/town-preview.mjs` 直接读 `buildings.mjs` 生成 SVG（rsvg 转 PNG）；地形预览用 `terrainHeight` 采样 + 分层设色 + 山体阴影 + 25 米等高线。
 - 测试：**118/118 通过**（新增 `tests/buildings.test.mjs` 7 项、`tests/terrain.test.mjs` 5 项）。
 - 未做：建筑碰撞体尚未接入 `obstacleAt`（现在仍用旧 `TOWN_HOUSES` 矩形）；没有浏览器/实机截图；LOD 过渡阈值只在代码里，未实机调参。
+
+## 2026-10-21 / v0.19 真实院墙碰撞与沿街生长
+
+用户要求“要真实一点”：民居沿街生长、巷子歪一点，并把碰撞换成真实院墙。
+
+- `buildings.mjs`：不再 import overworld（布局接收 structures 参数，消除模块环）；里坊内改 2–3 排沿街院落，退让 4–12 米、宽窄随机；增加 `streetsFor()` 按公共建筑切段；`blockedByBuildings()` 用真实墙/屋顶碰撞、门洞放行。
+- `overworld.mjs`：`townLayout()` 单例；`obstacleAt` 城内改用真实院落。
+- `overworld-ui.mjs` / `tools/town-preview.mjs`：绘制切段后的街巷。
+- 测试 119/119（新增院墙/院门/整街可走/公共建筑不压街）。
+- 实测：2000 次 obstacleAt 11ms；县城 139 个建筑对象。
+- 未做：建筑旋转与 OBB、楼层遮挡、村落沿河形态、实机截图。

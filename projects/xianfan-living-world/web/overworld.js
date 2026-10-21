@@ -1,5 +1,6 @@
 /** 仙凡共生 · v0.7 开放地理原型：米制唯一坐标、不因缩放切场景。 */
 import {PLACES,deriveSeed,note,advanceClock,getPlace,apparentLocation,npcActivity} from './core.js';
+import {layoutTown,blockedByBuildings} from './buildings.js';
 export const MAP_VERSION='county-0.9.0';
 export const WORLD_LIMIT=1_350_000;
 // 城池：世俗城池看实力，修仙城池只有御城军可飞（见 flightRuleAt）。
@@ -78,8 +79,17 @@ const clamp=(x,l,h)=>Math.max(l,Math.min(h,x));
 export const isCity=p=>Math.abs(p.x)<=740&&Math.abs(p.y)<=740;
 const inRect=(p,b,pad=0)=>p.x>b.x-pad&&p.x<b.x+b.w+pad&&p.y>b.y-pad&&p.y<b.y+b.h+pad;
 function crossRiver(p){const k=(p.x+9000)/3000;const streamY=-2000+1700*Math.sin(k*.45)+p.x*.18;return Math.abs(p.y-streamY)<32&&Math.abs(p.x)>1100;}
+let _town=null;
+/** 城里真实的院墙与屋顶（有门可过）。生成一次，之后每帧都用它挡人。 */
+export function townLayout(){
+ if(!_town)_town=layoutTown('linan',STRUCTURES);
+ return _town;
+}
 export function obstacleAt(p){if(!Number.isFinite(p.x)||!Number.isFinite(p.y))return '越界';if(Math.abs(p.x)>WORLD_LIMIT||Math.abs(p.y)>WORLD_LIMIT)return '世界边缘';
- if(STRUCTURES.some(b=>inRect(p,b,7))||TOWN_HOUSES.some(b=>inRect(p,b,4)))return '建筑墙体';if(WALLS.some(b=>inRect(p,b,6)))return '城墙';
+ const inCity=Math.abs(p.x)<740&&Math.abs(p.y)<740;
+ // 城里用真实院落（含院门），城外用地点矩形
+ if(inCity?blockedByBuildings(townLayout(),p,0):STRUCTURES.some(b=>inRect(p,b,7)))return '建筑墙体';
+ if(WALLS.some(b=>inRect(p,b,6)))return '城墙';
  if(isRiver(p))return '河流';
  return null;
 }

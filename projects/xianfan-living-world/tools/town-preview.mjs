@@ -1,9 +1,11 @@
 // 生成县城地图预览（SVG）：直接吃 buildings.mjs 的真实布局，保证预览与游戏同源。
 // 用法：node tools/town-preview.mjs [输出.svg]   （有 rsvg-convert 时可再转 PNG）
 import fs from 'node:fs';
-import {layoutTown,STREETS,ART} from '../buildings.mjs';
+import {layoutTown,streetsFor,ART} from '../buildings.mjs';
+import {STRUCTURES} from '../overworld.mjs';
 
-const town=layoutTown();
+const town=layoutTown('linan',STRUCTURES);
+const STREETS=streetsFor(STRUCTURES);
 const S=0.78, OX=830, OY=830;             // 0.78 px/米，画 1660 米见方
 const W=Math.round(1660*S), H=W;
 const px=x=>(OX+x)*S*1.0/1.0, py=y=>(OY+y)*S;

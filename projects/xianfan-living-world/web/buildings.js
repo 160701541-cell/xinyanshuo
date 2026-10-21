@@ -1,64 +1,74 @@
-// 《仙凡共生》建筑层：地图放大到 L0/L1 要看见“真的建筑”，而不是色块。
-// 每栋房子都有院墙、主屋、厢房、门、井、树；每栋都能被画出来，也能挡人。
-// 全部由种子确定性生成，改一个种子整座城会变，但同一存档永远一样。
-import {CITY,STRUCTURES} from './overworld.js';
-const deriveSeed=(str)=>{let h=2166136261;for(let i=0;i<str.length;i++){h^=str.charCodeAt(i);h=Math.imul(h,16777619);}return h>>>0;};
+// 《仙凡共生》建筑层：地图放大要看见“真的建筑”，缩远要看见街坊。
+// 房屋沿街生长、院墙围合、门朝巷、巷子有宽窄弯折；所有几何都确定性生成。
+// 这里不 import overworld：布局所需的公共建筑由调用方传入，避免模块环。
+import {STRUCTURES} from './overworld.js';
 
-/** 统一的画风底色（画布与预览图共用同一组数值，避免两套美术）。 */
+const deriveSeed=(str)=>{let h=2166136261;for(let i=0;i<str.length;i++){h^=str.charCodeAt(i);h=Math.imul(h,16777619);}return h>>>0;};
+const R=(s)=>{let a=s>>>0;return()=>{a=(a+0x6D2B79F5)>>>0;let t=Math.imul(a^(a>>>15),1|a);t=(t+Math.imul(t^(t>>>7),61|t))^t;return((t^(t>>>14))>>>0)/4294967296;};};
+
+/** 统一画风：画布与预览共用同一组数值，别搞两套美术。 */
 export const ART={
  roof:{official:'#6d6f73',temple:'#5d5a58',home:'#8a7d68',shop:'#7d6b52',thatch:'#a8905f'},
  wall:{rammed:'#b3a288',brick:'#9d8f7a',stone:'#8d8b83',plaster:'#cfc4ac'},
  ground:{street:'#c9bda0',yard:'#c0b394',field:'#9fae74',grass:'#a9b184'},
  accent:{eaves:'#5b5347',ridge:'#4b4539',door:'#6a4f38',well:'#7c8892',tree:'#5f7a52',stall:'#b0704f'},
- ink:'#4b4539',shadow:'rgba(60,52,40,.18)'
+ ink:'#4b4539'
 };
 
-const R=(s)=>{let a=s>>>0;return()=>{a=(a+0x6D2B79F5)>>>0;let t=Math.imul(a^(a>>>15),1|a);t=(t+Math.imul(t^(t>>>7),61|t))^t;return((t^(t>>>14))>>>0)/4294967296;};};
-
-/** 城市主街：十字大街 + 四条副街。宽都是米。 */
+/** 街巷：两条大街直（官府定的），四条副街与市场巷带折点（人走出来的）。 */
 export const STREETS=[
  {id:'main-ns',x1:0,y1:-720,x2:0,y2:720,w:34,kind:'avenue'},
  {id:'main-ew',x1:-720,y1:0,x2:720,y2:0,w:26,kind:'avenue'},
- {id:'north-lane',x1:-720,y1:-380,x2:720,y2:-380,w:14,kind:'lane'},
- {id:'south-lane',x1:-720,y1:380,x2:720,y2:380,w:14,kind:'lane'},
- {id:'west-lane',x1:-380,y1:-720,x2:-380,y2:720,w:14,kind:'lane'},
- {id:'east-lane',x1:380,y1:-720,x2:380,y2:720,w:14,kind:'lane'},
- {id:'south-market',x1:-330,y1:120,x2:330,y2:120,w:12,kind:'market'}
+ {id:'north-lane',x1:-720,y1:-392,x2:-180,y2:-380,w:13,kind:'lane'},
+ {id:'north-lane-b',x1:-180,y1:-380,x2:250,y2:-396,w:13,kind:'lane'},
+ {id:'north-lane-c',x1:250,y1:-396,x2:720,y2:-384,w:13,kind:'lane'},
+ {id:'south-lane',x1:-720,y1:386,x2:-120,y2:396,w:13,kind:'lane'},
+ {id:'south-lane-b',x1:-120,y1:396,x2:330,y2:382,w:13,kind:'lane'},
+ {id:'south-lane-c',x1:330,y1:382,x2:720,y2:392,w:13,kind:'lane'},
+ {id:'west-lane',x1:-388,y1:-720,x2:-376,y2:-90,w:12,kind:'lane'},
+ {id:'west-lane-b',x1:-376,y1:-90,x2:-392,y2:720,w:12,kind:'lane'},
+ {id:'east-lane',x1:378,y1:-720,x2:390,y2:120,w:12,kind:'lane'},
+ {id:'east-lane-b',x1:390,y1:120,x2:376,y2:720,w:12,kind:'lane'},
+ {id:'market-alley',x1:-330,y1:126,x2:-40,y2:112,w:10,kind:'market'},
+ {id:'market-alley-b',x1:-40,y1:112,x2:330,y2:130,w:10,kind:'market'}
 ];
 
 const inRect=(p,b,m=0)=>p.x>=b.x-m&&p.x<=b.x+b.w+m&&p.y>=b.y-m&&p.y<=b.y+b.h+m;
-const onStreet=(x,y,r=0)=>STREETS.some(s=>{
- const minX=Math.min(s.x1,s.x2)-s.w/2-r,maxX=Math.max(s.x1,s.x2)+s.w/2+r;
- const minY=Math.min(s.y1,s.y2)-s.w/2-r,maxY=Math.max(s.y1,s.y2)+s.w/2+r;
- return x>=minX&&x<=maxX&&y>=minY&&y<=maxY;
+const nearStreet=(x,y,r,lanes=STREETS)=>lanes.some(s=>{
+  const minX=Math.min(s.x1,s.x2)-s.w/2-r,maxX=Math.max(s.x1,s.x2)+s.w/2+r;
+  const minY=Math.min(s.y1,s.y2)-s.w/2-r,maxY=Math.max(s.y1,s.y2)+s.w/2+r;
+  // 斜街用线段距离判断
+  const dx=s.x2-s.x1,dy=s.y2-s.y1,len2=dx*dx+dy*dy||1;
+  const t=Math.max(0,Math.min(1,((x-s.x1)*dx+(y-s.y1)*dy)/len2));
+  const px=s.x1+dx*t,py=s.y1+dy*t;
+  return Math.hypot(x-px,y-py)<s.w/2+r&&x>=minX-40&&x<=maxX+40&&y>=minY-40&&y<=maxY+40;
 });
 
-/** 民居院落：院墙围合，主屋在后，门朝街，院里一口井或一棵树。 */
-function compound(seed,x,y,w,h,kind='home'){
+/** 民居院落：院墙四段、主屋、厢房、院门、井/树；门永远朝街。 */
+function compound(seed,x,y,w,h,kind='home',facing='south'){
  const r=R(seed);
- const roof=kind==='shop'?'shop':(r()<.3?'thatch':'home');
- const t=8; // 院墙厚
- const parts=[];
- parts.push({t:'wall',x: x,y: y,w: w,h: t});
- parts.push({t:'wall',x: x,y: y+h-t,w: w,h: t});
- parts.push({t:'wall',x: x,y: y,w: t,h: h});
- parts.push({t:'wall',x: x+w-t,y: y,w: t,h: h});
- parts.push({t:'yard',x:x+t,y:y+t,w:w-t*2,h:h-t*2});
- const hw=w-20,hh=Math.round(h*.62);
- parts.push({t:'house',x:x+12,y:y+t, w:hw,h:hh,roof,floors:kind==='shop'?2:1,ridge:(hw>=hh?'ew':'ns')});
- if(w>=88)parts.push({t:'wing',x:x+16,y:y+t+hh+4,w:Math.round(hw*.34),h:Math.round(h*.22),roof:'home',ridge:'ns'});
- if(w>=104)parts.push({t:'wing',x:x+w-12-Math.round(hw*.3),y:y+t+hh+5,w:Math.round(hw*.3),h:Math.round(h*.22),roof:'home',ridge:'ns'});
- parts.push({t:'gate',x:x+w/2-13,y:y+h-t-1,w:26,h:t+2});
- if(r()<.5)parts.push({t:'well',x:x+w*.3,y:y+h*.74,size:4});
- if(r()<.62)parts.push({t:'tree',x:x+w*.74,y:y+h*.76,size:5+(r()*2|0)});
+ const roof=kind==='shop'?'shop':(r()<.32?'thatch':'home');
+ const t=8;
+ const parts=[{t:'wall',x:x,y:y,w:w,h:t},{t:'wall',x:x,y:y+h-t,w:w,h:t},
+              {t:'wall',x:x,y:y,w:t,h:h},{t:'wall',x:x+w-t,y:y,w:t,h:h},
+              {t:'yard',x:x+t,y:y+t,w:w-2*t,h:h-2*t}];
+ const hw=w-20,hh=Math.round(h*.6);
+ const hx=x+10,hy=facing==='north'?y+h-8-hh:y+t;
+ parts.push({t:'house',x:hx,y:hy,w:hw,h:hh,roof,ridge:hw>=hh?'ew':'ns',floors:kind==='shop'?2:1});
+ if(w>=86)parts.push({t:'wing',x:hx,y:facing==='north'?hy-4-Math.round(h*.2):hy+hh+4,w:Math.round(hw*.34),h:Math.round(h*.2),roof:'home',ridge:'ns'});
+ const gy=facing==='north'?y:y+h-t-1;
+ parts.push({t:'gate',x:x+w/2-13,y:gy,w:26,h:t+2});
+ if(r()<.5)parts.push({t:'well',x:x+w*.3,y:y+h*(facing==='north'?.3:.72),size:4});
+ if(r()<.66)parts.push({t:'tree',x:x+w*.74,y:y+h*(facing==='north'?.26:.74),size:5+(r()*2|0)});
  return {id:'',kind,x,y,w,h,parts,roof:roof==='thatch'?'thatch':'home'};
 }
-/** 公共建筑：按 STRUCTURES 的占地生成更具体的形制。 */
+
+/** 公共建筑：按 STRUCTURES 的口径给形制；县衙三进、客栈两层、粮行带仓、铁铺带棚。 */
 function publicBuilding(s){
  const {x,y,w,h}=s;const parts=[{t:'yard',x:x+3,y:y+3,w:w-6,h:h-6}];
  if(s.kind==='government'){
-  parts.push({t:'house',x:x+10,y:y+10,w:w-20,h:Math.round(h*.42),roof:'official',ridge:'ew'});
-  parts.push({t:'house',x:x+22,y:y+Math.round(h*.55),w:w-44,h:Math.round(h*.3),roof:'official',ridge:'ew'});
+  parts.push({t:'house',x:x+10,y:y+10,w:w-20,h:Math.round(h*.4),roof:'official',ridge:'ew'});
+  parts.push({t:'house',x:x+22,y:y+Math.round(h*.54),w:w-44,h:Math.round(h*.3),roof:'official',ridge:'ew'});
   parts.push({t:'gate',x:x+w/2-14,y:y+h-10,w:28,h:10});
   parts.push({t:'tree',x:x+16,y:y+h*.5,size:6});
  }else if(s.kind==='inn'){
@@ -87,62 +97,152 @@ function publicBuilding(s){
  return {id:s.id,kind:s.kind,name:s.name,x,y,w,h,parts,roof:ROOFNAME[s.kind]||'home',public:true,door:s.door};
 }
 
-/** 生成整座县城的建筑：按“里坊”分块排布，每坊里房屋成排、门朝街、留出菜地与空地。 */
-export function layoutTown(seedStr='linan'){
- const out=[];const r=R(deriveSeed('town-'+seedStr));
- let id=0;
- for(const s of STRUCTURES)out.push({...publicBuilding(s),id:'B'+(++id)});
- // 里坊边界：由街巷切出的十六块地
- const xs=[-720,-380,0,380,720],ys=[-720,-380,0,380,720];
- for(let bi=0;bi<4;bi++)for(let bj=0;bj<4;bj++){
-  const bx0=xs[bi]+28,bx1=xs[bi+1]-28,by0=ys[bj]+30,by1=ys[bj+1]-30;
-  const bw=bx1-bx0,bh=by1-by0;
-  if(bw<120||bh<120)continue;
-  const rows=Math.max(1,Math.floor(bh/96)),cols=Math.max(1,Math.floor(bw/104));
-  for(let c=0;c<cols;c++)for(let rw=0;rw<rows;rw++){
-   const cellW=bw/cols,cellH=bh/rows;
-   const jx=(r()-.5)*10,jy=(r()-.5)*8;
-   const w=72+Math.floor(r()*22),h=68+Math.floor(r()*20);
-   const x=Math.round(bx0+c*cellW+(cellW-w)/2+jx),y=Math.round(by0+rw*cellH+(cellH-h)/2+jy);
-   // 空地：约 12% 的地块留作菜地或水塘，城才不像棋盘
-   const skip=r();
-   if(skip<.06){out.push({id:'G'+(++id),kind:'garden',x,y,w,h,parts:[{t:'field',x,y,w,h}],roof:'grass'});continue;}
-   if(skip<.09){out.push({id:'P'+(++id),kind:'pond',x,y,w,h,parts:[{t:'pond',x:x+6,y:y+6,w:w-12,h:h-12}],roof:'water'});continue;}
-   const hit=out.some(b=>x<b.x+b.w+6&&x+w+6>b.x&&y<b.y+b.h+6&&y+h+6>b.y);
-   if(hit)continue;
-   if(Math.abs(x+w/2)>700||Math.abs(y+h/2)>700)continue;
-   const kind=r()<.16?'shop':'home';
-   out.push({...compound(deriveSeed(`c-${bi}-${bj}-${c}-${rw}`),x,y,w,h,kind),id:'B'+(++id)});
+/** 县城：先放公共建筑，再沿街两排院落，块心留菜地/水塘/空地。 */
+/** 巷子遇到衙门客栈要绕：把街道按公共建筑切成几段，而不是搬走建筑。 */
+export function streetsFor(structures=[]){
+ const publicRects=structures.map(s=>({x:s.x-3,y:s.y-3,w:s.w+6,h:s.h+6}));
+ const out=[];
+ for(const st of STREETS){
+  const dx=st.x2-st.x1,dy=st.y2-st.y1,len=Math.hypot(dx,dy)||1;
+  const inside=[];
+  for(let d=0;d<=len;d+=8){
+   const t=d/len,x=st.x1+dx*t,y=st.y1+dy*t;
+   if(publicRects.some(r=>x>=r.x&&x<=r.x+r.w&&y>=r.y&&y<=r.y+r.h))inside.push(d);
+  }
+  if(!inside.length){out.push(st);continue;}
+  const merged=[];let a=inside[0],b=a;
+  for(const d of inside.slice(1)){if(d-b<=9)b=d;else{merged.push([a,b]);a=d;b=d;}}
+  merged.push([a,b]);
+  let from=0;
+  for(const [a2,b2] of merged){
+   if(a2-from>26){const t1=from/len,t2=a2/len;
+    out.push({...st,id:st.id+'-'+out.length,x1:st.x1+dx*t1,y1:st.y1+dy*t1,x2:st.x1+dx*t2,y2:st.y1+dy*t2});}
+   from=b2;
+  }
+  if(len-from>26){const t1=from/len;
+   out.push({...st,id:st.id+'-'+out.length,x1:st.x1+dx*t1,y1:st.y1+dy*t1,x2:st.x2,y2:st.y2});}
+ }
+ return out;
+}
+/** 县城：先放公共建筑，再沿街两排院落，块心留菜地/水塘/空地。 */
+/** 公共建筑压到任何一条街就往旁边让：官府客栈也不能把路堵死。 */
+function avoidStreets(s){
+ let {x,y,w,h}=s;
+ for(const st of STREETS){
+  if(Math.abs(st.x1-st.x2)<=Math.abs(st.y1-st.y2)){    // 南北向街（含微折）
+   const c=(st.x1+st.x2)/2,half=st.w/2+2;
+   if(x<c+half&&x+w>c-half){
+    if(x+w-c<c-x)w=Math.max(60,c-half-x);
+    else{const nx=c+half;w=Math.max(60,x+w-nx);x=nx;}
+   }
+  }else{                                              // 东西向街（含微折）
+   const c=(st.y1+st.y2)/2,half=st.w/2+2;
+   if(y<c+half&&y+h>c-half){
+    if(y+h-c<c-y)h=Math.max(60,c-half-y);
+    else{const ny=c+half;h=Math.max(60,y+h-ny);y=ny;}
+   }
   }
  }
- // 行道树：主街两侧，每 90 米一株，给街道一点生气
+ return {...s,x,y,w,h};
+}
+/** 县城：先放公共建筑，再沿街两排院落，块心留菜地/水塘/空地。 */
+/** 公共建筑若压到主街，就往里收一点：官府不能占着官道。 */
+function avoidMainStreets(s){
+ let {x,y,w,h}=s;
+ const nx=-17,px=17,ny=-13,py=13;      // 南北大街半宽 17，东西大街半宽 13
+ if(x<px&&x+w>nx){                     // 与南北大街相交
+  if(x+w-px<nx-x){w=Math.max(70,nx-x);}    // 收东边，收到大街西沿
+  else{x=px;w=Math.max(70,x+w-px);}        // 收西边，从大街东沿起
+ }
+ if(y<py&&y+h>ny){
+  if(y+h-py<ny-y){h=Math.max(70,ny-y);}
+  else{y=py;h=Math.max(70,y+h-py);}
+ }
+ return {...s,x,y,w,h};
+}
+export function layoutTown(seedStr='linan',structures=STRUCTURES){
+ const out=[];const r=R(deriveSeed('town-'+seedStr));let id=0;
+ for(const s of structures)out.push({...publicBuilding(s),id:'B'+(++id)});
+ const free=(x,y,w,h,pad)=>!out.some(b=>x<b.x+b.w+pad&&x+w+pad>b.x&&y<b.y+b.h+pad&&y+h+pad>b.y);
+ const lanes=streetsFor(structures);
+ const xs=[-720,-388,0,378,720],ys=[-720,-386,0,386,720];
+ let k=0;
+ for(let bi=0;bi<4;bi++)for(let bj=0;bj<4;bj++){
+  const bx0=xs[bi]+26,bx1=xs[bi+1]-26,by0=ys[bj]+24,by1=ys[bj+1]-24;
+  if(bx1-bx0<110||by1-by0<110)continue;
+  // 块内排数按进深定：一进两排不够密，三排更像县城
+  const rows=Math.max(2,Math.min(3,Math.round((by1-by0)/128)));
+  for(let rw=0;rw<rows;rw++){
+   const side=rw===0?'north':rw===rows-1?'south':'mid';
+   const rowY=by0+(by1-by0)*(rw+.5)/rows;
+   let x=bx0+4+Math.floor(r()*10);
+   while(x<bx1-66){
+    const w=66+Math.floor(r()*24),h=60+Math.floor(r()*22);
+    const setback=4+Math.floor(r()*8);
+    const y=side==='north'?by0+setback:side==='south'?by1-setback-h:Math.round(rowY-h/2);
+    if(y+h>by1-3||y<by0+3){x+=w+8;continue;}
+    if(nearStreet(x,y,9,lanes)||nearStreet(x+w,y,9,lanes)||nearStreet(x+w/2,y,9,lanes)||nearStreet(x,y+h,9,lanes)||nearStreet(x+w,y+h,9,lanes)||nearStreet(x+w/2,y+h,9,lanes)){x+=w+10;continue;}
+    if(!free(x,y,w,h,5)){x+=w+7;continue;}
+    const roll=r();
+    if(roll<.06)out.push({id:'G'+(++id),kind:'garden',x,y,w,h,parts:[{t:'field',x,y,w,h}],roof:'grass'});
+    else if(roll<.09)out.push({id:'P'+(++id),kind:'pond',x,y,w,h,parts:[{t:'pond',x:x+6,y:y+6,w:w-12,h:h-12}],roof:'water'});
+    else out.push({...compound(deriveSeed(`c${k++}`),x,y,w,h,r()<.2?'shop':'home',side==='north'?'north':'south'),id:'B'+(++id)});
+    x+=w+5+Math.floor(r()*7);
+   }
+  }
+ }
+ // 行道树：沿两条大街
  for(let y=-660;y<=660;y+=90){
-  if(Math.abs(y)<40||Math.abs(y)>660)continue;
+  if(Math.abs(y)<40)continue;
   out.push({id:'T'+y,kind:'street-tree',x:26,y,w:10,h:10,parts:[{t:'tree',x:26,y,size:6}],roof:'none'});
   out.push({id:'T2'+y,kind:'street-tree',x:-36,y,w:10,h:10,parts:[{t:'tree',x:-36,y,size:5}],roof:'none'});
  }
  return out;
 }
 
-/** 村落：散落十几户 + 祠堂 + 木坊，没有城墙，房子沿路排。 */
-export function layoutVillage(seedStr='songlin',cx=6900,cy=-3500){
+/** 村落：沿一条土路散开，门朝路，没有城墙。 */
+export function layoutVillage(seedStr='songlin',cx=6900,cy=-3500,structures=STRUCTURES){
  const out=[];const r=R(deriveSeed('vill-'+seedStr));let id=0;
- for(const s of STRUCTURES)if(s.id.startsWith('songlin'))out.push({...publicBuilding(s),id:'V'+(++id)});
- for(let i=0;i<16;i++){
-  const ang=(i/16)*Math.PI*2,dist=90+r()*160;
-  const x=Math.round(cx+Math.cos(ang)*dist),y=Math.round(cy+Math.sin(ang)*dist);
-  const w=70+Math.floor(r()*16),h=66+Math.floor(r()*14);
-  if(out.some(b=>x<b.x+b.w+14&&x+w+14>b.x&&y<b.y+b.h+14&&y+h+14>b.y))continue;
-  out.push({...compound(deriveSeed(`v-${i}`),x,y,w,h,r()<.3?'shop':'home'),id:'V'+(++id)});
+ for(const s of structures)if(s.id.startsWith('songlin'))out.push({...publicBuilding(s),id:'V'+(++id)});
+ const free=(x,y,w,h,pad)=>!out.some(b=>x<b.x+b.w+pad&&x+w+pad>b.x&&y<b.y+b.h+pad&&y+h+pad>b.y);
+ let x=cx-420,y=cy-60;
+ while(x<cx+380){
+  const w=64+Math.floor(r()*26),h=60+Math.floor(r()*20);
+  const dy=(r()-.5)*70,side=r()<.5?'south':'north';
+  const by=side==='south'?y+dy+14:y+dy-h-14;
+  if(free(x,by,w,h,12))out.push({...compound(deriveSeed(`v${x}`),x,by,w,h,r()<.25?'shop':'home',side==='south'?'south':'north'),id:'V'+(++id)});
+  x+=w+18+Math.floor(r()*26);
  }
  return out;
 }
 
-export function buildingAt(buildings,p,margin=0){
- return buildings.find(b=>inRect(p,b,margin))||null;
+// ---------- 碰撞 ----------
+const _cache=new WeakMap();
+function collisionSet(town){
+ let c=_cache.get(town);
+ if(c)return c;
+ const blockers=[],gates=[];
+ for(const b of town){
+  if(b.kind==='garden'||b.kind==='street-tree')continue;
+  for(const p of b.parts){
+   if(p.t==='house'||p.t==='wing'||p.t==='stall'||p.t==='wall')blockers.push(p);
+   if(p.t==='gate')gates.push(p);
+   if(p.t==='pond')blockers.push(p);
+  }
+ }
+ c={blockers,gates};_cache.set(town,c);return c;
 }
+/** 这个点能不能过：院墙与屋顶挡人，院门能过；院子能进（门开着才算，这里默认通）。 */
+export function blockedByBuildings(town,p,pad=0){
+ if(!town)return false;
+ const {blockers,gates}=collisionSet(town);
+ if(gates.some(g=>inRect(p,g,pad)))return false;
+ return blockers.some(b=>inRect(p,b,pad));
+}
+export function buildingAt(buildings,p,margin=0){return buildings.find(b=>inRect(p,b,margin))||null;}
 export function townReport(town){
- const houses=town.filter(b=>!b.public).length,publics=town.filter(b=>b.public).length;
+ const houses=town.filter(b=>!b.public&&(b.kind==='home'||b.kind==='shop')).length;
+ const publics=town.filter(b=>b.public).length;
  const roofs={};for(const b of town)roofs[b.roof||'home']=(roofs[b.roof||'home']||0)+1;
- return {total:town.length,houses,publics,roofs,streets:STREETS.length};
+ return {total:town.length,houses,publics,roofs,streets:STREETS.length,blockers:collisionSet(town).blockers.length};
 }
