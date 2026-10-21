@@ -96,3 +96,17 @@
 **“这次玩家是不是只需要打开手机里原来的《苍岚》，就能从游戏内自动得到更新？”**
 - 答案为**是**，且经过原版OTA证据验证，才可称“已更新进游戏”；
 - 答案为**否/尚不确定**，只能称“源码/QA进度，尚未完成原版热更新”，应集中解决阻碍。
+
+## Agent skills
+
+### Issue tracker
+
+Issues and specs live as GitHub issues in `160701541-cell/xinyanshuo`, driven with the `gh` CLI. See `docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+The five canonical triage roles keep their default label strings (`needs-triage`, `needs-info`, `ready-for-agent`, `ready-for-human`, `wontfix`); wayfinding tickets use `wayfinder:map` / `wayfinder:research` / `wayfinder:prototype` / `wayfinder:grilling` / `wayfinder:task`. See `docs/agents/triage-labels.md`.
+
+### Domain docs
+
+single-context — one `GLOSSARY.md` at the repo root and ADRs in `docs/adr/`. See `docs/agents/domain.md`.
