@@ -23,3 +23,9 @@
 .quest .tag{font-size:10px;padding:2px 6px;border-radius:6px;background:#e8e2cd;color:#5e563d}
 .quest button{margin-top:7px;padding:6px 10px;border-radius:8px;border:0;background:#285b46;color:#fff;font-size:12px}
 .quest button.ghost{background:#eee8d6;color:#4a5a44}
+
+/* 军团旗与身份：旗字=国徽，一眼分国；身份徽标区分权限 */
+.war-row .glyph{display:inline-block;min-width:22px;height:22px;line-height:22px;text-align:center;border-radius:3px;background:#cbb089;color:#5c4526;font-family:"Noto Serif SC","Songti SC",serif;font-weight:800;margin-right:6px;border:1px solid rgba(60,46,30,.35)}
+.war-row{border:1px solid rgba(120,104,74,.28);border-radius:8px;padding:8px 10px;margin:8px 0;background:rgba(255,252,242,.6)}
+.war-row header{display:flex;align-items:center;gap:6px;margin-bottom:4px}
+.war-row p{margin:2px 0;font-size:12px;line-height:1.5}

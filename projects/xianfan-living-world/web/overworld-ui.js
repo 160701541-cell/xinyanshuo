@@ -3,7 +3,7 @@ import {createWorld,restoreWorld,saveableWorld,worldReport,simulateDay,note,getP
 import {MAP_VERSION,WORLD_LIMIT,CITY,LANDMARKS,STRUCTURES,TOWN_HOUSES,WALLS,ROUTES,STREAMS,PLACE_METERS,ensureGeo,terrainHeight,dist,obstacleAt,beginJourney,stopJourney,advanceMap,enterStructure,exitStructure,placeAt,visibleActors,actorVisibility,openingStatus,canEnter,canFly,flightRuleAt,rest} from './overworld.js';
 import {FACTIONS,factionById,territoryGrid,territoryBorderPaths,MAP_MODES,mapColor,reputation,standing,securityIndex,ITEMS,itemById,priceOf,inventory,buyItem,sellItem,canTradeHere,bagWeight,contractsFor,acceptContract,completeContract,societyReport} from './society.js';
 import {SpriteBank,lookFor} from './sprites.js';
-import {ensureWar,levyCapacity,createArmy,warReport,tickWarDay,supplyDays,armyNeeds,deliveredCostKg} from './war.js';
+import {ensureWar,levyCapacity,createArmy,warReport,tickWarDay,supplyDays,armyNeeds,deliveredCostKg,emblemOf,authorityReport,setRank,rankOf,rankInfo,takeCommand,joinArmy,issueDecree} from './war.js';
 import {interiorAtlas} from './atlas.js';
 import {classifyGesture,canSelect} from './gesture.js';
 const placeById=getPlace;
@@ -121,20 +121,39 @@ function drawFactionLayer(){
 function securityLabel(){
  const s=securityIndex(w);return s>=70?'治安尚可':s>=45?'盗匪偶发':'盗匪横行';
 }
-/** 军团旗：一旗=一支军，旗上写万人数字，与账本一一对应；虚线是行军目标。 */
+/** 军团旗：一旗=一支军。旗形=国别，旗字=国徽，旗号=番号，旗色=国色。 */
 function drawArmies(){
  if(!w.war)return;
  for(const a of w.war.armies){
   if(!visible(a))continue;
-  const p=pos(a),f=factionById(a.faction),big=a.combat+a.support;
-  const size=clamp(Math.sqrt(big)/22,12,48);
-  if(a.goal){const g=pos(a.goal);ctx.setLineDash([7,7]);ctx.strokeStyle='rgba(126,52,40,.55)';ctx.lineWidth=1.5;ctx.beginPath();ctx.moveTo(p.x,p.y);ctx.lineTo(g.x,g.y);ctx.stroke();ctx.setLineDash([]);}
-  ctx.strokeStyle='#3d3427';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(p.x,p.y);ctx.lineTo(p.x,p.y-size*1.7);ctx.stroke();
-  ctx.fillStyle=a.routed?'#9a9384':(f?.color||'#999');
-  ctx.beginPath();ctx.moveTo(p.x,p.y-size*1.7);ctx.lineTo(p.x+size*1.15,p.y-size*1.3);ctx.lineTo(p.x,p.y-size*.95);ctx.closePath();
-  ctx.fill();ctx.strokeStyle='rgba(40,36,28,.75)';ctx.lineWidth=1;ctx.stroke();
-  ctx.fillStyle='rgba(40,34,26,.9)';
-  if(camera.mpp<600)text(`${Math.round(big/10000)}万`,{x:a.x,y:a.y},Math.min(18,Math.max(10,size*.4)),'#3b3226',700);
+  const p=pos(a),big=a.combat+a.support,e=a.emblem||emblemOf(a.faction);
+  const size=clamp(Math.sqrt(big)/24,14,52);
+  if(a.goal){const g=pos(a.goal);ctx.setLineDash([7,7]);ctx.strokeStyle='rgba(126,52,40,.5)';ctx.lineWidth=1.5;ctx.beginPath();ctx.moveTo(p.x,p.y);ctx.lineTo(g.x,g.y);ctx.stroke();ctx.setLineDash([]);}
+  const poleTop=p.y-size*1.95,fw=size*1.3,fh=size*.74;
+  ctx.strokeStyle='#3a3226';ctx.lineWidth=Math.max(1.4,size*.06);ctx.beginPath();ctx.moveTo(p.x,p.y);ctx.lineTo(p.x,poleTop);ctx.stroke();
+  const fill=a.routed?'#a8a294':e.color;
+  ctx.beginPath();
+  if(e.flag==='pennant'){ctx.moveTo(p.x,poleTop);ctx.lineTo(p.x+fw*1.35,poleTop+fh*.5);ctx.lineTo(p.x,poleTop+fh);}
+  else if(e.flag==='swallow'){ctx.moveTo(p.x,poleTop);ctx.lineTo(p.x+fw,poleTop);ctx.lineTo(p.x+fw*.72,poleTop+fh*.5);ctx.lineTo(p.x+fw,poleTop+fh);ctx.lineTo(p.x,poleTop+fh);}
+  else {ctx.rect(p.x,poleTop,fw,fh);}
+  ctx.closePath();ctx.fillStyle=fill;ctx.fill();
+  ctx.strokeStyle='rgba(40,34,26,.8)';ctx.lineWidth=Math.max(1,size*.04);ctx.stroke();
+  // 边框纹样：双线/细饰/点/山形/云
+  ctx.strokeStyle=e.ink;ctx.globalAlpha=.5;
+  if(e.border==='double'){ctx.strokeRect(p.x+3,poleTop+3,Math.max(2,fw-6),Math.max(2,fh-6));}
+  else if(e.border==='dot'){ctx.setLineDash([2,3]);ctx.strokeRect(p.x+3,poleTop+3,Math.max(2,fw-6),Math.max(2,fh-6));ctx.setLineDash([]);}
+  else if(e.border==='chevron'){for(let i=1;i<3;i++){ctx.beginPath();ctx.moveTo(p.x+4,poleTop+fh*i/3);ctx.lineTo(p.x+fw*.55,poleTop+fh*(i/3+.12));ctx.stroke();}}
+  else if(e.border==='cloud'){ctx.beginPath();ctx.arc(p.x+fw*.5,poleTop+fh*.55,Math.max(3,fh*.3),0,Math.PI*2);ctx.stroke();}
+  else {ctx.beginPath();ctx.moveTo(p.x+3,poleTop+fh-4);ctx.lineTo(p.x+fw-4,poleTop+fh-4);ctx.stroke();}
+  ctx.globalAlpha=1;
+  // 国徽字：屏上一眼分国
+  if(size>20){
+   ctx.fillStyle=a.routed?'#5c5749':e.ink;ctx.textAlign='center';ctx.textBaseline='middle';
+   ctx.font=`700 ${Math.round(fh*.62)}px "Noto Serif SC","Songti SC",serif`;
+   ctx.fillText(e.glyph,p.x+fw*.42,poleTop+fh*.52);
+  }
+  if(camera.mpp<700)text(`${Math.max(1,Math.round(big/10000))}万`,{x:a.x,y:a.y},Math.min(18,Math.max(10,size*.36)),'#3b3226',700);
+  if(camera.mpp<180&&size>22){screenText(`${a.corps.replace(/^.*·/,'')}·${a.commander}`,p.x,p.y+16,12);}
  }
 }
 function drawRelief(){if(camera.mpp>1500)return;const min=unpos(-20,-20),max=unpos(cssW+20,cssH+20);const inc=camera.mpp>80?15000:camera.mpp>10?3200:camera.mpp>2?400:160;
@@ -332,10 +351,20 @@ function renderQuests(){
 function renderWar(){
  ensureWar(w);
  const r=warReport(w);
- const rows=r.field.map(a=>`<article class="war-row"><header><strong>${safe(a.name)}</strong><span class="tag">${safe(factionById(a.faction)?.name||'')}</span></header>
-  <p>战兵 ${a.combat.toLocaleString()} · 辅兵 ${a.support.toLocaleString()} · 士气 ${a.morale} · ${safe(a.state)}</p>
-  <small>日耗 ${(a.needKg/1000).toFixed(0)} 吨 · 自携粮 ${a.supplyDays} 日 · 战损 战兵/辅兵</small><br>
-  <button data-march="${a.id}">开赴县城</button><button data-return="${a.id}">回师</button></article>`).join('')||'<p>天下暂无出征之军。</p>';
+ const auth=authorityReport(w);
+ const identity=`<article class="entry"><strong>你是：${safe(rankOf(w))}</strong><br><small>${safe(rankInfo(w).note)}</small><br>
+  ${auth.map(a=>`<span class="tag">${a.allowed?'✔':'✖'} ${safe(a.label)}</span>`).join(' ')}<br>
+  <small>身份是调试入口；正史里要考试、军功、世袭或禅位。</small><br>
+  ${['皇帝','将帅','校尉','小兵','平民'].map(k=>`<button data-rank="${k}" ${k===rankOf(w)?'disabled':''}>${k}</button>`).join('')}</article>`;
+ const rows=r.field.map(a=>{
+  const cmd=canLead()?`<button data-lead="${a.id}">${w.war.command===a.id?'你已统领':'领兵'}</button>`:'';
+  const join=`<button data-join="${a.id}">从军</button>`;
+  return `<article class="war-row"><header><strong>${a.emblem?`<span class="glyph">${safe(a.emblem.glyph)}</span>`:''}${safe(a.corps)}</strong><span class="tag">${safe(factionById(a.faction)?.name||'')}</span></header>
+  <p>将 ${safe(a.commander)} · 战历 ${a.veteran??0}（%越低越像炮灰）· 士气 ${a.morale} · ${safe(a.state)}</p>
+  <p>战兵 ${a.combat.toLocaleString()} · 辅兵 ${a.support.toLocaleString()} · 战损 ${a.losses.combat.toLocaleString()}/${a.losses.support.toLocaleString()}</p>
+  <small>日耗 ${(a.needKg/1000).toFixed(0)} 吨 · 自携粮 ${a.supplyDays} 日</small><br>
+  <button data-march="${a.id}">开赴县城</button><button data-return="${a.id}">回师</button>${cmd}${join}</article>`;
+ }).join('')||'<p>天下暂无出征之军。</p>';
  const levy=FACTIONS.map(f=>{
   const c=levyCapacity(w,f.id);
   return `<article class="entry"><strong>${safe(f.name)}</strong> 可征 ${c.combat.toLocaleString()} 战兵（辅兵 ${Math.round(c.combat*3).toLocaleString()}）<br>
@@ -343,10 +372,12 @@ function renderWar(){
   <button data-levy="${f.id}" data-men="150000" ${c.combat>=150000?'':'disabled'}>征 15 万</button></article>`;
  }).join('');
  const log=(w.war.log||[]).slice(-10).reverse();
- $('records').innerHTML=`<h2>天下兵事 · 第 ${r.day} 日</h2><p>屏上一面旗就是账本里一支军；粮道断了，仗就打不下去。</p>
- <p>在册兵马合计 ${r.total.toLocaleString()} 人（战兵+辅兵），出征 ${r.armies} 军。</p>${rows}
- <h3>征发</h3>${levy}<h3>战报</h3>${log.map(e=>`<article class="entry"><small>${safe(e.type)}</small> ${safe(e.text)}</article>`).join('')||'<p>尚未接战。</p>'}`;
+ $('records').innerHTML=`<h2>天下兵事 · 第 ${r.day} 日</h2>${identity}
+ <p>屏上一面旗就是账本里一支军：旗形是国别，旗字是国徽，旗号是番号，旗色是国色。</p>
+ <p>在册 〔${r.total.toLocaleString()}〕 人（战兵+辅兵），出征 ${r.armies} 军。</p>${rows}
+ <h3>征发（需圣旨）</h3>${levy}<h3>战报</h3>${log.map(e=>`<article class="entry"><small>${safe(e.type)}</small> ${safe(e.text)}</article>`).join('')||'<p>尚未接战。</p>'}`;
 }
+function canLead(){try{return !!rankInfo(w).lead;}catch{return false;}}
 function handleRecordsClick(e){
  const t=e.target.closest('button');if(!t)return;
  if(t.dataset.buy){const r=buyItem(w,t.dataset.buy,1);toast(r.ok?`买下${itemById(t.dataset.buy).name}，花 ${r.cost} 文`:r.error);if(r.ok){profile();scheduleSave();renderGoods();}return;}
@@ -355,6 +386,9 @@ function handleRecordsClick(e){
  if(t.dataset.levy){const men=Number(t.dataset.men)||50000;
   try{const a=createArmy(w,t.dataset.levy,{combat:men,seed:Date.now()%100000});note(w,'兵事',`${a.name}征发 ${men.toLocaleString()} 战兵、${a.support.toLocaleString()} 辅兵。`);toast(`${a.name}已集结，日耗 ${Math.round(armyNeeds(a).totalKg/1000)} 吨`);profile();scheduleSave();renderWar();}
   catch(err){toast(err.message);}return;}
+ if(t.dataset.rank){setRank(w,t.dataset.rank);toast(`身份：${t.dataset.rank}`);profile();scheduleSave();renderWar();return;}
+ if(t.dataset.lead){const r=takeCommand(w,Number(t.dataset.lead));toast(r.ok?'你已接管这一军':r.error);scheduleSave();renderWar();return;}
+ if(t.dataset.join){const r=joinArmy(w,Number(t.dataset.join));toast(r.ok?'你编入行伍，只是其中一人':r.error);scheduleSave();renderWar();return;}
  if(t.dataset.march){const a=w.war.armies.find(x=>x.id===Number(t.dataset.march));if(!a)return;a.goal={x:0,y:0};a.state='行军';toast(`${a.name}开拔，向县城行军`);scheduleSave();renderWar();return;}
  if(t.dataset.return){const a=w.war.armies.find(x=>x.id===Number(t.dataset.return));if(!a)return;const seat=LANDMARKS.find(l=>l.id===factionById(a.faction)?.seat);a.goal=seat?{x:seat.x,y:seat.y}:{x:a.x,y:a.y};a.state='行军';toast(`${a.name}回师`);scheduleSave();renderWar();return;}
  if(t.dataset.complete){const r=completeContract(w,t.dataset.complete);toast(r.ok?`交差，得 ${r.pay} 文`:r.error);if(r.ok){profile();scheduleSave();renderQuests();}return;}
