@@ -20,7 +20,7 @@ function scheduleSave(){if(tempWorld)return;clearTimeout(saveTimer);saveTimer=se
 function render(){if(!world)return;const p=getPlace(world.player.place);const count=worldReport(world);
  $('regionTrail').innerHTML=`<button data-scope="world">天下</button><span>/</span><button data-scope="province">大宁·青州</button><span>/</span><button data-scope="county">临安县</button><span>/</span><strong>${safe(label(p.name))}</strong>`;
  $('sceneHeading').innerHTML=`<h1>${safe(showInterior()?p.name:'临安县 · '+label(p.name))}</h1><p><span id="gameClock">${safe(dateLabel())}</span> · ${safe(world.weather)} · ${safe(world.player.role)}</p>`;
- $('countyFacts').innerHTML=`<span>县境 <b>${fmt(count.population)}人</b></span><span>本县在册 <b>${fmt(count.households)}户</b></span><span>粮价 <b>${count.price}文/斗</b></span><span>所在 <b>${indoors()?'建筑室内':names[scope]}</b></span>`;
+ $('countyFacts').innerHTML=`<span>县境 <b>${fmt(count.population)}人</b></span><span>本县在册 <b>${fmt(count.households)}户</b></span><span>粮价 <b>${count.price}文/斗</b></span><span>人物所在 <b>${safe(label(p.name))}</b></span>`;
  $('scope').textContent=showInterior()?'查看世界地图':indoors()?'返回室内':scope==='street'?'查看县域':'回到街巷';
  $('tabs').querySelectorAll('button').forEach(b=>b.classList.toggle('active',b.dataset.tab===tab));
  $('travelFoot').classList.toggle('chosen',mode==='foot');$('travelSword').classList.toggle('chosen',mode==='sword');
