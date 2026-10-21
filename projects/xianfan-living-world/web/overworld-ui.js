@@ -14,6 +14,7 @@ import {interiorAtlas} from './atlas.js';
 import {classifyGesture,canSelect} from './gesture.js';
 import {layoutTown,streetsFor,ART} from './buildings.js';
 import {generateWorld,realmView,regionAt,realmReport,domainShare} from './worldmap.js';
+import {createBattleView} from './battle-ui.js';
 import {ensureDao,daoReport,attitudeOf,seekAlly,shiftDao,taoLabel,STANCES,TAGS,NATIONS,SECTS as DAO_SECTS,attachPeople,peopleAt,helpPerson,personAttitude} from './dao.js';
 import {ensureKarma,killPreview,resolveKill,breakthroughChance,attemptBreakthrough,karmaTier,karmaReport,lootFor,JUSTIFY} from './karma.js';
 const placeById=getPlace;
@@ -669,8 +670,19 @@ function renderInstitutions(){
  当前结局：<strong>${safe(s.outcome.name)}</strong>——${safe(s.outcome.desc)}</article>
  ${rows}`;
 }
+let battleView=null;
+function battleScreenShow(on){
+ const el=$('battleScreen');if(el)el.hidden=!on;
+ if(on){
+  if(!battleView&&$('battleCanvas'))battleView=createBattleView({canvas:$('battleCanvas'),hud:$('battleHud'),world:w});
+  battleView.begin();battleView.updateHud();
+ }else if(battleView)battleView.pause();
+}
 function otherPanels(panel){activeTab=panel;for(const n of document.querySelectorAll('[data-view]'))n.classList.toggle('selected',n.dataset.view===panel);
- $('canvasFrame').hidden=panel!=='map';$('records').hidden=panel==='map';$('sheet').hidden=true;if(panel==='map'){drawMap();return;}
+ $('canvasFrame').hidden=panel!=='map';$('records').hidden=panel==='map';$('sheet').hidden=true;
+ battleScreenShow(panel==='battle');
+ if(panel==='battle'){return;}
+ if(panel==='map'){drawMap();return;}
  if(panel==='court')return renderCourt();
  if(panel==='xian')return renderXian();
  if(panel==='goods')return renderGoods();
@@ -735,6 +747,10 @@ function bind(){canvas=$('worldCanvas');setupGestures();$('zoomIn').onclick=()=>
  $('advanceDay').onclick=()=>{if(w.player.route)return toast('行走中，请先停下');simulateDay(w,1);toast('世界推进一日');profile();scheduleSave();};
  $('newWorld').onclick=()=>{if(!confirm('确认创建新世界？当前存档将被新世界替换，原人物不会再次出现。'))return;w=createWorld('县境-'+Date.now());ensureGeo(w);camera={x:0,y:0,mpp:3};selected=null;showSheet(null);otherPanels('map');profile();scheduleSave();};
  for(const btn of document.querySelectorAll('[data-view]'))btn.onclick=()=>otherPanels(btn.dataset.view);
+ const bs=$('bStart'),bp=$('bPause'),bb=$('bBack'),bspeed=$('bSpeed');
+ if(bs)bs.onclick=()=>{if(!battleView)battleView=createBattleView({canvas:$('battleCanvas'),hud:$('battleHud'),world:w});battleView.begin();toast('开战');};
+ if(bp)bp.onclick=()=>{if(!battleView)return;battleView.pause();toast('暂停');};
+ if(bb)bb.onclick=()=>otherPanels('map');
  window.addEventListener('resize',resize);document.addEventListener('visibilitychange',()=>{paused=document.hidden;if(paused)save().catch(()=>{});});
 }
 let stamp=0,profileStamp=0,saveStamp=0;

@@ -32,3 +32,11 @@
 
 .war-row .arms{font-size:12px;color:#5e563d}
 .war-row .warbtns button{font-size:11px;padding:4px 7px;margin:2px 3px 0 0}
+
+/* 战斗画面：小人在打，刀光箭矢都在这一层 */
+.battle-screen{position:absolute;inset:0;display:flex;flex-direction:column;background:#2c3226}
+.battle-screen[hidden]{display:none}
+#battleCanvas{flex:1;width:100%;min-height:0;display:block;touch-action:none}
+.battle-hud{padding:6px 10px;background:rgba(24,22,18,.82);color:#efe8d6;font-size:13px;line-height:1.45}
+.battle-bar{display:flex;gap:6px;padding:8px 10px calc(8px + env(safe-area-inset-bottom));background:#20241c}
+.battle-bar button{flex:1;min-height:44px;border:1px solid #4b5340;background:#39422f;color:#f0ead8;border-radius:8px;font-size:14px}
