@@ -522,7 +522,7 @@ public final class Sim {
     public String mortalRangeText() {
         double km = 30 * 365 * 60;
         double circle = 4375233;
-        return String.format("凡人脚程：一生约 %.0f 万年? %.0f 公里，绕玄黄星 %.2f 圈——走不完，更出不了星域", km / 10000, km, km / circle);
+        return "凡人脚程：一生约走 " + Math.round(km) + " 公里，绕玄黄星 " + String.format("%.2f", km / circle) + " 圈——走不完，更出不了星域";
     }
 
     /** 星舰：化神押船才有意义，凡人上船等于送死 */

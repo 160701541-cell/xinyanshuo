@@ -199,9 +199,18 @@ public final class MainActivity extends Activity {
     private int frames;
 
     private void updateHud() {
-        hud.setText(String.format("%s · %s\n银 %d · 灵石 %d · 私兵 %d · 体力 %.0f\n%s",
-            sim.timeText(), sim.realmName(), Sim.coinText(sim.coin), sim.stones, sim.men, sim.stamina,
-            sim.moving ? "前往：" + sim.targetName : "在" + nearestName()));
+        // 不再用 String.format 拼 HUD：格式符和类型对不上会直接把游戏打崩，字符串拼接不会有这种坑
+        try {
+            StringBuilder b = new StringBuilder();
+            b.append(sim.timeText()).append(" · ").append(sim.realmName()).append('\n')
+             .append(Sim.coinText(sim.coin)).append(" · 灵石 ").append(sim.stones)
+             .append(" · 私兵 ").append(sim.men)
+             .append(" · 体力 ").append(Math.round(sim.stamina)).append('\n')
+             .append(sim.moving ? "前往：" + sim.targetName : "在" + nearestName());
+            hud.setText(b.toString());
+        } catch (Throwable e) {
+            hud.setText("HUD 出错：" + e);
+        }
     }
 
     private String nearestName() {
