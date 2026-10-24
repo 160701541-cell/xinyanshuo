@@ -44,5 +44,7 @@
   "last_event_hash": "a74cf0a99c6cef1a4d019787bbf4eb457781f94346d420196c443be1c411fc69",
   "full_state_sha256": "52eab54f38ed24b476c8495e1343bec82f6ead1bf8414a39c1cebd4cb0eb6ca5",
   "roots_hidden": true,
-  "complete_source_event_ledger_synced": false
+  "complete_source_event_ledger_synced": true,
+  "full_state_parts_verified": true,
+  "next_checkpoint_turn": 10
 }
