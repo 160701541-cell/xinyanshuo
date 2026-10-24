@@ -8,20 +8,26 @@
       "name": "钱然泽",
       "relation": "父亲",
       "age": 35,
-      "notes": [
+      "narrative_notes": [
         "早晨扛锄准备下田",
         "询问玩家今日安排"
-      ]
+      ],
+      "location_id": "shiqiao",
+      "alive": true,
+      "health": "正常"
     },
     "CFNPC00002": {
       "id": "CFNPC00002",
       "name": "郑舟清",
       "relation": "母亲",
       "age": 49,
-      "notes": [
+      "narrative_notes": [
         "在厨房准备早饭",
         "劝父亲先让孩子吃饭"
-      ]
+      ],
+      "location_id": "shiqiao",
+      "alive": true,
+      "health": "正常"
     },
     "CFNPC00003": {
       "id": "CFNPC00003",
@@ -29,7 +35,10 @@
       "relation": "手足",
       "sex": "女",
       "age": 16,
-      "notes": []
+      "narrative_notes": [],
+      "location_id": "shiqiao",
+      "alive": true,
+      "health": "正常"
     }
   },
   "scene": {
