@@ -8,8 +8,8 @@
     "regnal_year": 3,
     "day": 1,
     "hour": 12,
-    "minute": 29,
-    "display": "承平三年 · 第1日 · 12:29",
+    "minute": 30,
+    "display": "承平三年 · 第1日 · 12:30",
     "weather": "晴"
   },
   "player": {
@@ -75,7 +75,7 @@
     }
   ],
   "current_location": "石桥村",
-  "last_event_id": "EV000005",
+  "last_event_id": "EV000006",
   "reference": {
     "origin": "GitHub 160701541-cell/xinyanshuo",
     "xianfan_branch": "xianfan/independent-living-county-v0.1",
@@ -388,10 +388,17 @@
   },
   "npc_schedules": {
     "CFNPC00003": {
-      "last_seen_location": "石桥村村外荒沟附近",
-      "activity": "helping_sift_herbs",
-      "updated_at": "承平三年 · 第1日 · 11:14",
-      "interest": "尝试学习普通小兽绳套"
+      "last_seen_location": "离开村外荒沟，向钱家院落方向走去",
+      "activity": "walking_home_to_ask_for_food_and_water",
+      "updated_at": "承平三年 · 第1日 · 12:30",
+      "interest": "尝试学习普通小兽绳套",
+      "request": {
+        "food": "ask_household",
+        "water": "ask_household",
+        "delivery": "pending",
+        "ownership": "household_requires_agreement"
+      },
+      "note": "尚未确定家庭现有可携带熟食或容器，禁止凭空登记"
     },
     "CFNPC00001": {
       "last_seen_location": "石桥村田间",
@@ -406,5 +413,30 @@
       "evidence": "08:00在厨房，后续活动为日程推演"
     }
   },
-  "sub_location": "村外荒沟·矮草丛边"
+  "sub_location": "村外荒沟·矮草丛边",
+  "fishing_requests": {
+    "rod_pair": {
+      "target_count": 2,
+      "craft_count": 0,
+      "status": "pending_materials_and_validated_hook_line_recipe",
+      "expected_users": [
+        "CFPLAYER00001",
+        "CFNPC00003"
+      ],
+      "required": "杆材、可靠鱼线、鱼钩，须实物和工艺验证"
+    },
+    "bait": {
+      "ground_grain": "proposed_only",
+      "rotten_meat": "proposed_only",
+      "worms": "proposed_only",
+      "insects": "proposed_only",
+      "frogs": "proposed_only",
+      "fry": "proposed_only",
+      "wine": "missing",
+      "corn": "missing",
+      "urine": "not_registered",
+      "status": "not_made",
+      "caution": "不能把臭味增强直接等同于必然增加捕获概率；腐败肉及尿液存在卫生风险"
+    }
+  }
 }
