@@ -1,9 +1,9 @@
 {
   "schema": 1,
   "campaign_id": "xianfan-canglan-text-20261024",
-  "turns_completed": 0,
-  "time": "承平三年·第1日·08:00",
-  "location": "石桥村·钱家院落",
+  "turns_completed": 1,
+  "time": "承平三年 · 第1日 · 10:19",
+  "location": "石桥村·村外荒沟",
   "player": {
     "id": "CFPLAYER00001",
     "name": "心魇说",
@@ -12,7 +12,7 @@
     "realm": "凡人（未修行）",
     "root": "未检测",
     "hp": 100,
-    "stamina": 100,
+    "stamina": 80,
     "copper": 12
   },
   "family": {
@@ -40,11 +40,13 @@
       ]
     ]
   },
-  "last_event": "EV000002",
-  "last_event_hash": "a74cf0a99c6cef1a4d019787bbf4eb457781f94346d420196c443be1c411fc69",
-  "full_state_sha256": "52eab54f38ed24b476c8495e1343bec82f6ead1bf8414a39c1cebd4cb0eb6ca5",
+  "last_event": "EV000003",
+  "last_event_hash": "711fd78f550f329d1807bfed0426d6f54dccf988987d7300574fedcc26250b01",
+  "full_state_sha256": "4e08b80a1606e169ca69a9a286a94dd00e41b2c8d72501bfb8b6da67adb666e1",
   "roots_hidden": true,
   "complete_source_event_ledger_synced": true,
   "full_state_parts_verified": true,
-  "next_checkpoint_turn": 10
+  "next_checkpoint_turn": 10,
+  "last_action": "call_sister_collect_craft_track_deploy",
+  "trap_status": "TRAP-SHIQIAO-0001 deployed; not checked"
 }
