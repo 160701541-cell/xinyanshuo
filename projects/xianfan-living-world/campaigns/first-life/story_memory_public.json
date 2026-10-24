@@ -46,13 +46,17 @@
     }
   },
   "scene": {
-    "id": "SCENE0011",
-    "place": "石桥村外",
-    "time": "承平三年 · 第1日 · 16:18",
+    "id": "SCENE0012",
+    "place": "临安县城·东门",
+    "time": "承平三年 · 第2日 · 09:04",
     "facts": [
-      "完成第二只鱼笼",
-      "查看旧设施，未发现收获"
-    ]
+      "傍晚返回钱家院落，与孙成明在家重逢；晚饭与次日早饭都经家人同意。",
+      "夜间睡眠后精力恢复。",
+      "第2日06:45查看小兽绳套为空。",
+      "第2日07:09查看鱼笼，里面有小河鱼1条；鱼仍在笼中，没有进入背包。",
+      "09:04抵达临安县城东门；尚未发生交易。"
+    ],
+    "awaiting": "县城内自主行动"
   },
   "open_threads": [
     {
@@ -72,7 +76,7 @@
       "title": "村外小兽绳套等待检查",
       "known": "TRAP-SHIQIAO-0001 已在村外小兽道布设，捕获情况仍未知",
       "source": "EV000003",
-      "status": "等待后续世界行动",
+      "status": "第二日06:45查看为空",
       "certainty": "事件已核对"
     },
     {
@@ -94,7 +98,7 @@
     {
       "id": "T0006",
       "title": "两根鱼竿与家人取饭取水",
-      "status": "妹妹已启程，尚未返还食水；鱼竿待材料",
+      "status": "返回家中吃饭休息，妹妹已在家重逢",
       "known": "鱼竿×0、饵料尚未制作；不消耗家庭库存",
       "source": "EV000006",
       "certainty": "已提交事件"
@@ -108,7 +112,7 @@
     {
       "id": "T0009",
       "title": "查看已部署鱼笼",
-      "status": "鱼笼已在SH-RIVER-01水域固定，尚未检查或捕获",
+      "status": "第二日07:09鱼笼内出现小河鱼1条，仍未取回",
       "source": "EV000010",
       "certainty": "已提交事件"
     },
@@ -118,14 +122,22 @@
       "status": "缺材料，尚未完成新的鱼笼",
       "source": "EV000011",
       "certainty": "已提交程序事件"
+    },
+    {
+      "id": "T0011",
+      "title": "抵达县城",
+      "status": "09:04到达东门，未进入商铺",
+      "source": "EV000013"
     }
   ],
   "state_checkpoint": {
-    "last_event_id": "EV000012",
-    "last_event_hash": "d135092bbc1bc1ff0e8455b62e5cc5f3673ac8a408063387d7e992477dd09cc4",
-    "state_sha256": "faffa7d736006689003b2a62ecc4d272f4f771d73ccdebc8264afea1231c93f3",
-    "time": "承平三年 · 第1日 · 16:18",
-    "stamina": 31
+    "last_event_id": "EV000013",
+    "last_event_hash": "9e00e93cab1ccd9e858e44b2415efef8da56a0cf78bd94455a487f1f55089eb1",
+    "state_sha256": "fa379f3210e90ee431a44827c8dfcfdffe9497a475a07368333139f329f85d68",
+    "time": "承平三年 · 第2日 · 09:04",
+    "stamina": 61,
+    "money": 12,
+    "location_id": "linan"
   },
   "private_notes_excluded": true
 }
