@@ -8,8 +8,8 @@
     "regnal_year": 3,
     "day": 1,
     "hour": 14,
-    "minute": 3,
-    "display": "承平三年 · 第1日 · 14:03",
+    "minute": 38,
+    "display": "承平三年 · 第1日 · 14:38",
     "weather": "晴"
   },
   "player": {
@@ -26,7 +26,7 @@
     "root_commitment_sha256": "897ffd3bec4b0c505b934d584835158fecaf6ddea61c5d70df6b8160db914dd7",
     "hp": 100,
     "max_hp": 100,
-    "stamina": 49,
+    "stamina": 44,
     "max_stamina": 100,
     "money": 12,
     "money_unit": "文",
@@ -73,10 +73,26 @@
       "category": "渔具半成品",
       "source": "SH-BRUSH-B(枝1)+SH-FIBER-B(纤维1)",
       "usable_for_fishing": false
+    },
+    {
+      "id": "flexible_branch",
+      "name": "韧枝",
+      "quantity": 4,
+      "category": "野外材料",
+      "equipped": false,
+      "source": "scout:SH-WILLOW-C"
+    },
+    {
+      "id": "bast_fiber",
+      "name": "植物纤维",
+      "quantity": 4,
+      "category": "野外材料",
+      "equipped": false,
+      "source": "scout:SH-REED-C"
     }
   ],
   "current_location": "石桥村",
-  "last_event_id": "EV000010",
+  "last_event_id": "EV000011",
   "reference": {
     "origin": "GitHub 160701541-cell/xinyanshuo",
     "xianfan_branch": "xianfan/independent-living-county-v0.1",
@@ -445,6 +461,32 @@
         "catch_events": [],
         "last_population_tick": null,
         "model": "world_seed + fixed habitat definitions; not spawned as a reward for player"
+      },
+      "basket_scouting": {
+        "version": "new-basket-0.1.0",
+        "seed": "xianfan-canglan-text-20261024-v1",
+        "nodes": [
+          {
+            "id": "SH-WILLOW-C",
+            "name": "下游柳丛",
+            "resource": "flexible_branch",
+            "x": 3940,
+            "y": 5030,
+            "initial_quantity": 4,
+            "quantity": 0,
+            "owner": "unclaimed_commons"
+          },
+          {
+            "id": "SH-REED-C",
+            "name": "下游芦苇滩",
+            "resource": "bast_fiber",
+            "x": 3950,
+            "y": 5038,
+            "initial_quantity": 4,
+            "quantity": 0,
+            "owner": "unclaimed_commons"
+          }
+        ]
       }
     }
   },
@@ -486,7 +528,8 @@
         "CFNPC00003"
       ],
       "required": "杆材、可靠鱼线、鱼钩，须实物和工艺验证",
-      "rod_blanks_made": 1
+      "rod_blanks_made": 1,
+      "note": "本次在下游搜索鱼笼材料，不是制作鱼竿；旧鱼竿仍未完成"
     },
     "bait": {
       "ground_grain": "proposed_only",
