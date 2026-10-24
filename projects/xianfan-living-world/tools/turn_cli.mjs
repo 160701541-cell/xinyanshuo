@@ -1,7 +1,8 @@
 import {readFileSync,writeFileSync,copyFileSync,renameSync,mkdirSync,rmSync,mkdtempSync,existsSync} from 'node:fs';
 import {join} from 'node:path';
 import {restore} from './restore_campaign.mjs';
-import {inspect,digest} from './campaign_guard.mjs';
+import {inspect,digest,checkpoint} from './campaign_guard.mjs';
+import {reviewAtTurn} from './gm_quality_gate.mjs';
 import {calculateAction,commitPreview} from './numeric_engine.mjs';
 import {auditProposedTurn} from './gm_quality_gate.mjs';
 
@@ -39,7 +40,10 @@ export function processTurn(root,command,save=false){
    catch(error){for(const name of Object.keys(outputs))if(existsSync(join(stage,name+'.before')))copyFileSync(join(stage,name+'.before'),join(root,name));throw error;}
   }finally{rmSync(lock,{recursive:true,force:true});}
   inspect(root);
-  return {ok:true,event_id:index.last_event,turn:index.turns_completed,after:preview.after,receipts:preview.receipts,gm_audit:audit.checks,github_sync:'PENDING_GITHUB'};
+  // Keep the original event ledger intact; summaries are additional derived indexes.
+  const memory_checkpoint=index.turns_completed%10===0?checkpoint(root):{created:false};
+  const gm_review=index.turns_completed%10===0?reviewAtTurn(root):{created:false};
+  return {ok:true,event_id:index.last_event,turn:index.turns_completed,after:preview.after,receipts:preview.receipts,gm_audit:audit.checks,memory_checkpoint,gm_review,github_sync:'PENDING_GITHUB'};
  }finally{rmSync(stage,{recursive:true,force:true});}
 }
 if(process.argv[1]?.endsWith('turn_cli.mjs')){
