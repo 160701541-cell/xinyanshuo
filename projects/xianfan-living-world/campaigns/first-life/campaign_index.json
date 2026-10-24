@@ -1,9 +1,9 @@
 {
   "schema": 1,
   "campaign_id": "xianfan-canglan-text-20261024",
-  "turns_completed": 12,
-  "time": "承平三年 · 第2日 · 10:09",
-  "location": "临安县城·集市",
+  "turns_completed": 13,
+  "time": "承平三年 · 第2日 · 10:44",
+  "location": "临安县城·匠人巷口",
   "player": {
     "id": "CFPLAYER00001",
     "name": "心魇说",
@@ -12,7 +12,7 @@
     "realm": "凡人（未修行）",
     "root": "未检测",
     "hp": 100,
-    "stamina": 56,
+    "stamina": 53,
     "copper": 2
   },
   "family": {
@@ -41,14 +41,14 @@
     ],
     "grain_remainder_millidou": 892
   },
-  "last_event": "EV000014",
-  "last_event_hash": "1600de20b28f6a478aa08dd86f04bb984e4d24126d72f2bf299c7ae272de71cb",
-  "full_state_sha256": "cda9d3368dce61e92fd6295fbf541221d6985d7ad481084229a03b0546ca5dde",
+  "last_event": "EV000015",
+  "last_event_hash": "9db769d7aa34cbe799ab1e647b259d2310c8d00182e3281b1df60c60260194cc",
+  "full_state_sha256": "b172cf39975f824a9ebbaea4b1214359b710c9121f0138094c51ddad02c6f13e",
   "roots_hidden": true,
   "complete_source_event_ledger_synced": true,
   "full_state_parts_verified": true,
   "next_checkpoint_turn": 20,
-  "last_action": "county_market_herb_sale_fishing_supplies_and_seeds",
+  "last_action": "walk_public_linan_streets",
   "trap_status": "checked empty 16:18",
   "inventory_added": {
     "fishing_line": 1,
