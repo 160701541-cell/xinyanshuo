@@ -22,7 +22,7 @@ export function calculateDay2Journey(original,events,registry){
  const family=s.family,zone=s.ecology?.['shiqiao-outskirts-v1'];
  if(!zone?.freshwater||!zone.deployed_traps?.length)err('TRAPS_NOT_REGISTERED');
  // Walk home using established player coordinates and village anchor; don't teleport.
- const home=s.locations.find(x=>x.id==='shiqiao');
+ const home=s.places.find(x=>x.id==='shiqiao');
  if(!home)err('HOME_UNKNOWN');
  energy(s,r.night.home_walk_stamina);advance(s,r.night.home_walk_minutes);
  s.position={x:home.x,y:home.y};s.sub_location='石桥村·钱家院落';
