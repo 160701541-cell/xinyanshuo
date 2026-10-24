@@ -1,8 +1,8 @@
 {
   "schema": 1,
   "campaign_id": "xianfan-canglan-text-20261024",
-  "turns_completed": 6,
-  "time": "承平三年 · 第1日 · 13:25",
+  "turns_completed": 7,
+  "time": "承平三年 · 第1日 · 13:45",
   "location": "石桥村·村外荒沟",
   "player": {
     "id": "CFPLAYER00001",
@@ -12,7 +12,7 @@
     "realm": "凡人（未修行）",
     "root": "未检测",
     "hp": 100,
-    "stamina": 55,
+    "stamina": 52,
     "copper": 12
   },
   "family": {
@@ -40,20 +40,20 @@
       ]
     ]
   },
-  "last_event": "EV000008",
-  "last_event_hash": "6105c80699d0978417891b2e0103d3002f99814a1ed408abb4ee05a20d686dac",
-  "full_state_sha256": "5a2d29a47d32431cbf724d7c002fefdde5048ec5996b1c043a1ad8883d4958b4",
+  "last_event": "EV000009",
+  "last_event_hash": "4810f55a188441b9ac94b1a57ea15d5815b2ea6952ca6473f0d2e83e7977d577",
+  "full_state_sha256": "9522f98cb6e871227851f3ad88e6280b9a04400467c9c6d707cdf6ab4f266ce7",
   "roots_hidden": true,
   "complete_source_event_ledger_synced": true,
   "full_state_parts_verified": true,
   "next_checkpoint_turn": 10,
-  "last_action": "seek_rod_line_and_hook_materials_once",
+  "last_action": "reinforce_existing_fish_basket_once",
   "trap_status": "TRAP-SHIQIAO-0001 deployed; catch unknown, not checked",
   "inventory_added": {
     "item_id": "fresh_plantain",
     "quantity": 1
   },
   "market_price_status": "NOT_QUOTED",
-  "fishing_status": "unfinished rod 1; foraged fiber 2; hooks and fishing line missing",
+  "fishing_status": "one reinforced basket, not deployed; one unfinished rod blank; no bait",
   "sister_errand": "walking home, no supplies delivered"
 }
