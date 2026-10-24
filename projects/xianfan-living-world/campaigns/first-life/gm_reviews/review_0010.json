@@ -1,0 +1,9 @@
+{
+  "schema": 1,
+  "turn": 10,
+  "protocol": "GM-QA-001",
+  "checked": 0,
+  "not_checked": 80,
+  "event_hash": "d135092bbc1bc1ff0e8455b62e5cc5f3673ac8a408063387d7e992477dd09cc4",
+  "note": "All eight QA categories for ten older events lack a complete per-event audit receipt. None may be claimed PASS."
+}
