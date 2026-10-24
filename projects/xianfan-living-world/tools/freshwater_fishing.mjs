@@ -71,3 +71,58 @@ export function deployBasket(original,events){
  event.hash=digest(event);
  return {state:s,event,events:[...events,event],public:{site,gear,stocks:water.stocks,after:event.after}};
 }
+
+
+/** Called by a NEW player check action after sufficient world time, never at installation.
+ * Checks one 120-minute ecological interval at a time. All catches debit registered fish.
+ */
+export function checkBasket(original,events){
+ verifyEvents(events);verifyNumericState(original);
+ if(digest(original)!==events.at(-1)?.state_hash||original.last_event_id!==eventId(events.length))err('STATE_HASH','存档与账本不一致');
+ const s=structuredClone(original),water=s.ecology?.[config.region_id]?.freshwater;
+ if(!water||!Array.isArray(water.installed_gear))err('NO_FISH_HABITAT','鱼群未建档');
+ const gear=water.installed_gear.find(g=>g.id==='GEAR-SH-RIVER-0001'&&g.owner===s.player.id);
+ if(!gear||gear.status!=='deployed_waiting')err('NO_DEPLOYED_GEAR','没有可检查的鱼笼');
+ const old=gear.checked_at_clock_minutes??gear.placed_clock_minutes;
+ const delta=clock(s)-old;
+ if(delta<config.capture.time_tick_minutes)err('NOT_READY','水域尚未经过一个完整生态周期，不得提前结算渔获');
+ if(s.player.stamina<2)err('STAMINA_LOW','体力不足');
+ const before={time:s.time.display,stamina:s.player.stamina,copper:s.player.money};
+ // 12 minutes bank inspection; any action that advanced world time is already in s.time.
+ const minutes=config.capture.time_tick_minutes;
+ const elapsedCycles=Math.floor(delta/minutes);
+ // Roll tied to trap, initial world seed and the distinct ecological interval. For fairness,
+ // a later check cannot reroll the same interval for another reward.
+ const cycleNumber=Math.floor((old-gear.placed_clock_minutes)/minutes)+1;
+ const r=rng(s.world_seed,gear.id+'|capture-cycle-'+cycleNumber,100);
+ const stock=water.stocks.find(z=>z.id==='small_cyprinid');
+ const catchAllowed=stock && stock.population>0 && r<18 && elapsedCycles>0;
+ const catchCount=catchAllowed?1:0;
+ if(catchCount){
+  stock.population-=catchCount;stock.harvested+=catchCount;
+  const item=s.inventory.find(x=>x.id==='fresh_small_fish');
+  if(item)item.quantity+=catchCount;
+  else s.inventory.push({id:'fresh_small_fish',name:'鲜活小河鱼',quantity:catchCount,equipped:false,category:'渔获',source:'GEAR-SH-RIVER-0001'});
+ }
+ gear.catch_count+=catchCount;
+ gear.checked_at_clock_minutes=old+minutes;
+ gear.checked_at=s.time.display;
+ const inspectedAt=clock(s)+12;
+ if(Math.floor(inspectedAt/1440)!==s.time.day-1)err('DAY_CYCLE_UNSUPPORTED','尚未实现过夜生态结算');
+ s.time.hour=Math.floor(inspectedAt%1440/60);s.time.minute=inspectedAt%60;
+ s.time.display='承平三年 · 第'+s.time.day+'日 · '+String(s.time.hour).padStart(2,'0')+':'+String(s.time.minute).padStart(2,'0');
+ s.player.stamina-=2;
+ gear.last_check_result=catchCount>0?'one_small_fish':'empty';
+ water.catch_events.push({event_id:eventId(events.length+1),gear_id:gear.id,cycle:cycleNumber,roll:r,
+  catch_count:catchCount,species_id:catchCount?'small_cyprinid':null,stock_after:stock?.population??0});
+ s.last_event_id=eventId(events.length+1);
+ verifyNumericState(s);
+ const event={seq:events.length+1,type:'turn_committed',turn_id:events.filter(e=>e.type==='turn_committed').length+1,
+  action:'check_fish_basket',rule_version:config.version,prev_hash:events.at(-1).hash,
+  duration_minutes:12,stamina_cost:2,checked_cycle:cycleNumber,roll:r,
+  catch_count:catchCount,species_id:catchCount?'small_cyprinid':null,
+  source_population_before:stock.population+catchCount,source_population_after:stock.population,
+  before,after:{time:s.time.display,stamina:s.player.stamina,copper:s.player.money},state_hash:digest(s)};
+ event.hash=digest(event);
+ return{state:s,event,events:[...events,event],public:{catch_count:catchCount,roll:r,stock_after:stock.population,after:event.after}};
+}
