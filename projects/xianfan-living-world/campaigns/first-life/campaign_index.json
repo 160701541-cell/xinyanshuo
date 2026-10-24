@@ -1,8 +1,8 @@
 {
   "schema": 1,
   "campaign_id": "xianfan-canglan-text-20261024",
-  "turns_completed": 8,
-  "time": "承平三年 · 第1日 · 14:03",
+  "turns_completed": 9,
+  "time": "承平三年 · 第1日 · 14:38",
   "location": "石桥村·荒沟下游缓水湾",
   "player": {
     "id": "CFPLAYER00001",
@@ -12,7 +12,7 @@
     "realm": "凡人（未修行）",
     "root": "未检测",
     "hp": 100,
-    "stamina": 49,
+    "stamina": 44,
     "copper": 12
   },
   "family": {
@@ -40,20 +40,20 @@
       ]
     ]
   },
-  "last_event": "EV000010",
-  "last_event_hash": "8b56a24daf1b02b3979c08703f7bb24ee7c480efd80d37016f47417176a158f3",
-  "full_state_sha256": "be1f6a9050a42b5e82f9682ed600f4d3111d59d633038e6f9e882af2c7f0a269",
+  "last_event": "EV000011",
+  "last_event_hash": "f5a02c92a3926c2ea10744445bc0f39ced7bc364ba0d92ae60606da6cc3bcd9f",
+  "full_state_sha256": "459ed23998fb4dabebeb36685c8aada1a2e0c935ae43e8b09a857b63f0ec2ead",
   "roots_hidden": true,
   "complete_source_event_ledger_synced": true,
   "full_state_parts_verified": true,
   "next_checkpoint_turn": 10,
-  "last_action": "deploy_fish_basket_in_shiqiao_bay",
+  "last_action": "scout_downstream_and_try_second_fish_basket",
   "trap_status": "TRAP-SHIQIAO-0001 deployed; catch unknown, not checked",
   "inventory_added": {
     "item_id": "fresh_plantain",
     "quantity": 1
   },
   "market_price_status": "NOT_QUOTED",
-  "fishing_status": "GEAR-SH-RIVER-0001 installed, no catch, bait none; wait for fish time-step",
+  "fishing_status": "1 basket deployed; second basket lacks materials",
   "sister_errand": "walking home, no supplies delivered"
 }
