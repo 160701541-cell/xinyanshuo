@@ -33,7 +33,20 @@
       ],
       "relationships": {},
       "last_known_location": "石桥村田间（依据日程推演，未目击）",
-      "last_updated_event": "EV000002"
+      "last_updated_event": "EV000002",
+      "base_temperament": {
+        "version": "npc-base-temperament-v1",
+        "source": "deterministic_world_seed",
+        "scores": {
+          "curiosity": 38,
+          "diligence": 36,
+          "caution": 62,
+          "sociability": 56,
+          "cooperation": 55,
+          "stress_tolerance": 50
+        },
+        "warning": "Generated base propensity, not a claim of player-observed behavior or guaranteed action"
+      }
     },
     "CFNPC00002": {
       "id": "CFNPC00002",
@@ -63,7 +76,20 @@
       ],
       "relationships": {},
       "last_known_location": "石桥村钱家院落（推演）",
-      "last_updated_event": "EV000002"
+      "last_updated_event": "EV000002",
+      "base_temperament": {
+        "version": "npc-base-temperament-v1",
+        "source": "deterministic_world_seed",
+        "scores": {
+          "curiosity": 38,
+          "diligence": 37,
+          "caution": 41,
+          "sociability": 39,
+          "cooperation": 60,
+          "stress_tolerance": 50
+        },
+        "warning": "Generated base propensity, not a claim of player-observed behavior or guaranteed action"
+      }
     },
     "CFNPC00003": {
       "id": "CFNPC00003",
@@ -120,7 +146,20 @@
       ],
       "relationships": {},
       "last_known_location": "石桥村·村外荒沟",
-      "last_updated_event": "EV000004"
+      "last_updated_event": "EV000004",
+      "base_temperament": {
+        "version": "npc-base-temperament-v1",
+        "source": "deterministic_world_seed",
+        "scores": {
+          "curiosity": 51,
+          "diligence": 55,
+          "caution": 48,
+          "sociability": 53,
+          "cooperation": 58,
+          "stress_tolerance": 46
+        },
+        "warning": "Generated base propensity, not a claim of player-observed behavior or guaranteed action"
+      }
     }
   }
 }
