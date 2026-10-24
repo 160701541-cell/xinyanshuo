@@ -8,8 +8,8 @@
     "regnal_year": 3,
     "day": 1,
     "hour": 13,
-    "minute": 25,
-    "display": "承平三年 · 第1日 · 13:25",
+    "minute": 45,
+    "display": "承平三年 · 第1日 · 13:45",
     "weather": "晴"
   },
   "player": {
@@ -26,7 +26,7 @@
     "root_commitment_sha256": "897ffd3bec4b0c505b934d584835158fecaf6ddea61c5d70df6b8160db914dd7",
     "hp": 100,
     "max_hp": 100,
-    "stamina": 55,
+    "stamina": 52,
     "max_stamina": 100,
     "money": 12,
     "money_unit": "文",
@@ -71,7 +71,14 @@
       "quantity": 1,
       "equipped": false,
       "category": "渔具",
-      "source": "craft:fishbasket-0.1.0"
+      "source": "craft:fishbasket-0.1.0",
+      "reinforcement": {
+        "version": "fishbasket-weave-0.1.0",
+        "lashing": "plant_fiber",
+        "layers": 1,
+        "quality": "reinforced_handwoven",
+        "source_event_id": "EV000009"
+      }
     },
     {
       "id": "rod_blank_wood_01",
@@ -81,18 +88,10 @@
       "category": "渔具半成品",
       "source": "SH-BRUSH-B(枝1)+SH-FIBER-B(纤维1)",
       "usable_for_fishing": false
-    },
-    {
-      "id": "bast_fiber",
-      "name": "野生植物纤维",
-      "quantity": 2,
-      "equipped": false,
-      "category": "野外材料",
-      "source": "SH-FIBER-B"
     }
   ],
   "current_location": "石桥村",
-  "last_event_id": "EV000008",
+  "last_event_id": "EV000009",
   "reference": {
     "origin": "GitHub 160701541-cell/xinyanshuo",
     "xianfan_branch": "xianfan/independent-living-county-v0.1",
