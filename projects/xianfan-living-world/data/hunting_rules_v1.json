@@ -1,0 +1,73 @@
+{
+  "schema": "xianfan.hunting.v1",
+  "version": "hunting-0.1.0",
+  "status": "partial_mechanics_no_wildlife_population",
+  "reference_only": false,
+  "world_boundary": "Independent ChatGPT first-life campaign, not APK branch gameplay",
+  "target_policy": "game-world animals only; no human traps",
+  "recipes": {
+    "cord_snare": {
+      "name": "简易小兽绳套",
+      "category": "portable_small_game_trap",
+      "requires": [
+        {
+          "id": "flexible_branch",
+          "name": "韧枝",
+          "quantity": 2
+        },
+        {
+          "id": "plant_cord",
+          "name": "植物绳",
+          "quantity": 1
+        },
+        {
+          "id": "wooden_peg",
+          "name": "小木桩",
+          "quantity": 1
+        }
+      ],
+      "produces": {
+        "id": "cord_snare",
+        "name": "简易小兽绳套",
+        "quantity": 1
+      },
+      "time_minutes": 25,
+      "stamina_cost": 4,
+      "max_target_size": "small",
+      "note": "25分钟与4点精力为明确版本化的游戏平衡参数，不是现实捕猎成功率。"
+    }
+  },
+  "hunting_requirements": {
+    "craft": "持有实际登记在个人背包的材料，且有足够精力及时间",
+    "deploy": "已登记的非居住/非人行生态地块，明确土地使用权与禁止设陷阱区域",
+    "encounter": "经世界账本注册并处于可接触位置的动物实体/兽群",
+    "capture": "未来独立实现；物种体型、脚印、进食习性、陷阱耐久、察觉能力、伤害与伤情都需要真实规则和确定性种子",
+    "loot": "真实动物尸体/所有权/重量/分割行为入账后才可获得肉、皮等物品"
+  },
+  "no_assumptions": [
+    "没有在本战役注册的猎物不能默认出现",
+    "没有登记的材料不能凭感觉在玩家附近生成",
+    "没有确定性抓获算法时不能直接说捕获成功",
+    "没有领地与路途证据时不能声明某山林已有陷阱"
+  ],
+  "initial_snapshot": {
+    "player_location": "石桥村·钱家院落",
+    "carried": [
+      {
+        "id": "coarse_cloth",
+        "quantity": 1
+      },
+      {
+        "id": "cloth_shoes",
+        "quantity": 1
+      }
+    ],
+    "no_tool_or_material_registered": true,
+    "known_wildlife_instances": 0,
+    "unknown_wildlife_elsewhere": true
+  },
+  "origin": [
+    "projects/xianfan-living-world/web/content/beasts.js has species definitions, not individual animals in current ChatGPT campaign save",
+    "projects/xianfan-living-world/web/core.js provides nearby farms and river, not hunting locations or current game prey census"
+  ]
+}
