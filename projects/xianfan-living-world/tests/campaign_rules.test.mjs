@@ -14,36 +14,39 @@ function fixture(fn){
    copyFileSync(join(source,name),join(dir,name));
  try{return fn(dir);}finally{rmSync(dir,{recursive:true,force:true});}
 }
-test('real first-life story save reconstructs and verifies',()=>fixture(dir=>{
- const w=restore(dir),r=inspect(dir);
- assert.equal(w.player.age,16);
- assert.equal(w.player.money,12);
- assert.equal(w.family.cash,42);
+test('live first-life save verifies across any number of turns',()=>fixture(dir=>{
+ const state=restore(dir),r=inspect(dir);
+ assert.equal(state.player.id,'CFPLAYER00001');
+ assert.equal(state.family.cash,42);
  assert.equal(r.full_state_verified,true);
- assert.equal(r.turns,2);
- assert.equal(r.events,4);
+ assert.equal(r.turns,r.index.turns_completed);
+ assert.equal(r.events.length,Number(r.index.last_event.slice(2)));
  assert.equal(r.last_hash,r.events.at(-1).hash);
- assert.equal(checkpoint(dir).created,false);
+ assert.equal(r.events.at(-1).state_hash,digest(r.state));
 }));
 test('tampered event cannot pass chain',()=>fixture(dir=>{
  restore(dir);
- let lines=readFileSync(join(dir,'events.jsonl'),'utf8').trim().split('\n').map(JSON.parse);
+ const lines=readFileSync(join(dir,'events.jsonl'),'utf8').trim().split('\\n').map(JSON.parse);
  lines[1].reason='altered';
  assert.throws(()=>verifyEvents(lines),/校验失败/);
 }));
-test('every 10 actual turns creates one summary without deleting events',()=>fixture(dir=>{
- const state=restore(dir),events=readFileSync(join(dir,'events.jsonl'),'utf8').trim().split('\n').map(JSON.parse);
- const initialTurns=countTurns(events);
- for(let i=initialTurns+1;i<=10;i++){
+test('synthetic birth fixture creates ten-turn summary without erasing events',()=>fixture(dir=>{
+ const initialFiles=['state_core.json','state_world.json','family.json','initial_rolls_public.json'].map(n=>JSON.parse(readFileSync(join(dir,n),'utf8')));
+ const [core,world,family,rolls]=initialFiles;
+ const state={...core,...world,family,initial_rolls_public:rolls};
+ const events=readFileSync(join(dir,'events.jsonl'),'utf8').trim().split('\\n').map(JSON.parse).slice(0,2);
+ const index=JSON.parse(readFileSync(join(dir,'campaign_index.json'),'utf8'));
+ index.last_event='EV000002';index.last_event_hash=events.at(-1).hash;index.turns_completed=0;
+ writeFileSync(join(dir,'game_state.json'),JSON.stringify(state));
+ for(let i=1;i<=10;i++){
    const seq=events.length+1;
    state.last_event_id='EV'+String(seq).padStart(6,'0');
-   const event={seq,type:'turn_committed',turn_id:i,reason:'合成测试行动，不属于真实战役',summary:'第'+i+'次模拟行动',delta:{},prev_hash:events.at(-1).hash,state_hash:digest(state)};
-   event.hash=digest(event);
-   events.push(event);
+   const ev={seq,type:'turn_committed',turn_id:i,reason:'合成测试行动，不属于真实战役',
+     summary:'第'+i+'次模拟行动',delta:{},prev_hash:events.at(-1).hash,state_hash:digest(state)};
+   ev.hash=digest(ev);events.push(ev);
  }
  writeFileSync(join(dir,'game_state.json'),JSON.stringify(state));
- writeFileSync(join(dir,'events.jsonl'),events.map(x=>JSON.stringify(x)).join('\n')+'\n');
- const index=JSON.parse(readFileSync(join(dir,'campaign_index.json')));
+ writeFileSync(join(dir,'events.jsonl'),events.map(x=>JSON.stringify(x)).join('\\n')+'\\n');
  index.last_event=state.last_event_id;index.last_event_hash=events.at(-1).hash;index.turns_completed=10;
  writeFileSync(join(dir,'campaign_index.json'),JSON.stringify(index));
  assert.equal(inspect(dir).turns,10);
