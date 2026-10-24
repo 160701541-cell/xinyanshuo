@@ -35,40 +35,62 @@
       "relation": "手足",
       "sex": "女",
       "age": 16,
-      "narrative_notes": [],
+      "narrative_notes": [
+        "承平三年第一日与心魇说结伴到村外采集枝草，协助制作一只小兽绳套。"
+      ],
       "location_id": "shiqiao",
       "alive": true,
       "health": "正常"
     }
   },
   "scene": {
-    "id": "SCENE0001",
-    "place": "石桥村·钱家院落",
-    "time": "承平三年第一日08:00",
-    "awaiting": "玩家第一项行动",
+    "id": "SCENE0002",
+    "place": "石桥村·村外荒沟·矮草丛边",
+    "time": "承平三年 · 第1日 · 10:19",
+    "awaiting": "玩家下一步行动",
     "facts": [
-      "玩家清晨刚醒",
-      "父亲准备下田，母亲在厨房",
-      "院外传来听不清内容的喊声"
+      "玩家呼唤孙成明并获得同意，两人一起出门。",
+      "按野外已生成并登记的资源节点采集材料，制成一只小兽绳套。",
+      "搜得可辨认的小兽足迹与啃咬痕迹，在远离人行路的兽道放置绳套。",
+      "尚无猎物被捕获，不能提前领取肉皮。"
+    ],
+    "unconfirmed": [
+      "父亲日程推断已前往田间劳动，非玩家当面目击。"
     ]
   },
   "open_threads": [
     {
       "id": "T0001",
       "title": "父亲询问今日安排",
-      "status": "待回应"
+      "status": "早晨未回答；玩家已外出"
     },
     {
       "id": "T0002",
       "title": "院外模糊喊声",
-      "status": "未调查",
+      "status": "仍未调查",
       "detail": "来者与喊声内容未知"
+    },
+    {
+      "id": "T0003",
+      "kind": "狩猎",
+      "title": "村外小兽绳套等待检查",
+      "known": "TRAP-SHIQIAO-0001 已在村外小兽道布设，捕获情况仍未知",
+      "source": "EV000003",
+      "status": "等待后续世界行动",
+      "certainty": "事件已核对"
     }
   ],
   "state_checkpoint": {
-    "last_event_id": "EV000002",
-    "event_hash": "a74cf0a99c6cef1a4d019787bbf4eb457781f94346d420196c443be1c411fc69",
-    "state_hash": "52eab54f38ed24b476c8495e1343bec82f6ead1bf8414a39c1cebd4cb0eb6ca5"
+    "last_event_id": "EV000003",
+    "last_event_hash": "711fd78f550f329d1807bfed0426d6f54dccf988987d7300574fedcc26250b01",
+    "state_sha256": "4e08b80a1606e169ca69a9a286a94dd00e41b2c8d72501bfb8b6da67adb666e1",
+    "time": "承平三年 · 第1日 · 10:19",
+    "location_id": "shiqiao",
+    "player_id": "CFPLAYER00001",
+    "hp": 100,
+    "stamina": 80,
+    "money": 12,
+    "root_status": "未检测"
   },
   "private_notes_excluded": true
 }
