@@ -46,14 +46,14 @@
     }
   },
   "scene": {
-    "id": "SCENE0006",
+    "id": "SCENE0007",
     "place": "石桥村村外荒沟",
-    "time": "承平三年 · 第1日 · 13:00",
+    "time": "承平三年 · 第1日 · 13:25",
     "awaiting": "玩家下一步行动",
     "facts": [
-      "用实际资源制造了一根尚无鱼线和鱼钩的竿坯。",
-      "尚缺另一根竿材和可靠的鱼线鱼钩。",
-      "成明去家里取食物饮水，尚未返回。"
+      "玩家继续采集鱼竿材料，获得植物纤维2份。",
+      "尚缺可靠鱼线和鱼钩。",
+      "成明尚未返程交付食物。"
     ]
   },
   "open_threads": [
@@ -109,12 +109,9 @@
     }
   ],
   "state_checkpoint": {
-    "last_event_id": "EV000007",
-    "last_event_hash": "0b82ff65f13e4804d77422e29aa9c1c4d3aa2cc552a6f17e0b4a4f5c090414b7",
-    "state_sha256": "4baa39ae660da8baf9e5f897ce70204133801490acea1bb1d6f566d4f130bbed",
-    "time": "承平三年 · 第1日 · 13:00",
-    "player_id": "CFPLAYER00001",
-    "stamina": 59,
+    "last_event_id": "EV000008",
+    "time": "承平三年 · 第1日 · 13:25",
+    "stamina": 55,
     "money": 12
   },
   "private_notes_excluded": true
