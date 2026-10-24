@@ -1,9 +1,9 @@
 {
   "schema": 1,
   "campaign_id": "xianfan-canglan-text-20261024",
-  "turns_completed": 1,
-  "time": "承平三年 · 第1日 · 10:19",
-  "location": "石桥村·村外荒沟",
+  "turns_completed": 2,
+  "time": "承平三年 · 第1日 · 11:14",
+  "location": "石桥村·村外荒沟草坡",
   "player": {
     "id": "CFPLAYER00001",
     "name": "心魇说",
@@ -12,7 +12,7 @@
     "realm": "凡人（未修行）",
     "root": "未检测",
     "hp": 100,
-    "stamina": 80,
+    "stamina": 73,
     "copper": 12
   },
   "family": {
@@ -40,13 +40,18 @@
       ]
     ]
   },
-  "last_event": "EV000003",
-  "last_event_hash": "711fd78f550f329d1807bfed0426d6f54dccf988987d7300574fedcc26250b01",
-  "full_state_sha256": "4e08b80a1606e169ca69a9a286a94dd00e41b2c8d72501bfb8b6da67adb666e1",
+  "last_event": "EV000004",
+  "last_event_hash": "cd03eae032166faf20a378644d95e6cd5b579f83c55bd72be6d65f292ef7cd2c",
+  "full_state_sha256": "f3dbeba20651bab9faa439ecabfdf4f54cb44d31957253ef2e10c393bd56d4a0",
   "roots_hidden": true,
   "complete_source_event_ledger_synced": true,
   "full_state_parts_verified": true,
   "next_checkpoint_turn": 10,
-  "last_action": "call_sister_collect_craft_track_deploy",
-  "trap_status": "TRAP-SHIQIAO-0001 deployed; not checked"
+  "last_action": "forage_medicinal_herbs",
+  "trap_status": "TRAP-SHIQIAO-0001 deployed; catch unknown, not checked",
+  "inventory_added": {
+    "item_id": "fresh_plantain",
+    "quantity": 1
+  },
+  "market_price_status": "NOT_QUOTED"
 }
