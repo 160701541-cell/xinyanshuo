@@ -46,15 +46,14 @@
     }
   },
   "scene": {
-    "id": "SCENE0005",
-    "place": "石桥村·村外荒沟",
-    "time": "承平三年 · 第1日 · 12:30",
+    "id": "SCENE0006",
+    "place": "石桥村村外荒沟",
+    "time": "承平三年 · 第1日 · 13:00",
     "awaiting": "玩家下一步行动",
     "facts": [
-      "玩家请妹妹回家向家人询问是否能带食物和水。",
-      "玩家计划制作两根鱼竿，以及寻找粮食、蚯蚓、昆虫等饵料，但尚未取得鱼钩、可靠鱼线、玉米或酒。",
-      "妹妹答应并动身往家走；尚未回来，也没有领到食物水。",
-      "腐肉、尿液和臭味对捕鱼效果没有经过规则测试，不当作必定有效。"
+      "用实际资源制造了一根尚无鱼线和鱼钩的竿坯。",
+      "尚缺另一根竿材和可靠的鱼线鱼钩。",
+      "成明去家里取食物饮水，尚未返回。"
     ]
   },
   "open_threads": [
@@ -101,19 +100,22 @@
       "known": "鱼竿×0、饵料尚未制作；不消耗家庭库存",
       "source": "EV000006",
       "certainty": "已提交事件"
+    },
+    {
+      "id": "T0007",
+      "title": "两根鱼竿制作",
+      "status": "竿坯1、可用鱼竿0",
+      "source": "EV000007"
     }
   ],
   "state_checkpoint": {
-    "last_event_id": "EV000006",
-    "last_event_hash": "2bedb3bf2f04ca0dd3b104bab540e5e8d55280357ba88cb202b129cad801cb4d",
-    "state_sha256": "85d662de12d66c2e91fb435d33a7b2eb741e2c853072acf80df452816ea09dd5",
-    "time": "承平三年 · 第1日 · 12:30",
-    "location_id": "shiqiao",
+    "last_event_id": "EV000007",
+    "last_event_hash": "0b82ff65f13e4804d77422e29aa9c1c4d3aa2cc552a6f17e0b4a4f5c090414b7",
+    "state_sha256": "4baa39ae660da8baf9e5f897ce70204133801490acea1bb1d6f566d4f130bbed",
+    "time": "承平三年 · 第1日 · 13:00",
     "player_id": "CFPLAYER00001",
-    "hp": 100,
-    "stamina": 63,
-    "money": 12,
-    "root_status": "未检测"
+    "stamina": 59,
+    "money": 12
   },
   "private_notes_excluded": true
 }
