@@ -1,0 +1,61 @@
+{
+  "schema": 1,
+  "campaign_id": "xianfan-canglan-text-20261024",
+  "title": "仙凡共生 × 苍岚·人生世界 · 文字战役",
+  "status": "playing",
+  "world_seed": "xianfan-canglan-text-20261024-v1",
+  "time": {
+    "regnal_year": 3,
+    "day": 1,
+    "hour": 8,
+    "minute": 0,
+    "display": "承平三年 · 第1日 · 08:00",
+    "weather": "晴"
+  },
+  "player": {
+    "id": "CFPLAYER00001",
+    "name": "心魇说",
+    "sex": "男",
+    "age": 16,
+    "background": "自耕农家庭",
+    "origin_id": "shiqiao",
+    "origin_name": "石桥村",
+    "role": "平民",
+    "realm": "凡人（未修行）",
+    "root_status": "未检测",
+    "root_commitment_sha256": "897ffd3bec4b0c505b934d584835158fecaf6ddea61c5d70df6b8160db914dd7",
+    "hp": 100,
+    "max_hp": 100,
+    "stamina": 100,
+    "max_stamina": 100,
+    "money": 12,
+    "money_unit": "文",
+    "exp": 0,
+    "family_id": "CFFAM00001",
+    "relations": [
+      "CFNPC00001",
+      "CFNPC00002",
+      "CFNPC00003"
+    ]
+  },
+  "inventory": [
+    {
+      "id": "coarse_cloth",
+      "name": "粗布衣",
+      "quantity": 1,
+      "equipped": true,
+      "category": "衣物",
+      "source": "出身基础衣着，视为原本穿在身上"
+    },
+    {
+      "id": "cloth_shoes",
+      "name": "布鞋",
+      "quantity": 1,
+      "equipped": true,
+      "category": "衣物",
+      "source": "出身基础衣着，视为原本穿在脚上"
+    }
+  ],
+  "current_location": "石桥村",
+  "last_event_id": "EV000002"
+}
