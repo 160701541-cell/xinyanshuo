@@ -15,6 +15,7 @@
 ## 独立文字战役：公正主持与十轮记忆
 
 - [GM-L0 游戏世界裁判协议](docs/GM_GAME_PROTOCOL.md)：玩家和NPC同规则、成功与敌对都必须有因果、追击必须合理止损。
+- [GM自我迭代与质量审计 v1.0](docs/GM_CONTINUOUS_IMPROVEMENT_V1.md)：行动后检查、每十轮公平/记忆复盘，缺证据不写通过；实现见 [审计工具](tools/gm_quality_gate.mjs) 与 [回归测试](tests/gm_quality_gate.test.mjs)。
 - [第一世公开存档](campaigns/first-life/README.md)：状态、原始事件账本、NPC公共记忆、分段完整状态与校验索引。
 - [存档恢复与每十轮压缩工具](tools/restore_campaign.mjs)：只在玩家行动结算后运行，不会聊天外自动执行。
 
