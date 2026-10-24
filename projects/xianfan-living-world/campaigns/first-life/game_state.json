@@ -7,9 +7,9 @@
   "time": {
     "regnal_year": 3,
     "day": 2,
-    "hour": 9,
-    "minute": 4,
-    "display": "承平三年 · 第2日 · 09:04",
+    "hour": 10,
+    "minute": 9,
+    "display": "承平三年 · 第2日 · 10:09",
     "weather": "晴"
   },
   "player": {
@@ -26,9 +26,9 @@
     "root_commitment_sha256": "897ffd3bec4b0c505b934d584835158fecaf6ddea61c5d70df6b8160db914dd7",
     "hp": 100,
     "max_hp": 100,
-    "stamina": 61,
+    "stamina": 56,
     "max_stamina": 100,
-    "money": 12,
+    "money": 2,
     "money_unit": "文",
     "exp": 0,
     "family_id": "CFFAM00001",
@@ -56,16 +56,6 @@
       "source": "出身基础衣着，视为原本穿在脚上"
     },
     {
-      "id": "fresh_plantain",
-      "name": "鲜车前草",
-      "quantity": 1,
-      "category": "鲜采普通草药",
-      "source": "wild_botany:SH-MED-01",
-      "equipped": false,
-      "valuation_wen": null,
-      "identification": "unverified_market_grade"
-    },
-    {
       "id": "rod_blank_wood_01",
       "name": "未装线钩的简易竿坯",
       "quantity": 1,
@@ -81,10 +71,34 @@
       "category": "渔具",
       "equipped": false,
       "source": "EV000012"
+    },
+    {
+      "id": "fishing_line",
+      "name": "钓鱼线",
+      "quantity": 1,
+      "category": "商品",
+      "equipped": false,
+      "source": "shop:GEAR@EV000014"
+    },
+    {
+      "id": "fish_hook",
+      "name": "鱼钩",
+      "quantity": 1,
+      "category": "商品",
+      "equipped": false,
+      "source": "shop:GEAR@EV000014"
+    },
+    {
+      "id": "vegetable_seed_packet",
+      "name": "青菜种子包",
+      "quantity": 1,
+      "category": "商品",
+      "equipped": false,
+      "source": "shop:SEEDS@EV000014"
     }
   ],
-  "current_location": "临安县城·东门",
-  "last_event_id": "EV000013",
+  "current_location": "临安县城·集市",
+  "last_event_id": "EV000014",
   "reference": {
     "origin": "GitHub 160701541-cell/xinyanshuo",
     "xianfan_branch": "xianfan/independent-living-county-v0.1",
@@ -139,8 +153,8 @@
   ],
   "location_id": "linan",
   "position": {
-    "x": 480,
-    "y": 630
+    "x": 220,
+    "y": 490
   },
   "known_npcs": [
     {
@@ -576,12 +590,12 @@
       "evidence": "08:00在厨房，后续活动为日程推演"
     }
   },
-  "sub_location": "临安县城东门",
+  "sub_location": "县城东市",
   "fishing_requests": {
     "rod_pair": {
       "target_count": 2,
       "craft_count": 0,
-      "status": "one_blank_and_two_fibers; second_pole and durable line and hook absent",
+      "status": "owned_fishing_line_1_hook_1; rod_blank_1; assemble_needed; second rod still missing",
       "expected_users": [
         "CFPLAYER00001",
         "CFNPC00003"
@@ -603,5 +617,98 @@
       "status": "not_made",
       "caution": "不能把臭味增强直接等同于必然增加捕获概率；腐败肉及尿液存在卫生风险"
     }
+  },
+  "economy": {
+    "markets": {
+      "linan": {
+        "id": "linan",
+        "registered_by": "EV000014",
+        "stalls": {
+          "HERB": {
+            "id": "HERB",
+            "name": "药材摊",
+            "cash": 16,
+            "initial_cash": 18,
+            "stock": {
+              "fresh_plantain": 1
+            },
+            "initial_stock": {},
+            "buy": {
+              "fresh_plantain": 2
+            },
+            "sell": {},
+            "source_event_id": "EV000014"
+          },
+          "GEAR": {
+            "id": "GEAR",
+            "name": "渔具摊",
+            "cash": 32,
+            "initial_cash": 25,
+            "stock": {
+              "fishing_line": 1,
+              "fish_hook": 2
+            },
+            "initial_stock": {
+              "fishing_line": 2,
+              "fish_hook": 3
+            },
+            "buy": {},
+            "sell": {
+              "fishing_line": 4,
+              "fish_hook": 3
+            },
+            "source_event_id": "EV000014"
+          },
+          "PRODUCE": {
+            "id": "PRODUCE",
+            "name": "菜肉摊",
+            "cash": 15,
+            "initial_cash": 15,
+            "stock": {},
+            "initial_stock": {},
+            "buy": {
+              "field_hare": 7,
+              "leafy_vegetables": 3,
+              "river_fish": 3
+            },
+            "sell": {},
+            "source_event_id": "EV000014"
+          },
+          "SEEDS": {
+            "id": "SEEDS",
+            "name": "种子摊",
+            "cash": 25,
+            "initial_cash": 20,
+            "stock": {
+              "vegetable_seed_packet": 2,
+              "radish_seed_packet": 4,
+              "maize_seed_packet": 2
+            },
+            "initial_stock": {
+              "vegetable_seed_packet": 3,
+              "radish_seed_packet": 4,
+              "maize_seed_packet": 2
+            },
+            "buy": {},
+            "sell": {
+              "vegetable_seed_packet": 5,
+              "radish_seed_packet": 3,
+              "maize_seed_packet": 4
+            },
+            "source_event_id": "EV000014"
+          }
+        },
+        "quote_day": 2
+      }
+    }
+  },
+  "farming": {
+    "seeds_owned": {
+      "vegetable_seed_packet": 1,
+      "radish_seed_packet": 0
+    },
+    "fields_prepared": 0,
+    "seed_origin": "linan-registered-vendor",
+    "note": "种子需返回家乡核实耕地使用权、土壤与季节后播种；不直接生成蔬菜"
   }
 }
