@@ -1,0 +1,10 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
+import {numericHud} from '../tools/numeric_hud.mjs';
+const dir=new URL('../campaigns/first-life/',import.meta.url).pathname;
+const c=JSON.parse(readFileSync(dir+'state_core.json')),w=JSON.parse(readFileSync(dir+'state_world.json'));
+const s={...c,...w,family:JSON.parse(readFileSync(dir+'family.json')),initial_rolls_public:JSON.parse(readFileSync(dir+'initial_rolls_public.json'))};
+const events=readFileSync(dir+'events.jsonl','utf8').trim().split('\n').map(JSON.parse);
+test('HUD only mirrors the hash-verified values',()=>{const h=numericHud(s,events);assert.equal(h.player.money_wen,12);assert.equal(h.family.cash_wen,42);assert.equal(h.turns_committed,0);assert.equal(h.player.strength,null);});
+test('arbitrarily editing money fails before HUD',()=>{const t=structuredClone(s);t.player.money=12345;assert.throws(()=>numericHud(t,events),/HASH/);});
