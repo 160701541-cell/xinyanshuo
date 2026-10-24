@@ -1,0 +1,390 @@
+{
+  "schema": "xianfan.worldcanon.v1",
+  "id": "xianfan_canglan_unified_v1",
+  "label": "仙凡·苍岚",
+  "date": "2026-10-24",
+  "kind": "reference_only_not_runtime",
+  "branch": "xianfan/independent-living-county-v0.1",
+  "independence": {
+    "main_godot": false,
+    "worldbox_mod": false,
+    "android_ota": false,
+    "source_principle": "原创大宁地理和社会，参考《凡人修仙传》结构，不纳入其专有角色、宗门、法宝或剧情"
+  },
+  "canon_priority": [
+    "campaign_committed_state_and_events",
+    "unified_world_canon",
+    "xianfan_branch_source",
+    "canglan_design_references",
+    "unconfirmed_candidates"
+  ],
+  "sample_populations": {
+    "xianfan_local": {
+      "source": "projects/xianfan-living-world/web/core.js",
+      "initial": 13680,
+      "scope": "near_county_roster",
+      "status": "prototype_person_records"
+    },
+    "canglan_godot": {
+      "source": "docs/REV207_LIVING_WORLD_50000KM2_MECHANICS_20261018.md",
+      "initial": 5000,
+      "regionKm2": 50000,
+      "spiritualRootRateCandidate": 0.025,
+      "scope": "different_engine_different_world",
+      "must_not_merge": true
+    },
+    "national_population": {
+      "value": null,
+      "reason": "not_established"
+    }
+  },
+  "world_layers": [
+    {
+      "id": "mortal",
+      "name": "凡界",
+      "status": "near_region_prototype"
+    },
+    {
+      "id": "pocket",
+      "name": "灵境洞天",
+      "status": "design"
+    },
+    {
+      "id": "spirit",
+      "name": "上位灵界",
+      "status": "future"
+    },
+    {
+      "id": "immortal",
+      "name": "仙界",
+      "status": "future"
+    },
+    {
+      "id": "nether",
+      "name": "幽冥地府",
+      "status": "future"
+    }
+  ],
+  "geo": {
+    "unit": "m",
+    "canonical": "xianfan/web/overworld.js",
+    "anchors": [
+      {
+        "id": "linan",
+        "name": "临安县城",
+        "x": 0,
+        "y": 0
+      },
+      {
+        "id": "shiqiao",
+        "name": "石桥村",
+        "x": 3600,
+        "y": 4800
+      },
+      {
+        "id": "songlin",
+        "name": "松林村",
+        "x": 6900,
+        "y": -3500
+      },
+      {
+        "id": "liantang",
+        "name": "莲塘村",
+        "x": -4100,
+        "y": 5100
+      },
+      {
+        "id": "hewan",
+        "name": "河湾村",
+        "x": -7400,
+        "y": 1500
+      },
+      {
+        "id": "qingxi",
+        "name": "青溪村",
+        "x": 8500,
+        "y": 6500
+      },
+      {
+        "id": "qingyun",
+        "name": "青云山城",
+        "x": 11300,
+        "y": -7200
+      },
+      {
+        "id": "lingshan",
+        "name": "灵山药市",
+        "x": 12000,
+        "y": -8100
+      },
+      {
+        "id": "dukou",
+        "name": "西河渡口",
+        "x": -1400,
+        "y": 500
+      }
+    ],
+    "pending_naming_conflict": [
+      "web/dao.js 玄京/越境 versus web/overworld.js 北朔/东越",
+      "do_not_change_stored_faction_ids_without_migration"
+    ]
+  },
+  "cultivation": {
+    "spirit_path": [
+      {
+        "id": "mortal",
+        "name": "凡人",
+        "tier": 0,
+        "reference_lifespan_max": 120
+      },
+      {
+        "id": "qi",
+        "name": "炼气",
+        "tier": 1,
+        "levels": 13,
+        "reference_lifespan_max": 120
+      },
+      {
+        "id": "found",
+        "name": "筑基",
+        "tier": 2,
+        "stages": [
+          "初期",
+          "中期",
+          "后期",
+          "圆满"
+        ],
+        "reference_lifespan_max": 240
+      },
+      {
+        "id": "core",
+        "name": "结丹",
+        "tier": 3,
+        "stages": [
+          "初期",
+          "中期",
+          "后期",
+          "圆满"
+        ],
+        "reference_lifespan_max": 520
+      },
+      {
+        "id": "nascent",
+        "name": "元婴",
+        "tier": 4,
+        "stages": [
+          "初期",
+          "中期",
+          "后期",
+          "圆满"
+        ],
+        "reference_lifespan_max": 1100
+      },
+      {
+        "id": "deity",
+        "name": "化神",
+        "tier": 5,
+        "stages": [
+          "初期",
+          "中期",
+          "后期",
+          "圆满"
+        ],
+        "reference_lifespan_max": 2200
+      },
+      {
+        "id": "void",
+        "name": "炼虚",
+        "tier": 6,
+        "stages": [
+          "初期",
+          "中期",
+          "后期",
+          "圆满"
+        ],
+        "reference_lifespan_max": 4500
+      },
+      {
+        "id": "integration",
+        "name": "合体",
+        "tier": 7,
+        "stages": [
+          "初期",
+          "中期",
+          "后期",
+          "圆满"
+        ],
+        "reference_lifespan_max": 9000
+      },
+      {
+        "id": "mahayana",
+        "name": "大乘",
+        "tier": 8,
+        "stages": [
+          "初期",
+          "中期",
+          "后期",
+          "圆满"
+        ],
+        "reference_lifespan_max": 18000
+      }
+    ],
+    "ascension": {
+      "kind": "event",
+      "name": "飞升劫",
+      "not_rank": true
+    },
+    "immortal_future": [
+      "真仙",
+      "金仙",
+      "太乙",
+      "大罗",
+      "道祖"
+    ],
+    "physical_path": [
+      "锻皮",
+      "炼筋",
+      "淬骨",
+      "换血",
+      "通脉",
+      "先天",
+      "宗师",
+      "大宗师",
+      "陆地神仙"
+    ],
+    "beast_path": [
+      "启灵",
+      "聚灵",
+      "凝丹",
+      "化形",
+      "妖婴",
+      "妖尊"
+    ],
+    "root_attributes": [
+      "金",
+      "木",
+      "水",
+      "火",
+      "土",
+      "风",
+      "雷",
+      "冰"
+    ],
+    "hide_root_until_test": true,
+    "root_generated_once_at_birth": true,
+    "root_distribution": "needs_consistent_model_and_migration_not_hardcoded",
+    "no_automatic_flying_for_untrained": true,
+    "flying_start_rule_candidate": "筑基+术法+法力+器具+合法环境",
+    "lifespan_status": "game_balance_reference_not_novel_canon"
+  },
+  "inventory_authority": [
+    "natural_node_or_preexisting_stock",
+    "gather_or_trade_event",
+    "carrier_inventory",
+    "transport",
+    "storage",
+    "craft",
+    "transfer_or_consume"
+  ],
+  "npc_rules": [
+    "stable_ids",
+    "finite_lifetime",
+    "independent_knowledge",
+    "family_relation_continuity",
+    "past_memories_persist",
+    "no_spontaneous_inventory",
+    "no_full_population_ai_claim"
+  ],
+  "text_campaign": {
+    "id": "xianfan-canglan-text-20261024",
+    "player": {
+      "id": "CFPLAYER00001",
+      "name": "心魇说",
+      "sex": "男",
+      "age": 16,
+      "background": "自耕农家庭",
+      "root_public": "未检测",
+      "realm": "凡人（未修行）",
+      "hp": [
+        100,
+        100
+      ],
+      "stamina": [
+        100,
+        100
+      ],
+      "copper": 12,
+      "equipment": [
+        "粗布衣",
+        "布鞋"
+      ]
+    },
+    "initial_time": {
+      "year": "承平三年",
+      "day": 1,
+      "hour": 8,
+      "minute": 0,
+      "weather": "晴",
+      "place": "石桥村·钱家院落"
+    },
+    "family": {
+      "id": "CFFAM00001",
+      "members": [
+        {
+          "id": "CFNPC00001",
+          "name": "钱然泽",
+          "relation": "父亲",
+          "age": 35
+        },
+        {
+          "id": "CFNPC00002",
+          "name": "郑舟清",
+          "relation": "母亲",
+          "age": 49
+        },
+        {
+          "id": "CFNPC00003",
+          "name": "孙成明",
+          "relation": "手足",
+          "sex": "女",
+          "age": 16
+        }
+      ],
+      "copper": 42,
+      "grain_dou": 54,
+      "not_player_property": true
+    },
+    "opening_threads": [
+      "T0001父亲询问今日计划未回答",
+      "T0002院外模糊喊声尚未调查"
+    ],
+    "initial_event": "EV000002",
+    "player_turns_settled": 0,
+    "root_private_commitment": "do_not_infer_from_hash_only",
+    "does_not_overwrite_game_client_save": true
+  },
+  "technical_status": {
+    "worldcanon": "SPEC_ONLY",
+    "runtime_integration": false,
+    "android_test": false,
+    "repo_commit_pending": true,
+    "unresolved": [
+      "dao_vs_geo_faction_alias",
+      "cultivation_ROOTS_vs_core_NPC_root",
+      "karma_automatic_generated_loot",
+      "npc_schedule_not_full_13680",
+      "upper_world_not_implemented"
+    ]
+  },
+  "citations": [
+    "docs/CULTIVATION_GAMEPLAY_SYSTEM_V1.md",
+    "docs/REV207_LIVING_WORLD_50000KM2_MECHANICS_20261018.md",
+    "web/core.js",
+    "web/overworld.js",
+    "web/worldmap.js",
+    "web/cultivation.js",
+    "web/dao.js",
+    "https://rmji.wiki/zh/realms/",
+    "https://rmji.wiki/zh/faq/cultivation/"
+  ]
+}
