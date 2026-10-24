@@ -34,6 +34,15 @@ export function transferLedger(s,a,events){
  if(!['copper','grain_dou'].includes(asset))stop('UNKNOWN_ASSET','没有该资产的正式计量规则');
  asUInt(quantity,'转账金额',1);
  if(!from||!to||from===to)stop('BAD_TRANSFER','交易账户不合法');
+ // An NPC/merchant wallet cannot be created by narrating an imaginary balance.
+ for(const id of [from,to]){
+  if(id===s.player.id||id===s.family.id)continue;
+  const account=s.economy?.accounts?.[id];
+  if(!account?.source_event_id||!Array.isArray(events))stop('ACCOUNT_UNKNOWN','未知NPC或商铺账户');
+  const certified=events.some(e=>e.type==='account_registered'&&e.account_id===id&&'EV'+String(e.seq).padStart(6,'0')===account.source_event_id);
+  if(!certified)stop('ACCOUNT_NO_EVENT','账户没有真实的历史建档事件');
+  verifyEvents(events);
+ }
  if(from!==s.player.id){
   const p=s.authorizations?.[auth_id];
   if(!p||p.from!==from||p.to!==to||p.asset!==asset||p.used||p.max_quantity<quantity||!p.source_event_id)stop('AUTH_REQUIRED','不能替NPC/家人擅自作主');
