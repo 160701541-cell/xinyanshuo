@@ -48,7 +48,7 @@ test('every material has a source, and trap deployment is not invisible',()=>{
 });
 test('no second turn replay of first turn, no forged prior state or user intent',()=>{
  const a=previewForestTrip(initial,events.slice(0,2));
- assert.throws(()=>previewForestTrip(a.state,a.events),/本动作属于第一世石桥村玩家|不在石桥村|当前存档与权威事件链不一致|本动作属于第一世|/); 
+ assert.throws(()=>previewForestTrip(a.state,a.events),e=>e.code==='SCENE_REPLAY');
  const forged=structuredClone(initial);forged.player.money=999;
  assert.throws(()=>previewForestTrip(forged,events.slice(0,2)),e=>e.code==='EVENT_STATE_MISMATCH');
  assert.throws(()=>previewForestTrip(initial,events.slice(0,2),{intent:'give_me_free_meat'}),e=>e.code==='UNKNOWN_INTENT');
