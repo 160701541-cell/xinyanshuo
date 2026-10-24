@@ -152,6 +152,11 @@ export function previewForestTrip(original,events,{intent='call_sister_collect_c
     note:'布置成功不等于猎获，后续动物行为和触发条件尚需独立结算'});
  }
  if(signs && world.deployed_traps.length!==1)BLOCK('TRAP_NOT_PERSISTED','陷阱未真正落入世界存档');
+ // NPC occupations proceed during the player's elapsed world time.
+ s.npc_schedules.CFNPC00001={last_seen_location:'石桥村田间',activity:'fieldwork',updated_at:s.time.display,
+   evidence:'08:00已准备下田；按家庭劳作日程推演，不等于已直接目击'};
+ s.npc_schedules.CFNPC00002={last_seen_location:'石桥村钱家院落',activity:'kitchen_and_housework',updated_at:s.time.display,
+   evidence:'08:00在厨房，后续活动为日程推演'};
  s.npc_schedules.CFNPC00003.updated_at=s.time.display;
  s.npc_schedules.CFNPC00003.activity='with_player_by_bushes';
  return wrap(s,original,events,start,facts,receipts,
