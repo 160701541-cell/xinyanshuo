@@ -7,9 +7,9 @@
   "time": {
     "regnal_year": 3,
     "day": 1,
-    "hour": 13,
-    "minute": 45,
-    "display": "承平三年 · 第1日 · 13:45",
+    "hour": 14,
+    "minute": 3,
+    "display": "承平三年 · 第1日 · 14:03",
     "weather": "晴"
   },
   "player": {
@@ -26,7 +26,7 @@
     "root_commitment_sha256": "897ffd3bec4b0c505b934d584835158fecaf6ddea61c5d70df6b8160db914dd7",
     "hp": 100,
     "max_hp": 100,
-    "stamina": 52,
+    "stamina": 49,
     "max_stamina": 100,
     "money": 12,
     "money_unit": "文",
@@ -66,21 +66,6 @@
       "identification": "unverified_market_grade"
     },
     {
-      "id": "woven_fish_basket",
-      "name": "简易编织鱼笼",
-      "quantity": 1,
-      "equipped": false,
-      "category": "渔具",
-      "source": "craft:fishbasket-0.1.0",
-      "reinforcement": {
-        "version": "fishbasket-weave-0.1.0",
-        "lashing": "plant_fiber",
-        "layers": 1,
-        "quality": "reinforced_handwoven",
-        "source_event_id": "EV000009"
-      }
-    },
-    {
       "id": "rod_blank_wood_01",
       "name": "未装线钩的简易竿坯",
       "quantity": 1,
@@ -91,7 +76,7 @@
     }
   ],
   "current_location": "石桥村",
-  "last_event_id": "EV000009",
+  "last_event_id": "EV000010",
   "reference": {
     "origin": "GitHub 160701541-cell/xinyanshuo",
     "xianfan_branch": "xianfan/independent-living-county-v0.1",
@@ -146,8 +131,8 @@
   ],
   "location_id": "shiqiao",
   "position": {
-    "x": 3853,
-    "y": 4991
+    "x": 3867,
+    "y": 5009
   },
   "known_npcs": [
     {
@@ -399,6 +384,67 @@
             "owner": "CFPLAYER00001"
           }
         ]
+      },
+      "freshwater": {
+        "schema": "xianfan.freshwater.v1",
+        "version": "freshwater-0.1.0",
+        "site": {
+          "id": "SH-RIVER-01",
+          "name": "荒沟下游缓水湾",
+          "x": 3867,
+          "y": 5009,
+          "bank_height_m": 0.3,
+          "depth_cm": 48,
+          "flow_cm_per_s": 12,
+          "owner": "unclaimed_commons",
+          "human_path_distance_m": 35,
+          "structure_anchor": "stable_bank_reeds",
+          "habitat": "vegetated_shallow_freshwater"
+        },
+        "stocks": [
+          {
+            "id": "small_cyprinid",
+            "name": "溪河小鱼群",
+            "population": 5,
+            "initial_population": 5,
+            "harvested": 0
+          },
+          {
+            "id": "loach",
+            "name": "泥鳅群",
+            "population": 0,
+            "initial_population": 0,
+            "harvested": 0
+          }
+        ],
+        "installed_gear": [
+          {
+            "id": "GEAR-SH-RIVER-0001",
+            "type": "woven_fish_basket",
+            "owner": "CFPLAYER00001",
+            "site_id": "SH-RIVER-01",
+            "x": 3867,
+            "y": 5009,
+            "source_event_id": "EV000010",
+            "placed_at": "承平三年 · 第1日 · 14:03",
+            "placed_clock_minutes": 843,
+            "reinforcement": {
+              "version": "fishbasket-weave-0.1.0",
+              "lashing": "plant_fiber",
+              "layers": 1,
+              "quality": "reinforced_handwoven",
+              "source_event_id": "EV000009"
+            },
+            "bait_id": null,
+            "anchor": "stable_bank_reeds",
+            "status": "deployed_waiting",
+            "catch_count": 0,
+            "checked_at": null
+          }
+        ],
+        "catch_events": [],
+        "last_population_tick": null,
+        "model": "world_seed + fixed habitat definitions; not spawned as a reward for player"
       }
     }
   },
@@ -429,7 +475,7 @@
       "evidence": "08:00在厨房，后续活动为日程推演"
     }
   },
-  "sub_location": "村外荒沟·矮草丛边",
+  "sub_location": "荒沟下游缓水湾",
   "fishing_requests": {
     "rod_pair": {
       "target_count": 2,
