@@ -80,8 +80,7 @@
       "quantity": 1,
       "category": "渔具",
       "equipped": false,
-      "source": "EV000012",
-      "reinforcement": null
+      "source": "EV000012"
     }
   ],
   "current_location": "石桥村",
