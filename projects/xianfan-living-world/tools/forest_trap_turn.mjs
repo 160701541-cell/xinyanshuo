@@ -68,7 +68,7 @@ function publicProfile(s){
 export function previewForestTrip(original,events,{intent='call_sister_collect_craft_track_deploy'}={}){
  assertBefore(original,events);
  if(intent!=='call_sister_collect_craft_track_deploy')BLOCK('UNKNOWN_INTENT','未登记的玩家行动');
- const s=structuredClone(original),start=now(s),facts=[],receipts=[];
+ let s=structuredClone(original);const start=now(s),facts=[],receipts=[];
  // 1. Calling is a valid attempt; hearing and agreeing are independent NPC outcomes.
  const speak=calculateAction(s,{type:'speak',text:'成明，你在吗？我们去村外寻些枝条和草，试试做套小兽的绳套。'});
  Object.assign(s,speak.state);
