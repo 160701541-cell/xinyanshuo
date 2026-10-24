@@ -1,9 +1,9 @@
 {
   "schema": 1,
   "campaign_id": "xianfan-canglan-text-20261024",
-  "turns_completed": 7,
-  "time": "承平三年 · 第1日 · 13:45",
-  "location": "石桥村·村外荒沟",
+  "turns_completed": 8,
+  "time": "承平三年 · 第1日 · 14:03",
+  "location": "石桥村·荒沟下游缓水湾",
   "player": {
     "id": "CFPLAYER00001",
     "name": "心魇说",
@@ -12,7 +12,7 @@
     "realm": "凡人（未修行）",
     "root": "未检测",
     "hp": 100,
-    "stamina": 52,
+    "stamina": 49,
     "copper": 12
   },
   "family": {
@@ -40,20 +40,20 @@
       ]
     ]
   },
-  "last_event": "EV000009",
-  "last_event_hash": "4810f55a188441b9ac94b1a57ea15d5815b2ea6952ca6473f0d2e83e7977d577",
-  "full_state_sha256": "9522f98cb6e871227851f3ad88e6280b9a04400467c9c6d707cdf6ab4f266ce7",
+  "last_event": "EV000010",
+  "last_event_hash": "8b56a24daf1b02b3979c08703f7bb24ee7c480efd80d37016f47417176a158f3",
+  "full_state_sha256": "be1f6a9050a42b5e82f9682ed600f4d3111d59d633038e6f9e882af2c7f0a269",
   "roots_hidden": true,
   "complete_source_event_ledger_synced": true,
   "full_state_parts_verified": true,
   "next_checkpoint_turn": 10,
-  "last_action": "reinforce_existing_fish_basket_once",
+  "last_action": "deploy_fish_basket_in_shiqiao_bay",
   "trap_status": "TRAP-SHIQIAO-0001 deployed; catch unknown, not checked",
   "inventory_added": {
     "item_id": "fresh_plantain",
     "quantity": 1
   },
   "market_price_status": "NOT_QUOTED",
-  "fishing_status": "one reinforced basket, not deployed; one unfinished rod blank; no bait",
+  "fishing_status": "GEAR-SH-RIVER-0001 installed, no catch, bait none; wait for fish time-step",
   "sister_errand": "walking home, no supplies delivered"
 }
