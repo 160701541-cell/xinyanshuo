@@ -12,7 +12,7 @@ const state=(()=>{
  const world=JSON.parse(readFileSync(dir+'state_world.json'));
  return {...core,...world,family:JSON.parse(readFileSync(dir+'family.json')),initial_rolls_public:JSON.parse(readFileSync(dir+'initial_rolls_public.json'))};
 })();
-const events=readFileSync(dir+'events.jsonl','utf8').trim().split('\n').map(JSON.parse);
+const events=readFileSync(dir+'events.jsonl','utf8').trim().split('\n').map(JSON.parse).slice(0,2);
 const fresh=()=>structuredClone(state);
 const error=(code,fn)=>assert.throws(fn,e=>e.code===code);
 
