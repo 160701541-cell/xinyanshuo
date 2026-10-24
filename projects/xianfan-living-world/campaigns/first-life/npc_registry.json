@@ -1,0 +1,119 @@
+{
+  "schema": "xianfan.npc_life.v1",
+  "system_rule": "npc-life-1.0.0",
+  "campaign_id": "xianfan-canglan-text-20261024",
+  "source_of_truth": "game_state.json + events.jsonl",
+  "record_policy": "Public known and evidence-backed only; hidden character motives excluded",
+  "npcs": {
+    "CFNPC00001": {
+      "id": "CFNPC00001",
+      "campaign_id": "xianfan-canglan-text-20261024",
+      "name": "钱然泽",
+      "sex": "男",
+      "age": 35,
+      "residence": "shiqiao",
+      "alive": true,
+      "health": "正常",
+      "roles": [
+        "父亲"
+      ],
+      "born_at": null,
+      "kinship_origin": "已结算出生档案；血缘细节未登记",
+      "private_personality": "NOT_PUBLISHED",
+      "public_personality": [],
+      "goals_observed": [],
+      "life_events": [
+        {
+          "event_id": "EV000002",
+          "tag": "morning_farmwork_preparation",
+          "text": "清晨准备前往田里做农活；具体工作成果未在游戏中确认",
+          "certainty": "inferred",
+          "location": "石桥村"
+        }
+      ],
+      "relationships": {},
+      "last_known_location": "石桥村田间（依据日程推演，未目击）",
+      "last_updated_event": "EV000002"
+    },
+    "CFNPC00002": {
+      "id": "CFNPC00002",
+      "campaign_id": "xianfan-canglan-text-20261024",
+      "name": "郑舟清",
+      "sex": "女",
+      "age": 49,
+      "residence": "shiqiao",
+      "alive": true,
+      "health": "正常",
+      "roles": [
+        "母亲"
+      ],
+      "born_at": null,
+      "kinship_origin": "已结算出生档案；血缘细节未登记",
+      "private_personality": "NOT_PUBLISHED",
+      "public_personality": [],
+      "goals_observed": [],
+      "life_events": [
+        {
+          "event_id": "EV000002",
+          "tag": "morning_meal_preparation",
+          "text": "早晨在家准备饭食并劝父亲让孩子吃东西",
+          "certainty": "inferred",
+          "location": "石桥村"
+        }
+      ],
+      "relationships": {},
+      "last_known_location": "石桥村钱家院落（推演）",
+      "last_updated_event": "EV000002"
+    },
+    "CFNPC00003": {
+      "id": "CFNPC00003",
+      "campaign_id": "xianfan-canglan-text-20261024",
+      "name": "孙成明",
+      "sex": "女",
+      "age": 16,
+      "residence": "shiqiao",
+      "alive": true,
+      "health": "正常",
+      "roles": [
+        "手足"
+      ],
+      "born_at": null,
+      "kinship_origin": "已结算出生档案；血缘细节未登记",
+      "private_personality": "NOT_PUBLISHED",
+      "public_personality": [
+        {
+          "tag": "willing_to_cooperate",
+          "kind": "observed",
+          "description": "面对家人邀请愿意结伴动手制作；不意味着以后总会答应",
+          "basis_event": "EV000003"
+        },
+        {
+          "tag": "cautious_about_bystanders",
+          "kind": "observed",
+          "description": "主动提醒别把绳套放在人走的路上；仅据一次行为记录观察",
+          "basis_event": "EV000003"
+        }
+      ],
+      "goals_observed": [],
+      "life_events": [
+        {
+          "event_id": "EV000003",
+          "tag": "joined_foraging",
+          "text": "经独立NPC决策答应与玩家结伴寻找材料；出村采草、制作陷阱",
+          "certainty": "known_fact",
+          "location": "石桥村·村外荒沟"
+        },
+        {
+          "event_id": "EV000003",
+          "tag": "warned_public_path_safety",
+          "text": "提醒不要把绳套安置在村民走的道路上",
+          "certainty": "known_fact",
+          "location": "石桥村·村外荒沟"
+        }
+      ],
+      "relationships": {},
+      "last_known_location": "石桥村·村外荒沟",
+      "last_updated_event": "EV000003"
+    }
+  }
+}
