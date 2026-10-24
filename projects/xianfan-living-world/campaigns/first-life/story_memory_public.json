@@ -1,0 +1,65 @@
+{
+  "schema": 1,
+  "campaign_id": "xianfan-canglan-text-20261024",
+  "memory_role": "公开已知剧情与人物索引；不覆盖权威游戏数值",
+  "characters": {
+    "CFNPC00001": {
+      "id": "CFNPC00001",
+      "name": "钱然泽",
+      "relation": "父亲",
+      "age": 35,
+      "notes": [
+        "早晨扛锄准备下田",
+        "询问玩家今日安排"
+      ]
+    },
+    "CFNPC00002": {
+      "id": "CFNPC00002",
+      "name": "郑舟清",
+      "relation": "母亲",
+      "age": 49,
+      "notes": [
+        "在厨房准备早饭",
+        "劝父亲先让孩子吃饭"
+      ]
+    },
+    "CFNPC00003": {
+      "id": "CFNPC00003",
+      "name": "孙成明",
+      "relation": "手足",
+      "sex": "女",
+      "age": 16,
+      "notes": []
+    }
+  },
+  "scene": {
+    "id": "SCENE0001",
+    "place": "石桥村·钱家院落",
+    "time": "承平三年第一日08:00",
+    "awaiting": "玩家第一项行动",
+    "facts": [
+      "玩家清晨刚醒",
+      "父亲准备下田，母亲在厨房",
+      "院外传来听不清内容的喊声"
+    ]
+  },
+  "open_threads": [
+    {
+      "id": "T0001",
+      "title": "父亲询问今日安排",
+      "status": "待回应"
+    },
+    {
+      "id": "T0002",
+      "title": "院外模糊喊声",
+      "status": "未调查",
+      "detail": "来者与喊声内容未知"
+    }
+  ],
+  "state_checkpoint": {
+    "last_event_id": "EV000002",
+    "event_hash": "a74cf0a99c6cef1a4d019787bbf4eb457781f94346d420196c443be1c411fc69",
+    "state_hash": "52eab54f38ed24b476c8495e1343bec82f6ead1bf8414a39c1cebd4cb0eb6ca5"
+  },
+  "private_notes_excluded": true
+}
