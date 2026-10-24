@@ -1,0 +1,40 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
+import {digest,verifyEvents,countTurns} from '../tools/campaign_guard.mjs';
+import {pendingObligations,assertNarrativeContinuity} from '../tools/intent_obligation_guard.mjs';
+const root=new URL('../campaigns/first-life/',import.meta.url);
+const state=JSON.parse(readFileSync(new URL('game_state.json',root),'utf8'));
+const events=readFileSync(new URL('events.jsonl',root),'utf8').trim().split('\n').map(JSON.parse);
+const index=JSON.parse(readFileSync(new URL('campaign_index.json',root),'utf8'));
+test('real market event and state indexes remain verifiable',()=>{
+ assert.equal(countTurns(events),12);
+ assert.equal(verifyEvents(events).last_hash,index.last_event_hash);
+ assert.equal(digest(state),index.full_state_sha256);
+ assert.equal(events.at(-1).state_hash,index.full_state_sha256);
+});
+test('money conserved across registered shop accounts and priced receipts',()=>{
+ const trade=events.at(-1);
+ assert.equal(trade.action,'county_market_herb_sale_fishing_supplies_and_seeds');
+ assert.equal(trade.player_coins_before,12);
+ assert.equal(trade.player_coins_after,2);
+ assert.equal(trade.sum_shop_and_player_coins_before,trade.sum_shop_and_player_coins_after);
+ assert.equal(state.player.money,2);
+ for(const txn of trade.transactions)assert.ok(txn.copper>0);
+ const shops=state.economy.markets.linan.stalls;
+ assert.equal(Object.values(shops).reduce((x,v)=>x+v.cash,0)+state.player.money,90);
+ assert.equal(shops.HERB.stock.fresh_plantain,1);
+ assert.equal(state.inventory.some(x=>x.id==='fresh_plantain'),false);
+ assert.ok(state.inventory.some(x=>x.id==='fishing_line'&&x.quantity===1));
+ assert.ok(state.inventory.some(x=>x.id==='fish_hook'&&x.quantity===1));
+ assert.ok(state.inventory.some(x=>x.id==='vegetable_seed_packet'&&x.quantity===1));
+});
+test('explicit NPC obligations persist until the person answers',()=>{
+ const issues=pendingObligations(events,state);
+ assert.equal(issues.length,2);
+ assert.ok(issues.some(x=>x.id==='OBLIGATION_FOOD_WATER_001'));
+ assert.ok(issues.some(x=>x.id==='OBLIGATION_BASKET_002'));
+ assert.throws(()=>assertNarrativeContinuity(events,state,'成明已经送饭成功'),e=>e.code==='FABRICATED_DELIVERY');
+ assert.throws(()=>assertNarrativeContinuity(events,state,'第二只鱼笼已入水'),e=>e.code==='FABRICATED_DEPLOYMENT');
+ assert.equal(assertNarrativeContinuity(events,state,'未交付原因待询问，第二只鱼笼仍在背包').ok,true);
+});
