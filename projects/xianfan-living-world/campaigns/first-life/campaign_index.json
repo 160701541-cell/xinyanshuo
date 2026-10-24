@@ -1,9 +1,9 @@
 {
   "schema": 1,
   "campaign_id": "xianfan-canglan-text-20261024",
-  "turns_completed": 9,
-  "time": "承平三年 · 第1日 · 14:38",
-  "location": "石桥村·荒沟下游缓水湾",
+  "turns_completed": 10,
+  "time": "承平三年 · 第1日 · 16:18",
+  "location": "石桥村外·草丛兽道",
   "player": {
     "id": "CFPLAYER00001",
     "name": "心魇说",
@@ -12,7 +12,7 @@
     "realm": "凡人（未修行）",
     "root": "未检测",
     "hp": 100,
-    "stamina": 44,
+    "stamina": 31,
     "copper": 12
   },
   "family": {
@@ -40,20 +40,20 @@
       ]
     ]
   },
-  "last_event": "EV000011",
-  "last_event_hash": "f5a02c92a3926c2ea10744445bc0f39ced7bc364ba0d92ae60606da6cc3bcd9f",
-  "full_state_sha256": "459ed23998fb4dabebeb36685c8aada1a2e0c935ae43e8b09a857b63f0ec2ead",
+  "last_event": "EV000012",
+  "last_event_hash": "d135092bbc1bc1ff0e8455b62e5cc5f3673ac8a408063387d7e992477dd09cc4",
+  "full_state_sha256": "faffa7d736006689003b2a62ecc4d272f4f771d73ccdebc8264afea1231c93f3",
   "roots_hidden": true,
   "complete_source_event_ledger_synced": true,
   "full_state_parts_verified": true,
-  "next_checkpoint_turn": 10,
-  "last_action": "scout_downstream_and_try_second_fish_basket",
-  "trap_status": "TRAP-SHIQIAO-0001 deployed; catch unknown, not checked",
+  "next_checkpoint_turn": 20,
+  "last_action": "seek_branch_weave_basket_and_inspect",
+  "trap_status": "checked empty 16:18",
   "inventory_added": {
     "item_id": "fresh_plantain",
     "quantity": 1
   },
   "market_price_status": "NOT_QUOTED",
-  "fishing_status": "1 basket deployed; second basket lacks materials",
+  "fishing_status": "one fish basket in water; one newly crafted basket carried",
   "sister_errand": "walking home, no supplies delivered"
 }
