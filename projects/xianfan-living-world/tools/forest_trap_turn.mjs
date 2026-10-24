@@ -55,7 +55,7 @@ function receive(s,id,name,qty,sourceId){
  if(found)found.quantity+=qty;
  else s.inventory.push({id,name,quantity:qty,equipped:false,category:'自然材料',source:'world_node:'+sourceId});
 }
-function elapse(s,minutes){const p=calculateAction(s,{type:'wait',minutes});return p.state;}
+function elapse(s,minutes){const p=calculateAction(s,{type:'wait',minutes});s.time=p.state.time;return s;}
 function spend(s,n,label){
  if(!Number.isSafeInteger(n)||n<0||s.player.stamina<n)BLOCK('EXHAUSTED',label+'精力不足');
  s.player.stamina-=n;
@@ -94,7 +94,7 @@ export function previewForestTrip(original,events,{intent='call_sister_collect_c
   facts.push({type:'ecology_initialized',zone:stockKey,
     note:'同一世界种子生成固定野外材料节点与动物存量，并非根据玩家需要免费发材料'});
  }
- const world=s.ecology[stockKey];
+ let world=s.ecology[stockKey];
  if(!s.npc_schedules)s.npc_schedules={};
  s.npc_schedules.CFNPC00003={last_seen_location:'石桥村村外荒沟附近',activity:'cooperating_foraging',
    updated_at:s.time.display,interest:'尝试学习普通小兽绳套'};
@@ -125,12 +125,13 @@ export function previewForestTrip(original,events,{intent='call_sister_collect_c
  receive(s,'wooden_peg','小木桩',1,'crafted:fallen_stick:1');
  receipts.push({type:'craft_intermediate',inputs:[{id:'fallen_stick',quantity:1}],outputs:[{id:'wooden_peg',quantity:1}],minutes:10,stamina:2});
  if(!trapEligibility(s).can_craft)BLOCK('TRAP_NOT_READY','真实配方材料不足');
- const crafted=calculateAction(s,{type:'craft_trap',recipe_id:'cord_snare'});s=crafted.state;
+ const crafted=calculateAction(s,{type:'craft_trap',recipe_id:'cord_snare'});s=crafted.state;world=s.ecology[stockKey];
  receipts.push(...crafted.receipts);
  facts.push({type:'trap_crafted',count:1,name:'简易小兽绳套',materials:'全部来自固定自然节点并已扣除'});
  // 4. Tracking depends on actually registered animals and deterministic detection.
  s=elapse(s,28);spend(s,4,'搜迹');
  const trail=world.trails[0],animal=world.animals.find(a=>a.route.includes(trail.id));
+ s.position={x:trail.x,y:trail.y};s.sub_location='村外荒沟·矮草丛边';
  const signRoll=roll(s.world_seed,'CFPLAYER00001|day1|trail-search',10);
  const signs=!!animal&&animal.count>0&&signRoll+trail.track_score>=8;
  facts.push({type:'track_search',trail_id:trail.id,animal_registered:!!animal,
@@ -149,6 +150,7 @@ export function previewForestTrip(original,events,{intent='call_sister_collect_c
   facts.push({type:'trap_deployed',trap_id:'TRAP-SHIQIAO-0001',
     note:'布置成功不等于猎获，后续动物行为和触发条件尚需独立结算'});
  }
+ if(signs && world.deployed_traps.length!==1)BLOCK('TRAP_NOT_PERSISTED','陷阱未真正落入世界存档');
  s.npc_schedules.CFNPC00003.updated_at=s.time.display;
  s.npc_schedules.CFNPC00003.activity='with_player_by_bushes';
  return wrap(s,original,events,start,facts,receipts,
