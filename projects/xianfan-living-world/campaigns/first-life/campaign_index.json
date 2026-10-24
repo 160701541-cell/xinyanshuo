@@ -42,7 +42,7 @@
     "grain_remainder_millidou": 892
   },
   "last_event": "EV000014",
-  "last_event_hash": "076ca250a304ddae77d8db894731533f87ecf317f022da5cf0b7d1c2412647e9",
+  "last_event_hash": "1600de20b28f6a478aa08dd86f04bb984e4d24126d72f2bf299c7ae272de71cb",
   "full_state_sha256": "cda9d3368dce61e92fd6295fbf541221d6985d7ad481084229a03b0546ca5dde",
   "roots_hidden": true,
   "complete_source_event_ledger_synced": true,
