@@ -367,7 +367,7 @@
     "worldcanon": "SPEC_ONLY",
     "runtime_integration": false,
     "android_test": false,
-    "repo_commit_pending": true,
+    "repo_commit_pending": false,
     "unresolved": [
       "dao_vs_geo_faction_alias",
       "cultivation_ROOTS_vs_core_NPC_root",
