@@ -44,3 +44,7 @@
 **本地执行记录**：使用原始存档`/mnt/data/campaign_verify/game_state.json`，其状态SHA256是 `52eab54f38ed24b476c8495e1343bec82f6ead1bf8414a39c1cebd4cb0eb6ca5`，两条原始事件。等效结算源码的Node测试10/10通过，包含双向守恒、授权、时钟、恢复精力、非法参数、未知机制阻断、原始事件校验和不篡改状态。**仓库完整测试、CLI正式多文件提交、Android原型实测仍未运行验收**，不得报告全部完成。
 
 **已知未实现**：经济账户建档NPC决策全链、购物与物价、经验成长、战斗伤害、行走地图、妖兽、跨日人口和资源模拟。没有公式时明确返回RULE_NOT_IMPLEMENTED/DAY_SIM_NOT_IMPLEMENTED，不生成具体数值。**本次未进行玩家行动，存档仍0回合，08:00**。
+
+### GM-NUM-001 增补：只读可信HUD
+
+新增 `tools/numeric_hud.mjs` 与 `tests/numeric_hud.test.mjs`。HUD在展示前复核完整事件哈希链和最终状态哈希，没有存档字段的力量/灵力等返回null（界面显示未建档），禁止AI随机补数。本地Node复现初始两条事件并运行了2个HUD测试，通过；正式仓库CI、完整游戏远端结算未验证。
