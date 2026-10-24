@@ -1,0 +1,229 @@
+{
+  "schema": 1,
+  "turn": 10,
+  "range": [
+    1,
+    10
+  ],
+  "event_ids": [
+    "EV000003",
+    "EV000004",
+    "EV000005",
+    "EV000006",
+    "EV000007",
+    "EV000008",
+    "EV000009",
+    "EV000010",
+    "EV000011",
+    "EV000012"
+  ],
+  "event_hash": "d135092bbc1bc1ff0e8455b62e5cc5f3673ac8a408063387d7e992477dd09cc4",
+  "state_hash": "faffa7d736006689003b2a62ecc4d272f4f771d73ccdebc8264afea1231c93f3",
+  "time": "承平三年 · 第1日 · 16:18",
+  "location": "石桥村",
+  "player": {
+    "id": "CFPLAYER00001",
+    "hp": 100,
+    "stamina": 31,
+    "money": 12,
+    "realm": "凡人（未修行）"
+  },
+  "inventory": [
+    {
+      "id": "coarse_cloth",
+      "name": "粗布衣",
+      "quantity": 1,
+      "equipped": true,
+      "category": "衣物",
+      "source": "出身基础衣着，视为原本穿在身上"
+    },
+    {
+      "id": "cloth_shoes",
+      "name": "布鞋",
+      "quantity": 1,
+      "equipped": true,
+      "category": "衣物",
+      "source": "出身基础衣着，视为原本穿在脚上"
+    },
+    {
+      "id": "fresh_plantain",
+      "name": "鲜车前草",
+      "quantity": 1,
+      "category": "鲜采普通草药",
+      "source": "wild_botany:SH-MED-01",
+      "equipped": false,
+      "valuation_wen": null,
+      "identification": "unverified_market_grade"
+    },
+    {
+      "id": "rod_blank_wood_01",
+      "name": "未装线钩的简易竿坯",
+      "quantity": 1,
+      "equipped": false,
+      "category": "渔具半成品",
+      "source": "SH-BRUSH-B(枝1)+SH-FIBER-B(纤维1)",
+      "usable_for_fishing": false
+    },
+    {
+      "id": "woven_fish_basket",
+      "name": "简易编织鱼笼",
+      "quantity": 1,
+      "category": "渔具",
+      "equipped": false,
+      "source": "EV000012",
+      "reinforcement": null
+    }
+  ],
+  "relevant_npcs": [
+    {
+      "id": "CFNPC00001",
+      "name": "钱然泽",
+      "age": 35,
+      "location": "shiqiao",
+      "notes": [
+        "早晨扛锄准备下田",
+        "询问玩家今日安排"
+      ]
+    },
+    {
+      "id": "CFNPC00002",
+      "name": "郑舟清",
+      "age": 49,
+      "location": "shiqiao",
+      "notes": [
+        "在厨房准备早饭",
+        "劝父亲先让孩子吃饭"
+      ]
+    },
+    {
+      "id": "CFNPC00003",
+      "name": "孙成明",
+      "age": 16,
+      "location": "shiqiao",
+      "notes": [
+        "承平三年第一日与心魇说结伴到村外采集枝草，协助制作一只小兽绳套。",
+        "承平三年第一日午前继续结伴在荒沟找草药；帮助整理辨认普通药草，没有成交买卖。",
+        "承平三年第一日正午，哥哥邀请她到泥岸挖泥鳅，她这一次没有同意。"
+      ]
+    }
+  ],
+  "open_threads": [
+    {
+      "id": "T0001",
+      "title": "父亲询问今日安排",
+      "status": "早晨未回答；玩家已外出"
+    },
+    {
+      "id": "T0002",
+      "title": "院外模糊喊声",
+      "status": "仍未调查",
+      "detail": "来者与喊声内容未知"
+    },
+    {
+      "id": "T0003",
+      "kind": "狩猎",
+      "title": "村外小兽绳套等待检查",
+      "known": "TRAP-SHIQIAO-0001 已在村外小兽道布设，捕获情况仍未知",
+      "source": "EV000003",
+      "status": "等待后续世界行动",
+      "certainty": "事件已核对"
+    },
+    {
+      "id": "T0004",
+      "title": "携带鲜车前草寻找收购渠道",
+      "status": "未鉴定／未询价",
+      "known": "采得鲜车前草1份；是否收购和价钱均不确定",
+      "source": "EV000004",
+      "certainty": "已结算采集"
+    },
+    {
+      "id": "T0005",
+      "title": "鱼笼与泥鳅诱饵",
+      "source": "EV000005",
+      "status": "鱼笼已编；妹妹本次拒绝挖掘；缺玉米和酒",
+      "known": "鱼笼×1在背包；没有捕到鱼和泥鳅",
+      "certainty": "已提交事件"
+    },
+    {
+      "id": "T0006",
+      "title": "两根鱼竿与家人取饭取水",
+      "status": "妹妹已启程，尚未返还食水；鱼竿待材料",
+      "known": "鱼竿×0、饵料尚未制作；不消耗家庭库存",
+      "source": "EV000006",
+      "certainty": "已提交事件"
+    },
+    {
+      "id": "T0007",
+      "title": "两根鱼竿制作",
+      "status": "竿坯1、可用鱼竿0",
+      "source": "EV000007"
+    },
+    {
+      "id": "T0009",
+      "title": "查看已部署鱼笼",
+      "status": "鱼笼已在SH-RIVER-01水域固定，尚未检查或捕获",
+      "source": "EV000010",
+      "certainty": "已提交事件"
+    },
+    {
+      "id": "T0010",
+      "title": "沿岸再次制作鱼笼",
+      "status": "缺材料，尚未完成新的鱼笼",
+      "source": "EV000011",
+      "certainty": "已提交程序事件"
+    }
+  ],
+  "confirmed_actions": [
+    {
+      "turn": 1,
+      "event": "EV000003",
+      "summary": "call_sister_collect_craft_track_deploy"
+    },
+    {
+      "turn": 2,
+      "event": "EV000004",
+      "summary": "forage_medicinal_herbs"
+    },
+    {
+      "turn": 3,
+      "event": "EV000005",
+      "summary": "weave_fish_basket_sister_looks_for_loaches"
+    },
+    {
+      "turn": 4,
+      "event": "EV000006",
+      "summary": "request_food_and_rod_pair"
+    },
+    {
+      "turn": 5,
+      "event": "EV000007",
+      "summary": "craft_single_rod_blank"
+    },
+    {
+      "turn": 6,
+      "event": "EV000008",
+      "summary": "seek_rod_line_and_hook_materials_once"
+    },
+    {
+      "turn": 7,
+      "event": "EV000009",
+      "summary": "reinforce_existing_fish_basket_once"
+    },
+    {
+      "turn": 8,
+      "event": "EV000010",
+      "summary": "deploy_fish_basket_in_shiqiao_bay"
+    },
+    {
+      "turn": 9,
+      "event": "EV000011",
+      "summary": "scout_downstream_and_try_second_fish_basket"
+    },
+    {
+      "turn": 10,
+      "event": "EV000012",
+      "summary": "seek_branch_weave_basket_and_inspect"
+    }
+  ],
+  "caution": "原事件与数值存档是权威；摘要保留事件引用，不替代原始历史。"
+}
