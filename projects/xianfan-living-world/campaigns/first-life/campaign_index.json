@@ -1,8 +1,8 @@
 {
   "schema": 1,
   "campaign_id": "xianfan-canglan-text-20261024",
-  "turns_completed": 3,
-  "time": "承平三年 · 第1日 · 12:29",
+  "turns_completed": 4,
+  "time": "承平三年 · 第1日 · 12:30",
   "location": "石桥村·村外荒沟",
   "player": {
     "id": "CFPLAYER00001",
@@ -40,19 +40,20 @@
       ]
     ]
   },
-  "last_event": "EV000005",
-  "last_event_hash": "e8800ede81ca01d7687ec1f13821cf3f37dd97a6f51f37f0f1450bad6f3f12ad",
-  "full_state_sha256": "bba0340050e60984e3509e5e23cbf20614a51b640d6e12363967c994844f6db4",
+  "last_event": "EV000006",
+  "last_event_hash": "2bedb3bf2f04ca0dd3b104bab540e5e8d55280357ba88cb202b129cad801cb4d",
+  "full_state_sha256": "85d662de12d66c2e91fb435d33a7b2eb741e2c853072acf80df452816ea09dd5",
   "roots_hidden": true,
   "complete_source_event_ledger_synced": true,
   "full_state_parts_verified": true,
   "next_checkpoint_turn": 10,
-  "last_action": "weave_fish_basket_sister_looks_for_loaches",
+  "last_action": "request_food_and_rod_pair",
   "trap_status": "TRAP-SHIQIAO-0001 deployed; catch unknown, not checked",
   "inventory_added": {
     "item_id": "fresh_plantain",
     "quantity": 1
   },
   "market_price_status": "NOT_QUOTED",
-  "fishing_status": "fish basket 1 carried; no corn, alcohol, or catch"
+  "fishing_status": "two rods pending materials; bait pending, no fish catch",
+  "sister_errand": "walking home, no supplies delivered"
 }
