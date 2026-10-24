@@ -2,6 +2,16 @@
 
 > **硬隔离**：本项目仅借用公开仓库的独立 `xianfan/independent-living-county-v0.1` 分支。与《苍岚·人生世界》Godot主线、WorldBox MOD、签名OTA和官网正式游戏均无关联。本包的 Android applicationId 为 `com.xinyanshuo.xianfan.county`。
 
+## 2026-10-24｜《仙凡·苍岚》统一世界观（仅设计，不代表游戏更新）
+
+本分支新增了供独立AI文字战役和后续实现参考的原创世界观合同：
+
+- [统一世界观与修仙体系 v1.0](docs/UNIFIED_WORLD_CANON_V1.md)：以本分支连续地理/凡俗王朝为底，参考《苍岚》社会生态与《凡人修仙传》修炼逻辑，明确凡界/灵境/灵界/仙界/幽冥、境界、灵根、经济、妖兽和NPC记忆规则。
+- [机读世界观配置](data/unified_world_rules_v1.json)：版本化地理/境界/人口边界/剧情初始快照；**仅参考，不是当前运行的引擎参数**。
+- [设计一致性测试](tests/unified_world_canon.test.mjs) 与 [本次整合日志](docs/UNIFIED_WORLD_INTEGRATION_LOG.md)。
+
+**边界**：不改动《苍岚》main、Godot正式APK、WorldBox MOD或此前的仙凡原型存档。本分支13,680名局部NPC与另项目5,000人口不得叠加；上位世界、完整版NPC AI及战斗经济仍属未实现计划。此提交不是Android更新、不是小说原作的官方联动授权。
+
 ## 本轮方向修正（2026-10-21，用户手机反馈）
 
 本游戏正式转为 **WorldBox式连续世界地图 + 地点建筑内部场景 + 社会模拟RPG**，不再是传统纯文字/MUD菜单，也不再做四张点击切换的假地图。
