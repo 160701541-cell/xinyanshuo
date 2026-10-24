@@ -6,10 +6,10 @@
   "world_seed": "xianfan-canglan-text-20261024-v1",
   "time": {
     "regnal_year": 3,
-    "day": 1,
-    "hour": 16,
-    "minute": 18,
-    "display": "承平三年 · 第1日 · 16:18",
+    "day": 2,
+    "hour": 9,
+    "minute": 4,
+    "display": "承平三年 · 第2日 · 09:04",
     "weather": "晴"
   },
   "player": {
@@ -26,7 +26,7 @@
     "root_commitment_sha256": "897ffd3bec4b0c505b934d584835158fecaf6ddea61c5d70df6b8160db914dd7",
     "hp": 100,
     "max_hp": 100,
-    "stamina": 31,
+    "stamina": 61,
     "max_stamina": 100,
     "money": 12,
     "money_unit": "文",
@@ -83,8 +83,8 @@
       "source": "EV000012"
     }
   ],
-  "current_location": "石桥村",
-  "last_event_id": "EV000012",
+  "current_location": "临安县城·东门",
+  "last_event_id": "EV000013",
   "reference": {
     "origin": "GitHub 160701541-cell/xinyanshuo",
     "xianfan_branch": "xianfan/independent-living-county-v0.1",
@@ -137,10 +137,10 @@
       "category": "水乡乡村"
     }
   ],
-  "location_id": "shiqiao",
+  "location_id": "linan",
   "position": {
-    "x": 3853,
-    "y": 4991
+    "x": 480,
+    "y": 630
   },
   "known_npcs": [
     {
@@ -180,7 +180,7 @@
     "background": "自耕农家庭",
     "size": 4,
     "cash": 42,
-    "grain_dou": 54,
+    "grain_dou": 53,
     "members": [
       {
         "id": "CFNPC00001",
@@ -213,7 +213,8 @@
         "alive": true
       }
     ],
-    "note": "家中库存并非玩家随身所有；不得未经交易或亲属许可扣取。"
+    "note": "家中库存并非玩家随身所有；不得未经交易或亲属许可扣取。",
+    "grain_remainder_millidou": 892
   },
   "initial_rolls_public": {
     "random_key": "xianfan-canglan-text-20261024-v1|玩家:心魇说|性别:男|年龄:16|开局序号:1",
@@ -326,8 +327,8 @@
           "set_time": "承平三年 · 第1日 · 10:19",
           "capture_status": "checked_empty",
           "captured_count": 0,
-          "last_checked_at": "承平三年 · 第1日 · 16:18",
-          "last_observation_roll": 76
+          "last_checked_at": "承平三年 · 第2日 · 06:45",
+          "last_observation_roll": 57
         }
       ],
       "generated_from": "predeclared world-seed + region templates",
@@ -415,9 +416,9 @@
           {
             "id": "small_cyprinid",
             "name": "溪河小鱼群",
-            "population": 5,
+            "population": 4,
             "initial_population": 5,
-            "harvested": 0
+            "harvested": 1
           },
           {
             "id": "loach",
@@ -448,11 +449,63 @@
             "bait_id": null,
             "anchor": "stable_bank_reeds",
             "status": "deployed_waiting",
-            "catch_count": 0,
-            "checked_at": null
+            "catch_count": 1,
+            "checked_at": "承平三年 · 第2日 · 06:57",
+            "checked_at_clock_minutes": 1803,
+            "last_check_result": "fish_present"
           }
         ],
-        "catch_events": [],
+        "catch_events": [
+          {
+            "event_id": "EV000013",
+            "gear_id": "GEAR-SH-RIVER-0001",
+            "checks": [
+              {
+                "cycle": 1,
+                "roll": 57,
+                "caught": 0
+              },
+              {
+                "cycle": 2,
+                "roll": 36,
+                "caught": 0
+              },
+              {
+                "cycle": 3,
+                "roll": 82,
+                "caught": 0
+              },
+              {
+                "cycle": 4,
+                "roll": 75,
+                "caught": 0
+              },
+              {
+                "cycle": 5,
+                "roll": 43,
+                "caught": 0
+              },
+              {
+                "cycle": 6,
+                "roll": 29,
+                "caught": 0
+              },
+              {
+                "cycle": 7,
+                "roll": 12,
+                "caught": 1
+              },
+              {
+                "cycle": 8,
+                "roll": 36,
+                "caught": 0
+              }
+            ],
+            "caught_total": 1,
+            "fish_stock_after": 4,
+            "retained_in_gear": 1
+          }
+        ],
         "last_population_tick": null,
         "model": "world_seed + fixed habitat definitions; not spawned as a reward for player"
       },
@@ -498,32 +551,32 @@
   },
   "npc_schedules": {
     "CFNPC00003": {
-      "last_seen_location": "离开村外荒沟，向钱家院落方向走去",
-      "activity": "walking_home_to_ask_for_food_and_water",
-      "updated_at": "承平三年 · 第1日 · 12:30",
+      "last_seen_location": "石桥村·钱家院落",
+      "activity": "home_day2_morning",
+      "updated_at": "承平三年 · 第2日 · 09:04",
       "interest": "尝试学习普通小兽绳套",
       "request": {
         "food": "ask_household",
         "water": "ask_household",
-        "delivery": "pending",
+        "delivery": "resolved_at_home",
         "ownership": "household_requires_agreement"
       },
       "note": "尚未确定家庭现有可携带熟食或容器，禁止凭空登记"
     },
     "CFNPC00001": {
       "last_seen_location": "石桥村田间",
-      "activity": "fieldwork",
-      "updated_at": "承平三年 · 第1日 · 10:19",
+      "activity": "home_evening",
+      "updated_at": "承平三年 · 第1日 · 16:34",
       "evidence": "08:00已准备下田；按家庭劳作日程推演，不等于已直接目击"
     },
     "CFNPC00002": {
       "last_seen_location": "石桥村钱家院落",
-      "activity": "kitchen_and_housework",
-      "updated_at": "承平三年 · 第1日 · 10:19",
+      "activity": "household_cooking_and_chores",
+      "updated_at": "承平三年 · 第2日 · 09:04",
       "evidence": "08:00在厨房，后续活动为日程推演"
     }
   },
-  "sub_location": "石桥村外·草丛兽道",
+  "sub_location": "临安县城东门",
   "fishing_requests": {
     "rod_pair": {
       "target_count": 2,
