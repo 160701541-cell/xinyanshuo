@@ -7,9 +7,9 @@
   "time": {
     "regnal_year": 3,
     "day": 1,
-    "hour": 12,
-    "minute": 30,
-    "display": "承平三年 · 第1日 · 12:30",
+    "hour": 13,
+    "minute": 0,
+    "display": "承平三年 · 第1日 · 13:00",
     "weather": "晴"
   },
   "player": {
@@ -26,7 +26,7 @@
     "root_commitment_sha256": "897ffd3bec4b0c505b934d584835158fecaf6ddea61c5d70df6b8160db914dd7",
     "hp": 100,
     "max_hp": 100,
-    "stamina": 63,
+    "stamina": 59,
     "max_stamina": 100,
     "money": 12,
     "money_unit": "文",
@@ -72,10 +72,19 @@
       "equipped": false,
       "category": "渔具",
       "source": "craft:fishbasket-0.1.0"
+    },
+    {
+      "id": "rod_blank_wood_01",
+      "name": "未装线钩的简易竿坯",
+      "quantity": 1,
+      "equipped": false,
+      "category": "渔具半成品",
+      "source": "SH-BRUSH-B(枝1)+SH-FIBER-B(纤维1)",
+      "usable_for_fishing": false
     }
   ],
   "current_location": "石桥村",
-  "last_event_id": "EV000006",
+  "last_event_id": "EV000007",
   "reference": {
     "origin": "GitHub 160701541-cell/xinyanshuo",
     "xianfan_branch": "xianfan/independent-living-county-v0.1",
@@ -241,7 +250,7 @@
           "x": 3777,
           "y": 4915,
           "resource": "flexible_branch",
-          "quantity": 1,
+          "quantity": 0,
           "rights": "uncultivated_commons",
           "kind": "wild_growth",
           "seed_origin": "xianfan-canglan-text-20261024-v1"
@@ -263,7 +272,7 @@
           "x": 3839,
           "y": 4961,
           "resource": "bast_fiber",
-          "quantity": 3,
+          "quantity": 2,
           "rights": "uncultivated_commons",
           "kind": "wild_growth",
           "seed_origin": "xianfan-canglan-text-20261024-v1"
@@ -418,12 +427,13 @@
     "rod_pair": {
       "target_count": 2,
       "craft_count": 0,
-      "status": "pending_materials_and_validated_hook_line_recipe",
+      "status": "one_blank_made_not_usable; second_pole_and_lines_hooks_missing",
       "expected_users": [
         "CFPLAYER00001",
         "CFNPC00003"
       ],
-      "required": "杆材、可靠鱼线、鱼钩，须实物和工艺验证"
+      "required": "杆材、可靠鱼线、鱼钩，须实物和工艺验证",
+      "rod_blanks_made": 1
     },
     "bait": {
       "ground_grain": "proposed_only",
