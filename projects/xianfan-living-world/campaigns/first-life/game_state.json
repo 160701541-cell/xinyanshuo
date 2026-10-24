@@ -7,9 +7,9 @@
   "time": {
     "regnal_year": 3,
     "day": 1,
-    "hour": 14,
-    "minute": 38,
-    "display": "承平三年 · 第1日 · 14:38",
+    "hour": 16,
+    "minute": 18,
+    "display": "承平三年 · 第1日 · 16:18",
     "weather": "晴"
   },
   "player": {
@@ -26,7 +26,7 @@
     "root_commitment_sha256": "897ffd3bec4b0c505b934d584835158fecaf6ddea61c5d70df6b8160db914dd7",
     "hp": 100,
     "max_hp": 100,
-    "stamina": 44,
+    "stamina": 31,
     "max_stamina": 100,
     "money": 12,
     "money_unit": "文",
@@ -75,24 +75,17 @@
       "usable_for_fishing": false
     },
     {
-      "id": "flexible_branch",
-      "name": "韧枝",
-      "quantity": 4,
-      "category": "野外材料",
+      "id": "woven_fish_basket",
+      "name": "简易编织鱼笼",
+      "quantity": 1,
+      "category": "渔具",
       "equipped": false,
-      "source": "scout:SH-WILLOW-C"
-    },
-    {
-      "id": "bast_fiber",
-      "name": "植物纤维",
-      "quantity": 4,
-      "category": "野外材料",
-      "equipped": false,
-      "source": "scout:SH-REED-C"
+      "source": "EV000012",
+      "reinforcement": null
     }
   ],
   "current_location": "石桥村",
-  "last_event_id": "EV000011",
+  "last_event_id": "EV000012",
   "reference": {
     "origin": "GitHub 160701541-cell/xinyanshuo",
     "xianfan_branch": "xianfan/independent-living-county-v0.1",
@@ -147,8 +140,8 @@
   ],
   "location_id": "shiqiao",
   "position": {
-    "x": 3867,
-    "y": 5009
+    "x": 3853,
+    "y": 4991
   },
   "known_npcs": [
     {
@@ -332,8 +325,10 @@
           "y": 4991,
           "set_day": 1,
           "set_time": "承平三年 · 第1日 · 10:19",
-          "capture_status": "pending_animal_simulation",
-          "captured_count": 0
+          "capture_status": "checked_empty",
+          "captured_count": 0,
+          "last_checked_at": "承平三年 · 第1日 · 16:18",
+          "last_observation_roll": 76
         }
       ],
       "generated_from": "predeclared world-seed + region templates",
@@ -487,6 +482,18 @@
             "owner": "unclaimed_commons"
           }
         ]
+      },
+      "branch_expansion": {
+        "version": "resource-search-1.0",
+        "nodes": [
+          {
+            "id": "SH-SAPLING-D",
+            "name": "石桥村河湾旁",
+            "resource": "flexible_branch",
+            "initial_quantity": 1,
+            "quantity": 0
+          }
+        ]
       }
     }
   },
@@ -517,7 +524,7 @@
       "evidence": "08:00在厨房，后续活动为日程推演"
     }
   },
-  "sub_location": "荒沟下游缓水湾",
+  "sub_location": "石桥村外·草丛兽道",
   "fishing_requests": {
     "rod_pair": {
       "target_count": 2,
