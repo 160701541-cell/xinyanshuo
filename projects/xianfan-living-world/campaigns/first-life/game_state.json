@@ -8,8 +8,8 @@
     "regnal_year": 3,
     "day": 2,
     "hour": 10,
-    "minute": 9,
-    "display": "承平三年 · 第2日 · 10:09",
+    "minute": 44,
+    "display": "承平三年 · 第2日 · 10:44",
     "weather": "晴"
   },
   "player": {
@@ -26,7 +26,7 @@
     "root_commitment_sha256": "897ffd3bec4b0c505b934d584835158fecaf6ddea61c5d70df6b8160db914dd7",
     "hp": 100,
     "max_hp": 100,
-    "stamina": 56,
+    "stamina": 53,
     "max_stamina": 100,
     "money": 2,
     "money_unit": "文",
@@ -97,8 +97,8 @@
       "source": "shop:SEEDS@EV000014"
     }
   ],
-  "current_location": "临安县城·集市",
-  "last_event_id": "EV000014",
+  "current_location": "临安县城·匠人巷口",
+  "last_event_id": "EV000015",
   "reference": {
     "origin": "GitHub 160701541-cell/xinyanshuo",
     "xianfan_branch": "xianfan/independent-living-county-v0.1",
@@ -153,8 +153,8 @@
   ],
   "location_id": "linan",
   "position": {
-    "x": 220,
-    "y": 490
+    "x": 190,
+    "y": 355
   },
   "known_npcs": [
     {
@@ -590,7 +590,7 @@
       "evidence": "08:00在厨房，后续活动为日程推演"
     }
   },
-  "sub_location": "县城东市",
+  "sub_location": "临安县城·匠人巷口",
   "fishing_requests": {
     "rod_pair": {
       "target_count": 2,
@@ -710,5 +710,43 @@
     "fields_prepared": 0,
     "seed_origin": "linan-registered-vendor",
     "note": "种子需返回家乡核实耕地使用权、土壤与季节后播种；不直接生成蔬菜"
+  },
+  "city_exploration": {
+    "day2-street-walk": {
+      "version": "linan-street-exploration-1.0.0",
+      "from": "LINAN-EAST-MARKET",
+      "stopped_at": "LINAN-ARTISAN-LANE",
+      "seen": [
+        {
+          "id": "LINAN-GOVT-STREET",
+          "name": "县衙前街",
+          "x": 170,
+          "y": 310,
+          "category": "administrative_street",
+          "visible": "道路向县衙方向延伸；衙门内部、当值官员身份尚未查明"
+        },
+        {
+          "id": "LINAN-ARTISAN-LANE",
+          "name": "匠人巷口",
+          "x": 190,
+          "y": 355,
+          "category": "workshops",
+          "visible": "有敲打木料的声响，远远能见到做活的棚屋；不自动假设有免费工具"
+        },
+        {
+          "id": "LINAN-NORTH-ALLEY",
+          "name": "北巷",
+          "x": 208,
+          "y": 385,
+          "category": "residential",
+          "visible": "临街院门与民居，院内不可擅闯"
+        }
+      ],
+      "visited_day": 2,
+      "time": "承平三年 · 第2日 · 10:44",
+      "access": "public streets only",
+      "trades": 0,
+      "conversation_outcomes": 0
+    }
   }
 }
