@@ -14,6 +14,8 @@
 
 ## 独立文字战役：公正主持与十轮记忆
 
+- [P0数值权威协议](docs/GM_NUMERIC_AUTHORITY_V1.md)：所有数值必须由真实代码计算，有明确公式、初值和凭证；[整数与双向经济账本](tools/numeric_accounts.mjs)、[结算引擎](tools/numeric_engine.mjs)、[行动CLI](tools/turn_cli.mjs)、[数字回归测试](tests/numeric_engine.test.mjs)。未知机制阻断，不临时生成数值。
+
 - [GM-L0 游戏世界裁判协议](docs/GM_GAME_PROTOCOL.md)：玩家和NPC同规则、成功与敌对都必须有因果、追击必须合理止损。
 - [GM自我迭代与质量审计 v1.0](docs/GM_CONTINUOUS_IMPROVEMENT_V1.md)：行动后检查、每十轮公平/记忆复盘，缺证据不写通过；实现见 [审计工具](tools/gm_quality_gate.mjs) 与 [回归测试](tests/gm_quality_gate.test.mjs)。
 - [第一世公开存档](campaigns/first-life/README.md)：状态、原始事件账本、NPC公共记忆、分段完整状态与校验索引。
