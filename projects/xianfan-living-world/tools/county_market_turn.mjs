@@ -59,12 +59,12 @@ export function transactCountyMarket(before,events){
  if(finalTotal!==initialTotal)NO('MONEY_NOT_CONSERVED');
  if(!plantainSold)NO('UNSOLD_PLANTAIN');
  if(!lineBought||!hookBought)NO('GEAR_PURCHASE_FAILED');
- if(!seedBought||!radishBought)NO('SEED_PURCHASE_FAILED');
+ if(!seedBought)NO('SEED_PURCHASE_FAILED');
  if(s.player.stamina<5)NO('NOT_ENOUGH_ENERGY');
  s.player.stamina-=5;tick(s,65);
  s.position={x:220,y:490};s.current_location='临安县城·集市';s.sub_location='县城东市';
  s.fishing_requests.rod_pair.status='owned_fishing_line_1_hook_1; rod_blank_1; assemble_needed; second rod still missing';
- s.farming={...(s.farming||{}),seeds_owned:{vegetable_seed_packet:1,radish_seed_packet:1},
+ s.farming={...(s.farming||{}),seeds_owned:{vegetable_seed_packet:seedBought?1:0,radish_seed_packet:radishBought?1:0},
   fields_prepared:0,seed_origin:'linan-registered-vendor',note:'种子需返回家乡核实耕地使用权、土壤与季节后播种；不直接生成蔬菜'};
  s.last_event_id='EV000014';
  verifyNumericState(s);
