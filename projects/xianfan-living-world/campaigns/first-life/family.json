@@ -1,0 +1,41 @@
+{
+  "id": "CFFAM00001",
+  "region_id": "shiqiao",
+  "background": "自耕农家庭",
+  "size": 4,
+  "cash": 42,
+  "grain_dou": 54,
+  "members": [
+    {
+      "id": "CFNPC00001",
+      "name": "钱然泽",
+      "relation": "父亲",
+      "sex": "男",
+      "age": 35,
+      "location_id": "shiqiao",
+      "health": "正常",
+      "alive": true
+    },
+    {
+      "id": "CFNPC00002",
+      "name": "郑舟清",
+      "relation": "母亲",
+      "sex": "女",
+      "age": 49,
+      "location_id": "shiqiao",
+      "health": "正常",
+      "alive": true
+    },
+    {
+      "id": "CFNPC00003",
+      "name": "孙成明",
+      "relation": "手足",
+      "sex": "女",
+      "age": 16,
+      "location_id": "shiqiao",
+      "health": "正常",
+      "alive": true
+    }
+  ],
+  "note": "家中库存并非玩家随身所有；不得未经交易或亲属许可扣取。"
+}
