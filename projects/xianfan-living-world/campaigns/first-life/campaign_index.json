@@ -1,9 +1,9 @@
 {
   "schema": 1,
   "campaign_id": "xianfan-canglan-text-20261024",
-  "turns_completed": 2,
-  "time": "承平三年 · 第1日 · 11:14",
-  "location": "石桥村·村外荒沟草坡",
+  "turns_completed": 3,
+  "time": "承平三年 · 第1日 · 12:29",
+  "location": "石桥村·村外荒沟",
   "player": {
     "id": "CFPLAYER00001",
     "name": "心魇说",
@@ -12,7 +12,7 @@
     "realm": "凡人（未修行）",
     "root": "未检测",
     "hp": 100,
-    "stamina": 73,
+    "stamina": 63,
     "copper": 12
   },
   "family": {
@@ -40,18 +40,19 @@
       ]
     ]
   },
-  "last_event": "EV000004",
-  "last_event_hash": "cd03eae032166faf20a378644d95e6cd5b579f83c55bd72be6d65f292ef7cd2c",
-  "full_state_sha256": "f3dbeba20651bab9faa439ecabfdf4f54cb44d31957253ef2e10c393bd56d4a0",
+  "last_event": "EV000005",
+  "last_event_hash": "e8800ede81ca01d7687ec1f13821cf3f37dd97a6f51f37f0f1450bad6f3f12ad",
+  "full_state_sha256": "bba0340050e60984e3509e5e23cbf20614a51b640d6e12363967c994844f6db4",
   "roots_hidden": true,
   "complete_source_event_ledger_synced": true,
   "full_state_parts_verified": true,
   "next_checkpoint_turn": 10,
-  "last_action": "forage_medicinal_herbs",
+  "last_action": "weave_fish_basket_sister_looks_for_loaches",
   "trap_status": "TRAP-SHIQIAO-0001 deployed; catch unknown, not checked",
   "inventory_added": {
     "item_id": "fresh_plantain",
     "quantity": 1
   },
-  "market_price_status": "NOT_QUOTED"
+  "market_price_status": "NOT_QUOTED",
+  "fishing_status": "fish basket 1 carried; no corn, alcohol, or catch"
 }
