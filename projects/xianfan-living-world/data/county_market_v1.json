@@ -1,0 +1,53 @@
+{
+  "schema": 1,
+  "version": "county-market-v1",
+  "stalls": [
+    {
+      "id": "HERB",
+      "name": "药材摊",
+      "money": 18,
+      "buy": {
+        "fresh_plantain": 2
+      }
+    },
+    {
+      "id": "GEAR",
+      "name": "渔具摊",
+      "money": 25,
+      "stock": {
+        "fishing_line": 2,
+        "fish_hook": 3
+      },
+      "sell": {
+        "fishing_line": 4,
+        "fish_hook": 3
+      }
+    },
+    {
+      "id": "PRODUCE",
+      "name": "菜肉摊",
+      "money": 15,
+      "buy": {
+        "field_hare": 7,
+        "leafy_vegetables": 3,
+        "river_fish": 3
+      }
+    },
+    {
+      "id": "SEEDS",
+      "name": "种子摊",
+      "money": 20,
+      "stock": {
+        "vegetable_seed_packet": 3,
+        "radish_seed_packet": 4,
+        "maize_seed_packet": 2
+      },
+      "sell": {
+        "vegetable_seed_packet": 5,
+        "radish_seed_packet": 3,
+        "maize_seed_packet": 4
+      }
+    }
+  ],
+  "prices_note": "虚构游戏经济起始价格，有账本存货和铜钱，非现实史料"
+}
