@@ -142,11 +142,18 @@
           "text": "在荒沟草坡与家人继续辨认普通药草；玩家实际采得鲜车前草一份，尚未售出。",
           "certainty": "known_fact",
           "location": "石桥村·村外荒沟"
+        },
+        {
+          "event_id": "EV000005",
+          "tag": "declined_mudbank_loach_search",
+          "text": "被邀请到泥岸找泥鳅，本次自主拒绝，未执行挖掘。",
+          "certainty": "known_fact",
+          "location": "石桥村·村外荒沟"
         }
       ],
       "relationships": {},
       "last_known_location": "石桥村·村外荒沟",
-      "last_updated_event": "EV000004",
+      "last_updated_event": "EV000005",
       "base_temperament": {
         "version": "npc-base-temperament-v1",
         "source": "deterministic_world_seed",
