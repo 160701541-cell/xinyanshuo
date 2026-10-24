@@ -1,9 +1,9 @@
 {
   "schema": 1,
   "campaign_id": "xianfan-canglan-text-20261024",
-  "turns_completed": 10,
-  "time": "承平三年 · 第1日 · 16:18",
-  "location": "石桥村外·草丛兽道",
+  "turns_completed": 11,
+  "time": "承平三年 · 第2日 · 09:04",
+  "location": "临安县城·东门",
   "player": {
     "id": "CFPLAYER00001",
     "name": "心魇说",
@@ -12,13 +12,13 @@
     "realm": "凡人（未修行）",
     "root": "未检测",
     "hp": 100,
-    "stamina": 31,
+    "stamina": 61,
     "copper": 12
   },
   "family": {
     "id": "CFFAM00001",
     "cash": 42,
-    "grain_dou": 54,
+    "grain_dou": 53,
     "people": [
       [
         "CFNPC00001",
@@ -38,16 +38,17 @@
         16,
         "手足"
       ]
-    ]
+    ],
+    "grain_remainder_millidou": 892
   },
-  "last_event": "EV000012",
-  "last_event_hash": "d135092bbc1bc1ff0e8455b62e5cc5f3673ac8a408063387d7e992477dd09cc4",
-  "full_state_sha256": "faffa7d736006689003b2a62ecc4d272f4f771d73ccdebc8264afea1231c93f3",
+  "last_event": "EV000013",
+  "last_event_hash": "9e00e93cab1ccd9e858e44b2415efef8da56a0cf78bd94455a487f1f55089eb1",
+  "full_state_sha256": "fa379f3210e90ee431a44827c8dfcfdffe9497a475a07368333139f329f85d68",
   "roots_hidden": true,
   "complete_source_event_ledger_synced": true,
   "full_state_parts_verified": true,
   "next_checkpoint_turn": 20,
-  "last_action": "seek_branch_weave_basket_and_inspect",
+  "last_action": "return_home_eat_sleep_inspect_traps_travel_county",
   "trap_status": "checked empty 16:18",
   "inventory_added": {
     "item_id": "fresh_plantain",
