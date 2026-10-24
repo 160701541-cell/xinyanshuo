@@ -1,8 +1,9 @@
 import {digest,verifyEvents} from './campaign_guard.mjs';
 import {verifyNumericState,asUInt,transferLedger} from './numeric_accounts.mjs';
+import {craftTrap} from './hunting_engine.mjs';
 export {verifyNumericState} from './numeric_accounts.mjs';
 
-export const NUMERIC_VERSION='number-authority-1.0.0';
+export const NUMERIC_VERSION='number-authority-1.1.0';
 export const RULES=Object.freeze({speech_chars_per_minute:90,rest_stamina_minutes_per_point:10,max_rest_minutes:480,max_wait_minutes:60,transfer_minutes:1});
 const stop=(code,message)=>{throw Object.assign(new Error(message),{code});};
 const clock=t=>{
@@ -19,7 +20,7 @@ function advance(s,delta){
 const snapshot=s=>({time:clock(s.time),player_money:s.player.money,family_money:s.family.cash,family_grain:s.family.grain_dou,hp:s.player.hp,stamina:s.player.stamina});
 export function calculateAction(original,action,events=[]){
  verifyNumericState(original);
- if(!action || !['speak','wait','rest','transfer'].includes(action.type))stop('RULE_NOT_IMPLEMENTED','该行为无权威计算公式，拒绝GM凭感觉增加数值');
+ if(!action || !['speak','wait','rest','transfer','craft_trap'].includes(action.type))stop('RULE_NOT_IMPLEMENTED','该行为无权威计算公式，拒绝GM凭感觉增加数值');
  if(action.numeric_override!==undefined||action.force_success!==undefined)stop('GM_CHEAT','禁止GM指定计算结果');
  const s=structuredClone(original),before=snapshot(s),receipts=[];
  switch(action.type){
@@ -43,6 +44,11 @@ export function calculateAction(original,action,events=[]){
   }
   case 'transfer':{
    receipts.push(transferLedger(s,action,events));advance(s,RULES.transfer_minutes);break;
+  }
+  case 'craft_trap':{
+   const receipt=craftTrap(s,action.recipe_id||'cord_snare');
+   advance(s,receipt.duration_minutes);
+   receipts.push(receipt);break;
   }
  }
  verifyNumericState(s);
