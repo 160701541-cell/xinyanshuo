@@ -1,0 +1,328 @@
+{
+  "schema": 1,
+  "campaign_id": "xianfan-canglan-text-20261024",
+  "title": "仙凡共生 × 苍岚·人生世界 · 文字战役",
+  "status": "playing",
+  "world_seed": "xianfan-canglan-text-20261024-v1",
+  "time": {
+    "regnal_year": 3,
+    "day": 1,
+    "hour": 10,
+    "minute": 19,
+    "display": "承平三年 · 第1日 · 10:19",
+    "weather": "晴"
+  },
+  "player": {
+    "id": "CFPLAYER00001",
+    "name": "心魇说",
+    "sex": "男",
+    "age": 16,
+    "background": "自耕农家庭",
+    "origin_id": "shiqiao",
+    "origin_name": "石桥村",
+    "role": "平民",
+    "realm": "凡人（未修行）",
+    "root_status": "未检测",
+    "root_commitment_sha256": "897ffd3bec4b0c505b934d584835158fecaf6ddea61c5d70df6b8160db914dd7",
+    "hp": 100,
+    "max_hp": 100,
+    "stamina": 80,
+    "max_stamina": 100,
+    "money": 12,
+    "money_unit": "文",
+    "exp": 0,
+    "family_id": "CFFAM00001",
+    "relations": [
+      "CFNPC00001",
+      "CFNPC00002",
+      "CFNPC00003"
+    ]
+  },
+  "inventory": [
+    {
+      "id": "coarse_cloth",
+      "name": "粗布衣",
+      "quantity": 1,
+      "equipped": true,
+      "category": "衣物",
+      "source": "出身基础衣着，视为原本穿在身上"
+    },
+    {
+      "id": "cloth_shoes",
+      "name": "布鞋",
+      "quantity": 1,
+      "equipped": true,
+      "category": "衣物",
+      "source": "出身基础衣着，视为原本穿在脚上"
+    }
+  ],
+  "current_location": "石桥村",
+  "last_event_id": "EV000003",
+  "reference": {
+    "origin": "GitHub 160701541-cell/xinyanshuo",
+    "xianfan_branch": "xianfan/independent-living-county-v0.1",
+    "xianfan_module": "projects/xianfan-living-world/",
+    "population_in_source_prototype": 13680,
+    "world_reference_only": true,
+    "note": "13680为仙凡代码里的临安县及周边原型人口，不是本次文字游戏已加载的13680个完整可模拟NPC。"
+  },
+  "places": [
+    {
+      "id": "linan",
+      "name": "临安县城",
+      "x": 0,
+      "y": 0,
+      "category": "凡俗县城"
+    },
+    {
+      "id": "songlin",
+      "name": "松林村",
+      "x": 6900,
+      "y": -3500,
+      "category": "林业乡村"
+    },
+    {
+      "id": "qingyun",
+      "name": "青云山城",
+      "x": 11300,
+      "y": -7200,
+      "category": "修仙山城"
+    },
+    {
+      "id": "lingshan",
+      "name": "灵山药市",
+      "x": 12000,
+      "y": -8100,
+      "category": "修行坊市"
+    },
+    {
+      "id": "shiqiao",
+      "name": "石桥村",
+      "x": 3600,
+      "y": 4800,
+      "category": "农耕乡村"
+    },
+    {
+      "id": "liantang",
+      "name": "莲塘村",
+      "x": -4100,
+      "y": 5100,
+      "category": "水乡乡村"
+    }
+  ],
+  "location_id": "shiqiao",
+  "position": {
+    "x": 3853,
+    "y": 4991
+  },
+  "known_npcs": [
+    {
+      "id": "CFNPC00001",
+      "name": "钱然泽",
+      "relation": "父亲",
+      "sex": "男",
+      "age": 35,
+      "location_id": "shiqiao",
+      "health": "正常",
+      "alive": true
+    },
+    {
+      "id": "CFNPC00002",
+      "name": "郑舟清",
+      "relation": "母亲",
+      "sex": "女",
+      "age": 49,
+      "location_id": "shiqiao",
+      "health": "正常",
+      "alive": true
+    },
+    {
+      "id": "CFNPC00003",
+      "name": "孙成明",
+      "relation": "手足",
+      "sex": "女",
+      "age": 16,
+      "location_id": "shiqiao",
+      "health": "正常",
+      "alive": true
+    }
+  ],
+  "family": {
+    "id": "CFFAM00001",
+    "region_id": "shiqiao",
+    "background": "自耕农家庭",
+    "size": 4,
+    "cash": 42,
+    "grain_dou": 54,
+    "members": [
+      {
+        "id": "CFNPC00001",
+        "name": "钱然泽",
+        "relation": "父亲",
+        "sex": "男",
+        "age": 35,
+        "location_id": "shiqiao",
+        "health": "正常",
+        "alive": true
+      },
+      {
+        "id": "CFNPC00002",
+        "name": "郑舟清",
+        "relation": "母亲",
+        "sex": "女",
+        "age": 49,
+        "location_id": "shiqiao",
+        "health": "正常",
+        "alive": true
+      },
+      {
+        "id": "CFNPC00003",
+        "name": "孙成明",
+        "relation": "手足",
+        "sex": "女",
+        "age": 16,
+        "location_id": "shiqiao",
+        "health": "正常",
+        "alive": true
+      }
+    ],
+    "note": "家中库存并非玩家随身所有；不得未经交易或亲属许可扣取。"
+  },
+  "initial_rolls_public": {
+    "random_key": "xianfan-canglan-text-20261024-v1|玩家:心魇说|性别:男|年龄:16|开局序号:1",
+    "region_weight_roll_0_13679": 5846,
+    "origin_population_weight": 1360,
+    "background_weight_roll_0_99": 53,
+    "family_size": 4,
+    "family_cash_before_pocket": 54,
+    "pocket_money": 12,
+    "grain_factor": 13.73,
+    "root_roll_public": "隐藏；承诺哈希已锁定；检测后公布并可复算",
+    "method": "SHA256(seed|label|counter)作为256位确定性整数，拒绝采样取余"
+  },
+  "ecology": {
+    "shiqiao-outskirts-v1": {
+      "version": "shiqiao-ecology-v1",
+      "seed": "xianfan-canglan-text-20261024-v1",
+      "location_id": "shiqiao",
+      "nodes": [
+        {
+          "id": "SH-BRUSH-A",
+          "name": "村南路外灌木带",
+          "x": 3730,
+          "y": 4896,
+          "resource": "flexible_branch",
+          "quantity": 2,
+          "rights": "uncultivated_commons",
+          "kind": "wild_growth",
+          "seed_origin": "xianfan-canglan-text-20261024-v1"
+        },
+        {
+          "id": "SH-BRUSH-B",
+          "name": "田埂外矮树丛",
+          "x": 3777,
+          "y": 4915,
+          "resource": "flexible_branch",
+          "quantity": 4,
+          "rights": "uncultivated_commons",
+          "kind": "wild_growth",
+          "seed_origin": "xianfan-canglan-text-20261024-v1"
+        },
+        {
+          "id": "SH-FIBER-A",
+          "name": "荒沟边的纤维草带",
+          "x": 3805,
+          "y": 4939,
+          "resource": "bast_fiber",
+          "quantity": 5,
+          "rights": "uncultivated_commons",
+          "kind": "wild_growth",
+          "seed_origin": "xianfan-canglan-text-20261024-v1"
+        },
+        {
+          "id": "SH-FIBER-B",
+          "name": "河侧芦草丛",
+          "x": 3839,
+          "y": 4961,
+          "resource": "bast_fiber",
+          "quantity": 3,
+          "rights": "uncultivated_commons",
+          "kind": "wild_growth",
+          "seed_origin": "xianfan-canglan-text-20261024-v1"
+        },
+        {
+          "id": "SH-FALLEN-A",
+          "name": "荒坡枯枝地",
+          "x": 3758,
+          "y": 4999,
+          "resource": "fallen_stick",
+          "quantity": 1,
+          "rights": "uncultivated_commons",
+          "kind": "wild_growth",
+          "seed_origin": "xianfan-canglan-text-20261024-v1"
+        }
+      ],
+      "animals": [
+        {
+          "id": "SH-HARE-01",
+          "species": "field_hare",
+          "name": "田野兔群",
+          "count": 3,
+          "zone": "shiqiao-outskirts-v1",
+          "route": [
+            "SH-HARE-TRAIL-A"
+          ],
+          "last_checked_day": 1
+        }
+      ],
+      "trails": [
+        {
+          "id": "SH-HARE-TRAIL-A",
+          "kind": "animal_path",
+          "name": "荒沟与低矮草丛间的小兽道",
+          "x": 3853,
+          "y": 4991,
+          "dist_from_human_road_m": 75,
+          "track_score": 10,
+          "owner": null
+        }
+      ],
+      "deployed_traps": [
+        {
+          "id": "TRAP-SHIQIAO-0001",
+          "type": "cord_snare",
+          "owner": "CFPLAYER00001",
+          "trail_id": "SH-HARE-TRAIL-A",
+          "x": 3853,
+          "y": 4991,
+          "set_day": 1,
+          "set_time": "承平三年 · 第1日 · 10:19",
+          "capture_status": "unset_until_animal_tick",
+          "captured_count": 0
+        }
+      ],
+      "generated_from": "predeclared world-seed + region templates"
+    }
+  },
+  "npc_schedules": {
+    "CFNPC00003": {
+      "last_seen_location": "石桥村村外荒沟附近",
+      "activity": "with_player_by_bushes",
+      "updated_at": "承平三年 · 第1日 · 10:19",
+      "interest": "尝试学习普通小兽绳套"
+    },
+    "CFNPC00001": {
+      "last_seen_location": "石桥村田间",
+      "activity": "fieldwork",
+      "updated_at": "承平三年 · 第1日 · 10:19",
+      "evidence": "08:00已准备下田；按家庭劳作日程推演，不等于已直接目击"
+    },
+    "CFNPC00002": {
+      "last_seen_location": "石桥村钱家院落",
+      "activity": "kitchen_and_housework",
+      "updated_at": "承平三年 · 第1日 · 10:19",
+      "evidence": "08:00在厨房，后续活动为日程推演"
+    }
+  },
+  "sub_location": "村外荒沟·矮草丛边"
+}
