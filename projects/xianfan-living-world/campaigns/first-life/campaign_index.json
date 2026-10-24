@@ -1,9 +1,9 @@
 {
   "schema": 1,
   "campaign_id": "xianfan-canglan-text-20261024",
-  "turns_completed": 11,
-  "time": "承平三年 · 第2日 · 09:04",
-  "location": "临安县城·东门",
+  "turns_completed": 12,
+  "time": "承平三年 · 第2日 · 10:09",
+  "location": "临安县城·集市",
   "player": {
     "id": "CFPLAYER00001",
     "name": "心魇说",
@@ -12,8 +12,8 @@
     "realm": "凡人（未修行）",
     "root": "未检测",
     "hp": 100,
-    "stamina": 61,
-    "copper": 12
+    "stamina": 56,
+    "copper": 2
   },
   "family": {
     "id": "CFFAM00001",
@@ -41,20 +41,22 @@
     ],
     "grain_remainder_millidou": 892
   },
-  "last_event": "EV000013",
-  "last_event_hash": "9e00e93cab1ccd9e858e44b2415efef8da56a0cf78bd94455a487f1f55089eb1",
-  "full_state_sha256": "fa379f3210e90ee431a44827c8dfcfdffe9497a475a07368333139f329f85d68",
+  "last_event": "EV000014",
+  "last_event_hash": "076ca250a304ddae77d8db894731533f87ecf317f022da5cf0b7d1c2412647e9",
+  "full_state_sha256": "cda9d3368dce61e92fd6295fbf541221d6985d7ad481084229a03b0546ca5dde",
   "roots_hidden": true,
   "complete_source_event_ledger_synced": true,
   "full_state_parts_verified": true,
   "next_checkpoint_turn": 20,
-  "last_action": "return_home_eat_sleep_inspect_traps_travel_county",
+  "last_action": "county_market_herb_sale_fishing_supplies_and_seeds",
   "trap_status": "checked empty 16:18",
   "inventory_added": {
-    "item_id": "fresh_plantain",
-    "quantity": 1
+    "fishing_line": 1,
+    "fish_hook": 1,
+    "vegetable_seed_packet": 1
   },
-  "market_price_status": "NOT_QUOTED",
+  "market_price_status": "QUOTED_DAY2",
   "fishing_status": "one fish basket in water; one newly crafted basket carried",
-  "sister_errand": "walking home, no supplies delivered"
+  "sister_errand": "unanswered food delivery request, not retroactively rewritten",
+  "second_basket_status": "carried; user wishes deployment, requires river visit"
 }
