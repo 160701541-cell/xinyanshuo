@@ -1,0 +1,91 @@
+{
+  "reference": {
+    "origin": "GitHub 160701541-cell/xinyanshuo",
+    "xianfan_branch": "xianfan/independent-living-county-v0.1",
+    "xianfan_module": "projects/xianfan-living-world/",
+    "population_in_source_prototype": 13680,
+    "world_reference_only": true,
+    "note": "13680为仙凡代码里的临安县及周边原型人口，不是本次文字游戏已加载的13680个完整可模拟NPC。"
+  },
+  "places": [
+    {
+      "id": "linan",
+      "name": "临安县城",
+      "x": 0,
+      "y": 0,
+      "category": "凡俗县城"
+    },
+    {
+      "id": "songlin",
+      "name": "松林村",
+      "x": 6900,
+      "y": -3500,
+      "category": "林业乡村"
+    },
+    {
+      "id": "qingyun",
+      "name": "青云山城",
+      "x": 11300,
+      "y": -7200,
+      "category": "修仙山城"
+    },
+    {
+      "id": "lingshan",
+      "name": "灵山药市",
+      "x": 12000,
+      "y": -8100,
+      "category": "修行坊市"
+    },
+    {
+      "id": "shiqiao",
+      "name": "石桥村",
+      "x": 3600,
+      "y": 4800,
+      "category": "农耕乡村"
+    },
+    {
+      "id": "liantang",
+      "name": "莲塘村",
+      "x": -4100,
+      "y": 5100,
+      "category": "水乡乡村"
+    }
+  ],
+  "location_id": "shiqiao",
+  "position": {
+    "x": 3600,
+    "y": 4800
+  },
+  "known_npcs": [
+    {
+      "id": "CFNPC00001",
+      "name": "钱然泽",
+      "relation": "父亲",
+      "sex": "男",
+      "age": 35,
+      "location_id": "shiqiao",
+      "health": "正常",
+      "alive": true
+    },
+    {
+      "id": "CFNPC00002",
+      "name": "郑舟清",
+      "relation": "母亲",
+      "sex": "女",
+      "age": 49,
+      "location_id": "shiqiao",
+      "health": "正常",
+      "alive": true
+    },
+    {
+      "id": "CFNPC00003",
+      "name": "孙成明",
+      "relation": "手足",
+      "sex": "女",
+      "age": 16,
+      "location_id": "shiqiao",
+      "health": "正常",
+      "alive": true
+    }
+  ]
+}
