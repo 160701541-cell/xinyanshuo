@@ -61,7 +61,7 @@ GM质量门禁与新事件SHA256
 - `tools/numeric_accounts.mjs`：整数、钱包、身份/授权证明、双向转移。
 - `tools/numeric_engine.mjs`：时间/精力/交流/转账的实际公式、确定性预览与事件构建。
 - `tools/turn_cli.mjs`：从完整保存及原始事件链调用计算器；`preview`仅预览，`commit`执行真正写盘并标记尚需GitHub同步。
-- `tools/restore_campaign.mjs`：第一回合之前用旧四份出生档重建状态，此后绝不让初始档覆盖新版数值。
+- `tools/numeric_hud.mjs`：只从事件哈希匹配的真实状态构造HUD视图；没有初始化的属性返回null/未建档，禁止凭空补数。\n- `tests/numeric_hud.test.mjs`：验证篡改金钱后HUD必须拒绝输出。\n- `tools/restore_campaign.mjs`：第一回合之前用旧四份出生档重建状态，此后绝不让初始档覆盖新版数值。
 - `tools/campaign_guard.mjs`：检查事件哈希、身份与第10/20/30轮压缩。
 - `tests/numeric_engine.test.mjs`：出生值哈希、存款守恒、授权、限时、精力、GM作弊、无来源账户、负值、破坏事件等回归。
 - 此处提交的源码不等于聊天环境中实时自动服务；每次行动需要GM实际使用工具运行并且提交GitHub。若某轮没有执行代码，必须明确回答**“本轮未数值结算，未修改存档”**。
