@@ -1,0 +1,55 @@
+{
+  "schema": "xianfan.freshwater.v1",
+  "version": "freshwater-0.1.0",
+  "purpose": "Static region habitats, not measured real-world hydrology; world seed determines ecology at first discovery.",
+  "region_id": "shiqiao-outskirts-v1",
+  "site": {
+    "id": "SH-RIVER-01",
+    "name": "荒沟下游缓水湾",
+    "x": 3867,
+    "y": 5009,
+    "bank_height_m": 0.3,
+    "depth_cm": 48,
+    "flow_cm_per_s": 12,
+    "owner": "unclaimed_commons",
+    "human_path_distance_m": 35,
+    "structure_anchor": "stable_bank_reeds",
+    "habitat": "vegetated_shallow_freshwater"
+  },
+  "thresholds": {
+    "max_depth_cm": 70,
+    "max_flow_cm_per_s": 30,
+    "max_distance_m": 70,
+    "min_path_clearance_m": 12
+  },
+  "species": [
+    {
+      "id": "small_cyprinid",
+      "name": "溪河小鱼群",
+      "spawn_chance_percent": 78,
+      "min_population": 2,
+      "extra_population_range": 5
+    },
+    {
+      "id": "loach",
+      "name": "泥鳅群",
+      "spawn_chance_percent": 50,
+      "min_population": 1,
+      "extra_population_range": 4
+    }
+  ],
+  "installation": {
+    "minutes": 18,
+    "stamina_cost": 3,
+    "requires_basket_id": "woven_fish_basket",
+    "requires_reinforcement": true,
+    "requires_bait": false
+  },
+  "capture": {
+    "status": "future_simulation_only",
+    "time_tick_minutes": 120,
+    "per_check_catch_cap": 1,
+    "fish_bait_bonus_percent": 0,
+    "warning": "Cannot claim a catch at placement, and never pre-credit loot. Must separately implement and test per-check event simulation, species population debit, injury risk and conservation."
+  }
+}
