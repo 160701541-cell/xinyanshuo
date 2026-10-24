@@ -11,9 +11,16 @@ export function restore(root) {
   const path=join(root,'game_state.json');
   if(existsSync(path)) {
     const existing=JSON.parse(readFileSync(path,'utf8'));
-    if(JSON.stringify(existing)!==JSON.stringify(state))
-      throw Error('完整状态与拆分原始档冲突：拒绝覆盖');
-  } else writeFileSync(path,JSON.stringify(state,null,2)+'\n');
+    const index=JSON.parse(readFileSync(join(root,'campaign_index.json'),'utf8'));
+    if(index.turns_completed===0 && JSON.stringify(existing)!==JSON.stringify(state))
+      throw Error('初始完整状态与来源档案冲突：拒绝覆盖');
+    // After first committed turn, the immutable initial segments must NOT overwrite live state.
+    inspect(root); // verifies authoritative state hash against the current event chain
+    return existing;
+  }
+  const index=JSON.parse(readFileSync(join(root,'campaign_index.json'),'utf8'));
+  if(index.turns_completed!==0)throw Error('历史战役缺少完整状态，禁止从旧出生档重建覆盖');
+  writeFileSync(path,JSON.stringify(state,null,2)+'\n');
   return state;
 }
 const root=process.argv[3]||new URL('../campaigns/first-life/',import.meta.url).pathname;
