@@ -1,0 +1,12 @@
+{
+  "schema": 1,
+  "version": "resource-search-1.0",
+  "node": "SH-SAPLING-D",
+  "location": "石桥村河湾旁",
+  "resource": "flexible_branch",
+  "availability_percent": 73,
+  "quantity_min": 1,
+  "quantity_extra": 3,
+  "search_minutes": 35,
+  "search_energy": 5
+}
