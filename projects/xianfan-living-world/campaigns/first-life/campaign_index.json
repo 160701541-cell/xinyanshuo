@@ -1,0 +1,48 @@
+{
+  "schema": 1,
+  "campaign_id": "xianfan-canglan-text-20261024",
+  "turns_completed": 0,
+  "time": "承平三年·第1日·08:00",
+  "location": "石桥村·钱家院落",
+  "player": {
+    "id": "CFPLAYER00001",
+    "name": "心魇说",
+    "sex": "男",
+    "age": 16,
+    "realm": "凡人（未修行）",
+    "root": "未检测",
+    "hp": 100,
+    "stamina": 100,
+    "copper": 12
+  },
+  "family": {
+    "id": "CFFAM00001",
+    "cash": 42,
+    "grain_dou": 54,
+    "people": [
+      [
+        "CFNPC00001",
+        "钱然泽",
+        35,
+        "父亲"
+      ],
+      [
+        "CFNPC00002",
+        "郑舟清",
+        49,
+        "母亲"
+      ],
+      [
+        "CFNPC00003",
+        "孙成明",
+        16,
+        "手足"
+      ]
+    ]
+  },
+  "last_event": "EV000002",
+  "last_event_hash": "a74cf0a99c6cef1a4d019787bbf4eb457781f94346d420196c443be1c411fc69",
+  "full_state_sha256": "52eab54f38ed24b476c8495e1343bec82f6ead1bf8414a39c1cebd4cb0eb6ca5",
+  "roots_hidden": true,
+  "complete_source_event_ledger_synced": false
+}
