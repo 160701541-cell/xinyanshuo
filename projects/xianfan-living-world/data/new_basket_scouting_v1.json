@@ -1,0 +1,50 @@
+{
+  "schema": "xianfan.local_basket_materials.v1",
+  "version": "new-basket-0.1.0",
+  "location": "石桥村荒沟下游",
+  "method": "fixed habitat definitions plus existing campaign world seed; node stocks persisted at first scouting and never rerolled",
+  "sites": [
+    {
+      "id": "SH-WILLOW-C",
+      "name": "下游柳丛",
+      "x": 3940,
+      "y": 5030,
+      "resource": "flexible_branch",
+      "spawn_percent": 75,
+      "base": 2,
+      "extra": 5
+    },
+    {
+      "id": "SH-REED-C",
+      "name": "下游芦苇滩",
+      "x": 3950,
+      "y": 5038,
+      "resource": "bast_fiber",
+      "spawn_percent": 85,
+      "base": 2,
+      "extra": 5
+    }
+  ],
+  "recipe": {
+    "requires": [
+      {
+        "id": "flexible_branch",
+        "quantity": 5
+      },
+      {
+        "id": "bast_fiber",
+        "quantity": 4
+      }
+    ],
+    "product": "woven_fish_basket",
+    "count": 1,
+    "craft_minutes": 50,
+    "craft_stamina": 6
+  },
+  "forage": {
+    "search_minutes": 35,
+    "search_stamina": 5,
+    "one_attempt_per_site": true
+  },
+  "note": "Even when material is present, do not create a fish basket without deducting 5 branches and 4 fibers; stock in old nodes is not replenished."
+}
