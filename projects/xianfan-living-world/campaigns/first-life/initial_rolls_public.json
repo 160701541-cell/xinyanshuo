@@ -1,0 +1,12 @@
+{
+  "random_key": "xianfan-canglan-text-20261024-v1|玩家:心魇说|性别:男|年龄:16|开局序号:1",
+  "region_weight_roll_0_13679": 5846,
+  "origin_population_weight": 1360,
+  "background_weight_roll_0_99": 53,
+  "family_size": 4,
+  "family_cash_before_pocket": 54,
+  "pocket_money": 12,
+  "grain_factor": 13.73,
+  "root_roll_public": "隐藏；承诺哈希已锁定；检测后公布并可复算",
+  "method": "SHA256(seed|label|counter)作为256位确定性整数，拒绝采样取余"
+}
