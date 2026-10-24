@@ -1,0 +1,60 @@
+{
+  "schema": "xianfan.day2_trip_rules.v1",
+  "version": "day2-food-sleep-travel-1.0.0",
+  "night": {
+    "home_walk_minutes": 16,
+    "home_walk_stamina": 3,
+    "dinner_start_clock": 1080,
+    "dinner_minutes": 30,
+    "meal_grain_millidou_per_person": 15,
+    "mealtime_household_size": 4,
+    "bed_start_clock": 1290,
+    "wake_clock": 360,
+    "sleep_stamina_per_10min": 1,
+    "meal_stamina_gain": 4,
+    "meal_requires_parent_approval": true,
+    "household_water_ml_per_person": 250
+  },
+  "morning": {
+    "depart_clock": 375,
+    "morning_food_millidou_per_person": 12,
+    "morning_food_minutes": 15,
+    "walk_trap_minutes": 18,
+    "walk_trap_stamina": 3,
+    "inspect_trap_minutes": 12,
+    "inspect_trap_stamina": 2,
+    "walk_river_minutes": 12,
+    "walk_river_stamina": 2,
+    "inspect_river_minutes": 12,
+    "inspect_river_stamina": 2,
+    "trap_check_chance_percent": 24,
+    "fish_check_chance_percent": 18,
+    "fish_cycle_minutes": 120
+  },
+  "county": {
+    "walk_minutes": 115,
+    "walk_stamina": 17,
+    "arrival_point": {
+      "id": "linan-east-gate",
+      "name": "临安县城东门",
+      "x": 480,
+      "y": 630
+    },
+    "city_access": "public_city_gate",
+    "market_status": "unknown_merchant_quotes"
+  },
+  "household": {
+    "grain_conversion_millidou_per_dou": 1000,
+    "water_source": "family-kitchen-water-container",
+    "water_availability": "home-cooking-context-assumed; not liquid inventory mint",
+    "grain_source": "family.grain_dou",
+    "food_owner_id": "CFFAM00001"
+  },
+  "invariants": [
+    "family grain owned separately; consumption must debit household grain via authorized meal service",
+    "no guaranteed animal catches or fish stock creation",
+    "do not assume a guaranteed trade, free fish bait or NPC gifts",
+    "cross-day must advance day and write auditable step receipts",
+    "full journey only if stamina, time and food allow; later stages stop otherwise"
+  ]
+}
