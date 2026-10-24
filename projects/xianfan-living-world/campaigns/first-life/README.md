@@ -6,8 +6,8 @@
 
 - `campaign_index.json`：当前可公开的局面、人名、财产和历史事件哈希。
 - 原始事件末尾编号 `EV000002`，目前玩家有效行动回合数 **0**。
-- 以前的完整本地存档及事件链仍存在于游戏会话附件；四份状态拆分文件已完全提交且SHA256已复核一致。
-- 这份索引**不能替代原始game_state.json+events.jsonl**；本轮它仍是公开镜像，不能虚称完整备份。
+- 完整原始状态以四份JSON拆分上传，合并后的SHA256与原存档一致；events.jsonl含原始两条事件，角色记忆保存在story_memory_public.json。
+- 单独的campaign_index.json不能替代权威状态，需运行node ../../tools/restore_campaign.mjs verify . 将四份状态无损合并为game_state.json并校验events.jsonl。
 - 后续每轮行动应落盘至经校验的正式事件链并同步公开仓库；不能提交时必须提示用户“尚未同步”。
 
 ## 主持协议
