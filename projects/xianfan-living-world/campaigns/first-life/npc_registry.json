@@ -156,11 +156,18 @@
           "text": "接受哥哥请求，动身往家走，准备向家人询问食物和水；尚未返还。",
           "certainty": "known_fact",
           "location": "石桥村·村外荒沟"
+        },
+        {
+          "event_id": "EV000013",
+          "tag": "reunited_at_home",
+          "text": "第一日晚在家与兄长重逢。",
+          "certainty": "known_fact",
+          "location": "石桥村"
         }
       ],
       "relationships": {},
       "last_known_location": "石桥村·村外荒沟",
-      "last_updated_event": "EV000006",
+      "last_updated_event": "EV000013",
       "base_temperament": {
         "version": "npc-base-temperament-v1",
         "source": "deterministic_world_seed",
