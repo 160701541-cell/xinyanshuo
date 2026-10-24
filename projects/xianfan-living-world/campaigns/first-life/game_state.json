@@ -7,9 +7,9 @@
   "time": {
     "regnal_year": 3,
     "day": 1,
-    "hour": 10,
-    "minute": 19,
-    "display": "承平三年 · 第1日 · 10:19",
+    "hour": 11,
+    "minute": 14,
+    "display": "承平三年 · 第1日 · 11:14",
     "weather": "晴"
   },
   "player": {
@@ -26,7 +26,7 @@
     "root_commitment_sha256": "897ffd3bec4b0c505b934d584835158fecaf6ddea61c5d70df6b8160db914dd7",
     "hp": 100,
     "max_hp": 100,
-    "stamina": 80,
+    "stamina": 73,
     "max_stamina": 100,
     "money": 12,
     "money_unit": "文",
@@ -54,10 +54,20 @@
       "equipped": true,
       "category": "衣物",
       "source": "出身基础衣着，视为原本穿在脚上"
+    },
+    {
+      "id": "fresh_plantain",
+      "name": "鲜车前草",
+      "quantity": 1,
+      "category": "鲜采普通草药",
+      "source": "wild_botany:SH-MED-01",
+      "equipped": false,
+      "valuation_wen": null,
+      "identification": "unverified_market_grade"
     }
   ],
   "current_location": "石桥村",
-  "last_event_id": "EV000003",
+  "last_event_id": "EV000004",
   "reference": {
     "origin": "GitHub 160701541-cell/xinyanshuo",
     "xianfan_branch": "xianfan/independent-living-county-v0.1",
@@ -297,18 +307,82 @@
           "y": 4991,
           "set_day": 1,
           "set_time": "承平三年 · 第1日 · 10:19",
-          "capture_status": "unset_until_animal_tick",
+          "capture_status": "pending_animal_simulation",
           "captured_count": 0
         }
       ],
-      "generated_from": "predeclared world-seed + region templates"
+      "generated_from": "predeclared world-seed + region templates",
+      "botany": {
+        "schema": "botany-zone-1",
+        "spawn_seed": "xianfan-canglan-text-20261024-v1",
+        "generated_from": "world_seed + static habitat templates only; independent of player intent",
+        "nodes": [
+          {
+            "id": "SH-MED-01",
+            "name": "荒沟潮湿边坡",
+            "resource": "plantain",
+            "x": 3876,
+            "y": 5034,
+            "quantity": 0,
+            "initial_quantity": 1,
+            "rights": "uncultivated_commons",
+            "growth_stage": "mature",
+            "version": "medicinal-forage-0.1.0"
+          },
+          {
+            "id": "SH-MED-02",
+            "name": "矮草丛北侧",
+            "resource": "mugwort",
+            "x": 3905,
+            "y": 4982,
+            "quantity": 0,
+            "initial_quantity": 0,
+            "rights": "uncultivated_commons",
+            "growth_stage": "mature",
+            "version": "medicinal-forage-0.1.0"
+          },
+          {
+            "id": "SH-MED-03",
+            "name": "较干的背阴坡",
+            "resource": "polygonatum",
+            "x": 3821,
+            "y": 5050,
+            "quantity": 0,
+            "initial_quantity": 0,
+            "rights": "uncultivated_commons",
+            "growth_stage": "mature",
+            "version": "medicinal-forage-0.1.0"
+          },
+          {
+            "id": "SH-SPIRIT-01",
+            "name": "低灵气荒沟碎石地",
+            "resource": "wood_spirit",
+            "x": 3920,
+            "y": 5072,
+            "quantity": 0,
+            "initial_quantity": 0,
+            "rights": "unverified_spirit_plant_protected",
+            "growth_stage": "mature",
+            "version": "medicinal-forage-0.1.0"
+          }
+        ],
+        "history": [
+          {
+            "event_id": "EV000004",
+            "node_id": "SH-MED-01",
+            "resource": "fresh_plantain",
+            "quantity": 1,
+            "owner": "CFPLAYER00001"
+          }
+        ]
+      }
     }
   },
   "npc_schedules": {
     "CFNPC00003": {
       "last_seen_location": "石桥村村外荒沟附近",
-      "activity": "with_player_by_bushes",
-      "updated_at": "承平三年 · 第1日 · 10:19",
+      "activity": "helping_sift_herbs",
+      "updated_at": "承平三年 · 第1日 · 11:14",
       "interest": "尝试学习普通小兽绳套"
     },
     "CFNPC00001": {
