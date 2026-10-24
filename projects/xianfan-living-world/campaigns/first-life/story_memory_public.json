@@ -46,16 +46,14 @@
     }
   },
   "scene": {
-    "id": "SCENE0009",
-    "place": "石桥村·荒沟下游缓水湾",
-    "time": "承平三年 · 第1日 · 14:03",
+    "id": "SCENE0010",
+    "place": "石桥村·荒沟下游河岸和柳丛",
+    "time": "承平三年 · 第1日 · 14:38",
     "awaiting": "玩家下一步行动",
     "facts": [
-      "玩家在已登记的浅缓水湾成功布设加固鱼笼一只，并在岸边芦草处固定。",
-      "用游戏内静态水文参数与稳定世界种子计算了水域安全和两类鱼群初始生态库存。",
-      "鱼笼已从玩家背包扣除，成为水域里的可交互设施。",
-      "刚布设不产生任何渔获；以后必须经过独立时间与检查公式。",
-      "妹妹尚未在账本中返回交付饮食。"
+      "玩家沿河岸寻找新的柳丛和芦苇，获得已登记的自然材料，但数量不足以完成第二只鱼笼。",
+      "未凭空生成鱼笼，原先的鱼笼仍在缓水湾中等待检查。",
+      "成明从家里返回尚无确认。"
     ]
   },
   "open_threads": [
@@ -115,17 +113,24 @@
       "status": "鱼笼已在SH-RIVER-01水域固定，尚未检查或捕获",
       "source": "EV000010",
       "certainty": "已提交事件"
+    },
+    {
+      "id": "T0010",
+      "title": "沿岸再次制作鱼笼",
+      "status": "缺材料，尚未完成新的鱼笼",
+      "source": "EV000011",
+      "certainty": "已提交程序事件"
     }
   ],
   "state_checkpoint": {
-    "last_event_id": "EV000010",
-    "last_event_hash": "8b56a24daf1b02b3979c08703f7bb24ee7c480efd80d37016f47417176a158f3",
-    "state_sha256": "be1f6a9050a42b5e82f9682ed600f4d3111d59d633038e6f9e882af2c7f0a269",
-    "time": "承平三年 · 第1日 · 14:03",
+    "last_event_id": "EV000011",
+    "last_event_hash": "f5a02c92a3926c2ea10744445bc0f39ced7bc364ba0d92ae60606da6cc3bcd9f",
+    "state_sha256": "459ed23998fb4dabebeb36685c8aada1a2e0c935ae43e8b09a857b63f0ec2ead",
+    "time": "承平三年 · 第1日 · 14:38",
     "location_id": "shiqiao",
     "player_id": "CFPLAYER00001",
     "hp": 100,
-    "stamina": 49,
+    "stamina": 44,
     "money": 12
   },
   "private_notes_excluded": true
