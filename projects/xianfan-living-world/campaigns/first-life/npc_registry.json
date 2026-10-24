@@ -72,11 +72,18 @@
           "text": "早晨在家准备饭食并劝父亲让孩子吃东西",
           "certainty": "inferred",
           "location": "石桥村"
+        },
+        {
+          "event_id": "EV000013",
+          "tag": "household_food_permission",
+          "text": "同意家人使用家庭粮食准备当日晚饭与次日早餐。",
+          "certainty": "known_fact",
+          "location": "石桥村钱家院落"
         }
       ],
       "relationships": {},
       "last_known_location": "石桥村钱家院落（推演）",
-      "last_updated_event": "EV000002",
+      "last_updated_event": "EV000013",
       "base_temperament": {
         "version": "npc-base-temperament-v1",
         "source": "deterministic_world_seed",
