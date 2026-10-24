@@ -14,6 +14,10 @@
 
 ## 独立文字战役：公正主持与十轮记忆
 
+- [系统级NPC性格与终生履历规则](systems/npc-life/README.md) 与 [所有正式登场NPC的持久档案](campaigns/first-life/npc_registry.json)：每个人物有稳定ID、性别、可复算的基础人格、带事件编号的经历；不随剧情压缩丢失。
+- [野外草药真实生成/采集规则](data/medicinal_foraging_rules_v1.json) 与 [行动结算程序](tools/medicinal_foraging_turn.mjs)：由生态种子和材料节点决定收获，出售前不填虚构价格。
+
+
 - [狩猎与小兽陷阱材料规则](data/hunting_rules_v1.json)、[真实制作判定程序](tools/hunting_engine.mjs)及[守恒回归测试](tests/hunting_engine.test.mjs)。仅实现可追溯的陷阱制作计算；没有猎物实例登记前，**不能直接捕获动物或凭空获得皮肉**。
 
 - [P0数值权威协议](docs/GM_NUMERIC_AUTHORITY_V1.md)：所有数值必须由真实代码计算，有明确公式、初值和凭证；[整数与双向经济账本](tools/numeric_accounts.mjs)、[结算引擎](tools/numeric_engine.mjs)、[行动CLI](tools/turn_cli.mjs)、[数字回归测试](tests/numeric_engine.test.mjs)、[哈希校验HUD](tools/numeric_hud.mjs)。未知机制阻断，不临时生成数值。
