@@ -76,3 +76,9 @@
 完整新权威`game_state.json`、`events.jsonl`追加的EV000004、`npc_registry.json`、`story_memory_public.json`、`campaign_index.json`均已实际上传到仙凡独立分支。事先使用确定性SHA256计算预览和全事件链核对匹配，后续对这两个哈希进行交叉引用。旧出生数据、灵根承诺未改。
 
 **质量范围**：本轮JS代码已做确定性状态计算及事件链校验；Node完整测试工作流结果尚未确认，商铺账户/具体收购报价及完整灵植识别与跨日生态仍未实现，不能宣称通过。
+
+## 2026-10-25｜EV000010 河岸生境、放置鱼笼和后续捕获算法
+
+根据用户确认，完成河岸参数表`data/freshwater_habitat_v1.json`、`tools/freshwater_fishing.mjs`和自动测试`tests/freshwater_fishing.test.mjs`。直接调用实际仓库源码结算第八回合，生成带水域归属、安全检查、稳定种子鱼群的世界实体，扣背包鱼笼一只、消耗18分钟/精力3点。已写入真实`game_state.json`、`events.jsonl`的EV000010、索引和公开记忆，索引状态sha和事件链sha一致。
+
+后续`checkBasket`已编写可复算的120分钟生态时间门槛和单鱼群扣数捕获规则，尚未作为玩家已执行行动，不能报告捕获成功。Node完整测试结果尚未取得，不得标正式通过。
