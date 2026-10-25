@@ -35,6 +35,10 @@ static func preset(index: int) -> Dictionary:
 static func preset_index(path: String) -> int:
     for i in range(MODELS.size()):
         if str(MODELS[i]["path"])==path: return i
+        if path.begins_with("https://hf-mirror.com/"):
+            var resolved:=XianfanResumableModelDownload.source_url(str(MODELS[i]["path"]))
+            if path==resolved.replace("https://huggingface.co/","https://hf-mirror.com/"):
+                return i
     return -1
 
 static func model_hint(index: int) -> String:
