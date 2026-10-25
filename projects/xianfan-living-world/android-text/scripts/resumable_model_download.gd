@@ -270,6 +270,19 @@ static func _split_url(url: String) -> Dictionary:
     if host.is_empty() or port<=0 or port>65535: return {}
     return {"host":host,"port":port,"path":target}
 
+static func trusted_model_sha(source: String) -> String:
+    if VERIFIED_SHA256.has(source): return str(VERIFIED_SHA256[source])
+    # Explicitly supported community mirror: the supplied bytes must match
+    # the official upstream digest before the downloaded weights may load.
+    var no_query:=source.split("?")[0]
+    if source.begins_with("https://hf-mirror.com/"):
+        for model_ref in VERIFIED_SHA256:
+            var official_tail:=str(model_ref).trim_prefix("hf://")
+            var bits:=official_tail.split("/")
+            var path: String=str(bits[0])+"/"+str(bits[1])+"/resolve/main/"+str(bits[2])
+            if no_query.ends_with(path): return str(VERIFIED_SHA256[model_ref])
+    return ""
+
 func validate_disk_file(source: String, path: String, total: int) -> Dictionary:
     if not FileAccess.file_exists(path): return {"ok":false,"error":"文件不存在"}
     var stream:=FileAccess.open(path,FileAccess.READ)
@@ -279,7 +292,7 @@ func validate_disk_file(source: String, path: String, total: int) -> Dictionary:
         return {"ok":false,"error":"模型文件长度不匹配，下载未完成"}
     if stream.get_buffer(4).get_string_from_ascii()!="GGUF":
         return {"ok":false,"error":"文件头不是GGUF，可能误下载了登录页或网络错误页"}
-    var expected_hash:=str(VERIFIED_SHA256.get(source,""))
+    var expected_hash:=trusted_model_sha(source)
     if expected_hash.is_empty():
         return {"ok":true,"verified":"GGUF文件头与服务端大小","sha256":""}
     var ctx:=HashingContext.new()
