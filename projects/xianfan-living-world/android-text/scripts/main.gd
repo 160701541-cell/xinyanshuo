@@ -37,7 +37,10 @@ var last_director_place := ""
 var latest_action := ""
 var latest_outcome := ""
 var view := "剧情"
-var current_npc := "孙成明"
+var current_npc := ""
+var map_selected := ""
+var known_people_page := false
+var letter_body_field: TextEdit
 var last_roster_sector := ""
 var last_roster_page := 0
 var scene_text: RichTextLabel
@@ -273,7 +276,7 @@ func _build() -> void:
     hud.horizontal_alignment=HORIZONTAL_ALIGNMENT_CENTER
     root.add_child(hud)
     world_clock_button=_button("世界运行 1×",func(): _cycle_world_speed(),16)
-    world_clock_button.custom_minimum_size=Vector2(0,42)
+    world_clock_button.custom_minimum_size=Vector2(0,31)
     root.add_child(world_clock_button)
     stamina_bar = ProgressBar.new()
     stamina_bar.show_percentage = false
@@ -287,11 +290,11 @@ func _build() -> void:
     tab_buttons=HBoxContainer.new()
     tab_buttons.add_theme_constant_override("separation",4)
     root.add_child(tab_buttons)
-    for name in ["剧情","对话","人物","世界","经济","反馈","设置"]:
+    for name in ["剧情","对话","地图","人物","市集","更多"]:
         var tab_name := str(name)
         var b := _button(tab_name,func(): _change_tab(tab_name),17)
         b.size_flags_horizontal=SIZE_EXPAND_FILL
-        b.custom_minimum_size=Vector2(0,54)
+        b.custom_minimum_size=Vector2(0,44)
         tab_buttons.add_child(b)
 
     reader_card = PanelContainer.new()
@@ -320,7 +323,7 @@ func _build() -> void:
     actor_buttons.add_theme_constant_override("separation",6)
     inside.add_child(actor_buttons)
 
-    reader_footer=_label("所见皆有因 · 行动可自由描述 · 建议指令并非限制",15,FADED)
+    reader_footer=_label("写下行动，或前往地图 / 人物 / 市集",14,FADED)
     reader_footer.horizontal_alignment=HORIZONTAL_ALIGNMENT_CENTER
     root.add_child(reader_footer)
     notice=_label("",16,GOLD)
@@ -363,7 +366,7 @@ func _build() -> void:
 
     feedback_copy=_button("复制诊断与功能反馈日志",func(): _copy_feedback())
     root.add_child(feedback_copy)
-    settings_button=_button("配置 AI 服务（API / 本机服务）",func(): _open_ai_settings())
+    settings_button=_button("配置 AI 服务与本地模型",func(): _open_ai_settings())
     root.add_child(settings_button)
 
     input_row=HBoxContainer.new()
@@ -444,6 +447,95 @@ func _open_modal(title: String, body: String) -> void:
     modal_title.add_theme_color_override("font_color",ink)
     _wipe(modal_actions)
     _wipe(modal_form)
+
+func _show_page(name: String) -> void:
+    _close_modal()
+    _change_tab(name)
+
+func _show_map() -> void:
+    # A route schematic of locations the rule engine can actually reach.
+    # Do not pass an unimplemented waypoint to the time/position engine.
+    var now:=str(game.data["place"])
+    page_title.text="地图 · 已知道路"
+    var names: Array[String]=[]
+    for item in XianfanTravelPost.PLACES:
+        var row: Dictionary=item
+        names.append(("● " if str(row["name"])==now else "○ ")+str(row["name"]))
+    scene_text.text="当前位置：%s\n\n%s\n\n点击下方的已知道路实际行走。未发现的路线不能瞬移；此页是地理路线示意，不是伪造的实测卫星地图。" % [now,"\n".join(names)]
+    actor_buttons.visible=true
+    _wipe(actor_buttons)
+    var routes: Array[Dictionary]=XianfanTravelPost.available_routes(now)
+    actor_buttons.add_child(_label("可从此处直接前往",16,GOLD))
+    if routes.is_empty():
+        actor_buttons.add_child(_label("当前没有已核实的直达路线，可先打听路线或返回已知地点。",15,FADED))
+    for route in routes:
+        var dest:=str(route["to"])
+        var cmd:=str(route["cmd"])
+        actor_buttons.add_child(_button("%s · 约%d分钟" % [dest,int(route["minutes"])],
+            func(): _go_from_map(cmd,dest),16))
+    actor_buttons.add_child(_button("查看全部已知地点与往来路程",func(): _open_route_ledger(),16))
+
+func _open_route_ledger() -> void:
+    var lines: Array[String]=[]
+    for place in XianfanTravelPost.PLACES:
+        var entry: Dictionary=place
+        var name:=str(entry["name"])
+        var edges:=XianfanTravelPost.available_routes(name)
+        var destinations: Array[String]=[]
+        for road in edges: destinations.append("%s（%d分）" % [str(road["to"]),int(road["minutes"])])
+        lines.append("%s → %s" % [name,"、".join(destinations) if not destinations.is_empty() else "尚无返程规则"])
+    _open_modal("已知地点与道路", "\n\n".join(lines))
+
+func _go_from_map(command_text: String, destination: String) -> void:
+    var allowed:=false
+    for road in XianfanTravelPost.available_routes(str(game.data["place"])):
+        if str(road["cmd"])==command_text and str(road["to"])==destination: allowed=true
+    if not allowed:
+        notice.text="地图路线已变化，没有执行移动。"
+        return
+    _submit(command_text,false)
+    if str(game.data["place"])==destination:
+        _change_tab("地图")
+
+func _open_contact_list() -> void:
+    var contacts: Array[Dictionary]=game.known_contacts()
+    var lines: Array[String]=["只列认识的人，不把县城全部居民当作你的熟人。远方交谈需要实际会面，或付费寄信。"]
+    _open_modal("熟人通讯录", "\n".join(lines))
+    if contacts.is_empty():
+        modal_actions.add_child(_label("尚无熟人；与人实际相识后才会出现在这里。",15,FADED))
+    for entry in contacts:
+        var who:=str(entry["name"])
+        var loc:=str(entry.get("place","未知"))
+        modal_actions.add_child(_button("%s · %s · %s" % [who,loc,
+            "就在眼前" if bool(entry["here"]) else "异地"],
+            func(): _open_npc(who),16))
+
+func _open_letter_writer(person: String) -> void:
+    var quote: Dictionary=game.postage_quote(person)
+    if not bool(quote.get("ok",false)):
+        _open_modal("无法寄信",str(quote.get("reason","收信地址不明确")))
+        return
+    _open_modal("给%s写信"%person,
+        "收信地：%s\n邮资：%d文｜预计%s送达\n%s\n\n只有点击『确认寄出』才会扣钱；对方不能立刻回答。" % [
+            str(game.data["npc"][person].get("place","")),int(quote["fee"]),
+            XianfanTravelPost.format_eta(int(quote["minutes"])),str(quote["route"])])
+    letter_body_field=TextEdit.new()
+    letter_body_field.custom_minimum_size=Vector2(0,125)
+    letter_body_field.placeholder_text="写下你想告诉对方的事……（最多600字）"
+    letter_body_field.wrap_mode=TextEdit.LINE_WRAPPING_BOUNDARY
+    modal_form.add_child(letter_body_field)
+    modal_actions.add_child(_button("确认寄出 · %d文" % int(quote["fee"]),func():
+        var message_text:=letter_body_field.text
+        var result: Dictionary=game.send_letter(person,message_text)
+        if bool(result.get("ok",false)):
+            _show_page("书信")
+            notice.text=str(game.last_result)
+        else:
+            modal_info.text=str(result.get("error","寄信失败，未扣资"))
+    ,17))
+
+func _open_distant_roster() -> void:
+    _open_society_roster()
 
 func _open_society_roster(sector: String="",page: int=0) -> void:
     last_roster_sector=sector
@@ -534,11 +626,20 @@ func _open_npc(name: String) -> void:
     if int(chosen["rapport"])>=0: details.append("【关系】亲近程度 %d/100" % int(chosen["rapport"]))
     if int(chosen["learning"])>=0: details.append("【学识】%d/100（不等于灵根或境界）" % int(chosen["learning"]))
     _open_modal("人物档案 · "+name,"\n\n".join(details))
-    if bool(chosen.get("alive",true)):
-        modal_actions.add_child(_button("与TA交谈",func():
+    if bool(chosen.get("alive",true)) and bool(chosen.get("here",false)):
+        modal_actions.add_child(_button("当面交谈",func():
             _close_modal()
             _change_tab("对话")
         ))
+    elif bool(chosen.get("alive",true)):
+        modal_actions.add_child(_label("此人现在不在你面前，不能当面交谈。",16,FADED))
+        var is_known:=false
+        for contact in game.known_contacts():
+            if str(contact["name"])==name: is_known=true
+        if is_known:
+            modal_actions.add_child(_button("写信联系 · 查邮资",func(): _open_letter_writer(name),17))
+        else:
+            modal_actions.add_child(_label("尚不相识：可先前往其所在地认识他。",15,FADED))
     modal_actions.add_child(_button("查看长期记忆 · 生活习惯",func(): _open_npc_memory(name),16))
     if str(chosen.get("id","")).begins_with("CIV"):
         modal_actions.add_child(_button("返回百业人物名册",func(): _open_society_roster(last_roster_sector,last_roster_page),16))
@@ -813,8 +914,9 @@ func _refresh_download_widgets() -> void:
     if worker!=null and local_enabled:
         pending=worker.is_pending(str(local_llm.get("model_source")))
     var downloading:=bool(local_llm.get("loading")) and not bool(local_llm.get("loading_weights"))
-    model_progress_label.visible=downloading or pending or model_download_seen
-    model_progress_bar.visible=downloading or pending or model_download_seen
+    # Completed downloads do not occupy story space forever.
+    model_progress_label.visible=(downloading or pending) and view=="设置"
+    model_progress_bar.visible=(downloading or pending) and view=="设置"
     resume_model_button.visible=pending and not bool(local_llm.get("loading"))
 
 func _local_status(message: String) -> void:
@@ -893,7 +995,13 @@ func _submit(text: String, typed: bool) -> void:
     if raw.is_empty(): return
     var npc_to_chat := current_npc if view=="对话" and typed else _detect_npc_speech(raw)
     if view=="对话" and typed:
+        if current_npc.is_empty() or not game.at_same_place(current_npc):
+            notice.text="没有可当面交谈的人。先在『人物』页选择眼前的人；远方熟人请写信。"
+            return
         raw="跟"+current_npc+"说："+raw
+    if not npc_to_chat.is_empty() and not game.at_same_place(npc_to_chat):
+        notice.text="%s此刻不在此地。不会调用AI假装当面对话；可在人物档案中寄信。" % npc_to_chat
+        return
     command.clear()
     command.release_focus()
     # Fast-path exact game actions and buttons; reserve heavy 8B inference for
@@ -1069,83 +1177,97 @@ func _refresh() -> void:
     match view:
         "剧情":
             page_title.text="眼前 · "+str(game.data["place"])
+            # The story screen shows what happens here, not a world census.
             scene_text.text=game.look()
             if not game.last_result.is_empty() and game.last_channel=="剧情":
-                scene_text.text+="\n\n—— 已结算的行动 ——\n"+game.last_result
+                scene_text.text+="\n\n【刚刚发生】\n"+game.last_result.substr(0,700)
             var generated:=game.recent_story_ai(1)
             if not generated.is_empty():
-                scene_text.text+="\n\n—— 本地AI叙事 · 不代替规则结算 ——\n"+generated
-            var story_flags: Dictionary=game.data.get("story_flags",{})
-            if not story_flags.is_empty():
-                scene_text.text+="\n\n人生支线已开启 %d 条，可在人物档案查看各人的新打算。" % story_flags.size()
+                scene_text.text+="\n\n【人生故事】\n"+generated.substr(0,700)
             suggestions=game.actions_for_place().slice(0,3)
             _render_buttons(quick_buttons,suggestions)
             _render_buttons(action_list,game.actions_for_place())
         "对话":
-            page_title.text="与人交谈 · "+current_npc
-            scene_text.text=game.dialogue_recent()
-            if game.last_channel=="对话" and not game.last_result.is_empty() and not scene_text.text.contains(game.last_result):
-                scene_text.text+="\n\n【刚才交谈】\n"+game.last_result
+            var selected_here:=not current_npc.is_empty() and game.at_same_place(current_npc)
+            if not selected_here: current_npc=""
+            page_title.text="对话 · "+(current_npc if selected_here else "选择眼前的人")
+            scene_text.text=game.dialogue_recent(12) if selected_here else "你现在在%s。\n\n请选择下方真正处于同一地点的人物。\n\n远处的人不能隔空聊天，熟人可通过书信联系。" % str(game.data["place"])
             actor_buttons.visible=true
             _wipe(actor_buttons)
-            actor_buttons.add_child(_label("选择人物，点击查看状态或更换交谈对象：",16,FADED))
-            for n in game.npcs_status():
-                if not bool(n.get("alive",true)) or (not n["here"] and not str(n["relationship"]) in ["妹妹","父亲","母亲"]): continue
-                var who:=str(n["name"])
-                actor_buttons.add_child(_button(who+" · "+str(n["activity"]),func(): _open_npc(who),16))
-        "人物":
-            page_title.text="人物与身家"
-            var full:=game.status()
-            scene_text.text=full.split("\n【背包】")[0]
-            actor_buttons.visible=true
-            _wipe(actor_buttons)
-            actor_buttons.add_child(_label("人物档案 · 点击弹出详细属性和互动",18,GOLD))
-            for n in game.npcs_status():
-                if not bool(n.get("alive",true)) or (not n["here"] and not str(n["relationship"]) in ["妹妹","父亲","母亲"]): continue
-                var who:=str(n["name"])
-                actor_buttons.add_child(_button(who+"  ·  "+str(n["relationship"])+"  ·  "+str(n["activity"]),func(): _open_npc(who),17))
-        "世界":
-            page_title.text="人间自行运转 · 自主职业与资源"
-            scene_text.text=game.society_status()
-            var economy_zone: String="村" if str(game.data["place"]).begins_with("石桥村") else "城"
-            var all_accounts: Dictionary=game.data.get("society",{}).get("economy_accounts",{})
-            var this_region: Dictionary=all_accounts.get("regions",{}).get(economy_zone,{})
-            if not this_region.is_empty():
-                var current: Dictionary=this_region.get("total",{})
-                scene_text.text+="\n\n【已模拟经济累计增加值】%d文（固定基期）；交易收入不重复算GDP。点下方按钮查年/月报表。" % int(current.get("gdp_real",0))
-            actor_buttons.visible=true
-            _wipe(actor_buttons)
-            var roster: Dictionary=game.society_roster()
-            actor_buttons.add_child(_button("📊 查看本地GDP、财政、物价与产业报表",func(): _open_economy_region("村" if str(game.data["place"]).begins_with("石桥村") else "城"),16))
-            actor_buttons.add_child(_button("📜 查看百业与社会身份 · %d名具名居民" % int(roster["size"]),
-                func(): _open_society_roster(),17))
-            actor_buttons.add_child(_label("附近具名NPC（真实职业、地点、账本）",17,GOLD))
-            var dead_people: Array[String]=[]
-            for n in game.npcs_status():
-                if not bool(n.get("alive",true)): dead_people.append(str(n["name"]))
-            if not dead_people.is_empty():
-                actor_buttons.add_child(_label("人物故去 · 可查看生前履历",16,FADED))
-                for old_name in dead_people.slice(-5):
-                    var remembered: String=old_name
-                    actor_buttons.add_child(_button("故人："+remembered,func(): _open_npc(remembered),16))
-            for person in game.society_nearby().slice(0,7):
+            var nearby:=game.nearby_people(7)
+            actor_buttons.add_child(_label("眼前 · %d人" % game.nearby_people(999).size(),17,GOLD))
+            for person in nearby:
                 var who:=str(person["name"])
-                actor_buttons.add_child(_button("%s｜%s｜%s" % [who,str(person["job"]),str(person["activity"])],func(): _open_npc(who),16))
-        "经济":
-            page_title.text="经济账本 · GDP与真实社会产出"
-            var econ_zone: String="村" if str(game.data["place"]).begins_with("石桥村") else "城"
-            scene_text.text=game.economy_report(econ_zone)
+                actor_buttons.add_child(_button("%s · %s" % [who,str(person["activity"])],
+                    func(): _open_npc(who),16))
+            if nearby.is_empty():
+                actor_buttons.add_child(_label("此地暂时没有其他可交谈的人。",16,FADED))
+            actor_buttons.add_child(_button("联系远方熟人 → 书信",func(): _show_page("书信"),16))
+        "地图":
+            _show_map()
+        "人物":
+            page_title.text="人物 · 眼前与熟人"
+            scene_text.text="你在%s。\n\n眼前的人可以互动；其他地方的人可在熟人通讯录中查找，不能隔空交谈。" % str(game.data["place"])
             actor_buttons.visible=true
             _wipe(actor_buttons)
-            actor_buttons.add_child(_button("查看石桥村经济与GDP",func(): _open_economy_region("村"),16))
-            actor_buttons.add_child(_button("查看临安县城经济与GDP",func(): _open_economy_region("城"),16))
-            actor_buttons.add_child(_label("指标基于已发生的真实生产记录。货物交易、领工资、财政余额不能重复计算成GDP。",15,FADED))
+            actor_buttons.add_child(_label("眼前 · %d人" % game.nearby_people(999).size(),17,GOLD))
+            for person in game.nearby_people(6):
+                var who:=str(person["name"])
+                actor_buttons.add_child(_button("%s · %s · %s" % [who,str(person.get("job","居民")),
+                    str(person.get("activity",""))],func(): _open_npc(who),16))
+            actor_buttons.add_child(_button("认识的人 · 查看 / 写信",func(): _open_contact_list(),17))
+            actor_buttons.add_child(_button("寻找其他地区居民 · 按行业筛选",func(): _open_distant_roster(),16))
+        "市集":
+            page_title.text="市集 · 真实买卖"
+            scene_text.text=game.local_market_summary()
+            actor_buttons.visible=true
+            _wipe(actor_buttons)
+            if str(game.data["place"]) in ["石桥村·街口","临安县城·东市"]:
+                actor_buttons.add_child(_button("买一份粗粮",func(): _submit("买粗粮",false),17))
+                actor_buttons.add_child(_button("卖一条小河鱼",func(): _submit("卖鱼",false),17))
+                actor_buttons.add_child(_button("找一小时零工",func(): _submit("做零工",false),17))
+            else:
+                actor_buttons.add_child(_button("打开地图，前往真正的集市",func(): _show_page("地图"),17))
+        "书信":
+            page_title.text="书信 · 邮资与送达"
+            scene_text.text=game.letters_report()
+            actor_buttons.visible=true
+            _wipe(actor_buttons)
+            actor_buttons.add_child(_button("选择熟人写信",func(): _open_contact_list(),17))
+            actor_buttons.add_child(_label("信件走真实时间。收到信不代表对方一定回信。",15,FADED))
+        "世界":
+            page_title.text="世界 · 自主运行"
+            var s: Dictionary=game.data.get("society",{})
+            var region: String="村" if str(game.data["place"]).begins_with("石桥村") else "城"
+            var roster: Dictionary=game.society_roster()
+            scene_text.text="【当前区域】%s\n【具名社会居民】%d人\n【自主演算】%d小时\n【货物交易】%d次\n\n世界按真实时间推进；其他居民不必等待你的行动。" % [
+                str(game.data["place"]),int(roster.get("size",0)),
+                int(s.get("total_steps",0)),int(s.get("total_trades",0))]
+            actor_buttons.visible=true
+            _wipe(actor_buttons)
+            actor_buttons.add_child(_button("查看本地区社会经济详情",func(): _open_economy_region(region),16))
+            actor_buttons.add_child(_button("浏览行业与社会身份（按页）",func(): _open_society_roster(),16))
+        "经济":
+            page_title.text="经济 · GDP / 财政 / 物价"
+            scene_text.text="GDP是已模拟生产的增加值，不能直接把所有成交额相加。\n\n选择下面的地区查看经济报表。"
+            actor_buttons.visible=true
+            _wipe(actor_buttons)
+            actor_buttons.add_child(_button("石桥村经济报表",func(): _open_economy_region("村"),17))
+            actor_buttons.add_child(_button("临安县城经济报表",func(): _open_economy_region("城"),17))
+        "更多":
+            page_title.text="更多 · 功能导航"
+            scene_text.text="主界面只保留经常使用的页面。以下资料和工具按需打开，不再挤在游历剧情中。"
+            actor_buttons.visible=true
+            _wipe(actor_buttons)
+            for name in ["书信","世界","经济","设置","反馈"]:
+                var target_page:=str(name)
+                actor_buttons.add_child(_button("打开 · "+target_page,func(): _show_page(target_page),17))
         "反馈":
-            page_title.text="可复制的功能缺口 / 错误日志"
+            page_title.text="诊断 · 错误与功能建议"
             scene_text.text=game.feedback_report()
         "设置":
-            page_title.text="引擎与 AI 模式"
-            scene_text.text="AI剧情导演："+director_mode+"；上下文 "+str(local_llm.get("context_tokens"))+" tokens。人物原始经历分别存入独立本地文件，日常按日汇总，重要对话与习惯有可追溯证据；不受当前上下文长度限制。\n\n当前："+(str(local_llm.status()) if local_enabled else ai.status())+"\n\n【游戏内模型库】支持0.6B、1.7B、4B、8B、14B Q4量化模型。点‘配置 AI 服务’ → ‘内置模型’ → 选择档位 → ‘下载/加载’。4B约2.50GB，8B约5.03GB，14B约9GB。大型模型需要大量RAM和储存空间，可能无法在普通手机上加载。\n\n【其他模型】也可填写合法HTTPS GGUF链接。下载失败请使用反馈页；实际推理速度取决于设备。\n\n【API】仍提供手动配置的OpenAI兼容API模式，密钥不随游戏提供。\n\n【存档】该预览版采用独立包名，不会覆盖已安装的主游戏；两者的存档互不通用。"
+            page_title.text="设置 · AI模型与世界参数"
+            scene_text.text="模型："+str(local_llm.status() if local_enabled else ai.status())+"\n\n已下载的模型不会因为切换页面而删除。首次下载和断点续传请点击下方『配置AI服务』，本页可查看进度。"
     if view in ["剧情","对话"]:
         # Only auto-follow the two chronological reading surfaces.
         # Updating RichTextLabel invalidates line layout until next frame;
