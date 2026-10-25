@@ -50,6 +50,9 @@ static func ensure(society: Dictionary) -> bool:
     if not society.has("psyche_cases"):
         society["psyche_cases"]=[]
         changed=true
+    if not society.has("psyche_debts"):
+        society["psyche_debts"]=[]
+        changed=true
     if not society.has("psyche_last_day"):
         society["psyche_last_day"]=int(society.get("civic_last_day",0))
         changed=true
@@ -128,6 +131,60 @@ static func resolve(society: Dictionary, actor_name: String, other_name: String,
             _event(society,other,day,"受到援助",
                 "收到%s主动相助的%d文，记得这份帮助。" % [str(actor["name"]),contribution],actor)
             outcome={"ok":true,"kind":"help","delta_coins":contribution}
+        "borrow":
+            if int(actor.get("coins",0))>4 or int(other.get("coins",0))<8:
+                return outcome
+            var accepted:=int(other_traits.get("compassion",0))>=55 and (
+                int(other.get("social",{}).get(str(actor["id"]),0))>=-10)
+            if not accepted:
+                _event(society,actor,day,"求借未成",
+                    "向%s提出借钱请求，但对方自主拒绝，财物没有转移。" % other_name,other)
+                return {"ok":true,"kind":"borrow_refused"}
+            for debt in society["psyche_debts"]:
+                if not (debt is Dictionary): continue
+                if str(debt.get("borrower_id",""))==str(actor["id"]) and (
+                        str(debt.get("lender_id",""))==str(other["id"])) and (
+                        str(debt.get("status","")) in ["open","overdue"]):
+                    return outcome
+            var amount:=mini(3,int(other["coins"])-5)
+            if amount<=0: return outcome
+            actor["coins"]=int(actor["coins"])+amount
+            other["coins"]=int(other["coins"])-amount
+            var debt_id:="LOAN-"+str(actor["id"])+"-"+str(other["id"])+"-"+str(day)
+            var loan: Dictionary={"id":debt_id,"day":day,"due_day":day+7,
+                "borrower_id":str(actor["id"]),"lender_id":str(other["id"]),
+                "principal":amount,"outstanding":amount,"status":"open",
+                "place":_place(actor)}
+            var debts: Array=society["psyche_debts"]
+            debts.append(loan)
+            _event(society,actor,day,"借债",
+                "向%s真借得%d文，有七天归还约定；并未凭空创造钱。" % [other_name,amount],other)
+            _event(society,other,day,"借出",
+                "依本人意愿借给%s %d文，约定第%d日归还。" % [actor_name,amount,day+7],actor)
+            outcome={"ok":true,"kind":"loan","debt_id":debt_id,"amount":amount}
+        "repay":
+            var matched: Dictionary={}
+            for candidate in society["psyche_debts"]:
+                if not (candidate is Dictionary): continue
+                if str(candidate.get("borrower_id",""))==str(actor["id"]) and (
+                        str(candidate.get("lender_id",""))==str(other["id"])) and (
+                        str(candidate.get("status","")) in ["open","overdue"]):
+                    matched=candidate
+                    break
+            var owed:=int(matched.get("outstanding",0))
+            if owed<=0 or int(actor.get("coins",0))<owed: return outcome
+            actor["coins"]=int(actor["coins"])-owed
+            other["coins"]=int(other["coins"])+owed
+            matched["outstanding"]=0
+            matched["status"]="repaid"
+            matched["repaid_day"]=day
+            _social(other,str(actor["id"]),8)
+            _event(society,actor,day,"偿债",
+                "亲自偿还此前向%s借的%d文；债务按账核销。" % [other_name,owed],other)
+            _event(society,other,day,"收回借款",
+                "收到%s按真实旧借据偿还的%d文。" % [actor_name,owed],actor)
+            outcome={"ok":true,"kind":"repaid","amount":owed,
+                "debt_id":str(matched["id"])}
         "attempt_theft":
             if int(traits.get("greed",0))<=75 or int(traits.get("self_control",100))>=35:
                 return outcome
@@ -208,10 +265,31 @@ static func resolve(society: Dictionary, actor_name: String, other_name: String,
         cooldowns[action]=day
     return outcome
 
+static func _settle_overdue(society: Dictionary, day: int) -> void:
+    var by_id: Dictionary={}
+    for person in society.get("civic_agents",{}).values():
+        by_id[str(person.get("id",""))]=person
+    for loan in society.get("psyche_debts",[]):
+        if not (loan is Dictionary) or str(loan.get("status",""))!="open": continue
+        if day<=int(loan.get("due_day",day+1)): continue
+        loan["status"]="overdue"
+        loan["overdue_day"]=day
+        var creditor: Dictionary=by_id.get(str(loan.get("lender_id","")),{})
+        var debtor: Dictionary=by_id.get(str(loan.get("borrower_id","")),{})
+        if creditor.is_empty() or debtor.is_empty(): continue
+        _social(creditor,str(debtor["id"]),-12)
+        _event(society,creditor,day,"债务逾期",
+            "%s借走的%d文已逾期未归还；账上仍记录应收款，而非直接宣称对方盗窃。" % [
+            str(debtor["name"]),int(loan.get("outstanding",0))],debtor)
+        _event(society,debtor,day,"债务逾期",
+            "欠%s的%d文已过约定日期，尚有真实还款义务。" % [
+            str(creditor["name"]),int(loan.get("outstanding",0))],creditor)
+
 static func advance_day(society: Dictionary, day: int) -> int:
     ensure(society)
     if day<=int(society.get("psyche_last_day",0)): return 0
     var people: Dictionary=society["civic_agents"]
+    _settle_overdue(society,day)
     var grouped: Dictionary={}
     for name in people:
         var npc: Dictionary=people[name]
@@ -244,6 +322,9 @@ static func advance_day(society: Dictionary, day: int) -> int:
             var action: String=""
             if int(traits["compassion"])>70 and int(actor["coins"])>=1 and int(peer["coins"])<=5:
                 action="help"
+            elif int(actor["coins"])<=3 and int(peer["coins"])>=8 and (
+                    int(traits["caution"])>=50):
+                action="borrow"
             elif int(traits["greed"])>82 and int(traits["self_control"])<24 and (
                     int(mind["stress"])>55 or int(traits["envy"])>78) and int(peer["coins"])>0:
                 action="attempt_theft"
