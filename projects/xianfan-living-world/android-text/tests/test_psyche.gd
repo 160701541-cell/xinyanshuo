@@ -100,6 +100,28 @@ func _run() -> void:
         "Reload keeps relationship, case and personality records intact")
     check(people["赵禾"]["psyche"]["traits"]["compassion"]>=91,
         "Helping changes long-term character without rerolling the person")
+    # Real credit: borrower requires voluntary lender, money moves once, due
+    # date is enforceable, repayment restores money and affects trust.
+    recipient["coins"]=1
+    giver["psyche"]["traits"]["compassion"]=95
+    var before_credit:=int(recipient["coins"])+int(giver["coins"])
+    var loan:=XianfanPsyche.resolve(society,"柳柳","赵禾","borrow",142)
+    check(bool(loan.get("ok",false)) and str(loan.get("kind",""))=="loan",
+        "A poor NPC can seek consensual credit, not automatically seize money")
+    check(int(recipient["coins"])+int(giver["coins"])==before_credit,
+        "Loan principal must be conserved and carried by actual parties")
+    check(society["psyche_debts"].size()==1 and
+        int(society["psyche_debts"][0]["outstanding"])==3,
+        "Individual loan agreement and date remain in authority database")
+    XianfanPsyche.advance_day(society,150)
+    check(str(society["psyche_debts"][0].get("status",""))=="overdue",
+        "Unpaid loan remains in the world and becomes overdue")
+    var repay:=XianfanPsyche.resolve(society,"柳柳","赵禾","repay",151)
+    check(bool(repay.get("ok",false)) and
+        str(society["psyche_debts"][0].get("status",""))=="repaid",
+        "Full actual repayment clears an existing loan with a verifiable trail")
+    check(int(recipient["coins"])+int(giver["coins"])==before_credit,
+        "Repayment cannot create money")
     if failures.is_empty():
         print("PSYCHE TESTS PASS: personality persistence, adult consent, private reports, money conservation, time and location")
         quit(0)
