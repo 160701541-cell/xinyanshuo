@@ -71,6 +71,17 @@ var setting_url: LineEdit
 var setting_model: LineEdit
 var setting_key: LineEdit
 var request_text := ""
+# A 5-second wall-time tick advances one game minute at 1x. Godot does not
+# keep running in Android background; reopening performs bounded catch-up.
+const WORLD_CLOCK_FILE := "user://xianfan_world_clock.json"
+const MAX_OFFLINE_MINUTES := 43200  # 30 game days, bounded CPU and disk work.
+var world_speed := 1
+var clock_accumulator := 0.0
+var clock_backgrounded := false
+var world_clock_button: Button
+var offline_progress_enabled := true
+var _last_world_ui_hour := -1
+
 
 func _ready() -> void:
     ai = XianfanAI.new()
@@ -89,7 +100,75 @@ func _ready() -> void:
         if saved is Dictionary and str(saved.get("mode","")) in ["关闭","关键事件","每次行动"]:
             director_mode=str(saved["mode"])
     _build()
+    _restore_world_clock()
     _refresh()
+
+func _save_world_clock() -> void:
+    var f:=FileAccess.open(WORLD_CLOCK_FILE,FileAccess.WRITE)
+    if f==null: return
+    f.store_string(JSON.stringify({"wall_unix":Time.get_unix_time_from_system(),
+        "speed":world_speed,"offline_enabled":offline_progress_enabled}))
+
+func _restore_world_clock() -> void:
+    if not FileAccess.file_exists(WORLD_CLOCK_FILE):
+        _save_world_clock()
+        return
+    var f:=FileAccess.open(WORLD_CLOCK_FILE,FileAccess.READ)
+    if f==null: return
+    var p: Variant=JSON.parse_string(f.get_as_text())
+    if not (p is Dictionary): return
+    var clock: Dictionary=p
+    var speed:=int(clock.get("speed",1))
+    if speed in [0,1,5,20]: world_speed=speed
+    offline_progress_enabled=bool(clock.get("offline_enabled",true))
+    if offline_progress_enabled and world_speed>0:
+        var elapsed:=maxf(0.0,Time.get_unix_time_from_system()-float(clock.get("wall_unix",Time.get_unix_time_from_system())))
+        var game_mins:=mini(MAX_OFFLINE_MINUTES,int(elapsed*float(world_speed)/5.0))
+        if game_mins>0:
+            var remaining:=game_mins
+            while remaining>0:
+                var batch:=mini(720,remaining)
+                game.passive_time(batch)
+                remaining-=batch
+            notice.text="离线补算了 %d 个游戏小时：NPC照常务工、吃饭和交易。超过上限的时间不会伪装成已演算。" % int(game_mins/60)
+    _save_world_clock()
+
+func _cycle_world_speed() -> void:
+    var levels: Array=[0,1,5,20]
+    var i:=levels.find(world_speed)
+    world_speed=int(levels[(i+1)%levels.size()])
+    clock_accumulator=0.0
+    _save_world_clock()
+    _refresh()
+
+func _process(delta: float) -> void:
+    if clock_backgrounded or world_speed==0: return
+    # World time has its own real-time source; it never waits for actions.
+    clock_accumulator+=clampf(delta,0.0,1.0)*float(world_speed)/5.0
+    var mins:=mini(60,int(clock_accumulator))
+    if mins<1: return
+    clock_accumulator-=float(mins)
+    game.passive_time(mins)
+    hud.text="%s · %s\n精力 %d/100 · 铜钱 %d文 · %s" % [
+        game.time_string(),str(game.data["place"]),int(game.data["stamina"]),
+        int(game.data["money"]),str(game.data["realm"])]
+    var hour:=int(game._clock()/60)
+    if view=="世界" and hour!=_last_world_ui_hour:
+        _last_world_ui_hour=hour
+        _refresh()
+    if int(game._clock())%60==0: _save_world_clock()
+
+func _notification(what: int) -> void:
+    if what==NOTIFICATION_APPLICATION_PAUSED:
+        clock_backgrounded=true
+        if not game.data.is_empty():
+            game.save()
+            _save_world_clock()
+    elif what==NOTIFICATION_APPLICATION_RESUMED:
+        clock_backgrounded=false
+        if not game.data.is_empty():
+            _restore_world_clock()
+            if is_inside_tree(): _refresh()
 
 func _box(color: Color, border: Color = Color.TRANSPARENT, roundness: int = 12) -> StyleBoxFlat:
     var b := StyleBoxFlat.new()
@@ -178,6 +257,9 @@ func _build() -> void:
     hud=_label("",16,FADED)
     hud.horizontal_alignment=HORIZONTAL_ALIGNMENT_CENTER
     root.add_child(hud)
+    world_clock_button=_button("世界运行 1×",func(): _cycle_world_speed(),16)
+    world_clock_button.custom_minimum_size=Vector2(0,42)
+    root.add_child(world_clock_button)
     stamina_bar = ProgressBar.new()
     stamina_bar.show_percentage = false
     stamina_bar.min_value = 0
@@ -190,7 +272,7 @@ func _build() -> void:
     tab_buttons=HBoxContainer.new()
     tab_buttons.add_theme_constant_override("separation",4)
     root.add_child(tab_buttons)
-    for name in ["剧情","对话","人物","反馈","设置"]:
+    for name in ["剧情","对话","人物","世界","反馈","设置"]:
         var tab_name := str(name)
         var b := _button(tab_name,func(): _change_tab(tab_name),17)
         b.size_flags_horizontal=SIZE_EXPAND_FILL
@@ -344,6 +426,8 @@ func _open_npc(name: String) -> void:
     var details: Array[String]=[
         "【身份】%s · %d岁 · %s" % [name,int(chosen["age"]),str(chosen["relationship"])],
         "【编号】"+str(chosen["id"]),
+        "【职业】"+str(chosen.get("job","家务")),
+        "【个人钱财】%d文" % int(chosen.get("money",0)),
         "【地点】"+str(chosen["place"]),
         "【正在做】"+str(chosen["activity"]),
         "【情绪】"+str(chosen["mood"]),
@@ -360,8 +444,8 @@ func _open_npc(name: String) -> void:
     ))
     modal_actions.add_child(_button("查看长期记忆 · 生活习惯",func(): _open_npc_memory(name),16))
     if chosen["here"]:
-        var address: String="妹妹" if name=="孙成明" else ("父亲" if name=="钱然泽" else "母亲")
-        modal_actions.add_child(_button("询问吃饭了吗",func(): _npc_action("问"+address+"吃饭了吗")))
+        var address: String="妹妹" if name=="孙成明" else ("父亲" if name=="钱然泽" else ("母亲" if name=="郑舟清" else name))
+        modal_actions.add_child(_button("问问最近在忙什么",func(): _npc_action("问"+address+"最近忙什么")))
         modal_actions.add_child(_button("聊聊青云山门",func(): _npc_action("问"+address+"青云的事")))
         for item in game.data["items"].keys():
             if not str(item) in ["小河鱼","青菜","枯枝","车前草"]: continue
@@ -780,6 +864,7 @@ func _render_buttons(node: Node, labels: Array[String], enabled: bool = true) ->
 
 func _refresh() -> void:
     cancel_ai_button.visible=bool(local_llm.get("busy"))
+    world_clock_button.text="世界时间："+("暂停" if world_speed==0 else ("%d×" % world_speed))+" · 点按调速"
     stamina_bar.value=clampf(float(game.data.get("stamina",0)),0.0,100.0)
     hud.text="%s · %s\n精力 %d/100 · 铜钱 %d文 · %s" % [
         game.time_string(),str(game.data["place"]),int(game.data["stamina"]),
@@ -828,6 +913,7 @@ func _refresh() -> void:
             _wipe(actor_buttons)
             actor_buttons.add_child(_label("选择人物，点击查看状态或更换交谈对象：",16,FADED))
             for n in game.npcs_status():
+                if not n["here"] and not str(n["relationship"]) in ["妹妹","父亲","母亲"]: continue
                 var who:=str(n["name"])
                 actor_buttons.add_child(_button(who+" · "+str(n["activity"]),func(): _open_npc(who),16))
         "人物":
@@ -838,8 +924,18 @@ func _refresh() -> void:
             _wipe(actor_buttons)
             actor_buttons.add_child(_label("人物档案 · 点击弹出详细属性和互动",18,GOLD))
             for n in game.npcs_status():
+                if not n["here"] and not str(n["relationship"]) in ["妹妹","父亲","母亲"]: continue
                 var who:=str(n["name"])
                 actor_buttons.add_child(_button(who+"  ·  "+str(n["relationship"])+"  ·  "+str(n["activity"]),func(): _open_npc(who),17))
+        "世界":
+            page_title.text="人间自行运转 · 自主职业与资源"
+            scene_text.text=game.society_status()
+            actor_buttons.visible=true
+            _wipe(actor_buttons)
+            actor_buttons.add_child(_label("附近具名NPC（真实职业、地点、账本）",17,GOLD))
+            for person in game.society_nearby().slice(0,7):
+                var who:=str(person["name"])
+                actor_buttons.add_child(_button("%s｜%s｜%s" % [who,str(person["job"]),str(person["activity"])],func(): _open_npc(who),16))
         "反馈":
             page_title.text="可复制的功能缺口 / 错误日志"
             scene_text.text=game.feedback_report()
