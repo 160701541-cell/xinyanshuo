@@ -77,6 +77,12 @@ static func initialize(society: Dictionary, start_hour: int) -> bool:
         for variant in range(ACTIVE_COUNT_PER_ROLE):
             # Each occupation has one local and one city/outer-village
             # practitioner. Factions and social status are separate from job.
+            var occupation_name:=str(card["job"])
+            var appointed:=str(card["sector"])=="官府军政" and occupation_name in [
+                "县令","县丞","主簿","典史","巡检","仓曹"]
+            # One appointed county office per seat, the other registered
+            # person is a candidate, not a duplicate sitting magistrate.
+            if appointed and variant==1: occupation_name="候补"+occupation_name
             var region: String="村" if variant==0 else "城"
             if str(card["sector"])=="官府军政": region="城"
             if str(card["sector"])=="修行外围": region="村"
@@ -91,8 +97,8 @@ static func initialize(society: Dictionary, start_hour: int) -> bool:
             if str(card["sector"])=="修行外围": workplace="青云山门·山门外"
             civilians[name]={
                 "id":"CIV%06d"%(idx+1),"name":name,"age":16+(idx*13)%50,
-                "job":str(card["job"]),"sector":str(card["sector"]),
-                "faction":str(card["faction"]),"standing":str(STANDING_OVERRIDES.get(str(card["job"]),card["standing"])),
+                "job":occupation_name,"sector":str(card["sector"]),
+                "faction":str(card["faction"]),"standing":("候补官吏" if appointed and variant==1 else str(STANDING_OVERRIDES.get(str(card["job"]),card["standing"]))),
                 "effect":str(card["effect"]),"region":region,"origin":home.split("·")[0],
                 "home":home,"work_place":workplace,"place":_daily_place(
                     {"alive":true,"home":home,"work_place":workplace},start_hour%24),
@@ -144,7 +150,7 @@ static func _produce(society: Dictionary, npc: Dictionary, day: int) -> bool:
     var effect:=str(npc["effect"])
     # Residents without a job do not receive wages merely because an entry
     # exists in the population registry.
-    if str(npc["job"]) in NONWORKING:
+    if str(npc["job"]) in NONWORKING or str(npc["job"]).begins_with("候补"):
         npc["activity"]="寻找生计或学习，暂无付薪职位"
         return false
     var made:=false
