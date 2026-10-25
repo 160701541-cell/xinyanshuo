@@ -701,6 +701,47 @@ func _free_say(raw: String) -> String:
     if who=="郑舟清": return "母亲说：‘外头事情再多，也要顾着家里的米粮和脚下的路。’"
     return "父亲放下手里的活：‘凡事得先看清楚，再动手。’"
 
+func _npc_free_chat(raw: String) -> String:
+    # Explicit direct-speech form only. Do not infer dialogue from incidental NPC mentions.
+    var recipient := ""
+    for person in ["孙成明", "钱然泽", "郑舟清"]:
+        if raw.begins_with("跟" + person + "说") or raw.begins_with("对" + person + "说") or raw.begins_with("问" + person) or raw.begins_with("和" + person + "聊天"):
+            recipient = person
+            break
+    if recipient.is_empty():
+        return ""
+    var npc: Dictionary = data["npc"][recipient]
+    if str(npc.get("place", "")) != str(data["place"]):
+        return "%s此刻在%s，不在你身边。你说的话没有人能当面听见。" % [recipient,str(npc.get("place","别处"))]
+    if recipient=="钱然泽" and int(data["minute"]) >= 420 and int(data["minute"]) <= 1050:
+        return "父亲白天正在忙田间事务，得等他回家才能当面谈。"
+    var said := raw
+    for prefix in ["跟"+recipient+"说：","对"+recipient+"说：","跟"+recipient+"说:","对"+recipient+"说:","问"+recipient,"和"+recipient+"聊天"]:
+        if said.begins_with(prefix):
+            said=said.trim_prefix(prefix).strip_edges()
+            break
+    if said.is_empty(): return "你想对%s说什么？输入完整的话即可。" % recipient
+    _tick(4)
+    var mood := str(npc.get("mood","平静"))
+    if said.contains("饭") or said.contains("饿"):
+        if recipient=="孙成明": return "成明把手中的活放下：‘娘会留饭。你问我吃没吃？我一会儿就去灶屋看看。’"
+        if recipient=="郑舟清": return "母亲笑道：‘锅里留着吃的，你也得准时吃饭。’"
+        return "父亲应道：‘忙过这阵子便吃。’"
+    if said.contains("青云") or said.contains("修仙") or said.contains("灵根"):
+        if recipient=="孙成明": return "成明认真听着：‘我也不晓得测灵究竟怎么做。你回来可得把见闻讲给我听。’"
+        if recipient=="郑舟清": return "母亲嘱咐：‘走远路谨慎些，真有不明白的事情，要问清再花钱。’"
+        return "父亲说：‘读书修行都要看实在的东西，不要再买那样的假诀了。’"
+    if said.contains("鱼") or said.contains("田") or said.contains("收成") or said.contains("种"):
+        if recipient=="孙成明": return "成明答道：‘溪里的鱼少了，田里的事也不能耽搁。等忙完再去看看吧。’"
+        if recipient=="郑舟清": return "母亲说：‘田里的收成要按农时来，别只图一时热闹。’"
+        return "父亲答道：‘鱼和粮都得有个账本，取了就得记清楚。’"
+    if said.contains("干嘛") or said.contains("忙") or said.contains("做什么"):
+        return "%s抬头应你：‘我现在正%s，忙完再说吧。’" % [recipient,str(npc.get("activity","忙家事"))]
+    if said.contains("你好") or said.contains("早上好") or said.contains("晚安") or said.contains("谢谢"):
+        return "%s听完你的话，点点头：‘嗯，知道了。’" % recipient
+    # Honest fallback: acknowledge exact message, without repeatedly using a generic script.
+    return "%s听你说完‘%s’，沉吟片刻：‘这我一时也说不准。你怎么会想到这个？’（情绪：%s）" % [recipient,said.substr(0,36),mood]
+
 func _free_action(raw: String) -> String:
     var t := raw.strip_edges().replace("，","").replace("。","").replace("！","")
     if t.is_empty(): return ""
@@ -710,6 +751,8 @@ func _free_action(raw: String) -> String:
         if str(data["place"]) == "石桥村·林缘":
             return travel + "\n" + _free_collect(t)
         return travel
+    var direct_speech := _npc_free_chat(t)
+    if not direct_speech.is_empty(): return direct_speech
     # Speech and inspection take priority over broad keyword shortcuts.
     if t.contains("观察") or t.contains("查看") or t.contains("看看") or t.contains("打量") or t.contains("调查"):
         if t.contains("鱼笼"): return _act_core("查看鱼笼")
