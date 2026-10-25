@@ -62,12 +62,13 @@ func _setup_society() -> void:
     var society: Dictionary=data["society"]
     var civic_added:=XianfanCivicPopulation.initialize(society,int(society.get("last_hour",int(_clock()/60))))
     var accounts_added:=XianfanEconomyAccounts.initialize(society,int(society.get("last_hour",int(_clock()/60))))
-    var immortal_added:=XianfanImmortalSociety.initialize(society,_clock())
+    var immortal_added:=false
     if not XianfanSocietySim.valid(society):
         # Never silently destroy a corrupted economic ledger: log and leave it
         # unchanged rather than resetting all people's possessions.
         _record_feedback("社会模拟读档","检测到社会账本异常，已经停止社会经济结算，原始存档仍保留。","SOCIETY_LEDGER_INVALID")
         return
+    immortal_added=XianfanImmortalSociety.initialize(society,_clock())
     _sync_society_people()
     _archive_society_milestones()
     _archive_civic_memory()
