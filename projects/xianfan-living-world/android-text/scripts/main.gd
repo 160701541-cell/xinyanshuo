@@ -474,11 +474,7 @@ func _show_map() -> void:
     page_title.text="地图 · 已知道路"
     route_canvas.visible=true
     route_canvas.set_position_place(now)
-    var names: Array[String]=[]
-    for item in XianfanTravelPost.PLACES:
-        var row: Dictionary=item
-        names.append(("● " if str(row["name"])==now else "○ ")+str(row["name"]))
-    scene_text.text="当前位置：%s\n\n%s\n\n点击下方的已知道路实际行走。未发现的路线不能瞬移；此页是地理路线示意，不是伪造的实测卫星地图。" % [now,"\n".join(names)]
+    scene_text.text="● 当前所在：%s。点击地图地点或下方道路可尝试前往；远方无直达路不能瞬移。此图根据原仓库地点/道路数据绘制，是可操作路线示意。" % now
     actor_buttons.visible=true
     _wipe(actor_buttons)
     var routes: Array[Dictionary]=XianfanTravelPost.available_routes(now)
