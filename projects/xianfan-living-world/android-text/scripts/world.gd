@@ -56,6 +56,7 @@ func _setup_society() -> void:
         _record_feedback("社会模拟读档","检测到社会账本异常，已经停止社会经济结算，原始存档仍保留。","SOCIETY_LEDGER_INVALID")
         return
     _sync_society_people()
+    _archive_society_milestones()
     if first_init: save()
 
 func _sync_society_people() -> void:
@@ -84,8 +85,39 @@ func _sync_society_people() -> void:
         npc["social"]=entry.get("social",{}).duplicate(true)
         npc["cargo"]=entry.get("cargo",{}).duplicate(true)
         npc["hunger"]=int(entry.get("hunger",0))
+        npc["alive"]=bool(entry.get("alive",true))
+        npc["skills"]=entry.get("skills",{}).duplicate(true)
+        npc["mentor"]=str(entry.get("mentor",""))
+        npc["training"]=int(entry.get("training",0))
+        npc["biography"]=entry.get("biography",[]).duplicate(true)
+        npc["death_day"]=int(entry.get("death_day",0))
         npc["goal_progress"]=mini(100,int(entry["work_done"]))
         data["npc"][name]=npc
+
+func _archive_society_milestones() -> void:
+    if memory_store==null or not data.has("society"): return
+    var history: Array=data["society"].get("chronicle",[])
+    var cursor:=clampi(int(data.get("society_chronicle_cursor",0)),0,history.size())
+    while cursor<history.size():
+        var record: Dictionary=history[cursor]
+        var person:=str(record.get("npc",""))
+        if not data["npc"].has(person):
+            cursor+=1
+            continue
+        var event: Dictionary={
+            "uid":str(record.get("uid","")),
+            "type":"life","day":int(record.get("day",0)),
+            "turn":int(data.get("turn",0)),
+            "activity":str(record.get("detail","")),
+            "goal":str(record.get("category","")),
+            "place":str(data["npc"][person].get("place","未知")),
+            "mood":str(data["npc"][person].get("mood","平静")),
+            "source":"职业与人生里程碑，规则引擎事实"}
+        if not memory_store.append_event(person,event,data["npc"][person]):
+            _note("【存储告警】社会人生里程碑尚未写入独立记忆，主存档仍保留原件。")
+            break
+        cursor+=1
+    data["society_chronicle_cursor"]=cursor
 
 func society_status() -> String:
     if not data.has("society"): return "世界社会层尚未初始化"
@@ -355,6 +387,7 @@ func note_api_failure(action: String, reason: String) -> void:
 func record_ai_dialogue(person: String, player_text: String, reply: String, engine: String="api") -> String:
     if not data["npc"].has(person): return "NPC不存在，无法进行对话。"
     var npc: Dictionary = data["npc"][person]
+    if not bool(npc.get("alive",true)): return "人物已经离世；可以查看生前档案，但无法当面交谈。"
     if str(npc.get("place","")) != str(data["place"]):
         return "%s不在此处，无法进行当面交谈。" % person
     if reply.strip_edges().is_empty() or reply.length() > 700:
@@ -520,6 +553,12 @@ func npcs_status() -> Array[Dictionary]:
             "social":n.get("social",{}),
             "cargo":n.get("cargo",{}),
             "hunger":int(n.get("hunger",0)),
+            "alive":bool(n.get("alive",true)),
+            "mentor":str(n.get("mentor","")),
+            "skills":n.get("skills",{}),
+            "training":int(n.get("training",0)),
+            "biography":n.get("biography",[]),
+            "death_day":int(n.get("death_day",0)),
             "place":str(n.get("place","未知")),
             "activity":str(n.get("activity","未知")),
             "wish":str(n.get("wish","未公开")),
@@ -566,7 +605,9 @@ func _tick(minutes: int, stamina_delta: int = 0, count_turn: bool = true) -> voi
         _daily()
     if data.has("society") and XianfanSocietySim.valid(data["society"]):
         var hours:=XianfanSocietySim.advance_to(data["society"],_clock())
-        if hours>0: _sync_society_people()
+        if hours>0:
+            _sync_society_people()
+            _archive_society_milestones()
     if count_turn:
         data["turn"] = int(data["turn"]) + 1
 
