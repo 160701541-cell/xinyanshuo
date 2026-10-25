@@ -202,6 +202,16 @@ static func settle(society: Dictionary, c: Dictionary, day: int) -> void:
     _cultivate_food(society,c,day)
     for person in c["agents"].values():
         if not bool(person.get("alive",true)) or str(person["station"])!="青云山门": continue
+        # A personal dose must be issued from real sect-owned medicine, and
+        # requires explicit ration authorization; no free items on dialogue.
+        if int(person.get("realm_level",0))>=14 and str(person.get("diet_mode",""))=="pill" and bool(person.get("bigu_ration_approved",false)):
+            var personal: Dictionary=person.get("stock",{})
+            var treasury_stock: Dictionary=c["regions"]["青云山门"]["stock"]
+            if int(personal.get("辟谷丹",0))==0 and int(treasury_stock.get("辟谷丹",0))>0:
+                treasury_stock["辟谷丹"]=int(treasury_stock["辟谷丹"])-1
+                personal["辟谷丹"]=int(personal.get("辟谷丹",0))+1
+                _log_event(c,person,day,"辟谷丹领用",
+                    "依已批准的山门配给领到1枚有真实药库来源的辟谷丹；药库同时扣除1枚。")
         _dine_one(c,person,day,false)
     for worker_name in c["sect_workforce"]:
         var contract: Dictionary=c["sect_workforce"][worker_name]
