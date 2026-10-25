@@ -23,7 +23,8 @@ static func _new_psyche(npc: Dictionary) -> Dictionary:
         traits[axis]=10+_roll(id+"|mind-v1|"+axis,81)
     if int(npc.get("age",0))<ADULT_AGE:
         traits["desire"]=0
-    return {"schema":SCHEMA,"traits":traits,"stress":0,"attachment":{},
+    return {"schema":SCHEMA,"traits":traits,"stress":0,
+        "adult_desire_initialized":int(npc.get("age",0))>=ADULT_AGE,"attachment":{},
         "romance_consent":{},"wishes":[],"cooldowns":{},"last_decision":"",
         "known_violations":[],"last_day":0}
 
@@ -41,6 +42,15 @@ static func ensure(society: Dictionary) -> bool:
             var mind: Dictionary=npc["psyche"]
             if not mind.has("traits"):
                 mind["traits"]=_new_psyche(npc)["traits"]
+                changed=true
+            # When an NPC naturally becomes an adult, initialize the adult
+            # desire trait once. Never expose sexual mechanics before age 18.
+            if int(npc.get("age",0))>=ADULT_AGE and (
+                    not bool(mind.get("adult_desire_initialized",true))):
+                var values: Dictionary=mind["traits"]
+                if int(values.get("desire",0))==0:
+                    values["desire"]=10+_roll(str(npc["id"])+"|mind-v1|desire",81)
+                mind["adult_desire_initialized"]=true
                 changed=true
             if not mind.has("romance_consent"): mind["romance_consent"]={}
             if not mind.has("cooldowns"): mind["cooldowns"]={}
