@@ -1,0 +1,206 @@
+{
+  "schema": 1,
+  "description": "规则观测驱动的可核验地方纪事，仅记实际库存与生态阈值，不编造盗窃、战争、私事；未来事件后果必须另经规则结算。",
+  "templates": [
+    {
+      "id": "village_grain_low",
+      "region": "村",
+      "source": "stock",
+      "resource": "粮",
+      "operator": "lte",
+      "threshold": 32,
+      "cooldown_days": 7,
+      "description": "石桥村可交割存粮仅{value}份，已低于账本警戒线{threshold}份；今后买卖和做工需要看实际供应。"
+    },
+    {
+      "id": "village_grain_high",
+      "region": "村",
+      "source": "stock",
+      "resource": "粮",
+      "operator": "gte",
+      "threshold": 550,
+      "cooldown_days": 15,
+      "description": "石桥村可交割存粮升至{value}份；是否会压低价格仍须按当地供需计算。"
+    },
+    {
+      "id": "village_wood_low",
+      "region": "村",
+      "source": "stock",
+      "resource": "木",
+      "operator": "lte",
+      "threshold": 6,
+      "cooldown_days": 7,
+      "description": "石桥村村社木材库存仅{value}份；木匠、修屋及运输会受真实原料供给约束。"
+    },
+    {
+      "id": "village_fish_low",
+      "region": "村",
+      "source": "stock",
+      "resource": "鱼",
+      "operator": "lte",
+      "threshold": 2,
+      "cooldown_days": 7,
+      "description": "石桥村鱼货库存仅{value}份；渔户能否补足，需要看溪河野鱼与实际劳动。"
+    },
+    {
+      "id": "village_medicine_low",
+      "region": "村",
+      "source": "stock",
+      "resource": "药",
+      "operator": "lte",
+      "threshold": 2,
+      "cooldown_days": 15,
+      "description": "石桥村药材可售库存只剩{value}份，医药供应不得从故事中凭空补出。"
+    },
+    {
+      "id": "village_craft_low",
+      "region": "村",
+      "source": "stock",
+      "resource": "器",
+      "operator": "lte",
+      "threshold": 1,
+      "cooldown_days": 20,
+      "description": "石桥村器具可售库存仅{value}件，补货要经过真实加工及运输。"
+    },
+    {
+      "id": "village_forest_low",
+      "region": "村",
+      "source": "wild",
+      "resource": "木林",
+      "operator": "lte",
+      "threshold": 5,
+      "cooldown_days": 10,
+      "description": "石桥村林木自然资源指标已降至{value}；采伐强度需由再生条件和村社规矩约束。"
+    },
+    {
+      "id": "village_fish_wild_low",
+      "region": "村",
+      "source": "wild",
+      "resource": "野鱼",
+      "operator": "lte",
+      "threshold": 3,
+      "cooldown_days": 10,
+      "description": "石桥村溪河野鱼资源指标仅{value}；捕捞后须按生态再生演算，不得无限出鱼。"
+    },
+    {
+      "id": "village_herb_wild_low",
+      "region": "村",
+      "source": "wild",
+      "resource": "野药",
+      "operator": "lte",
+      "threshold": 3,
+      "cooldown_days": 15,
+      "description": "石桥村野生药材指标降至{value}，山林采集需等待生态增长或寻找其他真实产地。"
+    },
+    {
+      "id": "village_treasury_low",
+      "region": "村",
+      "source": "treasury",
+      "resource": "",
+      "operator": "lte",
+      "threshold": 20,
+      "cooldown_days": 30,
+      "description": "石桥村社钱库只有{value}文；乡社雇工与救济需受真实财政约束。"
+    },
+    {
+      "id": "city_grain_low",
+      "region": "城",
+      "source": "stock",
+      "resource": "粮",
+      "operator": "lte",
+      "threshold": 70,
+      "cooldown_days": 7,
+      "description": "临安县城统计样本粮货库存降至{value}份；这只代表城区样本，不等于全县粮储。"
+    },
+    {
+      "id": "city_wood_low",
+      "region": "城",
+      "source": "stock",
+      "resource": "木",
+      "operator": "lte",
+      "threshold": 12,
+      "cooldown_days": 10,
+      "description": "临安县城样本的木料库存只有{value}份；工坊采购和物流需按实物账结算。"
+    },
+    {
+      "id": "city_fish_low",
+      "region": "城",
+      "source": "stock",
+      "resource": "鱼",
+      "operator": "lte",
+      "threshold": 5,
+      "cooldown_days": 10,
+      "description": "临安县城东市鱼货库存只有{value}份，运输若中断会影响城区供给。"
+    },
+    {
+      "id": "city_medicine_low",
+      "region": "城",
+      "source": "stock",
+      "resource": "药",
+      "operator": "lte",
+      "threshold": 8,
+      "cooldown_days": 15,
+      "description": "临安县城样本药材库存降为{value}份，医馆与药商不能无库存交货。"
+    },
+    {
+      "id": "city_tools_low",
+      "region": "城",
+      "source": "stock",
+      "resource": "器",
+      "operator": "lte",
+      "threshold": 7,
+      "cooldown_days": 15,
+      "description": "临安县城器具库存降至{value}件，工坊生产进度依赖工时和原料。"
+    },
+    {
+      "id": "city_treasury_low",
+      "region": "城",
+      "source": "treasury",
+      "resource": "",
+      "operator": "lte",
+      "threshold": 90,
+      "cooldown_days": 30,
+      "description": "临安县城样本财政钱库仅剩{value}文，不能把未建模的县域财政当作可用钱款。"
+    },
+    {
+      "id": "city_grain_high",
+      "region": "城",
+      "source": "stock",
+      "resource": "粮",
+      "operator": "gte",
+      "threshold": 850,
+      "cooldown_days": 15,
+      "description": "临安县城样本粮货库存已达{value}份，但尚不能据此推算其他乡镇的粮情。"
+    },
+    {
+      "id": "village_fish_recovery",
+      "region": "村",
+      "source": "wild",
+      "resource": "野鱼",
+      "operator": "gte",
+      "threshold": 27,
+      "cooldown_days": 15,
+      "description": "石桥村溪河野鱼资源指标回升至{value}；能捕获多少仍取决于工具、劳动和时间。"
+    },
+    {
+      "id": "village_forest_recovery",
+      "region": "村",
+      "source": "wild",
+      "resource": "木林",
+      "operator": "gte",
+      "threshold": 43,
+      "cooldown_days": 20,
+      "description": "石桥村林木指标已恢复至{value}；自然再生不代表仓库木料同步增加。"
+    },
+    {
+      "id": "city_herb_recovery",
+      "region": "城",
+      "source": "wild",
+      "resource": "野药",
+      "operator": "gte",
+      "threshold": 55,
+      "cooldown_days": 20,
+      "description": "临安县城样本地区野药资源指标达{value}，采药入库仍需实际劳动。"
+    }
+  ]
+}
