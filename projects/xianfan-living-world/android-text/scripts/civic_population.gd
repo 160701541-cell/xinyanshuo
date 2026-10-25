@@ -148,6 +148,10 @@ static func _produce(society: Dictionary, npc: Dictionary, day: int) -> bool:
     var stock: Dictionary=region["stock"]
     var wild: Dictionary=region["wild"]
     var effect:=str(npc["effect"])
+    var zone:=_region(npc)
+    var price_snapshot:=XianfanEconomyAccounts.price_snapshot(society,zone)
+    var outputs: Dictionary={}
+    var inputs: Dictionary={}
     # Residents without a job do not receive wages merely because an entry
     # exists in the population registry.
     if str(npc["job"]) in NONWORKING or str(npc["job"]).begins_with("候补"):
@@ -159,21 +163,26 @@ static func _produce(society: Dictionary, npc: Dictionary, day: int) -> bool:
             if int(wild["肥力"])>=2 and int(stock["粮"])<900:
                 wild["肥力"]=int(wild["肥力"])-2
                 stock["粮"]=int(stock["粮"])+2
+                outputs={"粮":2}
                 made=true
         "wood":
             if int(wild["木林"])>=1 and int(stock["木"])<220:
                 wild["木林"]=int(wild["木林"])-1
                 stock["木"]=int(stock["木"])+1
+                outputs={"木":1}
                 made=true
         "fish":
             if int(wild["野鱼"])>=1 and int(stock["鱼"])<80:
                 wild["野鱼"]=int(wild["野鱼"])-1
                 stock["鱼"]=int(stock["鱼"])+1
+                outputs={"鱼":1}
                 made=true
         "craft":
             if int(stock["木"])>=2 and int(stock["器"])<160:
                 stock["木"]=int(stock["木"])-2
                 stock["器"]=int(stock["器"])+1
+                outputs={"器":1}
+                inputs={"木":2}
                 made=true
         "heal":
             # Healthcare is a paid service requiring real medicines. One
@@ -199,6 +208,16 @@ static func _produce(society: Dictionary, npc: Dictionary, day: int) -> bool:
     var pay:=mini(salary,int(region["treasury"]))
     region["treasury"]=int(region["treasury"])-pay
     npc["coins"]=int(npc["coins"])+pay
+    var work_hour: int=(day-1)*24+6
+    if not outputs.is_empty():
+        var sector: String="工坊制造" if effect=="craft" else "农林渔药"
+        XianfanEconomyAccounts.production(society,zone,work_hour,sector,outputs,inputs,0,price_snapshot,
+            str(npc["name"])+"的实际劳动")
+    elif effect in ["trade","administration","service"] and pay>0:
+        XianfanEconomyAccounts.production(society,zone,work_hour,"公共与生活服务",{}, {},pay,
+            price_snapshot,str(npc["name"])+"的实际服务")
+    # Healing used to restore own strength has no proven external output,
+    # so that medicine expense is not counted as GDP.
     if int(npc["work_done"])==12:
         _event(society,npc,day,"凭真实工作积累12次本职经验，行当逐渐熟练。")
     return true
@@ -220,6 +239,8 @@ static func _eat(society: Dictionary, npc: Dictionary, day: int) -> void:
             region["stock"]["粮"]=int(region["stock"]["粮"])-1
             npc["rations"]=int(npc["rations"])+1
             society["civic_total_trade"]=int(society.get("civic_total_trade",0))+1
+            XianfanEconomyAccounts.trade(society,_region(npc),(day-1)*24+6,cost,
+                str(npc["name"])+"购口粮")
     if int(npc["rations"])==0 and int(npc["coins"])<2:
         # Unemployed and destitute citizens may receive real grain from a
         # village/city public granary, subject to a nonzero relief reserve.
