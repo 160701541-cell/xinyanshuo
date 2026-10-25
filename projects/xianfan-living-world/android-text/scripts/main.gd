@@ -140,12 +140,7 @@ func _build() -> void:
     quick_row = HBoxContainer.new()
     quick_row.add_theme_constant_override("separation", 7)
     root.add_child(quick_row)
-    for quick in ["看看周围", "问妹妹在忙什么", "出门走走"]:
-        var q := _btn(quick, func(): _execute("去林缘" if quick == "出门走走" else quick))
-        q.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-        q.custom_minimum_size = Vector2(0, 48)
-        q.add_theme_font_size_override("font_size", 17)
-        quick_row.add_child(q)
+    # Quick actions are regenerated from the current place; never hardwire village actions everywhere.
 
     action_toggle = _btn("参考操作 · 不限于这些  ▾", func(): _toggle_actions())
     action_toggle.custom_minimum_size = Vector2(0, 46)
@@ -182,6 +177,31 @@ func _build() -> void:
     go.custom_minimum_size = Vector2(110, 62)
     input_row.add_child(go)
 
+func _refresh_quick() -> void:
+    for child in quick_row.get_children():
+        quick_row.remove_child(child)
+        child.queue_free()
+    var buttons: Array[String] = []
+    match str(game.data["place"]):
+        "石桥村·家中":
+            buttons = ["看看周围", "打扫院子", "去林缘"]
+        "石桥村·溪边":
+            buttons = ["查看鱼笼", "钓鱼", "回家"]
+        "石桥村·林缘":
+            buttons = ["捡枯枝", "采车前草", "回家"]
+        "临安县城·东市":
+            buttons = ["看看街市", "沿山道北上", "回石桥村"]
+        "青云山门·山门外":
+            buttons = ["看看测灵台", "申请测灵根", "山脚脚店投宿"]
+        _:
+            buttons = ["看看周围", "回石桥村", "去东市"]
+    for action_name in buttons:
+        var q := _btn(action_name, func(): _execute(action_name))
+        q.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+        q.custom_minimum_size = Vector2(0, 48)
+        q.add_theme_font_size_override("font_size", 17)
+        quick_row.add_child(q)
+
 func _toggle_actions() -> void:
     drawer_open = not drawer_open
     scroll.visible = drawer_open
@@ -210,6 +230,7 @@ func _set_actions(list: Array[String]) -> void:
     scroll.scroll_vertical = 0
 
 func refresh() -> void:
+    _refresh_quick()
     heading.text = game.time_string() + "   ·   " + game.data["weather"]
     status_line.text = "%s  |  %s  |  精力 %d  |  铜钱 %d" % [game.data["place"], game.data["realm"], int(game.data["stamina"]), int(game.data["money"])]
     # On narrower phones the long HUD needs two lines, not a clipped single line.
