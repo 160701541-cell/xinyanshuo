@@ -325,12 +325,12 @@ static func initial_state(absolute_minute: int) -> Dictionary:
         "schema":VERSION,"last_hour":int(absolute_minute/60),
         "regions":{
             "村":{"stock":{"粮":220,"木":26,"鱼":6,"药":7,"器":4},
-                "wild":{"肥力":120,"木林":28,"野鱼":15,"野药":15},
-                "cap":{"肥力":180,"木林":45,"野鱼":30,"野药":35},
+                "wild":{"肥力":390,"木林":28,"野鱼":15,"野药":15},
+                "cap":{"肥力":600,"木林":45,"野鱼":30,"野药":35},
                 "treasury":340,"population_aggregate":1100},
             "城":{"stock":{"粮":460,"木":90,"鱼":22,"药":50,"器":45},
-                "wild":{"肥力":190,"木林":60,"野鱼":22,"野药":38},
-                "cap":{"肥力":240,"木林":80,"野鱼":40,"野药":60},
+                "wild":{"肥力":410,"木林":60,"野鱼":22,"野药":38},
+                "cap":{"肥力":650,"木林":80,"野鱼":40,"野药":60},
                 "treasury":980,"population_aggregate":18000}
         },
         "agents":{},"events":[],"daily":{},"total_production":0,"total_trades":0,
@@ -398,16 +398,19 @@ static func _wild_grow(society: Dictionary, absolute_hour: int) -> void:
         var wild: Dictionary=region["wild"]
         var cap: Dictionary=region["cap"]
         for key in ["肥力","木林","野鱼","野药"]:
-            var growth:=70 if region_key=="村" else 32
+            # Collective field productivity scales with the registered
+            # population rather than the old 24-person test sample.
+            # Sunlight/soil renewal is an ecological inflow, not free cash.
+            var growth:=260 if region_key=="村" else 270
             if key=="木林": growth=4
             elif key=="野鱼": growth=4
             elif key=="野药": growth=3
             wild[key]=mini(int(cap[key]),int(wild[key])+growth)
         # Existing unnamed farming households are simulated as one cooperative
         # batch to balance the named citizens, NOT per-person 18k population.
-        var collective:=40 if region_key=="村" else 22
+        var collective:=195 if region_key=="村" else 205
         var stores: Dictionary=region["stock"]
-        var capacity:=460 if region_key=="村" else 860
+        var capacity:=560 if region_key=="村" else 900
         var harvest:=mini(collective,mini(int(wild["肥力"]),maxi(0,capacity-int(stores["粮"]))))
         if harvest>0:
             wild["肥力"]=int(wild["肥力"])-harvest
