@@ -41,6 +41,10 @@ jobs:
         run: |
           cd projects/xianfan-living-world/android-text
           godot --headless --path . --script res://tests/test_world.gd
+      - name: Validate AI configuration and key privacy
+        run: |
+          cd projects/xianfan-living-world/android-text
+          godot --headless --path . --script res://tests/test_ai.gd
       - name: Smoke-launch native UI
         run: |
           cd projects/xianfan-living-world/android-text
