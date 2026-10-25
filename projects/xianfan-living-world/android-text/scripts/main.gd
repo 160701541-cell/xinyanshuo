@@ -24,6 +24,8 @@ var local_enabled := false
 var local_model_url: LineEdit
 var local_model_selector: OptionButton
 var local_model_hint: Label
+var context_selector: OptionButton
+var context_hint_label: Label
 var local_model_fields: Array[Control]=[]
 var remote_model_fields: Array[Control]=[]
 var pending_model_path := ""
@@ -356,6 +358,7 @@ func _open_npc(name: String) -> void:
         _close_modal()
         _change_tab("对话")
     ))
+    modal_actions.add_child(_button("查看长期记忆 · 生活习惯",func(): _open_npc_memory(name),16))
     if chosen["here"]:
         var address: String="妹妹" if name=="孙成明" else ("父亲" if name=="钱然泽" else "母亲")
         modal_actions.add_child(_button("询问吃饭了吗",func(): _npc_action("问"+address+"吃饭了吗")))
@@ -366,6 +369,18 @@ func _open_npc(name: String) -> void:
             var label := "赠送一份"+str(item)
             var cmd := "把"+str(item)+"给"+name
             modal_actions.add_child(_button(label,func(): _npc_action(cmd),17))
+
+func _open_npc_memory(person: String) -> void:
+    _open_modal("人物记忆 · "+person,game.memory_storage_info(person))
+    modal_actions.add_child(_button("查看最近关键旧事",func():
+        var memory: Dictionary=game.memory_digest(person)
+        var pinned: Array=memory.get("important",[])
+        var texts: Array[String]=[]
+        for line in pinned.slice(-8):
+            if not (line is Dictionary): continue
+            texts.append("第%d日：%s\n%s" % [int(line.get("day",0)),str(line.get("player","")),str(line.get("reply",""))])
+        modal_info.text="【原始记忆永久存于本机】\n\n"+("\n\n".join(texts) if not texts.is_empty() else "还没有被标记为重要的原始对话。")
+    ))
 
 func _npc_action(text: String) -> void:
     _close_modal()
@@ -408,6 +423,26 @@ func _open_ai_settings() -> void:
     local_model_url=_entry_field("GGUF地址；可改成自定义HTTPS下载源",str(local_llm.get("model_source")),false)
     modal_form.add_child(local_model_url)
     local_model_fields.append(local_model_url)
+    var ctx_title:=_label("模型上下文（长期经历在磁盘中，较大窗口增加RAM占用）",15,FADED)
+    modal_form.add_child(ctx_title)
+    local_model_fields.append(ctx_title)
+    context_selector=OptionButton.new()
+    context_selector.add_theme_stylebox_override("normal",_box(PANEL,DIVIDER,6))
+    context_selector.add_theme_color_override("font_color",PAPER)
+    var index:=0
+    for tokens in XianfanLocalLLM.CONTEXT_CHOICES:
+        context_selector.add_item("%d tokens"%int(tokens))
+        if int(tokens)==int(local_llm.get("context_tokens")): context_selector.select(index)
+        index+=1
+    context_selector.custom_minimum_size=Vector2(0,50)
+    context_selector.item_selected.connect(func(i: int):
+        context_hint_label.text=XianfanLocalLLM.context_hint(int(XianfanLocalLLM.CONTEXT_CHOICES[i]),str(local_llm.get("active_name")))
+    )
+    modal_form.add_child(context_selector)
+    local_model_fields.append(context_selector)
+    context_hint_label=_label(XianfanLocalLLM.context_hint(int(local_llm.get("context_tokens")),str(local_llm.get("active_name"))),15,FADED)
+    modal_form.add_child(context_hint_label)
+    local_model_fields.append(context_hint_label)
     local_model_fields.append(_label("剧情演化强度（会增加本地模型生成次数，8B较慢）",15,FADED))
     modal_form.add_child(local_model_fields.back())
     director_selector=OptionButton.new()
@@ -425,6 +460,7 @@ func _open_ai_settings() -> void:
     modal_actions.add_child(_button("下载/加载选中的本地模型",func(): _enable_local_and_load()))
     modal_actions.add_child(_button("卸载已运行的模型（切换时使用）",func(): _unload_active_model(),16))
     modal_actions.add_child(_button("保存设置（不自动下载）",func(): _save_ai_settings()))
+    modal_actions.add_child(_button("查看当前上下文占用",func(): _inspect_context_usage(),15))
     setting_provider.item_selected.connect(func(_index: int): _sync_provider_fields())
     _sync_provider_fields()
 
@@ -442,11 +478,21 @@ func _sync_provider_fields() -> void:
     for idx in range(actions.size()):
         var button: Control=actions[idx]
         # Two API preset actions, two local model actions, one save button.
-        button.visible = (not is_local) if idx<2 else (is_local if idx<4 else true)
+        button.visible = (not is_local) if idx<2 else (is_local if idx in [2,3,5] else true)
     if is_local:
         modal_info.text="在游戏中选择 1.7B / 4B / 8B / 14B 等本地模型，首次由手机自行下载GGUF，下载后缓存并离线生成。大型模型可能耗尽内存甚至被安卓终止。"
     else:
         modal_info.text="API模式通过你配置的服务联网。密钥仅本次运行内存保存；无需下载安装本地模型。"
+
+func _save_context_setting() -> String:
+    if context_selector==null: return ""
+    var n:=int(XianfanLocalLLM.CONTEXT_CHOICES[context_selector.selected])
+    return str(local_llm.choose_context(n))
+
+func _inspect_context_usage() -> void:
+    var info: String=await local_llm.context_usage()
+    notice.text=info
+    if overlay.visible and modal_title.text=="AI 设置": modal_info.text=info
 
 func _save_director_mode() -> void:
     if director_selector==null: return
@@ -520,6 +566,11 @@ func _local_status(message: String) -> void:
 
 func _enable_local_and_load(confirmed: bool=false) -> void:
     var target_path:=pending_model_path if confirmed else (local_model_url.text if local_model_url!=null else str(local_llm.get("model_source")))
+    if not confirmed:
+        var ctx_status:=_save_context_setting()
+        if ctx_status.contains("请先卸载"):
+            notice.text=ctx_status
+            return
     var tier:=XianfanLocalLLM.preset_index(target_path)
     if tier>=3 and not confirmed:
         pending_model_path=target_path
@@ -541,6 +592,7 @@ func _enable_local_and_load(confirmed: bool=false) -> void:
 
 func _save_ai_settings() -> void:
     _save_director_mode()
+    var ctx_response:=_save_context_setting()
     var p:=setting_provider.get_item_text(setting_provider.selected)
     if p=="内置模型":
         local_enabled=true
@@ -550,7 +602,7 @@ func _save_ai_settings() -> void:
         var result:=str(local_llm.choose_model(local_model_url.text))
         setting_key.clear()
         _close_modal()
-        notice.text="已选择模型。请重新进入设置，点击‘下载/加载’，才会开始下载。"+result
+        notice.text="已保存配置。"+ctx_response+"；"+result+"；点击下载/加载才会开始下载。"
         _refresh()
         return
     local_enabled=false
@@ -594,12 +646,12 @@ func _submit(text: String, typed: bool) -> void:
             notice.text="本地AI仍在生成上一轮内容。请等它完成再继续，避免丢失对话。"
             return
         notice.text=("本机 "+str(local_llm.get("active_name"))+" 正在与"+npc_to_chat+"交谈……") if not npc_to_chat.is_empty() else "本地AI正在理解行动……"
-        local_llm.talk(raw,npc_to_chat,game.data)
+        local_llm.talk(raw,npc_to_chat,game.ai_context(npc_to_chat,raw))
         return
     if not immediate and ai.configured():
         request_text=raw
         notice.text="正在通过你选定的API理解行动或人物对话。"
-        if not ai.ask(raw,game.data,npc_to_chat):
+        if not ai.ask(raw,game.ai_context(npc_to_chat,raw),npc_to_chat):
             notice.text="API当前不可用，请查看配置或切换离线规则模式。"
         return
     # No-model fallback must remain playable and clearly identify its source.
@@ -793,5 +845,5 @@ func _refresh() -> void:
             scene_text.text=game.feedback_report()
         "设置":
             page_title.text="引擎与 AI 模式"
-            scene_text.text="AI剧情导演："+director_mode+"；本地模型使用共享推理实例，依人物记忆生成对话，重要行动触发规则约束的故事续写。\n\n当前："+(str(local_llm.status()) if local_enabled else ai.status())+"\n\n【游戏内模型库】支持0.6B、1.7B、4B、8B、14B Q4量化模型。点‘配置 AI 服务’ → ‘内置模型’ → 选择档位 → ‘下载/加载’。4B约2.50GB，8B约5.03GB，14B约9GB。大型模型需要大量RAM和储存空间，可能无法在普通手机上加载。\n\n【其他模型】也可填写合法HTTPS GGUF链接。下载失败请使用反馈页；实际推理速度取决于设备。\n\n【API】仍提供手动配置的OpenAI兼容API模式，密钥不随游戏提供。\n\n【存档】该预览版采用独立包名，不会覆盖已安装的主游戏；两者的存档互不通用。"
+            scene_text.text="AI剧情导演："+director_mode+"；上下文 "+str(local_llm.get("context_tokens"))+" tokens。人物原始经历分别存入独立本地文件，日常按日汇总，重要对话与习惯有可追溯证据；不受当前上下文长度限制。\n\n当前："+(str(local_llm.status()) if local_enabled else ai.status())+"\n\n【游戏内模型库】支持0.6B、1.7B、4B、8B、14B Q4量化模型。点‘配置 AI 服务’ → ‘内置模型’ → 选择档位 → ‘下载/加载’。4B约2.50GB，8B约5.03GB，14B约9GB。大型模型需要大量RAM和储存空间，可能无法在普通手机上加载。\n\n【其他模型】也可填写合法HTTPS GGUF链接。下载失败请使用反馈页；实际推理速度取决于设备。\n\n【API】仍提供手动配置的OpenAI兼容API模式，密钥不随游戏提供。\n\n【存档】该预览版采用独立包名，不会覆盖已安装的主游戏；两者的存档互不通用。"
     scene_text.call_deferred("scroll_to_line",0)
