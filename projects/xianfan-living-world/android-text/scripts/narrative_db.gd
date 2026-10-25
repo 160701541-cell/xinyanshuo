@@ -160,6 +160,10 @@ func answer(person: String, question: String, data: Dictionary) -> Dictionary:
             selected=topic
             top_score=score
     if selected.is_empty(): return {"covered":false,"reason":"uncovered_question"}
+    if int(npc.get("age",18))<18 and str(selected.get("id",""))=="lust_and_consent":
+        return {"covered":true,"reply":"有些问题要等自己长大后再慢慢理解。我更想按自己的步调生活，也希望别人尊重我的界限。",
+            "topic":"age_appropriate_boundary","voice":_voice(person,npc),
+            "source":"authored-local-library","speaker_id":str(npc.get("id",""))}
     var voice:=_voice(person,npc)
     var voices: Dictionary=selected.get("voices",{})
     var lines: Array=voices.get(voice,voices.get("resident",[]))
