@@ -69,11 +69,12 @@ func _setup_society() -> void:
         _record_feedback("社会模拟读档","检测到社会账本异常，已经停止社会经济结算，原始存档仍保留。","SOCIETY_LEDGER_INVALID")
         return
     immortal_added=XianfanImmortalSociety.initialize(society,_clock())
+    var sect_living_added:=XianfanSectLiving.migrate(society)
     _sync_society_people()
     _archive_society_milestones()
     _archive_civic_memory()
     _archive_immortal_memory()
-    if first_init or civic_added or accounts_added or immortal_added: save()
+    if first_init or civic_added or accounts_added or immortal_added or sect_living_added: save()
 
 func _sync_society_people() -> void:
     var society: Dictionary=data.get("society",{})
@@ -122,6 +123,9 @@ func _sync_society_people() -> void:
         living["mood"]=str(info["mood"])
         living["relationship"]=str(info["standing"])
         living["social_class"]=str(info["standing"])
+        living["sect_contract"]=str(info.get("sect_contract",""))
+        living["sect_boarding"]=bool(info.get("sect_boarding",false))
+        living["physiology"]=info.get("physiology",{}).duplicate(true)
         living["sector"]=str(info["sector"])
         living["faction"]=str(info["faction"])
         living["trait"]=str(info["trait"])
