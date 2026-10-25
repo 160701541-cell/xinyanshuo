@@ -430,6 +430,11 @@ func _open_npc(name: String) -> void:
         "【身份】%s · %d岁 · %s" % [name,int(chosen["age"]),str(chosen["relationship"])],
         "【编号】"+str(chosen["id"]),
         "【职业】"+str(chosen.get("job","家务")),
+        "【生存状态】"+("在世" if bool(chosen.get("alive",true)) else "已故 · 逝于第%d日" % int(chosen.get("death_day",0))),
+        "【真实技能】"+str(chosen.get("skills",{})),
+        "【师承】"+str(chosen.get("mentor","暂无")),
+        "【学习进度】%d/24次实际工时" % int(chosen.get("training",0)),
+        "【人生重要事件】%d条" % chosen.get("biography",[]).size(),
         "【个人钱财】%d文" % int(chosen.get("money",0)),
         "【同户关系】"+str(chosen.get("household","尚未登记")),
         "【身上口粮】%s份 · 【饥饿】%s" % [str(game.data.get("npc",{}).get(name,{}).get("rations","未登记")),str(chosen.get("hunger",0))],
@@ -445,12 +450,21 @@ func _open_npc(name: String) -> void:
     if int(chosen["rapport"])>=0: details.append("【关系】亲近程度 %d/100" % int(chosen["rapport"]))
     if int(chosen["learning"])>=0: details.append("【学识】%d/100（不等于灵根或境界）" % int(chosen["learning"]))
     _open_modal("人物档案 · "+name,"\n\n".join(details))
-    modal_actions.add_child(_button("与TA交谈",func():
-        _close_modal()
-        _change_tab("对话")
-    ))
+    if bool(chosen.get("alive",true)):
+        modal_actions.add_child(_button("与TA交谈",func():
+            _close_modal()
+            _change_tab("对话")
+        ))
     modal_actions.add_child(_button("查看长期记忆 · 生活习惯",func(): _open_npc_memory(name),16))
-    if chosen["here"]:
+    if chosen.get("biography",[]).size()>0:
+        modal_actions.add_child(_button("查看真实人生履历",func():
+            var lines: Array[String]=[]
+            for event in chosen.get("biography",[]).slice(-12):
+                lines.append("第%d日｜%s：%s" % [int(event.get("day",0)),
+                    str(event.get("category","经历")),str(event.get("detail",""))])
+            _open_modal("人物履历 · "+name,"\n\n".join(lines))
+        ,16))
+    if chosen["here"] and bool(chosen.get("alive",true)):
         var address: String="妹妹" if name=="孙成明" else ("父亲" if name=="钱然泽" else ("母亲" if name=="郑舟清" else name))
         modal_actions.add_child(_button("问问最近在忙什么",func(): _npc_action("问"+address+"最近忙什么")))
         modal_actions.add_child(_button("聊聊青云山门",func(): _npc_action("问"+address+"青云的事")))
@@ -923,7 +937,7 @@ func _refresh() -> void:
             _wipe(actor_buttons)
             actor_buttons.add_child(_label("选择人物，点击查看状态或更换交谈对象：",16,FADED))
             for n in game.npcs_status():
-                if not n["here"] and not str(n["relationship"]) in ["妹妹","父亲","母亲"]: continue
+                if not bool(n.get("alive",true)) or (not n["here"] and not str(n["relationship"]) in ["妹妹","父亲","母亲"]): continue
                 var who:=str(n["name"])
                 actor_buttons.add_child(_button(who+" · "+str(n["activity"]),func(): _open_npc(who),16))
         "人物":
@@ -934,7 +948,7 @@ func _refresh() -> void:
             _wipe(actor_buttons)
             actor_buttons.add_child(_label("人物档案 · 点击弹出详细属性和互动",18,GOLD))
             for n in game.npcs_status():
-                if not n["here"] and not str(n["relationship"]) in ["妹妹","父亲","母亲"]: continue
+                if not bool(n.get("alive",true)) or (not n["here"] and not str(n["relationship"]) in ["妹妹","父亲","母亲"]): continue
                 var who:=str(n["name"])
                 actor_buttons.add_child(_button(who+"  ·  "+str(n["relationship"])+"  ·  "+str(n["activity"]),func(): _open_npc(who),17))
         "世界":
@@ -943,6 +957,14 @@ func _refresh() -> void:
             actor_buttons.visible=true
             _wipe(actor_buttons)
             actor_buttons.add_child(_label("附近具名NPC（真实职业、地点、账本）",17,GOLD))
+            var dead_people: Array[String]=[]
+            for n in game.npcs_status():
+                if not bool(n.get("alive",true)): dead_people.append(str(n["name"]))
+            if not dead_people.is_empty():
+                actor_buttons.add_child(_label("人物故去 · 可查看生前履历",16,FADED))
+                for old_name in dead_people.slice(-5):
+                    var remembered: String=old_name
+                    actor_buttons.add_child(_button("故人："+remembered,func(): _open_npc(remembered),16))
             for person in game.society_nearby().slice(0,7):
                 var who:=str(person["name"])
                 actor_buttons.add_child(_button("%s｜%s｜%s" % [who,str(person["job"]),str(person["activity"])],func(): _open_npc(who),16))
