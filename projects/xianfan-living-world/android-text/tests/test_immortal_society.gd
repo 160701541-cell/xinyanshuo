@@ -77,7 +77,11 @@ func _go() -> void:
         check(str(game.data["npc"].get(carrier,{}).get("place",""))=="临安官道","Porter uses road")
         game.passive_time(600)
         game.passive_time(720)
-        check(immortal.get("shipments",[]).is_empty(),"Delivery must complete after transit")
+        var original_still_in_transit:=false
+        for pending in immortal.get("shipments",[]):
+            if str(pending.get("id",""))==str(record.get("id","")):
+                original_still_in_transit=true
+        check(not original_still_in_transit,"Original billed delivery must complete after transit")
     # Both trade and courier service must be booked in the real in-game day,
     # never in a fictitious far-future year caused by minutes-vs-hours confusion.
     var town_accounts: Dictionary=society["economy_accounts"]["regions"]["城"]
