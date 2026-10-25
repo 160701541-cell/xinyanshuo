@@ -95,6 +95,27 @@ func _run() -> void:
         if str(row.get("category",""))=="灵膳烹制":
             last_cook_name=str(row.get("npc",""))
     check(last_cook_name==cook_name,"Kitchen event must be attributed to actual mortal worker")
+    var alchemist: Dictionary=c["agents"]["许晚照"]
+    alchemist["skills"]["丹房学徒"]=12
+    alchemist["bigu_recipe_verified"]=false
+    stock["灵草"]=7
+    stock["灵米"]=3
+    stock["灵矿石"]=4
+    var fasting_pills_before:=int(stock["辟谷丹"])
+    XianfanImmortalSociety._work(c,alchemist,48)
+    check(int(stock["辟谷丹"])==fasting_pills_before,
+        "Unverified fasting recipe cannot produce fasting medicines")
+    alchemist["bigu_recipe_verified"]=true
+    var rice_for_pill:=int(stock["灵米"])
+    var herb_for_pill:=int(stock["灵草"])
+    var ore_for_pill:=int(stock["灵矿石"])
+    XianfanImmortalSociety._work(c,alchemist,48)
+    check(int(stock["辟谷丹"])==fasting_pills_before+1,
+        "Authenticated alchemy skill and formula produce one fasting pill")
+    check(int(stock["灵米"])==rice_for_pill-2 and
+        int(stock["灵草"])==herb_for_pill-2 and
+        int(stock["灵矿石"])==ore_for_pill-1,
+        "Crafting a fasting pill has exact conserved material costs")
     var first_worker: String=""
     for worker_name in ledger:
         if bool(ledger[worker_name].get("employed",false)):
