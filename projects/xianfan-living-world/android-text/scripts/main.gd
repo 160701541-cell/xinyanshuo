@@ -1059,6 +1059,22 @@ func _submit(text: String, typed: bool) -> void:
     var immediate:=not typed and npc_to_chat.is_empty()
     if typed and npc_to_chat.is_empty() and game.actions_for_place().has(raw):
         immediate=true
+    # World-backed authored dialogue is the default fast path. Only uncovered
+    # questions need the local LLM/API. It never fabricates unrecorded history.
+    if not npc_to_chat.is_empty() and not bool(local_llm.get("busy")):
+        var authored: Dictionary=game.authored_dialogue(npc_to_chat,raw)
+        if bool(authored.get("covered",false)):
+            var reply:=str(authored.get("reply",""))
+            var committed:=game.record_ai_dialogue(npc_to_chat,raw,reply,"local-library",str(authored.get("topic","")))
+            if committed==reply.strip_edges() and game.last_channel=="对话":
+                current_npc=npc_to_chat
+                view="对话"
+                notice.text="已从本地人物剧情库即时回应；事实与记忆均按存档记录（无需等待大模型）。"
+                _refresh()
+                return
+            notice.text=committed
+            _refresh()
+            return
     if not immediate and local_enabled and bool(local_llm.get("model_ready")):
         request_text=raw
         if bool(local_llm.get("busy")):
