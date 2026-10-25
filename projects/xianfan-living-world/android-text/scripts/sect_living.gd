@@ -206,6 +206,31 @@ static func settle(society: Dictionary, c: Dictionary, day: int) -> void:
         if not bool(contract.get("employed",false)): continue
         var worker: Dictionary=society["civic_agents"].get(worker_name,{})
         if worker.is_empty() or not bool(worker.get("alive",true)): continue
+        # A real contracted workday creates a wage liability owed by this sect,
+        # never by the village public purse. Wage arrears and resignation persist.
+        var mountain: Dictionary=c["regions"]["青云山门"]
+        var pay:=mini(1,int(mountain["copper"]))
+        mountain["copper"]=int(mountain["copper"])-pay
+        worker["coins"]=int(worker["coins"])+pay
+        worker["work_done"]=int(worker.get("work_done",0))+1
+        society["civic_total_work"]=int(society.get("civic_total_work",0))+1
+        var skills: Dictionary=worker.get("skills",{})
+        var skill:=str(worker.get("job","役仆"))
+        skills[skill]=int(skills.get(skill,0))+1
+        worker["skills"]=skills
+        if pay<1:
+            contract["wage_arrears"]=int(contract.get("wage_arrears",0))+1
+            contract["unpaid_days"]=int(contract.get("unpaid_days",0))+1
+            if int(contract["unpaid_days"])>=7:
+                contract["employed"]=false
+                worker["sect_boarding"]=false
+                worker["sect_contract"]="因连续欠薪离开山门"
+                var steward: Dictionary=c["agents"].get("叶怀远",{})
+                if not steward.is_empty():
+                    _log_event(c,steward,day,"雇工离职",
+                        "%s连续7个工作日未得到工资，已结束山门服务并退出供膳名单。" % str(worker["name"]))
+        else:
+            contract["unpaid_days"]=0
         _dine_one(c,worker,day,true)
 
 static func needs_report(society: Dictionary) -> String:
@@ -213,13 +238,15 @@ static func needs_report(society: Dictionary) -> String:
     if c.is_empty(): return ""
     var employed:=0
     var apprentices:=0
+    var arrears:=0
     for contract in c.get("sect_workforce",{}).values():
+        arrears+=int(contract.get("wage_arrears",0))
         if bool(contract.get("employed",false)): employed+=1
         else: apprentices+=1
     var stats: Dictionary=c.get("daily_dining",{})
     var region: Dictionary=c["regions"]["青云山门"]
     var stock: Dictionary=region["stock"]
-    return "【仙凡衣食】山门具名凡人雇工/役仆%d人、求道见习%d人；炼气及未辟谷者仍需饮食、起居与卫生。\n口粮库存%d份，已供给普通餐食%d人日，合格辟谷%d人日，灵膳尝鲜%d份。\n灵田米%d份、灵果%d枚、已制灵膳%d份、泉水%d份，实际膳房及卫生用水均记账。" % [
+    return "【仙凡衣食】山门具名凡人雇工/役仆%d人、求道见习%d人；炼气及未辟谷者仍需饮食、起居与卫生。\n口粮库存%d份，已供给普通餐食%d人日，合格辟谷%d人日，灵膳尝鲜%d份。\n灵田米%d份、灵果%d枚、已制灵膳%d份、泉水%d份，累计欠薪%d文，实际膳房及卫生用水均记账。" % [
         employed,apprentices,int(stock["口粮"]),int(stats.get("mortal_meals",0)),
         int(stats.get("bigu_days",0)),int(stats.get("delicacy_meals",0)),
-        int(stock["灵米"]),int(stock["灵果"]),int(stock["灵膳"]),int(stock["泉水"])]
+        int(stock["灵米"]),int(stock["灵果"]),int(stock["灵膳"]),int(stock["泉水"]),arrears]
