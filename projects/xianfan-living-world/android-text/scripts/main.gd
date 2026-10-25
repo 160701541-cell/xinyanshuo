@@ -426,6 +426,7 @@ func _preset_api(url: String, model_id: String) -> void:
     setting_provider.select(1)
     setting_url.text=url
     setting_model.text=model_id
+    _sync_provider_fields()
     notice.text="已填写示例服务地址与模型名。仍需你自己的有效 API Key；此按钮没有实际调用接口。"
 
 func _entry_field(placeholder: String, value: String, hidden: bool) -> LineEdit:
@@ -443,6 +444,8 @@ func _entry_field(placeholder: String, value: String, hidden: bool) -> LineEdit:
 
 func _local_status(message: String) -> void:
     notice.text=message
+    if message.contains("失败") or message.contains("无法运行") or message.contains("没有加载成功"):
+        game.note_api_failure("内置GGUF模型 "+str(local_llm.get("active_name")),message)
     if view=="设置": _refresh()
 
 func _enable_local_and_load(confirmed: bool=false) -> void:
