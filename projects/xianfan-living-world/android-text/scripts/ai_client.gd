@@ -101,10 +101,29 @@ func ask(action_text: String, state: Dictionary, dialogue_target: String="") -> 
             "当前正在做："+str(npc.get("activity","家务"))+"；情绪："+str(npc.get("mood","平静"))+"。" + \
             "不能决定世界数值、NPC行动是否成功、物品、灵根、修为或改变任何角色状态。" + \
             "如不知道的问题请坦诚说不清楚。"
-    var payload := {"model":model,"messages":[
-        {"role":"system","content":system_text},
-        {"role":"user","content":"世界事实："+JSON.stringify(context)+"\n玩家说："+action_text.substr(0,350)}
-    ],"temperature":0.65 if not dialogue_target.is_empty() else 0.25,"max_tokens":260}
+    var messages: Array=[{"role":"system","content":system_text}]
+    if not dialogue_target.is_empty():
+        # The API also gets a bounded, NPC-scoped exchange history.
+        # Past speech is replayed as dialogue, never as authoritative world facts.
+        messages[0]["content"]=system_text+"\n可信地点："+str(state.get("place","未知"))+"；NPC当前地点："+str(state.get("npc",{}).get(dialogue_target,{}).get("place","未知"))+"。不要虚构移动，不要重复前一条回复。"
+        var history: Array=state.get("dialogue_log",[])
+        var relevant: Array=[]
+        for entry in history:
+            if entry is Dictionary and str(entry.get("speaker",""))==dialogue_target:
+                relevant.append(entry)
+        for i in range(maxi(0,relevant.size()-4),relevant.size()):
+            var old: Dictionary=relevant[i]
+            messages.append({"role":"user","content":str(old.get("player","")).substr(0,170)})
+            messages.append({"role":"assistant","content":str(old.get("reply","")).substr(0,170)})
+        var clean:=action_text.strip_edges()
+        for prefix in ["跟"+dialogue_target+"说：","跟"+dialogue_target+"说:"]:
+            if clean.begins_with(prefix):
+                clean=clean.trim_prefix(prefix).strip_edges()
+                break
+        messages.append({"role":"user","content":clean.substr(0,300)})
+    else:
+        messages.append({"role":"user","content":"世界事实："+JSON.stringify(context)+"\n玩家说："+action_text.substr(0,350)})
+    var payload := {"model":model,"messages":messages,"temperature":0.65 if not dialogue_target.is_empty() else 0.25,"max_tokens":260}
     var headers := PackedStringArray(["Content-Type: application/json"])
     if provider=="API": headers.append("Authorization: Bearer "+api_key)
     pending_text=action_text
