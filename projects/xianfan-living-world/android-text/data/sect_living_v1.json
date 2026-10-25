@@ -1,0 +1,116 @@
+{
+  "schema": 1,
+  "world_rule": "凡人、未能辟谷的低阶修士以及绝大多数外门见习、杂役、役仆都要吃饭与保持卫生；高阶修士需真正取得并激活辟谷丹或经过验证的辟谷法诀；辟谷后仍可主动享用灵膳。宗门衣食来自真实采购、农事与库存。",
+  "classes": [
+    {
+      "id": "outer_novice",
+      "title": "外门见习",
+      "condition": "未证实修为或初入修行",
+      "needs_mortal_life": true
+    },
+    {
+      "id": "sect_worker",
+      "title": "山门雇工",
+      "condition": "劳动换取口粮或钱",
+      "needs_mortal_life": true
+    },
+    {
+      "id": "sect_attendant",
+      "title": "山门役仆",
+      "condition": "有具体差事、作息与物资需求，契约与人身关系单独记录",
+      "needs_mortal_life": true
+    },
+    {
+      "id": "low_cultivator",
+      "title": "炼气修士",
+      "condition": "炼气1至13层仍需饮食起居",
+      "needs_mortal_life": true
+    },
+    {
+      "id": "foundation",
+      "title": "筑基修士",
+      "condition": "到筑基不等于自动辟谷；必须实际服药或修行有效法门",
+      "needs_mortal_life": true
+    },
+    {
+      "id": "bigu",
+      "title": "已辟谷者",
+      "condition": "服用合法辟谷丹于有效期内，或以筑基及以上功法持续维持",
+      "needs_mortal_life": false
+    }
+  ],
+  "rules": {
+    "bigu_min_level": 14,
+    "pill_days": 3,
+    "art_qi_cost_per_day": 1,
+    "grain_meal_units": 1,
+    "clean_water_per_hygiene": 1,
+    "sick_health_penalty_per_missed_day": 2,
+    "spirit_rice_field_cycle_days": 3,
+    "spirit_rice_crop_units": 2,
+    "spirit_fruit_grow_days": 7,
+    "delicacy_water_cost": 1,
+    "delicacy_rice_cost": 1,
+    "delicacy_fruit_cost": 1,
+    "delicacy_morale_gain": 4
+  },
+  "recipes": [
+    {
+      "id": "spirit_rice",
+      "name": "灵田灵米",
+      "prerequisites": [
+        "真实灵田地力",
+        "泉水",
+        "耕作劳力"
+      ],
+      "consumes": {
+        "灵田地力": 3,
+        "泉水": 2
+      },
+      "produces": {
+        "灵米": 2
+      }
+    },
+    {
+      "id": "fruit",
+      "name": "灵果成熟",
+      "prerequisites": [
+        "实体灵果树",
+        "成熟时间"
+      ],
+      "produces": {
+        "灵果": 1
+      }
+    },
+    {
+      "id": "delicacy",
+      "name": "灵米灵果羹",
+      "prerequisites": [
+        "真实膳房人手"
+      ],
+      "consumes": {
+        "灵米": 1,
+        "灵果": 1,
+        "泉水": 1
+      },
+      "produces": {
+        "灵膳": 1
+      }
+    },
+    {
+      "id": "bigu_pill",
+      "name": "辟谷丹",
+      "notes": "后续正式丹方与丹师鉴定，不和已有基础丹药互换；不得凭空合成。",
+      "requires_level": 14,
+      "duration_days": 3
+    }
+  ],
+  "dialogue_constraints": [
+    "职业或宗门身份不等于已经辟谷。",
+    "筑基后也不是自动免除吃饭与如厕，需要药物或功法实证。",
+    "辟谷是减少生理依赖，不是失去品味或情感。",
+    "灵米、灵果、灵兽肉必须有实物来源，灵兽肉不可凭空从野生灵兽数量扣除。",
+    "低阶修士也有体力劳动、个人隐私、食宿、卫生、生活费与债务。",
+    "宗门弟子和役仆的阶级差别应影响话语、知情范围、自由与实际待遇，而不是改变历史事实。"
+  ]
+}
