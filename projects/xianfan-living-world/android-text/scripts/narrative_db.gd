@@ -27,6 +27,8 @@ static func _voice(name: String, npc: Dictionary) -> String:
     if name=="钱然泽": return "father"
     if name=="郑舟清": return "mother"
     if bool(npc.get("cultivation_member",false)): return "cultivator"
+    if str(npc.get("sect_contract",""))=="山门役仆": return "sect_servant"
+    if bool(npc.get("sect_boarding",false)): return "sect_mortal"
     var work:=str(npc.get("job",""))
     var domain:=str(npc.get("sector",""))
     if domain.contains("官府") or work.contains("衙") or work.contains("巡") or work.contains("县令") or work.contains("吏"): return "official"
@@ -104,6 +106,19 @@ func answer(person: String, question: String, data: Dictionary) -> Dictionary:
         if asks_realm:
             personal+="我目前的修行境界是%s。" % realm_info
         return {"covered":true,"reply":personal,"topic":"verified_personal_status",
+            "voice":_voice(person,npc),"source":"verified-world-fact",
+            "speaker_id":str(npc.get("id",""))}
+    # First-person physiology facts must be derived from the live record, not
+    # guessed from the speaker's clothing, title or faction membership.
+    if query.contains("你辟谷了吗") or query.contains("你会辟谷吗") or query.contains("你还需要吃饭吗"):
+        var rank:=int(npc.get("realm_level",0))
+        if rank<14:
+            return {"covered":true,"reply":"我目前并未到能凭辟谷丹或功法维持辟谷的筑基境界，仍需正常吃饭起居。",
+                "topic":"verified_diet","voice":_voice(person,npc),"source":"verified-world-fact",
+                "speaker_id":str(npc.get("id",""))}
+        var today_fasting:=bool(npc.get("physiology",{}).get("bigu_today",false))
+        var message: String="我今天已有有效辟谷手段，不必为了饱腹进食，但仍可自愿品尝佳肴。" if today_fasting else "我虽有筑基境界，但今天没有有效的辟谷维持，仍需正常吃饭起居。"
+        return {"covered":true,"reply":message,"topic":"verified_diet",
             "voice":_voice(person,npc),"source":"verified-world-fact",
             "speaker_id":str(npc.get("id",""))}
     var selected: Dictionary={}
