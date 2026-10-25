@@ -287,7 +287,9 @@ func story_context() -> Dictionary:
         "inventory":data.get("items",{}).duplicate(true),"realm":str(data.get("realm","凡人")),
         "root":str(data.get("root","未检测")),"npc_here":npc_visible,
         "world_facts":look(),"available_beats":available_story_beats(),
-        "last_rule_result":last_result.substr(0,340)}
+        "last_rule_result":last_result.substr(0,340),
+        "recent_npc_days":data.get("npc_life_events",[]).slice(-6),
+        "open_plot_threads":data.get("story_flags",{}).keys()}
 
 func recent_story_ai(n: int=3) -> String:
     var events: Array=data.get("ai_story_log",[])
@@ -450,6 +452,15 @@ func _daily() -> void:
     data["npc"]["郑舟清"]["activity"] = "料理厨房" if day % 3 != 0 else "晾晒家粮"
     if int(data["field"]["planted_day"]) > 0 and day == int(data["field"]["planted_day"]) + 3:
         _note("【农事】菜畦里冒出嫩芽。")
+    # Keep durable, engine-computed NPC life events for optional AI narration.
+    # These exist even with AI disabled, and cannot mint any material resources.
+    var life: Array=data.get("npc_life_events",[])
+    for person in ["孙成明","钱然泽","郑舟清"]:
+        var n: Dictionary=data["npc"][person]
+        life.append({"day":day,"npc":person,"place":str(n.get("place","")),
+            "activity":str(n.get("activity","")),"mood":str(n.get("mood","平静")),
+            "goal":str(n.get("wish","")),"goal_progress":int(n.get("goal_progress",0))})
+    data["npc_life_events"]=life
     _note("【日结】第%d日，家中消耗粮食 %.3f 斗，天气%s。" % [day, float(eaten) / 1000.0, data["weather"]])
 
 func _has(item: String, number: int = 1) -> bool:
