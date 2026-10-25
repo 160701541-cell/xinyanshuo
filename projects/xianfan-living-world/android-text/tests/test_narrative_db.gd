@@ -43,6 +43,27 @@ func _run() -> void:
     var second:=library.answer("赵实","你做什么营生？",state)
     _check(str(first.get("reply",""))!=str(second.get("reply","")),
         "Repeated encounters rotate between authored replies without changing the speaker identity")
+    var profile_farmer:=XianfanNarrativeDB.voice_profile("赵实",people["赵实"])
+    var profile_artist:=XianfanNarrativeDB.voice_profile("李铁",people["李铁"])
+    _check(profile_farmer==XianfanNarrativeDB.voice_profile("赵实",people["赵实"]),
+        "Persona dispositions must be stable across sessions")
+    _check(profile_farmer!=profile_artist,
+        "Different NPC identities should not share a universal six-axis dialogue personality")
+    # End-to-end: if the model is absent, a known topic must still be archived
+    # as genuine rule-grounded dialogue without any LLM/API call.
+    var ui=load("res://main.tscn").instantiate()
+    root.add_child(ui)
+    ui.game.data["place"]="石桥村·家中"
+    ui.game.data["npc"]["孙成明"]["place"]="石桥村·家中"
+    ui.view="对话"
+    ui.current_npc="孙成明"
+    ui._submit("前朝是什么样的？",true)
+    var records_ui: Array=ui.game.data.get("dialogue_log",[])
+    _check(not records_ui.is_empty() and str(records_ui.back().get("engine",""))=="local-library",
+        "UI conversation must use the offline fact library before unavailable 8B/API")
+    _check(not records_ui.is_empty() and not bool(records_ui.back().get("ai",true)),
+        "Do not mislabel authored dialogue as AI generation")
+    ui.queue_free()
     var chronicle:=XianfanWorldFactChronicle.new()
     var campaign:="qa-narrative-"+str(Time.get_ticks_usec())
     _check(chronicle.configure(campaign),"Rule-event sidecar should initialize")
