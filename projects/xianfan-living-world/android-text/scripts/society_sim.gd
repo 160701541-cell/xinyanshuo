@@ -142,6 +142,7 @@ static func _arrive_caravans(society: Dictionary, absolute_hour: int) -> void:
             to_region["stock"][good]=int(to_region["stock"][good])+qty
             society["caravan_trades"]=int(society["caravan_trades"])+1
             society["total_trades"]=int(society["total_trades"])+1
+            XianfanEconomyAccounts.trade(society,to_zone,absolute_hour,qty*price,who+"跨区商队交割")
             _event(society,absolute_hour,who,
                 "沿官道抵达%s，交割%d份%s；从目的地钱库划转%d文给起点钱库。" % [
                     to_zone,qty,good,qty*price])
@@ -354,6 +355,7 @@ static func initial_state(absolute_minute: int) -> Dictionary:
     _prepare_social(society)
     _life_defaults(society)
     XianfanCivicPopulation.initialize(society,int(absolute_minute/60))
+    XianfanEconomyAccounts.initialize(society,int(absolute_minute/60))
     return society
 
 static func valid(society: Dictionary) -> bool:
@@ -380,6 +382,7 @@ static func valid(society: Dictionary) -> bool:
         if int(npc.get("age",0))<0: return false
         if not bool(npc.get("alive",true)) and int(npc["coins"])!=0: return false
     if not XianfanCivicPopulation.valid(society): return false
+    if not XianfanEconomyAccounts.valid(society): return false
     for shipment in society.get("caravans",[]):
         if not shipment is Dictionary: return false
         if int(shipment.get("qty",0))<0: return false
@@ -413,46 +416,60 @@ static func _wild_grow(society: Dictionary, absolute_hour: int) -> void:
         var capacity:=560 if region_key=="村" else 900
         var harvest:=mini(collective,mini(int(wild["肥力"]),maxi(0,capacity-int(stores["粮"]))))
         if harvest>0:
+            var quotes:=XianfanEconomyAccounts.price_snapshot(society,str(region_key))
             wild["肥力"]=int(wild["肥力"])-harvest
             stores["粮"]=int(stores["粮"])+harvest
             society["total_production"]=int(society["total_production"])+harvest
+            XianfanEconomyAccounts.production(society,str(region_key),absolute_hour,"农林渔药",
+                {"粮":harvest},{},0,quotes,"区域集体农田")
             _event(society,absolute_hour,"村社农田" if region_key=="村" else "县城周边农田","集体农户收获%d份真实粮食；已扣除田力并受粮仓容量限制。" % harvest)
     var day:=int(absolute_hour/24)+1
     society["daily"][str(day)]={"production":0,"trades":0,"consumption":0,"wages":0}
 
-static func _grant_pay(society: Dictionary, npc: Dictionary, region: Dictionary, hour: int) -> void:
+static func _grant_pay(society: Dictionary, npc: Dictionary, region: Dictionary, hour: int) -> int:
     var wage:=int(JOB_WAGE.get(str(npc["job"]),0))
-    if wage<=0 or int(region["treasury"])<wage: return
+    if wage<=0 or int(region["treasury"])<wage: return 0
     region["treasury"]=int(region["treasury"])-wage
     npc["coins"]=int(npc["coins"])+wage
     society["total_wages"]=int(society["total_wages"])+wage
     var day: Dictionary=society["daily"].get(str(int(hour/24)+1),{})
     day["wages"]=int(day.get("wages",0))+wage
+    return wage
 
 static func _produce(society: Dictionary, npc: Dictionary, region: Dictionary, hour: int) -> void:
     var job:=str(npc["job"])
     var wild: Dictionary=region["wild"]
     var stock: Dictionary=region["stock"]
     var made:=false
+    var outputs: Dictionary={}
+    var inputs: Dictionary={}
+    var zone:=_zone(str(npc["origin"]))
+    var quotes:=XianfanEconomyAccounts.price_snapshot(society,zone)
     if job=="农夫" and int(wild["肥力"])>=2:
         wild["肥力"]=int(wild["肥力"])-2
         stock["粮"]=int(stock["粮"])+2
+        outputs={"粮":2}
         made=true
     elif job=="渔夫" and int(wild["野鱼"])>=1:
         wild["野鱼"]=int(wild["野鱼"])-1
         stock["鱼"]=int(stock["鱼"])+1
+        outputs={"鱼":1}
         made=true
     elif job=="樵夫" and int(wild["木林"])>=1:
         wild["木林"]=int(wild["木林"])-1
         stock["木"]=int(stock["木"])+1
+        outputs={"木":1}
         made=true
     elif job=="采药人" and int(wild["野药"])>=1:
         wild["野药"]=int(wild["野药"])-1
         stock["药"]=int(stock["药"])+1
+        outputs={"药":1}
         made=true
     elif job=="匠人" and int(stock["木"])>=2:
         stock["木"]=int(stock["木"])-2
         stock["器"]=int(stock["器"])+1
+        inputs={"木":2}
+        outputs={"器":1}
         made=true
     elif job=="医者" and int(stock["药"])>=1 and int(npc["energy"])<85:
         stock["药"]=int(stock["药"])-1
@@ -467,7 +484,17 @@ static func _produce(society: Dictionary, npc: Dictionary, region: Dictionary, h
         var day: Dictionary=society["daily"].get(str(int(hour/24)+1),{})
         if job in ["农夫","渔夫","樵夫","采药人","匠人"]:
             day["production"]=int(day.get("production",0))+1
-        _grant_pay(society,npc,region,hour)
+        var paid:=_grant_pay(society,npc,region,hour)
+        var sector: String="农林渔药" if job in ["农夫","渔夫","樵夫","采药人"] else (
+            "工坊制造" if job=="匠人" else "公共与生活服务")
+        if not outputs.is_empty():
+            XianfanEconomyAccounts.production(society,zone,hour,sector,outputs,inputs,0,quotes,str(npc["name"]))
+        elif job in ["巡卒","教书人","脚夫","商贩"] and paid>0:
+            # An observed, paid service is valued at its known labor cost.
+            # Wages for production jobs are NOT added again to GDP.
+            XianfanEconomyAccounts.production(society,zone,hour,sector,{}, {},paid,quotes,str(npc["name"]))
+        # Self-treatment by a medic and unpaid study are not GDP yet:
+        # there is no measured service provided to an external customer.
 
 static func _purchase(society: Dictionary, npc: Dictionary, region: Dictionary, hour: int) -> void:
     if int(npc["rations"])>=2 or int(region["stock"]["粮"])<2: return
@@ -480,6 +507,7 @@ static func _purchase(society: Dictionary, npc: Dictionary, region: Dictionary, 
     region["stock"]["粮"]=int(region["stock"]["粮"])-2
     npc["rations"]=int(npc["rations"])+2
     society["total_trades"]=int(society["total_trades"])+1
+    XianfanEconomyAccounts.trade(society,zone,hour,bill,str(npc["name"])+"购粮")
     var day: Dictionary=society["daily"].get(str(int(hour/24)+1),{})
     day["trades"]=int(day.get("trades",0))+1
     if society["total_trades"]%7==0:
@@ -517,6 +545,8 @@ static func _work_place(npc: Dictionary, hour: int) -> String:
 static func _hour_step(society: Dictionary, absolute_hour: int) -> void:
     _prepare_social(society)
     _life_defaults(society)
+    if not society.has("economy_accounts"):
+        XianfanEconomyAccounts.initialize(society,absolute_hour)
     var hour:=absolute_hour%24
     _return_caravans(society,absolute_hour)
     _arrive_caravans(society,absolute_hour)
