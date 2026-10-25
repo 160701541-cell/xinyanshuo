@@ -91,12 +91,12 @@ func society_nearby() -> Array[Dictionary]:
     if not data.has("society"): return []
     return XianfanSocietySim.near_people(data["society"],str(data["place"]))
 
-func passive_time(minutes: int) -> int:
+func passive_time(minutes: int, persist: bool=true) -> int:
     # Independent world flow: unlike a player's action this does NOT grant a
     # turn or automatically change the player stamina.
     if minutes<=0 or minutes>720: return 0
     _tick(minutes,0,false)
-    save()
+    if persist: save()
     return minutes
 
 func ai_context(person: String="", query: String="") -> Dictionary:
