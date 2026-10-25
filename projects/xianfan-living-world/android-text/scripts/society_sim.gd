@@ -238,9 +238,17 @@ static func _hour_step(society: Dictionary, absolute_hour: int) -> void:
             person["activity"]="走亲访友" if hour==19 else "休闲学习"
             person["energy"]=mini(100,int(person["energy"])+2)
             if hour==19:
-                var peer_index:=int(str(person["id"]).substr(5).to_int())%PEOPLE.size()
-                var peer:=str(PEOPLE[peer_index][0])
-                if peer!=name:
+                # Social ties require physical co-presence; a villager cannot
+                # befriend somebody in a distant county by an arbitrary ID roll.
+                var peers: Array[String]=[]
+                for other_name in agents:
+                    if other_name==name: continue
+                    var other: Dictionary=agents[other_name]
+                    if str(other.get("home",""))==str(person["home"]):
+                        peers.append(str(other_name))
+                if not peers.is_empty():
+                    var pick:=int(person["id"].hash() & 0x7fffffff)%peers.size()
+                    var peer:=peers[pick]
                     var friends: Dictionary=person.get("social",{})
                     friends[peer]=mini(100,int(friends.get(peer,0))+1)
                     person["social"]=friends
