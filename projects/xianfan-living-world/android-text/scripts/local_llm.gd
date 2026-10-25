@@ -40,8 +40,20 @@ var model_source := MODEL
 var active_name := "0.6B"
 var last_error := ""
 var pending_confirmation := false
+var load_started_ticks := 0
+var heartbeat: Timer
+
+func _heartbeat() -> void:
+    if not loading: return
+    var elapsed:=maxi(0,int((Time.get_ticks_msec()-load_started_ticks)/1000))
+    status_changed.emit("正在下载/加载 %s · 已持续%d秒。原生下载器尚不提供可验证的百分比，请勿强制关闭应用。" % [active_name,elapsed])
 
 func _ready() -> void:
+    heartbeat=Timer.new()
+    heartbeat.wait_time=5.0
+    heartbeat.one_shot=false
+    heartbeat.timeout.connect(_heartbeat)
+    add_child(heartbeat)
     if not FileAccess.file_exists(PREF_PATH): return
     var file:=FileAccess.open(PREF_PATH,FileAccess.READ)
     if file==null: return
@@ -101,6 +113,8 @@ func load_model() -> void:
         status_changed.emit("原生推理库没有加载成功，请用反馈页记录设备型号与版本。")
         return
     loading=true
+    load_started_ticks=Time.get_ticks_msec()
+    heartbeat.start()
     last_error=""
     status_changed.emit("开始下载/加载 %s，模型体积约 %.2f GB；首次需稳定Wi-Fi及足够内存。原生下载器暂无百分比回调。" % [active_name,float(MODELS[preset_index(model_source)]["size_gb"]) if preset_index(model_source)>=0 else 0.0])
     # The native plugin downloads the model and caches it. It runs CPU-based
@@ -109,6 +123,7 @@ func load_model() -> void:
     # the registered native class after loading the ARM64 extension.
     var loaded = await ClassDB.class_call_static("NobodyWhoChat","create",model_source, {"n_ctx":2048,"n_threads":3,"template_variables":{"enable_thinking":false}})
     loading=false
+    heartbeat.stop()
     if loaded==null:
         model_ready=false
         last_error="下载或加载失败。请确认网络可访问模型仓库、手机存储与内存足够。"
