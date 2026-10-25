@@ -101,6 +101,10 @@ static func resolve(society: Dictionary, actor_name: String, other_name: String,
     if day<1: return {"ok":false,"why":"invalid_date"}
     var mind: Dictionary=actor["psyche"]
     var traits: Dictionary=mind["traits"]
+    var existing_cd: Dictionary=mind.get("cooldowns",{})
+    var interval:=5 if action=="help" else 25
+    if day-int(existing_cd.get(action,-9999))<interval:
+        return {"ok":false,"why":"cooldown"}
     var other_mind: Dictionary=other["psyche"]
     var other_traits: Dictionary=other_mind["traits"]
     if action in ["express_interest","accept_courtship","boundary_violation"] and not _adult_pair(actor,other):
@@ -117,6 +121,8 @@ static func resolve(society: Dictionary, actor_name: String, other_name: String,
             other["coins"]=int(other["coins"])+contribution
             _social(actor,str(other["id"]),4)
             _social(other,str(actor["id"]),12)
+            traits["compassion"]=mini(100,int(traits["compassion"])+1)
+            other_mind["stress"]=maxi(0,int(other_mind["stress"])-6)
             _event(society,actor,day,"援助",
                 "将本人实有的%d文交给正在缺钱的%s；钱财总量不变。" % [contribution,str(other["name"])],other)
             _event(society,other,day,"受到援助",
@@ -130,6 +136,8 @@ static func resolve(society: Dictionary, actor_name: String, other_name: String,
             other["coins"]=int(other["coins"])-amount
             actor["coins"]=int(actor["coins"])+amount
             _social(other,str(actor["id"]),-18)
+            traits["shame"]=mini(100,int(traits["shame"])+2)
+            other_mind["stress"]=mini(100,int(other_mind["stress"])+10)
             var case_id:="PC-"+str(actor["id"])+"-"+str(other["id"])+"-"+str(day)
             var case_entry: Dictionary={"id":case_id,"day":day,"kind":"theft",
                 "offender_id":str(actor["id"]),"victim_id":str(other["id"]),
@@ -160,6 +168,7 @@ static func resolve(society: Dictionary, actor_name: String, other_name: String,
             if accepted:
                 _social(actor,recipient_id,3)
                 _social(other,actor_id,3)
+                traits["loyalty"]=mini(100,int(traits["loyalty"])+1)
                 _event(society,actor,day,"表达心意",
                     "向%s坦诚表达好感，对方愿意继续了解；并未自动成婚或建立亲密关系。" % other_name,other)
                 _event(society,other,day,"自主选择",
@@ -179,6 +188,7 @@ static func resolve(society: Dictionary, actor_name: String, other_name: String,
             var boundaries: Dictionary=other_mind["romance_consent"]
             if bool(boundaries.get(str(actor["id"]),false)): return outcome
             _social(other,str(actor["id"]),-35)
+            other_mind["stress"]=mini(100,int(other_mind["stress"])+15)
             var report_id:="BOUND-"+str(actor["id"])+"-"+str(other["id"])+"-"+str(day)
             var incident: Dictionary={"id":report_id,"day":day,
                 "kind":"coercive_boundary_violation_attempt",
