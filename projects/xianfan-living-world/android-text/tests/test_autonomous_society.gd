@@ -34,7 +34,7 @@ func _run() -> void:
     check(game.data["npc"].has("赵阿禾"),"public NPC also integrated in registry")
     var first_money:=_sum_money(initial)
     var player_money:=int(game.data["money"])
-    var player_items:=game.data["items"].duplicate(true)
+    var player_items: Dictionary=game.data["items"].duplicate(true)
     var player_turn:=int(game.data["turn"])
     var base_hour:=int(game._clock()/60)
     var a:=initial.duplicate(true)
