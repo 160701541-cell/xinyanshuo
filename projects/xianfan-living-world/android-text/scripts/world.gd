@@ -244,11 +244,27 @@ func _archive_immortal_memory() -> void:
         cursor=0
     data["immortal_chronicle_cursor"]=cursor
 
+func immortal_recent_facts(maximum: int=5) -> String:
+    if str(data.get("place",""))!="青云山门·山门外": return ""
+    var events: Array=data.get("society",{}).get("cultivation_world",{}).get("events",[])
+    var lines: Array[String]=[]
+    for i in range(events.size()-1,-1,-1):
+        var item: Dictionary=events[i]
+        if not str(item.get("place","")).begins_with("青云山门"): continue
+        lines.append("第%d日 · %s：%s" % [
+            int(item.get("day",0)),str(item.get("npc","")),
+            str(item.get("detail","")).substr(0,135)])
+        if lines.size()>=maximum: break
+    return "\n".join(lines)
+
 func immortal_status() -> String:
     if not data.has("society"): return "修仙社会层尚未建立。"
     if str(data.get("place",""))!="青云山门·山门外":
         return "青云山门的灵材库存与弟子私事须到山门核实，不能隔空查看。世界修士仍会自行劳动、修炼和求生。"
-    return XianfanImmortalSociety.report(data["society"])
+    var report:=XianfanImmortalSociety.report(data["society"])
+    var history:=immortal_recent_facts(5)
+    if not history.is_empty(): report+="\n\n【山门近期真实事件】\n"+history
+    return report
 
 func society_roster(sector: String="",page: int=0) -> Dictionary:
     if not data.has("society"): return {"size":0,"pages":1,"page":0,"entries":[]}
@@ -1778,7 +1794,11 @@ func look() -> String:
     match data["place"]:
         "临安县城·旧书铺": return "城里旧书铺并没有可靠修仙法门。屋檐下的游方老道还坐着，面前放着一本泛黄小册。"
         "临安县城·东市": return "县城东市商贾云集，脚夫按时送来真实入账的货物；市场价格随库存变化。"
-        "青云山门·山门外": return "高石阶旁立着宗门的测灵碑。凡人走到这里不容易；执事让排队，30文测灵费须在能够真正测试时缴纳。"
+        "青云山门·山门外":
+            var base:="高石阶旁立着宗门的测灵碑。山门弟子、雇工有自己的活计；凡人可应聘杂役。测灵费30文，只在真实检测能够结算时缴纳。"
+            var current_facts:=immortal_recent_facts(1)
+            if not current_facts.is_empty(): base+="\n\n【耳闻目睹】"+current_facts
+            return base
         "石桥村·家中": return "院里晒着谷物，灶上有烟，屋旁是菜畦。成明有自己的家务；父亲田里忙，母亲管家。"
         "石桥村·街口":
             return "街口摊贩营业，脚夫往来，柴米鱼药皆有真实库存。当前有%d位具名村民在此工作。" % society_nearby().size()
