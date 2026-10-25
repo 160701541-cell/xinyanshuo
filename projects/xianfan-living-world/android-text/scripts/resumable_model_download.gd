@@ -312,7 +312,17 @@ func begin(source: String) -> void:
         return
     var ready:=final_path(source)
     if FileAccess.file_exists(ready):
-        completed.emit({"ok":true,"path":ready,"cached":true})
+        var f:=FileAccess.open(ready,FileAccess.READ)
+        var count:=int(f.get_length()) if f!=null else 0
+        _started_ms=Time.get_ticks_msec()
+        var cached_check: Dictionary=await validate_disk_file(source,ready,count)
+        if not bool(cached_check.get("ok",false)):
+            DirAccess.rename_absolute(ProjectSettings.globalize_path(ready),
+                ProjectSettings.globalize_path(ready+".corrupt"))
+            completed.emit({"ok":false,"error":"模型本地缓存完整性校验失败："+str(cached_check.get("error","损坏"))+"；损坏文件已隔离，重新点击下载。"})
+            return
+        completed.emit({"ok":true,"path":ready,"cached":true,
+            "verified":str(cached_check.get("verified",""))})
         return
     active=true
     paused=false
