@@ -10,6 +10,8 @@ const BTN := Color("#30494d")
 
 var game := XianfanWorld.new()
 var ai: XianfanAI
+var local_llm: XianfanLocalLLM
+var local_enabled := false
 var view := "剧情"
 var current_npc := "孙成明"
 var scene_text: RichTextLabel
@@ -43,6 +45,12 @@ func _ready() -> void:
     ai = XianfanAI.new()
     add_child(ai)
     ai.completed.connect(_on_ai_completed)
+    local_llm = XianfanLocalLLM.new()
+    add_child(local_llm)
+    local_llm.status_changed.connect(_local_status)
+    local_llm.answered.connect(_on_ai_completed)
+    var choice := FileAccess.open("user://xianfan_local_choice.txt",FileAccess.READ)
+    if choice!=null and choice.get_as_text()=="1": local_enabled=true
     _build()
     _refresh()
 
@@ -275,9 +283,9 @@ func _open_ai_settings() -> void:
     var expl:="AI 模式由你自行开启。API模式会把你输入的行动和少量游戏现场数据发送至你指定的服务商。\n\n本机服务模式仅连接已经在手机中运行的兼容服务，游戏安装包目前未自带模型权重或内置推理器。\n\n密钥不写入存档，也不加入反馈日志；关闭应用后需要重新填入。"
     _open_modal("AI 设置",expl)
     setting_provider=OptionButton.new()
-    for name in ["关闭","API","本机服务"]: setting_provider.add_item(name)
+    for name in ["关闭","API","本机服务","内置模型"]: setting_provider.add_item(name)
     for i in range(setting_provider.item_count):
-        if setting_provider.get_item_text(i)==ai.provider: setting_provider.select(i)
+        if setting_provider.get_item_text(i)==("内置模型" if local_enabled else ai.provider): setting_provider.select(i)
     modal_form.add_child(setting_provider)
     setting_url=_entry_field("请求地址（https://.../v1/chat/completions）",ai.endpoint,false)
     setting_model=_entry_field("模型名（服务端实际提供的model）",ai.model,false)
@@ -285,6 +293,7 @@ func _open_ai_settings() -> void:
     for x in [setting_url,setting_model,setting_key]: modal_form.add_child(x)
     modal_actions.add_child(_button("填入 DeepSeek 示例接口",func(): _preset_api("https://api.deepseek.com/chat/completions","deepseek-flash")))
     modal_actions.add_child(_button("填入 OpenAI 接口",func(): _preset_api("https://api.openai.com/v1/chat/completions","gpt-5-mini")))
+    modal_actions.add_child(_button("下载/加载离线Qwen3-0.6B",func(): _enable_local_and_load()))
     modal_actions.add_child(_button("保存本次配置",func(): _save_ai_settings()))
 
 func _preset_api(url: String, model_id: String) -> void:
@@ -302,8 +311,28 @@ func _entry_field(placeholder: String, value: String, hidden: bool) -> LineEdit:
     e.custom_minimum_size=Vector2(0,54)
     return e
 
+func _local_status(message: String) -> void:
+    notice.text=message
+    if view=="设置": _refresh()
+
+func _enable_local_and_load() -> void:
+    _close_modal()
+    local_enabled=true
+    ai.configure("关闭",ai.endpoint,ai.model,"")
+    var f:=FileAccess.open("user://xianfan_local_choice.txt",FileAccess.WRITE)
+    if f!=null: f.store_string("1")
+    local_llm.load_model()
+    _refresh()
+
 func _save_ai_settings() -> void:
     var p:=setting_provider.get_item_text(setting_provider.selected)
+    if p=="内置模型":
+        _enable_local_and_load()
+        setting_key.clear()
+        return
+    local_enabled=false
+    var choice_file:=FileAccess.open("user://xianfan_local_choice.txt",FileAccess.WRITE)
+    if choice_file!=null: choice_file.store_string("0")
     var response:=ai.configure(p,setting_url.text,setting_model.text,setting_key.text)
     setting_key.clear()
     notice.text=response
@@ -331,6 +360,16 @@ func _submit(text: String, typed: bool) -> void:
         raw="跟"+current_npc+"说："+raw
     command.clear()
     command.release_focus()
+    if typed and local_enabled:
+        request_text=raw
+        if local_llm.ready:
+            notice.text="本地模型正在理解输入……"
+            local_llm.talk(raw,npc_to_chat,game.data)
+        elif local_llm.loading:
+            notice.text="模型正在下载或加载。你也可以切换为规则模式。"
+        else:
+            notice.text="本地模型尚未下载或加载失败，请到设置中点击下载/加载模型。"
+        return
     if typed and ai.configured():
         request_text=raw
         notice.text="AI正在理解你的行动；结果必须通过游戏规则才能生效。"
@@ -446,5 +485,5 @@ func _refresh() -> void:
             scene_text.text=game.feedback_report()
         "设置":
             page_title.text="引擎与 AI 模式"
-            scene_text.text="当前："+ai.status()+"\n\n【API】真实代码使用 HTTP POST Chat Completions。默认 OpenAI 地址：https://api.openai.com/v1/chat/completions；也可以选 DeepSeek 示例。需要自行配置有效密钥，游戏不会提供免费的API额度。\n\n【本地模型】本版本没有随 APK 附带原生推理模块；本机服务仅用于连接其他运行在本手机127.0.0.1端口上的推理服务。\n\n【隐私】纯规则模式不联网。只有你主动开启AI并提交行动才发送现场上下文。\n\n【存档】原有存档不删除、不重开。灵根原始承诺仍保持锁定。"
+            scene_text.text="当前："+(local_llm.status() if local_enabled else ai.status())+"\n\n【API】真实代码使用 HTTP POST Chat Completions。默认 OpenAI 地址：https://api.openai.com/v1/chat/completions；也可以选 DeepSeek 示例。需要自行配置有效密钥，游戏不会提供免费的API额度。\n\n【本地模型】本版本没有随 APK 附带原生推理模块；内置模型需要首次下载约数百MB的 Qwen3 GGUF，模型缓存到手机后可离线推理。\n\n【隐私】纯规则模式不联网。只有你主动开启AI并提交行动才发送现场上下文。\n\n【存档】原有存档不删除、不重开。灵根原始承诺仍保持锁定。"
     scene_text.call_deferred("scroll_to_line",0)
