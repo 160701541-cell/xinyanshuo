@@ -113,11 +113,27 @@ func ai_context(person: String="", query: String="") -> Dictionary:
         "root":str(data.get("root","未检测")),"money":int(data.get("money",0)),
         "stamina":int(data.get("stamina",0)),
         "items":data.get("items",{}).duplicate(true),
-        "npc":data.get("npc",{}).duplicate(true),
-        "dialogue_log":data.get("dialogue_log",[]).slice(-80)
+        "npc":{},"dialogue_log":data.get("dialogue_log",[]).slice(-80)
     }
+    var selected: Dictionary={}
+    if not person.is_empty() and data["npc"].has(person):
+        selected[person]=data["npc"][person].duplicate(true)
+    for other in data["npc"]:
+        if selected.size()>=7: break
+        if selected.has(other): continue
+        if str(data["npc"][other].get("place",""))==str(data["place"]):
+            selected[other]=data["npc"][other].duplicate(true)
+    context["npc"]=selected
+    if data.has("society"):
+        var society: Dictionary=data["society"]
+        context["society_events"]=society.get("events",[]).slice(-4)
+        var zone: String="村" if str(data["place"]).begins_with("石桥村") else "城"
+        context["market_prices"]={
+            "粮":XianfanSocietySim.regional_price(society,zone,"粮"),
+            "鱼":XianfanSocietySim.regional_price(society,zone,"鱼")
+        }
     if not person.is_empty() and memory_store!=null and data["npc"].has(person):
-        var archive:=memory_store.digest(person,data["npc"][person])
+        var archive: Dictionary=memory_store.digest(person,data["npc"][person])
         archive["recalled"]=memory_store.recall(person,query,8)
         context["memory_context"]=archive
     return context
@@ -423,6 +439,8 @@ func story_context() -> Dictionary:
         "root":str(data.get("root","未检测")),"npc_here":npc_visible,
         "world_facts":look(),"available_beats":available_story_beats(),
         "last_rule_result":last_result.substr(0,340),
+        "society_events":data.get("society",{}).get("events",[]).slice(-6),
+        "society_daily":data.get("society",{}).get("daily",{}).get(str(data["day"]),{}),
         "recent_npc_days":data.get("npc_life_events",[]).slice(-6),
         "open_plot_threads":data.get("story_flags",{}).keys()}
 
@@ -608,6 +626,16 @@ func _daily() -> void:
         if all_safe and life.size()>45: life=life.slice(-45)
         if not all_safe: note_api_failure("NPC人生记录","独立生活日志写入失败，主存档仍保留完整历史。")
     data["npc_life_events"]=life
+    if memory_store!=null and data.has("society"):
+        var named: Dictionary=data["society"].get("agents",{})
+        for person_name in named:
+            var actor: Dictionary=named[person_name]
+            var observation: Dictionary={"day":day-1,"npc":str(person_name),
+                "place":str(actor.get("place","")),"activity":str(actor.get("activity","")),
+                "mood":str(actor.get("mood","平静")),"goal":str(actor.get("wish","")),
+                "turn":int(data["turn"])}
+            if not memory_store.archive_life(str(person_name),observation,actor):
+                _note("【存储警告】NPC生活记忆写入失败："+str(person_name))
     _note("【日结】第%d日，家中消耗粮食 %.3f 斗，天气%s。" % [day, float(eaten) / 1000.0, data["weather"]])
 
 func _has(item: String, number: int = 1) -> bool:
