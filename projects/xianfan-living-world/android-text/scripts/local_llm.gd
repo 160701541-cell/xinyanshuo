@@ -5,14 +5,14 @@ class_name XianfanLocalLLM
 signal status_changed(message: String)
 signal answered(payload: Dictionary)
 const MODEL := "hf://NobodyWho/Qwen_Qwen3-0.6B-GGUF/Qwen_Qwen3-0.6B-Q4_K_M.gguf"
-var ready := false
+var model_ready := false
 var loading := false
 var busy := false
 var current_chat: Variant
 var model_source := MODEL
 
 func choose_model(source: String) -> String:
-    if ready or loading: return "模型正在使用中，无法切换。"
+    if model_ready or loading: return "模型正在使用中，无法切换。"
     var path := source.strip_edges()
     if path.is_empty(): path=MODEL
     if not (path.begins_with("hf://") or path.begins_with("https://") or path.begins_with("user://")):
@@ -23,12 +23,12 @@ func choose_model(source: String) -> String:
 
 func status() -> String:
     if loading: return "模型下载或加载中（约数百MB；请使用稳定Wi-Fi）"
-    if ready: return "Qwen3-0.6B 本地模型已加载，可离线对话"
+    if model_ready: return "Qwen3-0.6B 本地模型已加载，可离线对话"
     if not ClassDB.class_exists("NobodyWhoChat"): return "缺少原生 NobodyWho GDExtension；此APK无法运行本地模型"
     return "本地模型未加载，须用户手动确认下载"
 
 func load_model() -> void:
-    if ready or loading: return
+    if model_ready or loading: return
     if not ClassDB.class_exists("NobodyWhoChat"):
         status_changed.emit("原生推理库没有加载成功，请用反馈页记录设备型号与版本。")
         return
@@ -41,18 +41,18 @@ func load_model() -> void:
     var loaded = await ClassDB.class_call_static("NobodyWhoChat","create",model_source, {"n_ctx":2048,"n_threads":3,"template_variables":{"enable_thinking":false}})
     loading=false
     if loaded==null:
-        ready=false
+        model_ready=false
         status_changed.emit("本地模型下载或加载失败。请查看网络、储存空间及插件错误信息。")
         return
     current_chat=loaded
-    ready=true
+    model_ready=true
     status_changed.emit("本地模型已加载，断网后可继续交谈。")
 
 func talk(text: String, person: String, state: Dictionary) -> void:
     if busy:
         answered.emit({"ok":false,"error":"上一轮模型生成尚未结束。"})
         return
-    if not ready:
+    if not model_ready:
         answered.emit({"ok":false,"error":"未下载并加载本地模型。请先在设置里点击下载。"})
         return
     var npc: Dictionary=state.get("npc",{}).get(person,{})
