@@ -22,6 +22,7 @@ func _init() -> void:
         new_game()
     else:
         _setup_memories()
+    _setup_society()
     _load_feedback()
 
 func _setup_memories() -> void:
@@ -43,6 +44,60 @@ func memory_digest(person: String) -> Dictionary:
 func memory_recall(person: String, query: String, limit: int=6) -> Array:
     if memory_store==null or not data.get("npc",{}).has(person): return []
     return memory_store.recall(person,query,limit)
+
+func _setup_society() -> void:
+    var first_init:=not data.has("society")
+    if first_init:
+        data["society"]=XianfanSocietySim.initial_state(_clock())
+    var society: Dictionary=data["society"]
+    if not XianfanSocietySim.valid(society):
+        # Never silently destroy a corrupted economic ledger: log and leave it
+        # unchanged rather than resetting all people's possessions.
+        _record_feedback("社会模拟读档","检测到社会账本异常，已经停止社会经济结算，原始存档仍保留。","SOCIETY_LEDGER_INVALID")
+        return
+    _sync_society_people()
+    if first_init: save()
+
+func _sync_society_people() -> void:
+    var society: Dictionary=data.get("society",{})
+    if not XianfanSocietySim.valid(society): return
+    var actors: Dictionary=society["agents"]
+    for name in actors:
+        var entry: Dictionary=actors[name]
+        var npc: Dictionary=data["npc"].get(name,{})
+        # The society ledger owns wealth, movement and work status; the NPC
+        # registry provides a read-only view for dialogue and popup UI.
+        npc["id"]=str(entry["id"])
+        npc["age"]=int(entry["age"])
+        npc["job"]=str(entry["job"])
+        npc["place"]=str(entry["place"])
+        npc["activity"]=str(entry["activity"])
+        npc["mood"]=str(entry["mood"])
+        npc["relationship"]="村人" if str(entry["origin"])=="石桥村" else "县城居民"
+        npc["trait"]=str(entry["trait"])
+        npc["wish"]=str(entry["wish"])
+        npc["money"]=int(entry["coins"])
+        npc["health"]=int(entry["health"])
+        npc["energy"]=int(entry["energy"])
+        npc["rations"]=int(entry["rations"])
+        npc["goal_progress"]=mini(100,int(entry["work_done"]))
+        data["npc"][name]=npc
+
+func society_status() -> String:
+    if not data.has("society"): return "世界社会层尚未初始化"
+    return XianfanSocietySim.report(data["society"],str(data.get("place","")))
+
+func society_nearby() -> Array[Dictionary]:
+    if not data.has("society"): return []
+    return XianfanSocietySim.near_people(data["society"],str(data["place"]))
+
+func passive_time(minutes: int) -> int:
+    # Independent world flow: unlike a player's action this does NOT grant a
+    # turn or automatically change the player stamina.
+    if minutes<=0 or minutes>720: return 0
+    _tick(minutes,0,false)
+    save()
+    return minutes
 
 func ai_context(person: String="", query: String="") -> Dictionary:
     # Store the complete original history on disk but load only evidence
@@ -149,6 +204,7 @@ func new_game() -> void:
         "【离线分支】这是2026-10-25读取的 GitHub 已同步快照，从此之后仅存本机。已有本机存档绝不自动重置。"
     ]
     _setup_memories()
+    _setup_society()
     save()
 
 func _valid(d: Dictionary) -> bool:
@@ -425,13 +481,19 @@ func related_npc_memories(person: String, query: String, max_results: int=6) -> 
 
 func npcs_status() -> Array[Dictionary]:
     var arr: Array[Dictionary] = []
-    for key in ["孙成明","钱然泽","郑舟清"]:
+    var ordered: Array=["孙成明","钱然泽","郑舟清"]
+    for key in data["npc"]:
+        if not ordered.has(key): ordered.append(key)
+    for key in ordered:
         if not data["npc"].has(key): continue
         var n: Dictionary = data["npc"][key]
         arr.append({
             "name":key,"id":str(n.get("id","")),
-            "age":16 if key=="孙成明" else (35 if key=="钱然泽" else 49),
-            "relationship":"妹妹" if key=="孙成明" else ("父亲" if key=="钱然泽" else "母亲"),
+            "age":int(n.get("age",16 if key=="孙成明" else (35 if key=="钱然泽" else 49))),
+            "relationship":str(n.get("relationship","妹妹" if key=="孙成明" else ("父亲" if key=="钱然泽" else "母亲"))),
+            "job":str(n.get("job","家务")),
+            "money":int(n.get("money",0)),
+            "health":int(n.get("health",100)),
             "place":str(n.get("place","未知")),
             "activity":str(n.get("activity","未知")),
             "wish":str(n.get("wish","未公开")),
@@ -468,7 +530,7 @@ func _roll(label: String, day: int, max_value: int = 100) -> int:
     var key := "%s|%s|%d" % [SEED, label, day]
     return (int(key.hash()) & 0x7fffffff) % max_value
 
-func _tick(minutes: int, stamina_delta: int = 0) -> void:
+func _tick(minutes: int, stamina_delta: int = 0, count_turn: bool = true) -> void:
     if minutes < 0: return
     data["minute"] = int(data["minute"]) + minutes
     data["stamina"] = clampi(int(data["stamina"]) + stamina_delta, 0, 100)
@@ -476,7 +538,11 @@ func _tick(minutes: int, stamina_delta: int = 0) -> void:
         data["minute"] = int(data["minute"]) - 1440
         data["day"] = int(data["day"]) + 1
         _daily()
-    data["turn"] = int(data["turn"]) + 1
+    if data.has("society") and XianfanSocietySim.valid(data["society"]):
+        var hours:=XianfanSocietySim.advance_to(data["society"],_clock())
+        if hours>0: _sync_society_people()
+    if count_turn:
+        data["turn"] = int(data["turn"]) + 1
 
 func _daily() -> void:
     var day := int(data["day"])
@@ -927,7 +993,7 @@ func _free_say(raw: String) -> String:
 func _npc_free_chat(raw: String) -> String:
     # Explicit direct-speech form only. Do not infer dialogue from incidental NPC mentions.
     var recipient := ""
-    for person in ["孙成明", "钱然泽", "郑舟清"]:
+    for person in data["npc"]:
         if raw.begins_with("跟" + person + "说") or raw.begins_with("对" + person + "说") or raw.begins_with("问" + person) or raw.begins_with("和" + person + "聊天"):
             recipient = person
             break
@@ -946,6 +1012,15 @@ func _npc_free_chat(raw: String) -> String:
     if said.is_empty(): return "你想对%s说什么？输入完整的话即可。" % recipient
     _tick(4)
     var mood := str(npc.get("mood","平静"))
+    if not recipient in ["孙成明","钱然泽","郑舟清"]:
+        var profession:=str(npc.get("job","村民"))
+        var activity:=str(npc.get("activity","正在忙自己的事"))
+        var trait:=str(npc.get("trait",""))
+        if said.contains("在哪") or said.contains("在干嘛") or said.contains("忙什么"):
+            return "%s停下手里的活回答：‘我在%s，正%s。’" % [recipient,str(npc.get("place","附近")),activity]
+        if said.contains("生意") or said.contains("工作") or said.contains("吃饭") or said.contains("村里"):
+            return "%s答道：‘我靠%s过活，这阵子%s。人总得顾好自己的生计。’" % [recipient,profession,activity]
+        return "%s听你说了‘%s’，想了想：‘我平日是个%s的人，这事还得细想。’" % [recipient,said.substr(0,48),trait]
     if said.contains("饭") or said.contains("饿"):
         if recipient=="孙成明": return "成明把手中的活放下：‘娘会留饭。你问我吃没吃？我一会儿就去灶屋看看。’"
         if recipient=="郑舟清": return "母亲笑道：‘锅里留着吃的，你也得准时吃饭。’"
