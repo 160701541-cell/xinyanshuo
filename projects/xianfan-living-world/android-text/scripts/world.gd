@@ -1040,6 +1040,51 @@ func _npc_free_chat(raw: String) -> String:
     # Honest fallback: acknowledge exact message, without repeatedly using a generic script.
     return "%s听你说完‘%s’，沉吟片刻：‘这我一时也说不准。你怎么会想到这个？’（情绪：%s）" % [recipient,said.substr(0,36),mood]
 
+func _society_player_trade(raw: String) -> String:
+    var buy_grain:=raw.begins_with("买粗粮") or raw.begins_with("买粮")
+    var sell_fish:=raw.begins_with("卖鱼") or raw.begins_with("卖一条鱼")
+    var work:=raw.begins_with("做零工") or raw.begins_with("帮忙搬货")
+    if not (buy_grain or sell_fish or work): return ""
+    if not data.has("society") or not XianfanSocietySim.valid(data["society"]):
+        return "本地社会交易账本暂不可用，无法结算。"
+    if not str(data["place"]) in ["临安县城·东市","石桥村·街口"]:
+        return "须到真正的市集才能买卖或帮商贩做零工。"
+    var zone:="村" if str(data["place"])=="石桥村·街口" else "城"
+    var society: Dictionary=data["society"]
+    var area: Dictionary=society["regions"][zone]
+    var stock: Dictionary=area["stock"]
+    if buy_grain:
+        if int(data["money"])<2: return "你连两文买粮钱也没有。"
+        if int(stock["粮"])<1: return "集市粮仓已经卖空，无法凭空拿出粮食。"
+        data["money"]=int(data["money"])-2
+        area["treasury"]=int(area["treasury"])+2
+        stock["粮"]=int(stock["粮"])-1
+        _add("粗粮",1)
+        _tick(12,-1)
+        society["total_trades"]=int(society["total_trades"])+1
+        return "你从真实粮仓买下一份粗粮，花去2文。附近商贩随后仍要照常上工。"
+    if sell_fish:
+        if not _has("小河鱼"): return "背包里没有小河鱼，不能拿假货卖。"
+        if int(area["treasury"])<3: return "商贩公库只剩%d文，今天收不了鱼。" % int(area["treasury"])
+        _take("小河鱼")
+        area["treasury"]=int(area["treasury"])-3
+        stock["鱼"]=int(stock["鱼"])+1
+        data["money"]=int(data["money"])+3
+        _tick(12,-1)
+        society["total_trades"]=int(society["total_trades"])+1
+        return "市集收了你一条真正的鱼，付给你3文；鱼进入公共库藏。"
+    if work:
+        if int(data["stamina"])<8: return "体力不足，没法完成一小时的零工。"
+        if int(area["treasury"])<2: return "公共钱库缺钱，今天暂时无薪可发。"
+        if int(area["wild"]["肥力"])<2: return "本地田力尚未恢复，今天没有可用的农事零工。"
+        area["wild"]["肥力"]=int(area["wild"]["肥力"])-2
+        stock["粮"]=int(stock["粮"])+2
+        area["treasury"]=int(area["treasury"])-2
+        data["money"]=int(data["money"])+2
+        _tick(60,-8)
+        return "你和其他人一样做完一小时农活，收获两份真实粮食进入仓库，并按公库现钱领了两文。"
+    return ""
+
 func _free_action(raw: String) -> String:
     var t := raw.strip_edges().replace("，","").replace("。","").replace("！","")
     if t.is_empty(): return ""
@@ -1051,6 +1096,8 @@ func _free_action(raw: String) -> String:
         return travel
     var direct_speech := _npc_free_chat(t)
     if not direct_speech.is_empty(): return direct_speech
+    var market_result:=_society_player_trade(t)
+    if not market_result.is_empty(): return market_result
     # Speech and inspection take priority over broad keyword shortcuts.
     if t.contains("观察") or t.contains("查看") or t.contains("看看") or t.contains("打量") or t.contains("调查"):
         if t.contains("鱼笼"): return _act_core("查看鱼笼")
