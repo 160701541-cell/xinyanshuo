@@ -198,10 +198,24 @@ func pause_download() -> void:
         download_manager.pause()
 
 func resume_pending() -> void:
-    if loading or model_ready or busy: return
+    if model_ready or busy: return
+    if loading:
+        # Android may resume on the same frame that the previous paused HTTP
+        # coroutine is unwinding. Retry later instead of silently losing the
+        # user's requested auto-resume.
+        if download_manager!=null and download_manager.paused:
+            call_deferred("_resume_after_pause")
+        return
     if download_manager!=null and download_manager.is_pending(model_source):
         status_changed.emit("检测到上次未完成的GGUF下载，正在从磁盘已保存的断点继续。")
         load_model()
+
+func _resume_after_pause() -> void:
+    for i in range(4):
+        if not loading: break
+        await get_tree().create_timer(0.25).timeout
+    if not loading:
+        resume_pending()
 
 func load_model() -> void:
     if model_ready or loading: return
