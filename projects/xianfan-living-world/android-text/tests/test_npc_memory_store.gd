@@ -66,6 +66,18 @@ func _run() -> void:
     expect(str(reloaded.data.get("memory_campaign",""))==campaign,"campaign ID stable across reload")
     expect(reloaded.memory_store.read_all("孙成明").size()==147,"independent raw memory survives restart")
     expect(reloaded.memory_digest("孙成明").get("anchor",{})==core_before,"persona baseline survives reload")
+    # Corrupt the *derived* profile; exact original archive must be sufficient
+    # to rebuild habits, identity and episodic counts without re-generating text.
+    var path:=reloaded.memory_store._profile_file("孙成明")
+    var damaged:=FileAccess.open(path,FileAccess.WRITE)
+    expect(damaged!=null,"profile file is in device-local storage")
+    if damaged!=null:
+        damaged.store_string("BROKEN LOCAL CACHE")
+        damaged.close()
+        var rebuilt: Dictionary=reloaded.memory_digest("孙成明")
+        expect(int(rebuilt.get("total_raw",0))==147,"corrupt profile rebuilt losslessly from raw file")
+        expect(rebuilt.get("anchor",{})==core_before,"character identity preserved after repair")
+        expect(str(rebuilt.get("habits",[])).contains("整理家事"),"habits reconstructed from daily observations")
     if problems.is_empty(): print("XIANFAN NPC SIDECAR MEMORY TESTS PASS")
     else: print("XIANFAN NPC SIDECAR MEMORY TESTS FAILED "+str(problems))
     quit(0 if problems.is_empty() else 1)
