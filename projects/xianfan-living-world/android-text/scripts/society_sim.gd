@@ -621,13 +621,17 @@ static func near_people(society: Dictionary, place: String) -> Array[Dictionary]
 
 static func report(society: Dictionary, current_place: String) -> String:
     var actors: Dictionary=society.get("agents",{})
+    var living:=0
+    for person in actors.values():
+        if bool(person.get("alive",true)): living+=1
     var nearby:=near_people(society,current_place)
     var region:=_zone("石桥村") if current_place.begins_with("石桥村") else "城"
     var economy: Dictionary=society.get("regions",{}).get(region,{})
     var supply: Dictionary=economy.get("stock",{})
     var lines: Array[String]=[
         "《仙凡 · 自运转的人间》",
-        "这个世界里有%d名持续演算的具名职业NPC；这是首批社会样本，不是整个县的人口。" % actors.size(),
+        "这个世界里有%d名持续演算身份的具名居民（在世%d、已故%d）；只有在世者还会工作，这并非全县人口。" % [
+            actors.size(),living,actors.size()-living],
         "【所在地点】%s；附近职业NPC %d人" % [current_place,nearby.size()],
         "【本地库藏】粮%d份 · 木%d份 · 鱼%d条 · 药%d份 · 器具%d件" % [
             int(supply.get("粮",0)),int(supply.get("木",0)),int(supply.get("鱼",0)),
