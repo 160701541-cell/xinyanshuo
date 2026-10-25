@@ -31,7 +31,7 @@ var _font: Font
 func _ready() -> void:
     custom_minimum_size=Vector2(0,252)
     mouse_filter=Control.MOUSE_FILTER_STOP
-    _font=ThemeDB.fallback_font
+    _font=get_theme_default_font() # inherited CJK SystemFont, not Godot Latin-only fallback
     resized.connect(queue_redraw)
 
 func set_position_place(place: String) -> void:
