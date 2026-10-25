@@ -70,11 +70,25 @@
           "certainty": "known_fact",
           "text": "不许女儿跟去青云，只准送到村口",
           "location": "石桥村·钱家院落"
+        },
+        {
+          "event_id": "EV000106",
+          "tag": "stayed_at_the_door",
+          "certainty": "known_fact",
+          "text": "儿子出门时没送出门口，只站在门里说\"送到村口就回来\"",
+          "location": "石桥村·钱家院落"
+        },
+        {
+          "event_id": "EV000115",
+          "tag": "heard_four_root_and_asked_about_practice",
+          "certainty": "known_fact",
+          "text": "听到\"四灵根\"只抓住一句\"还得练\"，意思是地里的活不会等人",
+          "location": "石桥村·钱家院落"
         }
       ],
       "relationships": {},
       "last_known_location": "石桥村田间（依据日程推演，未目击）",
-      "last_updated_event": "EV000104",
+      "last_updated_event": "EV000115",
       "base_temperament": {
         "version": "npc-base-temperament-v1",
         "source": "deterministic_world_seed",
@@ -134,11 +148,25 @@
           "certainty": "known_fact",
           "text": "答应给儿子烙饼带上路，叮嘱路上别省、别赶夜路",
           "location": "石桥村·钱家院落"
+        },
+        {
+          "event_id": "EV000106",
+          "tag": "baked_bread_before_dawn",
+          "certainty": "known_fact",
+          "text": "天没亮就烙了饼塞进包袱，说\"冷了也别扔\"",
+          "location": "石桥村·钱家院落"
+        },
+        {
+          "event_id": "EV000115",
+          "tag": "asked_about_the_money_first",
+          "certainty": "known_fact",
+          "text": "儿子回来先问钱花完了没有；听说剩十五文，没再说话",
+          "location": "石桥村·钱家院落"
         }
       ],
       "relationships": {},
       "last_known_location": "石桥村钱家院落（推演）",
-      "last_updated_event": "EV000104",
+      "last_updated_event": "EV000115",
       "base_temperament": {
         "version": "npc-base-temperament-v1",
         "source": "deterministic_world_seed",
@@ -267,11 +295,25 @@
           "certainty": "known_fact",
           "text": "只被允许送到村口",
           "location": "石桥村·钱家院落"
+        },
+        {
+          "event_id": "EV000106",
+          "tag": "escorted_to_the_village_gate",
+          "certainty": "known_fact",
+          "text": "天没亮送哥哥到村口",
+          "location": "石桥村·村口"
+        },
+        {
+          "event_id": "EV000115",
+          "tag": "asked_whether_four_colors_means_more",
+          "certainty": "known_fact",
+          "text": "头一句问\"四样色，是不是比别人多\"",
+          "location": "石桥村·钱家院落"
         }
       ],
       "relationships": {},
       "last_known_location": "石桥村·村外荒沟",
-      "last_updated_event": "EV000104",
+      "last_updated_event": "EV000115",
       "base_temperament": {
         "version": "npc-base-temperament-v1",
         "source": "deterministic_world_seed",
@@ -347,6 +389,65 @@
       "relationships": {},
       "last_known_location": "临安县城（去向不明）",
       "last_updated_event": "EV000018"
+    },
+    "CFNPC00009": {
+      "id": "CFNPC00009",
+      "campaign_id": "xianfan-canglan-text-20261024",
+      "name": "沈澜清",
+      "sex": "男",
+      "age": 55,
+      "residence": "qingyun",
+      "roles": [
+        "青云山门·测灵台执事"
+      ],
+      "base_temperament": {
+        "version": "npc-base-temperament-v1",
+        "source": "deterministic_world_seed",
+        "scores": {
+          "curiosity": 51,
+          "diligence": 40,
+          "caution": 48,
+          "sociability": 62,
+          "cooperation": 47,
+          "stress_tolerance": 45
+        },
+        "warning": "Generated base propensity, not a claim of player-observed behavior or guaranteed action"
+      },
+      "public_personality": [
+        {
+          "tag": "follows_the_register",
+          "kind": "observed",
+          "description": "先说要钱、说要上名册，再谈测什么",
+          "basis_event": "EV000109"
+        },
+        {
+          "tag": "blunt_about_results",
+          "kind": "observed",
+          "description": "报结果只有两个字四个字，不哄人也不劝人",
+          "basis_event": "EV000110"
+        }
+      ],
+      "life_events": [
+        {
+          "event_id": "EV000109",
+          "tag": "took_the_fee_and_explained_the_rule",
+          "certainty": "known_fact",
+          "text": "收下三十文过门钱，说明\"测一回三十文，测过上了册子，往后不再测第二回\"",
+          "location": "青云山门·测灵台"
+        },
+        {
+          "event_id": "EV000110",
+          "tag": "reported_four_root",
+          "certainty": "known_fact",
+          "text": "测出四灵根，只说\"四种。杂的。\"\"能练，练得慢。\"，把心魇说的名字记进名册",
+          "location": "青云山门·测灵台"
+        }
+      ],
+      "relationships": {
+        "CFPLAYER00001": "名册上添的一笔"
+      },
+      "last_known_location": "qingyun",
+      "last_updated_event": "EV000110"
     }
   }
 }

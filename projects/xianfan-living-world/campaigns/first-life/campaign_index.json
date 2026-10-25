@@ -1,8 +1,8 @@
 {
   "schema": 1,
   "campaign_id": "xianfan-canglan-text-20261024",
-  "turns_completed": 103,
-  "time": "承平三年 · 第29日 · 06:00",
+  "turns_completed": 114,
+  "time": "承平三年 · 第31日 · 06:00",
   "location": "石桥村·钱家院落",
   "player": {
     "id": "CFPLAYER00001",
@@ -10,10 +10,10 @@
     "sex": "男",
     "age": 16,
     "realm": "凡人（未修行）",
-    "root": "未检测",
+    "root": "四灵根",
     "hp": 100,
-    "stamina": 100,
-    "copper": 53
+    "stamina": 66.8,
+    "copper": 15
   },
   "family": {
     "id": "CFFAM00001",
@@ -39,15 +39,15 @@
         "手足"
       ]
     ],
-    "grain_remainder_millidou": 464
+    "grain_remainder_millidou": 356
   },
-  "last_event": "EV000105",
-  "last_event_hash": "4fae7924513c35c96f3b71b9104728632d5d42d92d081408b0b56b40a1cddf69",
-  "full_state_sha256": "b32999f868fe955daf8e51b1950f0437dbb1173e07b0c3a593c2f4f50b4281ee",
-  "roots_hidden": true,
+  "last_event": "EV000116",
+  "last_event_hash": "83011ef5e11cff54f2e6440a7701c49ceadc972c8dea82e4d52b1b8a607b70ab",
+  "full_state_sha256": "563d0bb55a4615c7ff94065b674eae8f4d815b1cd44a077fd44d5037d177777e",
+  "roots_hidden": false,
   "complete_source_event_ledger_synced": true,
   "full_state_parts_verified": true,
-  "next_checkpoint_turn": 110,
+  "next_checkpoint_turn": 120,
   "last_action": "sleep",
   "trap_status": "checked empty 16:18",
   "inventory_added": {
@@ -59,28 +59,31 @@
   "fishing_status": "河道 SH-RIVER-01 被抽空过：累计捕走 15 条，现存 0；一天只回涨一条，靠河攒不出大钱",
   "sister_errand": "第2日送饭失约已当面问清；此后她帮着看下游那只笼子；出发事宜她只被允许送到村口",
   "second_basket_status": "carried; user wishes deployment, requires river visit",
-  "manual_status": "手里那本《引气初篇》已判为伪本，不再照练；灵根仍未检测",
-  "sync_status": "SYNCED",
+  "manual_status": "手里那本《引气初篇》已判为伪本，不再照练；灵根已测，缺的是真正的入门功法",
+  "sync_status": "PENDING_GITHUB",
   "sync_target": "160701541-cell/xinyanshuo@xianfan/independent-living-county-v0.1",
   "last_synced_event": "EV000105",
   "journey_status": {
     "goal": "去青云山门·测灵台测灵根",
-    "stage": "盘缠已备，定在第29日天亮前动身",
-    "copper_held": 53,
-    "fish_held_unsold": 4,
-    "planned_cost": {
+    "stage": "已完成：第29日出发、当日测出结果、第30日回到家",
+    "copper_held": 15,
+    "spent": {
       "test_fee_copper": 30,
-      "lodging_per_night_copper": 8,
-      "nights_planned": 2,
-      "total_known": 46
+      "lodge_copper": 8
     },
-    "provisions": "自家烙饼带上，不在路上买",
-    "household_cash": 22,
-    "rule_files": [
-      "data/root_test_station_v1.json",
-      "data/road_travel_v1.json",
-      "data/fishing_v1.json"
-    ]
+    "outcome": "四灵根（可修行，根骨驳杂、凝气慢）"
   },
-  "next_action_hint": "第29日天亮前出门，走官道到临安，再沿山道北上青云山门"
+  "next_action_hint": "灵根已知，但没有可用的引气法门——那本《引气初篇》是伪的",
+  "root_status_public": "四灵根",
+  "root_test_result": {
+    "root": "四灵根",
+    "root_roll_0_9999": 2938,
+    "root_id": "si",
+    "commitment_sha256": "897ffd3bec4b0c505b934d584835158fecaf6ddea61c5d70df6b8160db914dd7",
+    "station": "ST-QINGYUN-01",
+    "tested_at": "承平三年 · 第29日 · 15:52",
+    "fee_copper": 30,
+    "method": "从 world_seed 重新抽签，与存档 root_commitment_sha256 逐位比对一致后才写入",
+    "one_time_only": true
+  }
 }

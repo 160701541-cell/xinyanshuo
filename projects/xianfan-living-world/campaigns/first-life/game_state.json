@@ -6,11 +6,11 @@
   "world_seed": "xianfan-canglan-text-20261024-v1",
   "time": {
     "regnal_year": 3,
-    "day": 29,
+    "day": 31,
     "hour": 6,
     "minute": 0,
-    "display": "承平三年 · 第29日 · 06:00",
-    "weather": "多云"
+    "display": "承平三年 · 第31日 · 06:00",
+    "weather": "晴"
   },
   "player": {
     "id": "CFPLAYER00001",
@@ -22,13 +22,13 @@
     "origin_name": "石桥村",
     "role": "平民",
     "realm": "凡人（未修行）",
-    "root_status": "未检测",
+    "root_status": "四灵根",
     "root_commitment_sha256": "897ffd3bec4b0c505b934d584835158fecaf6ddea61c5d70df6b8160db914dd7",
     "hp": 100,
     "max_hp": 100,
-    "stamina": 100,
+    "stamina": 66.8,
     "max_stamina": 100,
-    "money": 53,
+    "money": 15,
     "money_unit": "文",
     "exp": 0,
     "family_id": "CFFAM00001",
@@ -121,17 +121,27 @@
       "category": "渔具",
       "usable_for_fishing": true,
       "source": "EV000026 河岸现场组装"
+    },
+    {
+      "id": "dry_provisions",
+      "name": "烙饼（母亲给的干粮）",
+      "quantity": 1,
+      "equipped": false,
+      "category": "食物",
+      "source": "第29日出门前母亲郑舟清烙的"
     }
   ],
   "current_location": "石桥村·钱家院落",
-  "last_event_id": "EV000105",
+  "last_event_id": "EV000116",
   "reference": {
     "origin": "GitHub 160701541-cell/xinyanshuo",
     "xianfan_branch": "xianfan/independent-living-county-v0.1",
     "xianfan_module": "projects/xianfan-living-world/",
     "population_in_source_prototype": 13680,
     "world_reference_only": true,
-    "note": "13680为仙凡代码里的临安县及周边原型人口，不是本次文字游戏已加载的13680个完整可模拟NPC。"
+    "note": "13680为仙凡代码里的临安县及周边原型人口，不是本次文字游戏已加载的13680个完整可模拟NPC。",
+    "root_revealed_at": "承平三年 · 第29日 · 15:52",
+    "root_reveal_method": "SHA256(campaign_id|random_key|roll|root) 与存档承诺哈希一致"
   },
   "places": [
     {
@@ -222,6 +232,16 @@
       "location_id": "linan",
       "health": "正常",
       "alive": true
+    },
+    {
+      "id": "CFNPC00009",
+      "name": "沈澜清",
+      "relation": "青云山门测灵台执事",
+      "sex": "男",
+      "age": 55,
+      "location_id": "qingyun",
+      "health": "正常",
+      "alive": true
     }
   ],
   "family": {
@@ -264,7 +284,7 @@
       }
     ],
     "note": "家中库存并非玩家随身所有；不得未经交易或亲属许可扣取。",
-    "grain_remainder_millidou": 464
+    "grain_remainder_millidou": 356
   },
   "initial_rolls_public": {
     "random_key": "xianfan-canglan-text-20261024-v1|玩家:心魇说|性别:男|年龄:16|开局序号:1",
@@ -842,12 +862,12 @@
     }
   },
   "practice": {
-    "rootId": null,
+    "rootId": "si",
     "layer": 0,
     "progress": 0,
     "meridian": 0,
-    "tested": false,
-    "testedAt": null,
+    "tested": true,
+    "testedAt": "承平三年 · 第29日 · 15:52",
     "manual_status": "判定为拼凑伪诀，不能引气",
     "intake_days": 5,
     "log": [
@@ -859,6 +879,8 @@
         "day": 8,
         "msg": "判定《引气初篇》为伪本，停止照练"
       }
-    ]
+    ],
+    "root_roll_public": 2938,
+    "verified_by_commitment": "897ffd3bec4b0c505b934d584835158fecaf6ddea61c5d70df6b8160db914dd7"
   }
 }
