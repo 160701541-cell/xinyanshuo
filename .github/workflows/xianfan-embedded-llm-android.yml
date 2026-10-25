@@ -137,6 +137,12 @@ jobs:
           godot --headless --path . --script res://tests/test_civic_population.gd > /tmp/civic-population.log 2>&1 || { cat /tmp/civic-population.log; exit 1; }
           cat /tmp/civic-population.log
           if grep -E '(SCRIPT ERROR|Parse Error|CIVIC POPULATION FAILURE|CIVIC POPULATION TESTS FAILED)' /tmp/civic-population.log; then exit 1; fi
+      - name: Verify model download resume, real progress and message auto-follow
+        run: |
+          cd projects/xianfan-living-world/android-text
+          godot --headless --path . --script res://tests/test_download_resume.gd > /tmp/download-resume.log 2>&1 || { cat /tmp/download-resume.log; exit 1; }
+          cat /tmp/download-resume.log
+          if grep -E '(SCRIPT ERROR|Parse Error|GGUF DOWNLOAD TEST FAILURE|GGUF DOWNLOAD TESTS FAILED)' /tmp/download-resume.log; then exit 1; fi
       - name: Build APK with native local runtime
         run: |
           cd projects/xianfan-living-world/android-text
