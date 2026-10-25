@@ -52,6 +52,16 @@ static func voice_profile(person: String, npc: Dictionary) -> Dictionary:
     var axes: Dictionary={}
     for axis in ["caution","curiosity","empathy","directness","privacy","initiative"]:
         axes[axis]=_selection(identity+"|"+axis,5)
+    # The lasting rule-driven psychological state is authoritative when
+    # available; older NPCs retain deterministic six-axis legacy voices.
+    var actual: Dictionary=npc.get("psyche",{}).get("traits",{})
+    if not actual.is_empty():
+        axes["caution"]=clampi(int(actual.get("caution",50)/25),0,4)
+        axes["curiosity"]=clampi(int(actual.get("curiosity",50)/25),0,4)
+        axes["empathy"]=clampi(int(actual.get("empathy",50)/25),0,4)
+        axes["directness"]=clampi(int(actual.get("honesty",50)/25),0,4)
+        axes["privacy"]=clampi(int(actual.get("caution",50)/25),0,4)
+        axes["initiative"]=clampi(int(actual.get("ambition",50)/25),0,4)
     axes["existing_trait"]=str(npc.get("trait",""))
     axes["voice"]=_voice(person,npc)
     return axes
@@ -92,6 +102,22 @@ func answer(person: String, question: String, data: Dictionary) -> Dictionary:
             query=query.trim_prefix(prefix).strip_edges()
             break
     if query.is_empty(): return {"covered":false,"reason":"empty"}
+    if query.contains("强奸") or query.contains("性侵") or query.contains("强迫亲密"):
+        return {"covered":true,"reply":"强迫他人违背意愿是严重伤害。任何亲密关系都必须尊重对方明确的自主选择；遇到威胁应优先保护当事人并寻求可靠帮助。",
+            "topic":"protect_personal_boundaries","voice":_voice(person,npc),
+            "source":"authored-local-library","speaker_id":str(npc.get("id",""))}
+    if query.contains("你是什么样的人") or query.contains("你的性格是什么") or query.contains("你心里想什么") or query.contains("你有什么欲望"):
+        return {"covered":true,"reply":XianfanPsyche.private_self_description(npc),
+            "topic":"private_psyche_self_view","voice":_voice(person,npc),
+            "source":"verified-world-personality","speaker_id":str(npc.get("id",""))}
+    # Adult romance and sexual desire are not simulated for minors. Rejecting
+    # a conversation invitation never creates a consensual relationship.
+    var asks_adult_intimacy:=query.contains("性欲") or query.contains("亲密关系") or (
+        query.contains("恋爱") or query.contains("结婚") or query.contains("成亲"))
+    if asks_adult_intimacy and int(npc.get("age",18))<18:
+        return {"covered":true,"reply":"这些成人之间的私事我暂时不想谈。每个人的想法和界限都应得到尊重。",
+            "topic":"age_appropriate_boundary","voice":_voice(person,npc),
+            "source":"authored-local-library","speaker_id":str(npc.get("id",""))}
     # Query the present speaker's actual certificate. Never infer the player's
     # undisclosed root or claim a random cultivator has passed a test.
     var asks_root:=query.contains("你的灵根") or query.contains("你是什么灵根") or query.contains("你测过灵根")
