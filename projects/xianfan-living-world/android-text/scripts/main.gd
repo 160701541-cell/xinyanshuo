@@ -446,7 +446,7 @@ func _submit(text: String, typed: bool) -> void:
     command.release_focus()
     if typed and local_enabled:
         request_text=raw
-        if bool(local_llm.get("ready")):
+        if bool(local_llm.get("model_ready")):
             notice.text="本地模型正在理解输入……"
             local_llm.talk(raw,npc_to_chat,game.data)
         elif bool(local_llm.get("loading")):
