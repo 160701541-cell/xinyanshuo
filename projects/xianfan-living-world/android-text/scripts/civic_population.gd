@@ -311,6 +311,22 @@ static func snapshot(society: Dictionary, person: String, hour: int) -> Dictiona
     result["place"]=_daily_place(npc,hour%24)
     if bool(result.get("alive",true)):
         result["activity"]="做%s的本职工作" % str(result["job"]) if hour%24>=7 and hour%24<18 else "回到居所休息"
+    # Paid mountain porters occupy actual road or mountain locations during
+    # transport, instead of being visible at work and on the road at once.
+    var assignment: Dictionary=npc.get("delivery_assignment",{})
+    if not assignment.is_empty() and bool(result.get("alive",true)):
+        var today:=int(hour/24)+1
+        var departure:=int(assignment.get("departure_day",0))
+        var arrival:=int(assignment.get("arrive_day",0))
+        if today==departure and hour%24>=8:
+            result["place"]="临安官道"
+            result["activity"]="护送已出库的山门粮食，沿县城官道出发"
+        elif today==arrival:
+            result["place"]="青云山门·山门外" if hour%24>=8 else "临安官道"
+            result["activity"]="将粮食按账交到青云山门"
+        elif today==arrival+1:
+            result["place"]="临安官道"
+            result["activity"]="交割完毕，沿官道返回县城"
     return result
 
 static func nearby(society: Dictionary, place: String, hour: int) -> Array[Dictionary]:
