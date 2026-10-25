@@ -9,6 +9,7 @@ const SEED := "xianfan-canglan-text-20261024-v1"
 const VERSION := 4
 const MAX_JOURNAL := 100000
 var data: Dictionary = {}
+var memory_store: XianfanMemoryStore
 var journal: Array = []
 var last_result := ""
 var last_channel := "剧情"
@@ -19,11 +20,53 @@ var feedback: Array = []
 func _init() -> void:
     if not load_save():
         new_game()
+    else:
+        _setup_memories()
     _load_feedback()
+
+func _setup_memories() -> void:
+    # Existing phone saves receive a stable namespace without destroying the
+    # original JSON/backup. Fresh saves get a unique independent namespace.
+    if not data.has("memory_campaign"):
+        data["memory_campaign"]="legacy-"+str(data.get("source_event","first-life"))+"-"+str(data.get("name","player"))
+    memory_store=XianfanMemoryStore.new()
+    memory_store.configure(str(data["memory_campaign"]))
+    memory_store.sync_legacy(data)
+    if not FileAccess.file_exists(SAVE_PATH) or not data.get("memory_sidecar_registered",false):
+        data["memory_sidecar_registered"]=true
+        save()
+
+func memory_digest(person: String) -> Dictionary:
+    if memory_store==null or not data.get("npc",{}).has(person): return {}
+    return memory_store.digest(person,data["npc"][person])
+
+func memory_recall(person: String, query: String, limit: int=6) -> Array:
+    if memory_store==null or not data.get("npc",{}).has(person): return []
+    return memory_store.recall(person,query,limit)
+
+func memory_storage_info(person: String) -> String:
+    if memory_store==null: return "记忆库尚未初始化"
+    var info:=memory_digest(person)
+    if info.is_empty(): return "人物尚未登记"
+    var anchors: Dictionary=info.get("anchor",{})
+    var lines: Array[String]=[
+        "【人物核心】"+str(anchors.get("baseline","尚未建立")),
+        "【永久记忆】%d条完整原始记录（独立存储于本机）" % int(info.get("total_raw",0)),
+        "【交谈记录】%d条" % int(info.get("total_dialogues",0)),
+        "【多日习惯】"
+    ]
+    var habits: Array=info.get("habits",[])
+    lines.append("；".join(habits) if not habits.is_empty() else "尚无持续多日的观察证据")
+    lines.append("【最近日常提要】")
+    lines.append("\n".join(info.get("last_week",[])))
+    lines.append("【存储原则】原话原事不删；每日琐事只建立摘要；既有身份和个性不允许模型覆写。")
+    return "\n".join(lines)
+
 
 func new_game() -> void:
     data = {
         "schema": VERSION, "source_event": "EV000016", "turn": 14,
+        "memory_campaign": "native-"+str(Time.get_ticks_usec())+"-"+str(get_instance_id()),
         "day": 2, "minute": 674, "place": "临安县城·旧书铺",
         "name": "心魇说", "age": 16, "realm": "凡人（未修行）", "root": "未检测",
         "root_commitment": "897ffd3bec4b0c505b934d584835158fecaf6ddea61c5d70df6b8160db914dd7",
@@ -86,6 +129,7 @@ func new_game() -> void:
         "【当前目标】天亮动身，走115分钟官道至临安，再沿357分钟山道到青云山门。山门测灵收费30文，脚店住一晚8文。灵根承诺仍然隐藏，没有原文就不能伪造测灵结果。",
         "【离线分支】这是2026-10-25读取的 GitHub 已同步快照，从此之后仅存本机。已有本机存档绝不自动重置。"
     ]
+    _setup_memories()
     save()
 
 func _valid(d: Dictionary) -> bool:
@@ -227,19 +271,29 @@ func record_ai_dialogue(person: String, player_text: String, reply: String, engi
         if clean_player.begins_with(prefix):
             clean_player=clean_player.trim_prefix(prefix).strip_edges()
             break
-    log.append({"day":int(data["day"]),"speaker":person,"player":clean_player.substr(0,250),"reply":reply.strip_edges(),"ai":true,"engine":engine})
+    var entry: Dictionary={"day":int(data["day"]),"minute":int(data["minute"]),
+        "turn":int(data["turn"]),"speaker":person,"player":clean_player.substr(0,250),
+        "reply":reply.strip_edges(),"ai":true,"engine":engine}
+    entry["uid"]="D-"+str(entry["day"])+"-"+str(entry["turn"])+"-"+(JSON.stringify(entry).sha256_text().substr(0,12))
+    # Write to independent local append-only memory before trimming cached
+    # copies in the main save. On write failure the main save retains everything.
+    var sidecar_ok:=false
+    if memory_store!=null:
+        sidecar_ok=memory_store.archive_dialogue(person,entry,data["npc"][person])
+    if not sidecar_ok: note_api_failure("NPC记忆归档",person+"的独立记忆磁盘写入失败；保留主存档副本。")
+    log.append(entry)
     if log.size()>80: log.pop_front()
     data["dialogue_log"]=log
-    # Append-only dialogue archive and NPC-indexed memory survive recent-log rotation.
-    # Dialogue is a record of what was said, not a source of new world facts.
     var archive: Array=data.get("dialogue_archive",[])
-    var saved_turn: Dictionary=log.back().duplicate(true)
-    saved_turn["minute"]=int(data["minute"])
-    archive.append(saved_turn)
+    archive.append(entry.duplicate(true))
+    if sidecar_ok and archive.size()>120:
+        archive=archive.slice(-120)
     data["dialogue_archive"]=archive
     var npc_memories: Dictionary=data.get("npc_memories",{})
     var personal: Array=npc_memories.get(person,[])
-    personal.append({"day":int(data["day"]),"turn":int(data["turn"]),"player":clean_player.substr(0,250),"reply":reply.strip_edges().substr(0,350)})
+    personal.append({"uid":entry["uid"],"day":int(entry["day"]),"turn":int(entry["turn"]),
+        "player":clean_player.substr(0,250),"reply":reply.strip_edges().substr(0,350)})
+    if sidecar_ok and personal.size()>96: personal=personal.slice(-96)
     npc_memories[person]=personal
     data["npc_memories"]=npc_memories
     last_channel="对话"
@@ -342,26 +396,13 @@ func record_ai_story(scene: String, beat_id: String, expected_clock: int, origin
     return {"ok":true,"approved_beat":approved_id,"scene":text_scene}
 
 func related_npc_memories(person: String, query: String, max_results: int=6) -> Array:
+    if memory_store!=null:
+        var archived: Array=memory_store.recall(person,query,max_results)
+        if not archived.is_empty(): return archived
+    # Legacy data fallback if a phone has not yet migrated its old save.
     var all_npcs: Dictionary=data.get("npc_memories",{})
-    var memory: Array=all_npcs.get(person,[])
-    var tokens: Array[String]=[]
-    for i in range(maxi(0,query.length()-1)):
-        var chunk:=query.substr(i,2)
-        if not tokens.has(chunk): tokens.append(chunk)
-    var ranked: Array=[]
-    for i in range(memory.size()):
-        var item: Dictionary=memory[i]
-        var combined:=str(item.get("player",""))+" "+str(item.get("reply",""))
-        var relevance:=0
-        for token in tokens:
-            if combined.contains(token): relevance+=1
-        if relevance>0:
-            ranked.append({"score":relevance,"index":i,"memory":item})
-    ranked.sort_custom(func(a,b): return (int(a["score"])*10000+int(a["index"]))>(int(b["score"])*10000+int(b["index"])))
-    var selected: Array=[]
-    for i in range(mini(max_results,ranked.size())):
-        selected.append(ranked[i]["memory"])
-    return selected
+    var bank: Array=all_npcs.get(person,[])
+    return bank.slice(-clampi(max_results,0,16))
 
 func npcs_status() -> Array[Dictionary]:
     var arr: Array[Dictionary] = []
@@ -464,6 +505,15 @@ func _daily() -> void:
         life.append({"day":day,"npc":person,"place":str(n.get("place","")),
             "activity":str(n.get("activity","")),"mood":str(n.get("mood","平静")),
             "goal":str(n.get("wish","")),"goal_progress":int(n.get("goal_progress",0))})
+    if memory_store!=null:
+        var all_safe:=true
+        for life_event in life.slice(-3):
+            var who:=str(life_event.get("npc",""))
+            if data["npc"].has(who):
+                if not memory_store.archive_life(who,life_event,data["npc"][who]):
+                    all_safe=false
+        if all_safe and life.size()>45: life=life.slice(-45)
+        if not all_safe: note_api_failure("NPC人生记录","独立生活日志写入失败，主存档仍保留完整历史。")
     data["npc_life_events"]=life
     _note("【日结】第%d日，家中消耗粮食 %.3f 斗，天气%s。" % [day, float(eaten) / 1000.0, data["weather"]])
 
