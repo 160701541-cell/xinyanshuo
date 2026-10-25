@@ -14,6 +14,8 @@ func _sum_money(s: Dictionary) -> int:
         sum+=int(region["treasury"])
     for actor in s["agents"].values():
         sum+=int(actor["coins"])
+    for person in s.get("civic_agents",{}).values():
+        sum+=int(person.get("coins",0))
     return sum
 
 func _all_goods_positive(s: Dictionary) -> bool:
