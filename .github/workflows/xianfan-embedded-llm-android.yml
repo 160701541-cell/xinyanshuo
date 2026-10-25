@@ -43,7 +43,13 @@ jobs:
           cp -a "$src/." "$dest/"
           # Upstream Linux .so targets newer x86 instructions; CI is only packaging Android ARM64.
           # Remove Linux selector on CI to avoid SIGILL, keep Android extension libs intact.
-          sed -i '/^linux\\./d' "$dest"/*.gdextension
+          sed -i '/^[[:space:]]*linux[.]/d' "$dest"/*.gdextension
+          echo "Native addon platform manifest:"
+          cat "$dest"/*.gdextension
+          if grep -E '^[[:space:]]*linux[.]' "$dest"/*.gdextension; then
+            echo 'ERROR: Linux extension selector remains; CI CPU may SIGILL'
+            exit 1
+          fi
           find "$dest" -maxdepth 2 -type f | head -n 40
           test -s "$dest/$(basename "$ext")"
       - name: Import game with native extension
