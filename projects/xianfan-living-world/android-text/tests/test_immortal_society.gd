@@ -54,6 +54,21 @@ func _go() -> void:
         "Unverified root disallows fabricated breakthroughs regardless of accumulated experience")
     check(game.world_chronicle!=null and game.world_chronicle.number_of_facts()>0,
         "Sect production and practice must leave durable independently indexed fact records")
+    var bought_before:=int(immortal["total_food_bought"])
+    for i in range(6):
+        game.passive_time(720)
+    check(int(immortal["total_food_bought"])>bought_before,"Real food purchased from town")
+    var shipments: Array=immortal.get("shipments",[])
+    check(shipments.size()>0,"Goods must remain in transit during delivery")
+    if not shipments.is_empty():
+        var record: Dictionary=shipments.back()
+        var carrier:=str(record.get("courier",""))
+        check(society["civic_agents"].has(carrier),"Registered porter employed")
+        game.passive_time(120)
+        check(str(game.data["npc"].get(carrier,{}).get("place",""))=="临安官道","Porter uses road")
+        game.passive_time(600)
+        game.passive_time(720)
+        check(immortal.get("shipments",[]).is_empty(),"Delivery must complete after transit")
     var review:=game.immortal_status()
     check(review.contains("灵草") and review.contains("丹药") and review.contains("风险"),
         "Location-locked report displays rule-authenticated immortal economy")
