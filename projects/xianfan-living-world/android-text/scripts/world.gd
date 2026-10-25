@@ -1015,12 +1015,12 @@ func _npc_free_chat(raw: String) -> String:
     if not recipient in ["孙成明","钱然泽","郑舟清"]:
         var profession:=str(npc.get("job","村民"))
         var activity:=str(npc.get("activity","正在忙自己的事"))
-        var trait:=str(npc.get("trait",""))
+        var personal_temperament:=str(npc.get("trait",""))
         if said.contains("在哪") or said.contains("在干嘛") or said.contains("忙什么"):
             return "%s停下手里的活回答：‘我在%s，正%s。’" % [recipient,str(npc.get("place","附近")),activity]
         if said.contains("生意") or said.contains("工作") or said.contains("吃饭") or said.contains("村里"):
             return "%s答道：‘我靠%s过活，这阵子%s。人总得顾好自己的生计。’" % [recipient,profession,activity]
-        return "%s听你说了‘%s’，想了想：‘我平日是个%s的人，这事还得细想。’" % [recipient,said.substr(0,48),trait]
+        return "%s听你说了‘%s’，想了想：‘我平日是个%s的人，这事还得细想。’" % [recipient,said.substr(0,48),personal_temperament]
     if said.contains("饭") or said.contains("饿"):
         if recipient=="孙成明": return "成明把手中的活放下：‘娘会留饭。你问我吃没吃？我一会儿就去灶屋看看。’"
         if recipient=="郑舟清": return "母亲笑道：‘锅里留着吃的，你也得准时吃饭。’"
