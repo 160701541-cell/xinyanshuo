@@ -36,6 +36,10 @@ func _initial_profile(person: String, npc: Dictionary) -> Dictionary:
     if person=="孙成明": baseline="家务勤快，有自己的安排；是否修行由本人决定"
     elif person=="钱然泽": baseline="农户，务实谨慎，重视家中生计"
     elif person=="郑舟清": baseline="操持家务，关心家人饮食起居"
+    elif not npc.is_empty():
+        baseline="%s；从事%s；属于%s。核心经历应基于真实存档，不能因一次闲聊改变。" % [
+            str(npc.get("trait","沉稳朴实")),str(npc.get("job","村中事务")),
+            str(npc.get("household","独居"))]
     return {"schema":PROFILE_SCHEMA,"person":person,"npc_id":str(npc.get("id","")),
         "core":{"identity":person,"baseline":baseline,"immutable":true},
         "personality_notes":[],"days":{},"habits":{},"important":[],
