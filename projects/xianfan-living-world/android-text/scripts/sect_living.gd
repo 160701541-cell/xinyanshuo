@@ -99,7 +99,7 @@ static func bigu_active(person: Dictionary, day: int) -> bool:
 static func _log_event(c: Dictionary, actor: Dictionary, day: int, kind: String, detail: String) -> void:
     XianfanImmortalSociety._record(c,actor,day,kind,detail)
 
-static func _cultivate_food(c: Dictionary, day: int) -> void:
+static func _cultivate_food(society: Dictionary, c: Dictionary, day: int) -> void:
     var region: Dictionary=c["regions"]["青云山门"]
     var stock: Dictionary=region["stock"]
     var spring: Dictionary=region["spring"]
@@ -119,24 +119,26 @@ static func _cultivate_food(c: Dictionary, day: int) -> void:
         var trees:=int(region["spirit_orchard"].get("trees",0))
         if trees>0:
             stock["灵果"]=int(stock["灵果"])+mini(trees,2)
-            var steward: Dictionary=people.get("叶怀远",{})
-            if not steward.is_empty():
-                _log_event(c,steward,day,"灵果采收",
+            var grower: Dictionary=people.get("谷若竹",{})
+            if bool(grower.get("alive",false)):
+                _log_event(c,grower,day,"灵果采收",
                     "山门有%d株已登记果树成熟，其中采得%d枚灵果入库。" % [trees,mini(trees,2)])
-    var catering:=false
-    for worker in c.get("sect_workforce",{}).values():
-        if str(worker.get("job",""))=="外门膳房人" and bool(worker.get("employed",false)):
-            catering=true
+    var chef: Dictionary={}
+    for worker_name in c.get("sect_workforce",{}):
+        var contract: Dictionary=c["sect_workforce"][worker_name]
+        if str(contract.get("job",""))!="外门膳房人" or not bool(contract.get("employed",false)): continue
+        var cook: Dictionary=society.get("civic_agents",{}).get(worker_name,{})
+        if bool(cook.get("alive",false)):
+            chef=cook
             break
-    if catering and int(stock["灵米"])>=1 and int(stock["灵果"])>=1 and int(stock["泉水"])>=1:
+    if not chef.is_empty() and int(stock["灵米"])>=1 and int(stock["灵果"])>=1 and int(stock["泉水"])>=1:
         stock["灵米"]=int(stock["灵米"])-1
         stock["灵果"]=int(stock["灵果"])-1
         stock["泉水"]=int(stock["泉水"])-1
         stock["灵膳"]=int(stock["灵膳"])+1
-        var steward: Dictionary=people.get("叶怀远",{})
-        if not steward.is_empty():
-            _log_event(c,steward,day,"灵膳烹制",
-                "膳房实耗1份灵米、1枚灵果、1份泉水，做出1份灵米灵果羹并入厨房库存。")
+        chef["place"]="青云山门·山门外"
+        _log_event(c,chef,day,"灵膳烹制",
+            "膳房实耗1份灵米、1枚灵果、1份泉水，亲手做出1份灵米灵果羹并入厨房库存。")
 
 static func _sanitation(c: Dictionary, person: Dictionary, day: int) -> void:
     var physiology: Dictionary=person["physiology"]
@@ -197,7 +199,7 @@ static func _dine_one(c: Dictionary, person: Dictionary, day: int, is_worker: bo
 
 static func settle(society: Dictionary, c: Dictionary, day: int) -> void:
     migrate(society)
-    _cultivate_food(c,day)
+    _cultivate_food(society,c,day)
     for person in c["agents"].values():
         if not bool(person.get("alive",true)) or str(person["station"])!="青云山门": continue
         _dine_one(c,person,day,false)
