@@ -14,6 +14,7 @@ var api_key := ""  # Memory-only: never written to disk, feedback or game save.
 var busy := false
 var request_node: HTTPRequest
 var pending_text := ""
+var pending_npc := ""
 
 func _ready() -> void:
     request_node = HTTPRequest.new()
@@ -64,13 +65,18 @@ func status() -> String:
         return "API已就绪" if configured() else "API尚未配置密钥或模型"
     return "本机HTTP服务已设置（需另有推理程序正在运行）" if configured() else "本机HTTP服务未配置"
 
-func ask(action_text: String, state: Dictionary) -> bool:
+func ask(action_text: String, state: Dictionary, dialogue_target: String="") -> bool:
     if busy:
         completed.emit.call_deferred({"ok":false,"error":"上一条AI请求还没结束，可取消或稍后重试。"})
         return false
     if not configured():
         completed.emit.call_deferred({"ok":false,"error":"请先在设置中配置API或本机推理服务。"})
         return false
+    if not dialogue_target.is_empty():
+        var nearby: Dictionary=state.get("npc",{}).get(dialogue_target,{})
+        if nearby.is_empty() or str(nearby.get("place",""))!=str(state.get("place","")):
+            completed.emit.call_deferred({"ok":false,"error":"NPC不在面前，不能远程生成对话。","raw":action_text})
+            return false
     # Small, explicit context, with no API key, save-file path, or full conversation history.
     var visible: Array[String] = []
     for key in ["孙成明","钱然泽","郑舟清"]:
@@ -87,16 +93,26 @@ func ask(action_text: String, state: Dictionary) -> bool:
         "npc_here":visible,
         "cultivation":"未检测灵根；《引气初篇》已证实伪诀，不得突破"
     }
+    var system_text := system_prompt
+    if not dialogue_target.is_empty():
+        var npc: Dictionary=state.get("npc",{}).get(dialogue_target,{})
+        system_text="你扮演中国古风生活文字游戏中名叫"+dialogue_target+"的真实人物。" + \
+            "请用简短自然中文直接回应玩家，最多120字，不输出JSON，不要旁白，不重复固定台词。" + \
+            "当前正在做："+str(npc.get("activity","家务"))+"；情绪："+str(npc.get("mood","平静"))+"。" + \
+            "不能决定世界数值、NPC行动是否成功、物品、灵根、修为或改变任何角色状态。" + \
+            "如不知道的问题请坦诚说不清楚。"
     var payload := {"model":model,"messages":[
-        {"role":"system","content":system_prompt},
-        {"role":"user","content":"世界事实："+JSON.stringify(context)+"\n玩家行为："+action_text.substr(0,350)}
-    ],"temperature":0.25,"max_tokens":250}
+        {"role":"system","content":system_text},
+        {"role":"user","content":"世界事实："+JSON.stringify(context)+"\n玩家说："+action_text.substr(0,350)}
+    ],"temperature":0.65 if not dialogue_target.is_empty() else 0.25,"max_tokens":260}
     var headers := PackedStringArray(["Content-Type: application/json"])
     if provider=="API": headers.append("Authorization: Bearer "+api_key)
     pending_text=action_text
+    pending_npc=dialogue_target
     var err := request_node.request(endpoint,headers,HTTPClient.METHOD_POST,JSON.stringify(payload))
     if err!=OK:
         pending_text=""
+        pending_npc=""
         completed.emit.call_deferred({"ok":false,"error":"无法启动HTTP请求，错误代码%d" % int(err)})
         return false
     busy=true
@@ -107,13 +123,16 @@ func cancel() -> void:
     request_node.cancel_request()
     busy=false
     pending_text=""
+    pending_npc=""
     completed.emit({"ok":false,"error":"用户取消了AI请求。"})
 
 func _finished(result: int, code: int, _headers: PackedStringArray, body: PackedByteArray) -> void:
     if not busy: return
     busy=false
     var raw := pending_text
+    var npc := pending_npc
     pending_text=""
+    pending_npc=""
     if result!=HTTPRequest.RESULT_SUCCESS:
         completed.emit({"ok":false,"error":"网络请求失败（代码%d），检查网络、服务地址或本机服务是否启动。" % result,"raw":raw})
         return
@@ -130,6 +149,12 @@ func _finished(result: int, code: int, _headers: PackedStringArray, body: Packed
         return
     var msg: Dictionary=choices[0].get("message",{})
     var message := str(msg.get("content","")).strip_edges()
+    if not npc.is_empty():
+        if message.is_empty():
+            completed.emit({"ok":false,"error":"API未返回NPC发言。","raw":raw})
+        else:
+            completed.emit({"ok":true,"kind":"dialogue","npc":npc,"reply":message.substr(0,300),"raw":raw})
+        return
     if message.begins_with("```"):
         message=message.replace("```json","").replace("```","").strip_edges()
     var start := message.find("{")
