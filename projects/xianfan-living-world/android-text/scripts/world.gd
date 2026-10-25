@@ -75,7 +75,7 @@ func new_game() -> void:
     data["fishing_last_check"] = 40800
     data["npc"]["孙成明"]["learning"] = 16
     data["npc"]["孙成明"]["agreed"] = true
-    data["npc"]["孙成明"]["activity"] = "清早送行，父亲只许送到村口"
+    data["npc"]["孙成明"]["activity"] = "在院内收拾行囊，准备送你到村口"
     data["npc"]["钱然泽"]["activity"] = "将二十文盘缠交给儿子后早起下田"
     data["npc"]["郑舟清"]["activity"] = "为出远门的儿子备干粮"
     data["journey"] = {"stage": "未动身", "lodging_nights": 0, "tested": false, "goal": "青云山门测灵台", "fee": 30}
@@ -213,7 +213,7 @@ func feedback_report() -> String:
 func note_api_failure(action: String, reason: String) -> void:
     _record_feedback(action, reason, "AI_API_FAILED")
 
-func record_ai_dialogue(person: String, player_text: String, reply: String) -> String:
+func record_ai_dialogue(person: String, player_text: String, reply: String, engine: String="api") -> String:
     if not data["npc"].has(person): return "NPC不存在，无法进行对话。"
     var npc: Dictionary = data["npc"][person]
     if str(npc.get("place","")) != str(data["place"]):
