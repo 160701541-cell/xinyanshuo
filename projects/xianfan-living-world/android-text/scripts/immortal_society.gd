@@ -79,6 +79,7 @@ static func valid(society: Dictionary) -> bool:
     if int(c.get("schema",0))!=SCHEMA: return false
     for place in c.get("regions",{}).values():
         if not (place is Dictionary): return false
+        if int(place.get("copper",-1))<0: return false
         for key in ["wild","stock","cap"]:
             var source: Dictionary=place.get(key,{})
             for value in source.values():
