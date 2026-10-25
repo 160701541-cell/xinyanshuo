@@ -10,7 +10,7 @@ const BTN := Color("#30494d")
 
 var game := XianfanWorld.new()
 var ai: XianfanAI
-var local_llm: XianfanLocalLLM
+var local_llm: Node
 var local_enabled := false
 var local_model_url: LineEdit
 var view := "剧情"
@@ -46,7 +46,7 @@ func _ready() -> void:
     ai = XianfanAI.new()
     add_child(ai)
     ai.completed.connect(_on_ai_completed)
-    local_llm = XianfanLocalLLM.new()
+    local_llm = load("res://scripts/local_llm.gd").new()
     add_child(local_llm)
     local_llm.status_changed.connect(_local_status)
     local_llm.answered.connect(_on_ai_completed)
@@ -367,10 +367,10 @@ func _submit(text: String, typed: bool) -> void:
     command.release_focus()
     if typed and local_enabled:
         request_text=raw
-        if local_llm.ready:
+        if bool(local_llm.get("ready")):
             notice.text="本地模型正在理解输入……"
             local_llm.talk(raw,npc_to_chat,game.data)
-        elif local_llm.loading:
+        elif bool(local_llm.get("loading")):
             notice.text="模型正在下载或加载。你也可以切换为规则模式。"
         else:
             notice.text="本地模型尚未下载或加载失败，请到设置中点击下载/加载模型。"
