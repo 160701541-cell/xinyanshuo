@@ -39,7 +39,7 @@ static func _voice(name: String, npc: Dictionary) -> String:
 static func _selection(seed: String, count: int) -> int:
     if count<=0: return 0
     var digest:=seed.sha256_text()
-    return int("0x"+digest.substr(0,6))%count
+    return ("0x"+digest.substr(0,6)).hex_to_int()%count
 
 static func _unpack_speech(person: String, phrase: String, npc: Dictionary, data: Dictionary) -> String:
     var value:=phrase
@@ -93,7 +93,12 @@ func answer(person: String, question: String, data: Dictionary) -> Dictionary:
     var lines: Array=voices.get(voice,voices.get("resident",[]))
     if lines.is_empty(): return {"covered":false,"reason":"missing_voice"}
     var topic_id:=str(selected.get("id",""))
-    var index:=_selection(str(npc.get("id",person))+"|"+topic_id,lines.size())
+    var repeat_count:=0
+    for item in data.get("dialogue_log",[]):
+        if not (item is Dictionary): continue
+        if str(item.get("speaker",""))==person and str(item.get("topic",""))==topic_id:
+            repeat_count+=1
+    var index:=(_selection(str(npc.get("id",person))+"|"+topic_id,lines.size())+repeat_count)%lines.size()
     var text:=_unpack_speech(person,str(lines[index]),npc,data)
     if topic_id=="personal_history":
         var personal_fact:=_first_person_fact(person,npc)
