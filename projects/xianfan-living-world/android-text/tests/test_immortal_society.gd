@@ -78,6 +78,12 @@ func _go() -> void:
         game.passive_time(600)
         game.passive_time(720)
         check(immortal.get("shipments",[]).is_empty(),"Delivery must complete after transit")
+    # Both trade and courier service must be booked in the real in-game day,
+    # never in a fictitious far-future year caused by minutes-vs-hours confusion.
+    var town_accounts: Dictionary=society["economy_accounts"]["regions"]["城"]
+    for key in town_accounts.get("days",{}):
+        check(int(key)<=int(game.data["day"])+1,
+            "Sect transport accounting must use absolute world hours")
     var review:=game.immortal_status()
     check(review.contains("灵草") and review.contains("丹药") and review.contains("风险"),
         "Location-locked report displays rule-authenticated immortal economy")
