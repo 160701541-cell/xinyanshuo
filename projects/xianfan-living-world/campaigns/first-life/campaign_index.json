@@ -1,9 +1,9 @@
 {
   "schema": 1,
   "campaign_id": "xianfan-canglan-text-20261024",
-  "turns_completed": 14,
-  "time": "承平三年 · 第2日 · 11:14",
-  "location": "临安县城·旧书铺",
+  "turns_completed": 29,
+  "time": "承平三年 · 第8日 · 12:30",
+  "location": "石桥村·钱家院落",
   "player": {
     "id": "CFPLAYER00001",
     "name": "心魇说",
@@ -12,13 +12,13 @@
     "realm": "凡人（未修行）",
     "root": "未检测",
     "hp": 100,
-    "stamina": 51,
-    "copper": 2
+    "stamina": 100,
+    "copper": 0
   },
   "family": {
     "id": "CFFAM00001",
     "cash": 42,
-    "grain_dou": 53,
+    "grain_dou": 52,
     "people": [
       [
         "CFNPC00001",
@@ -39,16 +39,16 @@
         "手足"
       ]
     ],
-    "grain_remainder_millidou": 892
+    "grain_remainder_millidou": 884
   },
-  "last_event": "EV000016",
-  "last_event_hash": "4b374a75f13c599dab5e1d8b6a451e5d6f8009550b225476fc9c44449a2e23b4",
-  "full_state_sha256": "bc7836055c7ac70d53303450c3fcdaec89341ac8b7da8ad1a9e258a98ede2347",
+  "last_event": "EV000031",
+  "last_event_hash": "16eb96580932f59264ebb54a0d840c7c42e52a4312a2ce7a137f3f43e864150e",
+  "full_state_sha256": "34cfa14b9e3678f7aa7dd7cf4df34f92f8cbb40b5f68aabee1fbfa4ff96019ce",
   "roots_hidden": true,
   "complete_source_event_ledger_synced": true,
   "full_state_parts_verified": true,
   "next_checkpoint_turn": 20,
-  "last_action": "seek_genuine_cultivation_manual_for_two_wen",
+  "last_action": "day8_conclude_manual_is_unusable",
   "trap_status": "checked empty 16:18",
   "inventory_added": {
     "fishing_line": 1,
@@ -59,5 +59,6 @@
   "fishing_status": "one fish basket in water; one newly crafted basket carried",
   "sister_errand": "unanswered food delivery request, not retroactively rewritten",
   "second_basket_status": "carried; user wishes deployment, requires river visit",
-  "manual_status": "genuine basic cultivation manual out of stock; offered ordinary breathing notes at 2 wen; not bought"
+  "manual_status": "genuine basic cultivation manual out of stock; offered ordinary breathing notes at 2 wen; not bought",
+  "sync_status": "PENDING_GITHUB"
 }

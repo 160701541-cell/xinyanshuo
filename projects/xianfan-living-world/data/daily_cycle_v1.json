@@ -1,0 +1,36 @@
+{
+  "schema": "xianfan.daily_cycle.v1",
+  "version": "daily-cycle-1.0.0",
+  "status": "declared at turn 15; 补上 numeric_engine.mjs:advance() 拒绝跨日的那一段",
+  "sources": {
+    "data/day2_home_and_county_rules_v1.json": [
+      "sleep_stamina_per_10min = 1",
+      "meal_stamina_gain = 4",
+      "morning_food_millidou_per_person = 12",
+      "meal_grain_millidou_per_person = 15",
+      "morning_food_minutes = 15",
+      "dinner_minutes = 30",
+      "wake_clock = 360",
+      "household.grain_conversion_millidou_per_dou = 1000",
+      "mealtime_household_size = 4"
+    ],
+    "cultivation.mjs:restMeridian": "睡眠每小时清 2.2 点经脉负荷"
+  },
+  "declared_here": {
+    "lunch": { "clock": 720, "minutes": 30, "millidou_per_person": 15,
+      "reason": "day2 规则只定义了早饭与晚饭；午饭沿用晚饭份量，按同一 household 口径扣粮。" },
+    "weather": {
+      "method": "SHA256(worldSeed|weather|dayN|v1) % 7",
+      "table": ["晴", "晴", "晴", "多云", "多云", "阴", "小雨"],
+      "note": "天气按世界种子确定，不由剧情需要或玩家愿望决定。"
+    },
+    "household_rhythm": {
+      "note": "家人各自起床、下田、做饭、缝补。日程用于推演 NPC 在玩家不在场时做什么，属于 inferred，不等于玩家亲见。",
+      "certainty": "inferred_from_household_rhythm"
+    }
+  },
+  "constraints": [
+    "家庭粮账是全家共用的，不扣就吃饭 = 凭空生粮",
+    "家人份量按 household 4 人计，不能只扣玩家自己那一份"
+  ]
+}

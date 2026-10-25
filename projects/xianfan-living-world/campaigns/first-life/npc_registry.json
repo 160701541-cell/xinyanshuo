@@ -29,11 +29,18 @@
           "text": "清晨准备前往田里做农活；具体工作成果未在游戏中确认",
           "certainty": "inferred",
           "location": "石桥村"
+        },
+        {
+          "event_id": "EV000022",
+          "tag": "asked_about_county_purchases",
+          "certainty": "known_fact",
+          "text": "晚饭时问起县城摊子上有没有买东西；听说买了书，只问了一句识不识字便低头吃饭",
+          "location": "石桥村·钱家院落"
         }
       ],
       "relationships": {},
       "last_known_location": "石桥村田间（依据日程推演，未目击）",
-      "last_updated_event": "EV000002",
+      "last_updated_event": "EV000022",
       "base_temperament": {
         "version": "npc-base-temperament-v1",
         "source": "deterministic_world_seed",
@@ -170,11 +177,32 @@
           "text": "第一日晚在家与兄长重逢。",
           "certainty": "known_fact",
           "location": "石桥村"
+        },
+        {
+          "event_id": "EV000019",
+          "tag": "answered_missed_delivery",
+          "certainty": "known_fact",
+          "text": "承认当日被母亲叫去晒谷，怕被质问而未补送饭食",
+          "location": "石桥村·钱家院落"
+        },
+        {
+          "event_id": "EV000023",
+          "tag": "received_primer_custody",
+          "certainty": "known_fact",
+          "text": "接过残旧《引气初篇》代为保管，收在针线筐下",
+          "location": "石桥村·钱家院落"
+        },
+        {
+          "event_id": "EV000028",
+          "tag": "intake_side_effect",
+          "certainty": "known_fact",
+          "text": "照册吐纳数日后头晕胸闷，被兄长叫停",
+          "location": "石桥村·钱家院落"
         }
       ],
       "relationships": {},
       "last_known_location": "石桥村·村外荒沟",
-      "last_updated_event": "EV000013",
+      "last_updated_event": "EV000031",
       "base_temperament": {
         "version": "npc-base-temperament-v1",
         "source": "deterministic_world_seed",
@@ -188,6 +216,68 @@
         },
         "warning": "Generated base propensity, not a claim of player-observed behavior or guaranteed action"
       }
+    },
+    "CFNPC00008": {
+      "id": "CFNPC00008",
+      "campaign_id": "xianfan-canglan-text-20261024",
+      "name": "钟时云",
+      "sex": "男",
+      "age": 40,
+      "residence": "游方（无固定居所）",
+      "alive": true,
+      "health": "正常",
+      "roles": [
+        "游方道人"
+      ],
+      "born_at": null,
+      "kinship_origin": "来历未告，与钱家无亲",
+      "base_temperament": {
+        "version": "npc-base-temperament-v1",
+        "source": "deterministic_world_seed",
+        "scores": {
+          "curiosity": 57,
+          "diligence": 45,
+          "caution": 63,
+          "sociability": 43,
+          "cooperation": 65,
+          "stress_tolerance": 49
+        },
+        "warning": "Generated base propensity, not a claim of player-observed behavior or guaranteed action"
+      },
+      "public_personality": [
+        {
+          "tag": "refuses_to_explain_price",
+          "kind": "observed",
+          "description": "被追问为何只卖两文，只说自己懒得解释",
+          "basis_event": "EV000017"
+        },
+        {
+          "tag": "leaves_abruptly",
+          "kind": "observed",
+          "description": "收了钱就让人走，不附赠任何保证",
+          "basis_event": "EV000017"
+        }
+      ],
+      "goals_observed": [],
+      "life_events": [
+        {
+          "event_id": "EV000017",
+          "tag": "sold_weathered_primer_for_two_wen",
+          "certainty": "known_fact",
+          "text": "在临安街边以两文卖出残旧《引气初篇》，未说明来历",
+          "location": "临安县城·旧书铺街口"
+        },
+        {
+          "event_id": "EV000018",
+          "tag": "parted_with_promise_to_meet_again",
+          "certainty": "known_fact",
+          "text": "留下一句\"日后好相见\"便离去，去向不明",
+          "location": "临安县城"
+        }
+      ],
+      "relationships": {},
+      "last_known_location": "临安县城（去向不明）",
+      "last_updated_event": "EV000018"
     }
   }
 }

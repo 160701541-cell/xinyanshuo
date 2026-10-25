@@ -6,10 +6,10 @@
   "world_seed": "xianfan-canglan-text-20261024-v1",
   "time": {
     "regnal_year": 3,
-    "day": 2,
-    "hour": 11,
-    "minute": 14,
-    "display": "承平三年 · 第2日 · 11:14",
+    "day": 8,
+    "hour": 12,
+    "minute": 30,
+    "display": "承平三年 · 第8日 · 12:30",
     "weather": "晴"
   },
   "player": {
@@ -26,9 +26,9 @@
     "root_commitment_sha256": "897ffd3bec4b0c505b934d584835158fecaf6ddea61c5d70df6b8160db914dd7",
     "hp": 100,
     "max_hp": 100,
-    "stamina": 51,
+    "stamina": 100,
     "max_stamina": 100,
-    "money": 2,
+    "money": 0,
     "money_unit": "文",
     "exp": 0,
     "family_id": "CFFAM00001",
@@ -58,7 +58,7 @@
     {
       "id": "rod_blank_wood_01",
       "name": "未装线钩的简易竿坯",
-      "quantity": 1,
+      "quantity": 0,
       "equipped": false,
       "category": "渔具半成品",
       "source": "SH-BRUSH-B(枝1)+SH-FIBER-B(纤维1)",
@@ -67,7 +67,7 @@
     {
       "id": "woven_fish_basket",
       "name": "简易编织鱼笼",
-      "quantity": 1,
+      "quantity": 0,
       "category": "渔具",
       "equipped": false,
       "source": "EV000012"
@@ -75,7 +75,7 @@
     {
       "id": "fishing_line",
       "name": "钓鱼线",
-      "quantity": 1,
+      "quantity": 0,
       "category": "商品",
       "equipped": false,
       "source": "shop:GEAR@EV000014"
@@ -83,7 +83,7 @@
     {
       "id": "fish_hook",
       "name": "鱼钩",
-      "quantity": 1,
+      "quantity": 0,
       "category": "商品",
       "equipped": false,
       "source": "shop:GEAR@EV000014"
@@ -91,14 +91,40 @@
     {
       "id": "vegetable_seed_packet",
       "name": "青菜种子包",
-      "quantity": 1,
+      "quantity": 0,
       "category": "商品",
       "equipped": false,
       "source": "shop:SEEDS@EV000014"
+    },
+    {
+      "id": "weathered_qi_primer",
+      "name": "《引气初篇》（残旧）",
+      "quantity": 1,
+      "equipped": false,
+      "category": "来历不明的册子",
+      "source": "EV000017 临安县城街边购入，2文",
+      "provenance": "卖方未出示来历；纸页焦黄、有虫蛀、末三页残缺；无门无派印记"
+    },
+    {
+      "id": "river_fish",
+      "name": "小河鱼",
+      "quantity": 1,
+      "category": "渔获",
+      "equipped": false,
+      "source": "EV000026 鱼笼取回"
+    },
+    {
+      "id": "simple_fishing_rod",
+      "name": "简易手竿（竿坯+线+钩）",
+      "quantity": 1,
+      "equipped": false,
+      "category": "渔具",
+      "usable_for_fishing": true,
+      "source": "EV000026 河岸现场组装"
     }
   ],
-  "current_location": "临安县城·旧书铺",
-  "last_event_id": "EV000016",
+  "current_location": "石桥村·钱家院落",
+  "last_event_id": "EV000031",
   "reference": {
     "origin": "GitHub 160701541-cell/xinyanshuo",
     "xianfan_branch": "xianfan/independent-living-county-v0.1",
@@ -151,10 +177,10 @@
       "category": "水乡乡村"
     }
   ],
-  "location_id": "linan",
+  "location_id": "shiqiao",
   "position": {
-    "x": 154,
-    "y": 330
+    "x": 3867,
+    "y": 5009
   },
   "known_npcs": [
     {
@@ -186,6 +212,16 @@
       "location_id": "shiqiao",
       "health": "正常",
       "alive": true
+    },
+    {
+      "id": "CFNPC00008",
+      "name": "钟时云",
+      "relation": "游方道人（未通名）",
+      "sex": "男",
+      "age": 40,
+      "location_id": "linan",
+      "health": "正常",
+      "alive": true
     }
   ],
   "family": {
@@ -194,7 +230,7 @@
     "background": "自耕农家庭",
     "size": 4,
     "cash": 42,
-    "grain_dou": 53,
+    "grain_dou": 52,
     "members": [
       {
         "id": "CFNPC00001",
@@ -228,7 +264,7 @@
       }
     ],
     "note": "家中库存并非玩家随身所有；不得未经交易或亲属许可扣取。",
-    "grain_remainder_millidou": 892
+    "grain_remainder_millidou": 884
   },
   "initial_rolls_public": {
     "random_key": "xianfan-canglan-text-20261024-v1|玩家:心魇说|性别:男|年龄:16|开局序号:1",
@@ -463,10 +499,35 @@
             "bait_id": null,
             "anchor": "stable_bank_reeds",
             "status": "deployed_waiting",
-            "catch_count": 1,
-            "checked_at": "承平三年 · 第2日 · 06:57",
-            "checked_at_clock_minutes": 1803,
-            "last_check_result": "fish_present"
+            "catch_count": 0,
+            "checked_at": "承平三年 · 第3日 · 06:39",
+            "checked_at_clock_minutes": 3279,
+            "last_check_result": "removed_retained_fish"
+          },
+          {
+            "id": "GEAR-SH-RIVER-0002",
+            "type": "woven_fish_basket",
+            "owner": "CFPLAYER00001",
+            "site_id": "SH-RIVER-01",
+            "x": 3950,
+            "y": 5038,
+            "source_event_id": "EV000026",
+            "placed_at": "承平三年 · 第3日 · 06:54",
+            "placed_clock_minutes": 3294,
+            "reinforcement": {
+              "version": "fishbasket-weave-0.1.0",
+              "lashing": "plant_fiber",
+              "layers": 1,
+              "quality": "reinforced_handwoven",
+              "source_event_id": "EV000009"
+            },
+            "bait_id": null,
+            "anchor": "downstream_reed_bank",
+            "status": "deployed_waiting",
+            "catch_count": 0,
+            "checked_at": null,
+            "checked_at_clock_minutes": null,
+            "last_check_result": null
           }
         ],
         "catch_events": [
@@ -566,16 +627,19 @@
   "npc_schedules": {
     "CFNPC00003": {
       "last_seen_location": "石桥村·钱家院落",
-      "activity": "home_day2_morning",
-      "updated_at": "承平三年 · 第2日 · 09:04",
-      "interest": "尝试学习普通小兽绳套",
+      "activity": "studying_primer_with_brother",
+      "updated_at": "承平三年 · 第2日 · 19:20",
+      "interest": "跟着兄长认字、听修仙的事",
       "request": {
         "food": "ask_household",
         "water": "ask_household",
         "delivery": "resolved_at_home",
         "ownership": "household_requires_agreement"
       },
-      "note": "尚未确定家庭现有可携带熟食或容器，禁止凭空登记"
+      "note": "尚未确定家庭现有可携带熟食或容器，禁止凭空登记",
+      "delivery_obligation": "answered_on_day2_afternoon",
+      "delivery_account": "被母亲叫去晒谷，回过神已近日落，怕挨骂没补送",
+      "custody": "weathered_qi_primer"
     },
     "CFNPC00001": {
       "last_seen_location": "石桥村田间",
@@ -586,16 +650,16 @@
     "CFNPC00002": {
       "last_seen_location": "石桥村钱家院落",
       "activity": "household_cooking_and_chores",
-      "updated_at": "承平三年 · 第2日 · 09:04",
+      "updated_at": "承平三年 · 第2日 · 18:30",
       "evidence": "08:00在厨房，后续活动为日程推演"
     }
   },
-  "sub_location": "临安旧书铺",
+  "sub_location": "钱家院落",
   "fishing_requests": {
     "rod_pair": {
       "target_count": 2,
-      "craft_count": 0,
-      "status": "owned_fishing_line_1_hook_1; rod_blank_1; assemble_needed; second rod still missing",
+      "craft_count": 1,
+      "status": "simple_rod_assembled_1; second rod still missing",
       "expected_users": [
         "CFPLAYER00001",
         "CFNPC00003"
@@ -704,12 +768,22 @@
   },
   "farming": {
     "seeds_owned": {
-      "vegetable_seed_packet": 1,
+      "vegetable_seed_packet": 0,
       "radish_seed_packet": 0
     },
-    "fields_prepared": 0,
+    "fields_prepared": 1,
     "seed_origin": "linan-registered-vendor",
-    "note": "种子需返回家乡核实耕地使用权、土壤与季节后播种；不直接生成蔬菜"
+    "note": "种子需返回家乡核实耕地使用权、土壤与季节后播种；不直接生成蔬菜",
+    "planted": [
+      {
+        "crop": "青菜",
+        "plot": "钱家自留地",
+        "planted_at": "承平三年 · 第3日 · 07:56",
+        "seed_source": "linan-registered-vendor",
+        "status": "sown",
+        "note": "按农时需月余方可采收"
+      }
+    ]
   },
   "city_exploration": {
     "day2-street-walk": {
@@ -766,5 +840,25 @@
       "no_purchase": true,
       "merchants_met": "bookshop_vendor_identity_unknown"
     }
+  },
+  "practice": {
+    "rootId": null,
+    "layer": 0,
+    "progress": 0,
+    "meridian": 0,
+    "tested": false,
+    "testedAt": null,
+    "manual_status": "判定为拼凑伪诀，不能引气",
+    "intake_days": 5,
+    "log": [
+      {
+        "day": 2,
+        "msg": "通读《引气初篇》残卷一遍，试诵口诀"
+      },
+      {
+        "day": 8,
+        "msg": "判定《引气初篇》为伪本，停止照练"
+      }
+    ]
   }
 }

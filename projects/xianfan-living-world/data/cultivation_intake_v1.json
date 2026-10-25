@@ -1,0 +1,51 @@
+{
+  "schema": "xianfan.cultivation_intake.v1",
+  "version": "cultivation-intake-1.0.0",
+  "status": "declared before any roll, effective from turn 15 (EV000017)",
+  "why": "上一任 GM 拟定了『读背功法并试引气』，但 tools/numeric_engine.mjs 对所有未实现动作抛 RULE_NOT_IMPLEMENTED，且 advance() 拒绝跨日。规则不允许用叙述代替数值，因此先把这一段的判定规则版本化声明，再由代码结算。",
+  "inherits": {
+    "cultivation.mjs": "xian-1.0.0 的 ROOTS / BARRIERS / BREATHE / restMeridian / breakLayer 公式逐项照录，不新增平衡数字",
+    "data/day2_home_and_county_rules_v1.json": "睡眠、三餐、粮耗、行走、居家路径耗时"
+  },
+  "declared_rules": {
+    "intake_formula": {
+      "source": "cultivation.mjs: practice()",
+      "formula": "gain = round1(baseGain * hours * rootSpeed * (1 + qi) * overload)",
+      "meridian_growth": "meridian += hours * 1.6 (cap 100)",
+      "stamina_cost_per_hour": 1.4,
+      "overload_when_meridian_ge_60": 0.75,
+      "qi_at_shiqiao": 0.18,
+      "qi_note": "石桥村不在 cultivation.mjs:QI_REGIONS 明列地点，regionOfPlace() 默认落 xiancheng = 0.18。不得因为『乡下灵气稀薄』之类叙述另调数值。"
+    },
+    "untested_root_may_attempt": {
+      "value": true,
+      "note": "凡人不知道自己的灵根也会照着册子练。未检测不阻止尝试，但也无法从体感反推灵根；进度按同一公式累计，灵根为无灵根时 speed=0。",
+      "must_not_reveal": "任何情况下不得把灵根写进公开存档，也不得让 NPC 或旁白说出玩家未检测的灵根。"
+    },
+    "manual_authenticity": {
+      "method": "SHA256(worldSeed|manual-authenticity|itemId|vendorId|v1) % 10000",
+      "bands": [
+        { "id": "genuine", "from": 0, "to": 2999, "weight": 0.30, "meaning": "真品：口诀完整、行气路线无误" },
+        { "id": "fragment", "from": 3000, "to": 6499, "weight": 0.35, "meaning": "残本：口诀缺关键环节，只能调息，无法引气" },
+        { "id": "fake", "from": 6500, "to": 9999, "weight": 0.35, "meaning": "伪本：拼凑伪诀，路线自相矛盾，照着练不出气" }
+      ],
+      "order_note": "分布在本回合结算前一次性写定，掷骰只用世界种子，不因玩家愿望或剧情需要调整。",
+      "fake_side_effect": { "extra_stamina_per_hour": 0.6, "meridian_per_hour": 0.8, "qi_gain": 0,
+        "note": "伪诀不产生修为；额外耗神、并让经脉负荷虚涨。久练出现头晕、胸闷等不适。" }
+    },
+    "falsification_rule": {
+      "condition": "连续 6 个修炼日（每日 ≥1 小时）零气感，且逐字比对发现前后口诀硬矛盾，且关键收功页缺失",
+      "result": "玩家可自行判定该册不可用，不需要检测台，也不需要 NPC 告知",
+      "does_not_prove": "不证明玩家有无灵根；也不能反推出『凡人无望』"
+    },
+    "insight_vs_sleep": {
+      "value": "入静（吐纳）与睡眠是两件事",
+      "note": "吐纳只扣精力与涨经脉；睡眠才补精力、清经脉负荷。不得用睡觉代替修炼，也不得用打坐代替睡眠。"
+    }
+  },
+  "forbidden": [
+    "用温热、心跳、发麻一类的体感描写直接宣布『引气成功』",
+    "在没有真功法的情况下给修为进度",
+    "在玩家未检测、未揭示前把灵根写入任何公开档案"
+  ]
+}

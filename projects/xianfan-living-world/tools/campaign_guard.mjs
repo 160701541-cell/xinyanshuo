@@ -42,7 +42,8 @@ export function inspect(root) {
     state=JSON.parse(readFileSync(statePath,'utf8'));
     if (digest(state)!==events.at(-1).state_hash) throw Error('状态哈希与事件链不一致');
   }
-  return {index,events,state,turns,...check,full_state_verified:!!state};
+  // 注意：verifyEvents 也返回一个名为 events 的计数字段，必须先铺底层再覆盖，否则 checkpoint/review 拿不到事件数组
+  return {...check,index,events,state,turns,full_state_verified:!!state};
 }
 export function checkpoint(root) {
   const a=inspect(root);
