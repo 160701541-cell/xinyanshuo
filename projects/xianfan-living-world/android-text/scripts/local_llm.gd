@@ -312,6 +312,9 @@ func build_messages(text: String, person: String, state: Dictionary) -> Array:
         system_text += "\n可信世界事实（优先级最高）：今天是第%d日 %02d:%02d。玩家位置：%s。你的当前位置：%s。你正在做：%s。你的情绪：%s。" % [current_day,int(time/60),time%60,scene,str(npc.get("place","未知")),str(npc.get("activity","家务")),str(npc.get("mood","平静"))]
         system_text += "\n约束：只扮演NPC，以一两句自然中文回答。每次要真正回应玩家最新问题和追问；不能答非所问、机械重复前一轮、虚构自己离开或正在路上。"
         system_text += "没有移动事件时不得宣称自己换了位置；你可以表达个人意愿和拒绝，但不能宣布获得物品、修炼突破、改变任何游戏数值。"
+        var speech_profile: Dictionary=XianfanNarrativeDB.voice_profile(person,npc)
+        system_text+="\n独立语言人格（只控制表达风格，不是新的世界事实）：谨慎%d/4，好奇%d/4，共情%d/4，直率%d/4，隐私边界%d/4，自主%d/4。优先维持人物已经记录的性格和经历，不因相同职业而说同一种台词。" % [int(speech_profile["caution"]),int(speech_profile["curiosity"]),int(speech_profile["empathy"]),int(speech_profile["directness"]),int(speech_profile["privacy"]),int(speech_profile["initiative"])]
+        system_text+="\n历史认知边界：前朝、战争、村史、亲人私事、盗窃、朝廷人事等，若当前世界存档与检索记忆无证据，不得编造成已发生事件；可以如实承认不知或讲明确标注的猜想与传闻。"
         system_text += "玩家问‘你在哪条路’时，必须基于登记位置解释，不能只重复‘我正在路上’。不要输出JSON或带‘旁白’的段落。"
         # Full archive stays on disk, semantic retrieval brings only relevant
         # long-term talk back into the narrow LLM context.
@@ -450,6 +453,7 @@ func build_story_messages(player_action: String, resolved_event: String, facts: 
     setup+="只输出一个JSON对象，包含scene字符串(35到180字)，beat_id字符串。"
     setup+="仅描写当前真实发生的动作、环境、人物自然反应、已知矛盾和伏笔；有因有果、富有仙侠气韵，不重复数值日志。"
     setup+="不得生成任何规则未结算的战利品、伤害、修为、灵根、财富、异地传送或NPC移动。"
+    setup+="过去或现在的重大历史、皇位更替、村内案件、宗门战争必须来自真实已结算档案，不能虚构成既定事实；未知就写作未证实的消息。"
     setup+="beat_id只能从以下名单选择："+", ".join(hooks)+"。没有自然衔接时使用none。"
     setup+="不要在scene中描写beat_id尚未被规则确认的效果；人物并非玩家的附庸，他们各有愿望。"
     var prompt := "已核算动作："+player_action.substr(0,180)
