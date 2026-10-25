@@ -46,6 +46,7 @@ var stamina_bar: ProgressBar
 var modal_card: PanelContainer
 var modal_heading_strip: PanelContainer
 var reader_footer: Label
+var cancel_ai_button: Button
 var tab_buttons: HBoxContainer
 var actor_buttons: VBoxContainer
 var quick_buttons: HBoxContainer
@@ -77,6 +78,7 @@ func _ready() -> void:
     add_child(local_llm)
     local_llm.status_changed.connect(_local_status)
     local_llm.answered.connect(_on_ai_completed)
+    local_llm.streaming.connect(_on_local_stream)
     var choice := FileAccess.open("user://xianfan_local_choice.txt",FileAccess.READ)
     if choice!=null and choice.get_as_text()=="1": local_enabled=true
     var director_file:=FileAccess.open(DIRECTOR_PREF,FileAccess.READ)
@@ -224,6 +226,9 @@ func _build() -> void:
     root.add_child(reader_footer)
     notice=_label("",16,GOLD)
     root.add_child(notice)
+    cancel_ai_button=_button("停止本轮 AI 生成",func(): _cancel_model_generation(),16)
+    cancel_ai_button.visible=false
+    root.add_child(cancel_ai_button)
 
     quick_buttons=HBoxContainer.new()
     quick_buttons.add_theme_constant_override("separation",7)
@@ -609,7 +614,24 @@ func _submit(text: String, typed: bool) -> void:
     _refresh()
     _request_story(raw,result,before_clock,before_place,false)
 
+func _cancel_model_generation() -> void:
+    if bool(local_llm.get("busy")):
+        local_llm.cancel_generation()
+        notice.text="正在中止本轮AI生成，已经确认的世界状态不会回滚。"
+
+func _on_local_stream(kind: String, contents: String) -> void:
+    # Player sees the answer as it arrives rather than waiting for an 8B batch.
+    cancel_ai_button.visible=true
+    if kind=="dialogue" and view=="对话":
+        scene_text.text=game.dialogue_recent()+"\n\n—— 本地AI正在回复（未保存） ——\n"+contents
+        scene_text.call_deferred("scroll_to_line",9999)
+    elif kind=="story":
+        notice.text="本地AI正在推演下一段剧情（%d字）；结算仍以游戏规则为准。" % contents.length()
+    else:
+        notice.text="本地AI正在解析自由行动（%d字）……" % contents.length()
+
 func _on_ai_completed(payload: Dictionary) -> void:
+    cancel_ai_button.visible=false
     var kind:=str(payload.get("kind",""))
     if kind=="story":
         if not bool(payload.get("ok",false)):
@@ -630,6 +652,10 @@ func _on_ai_completed(payload: Dictionary) -> void:
         return
     if not bool(payload.get("ok",false)):
         var err:=str(payload.get("error","AI服务错误"))
+        if bool(local_llm.get("generation_cancelled")):
+            notice.text="已取消AI生成，世界存档未变更。"
+            _refresh()
+            return
         game.note_api_failure(request_text,err)
         notice.text=err+"；反馈页可复制错误。"
         view="反馈"
@@ -701,6 +727,7 @@ func _render_buttons(node: Node, labels: Array[String], enabled: bool = true) ->
         node.add_child(b)
 
 func _refresh() -> void:
+    cancel_ai_button.visible=bool(local_llm.get("busy"))
     stamina_bar.value=clampf(float(game.data.get("stamina",0)),0.0,100.0)
     hud.text="%s · %s\n精力 %d/100 · 铜钱 %d文 · %s" % [
         game.time_string(),str(game.data["place"]),int(game.data["stamina"]),
