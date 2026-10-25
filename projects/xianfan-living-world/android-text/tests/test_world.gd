@@ -96,6 +96,22 @@ func _run() -> void:
     _must(other.dialogue_recent().contains("今天怎么过"),"dialogue is isolated from scene events")
     _must(other.data["root"]=="未检测","model must not reveal root")
     _must(not other.feedback_report().contains("api_key"),"feedback excludes API credentials")
+    # Free-form NPC dialogue must reply and be visible, even when AI is turned off.
+    other.data["place"]="石桥村·家中"
+    other.data["npc"]["孙成明"]["place"]="石桥村·家中"
+    var before_chat:=other._clock()
+    var reply_free:=other.act("跟孙成明说：你觉得咱们村里的日子怎么样？")
+    _must(reply_free.contains("成明") or reply_free.contains("这我一时"),"unseen chat receives honest response")
+    _must(other._clock()==before_chat+4,"free speech advances conversation time")
+    _must(other.last_channel=="对话","free speech routed to dialogue page")
+    _must(other.dialogue_recent().contains("咱们村里"),"free speech preserved in dialogue ledger")
+    var reply_school:=other.act("跟孙成明说：你觉得青云宗修仙怎么样？")
+    _must(reply_school.contains("测灵"),"different topic gets different answer")
+    other.data["npc"]["孙成明"]["place"]="石桥村·田边"
+    var off_time:=other._clock()
+    var absent_reply:=other.act("跟孙成明说：你好")
+    _must(absent_reply.contains("不在"),"offsite dialogue explicitly rejects remote interaction")
+    _must(other._clock()==off_time,"offsite dialogue doesn't spend time")
     var replay := XianfanWorld.new()
     _must(int(replay.data["money"]) == 53, "save reload")
     _must(replay.data["source_event"] == "EV000105", "save anchored to event 105")
