@@ -47,6 +47,7 @@ jobs:
           godot --headless --path . --script res://tests/test_ai.gd
       - name: Integration test real HTTP requests against a loopback mock API
         run: |
+          apt-get update -qq && apt-get install -y -qq python3
           cd projects/xianfan-living-world/android-text
           python3 tests/mock_ai_server.py &
           server_pid=$!
