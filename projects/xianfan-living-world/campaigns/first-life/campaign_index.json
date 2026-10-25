@@ -60,9 +60,9 @@
   "sister_errand": "第2日送饭失约已当面问清；此后她帮着看下游那只笼子；出发事宜她只被允许送到村口",
   "second_basket_status": "carried; user wishes deployment, requires river visit",
   "manual_status": "手里那本《引气初篇》已判为伪本，不再照练；灵根已测，缺的是真正的入门功法",
-  "sync_status": "PENDING_GITHUB",
+  "sync_status": "SYNCED",
   "sync_target": "160701541-cell/xinyanshuo@xianfan/independent-living-county-v0.1",
-  "last_synced_event": "EV000105",
+  "last_synced_event": "EV000151",
   "journey_status": {
     "goal": "去青云山门·测灵台测灵根",
     "stage": "已完成：第29日出发、当日测出结果、第30日回到家",
