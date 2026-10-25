@@ -596,7 +596,7 @@ func _submit(text: String, typed: bool) -> void:
         notice.text=("本机 "+str(local_llm.get("active_name"))+" 正在与"+npc_to_chat+"交谈……") if not npc_to_chat.is_empty() else "本地AI正在理解行动……"
         local_llm.talk(raw,npc_to_chat,game.data)
         return
-    if ai.configured():
+    if not immediate and ai.configured():
         request_text=raw
         notice.text="正在通过你选定的API理解行动或人物对话。"
         if not ai.ask(raw,game.data,npc_to_chat):
