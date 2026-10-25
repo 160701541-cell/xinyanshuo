@@ -71,7 +71,7 @@ func _run() -> void:
     var water_before:=int(pantry["泉水"])
     var fertility_before:=int(field["fertility"])
     var rice_before:=int(pantry["灵米"])
-    XianfanSectLiving._cultivate_food(c,45)
+    XianfanSectLiving._cultivate_food(society,c,45)
     check(int(field["fertility"])<=fertility_before+1 and
         int(pantry["灵米"])>=rice_before,
         "Spirit rice harvest obeys physical field and water constraints")
