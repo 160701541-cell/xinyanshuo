@@ -17,7 +17,7 @@ func _run() -> void:
     _assert(ui.input_row.visible,"free input visible")
     ui._change_tab("对话")
     _assert(ui.view=="对话","dialogue page")
-    _assert(ui.scene_text.text.contains("还没有对话"),"dialogue independent from scene journal")
+    _assert(ui.scene_text.text==ui.game.dialogue_recent(),"dialogue page shows only structured dialogue, not story journal")
     ui._change_tab("人物")
     _assert(ui.actor_buttons.visible,"NPC listing is visible")
     _assert(ui.actor_buttons.get_child_count()>=4,"all family members listed")
