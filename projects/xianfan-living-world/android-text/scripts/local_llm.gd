@@ -5,27 +5,95 @@ class_name XianfanLocalLLM
 signal status_changed(message: String)
 signal answered(payload: Dictionary)
 const MODEL := "hf://NobodyWho/Qwen_Qwen3-0.6B-GGUF/Qwen_Qwen3-0.6B-Q4_K_M.gguf"
+# Sources: official Qwen GGUF file names; sizes in decimal GB, rounded.
+# RAM figures are conservative guidance, not a guarantee of successful loading.
+const MODELS := [
+    {"id":"0.6B","title":"Qwen3 0.6B · 轻量测试","size_gb":0.5,"ram_gb":4,"storage_gb":1.2,"path":MODEL},
+    {"id":"1.7B","title":"Qwen3 1.7B · 入门","size_gb":1.28,"ram_gb":6,"storage_gb":2.2,"path":"hf://Qwen/Qwen3-1.7B-GGUF/Qwen3-1.7B-Q4_K_M.gguf"},
+    {"id":"4B","title":"Qwen3 4B · 推荐","size_gb":2.50,"ram_gb":8,"storage_gb":4.0,"path":"hf://Qwen/Qwen3-4B-GGUF/Qwen3-4B-Q4_K_M.gguf"},
+    {"id":"8B","title":"Qwen3 8B · 大型","size_gb":5.03,"ram_gb":12,"storage_gb":7.0,"path":"hf://Qwen/Qwen3-8B-GGUF/Qwen3-8B-Q4_K_M.gguf"},
+    {"id":"14B","title":"Qwen3 14B · 超大型/高风险","size_gb":9.0,"ram_gb":20,"storage_gb":12.0,"path":"hf://Qwen/Qwen3-14B-GGUF/Qwen3-14B-Q4_K_M.gguf"}
+]
+const PREF_PATH := "user://xianfan_local_model_selection.json"
+
+static func preset(index: int) -> Dictionary:
+    if index<0 or index>=MODELS.size(): return {}
+    return MODELS[index].duplicate(true)
+
+static func preset_index(path: String) -> int:
+    for i in range(MODELS.size()):
+        if str(MODELS[i]["path"])==path: return i
+    return -1
+
+static func model_hint(index: int) -> String:
+    var item:=preset(index)
+    if item.is_empty(): return "自定义 GGUF：请自行确认模型体积与手机兼容性。"
+    return "%s · 约 %.2f GB 下载 · 建议内存至少 %d GB · 预留存储 %.1f GB。%s" % [
+        str(item["title"]),float(item["size_gb"]),int(item["ram_gb"]),float(item["storage_gb"]),
+        "可能因手机系统内存限制被终止，运行速度也可能很慢。" if index>=3 else "实际能否运行仍取决于手机与系统剩余内存。"
+    ]
 var model_ready := false
 var loading := false
 var busy := false
 var current_chat: Variant
 var model_source := MODEL
+var active_name := "0.6B"
+var last_error := ""
+var pending_confirmation := false
+
+func _ready() -> void:
+    if not FileAccess.file_exists(PREF_PATH): return
+    var file:=FileAccess.open(PREF_PATH,FileAccess.READ)
+    if file==null: return
+    var parsed: Variant=JSON.parse_string(file.get_as_text())
+    if parsed is Dictionary:
+        var saved:=str(parsed.get("source",""))
+        if saved.begins_with("hf://") or saved.begins_with("https://") or saved.begins_with("user://"):
+            model_source=saved
+            _update_name()
+
+func _update_name() -> void:
+    var i:=preset_index(model_source)
+    active_name=str(MODELS[i]["id"]) if i>=0 else "自定义"
+
+func unload_model() -> String:
+    if loading or busy: return "模型正在下载或生成中，不能切换。"
+    current_chat=null
+    model_ready=false
+    last_error=""
+    status_changed.emit("已卸载当前模型。可选择其他模型下载；旧模型缓存不会自动删除。")
+    return "已卸载，可切换"
+
+func model_info() -> String:
+    var i:=preset_index(model_source)
+    return model_hint(i)
+
+func persist_selection() -> void:
+    var file:=FileAccess.open(PREF_PATH,FileAccess.WRITE)
+    if file!=null:
+        file.store_string(JSON.stringify({"source":model_source}))
+
 
 func choose_model(source: String) -> String:
-    if model_ready or loading: return "模型正在使用中，无法切换。"
+    if loading or busy: return "正在加载/生成，暂不能切换模型。"
     var path := source.strip_edges()
+    if model_ready and path!=model_source: return "请先卸载当前已加载模型，再选择新模型。"
     if path.is_empty(): path=MODEL
     if not (path.begins_with("hf://") or path.begins_with("https://") or path.begins_with("user://")):
         return "只允许 Hugging Face 模型、HTTPS GGUF地址或已下载的user://模型。"
     if path.length()>500: return "模型地址过长。"
     model_source=path
-    return "模型地址已更新。请点击下载/加载。"
+    _update_name()
+    last_error=""
+    persist_selection()
+    return "已选择 %s；请点下载/加载。首次下载不在APK内。" % active_name
 
 func status() -> String:
-    if loading: return "模型下载或加载中（约数百MB；请使用稳定Wi-Fi）"
-    if model_ready: return "Qwen3-0.6B 本地模型已加载，可离线对话"
-    if not ClassDB.class_exists("NobodyWhoChat"): return "缺少原生 NobodyWho GDExtension；此APK无法运行本地模型"
-    return "本地模型未加载，须用户手动确认下载"
+    if loading: return "正在下载或加载 %s（可能需数GB）；请保持应用前台运行。" % active_name
+    if model_ready: return "本机 %s 已加载，可离线对话" % active_name
+    if not ClassDB.class_exists("NobodyWhoChat"): return "原生推理扩展未加载，无法使用本地模型；可复制反馈日志。"
+    if not last_error.is_empty(): return "%s：%s" % [active_name,last_error]
+    return "%s 未加载。选定后点击下载/加载，模型会缓存到手机。" % active_name
 
 func load_model() -> void:
     if model_ready or loading: return
@@ -33,7 +101,8 @@ func load_model() -> void:
         status_changed.emit("原生推理库没有加载成功，请用反馈页记录设备型号与版本。")
         return
     loading=true
-    status_changed.emit("开始下载/打开 Qwen3 0.6B Q4 模型。首次需要稳定网络和足够手机空间。")
+    last_error=""
+    status_changed.emit("开始下载/加载 %s，模型体积约 %.2f GB；首次需稳定Wi-Fi及足够内存。原生下载器暂无百分比回调。" % [active_name,float(MODELS[preset_index(model_source)]["size_gb"]) if preset_index(model_source)>=0 else 0.0])
     # The native plugin downloads the model and caches it. It runs CPU-based
     # inference on device; no remote Chat Completions server or API key is used.
     # Dynamic call avoids a compile-time link on x86 CI; Android still resolves
@@ -42,11 +111,12 @@ func load_model() -> void:
     loading=false
     if loaded==null:
         model_ready=false
-        status_changed.emit("本地模型下载或加载失败。请查看网络、储存空间及插件错误信息。")
+        last_error="下载或加载失败。请确认网络可访问模型仓库、手机存储与内存足够。"
+        status_changed.emit(last_error)
         return
     current_chat=loaded
     model_ready=true
-    status_changed.emit("本地模型已加载，断网后可继续交谈。")
+    status_changed.emit("已加载 %s。下载缓存可供离线对话。" % active_name)
 
 # Build a fresh, bounded conversation for *each* NPC. The previous code kept
 # accumulating unrelated multi-NPC prompts in one shared native chat context.
