@@ -5,6 +5,7 @@ class_name XianfanLocalLLM
 signal status_changed(message: String)
 signal answered(payload: Dictionary)
 signal streaming(kind: String, content: String)
+signal download_progress(info: Dictionary)
 const MODEL := "hf://NobodyWho/Qwen_Qwen3-0.6B-GGUF/Qwen_Qwen3-0.6B-Q4_K_M.gguf"
 # Sources: official Qwen GGUF file names; sizes in decimal GB, rounded.
 # RAM figures are conservative guidance, not a guarantee of successful loading.
@@ -56,13 +57,25 @@ var last_error := ""
 var pending_confirmation := false
 var load_started_ticks := 0
 var heartbeat: Timer
+var download_manager: XianfanResumableModelDownload
+var loading_weights := false
 
 func _heartbeat() -> void:
     if not loading: return
     var elapsed:=maxi(0,int((Time.get_ticks_msec()-load_started_ticks)/1000))
-    status_changed.emit("正在下载/加载 %s · 已持续%d秒。原生下载器尚不提供可验证的百分比，请勿强制关闭应用。" % [active_name,elapsed])
+    if download_manager.active:
+        var bytes:=int(download_manager.last_progress.get("bytes",0))
+        var total:=int(download_manager.last_progress.get("total",-1))
+        status_changed.emit("已下载 %.2f GB / %s；文件已在磁盘缓存，网络中断会自动断点重试。" % [
+            float(bytes)/1000000000.0,("%.2f GB" % (float(total)/1000000000.0)) if total>0 else "总大小待服务器确认"])
+    else:
+        status_changed.emit("本机 %s 正在加载模型权重，已持续%d秒。" % [active_name,elapsed])
 
 func _ready() -> void:
+    download_manager=XianfanResumableModelDownload.new()
+    add_child(download_manager)
+    download_manager.progress.connect(_on_download_progress)
+    download_manager.completed.connect(_on_download_finished)
     heartbeat=Timer.new()
     heartbeat.wait_time=5.0
     heartbeat.one_shot=false
@@ -143,11 +156,52 @@ func choose_model(source: String) -> String:
     return "已选择 %s；请点下载/加载。首次下载不在APK内。" % active_name
 
 func status() -> String:
-    if loading: return "正在下载或加载 %s（可能需数GB）；请保持应用前台运行。" % active_name
+    if loading:
+        if loading_weights: return "正在把 %s 权重载入RAM，请勿切换。" % active_name
+        var stats: Dictionary=download_manager.last_progress if download_manager!=null else {}
+        var bytes:=int(stats.get("bytes",0))
+        var total:=int(stats.get("total",-1))
+        return "下载 %s：%.2fGB/%s（断点保留）" % [
+            active_name,float(bytes)/1000000000.0,("%.2fGB"% (float(total)/1000000000.0)) if total>0 else "等待大小"]
     if model_ready: return "本机 %s · %d tokens 已加载，可离线对话" % [active_name,context_tokens]
     if not ClassDB.class_exists("NobodyWhoChat"): return "%s：原生推理扩展未加载；请到反馈页复制错误。" % active_name
     if not last_error.is_empty(): return "%s：%s" % [active_name,last_error]
     return "%s 未加载。选定后点击下载/加载，模型会缓存到手机。" % active_name
+
+func _on_download_progress(state: Dictionary) -> void:
+    download_progress.emit(state)
+
+func _on_download_finished(result: Dictionary) -> void:
+    if bool(result.get("ok",false)):
+        var file_path:=str(result.get("path",""))
+        if file_path.is_empty() or not FileAccess.file_exists(file_path):
+            loading=false
+            heartbeat.stop()
+            last_error="下载已结束，但找不到模型文件。"
+            status_changed.emit(last_error)
+            return
+        _load_native(file_path)
+    elif bool(result.get("paused",false)):
+        loading=false
+        loading_weights=false
+        heartbeat.stop()
+        status_changed.emit("已暂停下载，缓存仍在本地，返回游戏或重启后可自动断点继续。")
+    else:
+        loading=false
+        loading_weights=false
+        heartbeat.stop()
+        last_error=str(result.get("error","下载失败"))
+        status_changed.emit(last_error)
+
+func pause_download() -> void:
+    if download_manager!=null and download_manager.active:
+        download_manager.pause()
+
+func resume_pending() -> void:
+    if loading or model_ready or busy: return
+    if download_manager!=null and download_manager.is_pending(model_source):
+        status_changed.emit("检测到上次未完成的GGUF下载，正在从磁盘已保存的断点继续。")
+        load_model()
 
 func load_model() -> void:
     if model_ready or loading: return
@@ -155,31 +209,42 @@ func load_model() -> void:
         status_changed.emit("原生推理库没有加载成功，请用反馈页记录设备型号与版本。")
         return
     loading=true
+    loading_weights=false
     load_started_ticks=Time.get_ticks_msec()
     heartbeat.start()
     last_error=""
-    status_changed.emit("开始下载/加载 %s，模型体积约 %.2f GB；首次需稳定Wi-Fi及足够内存。原生下载器暂无百分比回调。" % [active_name,float(MODELS[preset_index(model_source)]["size_gb"]) if preset_index(model_source)>=0 else 0.0])
-    # The native plugin downloads the model and caches it. It runs CPU-based
-    # inference on device; no remote Chat Completions server or API key is used.
-    # Dynamic call avoids a compile-time link on x86 CI; Android still resolves
-    # the registered native class after loading the ARM64 extension.
-    # Keep one 8B weight copy loaded, and reuse its chat context sequentially.
-    # n_ctx=4096 balances conversation memory against a 12GB real-RAM Android phone.
-    var loaded = await ClassDB.class_call_static("NobodyWhoChat","create",model_source,{
+    if model_source.begins_with("user://"):
+        if not FileAccess.file_exists(model_source):
+            loading=false
+            heartbeat.stop()
+            last_error="选择的本地GGUF文件不存在。"
+            status_changed.emit(last_error)
+            return
+        _load_native(model_source)
+        return
+    status_changed.emit("开始下载 %s。实际百分比、速度和已保存字节数显示在主界面；失败会重试，保留断点。" % active_name)
+    download_manager.begin(model_source)
+
+func _load_native(local_path: String) -> void:
+    loading_weights=true
+    status_changed.emit("模型已在手机本地保存，正在加载 %s 权重并申请运行内存。" % active_name)
+    var loaded = await ClassDB.class_call_static("NobodyWhoChat","create",local_path,{
         "n_ctx":context_tokens,"n_threads":3,"use_gpu":true,
         "context_shift":{"keep_first_turns":0,"keep_last_turns":3,"target":0.75},
         "template_variables":{"enable_thinking":false}
     })
     loading=false
+    loading_weights=false
     heartbeat.stop()
     if loaded==null:
         model_ready=false
-        last_error="下载或加载失败。请确认网络可访问模型仓库、手机存储与内存足够。"
+        last_error="模型文件下载完成，但本地加载失败。请检查RAM、文件完整性和模型格式。"
         status_changed.emit(last_error)
         return
     current_chat=loaded
     model_ready=true
-    status_changed.emit("已加载 %s。下载缓存可供离线对话。" % active_name)
+    status_changed.emit("本机 %s 已加载完成。可离线对话，不需要API Key。" % active_name)
+
 
 # Build a fresh, bounded conversation for *each* NPC. The previous code kept
 # accumulating unrelated multi-NPC prompts in one shared native chat context.
