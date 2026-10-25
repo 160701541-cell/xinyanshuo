@@ -40,14 +40,15 @@ static func initialize(society: Dictionary, start_minute: int) -> bool:
         "regions":{
             "青云山门":{"qi_density":1.0,"wild":{"灵草":22,"灵矿露头":8,"野生灵兽":5},
                 "cap":{"灵草":60,"灵矿露头":20,"野生灵兽":12},
-                "stock":{"灵草":4,"灵矿石":2,"丹药":0,"符箓":1,"灵兽饲料":12},
-                "guard":4,"hazard":2},
+                "stock":{"灵草":4,"灵矿石":2,"丹药":0,"符箓":1,"灵兽饲料":12,"口粮":48},
+                "guard":4,"hazard":2,"copper":260},
             "临安县城":{"qi_density":0.18,"wild":{"灵草":4,"灵矿露头":1,"野生灵兽":0},
                 "cap":{"灵草":9,"灵矿露头":3,"野生灵兽":0},
-                "stock":{"灵草":0,"灵矿石":0,"丹药":0,"符箓":0,"灵兽饲料":0},
-                "guard":0,"hazard":0}
+                "stock":{"灵草":0,"灵矿石":0,"丹药":0,"符箓":0,"灵兽饲料":0,"口粮":0},
+                "guard":0,"hazard":0,"copper":0}
         },
-        "agents":{},"events":[],"total_practice":0,
+        "agents":{},"events":[],"shipments":[],"total_food_bought":0,"total_freight":0,
+        "total_meals":0,"total_practice":0,
         "total_herbs":0,"total_ore":0,"total_pills":0,"total_talismans":0
     }
     var people: Dictionary=formed["agents"]
@@ -167,6 +168,73 @@ static func _work(c: Dictionary, person: Dictionary, day: int) -> void:
         var skills: Dictionary=person["skills"]
         skills[job]=int(skills.get(job,0))+1
 
+# 仙凡相互依存：粮从城区库存出发，真实付铜钱、脚夫运费，隔天才入山门。
+# Shipments remain in transit rather than teleporting into the mountain store.
+static func _logistics(society: Dictionary, c: Dictionary, day: int) -> void:
+    var mountain: Dictionary=c["regions"]["青云山门"]
+    var stock: Dictionary=mountain["stock"]
+    var remaining: Array=[]
+    for shipment in c.get("shipments",[]):
+        var delivery: Dictionary=shipment
+        if day<int(delivery["arrive_day"]):
+            remaining.append(delivery)
+            continue
+        var amount:=int(delivery["quantity"])
+        stock["口粮"]=int(stock["口粮"])+amount
+        var quartermaster: Dictionary=c["agents"]["叶怀远"]
+        _record(c,quartermaster,day,"粮食抵达","城区已付款在途货物%d份历经道路运送后交入山门粮库。" % amount)
+    c["shipments"]=remaining
+    for person in c["agents"].values():
+        if not bool(person.get("alive",true)) or str(person["station"])!="青云山门": continue
+        if int(stock["口粮"])>0:
+            stock["口粮"]=int(stock["口粮"])-1
+            c["total_meals"]=int(c["total_meals"])+1
+        else:
+            person["health"]=maxi(0,int(person["health"])-2)
+            person["energy"]=maxi(0,int(person["energy"])-8)
+            if int(person["health"])<=0:
+                person["alive"]=false
+                _record(c,person,day,"饥馑死亡","山门长期断粮且未能购得口粮，健康真实归零，已死亡。")
+    if int(stock["口粮"])>=28 or not remaining.is_empty(): return
+    var city: Dictionary=society.get("regions",{}).get("城",{})
+    if city.is_empty(): return
+    var carrier: Dictionary={}
+    for name in society.get("civic_agents",{}):
+        var candidate: Dictionary=society["civic_agents"][name]
+        if str(candidate.get("job",""))!="山门脚夫" or not bool(candidate.get("alive",true)): continue
+        var assignment: Dictionary=candidate.get("delivery_assignment",{})
+        if assignment.is_empty() or day>int(assignment.get("arrive_day",0))+1:
+            carrier=candidate
+            break
+    if carrier.is_empty(): return
+    var unit_price:=maxi(1,XianfanSocietySim.regional_price(society,"城","粮"))
+    var price_freight:=3
+    var copper:=int(mountain["copper"])
+    if copper<=price_freight+unit_price: return
+    var amount:=mini(36,mini(int(city["stock"]["粮"]),int((copper-price_freight)/unit_price)))
+    if amount<=0: return
+    var purchase:=amount*unit_price
+    mountain["copper"]=copper-purchase-price_freight
+    city["stock"]["粮"]=int(city["stock"]["粮"])-amount
+    city["treasury"]=int(city["treasury"])+purchase
+    carrier["coins"]=int(carrier["coins"])+price_freight
+    var bill: Dictionary={"id":"SHIP-QY-"+str(day),"quantity":amount,
+        "departure_day":day,"arrive_day":day+1,
+        "courier_id":str(carrier["id"]),"courier":str(carrier["name"])}
+    carrier["delivery_assignment"]=bill.duplicate(true)
+    var pending: Array=c["shipments"]
+    pending.append(bill)
+    c["total_food_bought"]=int(c["total_food_bought"])+amount
+    c["total_freight"]=int(c["total_freight"])+price_freight
+    var hour:=(day-1)*1440+480
+    XianfanEconomyAccounts.trade(society,"城",hour,purchase,"青云山门实购凡粮")
+    XianfanEconomyAccounts.production(society,"城",hour,"公共与生活服务",
+        {},{},price_freight,XianfanEconomyAccounts.price_snapshot(society,"城"),
+        str(carrier["name"])+"送粮")
+    _record(c,c["agents"]["叶怀远"],day,"仙凡交易",
+        "实付%d文粮价及%d文脚夫运费，城区出库%d份粮；尚在途，次日方可交入山门。" % [
+            purchase,price_freight,amount])
+
 static func _practice(c: Dictionary, person: Dictionary, day: int) -> void:
     if not bool(person.get("root_verified",false)) or not bool(person.get("verified_manual",false)): return
     var root_name:=str(person.get("root",""))
@@ -197,6 +265,7 @@ static func advance_to(society: Dictionary, target_minute: int) -> int:
     if day<=cursor: return 0
     while cursor<day:
         cursor+=1
+        _logistics(society,c,cursor)
         _regenerate(c["regions"]["青云山门"],cursor,true)
         _regenerate(c["regions"]["临安县城"],cursor,false)
         # Threat is a scalar generated from ecology, not an imaginary attack.
@@ -230,8 +299,9 @@ static func report(society: Dictionary) -> String:
     var mountain: Dictionary=c["regions"]["青云山门"]
     var stock: Dictionary=mountain["stock"]
     var wild: Dictionary=mountain["wild"]
-    return "【仙门·已模拟样本】%d名具名修士/学徒；已结算吐纳%d人日\n青云库存：灵草%d、灵矿石%d、基础丹药%d、符箓%d、灵兽饲料%d\n自然资源：野生灵草%d、灵矿露头%d、野生灵兽%d；风险指标%d\n所有原料均有来源，不能据此推算天下宗门全部产能。" % [
+    return "【仙门·已模拟样本】%d名具名修士/学徒；已结算吐纳%d人日\n青云库存：灵草%d、灵矿石%d、基础丹药%d、符箓%d、灵兽饲料%d\n自然资源：野生灵草%d、灵矿露头%d、野生灵兽%d；风险指标%d\n山门粮库%d份、铜钱%d文；购粮累计%d份、运费累计%d文。\n所有原料均有来源，不能据此推算天下宗门全部产能。" % [
         c["agents"].size(),int(c["total_practice"]),int(stock["灵草"]),
         int(stock["灵矿石"]),int(stock["丹药"]),int(stock["符箓"]),
         int(stock["灵兽饲料"]),int(wild["灵草"]),int(wild["灵矿露头"]),
-        int(wild["野生灵兽"]),int(mountain["hazard"])]
+        int(wild["野生灵兽"]),int(mountain["hazard"]),
+        int(stock.get("口粮",0)),int(mountain.get("copper",0)),int(c.get("total_food_bought",0)),int(c.get("total_freight",0))]
