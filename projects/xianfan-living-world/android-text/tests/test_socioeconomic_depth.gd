@@ -67,6 +67,7 @@ func _run() -> void:
     var trip: Dictionary=exhausted["caravans"][0]
     check(str(trip["state"])=="road","low treasury initially allows shipment")
     exhausted["regions"]["城"]["treasury"]=0
+    exhausted["regions"]["城"]["stock"]["粮"]=0  # no chance of NPC food purchases replenishing buyer cash before arrival
     XianfanSocietySim.advance_to(exhausted,16*60)
     check(str(trip["state"])=="returning","buyer default starts physical return")
     check(int(trip["qty"])>0,"goods are not destroyed by failed trade")
