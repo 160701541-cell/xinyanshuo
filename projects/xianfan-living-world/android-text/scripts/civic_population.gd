@@ -40,7 +40,7 @@ static func job_catalog() -> Array[Dictionary]:
 static func _name(idx: int) -> String:
     var given:=GIVEN[idx%GIVEN.size()]
     var suffix:=ENDING[int(idx/GIVEN.size())%ENDING.size()]
-    var surname:=SURNAME[int(idx/(GIVEN.size()*ENDING.size()))%SURNAME.size()]
+    var surname:=SURNAME[idx%SURNAME.size()]
     return surname+given+suffix
 
 static func _region(npc: Dictionary) -> String:
@@ -178,7 +178,14 @@ static func _produce(society: Dictionary, npc: Dictionary, day: int) -> bool:
 static func _eat(society: Dictionary, npc: Dictionary, day: int) -> void:
     var region: Dictionary=society["regions"][_region(npc)]
     if int(npc["rations"])<2:
-        var cost:=XianfanSocietySim.regional_price(society,_region(npc),"粮")
+        var base_price:=2
+        var remaining:=int(region["stock"]["粮"])
+        var target:=120 if _region(npc)=="村" else 300
+        if remaining<=target/4: base_price+=3
+        elif remaining<=target/2: base_price+=2
+        elif remaining>=target*3: base_price-=2
+        elif remaining>=target*2: base_price-=1
+        var cost:=maxi(1,base_price)
         if int(npc["coins"])>=cost and int(region["stock"]["粮"])>=1:
             npc["coins"]=int(npc["coins"])-cost
             region["treasury"]=int(region["treasury"])+cost
