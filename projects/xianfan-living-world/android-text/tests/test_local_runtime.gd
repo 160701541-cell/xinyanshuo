@@ -7,7 +7,7 @@ func _go() -> void:
         errors.append("Native NobodyWhoChat class not registered for this platform")
     var root_node:=XianfanLocalLLM.new()
     root.add_child(root_node)
-    if root_node.ready or root_node.loading:
+    if root_node.model_ready or root_node.loading:
         errors.append("Local model must not download or load without an explicit click")
     if not root_node.status().contains("未加载") and not root_node.status().contains("缺少"):
         errors.append("Runtime status must disclose model absence before download")
