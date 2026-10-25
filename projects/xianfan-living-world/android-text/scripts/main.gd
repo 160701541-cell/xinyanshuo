@@ -229,7 +229,7 @@ func refresh() -> void:
             _set_actions(["查看四周", "自动完成今日安排"])
         "系统":
             activity_title.text = "存档与玩法说明"
-            story.text = "《仙凡·苍岚》安卓独立文字游戏 1.1\n\n无需网络、账号或API。游戏使用Godot原生界面，每次有效行动自动保存，损坏时尝试备份恢复。\n\n自由输入采用本地意图识别，不是联网AI。可选‘自动完成今日安排’批量结算生活行动；连续修炼在功法真伪与原始灵根未验证时不会伪造突破。\n\n主线锚点：" + game.data["source_event"] + "。安卓游戏的新增经历仅存手机本地，不会自动同步GitHub。\n\n本机存档：user://xianfan_first_life.json\n\n可用按钮打开全部操作；不支持的命令不扣时间与物品。"
+            story.text = "《仙凡·苍岚》安卓独立文字游戏 1.2\n\n无需网络、账号或API。游戏使用Godot原生界面，每次有效行动自动保存，损坏时尝试备份恢复。\n\n自由描述行为优先：可以去林缘拾柴、打扫院子、随意等待、钓鱼、询问家人、赠送已有物品。参考按钮不是所有动作的清单。\n\n当前为本地规则模式，尚未内置或下载语言模型；不使用联网AI。可选‘自动完成今日安排’批量结算生活行动；连续修炼在功法真伪与原始灵根未验证时不会伪造突破。\n\n主线锚点：" + game.data["source_event"] + "。安卓游戏的新增经历仅存手机本地，不会自动同步GitHub。\n\n本机存档：user://xianfan_first_life.json\n\n可用按钮打开全部操作；不支持的命令不扣时间与物品。"
             _set_actions(["查看四周", "查看修炼结论"])
     story.call_deferred("scroll_to_line", 0)
     for b in tabs.get_children():
