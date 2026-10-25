@@ -65,7 +65,8 @@ func personal_facts(person: String, limit: int=5) -> Array[Dictionary]:
     var stream:=FileAccess.open(_path,FileAccess.READ)
     if stream==null: return out
     while not stream.eof_reached():
-        var line:=stream.get_line()
+        var line:=stream.get_line().strip_edges()
+        if line.is_empty(): continue
         var item: Variant=JSON.parse_string(line)
         if item is Dictionary and str(item.get("person",""))==person and str(item.get("confidence",""))=="rule_confirmed":
             out.append(item)
