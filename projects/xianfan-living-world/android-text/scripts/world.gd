@@ -792,6 +792,22 @@ func npcs_status() -> Array[Dictionary]:
         })
     return arr
 
+func dialogue_with(person: String, n: int=12) -> String:
+    var records: Array=data.get("dialogue_log",[])
+    var relevant: Array=[]
+    for record in records:
+        if record is Dictionary and str(record.get("speaker",""))==person:
+            relevant.append(record)
+    var lines: Array[String]=[]
+    for record in relevant.slice(-maxi(1,n)):
+        var speaker:=str(record.get("speaker",""))
+        var source: String="本地规则"
+        if bool(record.get("ai",false)):
+            source="本机AI" if str(record.get("engine",""))=="local-gguf" else "API"
+        lines.append("你：%s\n%s（%s）：%s" % [
+            str(record.get("player","")),speaker,source,str(record.get("reply",""))])
+    return "\n\n────────────\n\n".join(lines) if not lines.is_empty() else "你们尚未交谈。写下你想说的话。"
+
 func dialogue_recent(n: int=24) -> String:
     var lines: Array[String] = []
     var records: Array = data.get("dialogue_log",[])
@@ -1095,8 +1111,11 @@ func _continuous(days: int = 10) -> String:
 # The offline game interprets everyday speech locally. Dialogue is not a free-form LLM.
 # Every spoken exchange is bounded by NPC presence and the family life ledger.
 func _family_chat(person: String, topic: String) -> String:
+    if not at_same_place(person):
+        return "%s正在%s，与你不在同一地点。可在认识的人中写信，或亲自前往相见。" % [
+            person,str(data.get("npc",{}).get(person,{}).get("place","别处"))]
     if data["place"] != "石桥村·家中":
-        return "你不在家里，眼前没有可以这样交谈的家人。"
+        return "你不在家里，当前不能使用这条家庭日常交谈规则。"
     if person == "孙成明":
         if not _sister_here():
             return "成明今日在外头忙。她不是随叫随到的，等她回家再问。"
@@ -1302,6 +1321,8 @@ func _npc_free_chat(raw: String) -> String:
     if recipient.is_empty():
         return ""
     var npc: Dictionary = data["npc"][recipient]
+    if not bool(npc.get("alive",true)):
+        return "%s已经离世，无法当面交谈。" % recipient
     if str(npc.get("place", "")) != str(data["place"]):
         return "%s此刻在%s，不在你身边。你说的话没有人能当面听见。" % [recipient,str(npc.get("place","别处"))]
     if recipient=="钱然泽" and int(data["minute"]) >= 420 and int(data["minute"]) <= 1050:
