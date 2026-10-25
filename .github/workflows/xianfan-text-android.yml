@@ -45,6 +45,14 @@ jobs:
         run: |
           cd projects/xianfan-living-world/android-text
           godot --headless --path . --script res://tests/test_ai.gd
+      - name: Integration test real HTTP requests against a loopback mock API
+        run: |
+          cd projects/xianfan-living-world/android-text
+          python3 tests/mock_ai_server.py &
+          server_pid=$!
+          trap 'kill "$server_pid" || true' EXIT
+          sleep 2
+          godot --headless --path . --script res://tests/test_ai_http.gd
       - name: Validate mobile pages and NPC modals
         run: |
           cd projects/xianfan-living-world/android-text
