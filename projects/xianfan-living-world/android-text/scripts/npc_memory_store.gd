@@ -42,15 +42,25 @@ func _initial_profile(person: String, npc: Dictionary) -> Dictionary:
         "total_dialogues":0,"total_life_events":0,"total_events":0,
         "last_day":0}
 
+func _rebuild_profile(person: String, npc: Dictionary={}) -> Dictionary:
+    # The profile is an expendable cache. A malformed or missing profile
+    # must be reconstructed from the untouched raw archive, not "forgotten".
+    var rebuilt:=_initial_profile(person,npc)
+    for record in read_all(person):
+        if record is Dictionary and record.has("type"):
+            _derive(rebuilt,record)
+    _write_profile(person,rebuilt)
+    return rebuilt
+
 func _load_profile(person: String, npc: Dictionary={}) -> Dictionary:
     var file_path:=_profile_file(person)
     if FileAccess.file_exists(file_path):
         var f:=FileAccess.open(file_path,FileAccess.READ)
         if f!=null:
             var parsed: Variant=JSON.parse_string(f.get_as_text())
-            if parsed is Dictionary and int(parsed.get("schema",0))==PROFILE_SCHEMA:
+            if parsed is Dictionary and int(parsed.get("schema",0))==PROFILE_SCHEMA and parsed.has("core") and parsed.has("days") and parsed.has("total_events"):
                 return parsed
-    return _initial_profile(person,npc)
+    return _rebuild_profile(person,npc)
 
 func profile(person: String, npc: Dictionary={}) -> Dictionary:
     return _load_profile(person,npc).duplicate(true)
@@ -151,6 +161,7 @@ func append_event(person: String, event: Dictionary, npc: Dictionary={}) -> bool
     if not _ensure(person): return false
     var uid:=str(event.get("uid",""))
     if uid.is_empty(): return false
+    var p:=_load_profile(person,npc)
     var filename:=_day_file(person,int(event.get("day",0)))
     var known:=_ids(filename)
     if known.has(uid): return true
@@ -165,7 +176,6 @@ func append_event(person: String, event: Dictionary, npc: Dictionary={}) -> bool
     file.flush()
     file.close()
     known[uid]=true
-    var p:=_load_profile(person,npc)
     _derive(p,event)
     return _write_profile(person,p)
 
