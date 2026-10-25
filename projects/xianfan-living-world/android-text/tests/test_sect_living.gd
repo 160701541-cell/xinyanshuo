@@ -76,6 +76,25 @@ func _run() -> void:
         int(pantry["灵米"])>=rice_before,
         "Spirit rice harvest obeys physical field and water constraints")
     check(int(pantry["泉水"])>=0 and water_before>=0,"Real spring water never negative")
+    # Prepared ingredients in a test-only fixture must be transformed by an
+    # actual living civic cook, not narrated as the sect steward's work.
+    stock["灵米"]=maxi(1,int(stock["灵米"]))
+    stock["灵果"]=maxi(1,int(stock["灵果"]))
+    stock["泉水"]=maxi(2,int(stock["泉水"]))
+    var cook_name: String=""
+    for cook_candidate in ledger:
+        if str(ledger[cook_candidate].get("job",""))=="外门膳房人":
+            cook_name=str(cook_candidate)
+            break
+    var cooked_before:=int(stock["灵膳"])
+    XianfanSectLiving._cultivate_food(society,c,46)
+    check(int(stock["灵膳"])==cooked_before+1,"Real cook transforms actual spiritual rice and fruit")
+    var event_list: Array=c.get("events",[])
+    var last_cook_name: String=""
+    for row in event_list:
+        if str(row.get("category",""))=="灵膳烹制":
+            last_cook_name=str(row.get("npc",""))
+    check(last_cook_name==cook_name,"Kitchen event must be attributed to actual mortal worker")
     var first_worker: String=""
     for worker_name in ledger:
         if bool(ledger[worker_name].get("employed",false)):
