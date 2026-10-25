@@ -30,7 +30,7 @@ static func source_url(src: String) -> String:
         var paths:=tail.split("/",false)
         if paths.size()<3: return ""
         return "https://huggingface.co/%s/%s/resolve/main/%s?download=true" % [
-            paths[0],paths[1],"/".join(Array(paths).slice(2))]
+            paths[0],paths[1],"/".join(paths.slice(2))]
     return ""
 
 static func range_start(header: String) -> int:
@@ -100,7 +100,7 @@ func is_pending(source: String) -> bool:
 
 func _publish(source: String, bytes: int, expected: int, phase: String, error: String="") -> void:
     var now:=Time.get_ticks_msec()
-    var elapsed:=maxf(0.001,float(now-_started_ms)/1000.0)
+    var elapsed: float=maxf(0.001,float(now-_started_ms)/1000.0)
     var speed:=maxf(0.0,float(bytes-_bytes_at_tick)/maxf(0.1,float(now-_last_tick_ms)/1000.0))
     if now-_last_tick_ms>=DISPLAY_INTERVAL_MS:
         _last_tick_ms=now
