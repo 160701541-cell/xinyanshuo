@@ -1,0 +1,637 @@
+{
+  "schema": 1,
+  "version": "2026-10-26",
+  "axes": [
+    {
+      "id": "greed",
+      "meaning": "占有与财富渴望；不自动等同于盗窃",
+      "range": [
+        0,
+        100
+      ],
+      "causal": "desire_not_guaranteed_action"
+    },
+    {
+      "id": "compassion",
+      "meaning": "见苦时的援助倾向",
+      "range": [
+        0,
+        100
+      ],
+      "causal": "desire_not_guaranteed_action"
+    },
+    {
+      "id": "empathy",
+      "meaning": "理解他人感受的能力",
+      "range": [
+        0,
+        100
+      ],
+      "causal": "desire_not_guaranteed_action"
+    },
+    {
+      "id": "self_control",
+      "meaning": "冲动控制、延迟满足、守住行为边界",
+      "range": [
+        0,
+        100
+      ],
+      "causal": "desire_not_guaranteed_action"
+    },
+    {
+      "id": "honesty",
+      "meaning": "愿意真实表达和守约",
+      "range": [
+        0,
+        100
+      ],
+      "causal": "desire_not_guaranteed_action"
+    },
+    {
+      "id": "justice",
+      "meaning": "对公平与违法的看重",
+      "range": [
+        0,
+        100
+      ],
+      "causal": "desire_not_guaranteed_action"
+    },
+    {
+      "id": "ambition",
+      "meaning": "功名、修为、权力和成就欲",
+      "range": [
+        0,
+        100
+      ],
+      "causal": "desire_not_guaranteed_action"
+    },
+    {
+      "id": "envy",
+      "meaning": "因比较而产生的嫉妒与失落",
+      "range": [
+        0,
+        100
+      ],
+      "causal": "desire_not_guaranteed_action"
+    },
+    {
+      "id": "loyalty",
+      "meaning": "对亲友、宗门与承诺的持久维护",
+      "range": [
+        0,
+        100
+      ],
+      "causal": "desire_not_guaranteed_action"
+    },
+    {
+      "id": "fear",
+      "meaning": "对真实风险的戒惧",
+      "range": [
+        0,
+        100
+      ],
+      "causal": "desire_not_guaranteed_action"
+    },
+    {
+      "id": "pride",
+      "meaning": "自尊、爱面子与荣誉感",
+      "range": [
+        0,
+        100
+      ],
+      "causal": "desire_not_guaranteed_action"
+    },
+    {
+      "id": "curiosity",
+      "meaning": "探索未知及学习的动机",
+      "range": [
+        0,
+        100
+      ],
+      "causal": "desire_not_guaranteed_action"
+    },
+    {
+      "id": "altruism",
+      "meaning": "不期待回报的利他意愿",
+      "range": [
+        0,
+        100
+      ],
+      "causal": "desire_not_guaranteed_action"
+    },
+    {
+      "id": "dominance",
+      "meaning": "支配和控制他人的冲动，不自动代表侵害",
+      "range": [
+        0,
+        100
+      ],
+      "causal": "desire_not_guaranteed_action"
+    },
+    {
+      "id": "caution",
+      "meaning": "审慎、隐私与风险评估",
+      "range": [
+        0,
+        100
+      ],
+      "causal": "desire_not_guaranteed_action"
+    },
+    {
+      "id": "desire",
+      "meaning": "成年后的情感与亲密欲望；未成年不启用",
+      "range": [
+        0,
+        100
+      ],
+      "causal": "desire_not_guaranteed_action"
+    },
+    {
+      "id": "resentment",
+      "meaning": "记仇和不甘",
+      "range": [
+        0,
+        100
+      ],
+      "causal": "desire_not_guaranteed_action"
+    },
+    {
+      "id": "shame",
+      "meaning": "做错事后的羞愧体验",
+      "range": [
+        0,
+        100
+      ],
+      "causal": "desire_not_guaranteed_action"
+    },
+    {
+      "id": "impulsivity",
+      "meaning": "短期冲动与刺激寻求",
+      "range": [
+        0,
+        100
+      ],
+      "causal": "desire_not_guaranteed_action"
+    },
+    {
+      "id": "forgiveness",
+      "meaning": "在伤害真实发生后自愿缓和关系",
+      "range": [
+        0,
+        100
+      ],
+      "causal": "desire_not_guaranteed_action"
+    },
+    {
+      "id": "diligence",
+      "meaning": "勤奋、责任心和持续劳动",
+      "range": [
+        0,
+        100
+      ],
+      "causal": "desire_not_guaranteed_action"
+    },
+    {
+      "id": "attachment",
+      "meaning": "亲密依恋、家庭牵挂与关心",
+      "range": [
+        0,
+        100
+      ],
+      "causal": "desire_not_guaranteed_action"
+    },
+    {
+      "id": "risk_taking",
+      "meaning": "对危险和不确定性的承受",
+      "range": [
+        0,
+        100
+      ],
+      "causal": "desire_not_guaranteed_action"
+    },
+    {
+      "id": "conformity",
+      "meaning": "从众、顺从权威与规范的倾向",
+      "range": [
+        0,
+        100
+      ],
+      "causal": "desire_not_guaranteed_action"
+    }
+  ],
+  "models": {
+    "values_vs_wants": "同一人物可以同时善良、自私、胆怯、贪婪、好奇；欲念不等于实际行为。",
+    "adult_consent": "任何恋爱和性关系必须至少18岁，并由各当事人独立决定；无同意不成立关系。",
+    "privacy": "目击、本人经历、传闻、查证与公开判决分层，私事或未经证实的犯罪不会自动公开。",
+    "evidence": "每个已经结算的事件保存行为双方实体ID、时间地点、资源账和证据状态。",
+    "civilization": "仙凡世界同一社会，修士不因灵根或境界天然善恶；身份特权产生机会与制衡。"
+  },
+  "implemented_events": [
+    {
+      "id": "aid_cash",
+      "name": "援助缺钱者",
+      "action": "help",
+      "category": "help",
+      "requirement": "援助者本人有铜钱，对方缺钱，同一地点",
+      "possible_consequences": "真实移转铜钱，增加双方信任，援助者个人经历留档",
+      "visibility": "private",
+      "implementation": "full_rule"
+    },
+    {
+      "id": "theft_private_case",
+      "name": "因贪念盗窃",
+      "action": "attempt_theft",
+      "category": "harm",
+      "requirement": "已有合法铜钱，犯罪人和受害人真实同地；强贪且克制低",
+      "possible_consequences": "真实财富转移，秘密案件、证据和人物记忆保留；罪名尚未公开定论",
+      "visibility": "confidential",
+      "implementation": "prototype"
+    },
+    {
+      "id": "adult_courtship",
+      "name": "成年人表达心意",
+      "action": "express_interest",
+      "category": "romance",
+      "requirement": "双方至少18岁，真实同地，双方独立自主决定",
+      "possible_consequences": "接受或拒绝并留下个人记忆；不直接发生结婚或性行为",
+      "visibility": "private",
+      "implementation": "full_rule"
+    },
+    {
+      "id": "adult_boundary_violation",
+      "name": "成年人越界纠缠被拒绝",
+      "action": "boundary_violation",
+      "category": "violation",
+      "requirement": "双方成年、同地、缺少同意，高风险人格与约束不足",
+      "possible_consequences": "当事人拒绝，记私密报告并改变信任和压力；不模拟性暴力细节",
+      "visibility": "confidential",
+      "implementation": "prototype"
+    },
+    {
+      "id": "loan",
+      "name": "因急需向熟人求借",
+      "action": "borrow",
+      "category": "finance",
+      "requirement": "双方真实同地，借方缺钱贷方有余款，贷方自主同意",
+      "possible_consequences": "钱财转移、形成个人债权债务及约定日期",
+      "visibility": "private",
+      "implementation": "full_rule"
+    },
+    {
+      "id": "repayment",
+      "name": "按实际债权偿还借款",
+      "action": "repay",
+      "category": "finance",
+      "requirement": "借贷双方真实同地，有未清偿债权且现金足够",
+      "possible_consequences": "按实物资金归还、记录还款日、修复关系",
+      "visibility": "private",
+      "implementation": "full_rule"
+    },
+    {
+      "id": "arrears",
+      "name": "债务逾期",
+      "action": "settle_overdue",
+      "category": "finance",
+      "requirement": "已结清与未到期不触发，借据到期后仍未清偿",
+      "possible_consequences": "保留债权、信任改变、双方个人经历，不自动认定为犯罪",
+      "visibility": "private",
+      "implementation": "full_rule"
+    }
+  ],
+  "planned_event_scenarios": [
+    {
+      "id": "bribe_offer",
+      "name": "贿赂官差或执事",
+      "category": "power",
+      "requirement": "必须有真实财物、职权和选择",
+      "possible_consequences": "被拒绝、违规受查或腐败成功且埋下证据",
+      "implementation": "not_yet_executable",
+      "evidence_required": true
+    },
+    {
+      "id": "embezzle",
+      "name": "侵吞商会或宗门公款",
+      "category": "greed",
+      "requirement": "真实公账、经手权限及审核缺口",
+      "possible_consequences": "公库减少、个人财产增加、审计追责",
+      "implementation": "not_yet_executable",
+      "evidence_required": true
+    },
+    {
+      "id": "promise",
+      "name": "为亲人承担长期诺言",
+      "category": "loyalty",
+      "requirement": "真实关系、承诺范围和履行能力",
+      "possible_consequences": "履约耗费时间或失信破坏信任",
+      "implementation": "not_yet_executable",
+      "evidence_required": true
+    },
+    {
+      "id": "betrayal",
+      "name": "为利益背弃师门",
+      "category": "betrayal",
+      "requirement": "有效师门关系、真实利益冲突和秘密",
+      "possible_consequences": "关系破裂、权利变化、调查和声望",
+      "implementation": "not_yet_executable",
+      "evidence_required": true
+    },
+    {
+      "id": "coercion",
+      "name": "以身份和粮食强逼役仆",
+      "category": "violation",
+      "requirement": "真实权力关系、成人、工作与法律地位",
+      "possible_consequences": "拒绝求助、证据、保护与法律程序",
+      "implementation": "not_yet_executable",
+      "evidence_required": true
+    },
+    {
+      "id": "serious_sexual_crime",
+      "name": "严重性侵害案件",
+      "category": "crime",
+      "requirement": "只限成年人，必须有独立物理条件、保护和司法全链路",
+      "possible_consequences": "非图像化处理侵害伤害、求助、证据、调查和追责；绝不作为奖励",
+      "implementation": "not_yet_executable",
+      "evidence_required": true
+    },
+    {
+      "id": "molestation_attempt",
+      "name": "不受欢迎的纠缠及尾随",
+      "category": "violation",
+      "requirement": "成年人、真实同地、对方拒绝、无越权加害",
+      "possible_consequences": "求助记录、关系损害、调查与实地干预",
+      "implementation": "not_yet_executable",
+      "evidence_required": true
+    },
+    {
+      "id": "rescue",
+      "name": "遇到危险时出手搭救",
+      "category": "altruism",
+      "requirement": "真实危险、体力和救援方式",
+      "possible_consequences": "获救或救援失败、伤亡和目击记录",
+      "implementation": "not_yet_executable",
+      "evidence_required": true
+    },
+    {
+      "id": "witness_courage",
+      "name": "目击不公时是否作证",
+      "category": "justice",
+      "requirement": "真实亲眼目击，证词可核对",
+      "possible_consequences": "勇敢证言或因恐惧沉默",
+      "implementation": "not_yet_executable",
+      "evidence_required": true
+    },
+    {
+      "id": "wrongful_rumor",
+      "name": "传播有偏差的传闻",
+      "category": "deception",
+      "requirement": "真实原始传播者、传播距离及接触路径",
+      "possible_consequences": "个人认知产生谣言标签，无法自动变成史实",
+      "implementation": "not_yet_executable",
+      "evidence_required": true
+    },
+    {
+      "id": "forgiveness",
+      "name": "受害人选择是否原谅",
+      "category": "forgiveness",
+      "requirement": "真实过往损害、当前意愿与信任",
+      "possible_consequences": "情感关系改变，不撤销应承担的法律责任",
+      "implementation": "not_yet_executable",
+      "evidence_required": true
+    },
+    {
+      "id": "family_dispute",
+      "name": "分家与赡养纠纷",
+      "category": "family",
+      "requirement": "真实户籍、财产、亲属和赡养义务",
+      "possible_consequences": "可能和解、分产、断亲或诉讼",
+      "implementation": "not_yet_executable",
+      "evidence_required": true
+    },
+    {
+      "id": "matchmaking",
+      "name": "乡里介绍婚事",
+      "category": "romance",
+      "requirement": "成年人、双方同意和家庭社会环境",
+      "possible_consequences": "可接受、拒绝、订约或关系冷却",
+      "implementation": "not_yet_executable",
+      "evidence_required": true
+    },
+    {
+      "id": "marriage",
+      "name": "真实成亲",
+      "category": "romance",
+      "requirement": "双方成年同意、结婚登记和财产规则",
+      "possible_consequences": "形成婚姻身份、财产及家庭社会关系",
+      "implementation": "not_yet_executable",
+      "evidence_required": true
+    },
+    {
+      "id": "breakup",
+      "name": "分手与关系解除",
+      "category": "romance",
+      "requirement": "已形成真实关系及自主决策",
+      "possible_consequences": "情绪、共同财产及人际网络变化",
+      "implementation": "not_yet_executable",
+      "evidence_required": true
+    },
+    {
+      "id": "birth_parenting",
+      "name": "抚育子女",
+      "category": "family",
+      "requirement": "真实成年家庭、同意、妊娠医疗和出生规则",
+      "possible_consequences": "户籍、抚养义务、教育和遗产影响",
+      "implementation": "not_yet_executable",
+      "evidence_required": true
+    },
+    {
+      "id": "widowhood",
+      "name": "亲人离世后的哀伤",
+      "category": "family",
+      "requirement": "有确定的死亡事件和关系",
+      "possible_consequences": "哀伤进程、继承及生活改变",
+      "implementation": "not_yet_executable",
+      "evidence_required": true
+    },
+    {
+      "id": "scarcity",
+      "name": "灾荒引发的自保或救助",
+      "category": "survival",
+      "requirement": "真实粮储、季节、工资和土地",
+      "possible_consequences": "囤粮、赈济、迁移或违法行为分支",
+      "implementation": "not_yet_executable",
+      "evidence_required": true
+    },
+    {
+      "id": "banditry",
+      "name": "匪患与民兵防卫",
+      "category": "crime",
+      "requirement": "真实组织、武器、战斗与伤亡成本",
+      "possible_consequences": "生命财产损失、巡检行动和历史遗留",
+      "implementation": "not_yet_executable",
+      "evidence_required": true
+    },
+    {
+      "id": "gambling_loss",
+      "name": "财产风险冲动",
+      "category": "risk",
+      "requirement": "自愿参与和真实钱款",
+      "possible_consequences": "赢亏账、债务与家庭矛盾；不鼓励赌资滥造",
+      "implementation": "not_yet_executable",
+      "evidence_required": true
+    },
+    {
+      "id": "intoxication",
+      "name": "饮酒后失控",
+      "category": "temper",
+      "requirement": "真实酒品实物、年龄和体质",
+      "possible_consequences": "误工、家庭争执、风险与健康后果",
+      "implementation": "not_yet_executable",
+      "evidence_required": true
+    },
+    {
+      "id": "jealous_cultivator",
+      "name": "对同门先突破产生嫉妒",
+      "category": "envy",
+      "requirement": "真实突破、师门比较、个人关系",
+      "possible_consequences": "勤奋修行、沉默疏远或矛盾升级",
+      "implementation": "not_yet_executable",
+      "evidence_required": true
+    },
+    {
+      "id": "merit_steal",
+      "name": "盗占功法研究成果",
+      "category": "greed",
+      "requirement": "真实功法图纸、权限和原作者",
+      "possible_consequences": "证据争端、门规处罚与信任损害",
+      "implementation": "not_yet_executable",
+      "evidence_required": true
+    },
+    {
+      "id": "sect_appointment",
+      "name": "争夺执事之位",
+      "category": "ambition",
+      "requirement": "真实空缺、资格、支持者和门规",
+      "possible_consequences": "任命、失利、不服或派系改变",
+      "implementation": "not_yet_executable",
+      "evidence_required": true
+    },
+    {
+      "id": "sect_civilian_pay",
+      "name": "山门拖欠雇工工钱",
+      "category": "power",
+      "requirement": "山门财政不足或管事违规",
+      "possible_consequences": "欠薪、离职、罢工、诉讼和减产",
+      "implementation": "not_yet_executable",
+      "evidence_required": true
+    },
+    {
+      "id": "renegade",
+      "name": "修士叛门避追查",
+      "category": "betrayal",
+      "requirement": "真实门规违规、调查与逃亡道路",
+      "possible_consequences": "通缉、迁徙、友谊受损及宗门追索",
+      "implementation": "not_yet_executable",
+      "evidence_required": true
+    },
+    {
+      "id": "immortal_retribution",
+      "name": "修士因仇怨动武",
+      "category": "revenge",
+      "requirement": "真实境界、法器、仇因和地点",
+      "possible_consequences": "战斗伤害、因果和官府宗门司法",
+      "implementation": "not_yet_executable",
+      "evidence_required": true
+    },
+    {
+      "id": "immortal_compassion",
+      "name": "高阶修士护佑凡人",
+      "category": "altruism",
+      "requirement": "自身真正的修为、出行动机和技能",
+      "possible_consequences": "保护造成资源时间消耗而非白捡功德",
+      "implementation": "not_yet_executable",
+      "evidence_required": true
+    },
+    {
+      "id": "memory_trauma",
+      "name": "创伤性事件的长期影响",
+      "category": "mental_state",
+      "requirement": "当事人确曾受伤害且愿意保留隐私",
+      "possible_consequences": "压力、信任、选择变化，不立即重置",
+      "implementation": "not_yet_executable",
+      "evidence_required": true
+    },
+    {
+      "id": "longterm_redemption",
+      "name": "长期悔过与赔偿",
+      "category": "values",
+      "requirement": "真有过错并承认，资源和受害人选择",
+      "possible_consequences": "真实补偿、社交缓和或仍未获谅解",
+      "implementation": "not_yet_executable",
+      "evidence_required": true
+    },
+    {
+      "id": "study_selfdiscipline",
+      "name": "因贫苦继续读书",
+      "category": "ambition",
+      "requirement": "时间、学费、老师与精力",
+      "possible_consequences": "技能增长、误工或放弃计划",
+      "implementation": "not_yet_executable",
+      "evidence_required": true
+    },
+    {
+      "id": "greed_spirit_ore",
+      "name": "偷采宗门灵矿",
+      "category": "cultivation",
+      "requirement": "真实矿点、权限、工具和巡逻",
+      "possible_consequences": "采矿入账、非法归属、证据与门规",
+      "implementation": "not_yet_executable",
+      "evidence_required": true
+    },
+    {
+      "id": "spirit_root_shame",
+      "name": "测灵结果引发自卑",
+      "category": "mental_state",
+      "requirement": "确有测灵结果且本人知道",
+      "possible_consequences": "努力、自我接纳或关系改变；资质不自动决定价值",
+      "implementation": "not_yet_executable",
+      "evidence_required": true
+    },
+    {
+      "id": "sect_temptation",
+      "name": "邪道功法交易诱惑",
+      "category": "cultivation",
+      "requirement": "真实功法物品、联系人、条件与风险",
+      "possible_consequences": "拒绝、求证、交易或走火入魔后果",
+      "implementation": "not_yet_executable",
+      "evidence_required": true
+    },
+    {
+      "id": "righteous_dissent",
+      "name": "不服家族宗门旧规",
+      "category": "values",
+      "requirement": "真实规则与资源关系",
+      "possible_consequences": "申请改革、出走、冲突与声望变化",
+      "implementation": "not_yet_executable",
+      "evidence_required": true
+    },
+    {
+      "id": "legacy_descendant",
+      "name": "前人的善恶遗留给后人",
+      "category": "history",
+      "requirement": "真实家谱、债权、遗产和证据",
+      "possible_consequences": "继承、争议、评价或拒绝继承",
+      "implementation": "not_yet_executable",
+      "evidence_required": true
+    },
+    {
+      "id": "rumor_government",
+      "name": "讹传前朝兴亡",
+      "category": "history",
+      "requirement": "真实传闻来源、传播路线和地方文书",
+      "possible_consequences": "NPC形成不同认知，不自动修正权威历史",
+      "implementation": "not_yet_executable",
+      "evidence_required": true
+    }
+  ],
+  "source": "authored-local-psychology-knowledge-base"
+}
