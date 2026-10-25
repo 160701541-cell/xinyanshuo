@@ -59,6 +59,18 @@ func _run() -> void:
     var records:=reopened.personal_facts("李铁",4)
     _check(records.size()==1 and str(records[0].get("detail","")).contains("陶器"),
         "Retrieval must preserve provenance and exact actor")
+    var stories:=XianfanConditionalStory.new()
+    _check(stories.template_count()>=20,"Expected real state-gated social and ecological story templates")
+    var observation_state: Dictionary={"day":29,"society":{"regions":{
+        "村":{"stock":{"粮":0,"木":0,"鱼":0,"药":0,"器":0},"wild":{"木林":0,"野鱼":0,"野药":0},"treasury":0},
+        "城":{"stock":{"粮":500,"木":90,"鱼":20,"药":40,"器":45},"wild":{"野药":20},"treasury":980}}}}
+    var observed:=stories.observe(observation_state)
+    _check(observed.size()>=6,"Local simulated resource depletion must produce fact-gated history")
+    _check(stories.observe(observation_state).is_empty(),"No duplicate observation before cooldown")
+    var no_shortage: Dictionary={"day":29,"society":{"regions":{
+        "村":{"stock":{"粮":220,"木":26,"鱼":16,"药":18,"器":20},"wild":{"木林":30,"野鱼":15,"野药":15},"treasury":340},
+        "城":{"stock":{"粮":460,"木":90,"鱼":22,"药":50,"器":45},"wild":{"野药":38},"treasury":980}}}}
+    _check(stories.observe(no_shortage).is_empty(),"Normal stock must not fabricate a crisis or victory")
     if failures.is_empty():
         print("NARRATIVE DB: PASS, %d authored variants, non-fiction history and persistent rule ledger" % library.catalog_count())
         quit(0)
