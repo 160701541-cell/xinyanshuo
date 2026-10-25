@@ -15,6 +15,8 @@ func _total_cash(sim: Dictionary) -> int:
         sum+=int(r["treasury"])
     for npc in sim["agents"].values():
         sum+=int(npc["coins"])
+    for person in sim.get("civic_agents",{}).values():
+        sum+=int(person.get("coins",0))
     return sum
 
 func _run() -> void:
