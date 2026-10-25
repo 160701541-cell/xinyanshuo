@@ -195,7 +195,7 @@ static func report(society: Dictionary, zone: String) -> String:
         if area==zone or (zone=="村" and area.contains("石桥村")) or (zone=="城" and area.contains("临安县")):
             money_sum+=int(actor.get("coins",0))
     var lines: Array[String]=[
-        "【%s · 已模拟经济样本】" % ("石桥村" if zone=="村" else "临安县城样本（非全县）"),
+        "【%s · 已模拟经济统计样本】" % ("石桥村" if zone=="村" else "临安县城（非全县）"),
         "统计自游戏第%d日启用；只统计可追溯的规则产出，不回填过去。" %
             (int(int(society["economy_accounts"]["started_at_hour"])/24)+1),
         "【本日新增价值】实际产值%d文（固定基期），名义%d文" % [
