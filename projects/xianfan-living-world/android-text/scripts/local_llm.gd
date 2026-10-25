@@ -170,6 +170,12 @@ func status() -> String:
     if model_ready: return "本机 %s · %d tokens 已加载，可离线对话" % [active_name,context_tokens]
     if not ClassDB.class_exists("NobodyWhoChat"): return "%s：原生推理扩展未加载；请到反馈页复制错误。" % active_name
     if not last_error.is_empty(): return "%s：%s" % [active_name,last_error]
+    if download_manager!=null and not model_source.begins_with("user://"):
+        var cache_path:=download_manager.final_path(model_source)
+        if FileAccess.file_exists(cache_path):
+            return "%s 权重已保存在手机，尚未载入内存。点击【下载/加载】会复用本地文件，不会重新下载。" % active_name
+        if download_manager.current_bytes(model_source)>0:
+            return "%s 下载缓存已保留（%.2f GB），点击【下载/加载】从断点恢复。" % [active_name,float(download_manager.current_bytes(model_source))/1000000000.0]
     return "%s 未加载。选定后点击下载/加载，模型会缓存到手机。" % active_name
 
 func _on_download_progress(state: Dictionary) -> void:
@@ -246,7 +252,10 @@ func load_model() -> void:
 func _load_native(local_path: String) -> void:
     loading_weights=true
     status_changed.emit("模型已在手机本地保存，正在加载 %s 权重并申请运行内存。" % active_name)
-    var loaded = await ClassDB.class_call_static("NobodyWhoChat","create",local_path,{
+    # NobodyWho accepts Godot user:// paths; use the real filesystem path so
+    # Android logs and native errors can be correlated with the exact cached file.
+    var native_path:=ProjectSettings.globalize_path(local_path)
+    var loaded = await ClassDB.class_call_static("NobodyWhoChat","create",native_path,{
         "n_ctx":context_tokens,"n_threads":3,"use_gpu":true,
         "context_shift":{"keep_first_turns":0,"keep_last_turns":3,"target":0.75},
         "template_variables":{"enable_thinking":false}
@@ -256,7 +265,10 @@ func _load_native(local_path: String) -> void:
     heartbeat.stop()
     if loaded==null:
         model_ready=false
-        last_error="模型文件下载完成，但本地加载失败。请检查RAM、文件完整性和模型格式。"
+        var size_gb:=0.0
+        var fd:=FileAccess.open(local_path,FileAccess.READ)
+        if fd!=null: size_gb=float(fd.get_length())/1000000000.0
+        last_error="模型已存盘（%.2f GB），但NobodyWho原生create返回空值；未执行重新下载。请复制Godot原生错误日志，并检查Vulkan、可用物理内存、上下文长度。可卸载后尝试4096 tokens或较小模型。" % size_gb
         status_changed.emit(last_error)
         return
     current_chat=loaded
