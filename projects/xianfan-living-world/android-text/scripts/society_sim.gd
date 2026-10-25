@@ -327,16 +327,20 @@ static func _produce(society: Dictionary, npc: Dictionary, region: Dictionary, h
         _grant_pay(society,npc,region,hour)
 
 static func _purchase(society: Dictionary, npc: Dictionary, region: Dictionary, hour: int) -> void:
-    if int(npc["rations"])>=2 or int(npc["coins"])<2 or int(region["stock"]["粮"])<2: return
-    npc["coins"]=int(npc["coins"])-2
-    region["treasury"]=int(region["treasury"])+2
+    if int(npc["rations"])>=2 or int(region["stock"]["粮"])<2: return
+    var zone:=_zone(str(npc["origin"]))
+    var price:=regional_price(society,zone,"粮")
+    var bill:=price*2
+    if int(npc["coins"])<bill: return
+    npc["coins"]=int(npc["coins"])-bill
+    region["treasury"]=int(region["treasury"])+bill
     region["stock"]["粮"]=int(region["stock"]["粮"])-2
     npc["rations"]=int(npc["rations"])+2
     society["total_trades"]=int(society["total_trades"])+1
     var day: Dictionary=society["daily"].get(str(int(hour/24)+1),{})
     day["trades"]=int(day.get("trades",0))+1
     if society["total_trades"]%7==0:
-        _event(society,hour,str(npc["name"]),"从市集付出两文，购买两份确实存在的粮食。")
+        _event(society,hour,str(npc["name"]),"按今日市价支付%d文，买下真实存货中的两份粮食。" % bill)
 
 static func _meal(society: Dictionary, npc: Dictionary, region: Dictionary, hour: int) -> void:
     _purchase(society,npc,region,hour)
@@ -420,6 +424,22 @@ static func _hour_step(society: Dictionary, absolute_hour: int) -> void:
                     var friends: Dictionary=person.get("social",{})
                     friends[peer]=mini(100,int(friends.get(peer,0))+1)
                     person["social"]=friends
+        # Goal selection is grounded in needs/occupation, not a cosmetic fixed wish.
+        if hour==20 and int(person["health"])>0:
+            if int(person["hunger"])>0 or int(person["rations"])==0:
+                person["wish"]="努力挣钱买粮，别再挨饿"
+                person["mood"]="忧虑"
+            elif int(person["coins"])>=25:
+                person["wish"]="攒钱改善居所与日常生活"
+                person["mood"]="安心"
+            elif job=="脚夫" and not person["cargo"].is_empty():
+                person["wish"]="把押运货物如数送达"
+            elif job in ["学徒","教书人"]:
+                person["wish"]="继续学习本业，逐步提升技艺"
+            elif int(person["work_done"])>10:
+                person["wish"]="靠手艺和劳动积累家底"
+            else:
+                person["wish"]="凭本事把日子过好"
         person["last_hour"]=absolute_hour
         if int(person["health"])<=0:
             person["activity"]="病卧不起"
