@@ -50,6 +50,7 @@ func _setup_society() -> void:
     if first_init:
         data["society"]=XianfanSocietySim.initial_state(_clock())
     var society: Dictionary=data["society"]
+    var civic_added:=XianfanCivicPopulation.initialize(society,int(society.get("last_hour",int(_clock()/60))))
     if not XianfanSocietySim.valid(society):
         # Never silently destroy a corrupted economic ledger: log and leave it
         # unchanged rather than resetting all people's possessions.
@@ -57,7 +58,8 @@ func _setup_society() -> void:
         return
     _sync_society_people()
     _archive_society_milestones()
-    if first_init: save()
+    _archive_civic_memory()
+    if first_init or civic_added: save()
 
 func _sync_society_people() -> void:
     var society: Dictionary=data.get("society",{})
@@ -93,6 +95,36 @@ func _sync_society_people() -> void:
         npc["death_day"]=int(entry.get("death_day",0))
         npc["goal_progress"]=mini(100,int(entry["work_done"]))
         data["npc"][name]=npc
+    # Hundreds of named background residents are updated from saved identity
+    # and the current time; they aren't each executing frame-by-frame AI.
+    for who in society.get("civic_agents",{}):
+        var info: Dictionary=XianfanCivicPopulation.snapshot(society,str(who),int(society.get("last_hour",0)))
+        var living: Dictionary=data["npc"].get(who,{})
+        living["id"]=str(info["id"])
+        living["age"]=int(info["age"])
+        living["job"]=str(info["job"])
+        living["place"]=str(info["place"])
+        living["activity"]=str(info["activity"])
+        living["mood"]=str(info["mood"])
+        living["relationship"]=str(info["standing"])
+        living["social_class"]=str(info["standing"])
+        living["sector"]=str(info["sector"])
+        living["faction"]=str(info["faction"])
+        living["trait"]=str(info["trait"])
+        living["wish"]=str(info["wish"])
+        living["money"]=int(info["coins"])
+        living["health"]=int(info["health"])
+        living["energy"]=int(info["energy"])
+        living["rations"]=int(info["rations"])
+        living["household"]=str(info.get("household","独居"))
+        living["hunger"]=int(info.get("hunger",0))
+        living["alive"]=bool(info.get("alive",true))
+        living["skills"]=info.get("skills",{}).duplicate(true)
+        living["root"]=str(info.get("root","待鉴定"))
+        living["biography"]=info.get("biography",[]).duplicate(true)
+        living["death_day"]=int(info.get("death_day",0))
+        living["goal_progress"]=mini(100,int(info.get("work_done",0)))
+        data["npc"][who]=living
 
 func _archive_society_milestones() -> void:
     if memory_store==null or not data.has("society"): return
@@ -118,6 +150,38 @@ func _archive_society_milestones() -> void:
             break
         cursor+=1
     data["society_chronicle_cursor"]=cursor
+
+func _archive_civic_memory() -> void:
+    if memory_store==null or not data.has("society"): return
+    var event_log: Array=data["society"].get("civic_chronicle",[])
+    var cursor:=clampi(int(data.get("civic_chronicle_cursor",0)),0,event_log.size())
+    while cursor<event_log.size():
+        var event: Dictionary=event_log[cursor]
+        var who:=str(event.get("npc",""))
+        if not data["npc"].has(who):
+            cursor+=1
+            continue
+        var entry: Dictionary={"uid":str(event.get("uid","")),
+            "type":"life","day":int(event.get("day",0)),
+            "activity":str(event.get("detail","")),
+            "goal":str(event.get("sector","社会")),
+            "place":str(data["npc"][who].get("place","")),
+            "mood":str(data["npc"][who].get("mood","平静")),
+            "source":"地区社会账本真实经历"}
+        if not memory_store.append_event(who,entry,data["npc"][who]):
+            _note("【存储告警】社会人生事件等待下次写入："+who)
+            break
+        cursor+=1
+    data["civic_chronicle_cursor"]=cursor
+
+func society_roster(sector: String="",page: int=0) -> Dictionary:
+    if not data.has("society"): return {"size":0,"pages":1,"page":0,"entries":[]}
+    return XianfanCivicPopulation.roster(data["society"],sector,page,12)
+
+func society_sectors() -> Array[String]:
+    var choices: Array[String]=[]
+    for row in XianfanCivicPopulation.DOMAINS: choices.append(str(row[0]))
+    return choices
 
 func society_status() -> String:
     if not data.has("society"): return "世界社会层尚未初始化"
@@ -547,6 +611,10 @@ func npcs_status() -> Array[Dictionary]:
             "age":int(n.get("age",16 if key=="孙成明" else (35 if key=="钱然泽" else 49))),
             "relationship":str(n.get("relationship","妹妹" if key=="孙成明" else ("父亲" if key=="钱然泽" else "母亲"))),
             "job":str(n.get("job","家务")),
+            "sector":str(n.get("sector","家户")),
+            "faction":str(n.get("faction","无")),
+            "standing":str(n.get("social_class",n.get("relationship","平民"))),
+            "root":str(n.get("root","未鉴定")),
             "money":int(n.get("money",0)),
             "health":int(n.get("health",100)),
             "household":str(n.get("household","未登记")),
@@ -608,6 +676,7 @@ func _tick(minutes: int, stamina_delta: int = 0, count_turn: bool = true) -> voi
         if hours>0:
             _sync_society_people()
             _archive_society_milestones()
+            _archive_civic_memory()
     if count_turn:
         data["turn"] = int(data["turn"]) + 1
 
