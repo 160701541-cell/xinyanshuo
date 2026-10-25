@@ -1,0 +1,22 @@
+{
+  "schema": 1,
+  "version": "linan-bookshop-v1",
+  "site_id": "LN-BOOK-01",
+  "name": "临安旧书铺",
+  "coords": {
+    "x": 154,
+    "y": 330
+  },
+  "inventory": {
+    "ordinary_breathing_notes": 1,
+    "verified_cultivation_manual": 0
+  },
+  "price": {
+    "ordinary_breathing_notes": 2,
+    "verified_cultivation_manual": null
+  },
+  "copper": 20,
+  "walk_minutes": 16,
+  "ask_minutes": 14,
+  "stamina_cost": 2
+}
