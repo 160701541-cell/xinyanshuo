@@ -22,7 +22,7 @@ const PREF_PATH := "user://xianfan_local_model_selection.json"
 const CONTEXT_CHOICES := [4096,8192,16384,32768]
 static func default_context(model_name: String) -> int:
     if model_name=="4B" or model_name=="1.7B": return 16384
-    if model_name=="14B": return 4096
+    if model_name=="8B" or model_name=="14B": return 4096
     return 8192
 static func context_hint(tokens: int, model_name: String) -> String:
     var risk:="常规" if tokens<=8192 else ("高内存/发热风险" if tokens<=16384 else "极高风险：12GB物理内存上8B可能被系统终止")
@@ -97,6 +97,9 @@ func _ready() -> void:
         var selected:=int(parsed.get("n_ctx",default_context(active_name)))
         if CONTEXT_CHOICES.has(selected): context_tokens=selected
         context_customized=bool(parsed.get("context_customized",false))
+        # Earlier builds stored an 8192-token default for 8B. Migrate only
+        # uncustomized selections, preserving deliberate user settings.
+        if not context_customized: context_tokens=default_context(active_name)
 
 func _update_name() -> void:
     var i:=preset_index(model_source)
@@ -364,8 +367,9 @@ func build_messages(text: String, person: String, state: Dictionary) -> Array:
             var entry: Dictionary = item
             if str(entry.get("speaker",""))==person:
                 scoped.append(entry)
-        # Recent 4 exchanges max, and every NPC gets their own context.
-        for idx in range(maxi(0,scoped.size()-4),scoped.size()):
+        # Keep the latest two exchanges in the active inference context.
+        # The complete transcript and long-term retrieval remain on disk.
+        for idx in range(maxi(0,scoped.size()-2),scoped.size()):
             var old: Dictionary=scoped[idx]
             var player_words := str(old.get("player","")).substr(0,180)
             for prefix in ["跟"+person+"说：","跟"+person+"说:"]:
@@ -388,10 +392,17 @@ func build_messages(text: String, person: String, state: Dictionary) -> Array:
 func _collect_stream(stream: Variant, kind: String) -> Variant:
     var full: String=""
     var last_emit:=0
+    var start_ms:=Time.get_ticks_msec()
+    var first_token_ms:=-1
+    var count:=0
     while true:
         var token: Variant=await stream.next_token()
         if token==null: break
         if generation_cancelled: return null
+        if first_token_ms<0:
+            first_token_ms=Time.get_ticks_msec()
+            status_changed.emit("AI首字等待 %.1f 秒，正在逐字生成。" % [float(first_token_ms-start_ms)/1000.0])
+        count+=1
         full+=str(token)
         var now:=Time.get_ticks_msec()
         if now-last_emit>=180:
@@ -399,6 +410,8 @@ func _collect_stream(stream: Variant, kind: String) -> Variant:
             streaming.emit(kind,full.substr(maxi(0,full.length()-900)))
     if generation_cancelled: return null
     streaming.emit(kind,full.substr(maxi(0,full.length()-900)))
+    var seconds:=maxf(0.001,float(Time.get_ticks_msec()-start_ms)/1000.0)
+    status_changed.emit("本轮AI生成：%d token / %.1f秒（约 %.1f token/秒，含首字等待）。" % [count,seconds,float(count)/seconds])
     return full
 
 # Story director proposes only observations and a named candidate plot beat.
