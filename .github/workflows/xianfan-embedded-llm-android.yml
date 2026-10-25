@@ -1,0 +1,81 @@
+name: Xianfan Android Native LLM Prototype
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - xianfan/android-embedded-llm-prototype
+    paths:
+      - 'projects/xianfan-living-world/android-text/**'
+      - '.github/workflows/xianfan-embedded-llm-android.yml'
+permissions:
+  contents: read
+jobs:
+  package:
+    runs-on: ubuntu-latest
+    container:
+      image: barichello/godot-ci:4.6.3
+    steps:
+      - uses: actions/checkout@v4
+      - name: Prepare Godot export templates and Android SDK
+        run: |
+          for dir in /root/.local/share/godot/export_templates/*; do
+            test -d "$dir" || continue
+            name="$(basename "$dir")"
+            mkdir -p "$HOME/.local/share/godot/export_templates/$name"
+            cp -a "$dir/." "$HOME/.local/share/godot/export_templates/$name/"
+          done
+          mkdir -p "$HOME/.config/godot"
+          cp /root/.config/godot/editor_settings-4.6.tres "$HOME/.config/godot/editor_settings-4.6.tres"
+          sdkmanager --install "platforms;android-34" "build-tools;34.0.0"
+      - name: Install audited NobodyWho v12.1.0 binary release for Android and Linux
+        run: |
+          set -eu
+          curl -fL --retry 3 --connect-timeout 20 "https://github.com/nobodywho-ooo/nobodywho/releases/download/nobodywho-godot-v12.1.0/nobodywho-godot-nobodywho-godot-v12.1.0.zip" -o /tmp/nobodywho-godot-v12.1.0.zip
+          unzip -q /tmp/nobodywho-godot-v12.1.0.zip -d /tmp/nobodywho-release
+          find /tmp/nobodywho-release -name '*.gdextension' -print
+          ext="$(find /tmp/nobodywho-release -type f -name '*.gdextension' | head -n 1)"
+          test -n "$ext"
+          src="$(dirname "$ext")"
+          dest="projects/xianfan-living-world/android-text/addons/nobodywho"
+          mkdir -p "$dest"
+          cp -a "$src/." "$dest/"
+          find "$dest" -maxdepth 2 -type f | head -n 40
+          test -s "$dest/$(basename "$ext")"
+      - name: Import game with native extension
+        run: |
+          cd projects/xianfan-living-world/android-text
+          godot --headless --path . --editor --import --quit
+      - name: Run world NPC and API tests
+        run: |
+          cd projects/xianfan-living-world/android-text
+          godot --headless --path . --script res://tests/test_world.gd
+          godot --headless --path . --script res://tests/test_ai.gd
+          godot --headless --path . --script res://tests/test_ui.gd
+      - name: Validate native local model runtime class exists
+        run: |
+          cd projects/xianfan-living-world/android-text
+          godot --headless --path . --script res://tests/test_local_runtime.gd
+      - name: UI startup check
+        run: |
+          cd projects/xianfan-living-world/android-text
+          godot --headless --path . --quit-after 30 > /tmp/native-ui.log 2>&1
+          cat /tmp/native-ui.log
+          if grep -E '(SCRIPT ERROR|Parse Error|Invalid call)' /tmp/native-ui.log; then exit 1; fi
+      - name: Build APK with native local runtime
+        run: |
+          cd projects/xianfan-living-world/android-text
+          mkdir -p build
+          export GODOT_ANDROID_KEYSTORE_DEBUG_PATH=/root/debug.keystore
+          export GODOT_ANDROID_KEYSTORE_DEBUG_USER=androiddebugkey
+          export GODOT_ANDROID_KEYSTORE_DEBUG_PASSWORD=android
+          godot --headless --path . --export-debug Android build/xianfan-canglan-native-llm.apk
+          test -s build/xianfan-canglan-native-llm.apk
+          sha256sum build/xianfan-canglan-native-llm.apk > build/SHA256SUMS.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: xianfan-canglan-native-llm-test-apk
+          path: |
+            projects/xianfan-living-world/android-text/build/xianfan-canglan-native-llm.apk
+            projects/xianfan-living-world/android-text/build/SHA256SUMS.txt
+          if-no-files-found: error
+          retention-days: 30
