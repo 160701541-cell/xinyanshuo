@@ -22,6 +22,11 @@ func _run() -> void:
     }
     var society: Dictionary={"civic_agents":people,"civic_last_day":29,
         "civic_chronicle":[],"civic_life_events":[]}
+    var catalog: Dictionary=XianfanPsyche.catalog()
+    check(catalog.get("axes",[]).size()==XianfanPsyche.TRAITS.size(),
+        "All 24 value and desire axes are defined in authored offline data")
+    check(catalog.get("planned_event_scenarios",[]).size()>=35,
+        "Psychological database must distinguish actual mechanics from future complex events")
     check(XianfanPsyche.ensure(society),"First load creates durable psychological profiles")
     check(not XianfanPsyche.ensure(society),"Second load preserves original identities and traits")
     for who in people:
@@ -88,6 +93,11 @@ func _run() -> void:
     var minor_request:=XianfanPsyche.resolve(society,"赵禾","小石","express_interest",100)
     check(not bool(minor_request.get("ok",false)),
         "No adult romance actions involving minors, ever")
+    people["小石"]["age"]=18
+    check(XianfanPsyche.ensure(society),"Turning 18 activates adult traits exactly once")
+    check(int(people["小石"]["psyche"]["traits"]["desire"])>0,
+        "Adult development is not permanently disabled by a minor-age start")
+
     recipient["home"]="临安县城·南巷"
     var distance:=XianfanPsyche.resolve(society,"赵禾","柳柳","express_interest",140)
     check(not bool(distance.get("ok",false)),
