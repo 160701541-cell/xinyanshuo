@@ -1,12 +1,21 @@
 extends Control
 
 # Portrait-first reader, NPC dossier popups and separated dialogue history.
-const BG := Color("#101d22")
-const PAPER := Color("#f4eee2")
-const FADED := Color("#b6c5c7")
-const GOLD := Color("#dfbc80")
-const PANEL := Color("#20343a")
-const BTN := Color("#30494d")
+# Native Godot interpretation of 《浮生簿·界面美化模块》: parchment-only
+# content, single tinted heading stripe, ink text and chapter-dependent accents.
+# No LaTeX/KaTeX; game mechanics and saved data remain unchanged.
+const BG := Color("#FBF8F1")
+const PAPER := Color("#3A362F")
+const FADED := Color("#8A8074")
+const GOLD := Color("#427C74")
+const PANEL := Color("#FBF8F1")
+const BTN := Color("#FBF8F1")
+const DIVIDER := Color("#E6E0D4")
+const JADE_BAND := Color("#D6DFD8")
+const JADE_INK := Color("#152826")
+const ROSE_BAND := Color("#EDD7D5")
+const ROSE_INK := Color("#2B1317")
+const ROSE_EDGE := Color("#B45464")
 
 var game := XianfanWorld.new()
 var ai: XianfanAI
@@ -19,6 +28,12 @@ var scene_text: RichTextLabel
 var title_label: Label
 var hud: Label
 var page_title: Label
+var paper_heading_strip: PanelContainer
+var reader_card: PanelContainer
+var stamina_bar: ProgressBar
+var modal_card: PanelContainer
+var modal_heading_strip: PanelContainer
+var reader_footer: Label
 var tab_buttons: HBoxContainer
 var actor_buttons: VBoxContainer
 var quick_buttons: HBoxContainer
@@ -67,6 +82,27 @@ func _box(color: Color, border: Color = Color.TRANSPARENT, roundness: int = 12) 
     b.content_margin_bottom = 12
     return b
 
+func _paper_palette(page: String) -> Dictionary:
+    match page:
+        "对话", "人物":
+            return {"band":ROSE_BAND,"ink":ROSE_INK,"edge":ROSE_EDGE}
+        "反馈":
+            return {"band":Color("#EED6CE"),"ink":Color("#2D1310"),"edge":Color("#BC5044")}
+        "设置":
+            return {"band":Color("#D9DEDE"),"ink":Color("#162028"),"edge":Color("#517693")}
+        _:
+            return {"band":JADE_BAND,"ink":JADE_INK,"edge":GOLD}
+
+func _progress_style(tint: Color) -> StyleBoxFlat:
+    var b := StyleBoxFlat.new()
+    b.bg_color = tint
+    b.set_corner_radius_all(3)
+    b.content_margin_top = 0
+    b.content_margin_bottom = 0
+    b.content_margin_left = 0
+    b.content_margin_right = 0
+    return b
+
 func _label(value: String, font_size: int = 19, color: Color = PAPER) -> Label:
     var t := Label.new()
     t.text = value
@@ -78,12 +114,16 @@ func _label(value: String, font_size: int = 19, color: Color = PAPER) -> Label:
 func _button(value: String, target: Callable, fs: int = 18) -> Button:
     var b := Button.new()
     b.text = value
-    b.custom_minimum_size = Vector2(0, 49)
+    b.custom_minimum_size = Vector2(0, 45)
     b.add_theme_font_size_override("font_size", fs)
     b.add_theme_color_override("font_color", PAPER)
-    b.add_theme_stylebox_override("normal", _box(BTN,Color("#446267")))
-    b.add_theme_stylebox_override("hover", _box(Color("#415c61"), GOLD))
-    b.add_theme_stylebox_override("pressed", _box(Color("#15292e"), GOLD))
+    b.add_theme_color_override("font_hover_color", JADE_INK)
+    b.add_theme_color_override("font_pressed_color", JADE_INK)
+    b.add_theme_color_override("font_focus_color", PAPER)
+    b.add_theme_stylebox_override("normal", _box(BTN, DIVIDER, 7))
+    b.add_theme_stylebox_override("hover", _box(JADE_BAND, GOLD, 7))
+    b.add_theme_stylebox_override("pressed", _box(Color("#C7D8D0"), GOLD, 7))
+    b.add_theme_stylebox_override("focus", _box(BTN, GOLD, 7))
     b.pressed.connect(target)
     return b
 
@@ -109,14 +149,22 @@ func _build() -> void:
         margins.add_theme_constant_override("margin_"+direction, 16 if direction in ["left","right"] else 10)
     add_child(margins)
     var root := VBoxContainer.new()
-    root.add_theme_constant_override("separation",8)
+    root.add_theme_constant_override("separation",7)
     margins.add_child(root)
-    title_label=_label("仙 凡 · 苍 岚",29,GOLD)
+    title_label=_label("仙 凡 · 苍 岚",30,JADE_INK)
     title_label.horizontal_alignment=HORIZONTAL_ALIGNMENT_CENTER
     root.add_child(title_label)
-    hud=_label("",17,FADED)
+    hud=_label("",16,FADED)
     hud.horizontal_alignment=HORIZONTAL_ALIGNMENT_CENTER
     root.add_child(hud)
+    stamina_bar = ProgressBar.new()
+    stamina_bar.show_percentage = false
+    stamina_bar.min_value = 0
+    stamina_bar.max_value = 100
+    stamina_bar.custom_minimum_size = Vector2(0, 9)
+    stamina_bar.add_theme_stylebox_override("background",_progress_style(DIVIDER))
+    stamina_bar.add_theme_stylebox_override("fill",_progress_style(Color("#3F7C76")))
+    root.add_child(stamina_bar)
 
     tab_buttons=HBoxContainer.new()
     tab_buttons.add_theme_constant_override("separation",4)
@@ -128,39 +176,46 @@ func _build() -> void:
         b.custom_minimum_size=Vector2(0,54)
         tab_buttons.add_child(b)
 
-    var reader := PanelContainer.new()
-    reader.size_flags_vertical=SIZE_EXPAND_FILL
-    reader.add_theme_stylebox_override("panel",_box(PANEL,Color("#4b6468")))
-    root.add_child(reader)
+    reader_card = PanelContainer.new()
+    reader_card.size_flags_vertical=SIZE_EXPAND_FILL
+    reader_card.add_theme_stylebox_override("panel",_box(PANEL,GOLD,8))
+    root.add_child(reader_card)
     var inside := VBoxContainer.new()
-    inside.add_theme_constant_override("separation",9)
-    reader.add_child(inside)
-    page_title=_label("眼前",20,GOLD)
-    inside.add_child(page_title)
+    inside.add_theme_constant_override("separation",10)
+    reader_card.add_child(inside)
+    paper_heading_strip = PanelContainer.new()
+    paper_heading_strip.add_theme_stylebox_override("panel",_box(JADE_BAND, Color.TRANSPARENT,4))
+    inside.add_child(paper_heading_strip)
+    page_title=_label("眼前",21,JADE_INK)
+    paper_heading_strip.add_child(page_title)
     scene_text=RichTextLabel.new()
     scene_text.bbcode_enabled=false
     scene_text.scroll_active=true
     scene_text.fit_content=false
     scene_text.scroll_following=false
     scene_text.size_flags_vertical=SIZE_EXPAND_FILL
-    scene_text.add_theme_font_size_override("normal_font_size",23)
+    scene_text.add_theme_font_size_override("normal_font_size",22)
     scene_text.add_theme_color_override("default_color",PAPER)
+    scene_text.add_theme_color_override("font_shadow_color",Color.TRANSPARENT)
     inside.add_child(scene_text)
     actor_buttons=VBoxContainer.new()
     actor_buttons.add_theme_constant_override("separation",6)
     inside.add_child(actor_buttons)
 
+    reader_footer=_label("所见皆有因 · 行动可自由描述 · 建议指令并非限制",15,FADED)
+    reader_footer.horizontal_alignment=HORIZONTAL_ALIGNMENT_CENTER
+    root.add_child(reader_footer)
     notice=_label("",16,GOLD)
     root.add_child(notice)
 
     quick_buttons=HBoxContainer.new()
     quick_buttons.add_theme_constant_override("separation",7)
     root.add_child(quick_buttons)
-    action_toggle=_button("展开参考行动  ▾",func(): _toggle_actions(),16)
+    action_toggle=_button("本页可做 · 展开建议  ▾",func(): _toggle_actions(),16)
     action_toggle.custom_minimum_size=Vector2(0,41)
     root.add_child(action_toggle)
     action_scroll=ScrollContainer.new()
-    action_scroll.custom_minimum_size=Vector2(0,190)
+    action_scroll.custom_minimum_size=Vector2(0,175)
     action_scroll.horizontal_scroll_mode=ScrollContainer.SCROLL_MODE_DISABLED
     action_scroll.visible=false
     root.add_child(action_scroll)
@@ -180,13 +235,15 @@ func _build() -> void:
     input_row.add_theme_constant_override("separation",8)
     root.add_child(input_row)
     command=LineEdit.new()
-    command.placeholder_text="直接写行动或对话，不限按钮"
+    command.placeholder_text="写下想做的事，或对眼前的人说话……"
     command.size_flags_horizontal=SIZE_EXPAND_FILL
     command.custom_minimum_size=Vector2(0,60)
     command.add_theme_font_size_override("font_size",20)
     command.add_theme_color_override("font_color",PAPER)
-    command.add_theme_stylebox_override("normal",_box(PANEL,Color("#628084")))
-    command.add_theme_stylebox_override("focus",_box(PANEL,GOLD))
+    command.add_theme_stylebox_override("normal",_box(PANEL,Color("#B5AFA3"),6))
+    command.add_theme_stylebox_override("focus",_box(Color("#FEFCF7"),GOLD,6))
+    command.add_theme_color_override("caret_color",GOLD)
+    command.add_theme_color_override("font_placeholder_color",FADED)
     command.text_submitted.connect(func(t: String): _submit(t,true))
     input_row.add_child(command)
     var send := _button("发送",func(): _submit(command.text,true),19)
@@ -200,7 +257,7 @@ func _build() -> void:
     overlay.visible=false
     add_child(overlay)
     var shade:=ColorRect.new()
-    shade.color=Color(0.02,0.04,0.05,0.85)
+    shade.color=Color(0.09,0.11,0.10,0.66)
     shade.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
     shade.mouse_filter=Control.MOUSE_FILTER_STOP
     overlay.add_child(shade)
@@ -211,14 +268,17 @@ func _build() -> void:
     for side in ["top","bottom"]:
         popup_margin.add_theme_constant_override("margin_"+side,110)
     overlay.add_child(popup_margin)
-    var box:=PanelContainer.new()
-    box.add_theme_stylebox_override("panel",_box(PANEL,GOLD,15))
-    popup_margin.add_child(box)
+    modal_card=PanelContainer.new()
+    modal_card.add_theme_stylebox_override("panel",_box(PANEL,ROSE_EDGE,10))
+    popup_margin.add_child(modal_card)
     var pop_column:=VBoxContainer.new()
     pop_column.add_theme_constant_override("separation",9)
-    box.add_child(pop_column)
-    modal_title=_label("人物",26,GOLD)
-    pop_column.add_child(modal_title)
+    modal_card.add_child(pop_column)
+    modal_heading_strip=PanelContainer.new()
+    modal_heading_strip.add_theme_stylebox_override("panel",_box(ROSE_BAND,Color.TRANSPARENT,4))
+    pop_column.add_child(modal_heading_strip)
+    modal_title=_label("人物",25,ROSE_INK)
+    modal_heading_strip.add_child(modal_title)
     modal_info=RichTextLabel.new()
     modal_info.bbcode_enabled=false
     modal_info.fit_content=false
@@ -240,6 +300,13 @@ func _open_modal(title: String, body: String) -> void:
     overlay.visible=true
     modal_title.text=title
     modal_info.text=body
+    var person_popup := title.begins_with("人物")
+    var band := ROSE_BAND if person_popup else JADE_BAND
+    var ink := ROSE_INK if person_popup else JADE_INK
+    var edge := ROSE_EDGE if person_popup else GOLD
+    modal_card.add_theme_stylebox_override("panel",_box(PANEL,edge,10))
+    modal_heading_strip.add_theme_stylebox_override("panel",_box(band,Color.TRANSPARENT,4))
+    modal_title.add_theme_color_override("font_color",ink)
     _wipe(modal_actions)
     _wipe(modal_form)
 
@@ -284,6 +351,9 @@ func _open_ai_settings() -> void:
     var expl:="AI 模式由你自行开启。API模式会把你输入的行动和少量游戏现场数据发送至你指定的服务商。\n\n本机服务模式仅连接已经在手机中运行的兼容服务，游戏安装包目前未自带模型权重或内置推理器。\n\n密钥不写入存档，也不加入反馈日志；关闭应用后需要重新填入。"
     _open_modal("AI 设置",expl)
     setting_provider=OptionButton.new()
+    setting_provider.add_theme_color_override("font_color",PAPER)
+    setting_provider.add_theme_color_override("font_hover_color",PAPER)
+    setting_provider.add_theme_stylebox_override("normal",_box(PANEL,DIVIDER,6))
     for name in ["关闭","API","本机服务","内置模型"]: setting_provider.add_item(name)
     for i in range(setting_provider.item_count):
         if setting_provider.get_item_text(i)==("内置模型" if local_enabled else ai.provider): setting_provider.select(i)
@@ -294,9 +364,10 @@ func _open_ai_settings() -> void:
     for x in [setting_url,setting_model,setting_key]: modal_form.add_child(x)
     modal_actions.add_child(_button("填入 DeepSeek 示例接口",func(): _preset_api("https://api.deepseek.com/chat/completions","deepseek-flash")))
     modal_actions.add_child(_button("填入 OpenAI 接口",func(): _preset_api("https://api.openai.com/v1/chat/completions","gpt-5-mini")))
-    local_model_url=_entry_field("GGUF模型地址或备用HTTPS镜像",local_llm.model_source,false)
+    modal_form.add_child(_label("本地 Qwen3-0.6B Q4_K_M · 文件约484MB，建议手机至少6GB内存、预留1GB空间。首次需联网下载，之后离线使用。",15,FADED))
+    local_model_url=_entry_field("GGUF 地址（预设 Hugging Face，可自定义 HTTPS）",str(local_llm.get("model_source")),false)
     modal_form.add_child(local_model_url)
-    modal_actions.add_child(_button("下载/加载离线Qwen3-0.6B",func(): _enable_local_and_load()))
+    modal_actions.add_child(_button("下载/加载内置 Qwen3-0.6B",func(): _enable_local_and_load()))
     modal_actions.add_child(_button("保存本次配置",func(): _save_ai_settings()))
 
 func _preset_api(url: String, model_id: String) -> void:
@@ -311,6 +382,10 @@ func _entry_field(placeholder: String, value: String, hidden: bool) -> LineEdit:
     e.text=value
     e.secret=hidden
     e.add_theme_font_size_override("font_size",17)
+    e.add_theme_color_override("font_color",PAPER)
+    e.add_theme_color_override("font_placeholder_color",FADED)
+    e.add_theme_stylebox_override("normal",_box(PANEL,DIVIDER,6))
+    e.add_theme_stylebox_override("focus",_box(Color("#FEFCF7"),GOLD,6))
     e.custom_minimum_size=Vector2(0,54)
     return e
 
@@ -324,9 +399,13 @@ func _enable_local_and_load() -> void:
     ai.configure("关闭",ai.endpoint,ai.model,"")
     var f:=FileAccess.open("user://xianfan_local_choice.txt",FileAccess.WRITE)
     if f!=null: f.store_string("1")
-    var model_status: String = str(local_llm.choose_model(local_model_url.text if local_model_url!=null else str(local_llm.get("model_source"))))
-    if not model_status.contains("模型地址已更新"): notice.text=model_status
-    else: local_llm.load_model()
+    var path := str(local_llm.get("model_source"))
+    if local_model_url!=null: path=local_model_url.text
+    var model_status: String = str(local_llm.choose_model(path))
+    if model_status.contains("模型地址已更新"):
+        local_llm.load_model()
+    else:
+        notice.text=model_status
     _refresh()
 
 func _save_ai_settings() -> void:
@@ -355,7 +434,7 @@ func _change_tab(name: String) -> void:
 func _toggle_actions() -> void:
     drawer_open=not drawer_open
     action_scroll.visible=drawer_open and view=="剧情"
-    action_toggle.text="收起参考行动  ▴" if drawer_open else "展开参考行动  ▾"
+    action_toggle.text="收起建议  ▴" if drawer_open else "本页可做 · 展开建议  ▾"
 
 func _submit(text: String, typed: bool) -> void:
     var raw:=text.strip_edges()
@@ -371,9 +450,9 @@ func _submit(text: String, typed: bool) -> void:
             notice.text="本地模型正在理解输入……"
             local_llm.talk(raw,npc_to_chat,game.data)
         elif bool(local_llm.get("loading")):
-            notice.text="模型正在下载或加载。你也可以切换为规则模式。"
+            notice.text="模型正在下载或加载，首次下载请保持应用开启。"
         else:
-            notice.text="本地模型尚未下载或加载失败，请到设置中点击下载/加载模型。"
+            notice.text="本地模型未就绪，进入设置点击‘下载/加载’。"
         return
     if typed and ai.configured():
         request_text=raw
@@ -441,12 +520,22 @@ func _render_buttons(node: Node, labels: Array[String], enabled: bool = true) ->
         node.add_child(b)
 
 func _refresh() -> void:
+    stamina_bar.value=clampf(float(game.data.get("stamina",0)),0.0,100.0)
     hud.text="%s · %s\n精力 %d/100 · 铜钱 %d文 · %s" % [
         game.time_string(),str(game.data["place"]),int(game.data["stamina"]),
         int(game.data["money"]),str(game.data["realm"])]
+    var palette := _paper_palette(view)
+    reader_card.add_theme_stylebox_override("panel",_box(PANEL,palette["edge"],8))
+    paper_heading_strip.add_theme_stylebox_override("panel",_box(palette["band"],Color.TRANSPARENT,4))
+    page_title.add_theme_color_override("font_color",palette["ink"])
     for button in tab_buttons.get_children():
         var tab: Button=button
-        tab.add_theme_stylebox_override("normal",_box(Color("#425748") if tab.text==view else BTN,GOLD if tab.text==view else Color("#4c6569")))
+        var selected := tab.text==view
+        var band: Color = _paper_palette(tab.text)["band"]
+        var edge: Color = _paper_palette(tab.text)["edge"]
+        tab.add_theme_stylebox_override("normal",_box(band if selected else PANEL,edge if selected else DIVIDER,5))
+        tab.add_theme_color_override("font_color",PAPER)
+        tab.add_theme_color_override("font_hover_color",PAPER)
     var suggestions: Array[String]=[]
     actor_buttons.visible=false
     feedback_copy.visible=view=="反馈"
@@ -490,5 +579,5 @@ func _refresh() -> void:
             scene_text.text=game.feedback_report()
         "设置":
             page_title.text="引擎与 AI 模式"
-            scene_text.text="当前："+(local_llm.status() if local_enabled else ai.status())+"\n\n【API】真实代码使用 HTTP POST Chat Completions。默认 OpenAI 地址：https://api.openai.com/v1/chat/completions；也可以选 DeepSeek 示例。需要自行配置有效密钥，游戏不会提供免费的API额度。\n\n【本地模型】本版本没有随 APK 附带原生推理模块；内置模型需要首次下载约数百MB的 Qwen3 GGUF，模型缓存到手机后可离线推理。\n\n【隐私】纯规则模式不联网。只有你主动开启AI并提交行动才发送现场上下文。\n\n【存档】原有存档不删除、不重开。灵根原始承诺仍保持锁定。"
+            scene_text.text="当前："+(str(local_llm.status()) if local_enabled else ai.status())+"\n\n【游戏内下载】本试验版APK包含安卓ARM64原生推理扩展。选择‘内置模型’，点‘下载/加载内置 Qwen3-0.6B’，将在本机下载约484MB的GGUF模型；下载后缓存于手机，可断网推理。建议至少6GB内存、预留1GB空间。首次下载需要网络访问 Hugging Face。\n\n【其他模型】也可填写合法HTTPS GGUF链接。下载失败请使用反馈页；实际推理速度取决于设备。\n\n【API】仍提供手动配置的OpenAI兼容API模式，密钥不随游戏提供。\n\n【存档】该预览版采用独立包名，不会覆盖已安装的主游戏；两者的存档互不通用。"
     scene_text.call_deferred("scroll_to_line",0)
