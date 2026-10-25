@@ -283,7 +283,15 @@ func _open_ai_settings() -> void:
     setting_model=_entry_field("模型名（服务端实际提供的model）",ai.model,false)
     setting_key=_entry_field("API密钥（只在本次运行内存中保存）","",true)
     for x in [setting_url,setting_model,setting_key]: modal_form.add_child(x)
+    modal_actions.add_child(_button("填入 DeepSeek 示例接口",func(): _preset_api("https://api.deepseek.com/chat/completions","deepseek-flash")))
+    modal_actions.add_child(_button("填入 OpenAI 接口",func(): _preset_api("https://api.openai.com/v1/chat/completions","gpt-5-mini")))
     modal_actions.add_child(_button("保存本次配置",func(): _save_ai_settings()))
+
+func _preset_api(url: String, model_id: String) -> void:
+    setting_provider.select(1)
+    setting_url.text=url
+    setting_model.text=model_id
+    notice.text="已填写示例服务地址与模型名。仍需你自己的有效 API Key；此按钮没有实际调用接口。"
 
 func _entry_field(placeholder: String, value: String, hidden: bool) -> LineEdit:
     var e:=LineEdit.new()
@@ -318,14 +326,17 @@ func _toggle_actions() -> void:
 func _submit(text: String, typed: bool) -> void:
     var raw:=text.strip_edges()
     if raw.is_empty(): return
-    if view=="对话" and typed:
+    var npc_to_chat := current_npc if view=="对话" and typed else ""
+    if not npc_to_chat.is_empty():
         raw="跟"+current_npc+"说："+raw
     command.clear()
     command.release_focus()
     if typed and ai.configured():
         request_text=raw
         notice.text="AI正在理解你的行动；结果必须通过游戏规则才能生效。"
-        ai.ask(raw,game.data)
+        var started := ai.ask(raw,game.data,npc_to_chat)
+        if not started and not ai.busy:
+            notice.text="AI尚未就绪或无法连接，请打开设置填写真实接口和密钥；也可以关闭AI继续规则对话。"
         return
     var result:=game.act(raw)
     notice.text=("已记录到反馈页，可一键复制给开发者。" if result.begins_with("暂不支持") else "")
@@ -361,9 +372,14 @@ func _on_ai_completed(payload: Dictionary) -> void:
         var person:=str(payload.get("npc",""))
         var reply:=str(payload.get("reply",""))
         var response:=game.record_ai_dialogue(person,request_text,reply)
-        if game.last_channel=="对话": view="对话"
-        else: game.note_api_failure(request_text,response)
-        notice.text="AI角色对话已保存（不代表获得物品或修为）。"
+        if game.last_channel=="对话":
+            current_npc=person
+            view="对话"
+            notice.text="NPC 已回复；本次对话未改变游戏数值、物品或修为。"
+        else:
+            game.note_api_failure(request_text,response)
+            view="反馈"
+            notice.text=response
     else:
         var info:=str(payload.get("message","描述不够明确"))
         game.note_api_failure(request_text,"尚未实现的行动："+info)
@@ -407,6 +423,8 @@ func _refresh() -> void:
         "对话":
             page_title.text="与人交谈 · "+current_npc
             scene_text.text=game.dialogue_recent()
+            if game.last_channel=="对话" and not game.last_result.is_empty() and not scene_text.text.contains(game.last_result):
+                scene_text.text+="\n\n【刚才交谈】\n"+game.last_result
             actor_buttons.visible=true
             _wipe(actor_buttons)
             actor_buttons.add_child(_label("选择人物，点击查看状态或更换交谈对象：",16,FADED))
@@ -428,5 +446,5 @@ func _refresh() -> void:
             scene_text.text=game.feedback_report()
         "设置":
             page_title.text="引擎与 AI 模式"
-            scene_text.text="当前："+ai.status()+"\n\n【API】支持兼容 chat/completions 的HTTPS服务。可自填服务地址、模型名和临时密钥。\n\n【本地模型】本版本没有随 APK 附带原生推理模块；本机服务仅用于连接其他运行在本手机127.0.0.1端口上的推理服务。\n\n【隐私】纯规则模式不联网。只有你主动开启AI并提交行动才发送现场上下文。\n\n【存档】原有存档不删除、不重开。灵根原始承诺仍保持锁定。"
+            scene_text.text="当前："+ai.status()+"\n\n【API】真实代码使用 HTTP POST Chat Completions。默认 OpenAI 地址：https://api.openai.com/v1/chat/completions；也可以选 DeepSeek 示例。需要自行配置有效密钥，游戏不会提供免费的API额度。\n\n【本地模型】本版本没有随 APK 附带原生推理模块；本机服务仅用于连接其他运行在本手机127.0.0.1端口上的推理服务。\n\n【隐私】纯规则模式不联网。只有你主动开启AI并提交行动才发送现场上下文。\n\n【存档】原有存档不删除、不重开。灵根原始承诺仍保持锁定。"
     scene_text.call_deferred("scroll_to_line",0)
