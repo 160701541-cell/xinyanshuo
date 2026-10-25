@@ -15,6 +15,14 @@ func _run() -> void:
     check(XianfanResumableModelDownload.source_url(
         "hf://Qwen/Qwen3-8B-GGUF/Qwen3-8B-Q4_K_M.gguf").contains("/resolve/main/"),
         "official Hugging Face file translates to direct GGUF URL")
+    var mirror_url: String="https://hf-mirror.com/Qwen/Qwen3-8B-GGUF/resolve/main/Qwen3-8B-Q4_K_M.gguf?download=true"
+    check(XianfanResumableModelDownload.trusted_model_sha(mirror_url)==
+        XianfanResumableModelDownload.VERIFIED_SHA256["hf://Qwen/Qwen3-8B-GGUF/Qwen3-8B-Q4_K_M.gguf"],
+        "third-party mirror must match official Qwen SHA256")
+    check(XianfanLocalLLM.preset_index(mirror_url)==3,
+        "mirror 8B still requires large-model confirmation")
+    check(XianfanResumableModelDownload.trusted_model_sha("https://untrusted.example/not-model.gguf")=="",
+        "unrelated mirror does not inherit trusted upstream checksum")
     check(XianfanResumableModelDownload.range_start("bytes 8388608-16777215/5028000000")==8388608,
         "content range validates resume start")
     check(XianfanResumableModelDownload.range_total("bytes 8388608-16777215/5028000000")==5028000000,
