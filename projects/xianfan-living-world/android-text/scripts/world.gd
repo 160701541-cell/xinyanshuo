@@ -62,6 +62,7 @@ func _setup_society() -> void:
     var society: Dictionary=data["society"]
     var civic_added:=XianfanCivicPopulation.initialize(society,int(society.get("last_hour",int(_clock()/60))))
     var accounts_added:=XianfanEconomyAccounts.initialize(society,int(society.get("last_hour",int(_clock()/60))))
+    var immortal_added:=XianfanImmortalSociety.initialize(society,_clock())
     if not XianfanSocietySim.valid(society):
         # Never silently destroy a corrupted economic ledger: log and leave it
         # unchanged rather than resetting all people's possessions.
@@ -70,7 +71,8 @@ func _setup_society() -> void:
     _sync_society_people()
     _archive_society_milestones()
     _archive_civic_memory()
-    if first_init or civic_added or accounts_added: save()
+    _archive_immortal_memory()
+    if first_init or civic_added or accounts_added or immortal_added: save()
 
 func _sync_society_people() -> void:
     var society: Dictionary=data.get("society",{})
@@ -136,6 +138,23 @@ func _sync_society_people() -> void:
         living["death_day"]=int(info.get("death_day",0))
         living["goal_progress"]=mini(100,int(info.get("work_done",0)))
         data["npc"][who]=living
+    # New world-generated cultivators belong to their own conserved sect and
+    # spiritual resource ledger. Never repurpose a legacy NPC's identity.
+    var immortal: Dictionary=society.get("cultivation_world",{})
+    for cultivator_name in immortal.get("agents",{}):
+        var name:=str(cultivator_name)
+        var info: Dictionary=XianfanImmortalSociety.snapshot(society,name,int(_clock()/60))
+        var existing: Dictionary=data["npc"].get(name,{})
+        if not existing.is_empty() and str(existing.get("id",""))!=str(info["id"]):
+            push_warning("Cannot merge new cultivator: existing historical NPC shares name "+name)
+            continue
+        var living:=info.duplicate(true)
+        living["relationship"]="山门修士" if str(info.get("station",""))=="青云山门" else "行脚散修"
+        living["social_class"]=str(info.get("standing","修士"))
+        living["money"]=0
+        living["rations"]=0
+        living["goal_progress"]=int(info.get("progress",0))
+        data["npc"][name]=living
 
 func _archive_society_milestones() -> void:
     if memory_store==null or not data.has("society"): return
@@ -192,6 +211,44 @@ func _archive_civic_memory() -> void:
         cursor+=1
         processed+=1
     data["civic_chronicle_cursor"]=cursor
+
+func _archive_immortal_memory() -> void:
+    if memory_store==null or not data.has("society"): return
+    var c: Dictionary=data["society"].get("cultivation_world",{})
+    if c.is_empty(): return
+    var ledger: Array=c.get("events",[])
+    var cursor:=clampi(int(data.get("immortal_chronicle_cursor",0)),0,ledger.size())
+    while cursor<ledger.size():
+        var event: Dictionary=ledger[cursor]
+        var name:=str(event.get("npc",""))
+        if not data["npc"].has(name):
+            cursor+=1
+            continue
+        var person: Dictionary=data["npc"][name]
+        var memory: Dictionary={"uid":str(event.get("uid","")),"type":"life",
+            "day":int(event.get("day",0)),"activity":str(event.get("detail","")),
+            "goal":str(event.get("category","修行")),"place":str(event.get("place","")),
+            "mood":str(person.get("mood","平静")),"source":"仙门实际生产/修炼结算"}
+        if not memory_store.append_event(name,memory,person):
+            push_warning("Immortal event memory append failed; still retained in original society ledger")
+            break
+        if world_chronicle!=null and not world_chronicle.append_rule_fact(
+            "immortal_society",name,int(event.get("day",0)),str(event.get("detail","")),
+            str(event.get("uid","")),str(event.get("place",""))):
+            push_warning("Immortal history mirror failed; player game save remains authoritative")
+        cursor+=1
+    # Keep a bounded in-save event window only after archival.
+    if cursor>384:
+        ledger=ledger.slice(cursor)
+        c["events"]=ledger
+        cursor=0
+    data["immortal_chronicle_cursor"]=cursor
+
+func immortal_status() -> String:
+    if not data.has("society"): return "修仙社会层尚未建立。"
+    if str(data.get("place",""))!="青云山门·山门外":
+        return "青云山门的灵材库存与弟子私事须到山门核实，不能隔空查看。世界修士仍会自行劳动、修炼和求生。"
+    return XianfanImmortalSociety.report(data["society"])
 
 func society_roster(sector: String="",page: int=0) -> Dictionary:
     if not data.has("society"): return {"size":0,"pages":1,"page":0,"entries":[]}
@@ -722,6 +779,7 @@ func story_context() -> Dictionary:
         "society_events":data.get("society",{}).get("events",[]).slice(-6),
         "society_daily":data.get("society",{}).get("daily",{}).get(str(data["day"]),{}),
         "recent_npc_days":data.get("npc_life_events",[]).slice(-6),
+        "recent_immortal_facts":data.get("society",{}).get("cultivation_world",{}).get("events",[]).slice(-5),
         "rule_verified_region_events":data.get("verified_local_events",[]).slice(-6),
         "open_plot_threads":data.get("story_flags",{}).keys()}
 
@@ -874,9 +932,11 @@ func _tick(minutes: int, stamina_delta: int = 0, count_turn: bool = true) -> voi
     if data.has("society") and XianfanSocietySim.valid(data["society"]):
         var hours:=XianfanSocietySim.advance_to(data["society"],_clock())
         if hours>0:
+            XianfanImmortalSociety.advance_to(data["society"],_clock())
             _sync_society_people()
             _archive_society_milestones()
             _archive_civic_memory()
+            _archive_immortal_memory()
             if conditional_story!=null:
                 var observations:=conditional_story.observe(data)
                 for observation in observations:
