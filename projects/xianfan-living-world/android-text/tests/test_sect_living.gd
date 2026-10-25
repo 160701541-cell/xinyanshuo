@@ -76,11 +76,25 @@ func _run() -> void:
         int(pantry["灵米"])>=rice_before,
         "Spirit rice harvest obeys physical field and water constraints")
     check(int(pantry["泉水"])>=0 and water_before>=0,"Real spring water never negative")
+    var first_worker: String=""
+    for worker_name in ledger:
+        if bool(ledger[worker_name].get("employed",false)):
+            first_worker=str(worker_name)
+            break
+    var worker_cash_before:=int(society["civic_agents"][first_worker]["coins"])
+    var worker_ration_before:=int(society["civic_agents"][first_worker]["rations"])
     var owned_food_before:=int(society["civic_agents"].values()[0]["rations"])
     world.data["place"]="青云山门·山门外"
     world.passive_time(720)
     world.passive_time(720)
     check(XianfanImmortalSociety.valid(society),"Long-running sect lifecycle conserves all stocks")
+    check(int(society["civic_agents"][first_worker]["coins"])>=worker_cash_before+1,
+        "Mountain workers receive real wages from sect employer")
+    check(int(society["civic_agents"][first_worker]["rations"])==worker_ration_before,
+        "Boarding consumes sect rations, not worker's personal village provisions")
+    check(str(XianfanCivicPopulation.snapshot(society,first_worker,23).get("place",""))=="青云山门·山门外",
+        "Sect boarders remain physically housed at gate at night")
+
     check(int(society["civic_agents"].values()[0]["rations"])>=0 and owned_food_before>=0,
         "Civilian meal bookkeeping remains nonnegative")
     if issues.is_empty():
