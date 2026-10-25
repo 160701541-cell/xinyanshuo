@@ -915,6 +915,8 @@ func _free_wait(raw: String) -> String:
 
 func _free_visit(raw: String) -> String:
     var place := str(data["place"])
+    if raw.contains("村口") or raw.contains("街口") or raw.contains("村里的集市"):
+        return _act_core("去村口")
     if raw.contains("林") or raw.contains("山脚树林") or raw.contains("野地"):
         if place == "石桥村·家中": return _move("石桥村·林缘",24,4)
         if place == "石桥村·溪边": return _move("石桥村·林缘",22,4)
@@ -1156,13 +1158,18 @@ func _free_action(raw: String) -> String:
     if (t.contains("捡") or t.contains("拾") or t.contains("采") or t.contains("挖") or t.contains("砍")) and (t.contains("柴") or t.contains("枝") or t.contains("草") or t.contains("药") or t.contains("树") or t.contains("木")):
         return _free_collect(t)
     if t.contains("去") or t.contains("前往") or t.contains("走到") or t.contains("回村") or t.contains("回家"):
-        if t.contains("林") or t.contains("树林") or t.contains("森林") or t.contains("村外") or t.contains("溪") or t.contains("河边") or t.contains("青云") or t.contains("县城") or t.contains("临安") or t.contains("市集") or t.contains("回家") or t.contains("回村"):
+        if t.contains("林") or t.contains("树林") or t.contains("森林") or t.contains("村外") or t.contains("溪") or t.contains("河边") or t.contains("青云") or t.contains("县城") or t.contains("临安") or t.contains("市集") or t.contains("街口") or t.contains("村口") or t.contains("回家") or t.contains("回村"):
             return _free_visit(t)
     return ""
 
 func _act_core(action: String) -> String:
     match action:
         "查看四周": return look()
+        "去村口":
+            if data["place"]=="石桥村·街口": return "你已在石桥村街口；商贩和村民照常做自己的营生。"
+            if str(data["place"]).begins_with("石桥村"):
+                return _move("石桥村·街口",12 if data["place"]=="石桥村·家中" else 22,2)
+            return "须先返回石桥村才能到村口。"
         "向老道买书": return _buy_manual()
         "回石桥村":
             if data["place"] == "石桥村·家中": return "你已经在家。"
@@ -1303,13 +1310,21 @@ func act(action: String) -> String:
     var line := action.strip_edges()
     var dialogue := (line.contains("妹妹") or line.contains("成明") or line.contains("母亲") or line.contains("父亲") or line.contains("爹") or line.contains("娘")) and (line.contains("问") or line.contains("说") or line.contains("聊") or line.contains("吃饭了吗"))
     dialogue = dialogue or canonical.begins_with("问妹妹") or canonical.begins_with("问母亲") or canonical.begins_with("问父亲") or canonical=="跟妹妹说话"
+    var public_recipient: String=""
+    if line.contains("问") or line.contains("跟") or line.contains("对") or line.contains("聊"):
+        for other in data["npc"]:
+            if str(other) in ["孙成明","钱然泽","郑舟清"]: continue
+            if line.contains(str(other)):
+                dialogue=true
+                public_recipient=str(other)
+                break
     var is_rejected := result.begins_with("暂不支持")
     if is_rejected:
         _record_feedback(line, result, "UNSUPPORTED_ACTION")
         last_channel="反馈"
         last_target=""
     elif dialogue:
-        var who := "孙成明"
+        var who := public_recipient if not public_recipient.is_empty() else "孙成明"
         if line.contains("母亲") or line.contains("娘"): who="郑舟清"
         elif line.contains("父亲") or line.contains("爹"): who="钱然泽"
         last_channel="对话"
@@ -1331,9 +1346,11 @@ func act(action: String) -> String:
 func look() -> String:
     match data["place"]:
         "临安县城·旧书铺": return "城里旧书铺并没有可靠修仙法门。屋檐下的游方老道还坐着，面前放着一本泛黄小册。"
-        "临安县城·东市": return "东市里菜肉摊正收河鱼与青菜。官道在东门外，青云山道从北门蜿蜒而上。"
+        "临安县城·东市": return "县城东市商贾云集，脚夫按时送来真实入账的货物；市场价格随库存变化。"
         "青云山门·山门外": return "高石阶旁立着宗门的测灵碑。凡人走到这里不容易；执事让排队，30文测灵费须在能够真正测试时缴纳。"
         "石桥村·家中": return "院里晒着谷物，灶上有烟，屋旁是菜畦。成明有自己的家务；父亲田里忙，母亲管家。"
+        "石桥村·街口":
+            return "街口摊贩营业，脚夫往来，柴米鱼药皆有真实库存。当前有%d位具名村民在此工作。" % society_nearby().size()
         "石桥村·溪边": return "浅溪旁芦苇成片。第一只鱼笼还在水里，已登记的河鱼并非取之不尽。"
         "石桥村·林缘": return "村外林缘落枝散乱，偶尔能找到车前草。往深处是村社林木，不得随意伐树。" 
     return "远处田野与山路相接，世界仍有人各自谋生。"
@@ -1341,11 +1358,12 @@ func look() -> String:
 func actions_for_place() -> Array[String]:
     match data["place"]:
         "临安县城·旧书铺": return ["查看四周", "向老道买书", "回石桥村", "去东市", "查看修炼结论"]
-        "临安县城·东市": return ["查看四周", "沿山道北上", "山脚脚店投宿", "出售小河鱼", "出售青菜", "回旧书铺", "回石桥村"]
+        "临安县城·东市": return ["查看四周", "查看物价", "买粗粮", "卖鱼", "做零工", "沿山道北上", "山脚脚店投宿", "出售小河鱼", "出售青菜", "回旧书铺", "回石桥村"]
+        "石桥村·街口": return ["查看四周","查看物价","买粗粮","卖鱼","做零工","回家","去溪边"]
         "石桥村·溪边": return ["查看四周", "查看鱼笼", "钓鱼", "取鱼笼里的鱼", "去林缘", "回家"]
         "石桥村·林缘": return ["查看四周", "捡枯枝", "采车前草", "去溪边", "回家"]
         "青云山门·山门外": return ["查看四周", "申请测灵根", "山脚脚店投宿", "查看修炼结论"]
-        _: return ["查看四周", "自动完成今日安排", "跟妹妹说话", "教妹妹修炼", "读引气初篇", "静坐修炼", "连续修炼一天", "连续修炼十日", "查看修炼结论", "吃饭休息", "睡觉", "播种青菜", "收获青菜", "组装鱼竿", "去溪边", "出发去青云", "去东市"]
+        _: return ["查看四周", "去村口", "自动完成今日安排", "跟妹妹说话", "教妹妹修炼", "读引气初篇", "静坐修炼", "连续修炼一天", "连续修炼十日", "查看修炼结论", "吃饭休息", "睡觉", "播种青菜", "收获青菜", "组装鱼竿", "去溪边", "出发去青云", "去东市"]
 
 func status() -> String:
     var lines: Array[String] = []
