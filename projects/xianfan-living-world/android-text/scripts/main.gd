@@ -38,6 +38,8 @@ var latest_action := ""
 var latest_outcome := ""
 var view := "剧情"
 var current_npc := "孙成明"
+var last_roster_sector := ""
+var last_roster_page := 0
 var scene_text: RichTextLabel
 var title_label: Label
 var hud: Label
@@ -419,6 +421,44 @@ func _open_modal(title: String, body: String) -> void:
     _wipe(modal_actions)
     _wipe(modal_form)
 
+func _open_society_roster(sector: String="",page: int=0) -> void:
+    last_roster_sector=sector
+    last_roster_page=page
+    var roster: Dictionary=game.society_roster(sector,page)
+    last_roster_page=int(roster["page"])
+    var lines: Array[String]=[
+        "这里的人物有永久身份编号，职业、阶层与组织互相独立。日常按天模拟，并非把几万人每帧交给8B计算。",
+        "已登记：%d 人 · 第%d/%d页" % [
+            int(roster["size"]),int(roster["page"])+1,int(roster["pages"])]
+    ]
+    var select:=OptionButton.new()
+    select.custom_minimum_size=Vector2(0,52)
+    select.add_theme_stylebox_override("normal",_box(PANEL,DIVIDER,5))
+    select.add_theme_color_override("font_color",PAPER)
+    select.add_item("全部行业")
+    var selected:=0
+    var idx:=1
+    for group in game.society_sectors():
+        select.add_item(group)
+        if group==sector: selected=idx
+        idx+=1
+    select.select(selected)
+    select.item_selected.connect(func(item: int):
+        var chosen: String="" if item==0 else select.get_item_text(item)
+        _open_society_roster(chosen,0)
+    )
+    _open_modal("百业人物名册", "\n\n".join(lines))
+    modal_form.add_child(select)
+    for entry in roster["entries"]:
+        var npc: Dictionary=entry
+        var who:=str(npc["name"])
+        modal_actions.add_child(_button("%s · %s · %s%s" % [
+            who,str(npc["job"]),str(npc["standing"]),
+            "" if bool(npc["alive"]) else "（已故）"],
+            func(): _open_npc(who),15))
+    modal_actions.add_child(_button("上一页",func(): _open_society_roster(sector,last_roster_page-1),16))
+    modal_actions.add_child(_button("下一页",func(): _open_society_roster(sector,last_roster_page+1),16))
+
 func _open_npc(name: String) -> void:
     current_npc=name
     var chosen: Dictionary={}
@@ -430,6 +470,10 @@ func _open_npc(name: String) -> void:
         "【身份】%s · %d岁 · %s" % [name,int(chosen["age"]),str(chosen["relationship"])],
         "【编号】"+str(chosen["id"]),
         "【职业】"+str(chosen.get("job","家务")),
+        "【行业】"+str(chosen.get("sector","家户")),
+        "【社会身份】"+str(chosen.get("standing","平民")),
+        "【所属组织】"+str(chosen.get("faction","无")),
+        "【灵根】"+str(chosen.get("root","待鉴定"))+"（未鉴定不等于有资格修炼）",
         "【生存状态】"+("在世" if bool(chosen.get("alive",true)) else "已故 · 逝于第%d日" % int(chosen.get("death_day",0))),
         "【真实技能】"+str(chosen.get("skills",{})),
         "【师承】"+str(chosen.get("mentor","暂无")),
@@ -456,6 +500,8 @@ func _open_npc(name: String) -> void:
             _change_tab("对话")
         ))
     modal_actions.add_child(_button("查看长期记忆 · 生活习惯",func(): _open_npc_memory(name),16))
+    if str(chosen.get("id","")).begins_with("CIV"):
+        modal_actions.add_child(_button("返回百业人物名册",func(): _open_society_roster(last_roster_sector,last_roster_page),16))
     if chosen.get("biography",[]).size()>0:
         modal_actions.add_child(_button("查看真实人生履历",func():
             var lines: Array[String]=[]
@@ -956,6 +1002,9 @@ func _refresh() -> void:
             scene_text.text=game.society_status()
             actor_buttons.visible=true
             _wipe(actor_buttons)
+            var roster: Dictionary=game.society_roster()
+            actor_buttons.add_child(_button("📜 查看百业与社会身份 · %d名具名居民" % int(roster["size"]),
+                func(): _open_society_roster(),17))
             actor_buttons.add_child(_label("附近具名NPC（真实职业、地点、账本）",17,GOLD))
             var dead_people: Array[String]=[]
             for n in game.npcs_status():
