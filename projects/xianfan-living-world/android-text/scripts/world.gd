@@ -269,7 +269,7 @@ func _catch_fish() -> String:
 func _sleep() -> String:
     if data["place"] != "石桥村·家中": return "这里没有安全的睡处。"
     _tick(480, 48)
-    return "你睡了整整八个时辰中的四个时辰，醒来精神有所恢复。"
+    return "你睡了八个小时（四个时辰），醒来精神有所恢复。"
 
 func _study() -> String:
     if not data["book_owned"]: return "你还没有《引气初篇》。"
@@ -406,6 +406,53 @@ func _continuous(days: int = 10) -> String:
         if int(data["hp"]) == 0: break
     return "从第%d日开始，你按正常饮食作息连续修习%d天。已登记静坐%d小时、参悟%d/100；功法真伪和原始灵根揭示尚无证据，不能将暖意算作引气成功。本次提供明确的‘证据不足’结论，没有伪造突破。" % [start, int(data["cultivation_days"]), int(data["quiet_hours"]), int(data["insight"])]
 
+# The offline game interprets everyday speech locally. Dialogue is not a free-form LLM.
+# Every spoken exchange is bounded by NPC presence and the family life ledger.
+func _family_chat(person: String, topic: String) -> String:
+    if data["place"] != "石桥村·家中":
+        return "你不在家里，眼前没有可以这样交谈的家人。"
+    if person == "孙成明":
+        if not _sister_here():
+            return "成明今日在外头忙。她不是随叫随到的，等她回家再问。"
+        _tick(3)
+        if topic == "饭":
+            return "你问成明吃过饭没有。她放下手里的活：‘娘会留饭，我自己知道吃。倒是你，出远门记得带干粮。’"
+        if topic == "青云":
+            return "成明看你一眼：‘爹只肯让我送到村口，再远便不让我去了。你上山可别逞强。’"
+        return "成明正忙着%s，抬头同你说了几句家常。她还有自己的事要做。" % str(data["npc"]["孙成明"].get("activity", "家务"))
+    if person == "郑舟清":
+        _tick(3)
+        if topic == "饭":
+            return "母亲搁下手里的活：‘灶上有吃食。想吃便坐下，别空着肚子赶路。’"
+        if topic == "青云":
+            return "母亲帮你理了理行囊：‘钱装好，饼带够。天黑前找地方落脚。’"
+        return "母亲正在料理家务，听你说话时也没停下手里的活。"
+    if person == "钱然泽":
+        if int(data["minute"]) >= 420 and int(data["minute"]) <= 1050:
+            return "父亲这会儿在田里，若要当面说话，得等他回来。"
+        _tick(3)
+        if topic == "青云":
+            return "父亲沉着脸：‘银钱是借你看个明白的。测不出就回来踏实做事。’"
+        if topic == "饭":
+            return "父亲皱眉：‘家里吃饭有时辰，不用你替我操心。’"
+        return "父亲放下农具，听完你的话，点头应了一声。"
+    return "这里没有这个人。"
+
+func scene_overview() -> String:
+    var paragraph := "【眼前的世界】\n" + look()
+    if not last_result.is_empty():
+        paragraph += "\n\n【刚刚发生】\n" + last_result
+    match str(data["place"]):
+        "石桥村·家中":
+            paragraph += "\n\n【路途与打算】\n去青云山门测灵根的盘缠已备。你可启程去临安，也可陪家人说话、安排田间劳作。"
+        "临安县城·东市":
+            paragraph += "\n\n【路途与打算】\n北门外是通往青云山门的山路，途中需要留意精力与天色。"
+        "青云山门·山门外":
+            paragraph += "\n\n【路途与打算】\n山门执事正在登记。原始灵根揭示缺失，不能在这里伪造结果或先扣费用。"
+        _:
+            paragraph += "\n\n【路途与打算】\n你可以查看附近、往来行走，也能直接输入想说的话。"
+    return paragraph
+
 func _act_core(action: String) -> String:
     match action:
         "查看四周": return look()
@@ -459,6 +506,14 @@ func _act_core(action: String) -> String:
         "吃饭休息": return _meal()
         "睡觉": return _sleep()
         "跟妹妹说话": return _talk()
+        "问妹妹吃饭了吗": return _family_chat("孙成明", "饭")
+        "问母亲吃饭了吗": return _family_chat("郑舟清", "饭")
+        "问父亲吃饭了吗": return _family_chat("钱然泽", "饭")
+        "问妹妹青云的事": return _family_chat("孙成明", "青云")
+        "问母亲青云的事": return _family_chat("郑舟清", "青云")
+        "问父亲青云的事": return _family_chat("钱然泽", "青云")
+        "询问吃饭对象": return "你想问谁吃饭了？可以输入‘问妹妹吃饭了吗’、‘问母亲吃饭了吗’；若你自己要吃饭，请说‘我要吃饭’。"
+        "查看当前目标": return "眼下要去青云山门测灵根。先从石桥村出发，经临安北上。你的《引气初篇》已证实是伪诀，无须再耗时照练。"
         "教妹妹修炼": return _teach()
         "取鱼笼里的鱼": return _catch_fish()
         "查看鱼笼": return _fish_check()
@@ -485,6 +540,21 @@ func _resolve_input(raw: String) -> String:
     if text.is_empty(): return ""
     var known: Array[String] = ["查看四周", "向老道买书", "回石桥村", "去溪边", "回家", "去东市", "回旧书铺", "读引气初篇", "静坐修炼", "吃饭休息", "睡觉", "跟妹妹说话", "教妹妹修炼", "取鱼笼里的鱼", "查看鱼笼", "布第二只鱼笼", "组装鱼竿", "播种青菜", "收获青菜", "出售小河鱼", "出售青菜", "自动完成今日安排", "连续修炼一天", "连续修炼十日", "查看修炼结论", "出发去青云", "沿山道北上", "山脚脚店投宿", "申请测灵根"]
     if known.has(text): return text
+    # Everyday interrogatives must not trigger eating or physical movement.
+    var question := text.ends_with("吗") or text.ends_with("呢") or text.contains("？") or text.contains("?") or text.contains("有没有") or text.contains("怎么")
+    if text.contains("饭") or text.contains("饿"):
+        if question:
+            if text.contains("妹妹") or text.contains("成明"): return "问妹妹吃饭了吗"
+            if text.contains("母亲") or text.contains("娘") or text.contains("妈妈"): return "问母亲吃饭了吗"
+            if text.contains("父亲") or text.contains("爹") or text.contains("爸爸"): return "问父亲吃饭了吗"
+            return "询问吃饭对象"
+        if text.contains("吃") or text.contains("饿") or text.contains("开饭"): return "吃饭休息"
+    if text.contains("青云") and question:
+        if text.contains("妹妹") or text.contains("成明"): return "问妹妹青云的事"
+        if text.contains("母亲") or text.contains("娘"): return "问母亲青云的事"
+        if text.contains("父亲") or text.contains("爹"): return "问父亲青云的事"
+        return "查看当前目标"
+    if text.contains("做什么") or text.contains("下一步") or text.contains("目标"): return "查看当前目标"
     # Ordered intents: teach before cultivate, place before generic fish lookup.
     if text.contains("青云") and (text.contains("出发") or text.contains("动身") or text.contains("去")):
         return "出发去青云" if data["place"] == "石桥村·家中" else "沿山道北上"
@@ -522,7 +592,9 @@ func act(action: String) -> String:
     var before := _clock()
     var result := _act_core(canonical)
     last_result = result
-    _note("【%s · %s】\n%s" % [time_string(), action, result])
+    # Explanations and unsupported phrases are visible but do not pollute the saved event journal.
+    if not result.begins_with("暂不支持") and canonical != "询问吃饭对象" and canonical != "查看当前目标":
+        _note("【%s · %s】\n%s" % [time_string(), action, result])
     # Only committed actions affect clock; unknown input does not do so.
     if _clock() < before: push_error("World time unexpectedly reversed")
     save()

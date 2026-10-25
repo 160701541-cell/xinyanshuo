@@ -1,11 +1,11 @@
 extends Control
 
-const INK := Color("#121e20")
-const PAPER := Color("#f1e4c8")
-const MUTED := Color("#bac7b8")
-const GOLD := Color("#caa66b")
-const PANEL := Color("#243639")
-const BUTTON := Color("#31474a")
+const INK := Color("#0d191d")
+const PAPER := Color("#f2e7d6")
+const MUTED := Color("#b6c6c2")
+const GOLD := Color("#dfbb7e")
+const PANEL := Color("#1c3338")
+const BUTTON := Color("#29494c")
 
 var game := XianfanWorld.new()
 var story: RichTextLabel
@@ -17,6 +17,10 @@ var activity_title: Label
 var tabs: HBoxContainer
 var scroll: ScrollContainer
 var current_tab := "游历"
+var action_drawer: ScrollContainer
+var action_toggle: Button
+var drawer_open := false
+var quick_row: HBoxContainer
 
 func _ready() -> void:
     _build()
@@ -85,10 +89,10 @@ func _build() -> void:
     var title_row := VBoxContainer.new()
     title_row.add_theme_constant_override("separation", 2)
     root.add_child(title_row)
-    var title := _txt("仙 凡 · 苍 岚", 35, GOLD)
+    var title := _txt("仙 凡 · 苍 岚", 31, GOLD)
     title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
     title_row.add_child(title)
-    var subtitle := _txt("第一世  /  红尘问仙  /  离线单机", 16, MUTED)
+    var subtitle := _txt("第一世 · 红尘问仙", 16, MUTED)
     subtitle.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
     title_row.add_child(subtitle)
 
@@ -100,7 +104,7 @@ func _build() -> void:
     heading = _txt("", 18, GOLD)
     heading.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
     hud_lines.add_child(heading)
-    status_line = _txt("", 20, PAPER)
+    status_line = _txt("", 18, PAPER)
     status_line.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
     hud_lines.add_child(status_line)
 
@@ -115,7 +119,7 @@ func _build() -> void:
 
     var story_panel := PanelContainer.new()
     story_panel.size_flags_vertical = Control.SIZE_EXPAND_FILL
-    story_panel.add_theme_stylebox_override("panel", _style(Color("#1c2b2e"), Color("#3e585c")))
+    story_panel.add_theme_stylebox_override("panel", _style(Color("#17292e"), Color("#426066")))
     root.add_child(story_panel)
     var inner := VBoxContainer.new()
     inner.add_theme_constant_override("separation", 9)
@@ -126,18 +130,32 @@ func _build() -> void:
     story.bbcode_enabled = false
     story.fit_content = false
     story.scroll_active = true
-    story.scroll_following = true
+    story.scroll_following = false
     story.size_flags_vertical = Control.SIZE_EXPAND_FILL
-    story.add_theme_font_size_override("normal_font_size", 22)
+    story.add_theme_font_size_override("normal_font_size", 23)
     story.add_theme_color_override("default_color", PAPER)
     inner.add_child(story)
 
-    var actions_header := _txt("可执行行动  ·  也可以直接输入", 17, MUTED)
-    root.add_child(actions_header)
+    # The action menu folds away so most of the phone is a reading surface.
+    quick_row = HBoxContainer.new()
+    quick_row.add_theme_constant_override("separation", 7)
+    root.add_child(quick_row)
+    for quick in ["查看四周", "跟妹妹说话", "当前目标"]:
+        var q := _btn(quick, func(): _execute("查看当前目标" if quick == "当前目标" else quick))
+        q.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+        q.custom_minimum_size = Vector2(0, 48)
+        q.add_theme_font_size_override("font_size", 17)
+        quick_row.add_child(q)
+
+    action_toggle = _btn("全部行动  ▾", func(): _toggle_actions())
+    action_toggle.custom_minimum_size = Vector2(0, 46)
+    action_toggle.add_theme_font_size_override("font_size", 17)
+    root.add_child(action_toggle)
     scroll = ScrollContainer.new()
-    scroll.custom_minimum_size = Vector2(0, 235)
+    scroll.custom_minimum_size = Vector2(0, 210)
     scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
     scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+    scroll.visible = drawer_open
     root.add_child(scroll)
     actions = GridContainer.new()
     actions.columns = 2
@@ -150,7 +168,7 @@ func _build() -> void:
     input_row.add_theme_constant_override("separation", 8)
     root.add_child(input_row)
     command = LineEdit.new()
-    command.placeholder_text = "输入行动，如：回家、教妹妹修炼"
+    command.placeholder_text = "说句话或下指令，如：问妹妹吃饭了吗"
     command.size_flags_horizontal = Control.SIZE_EXPAND_FILL
     command.custom_minimum_size = Vector2(0, 62)
     command.add_theme_font_size_override("font_size", 19)
@@ -163,6 +181,11 @@ func _build() -> void:
     var go := _btn("执行", func(): _execute(command.text), true)
     go.custom_minimum_size = Vector2(110, 62)
     input_row.add_child(go)
+
+func _toggle_actions() -> void:
+    drawer_open = not drawer_open
+    scroll.visible = drawer_open
+    action_toggle.text = "收起行动  ▴" if drawer_open else "全部行动  ▾"
 
 func _switch(tab: String) -> void:
     current_tab = tab
@@ -194,7 +217,7 @@ func refresh() -> void:
     match current_tab:
         "游历":
             activity_title.text = "近事 · " + game.data["place"]
-            story.text = game.story_recent()
+            story.text = game.scene_overview()
             _set_actions(game.actions_for_place())
         "人物":
             activity_title.text = "人物 · 身家 · 行囊"
@@ -206,7 +229,8 @@ func refresh() -> void:
             _set_actions(["查看四周", "自动完成今日安排"])
         "系统":
             activity_title.text = "存档与玩法说明"
-            story.text = "《仙凡·苍岚》安卓独立文字游戏 1.0\n\n无需网络、账号或API。游戏使用Godot原生界面，每次有效行动自动保存，损坏时尝试备份恢复。\n\n自由输入采用本地意图识别，不是联网AI。可选‘自动完成今日安排’批量结算生活行动；连续修炼在功法真伪与原始灵根未验证时不会伪造突破。\n\n主线锚点：" + game.data["source_event"] + "。安卓游戏的新增经历仅存手机本地，不会自动同步GitHub。\n\n本机存档：user://xianfan_first_life.json\n\n可用按钮打开全部操作；不支持的命令不扣时间与物品。"
+            story.text = "《仙凡·苍岚》安卓独立文字游戏 1.1\n\n无需网络、账号或API。游戏使用Godot原生界面，每次有效行动自动保存，损坏时尝试备份恢复。\n\n自由输入采用本地意图识别，不是联网AI。可选‘自动完成今日安排’批量结算生活行动；连续修炼在功法真伪与原始灵根未验证时不会伪造突破。\n\n主线锚点：" + game.data["source_event"] + "。安卓游戏的新增经历仅存手机本地，不会自动同步GitHub。\n\n本机存档：user://xianfan_first_life.json\n\n可用按钮打开全部操作；不支持的命令不扣时间与物品。"
             _set_actions(["查看四周", "查看修炼结论"])
+    story.call_deferred("scroll_to_line", 0)
     for b in tabs.get_children():
         b.add_theme_stylebox_override("normal", _style(Color("#40544e") if b.text == current_tab else BUTTON, GOLD if b.text == current_tab else Color("#567174")))
