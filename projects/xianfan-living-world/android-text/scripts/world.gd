@@ -222,6 +222,7 @@ func _setup_post() -> void:
     # empty letterbox without touching existing dialogue and world history.
     if not data.has("letters"): data["letters"]=[]
     if not data.has("letter_counter"): data["letter_counter"]=0
+    if not data.has("dialogue_log"): data["dialogue_log"]=[]
 
 func at_same_place(person: String) -> bool:
     if not data.get("npc",{}).has(person): return false
