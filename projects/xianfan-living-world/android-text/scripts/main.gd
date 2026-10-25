@@ -625,7 +625,17 @@ func _open_npc(name: String) -> void:
         "【持有物品】"+items]
     if int(chosen["rapport"])>=0: details.append("【关系】亲近程度 %d/100" % int(chosen["rapport"]))
     if int(chosen["learning"])>=0: details.append("【学识】%d/100（不等于灵根或境界）" % int(chosen["learning"]))
-    _open_modal("人物档案 · "+name,"\n\n".join(details))
+    var short_info: Array[String]=[
+        "【身份】%s · %d岁 · %s" % [name,int(chosen["age"]),str(chosen.get("standing","平民"))],
+        "【生活】%s · %s" % [str(chosen.get("job","居民")),str(chosen.get("activity","忙自己的事"))],
+        "【现在】%s" % str(chosen["place"]),
+        "【情绪】%s" % str(chosen.get("mood","平静")),
+        "【个人愿望】%s" % str(chosen.get("wish","未透露")),
+        "【联系】%s" % ("可以当面说话" if bool(chosen["here"]) else "相隔两地，不能当面交谈")]
+    _open_modal("人物 · "+name,"\n\n".join(short_info))
+    modal_actions.add_child(_button("展开完整人物档案",func():
+        modal_info.text="\n\n".join(details)
+    ,16))
     if bool(chosen.get("alive",true)) and bool(chosen.get("here",false)):
         modal_actions.add_child(_button("当面交谈",func():
             _close_modal()
@@ -1044,7 +1054,7 @@ func _on_local_stream(kind: String, contents: String) -> void:
     # Player sees the answer as it arrives rather than waiting for an 8B batch.
     cancel_ai_button.visible=true
     if kind=="dialogue" and view=="对话":
-        scene_text.text=game.dialogue_recent()+"\n\n—— 本地AI正在回复（未保存） ——\n"+contents
+        scene_text.text=game.dialogue_with(current_npc,12)+"\n\n—— 本机AI正在回复（未保存） ——\n"+contents
         scene_text.call_deferred("scroll_to_line",9999)
     elif kind=="story":
         notice.text="本地AI正在推演下一段剧情（%d字）；结算仍以游戏规则为准。" % contents.length()
@@ -1191,7 +1201,7 @@ func _refresh() -> void:
             var selected_here:=not current_npc.is_empty() and game.at_same_place(current_npc)
             if not selected_here: current_npc=""
             page_title.text="对话 · "+(current_npc if selected_here else "选择眼前的人")
-            scene_text.text=game.dialogue_recent(12) if selected_here else "你现在在%s。\n\n请选择下方真正处于同一地点的人物。\n\n远处的人不能隔空聊天，熟人可通过书信联系。" % str(game.data["place"])
+            scene_text.text=game.dialogue_with(current_npc,12) if selected_here else "你现在在%s。\n\n请选择下方真正处于同一地点的人物。\n\n远处的人不能隔空聊天，熟人可通过书信联系。" % str(game.data["place"])
             actor_buttons.visible=true
             _wipe(actor_buttons)
             var nearby:=game.nearby_people(7)
