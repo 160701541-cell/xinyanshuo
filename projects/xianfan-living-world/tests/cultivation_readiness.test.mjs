@@ -1,0 +1,13 @@
+import assert from 'node:assert/strict';
+import {auditCultivationReadiness} from '../tools/cultivation_readiness.mjs';
+const state={last_event_id:'EV000016',player:{id:'CFPLAYER00001'},time:{display:'承平三年 · 第2日 · 11:14'},inventory:[]};
+const index={last_event:'EV000016'};
+const blocked=auditCultivationReadiness({state,index});
+assert.equal(blocked.ready,false);
+assert.equal(blocked.authoritative,false);
+assert.equal(blocked.allowSaveMutation,false);
+assert.deepEqual(blocked.blockers.map(x=>x.code),['TRADE_NOT_IMPLEMENTED','MANUAL_NOT_OWNED','MANUAL_AUTHENTICITY_UNKNOWN','RETURN_HOME_RULE_MISSING','CROSS_DAY_RULES_MISSING','ROOT_REVEAL_NOT_VERIFIED','NPC_RULE_MISSING']);
+assert.throws(()=>auditCultivationReadiness({state:{...state,last_event_id:'EV000017'},index}),/EVENT_INDEX_STATE_MISMATCH/);
+const complete=auditCultivationReadiness({state:{...state,inventory:[{id:'weathered_qi_primer',quantity:1}]},index,tradeRule:{registeredVendor:true,balancedTransfer:true,registeredStock:true},manualEvidence:{authenticated:true,id:'weathered_qi_primer'},routeRule:{travel:true,time:true,stamina:true},dailyRule:{dayBoundary:true,foodSource:true,sleep:true,ecology:true,npcContinuity:true},rootEvidence:{matchesOriginalCommitment:true,generationProtocolVerified:true},npcRule:{autonomousChoices:true,knowledgeVisibility:true}});
+assert.equal(complete.ready,true);
+console.log('cultivation readiness tests passed');
