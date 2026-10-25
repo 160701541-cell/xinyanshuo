@@ -12,6 +12,12 @@ const MAX_REDIRECTS := 8
 const CONNECT_TIMEOUT_MS := 25000
 const STALL_TIMEOUT_MS := 45000
 const DISPLAY_INTERVAL_MS := 500
+# Exact upstream Xet/LFS SHA-256 digests published by official Qwen GGUF repos.
+# This protects against CDN/content changes during multi-GB range resumes.
+const VERIFIED_SHA256 := {
+    "hf://Qwen/Qwen3-8B-GGUF/Qwen3-8B-Q4_K_M.gguf":"d98cdcbd03e17ce47681435b5150e34c1417f50b5c0019dd560e4882c5745785",
+    "hf://Qwen/Qwen3-14B-GGUF/Qwen3-14B-Q4_K_M.gguf":"500a8806e85ee9c83f3ae08420295592451379b4f8cf2d0f41c15dffeb6b81f0"
+}
 var active := false
 var paused := false
 var cancelled := false
@@ -264,6 +270,36 @@ static func _split_url(url: String) -> Dictionary:
     if host.is_empty() or port<=0 or port>65535: return {}
     return {"host":host,"port":port,"path":target}
 
+func validate_disk_file(source: String, path: String, total: int) -> Dictionary:
+    if not FileAccess.file_exists(path): return {"ok":false,"error":"文件不存在"}
+    var stream:=FileAccess.open(path,FileAccess.READ)
+    if stream==null: return {"ok":false,"error":"模型文件无法打开"}
+    var actual:=int(stream.get_length())
+    if total<=0 or actual!=total or actual<1048576:
+        return {"ok":false,"error":"模型文件长度不匹配，下载未完成"}
+    if stream.get_buffer(4).get_string_from_ascii()!="GGUF":
+        return {"ok":false,"error":"文件头不是GGUF，可能误下载了登录页或网络错误页"}
+    var expected_hash:=str(VERIFIED_SHA256.get(source,""))
+    if expected_hash.is_empty():
+        return {"ok":true,"verified":"GGUF文件头与服务端大小","sha256":""}
+    var ctx:=HashingContext.new()
+    if ctx.start(HashingContext.HASH_SHA256)!=OK:
+        return {"ok":false,"error":"SHA256校验模块不可用"}
+    stream.seek(0)
+    var processed:=0
+    while not stream.eof_reached():
+        var block:=stream.get_buffer(1024*1024)
+        if block.is_empty(): break
+        ctx.update(block)
+        processed+=block.size()
+        if processed%(32*1024*1024)<1024*1024:
+            _publish(source,processed,total,"正在校验SHA256")
+            await get_tree().process_frame
+    stream.close()
+    if processed!=total or ctx.finish().hex_encode().to_lower()!=expected_hash:
+        return {"ok":false,"error":"官方SHA256校验不通过，拒绝加载损坏或错误版本的GGUF"}
+    return {"ok":true,"verified":"官方SHA256完整性校验通过","sha256":expected_hash}
+
 func begin(source: String) -> void:
     if active:
         completed.emit({"ok":false,"error":"已有下载任务正在运行"})
@@ -302,6 +338,16 @@ func begin(source: String) -> void:
             if confirmed>0 and file_length!=confirmed:
                 reason="下载文件长度不完整"
                 continue
+            _publish(source,file_length,file_length,"下载完成，验证模型")
+            var checked: Dictionary=await validate_disk_file(source,partial_path(source),file_length)
+            if not bool(checked.get("ok",false)):
+                reason=str(checked.get("error","校验失败"))
+                # Do not retry a fully downloaded but invalid file with HTTP
+                # 416 forever. Keep failed bits in .corrupt for inspection.
+                var bad:=ProjectSettings.globalize_path(partial_path(source)+".corrupt")
+                DirAccess.rename_absolute(ProjectSettings.globalize_path(partial_path(source)),bad)
+                _save_manifest(source,file_length,"failed")
+                break
             var src:=ProjectSettings.globalize_path(partial_path(source))
             var dst:=ProjectSettings.globalize_path(final_path(source))
             var moved:=DirAccess.rename_absolute(src,dst)
@@ -311,7 +357,8 @@ func begin(source: String) -> void:
             _save_manifest(source,file_length,"complete")
             active=false
             _publish(source,file_length,file_length,"下载完成")
-            completed.emit({"ok":true,"path":final_path(source),"bytes":file_length,"cached":false})
+            completed.emit({"ok":true,"path":final_path(source),"bytes":file_length,
+                "cached":false,"verified":str(checked.get("verified",""))})
             return
         reason=str(result.get("reason","下载失败"))
         if reason=="paused": break
