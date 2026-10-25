@@ -312,6 +312,14 @@ func build_messages(text: String, person: String, state: Dictionary) -> Array:
         system_text += "\n可信世界事实（优先级最高）：今天是第%d日 %02d:%02d。玩家位置：%s。你的当前位置：%s。你正在做：%s。你的情绪：%s。" % [current_day,int(time/60),time%60,scene,str(npc.get("place","未知")),str(npc.get("activity","家务")),str(npc.get("mood","平静"))]
         system_text += "\n约束：只扮演NPC，以一两句自然中文回答。每次要真正回应玩家最新问题和追问；不能答非所问、机械重复前一轮、虚构自己离开或正在路上。"
         system_text += "没有移动事件时不得宣称自己换了位置；你可以表达个人意愿和拒绝，但不能宣布获得物品、修炼突破、改变任何游戏数值。"
+        # Proven NPC cultivation certificates and economy may be used as facts,
+        # but the undisclosed player root is never present in this prompt.
+        if bool(npc.get("cultivation_member",false)):
+            system_text+="\n【本人修炼事实】认证灵根："+str(npc.get("root","未测"))
+            system_text+="；真实境界："+str(npc.get("realm","修行预备"))
+            system_text+="；本职："+str(npc.get("job","弟子"))
+            system_text+="；所在宗门："+str(npc.get("faction","散修"))
+            system_text+="。已发生的真实修行、材料采购或炼丹事件仅以人物传记为准，不得宣称凭谈话就赠送丹药、灵石、功法或御剑传送。"
         var speech_profile: Dictionary=XianfanNarrativeDB.voice_profile(person,npc)
         system_text+="\n独立语言人格（只控制表达风格，不是新的世界事实）：谨慎%d/4，好奇%d/4，共情%d/4，直率%d/4，隐私边界%d/4，自主%d/4。优先维持人物已经记录的性格和经历，不因相同职业而说同一种台词。" % [int(speech_profile["caution"]),int(speech_profile["curiosity"]),int(speech_profile["empathy"]),int(speech_profile["directness"]),int(speech_profile["privacy"]),int(speech_profile["initiative"])]
         system_text+="\n历史认知边界：前朝、战争、村史、亲人私事、盗窃、朝廷人事等，若当前世界存档与检索记忆无证据，不得编造成已发生事件；可以如实承认不知或讲明确标注的猜想与传闻。"
