@@ -21,6 +21,16 @@ func _go() -> void:
     check(int(example["realm_level"])==2,"Initial realm must be grounded in world generation")
     check(game.data["npc"].has("罗观尘"),"Cultivators integrated into NPC registry with real IDs")
     game.data["place"]="青云山门·山门外"
+    game.data["minute"]=480
+    var money_before:=int(game.data["money"])
+    var sect_treasury_before:=int(immortal["regions"]["青云山门"]["copper"])
+    var stamina_before:=int(game.data["stamina"])
+    var work_result:=game.act("做山门杂役")
+    check(work_result.contains("2文"),"An actual local sect job returns an audited result")
+    check(int(game.data["money"])==money_before+2 and
+        int(immortal["regions"]["青云山门"]["copper"])==sect_treasury_before-2,
+        "Mortal player wage must transfer actual coins, never mint money")
+    check(int(game.data["stamina"])==stamina_before-5,"Work must cost player stamina")
     check(game.at_same_place("罗观尘"),"Cultivator can only speak when actually at same place")
     var answer: Dictionary=game.authored_dialogue("罗观尘","你是什么灵根？")
     check(bool(answer.get("covered",false)) and str(answer.get("reply","")).contains("三灵根"),
