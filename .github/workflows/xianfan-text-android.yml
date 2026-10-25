@@ -1,0 +1,49 @@
+name: Xianfan Android Debug APK
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - xianfan/independent-living-county-v0.1
+    paths:
+      - 'projects/xianfan-living-world/android-text/**'
+      - '.github/workflows/xianfan-text-android.yml'
+permissions:
+  contents: read
+jobs:
+  export:
+    runs-on: ubuntu-latest
+    container:
+      image: barichello/godot-ci:4.4.1
+    steps:
+      - uses: actions/checkout@v4
+      - name: Print Godot environment
+        run: |
+          godot --version
+          echo "ANDROID_HOME=$ANDROID_HOME"
+          ls -lah /root/.local/share/godot/export_templates || true
+      - name: Validate GDScript and import project
+        run: |
+          cd projects/xianfan-living-world/android-text
+          godot --headless --path . --editor --import --quit
+      - name: Run gameplay regression checks
+        run: |
+          cd projects/xianfan-living-world/android-text
+          godot --headless --path . --script res://tests/test_world.gd
+      - name: Export Android debug APK
+        run: |
+          cd projects/xianfan-living-world/android-text
+          mkdir -p build
+          export GODOT_ANDROID_KEYSTORE_DEBUG_PATH=/root/debug.keystore
+          export GODOT_ANDROID_KEYSTORE_DEBUG_USER=androiddebugkey
+          export GODOT_ANDROID_KEYSTORE_DEBUG_PASSWORD=android
+          godot --headless --path . --export-debug Android build/xianfan-canglan-debug.apk
+          test -s build/xianfan-canglan-debug.apk
+          sha256sum build/xianfan-canglan-debug.apk > build/SHA256SUMS.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: xianfan-canglan-android-debug
+          path: |
+            projects/xianfan-living-world/android-text/build/xianfan-canglan-debug.apk
+            projects/xianfan-living-world/android-text/build/SHA256SUMS.txt
+          if-no-files-found: error
+          retention-days: 30
