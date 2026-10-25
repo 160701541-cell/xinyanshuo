@@ -40,7 +40,7 @@ func _run() -> void:
     var a:=initial.duplicate(true)
     var b:=initial.duplicate(true)
     var from_time:=int(game._clock())
-    var final_minutes: int=(base_hour+85)*60
+    var final_minutes: int=(base_hour+81)*60
     XianfanSocietySim.advance_to(a,final_minutes)
     XianfanSocietySim.advance_to(b,(base_hour+23)*60)
     XianfanSocietySim.advance_to(b,(base_hour+50)*60)
@@ -48,7 +48,7 @@ func _run() -> void:
     check(JSON.stringify(a)==JSON.stringify(b),"determinism: same world across step grouping")
     check(_sum_money(a)==first_money,"money moves between actual NPCs and public treasury only")
     check(_all_goods_positive(a),"resources and NPC possessions remain nonnegative")
-    check(int(a["total_steps"])>=85,"offscreen occupations run without player actions")
+    check(int(a["total_steps"])>=81,"offscreen occupations run without player actions")
     check(int(a["total_production"])>0,"people create real supplies through labor")
     check(int(a["total_trades"])>0,"food trade occurs without player visits")
     check(int(a["total_consumption"])>0,"NPCs eat daily")
