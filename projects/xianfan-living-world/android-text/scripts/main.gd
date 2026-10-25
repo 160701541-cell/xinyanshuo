@@ -165,7 +165,7 @@ func _process(delta: float) -> void:
         game.time_string(),str(game.data["place"]),int(game.data["stamina"]),
         int(game.data["money"]),str(game.data["realm"])]
     var hour:=int(game._clock()/60)
-    if view=="世界" and hour!=_last_world_ui_hour:
+    if view in ["世界","经济"] and hour!=_last_world_ui_hour:
         _last_world_ui_hour=hour
         _refresh()
     if int(game._clock())%60==0: _save_world_clock()
@@ -287,7 +287,7 @@ func _build() -> void:
     tab_buttons=HBoxContainer.new()
     tab_buttons.add_theme_constant_override("separation",4)
     root.add_child(tab_buttons)
-    for name in ["剧情","对话","人物","世界","反馈","设置"]:
+    for name in ["剧情","对话","人物","世界","经济","反馈","设置"]:
         var tab_name := str(name)
         var b := _button(tab_name,func(): _change_tab(tab_name),17)
         b.size_flags_horizontal=SIZE_EXPAND_FILL
@@ -482,6 +482,22 @@ func _open_society_roster(sector: String="",page: int=0) -> void:
             func(): _open_npc(who),15))
     modal_actions.add_child(_button("上一页",func(): _open_society_roster(sector,last_roster_page-1),16))
     modal_actions.add_child(_button("下一页",func(): _open_society_roster(sector,last_roster_page+1),16))
+
+func _open_economy_region(zone: String) -> void:
+    var name: String="石桥村" if zone=="村" else "临安县城"
+    var description:=game.economy_report(zone)
+    var observations:=game.economy_trend(zone)
+    var trend_text: Array[String]=[]
+    for period in observations:
+        trend_text.append("第%d个月：实际新增产值%d文；名义%d文；成交额%d文" % [
+            int(period.get("month",0)),int(period.get("real",0)),
+            int(period.get("nominal",0)),int(period.get("trade",0))])
+    if not trend_text.is_empty():
+        description+="\n\n【最近12个月的经济变化】\n"+"\n".join(trend_text)
+    _open_modal("地区经济报表 · "+name,description)
+    modal_actions.add_child(_button("切换到另一地区",func():
+        _open_economy_region("城" if zone=="村" else "村")
+    ,16))
 
 func _open_npc(name: String) -> void:
     current_npc=name
@@ -1091,9 +1107,16 @@ func _refresh() -> void:
         "世界":
             page_title.text="人间自行运转 · 自主职业与资源"
             scene_text.text=game.society_status()
+            var economy_zone: String="村" if str(game.data["place"]).begins_with("石桥村") else "城"
+            var all_accounts: Dictionary=game.data.get("society",{}).get("economy_accounts",{})
+            var this_region: Dictionary=all_accounts.get("regions",{}).get(economy_zone,{})
+            if not this_region.is_empty():
+                var current: Dictionary=this_region.get("total",{})
+                scene_text.text+="\n\n【已模拟经济累计增加值】%d文（固定基期）；交易收入不重复算GDP。点下方按钮查年/月报表。" % int(current.get("gdp_real",0))
             actor_buttons.visible=true
             _wipe(actor_buttons)
             var roster: Dictionary=game.society_roster()
+            actor_buttons.add_child(_button("📊 查看本地GDP、财政、物价与产业报表",func(): _open_economy_region("村" if str(game.data["place"]).begins_with("石桥村") else "城"),16))
             actor_buttons.add_child(_button("📜 查看百业与社会身份 · %d名具名居民" % int(roster["size"]),
                 func(): _open_society_roster(),17))
             actor_buttons.add_child(_label("附近具名NPC（真实职业、地点、账本）",17,GOLD))
@@ -1108,6 +1131,15 @@ func _refresh() -> void:
             for person in game.society_nearby().slice(0,7):
                 var who:=str(person["name"])
                 actor_buttons.add_child(_button("%s｜%s｜%s" % [who,str(person["job"]),str(person["activity"])],func(): _open_npc(who),16))
+        "经济":
+            page_title.text="经济账本 · GDP与真实社会产出"
+            var econ_zone: String="村" if str(game.data["place"]).begins_with("石桥村") else "城"
+            scene_text.text=game.economy_report(econ_zone)
+            actor_buttons.visible=true
+            _wipe(actor_buttons)
+            actor_buttons.add_child(_button("查看石桥村经济与GDP",func(): _open_economy_region("村"),16))
+            actor_buttons.add_child(_button("查看临安县城经济与GDP",func(): _open_economy_region("城"),16))
+            actor_buttons.add_child(_label("指标基于已发生的真实生产记录。货物交易、领工资、财政余额不能重复计算成GDP。",15,FADED))
         "反馈":
             page_title.text="可复制的功能缺口 / 错误日志"
             scene_text.text=game.feedback_report()
