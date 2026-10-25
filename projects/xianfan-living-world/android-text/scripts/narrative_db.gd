@@ -41,6 +41,18 @@ static func _selection(seed: String, count: int) -> int:
     var digest:=seed.sha256_text()
     return ("0x"+digest.substr(0,6)).hex_to_int()%count
 
+# Independent, stable behavioral tendencies for every registered identity. The
+# existing "trait", goals, relationships and memories remain authoritative;
+# this profile changes how facts are expressed, NEVER what happened.
+static func voice_profile(person: String, npc: Dictionary) -> Dictionary:
+    var identity:=str(npc.get("id",person))
+    var axes: Dictionary={}
+    for axis in ["caution","curiosity","empathy","directness","privacy","initiative"]:
+        axes[axis]=_selection(identity+"|"+axis,5)
+    axes["existing_trait"]=str(npc.get("trait",""))
+    axes["voice"]=_voice(person,npc)
+    return axes
+
 static func _unpack_speech(person: String, phrase: String, npc: Dictionary, data: Dictionary) -> String:
     var value:=phrase
     var substitutions: Dictionary={
@@ -111,5 +123,16 @@ func answer(person: String, question: String, data: Dictionary) -> Dictionary:
         var personal_event:=_first_person_fact(person,npc)
         if not personal_event.is_empty():
             text=personal_event+"。"+text
+    var profile:=voice_profile(person,npc)
+    if topic_id in ["aspiration","trust","family","personal_history"]:
+        if int(profile["privacy"])>=4:
+            text+=" 有些涉及我自己的事，熟到一定地步我才愿意细讲。"
+        elif int(profile["curiosity"])>=4:
+            text+=" 我也想听听，你为什么会这样想？"
+        elif int(profile["directness"])>=4:
+            text+=" 若有具体事，就直接说吧。"
+        elif int(profile["caution"])>=4:
+            text+=" 这话说定之前，我还想核对清楚。"
     return {"covered":true,"reply":text,"topic":topic_id,"voice":voice,
+        "personality_profile":profile,
         "source":"authored-local-library","speaker_id":str(npc.get("id",""))}
