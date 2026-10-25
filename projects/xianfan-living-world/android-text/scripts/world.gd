@@ -23,6 +23,7 @@ func _init() -> void:
     else:
         _setup_memories()
     _setup_society()
+    _setup_post()
     _load_feedback()
 
 func _setup_memories() -> void:
@@ -216,6 +217,140 @@ func passive_time(minutes: int, persist: bool=true) -> int:
     if persist: save()
     return minutes
 
+func _setup_post() -> void:
+    # Separate mail journal from spoken NPC dialogue. Legacy saves add an
+    # empty letterbox without touching existing dialogue and world history.
+    if not data.has("letters"): data["letters"]=[]
+    if not data.has("letter_counter"): data["letter_counter"]=0
+
+func at_same_place(person: String) -> bool:
+    if not data.get("npc",{}).has(person): return false
+    var npc: Dictionary=data["npc"][person]
+    return bool(npc.get("alive",true)) and str(npc.get("place",""))==str(data.get("place",""))
+
+func nearby_people(limit: int=9) -> Array[Dictionary]:
+    var actors: Array[Dictionary]=[]
+    for person in npcs_status():
+        if bool(person.get("alive",true)) and bool(person.get("here",false)):
+            actors.append(person)
+    actors.sort_custom(func(a,b): return str(a["name"])<str(b["name"]))
+    return actors.slice(0,maxi(0,limit))
+
+func known_contacts() -> Array[Dictionary]:
+    # Family, previously met citizens, and correspondents are known; an
+    # arbitrary person from the huge county registry is not automatically a contact.
+    var known: Array[Dictionary]=[]
+    var marked: Dictionary={}
+    for name in ["孙成明","钱然泽","郑舟清"]:
+        marked[name]=true
+    for row in data.get("dialogue_log",[]):
+        if row is Dictionary: marked[str(row.get("speaker",""))]=true
+    for row in data.get("letters",[]):
+        if row is Dictionary: marked[str(row.get("person",""))]=true
+    for person in npcs_status():
+        if marked.has(str(person["name"])) and bool(person.get("alive",true)):
+            known.append(person)
+    return known
+
+func postage_quote(person: String) -> Dictionary:
+    if not data.get("npc",{}).has(person):
+        return {"ok":false,"reason":"你还不知道对方的可靠收信地址。"}
+    var npc: Dictionary=data["npc"][person]
+    if not bool(npc.get("alive",true)):
+        return {"ok":false,"reason":"此人已故，不能向他寄送普通书信。"}
+    return XianfanTravelPost.postage(str(data["place"]),str(npc.get("place","")))
+
+func send_letter(person: String, body: String) -> Dictionary:
+    _setup_post()
+    var clean:=body.strip_edges()
+    if clean.is_empty() or clean.length()>600:
+        return {"ok":false,"error":"书信须有正文，最多600字。"}
+    var eligible:=false
+    for contact in known_contacts():
+        if str(contact.get("name",""))==person: eligible=true
+    if not eligible:
+        return {"ok":false,"error":"你尚不认识这名收信人，不能凭人口名册获取地址。"}
+    var quote: Dictionary=postage_quote(person)
+    if not bool(quote.get("ok",false)):
+        return {"ok":false,"error":str(quote.get("reason","无法寄出"))}
+    var fee:=int(quote["fee"])
+    if int(data["money"])<fee:
+        return {"ok":false,"error":"邮资需%d文，身上仅有%d文，信尚未寄出。" % [fee,int(data["money"])]}
+    # Only cash already held by player may pay actual postal charge.
+    var zone:=XianfanTravelPost.zone(str(data["place"]))
+    if not data.has("society") or not data["society"]["regions"].has(zone):
+        return {"ok":false,"error":"该地点尚无邮驿结算账本。"}
+    data["money"]=int(data["money"])-fee
+    data["society"]["regions"][zone]["treasury"]=int(data["society"]["regions"][zone]["treasury"])+fee
+    _tick(10,0)
+    var delivery:=_clock()+int(quote["minutes"])
+    data["letter_counter"]=int(data["letter_counter"])+1
+    var letter: Dictionary={"id":"MAIL-%06d" % int(data["letter_counter"]),
+        "person":person,"from_place":str(data["place"]),
+        "to_place":str(data["npc"][person].get("place","")),
+        "body":clean,"postage":fee,"route":str(quote["route"]),
+        "sent_clock":_clock(),"arrival_clock":delivery,
+        "status":"在途"}
+    data["letters"].append(letter)
+    last_result="你写好书信交由驿递，支付%d文。预计%s送达%s；对方不在你眼前，不能立刻回答。" % [
+        fee,XianfanTravelPost.format_eta(int(quote["minutes"])),person]
+    last_channel="书信"
+    save()
+    return {"ok":true,"fee":fee,"letter":letter.duplicate(true)}
+
+func _advance_letters() -> void:
+    var now:=_clock()
+    for letter in data.get("letters",[]):
+        if str(letter.get("status",""))!="在途": continue
+        if int(letter.get("arrival_clock",0))>now: continue
+        var who:=str(letter.get("person",""))
+        if not data["npc"].has(who) or not bool(data["npc"][who].get("alive",true)):
+            letter["status"]="退信（收信人已故或无处查找）"
+            continue
+        var target:=str(data["npc"][who].get("place",""))
+        if XianfanTravelPost.zone(target)!=XianfanTravelPost.zone(str(letter["to_place"])):
+            var next_route: Dictionary=XianfanTravelPost.postage(str(letter["to_place"]),target)
+            if bool(next_route.get("ok",false)):
+                letter["to_place"]=target
+                letter["arrival_clock"]=now+int(next_route["minutes"])
+                letter["status"]="在途"
+                continue
+        letter["status"]="已送达"
+        letter["delivered_clock"]=now
+        # Never hallucinate an immediate letter back: a recipient reply must
+        # originate from a separate rule-verified and paid letter transaction.
+        _note("【乡邮】寄给%s的信已由驿递送达。" % who)
+
+func letters_report() -> String:
+    _setup_post()
+    var lines: Array[String]=[
+        "书信按地理路线计费，和面对面交谈分开。写信耗时10分钟；送达需要驿路时间。对方可能忙碌、迁居或不回信。",
+        "【已寄书信 %d封】" % data["letters"].size()]
+    var entries: Array=data["letters"]
+    for letter in entries.slice(-12):
+        var eta:=maxi(0,int(letter.get("arrival_clock",0))-_clock())
+        lines.append("%s → %s｜%d文｜%s%s\n%s" % [
+            str(letter.get("id","")),str(letter.get("person","")),
+            int(letter.get("postage",0)),str(letter.get("status","")),
+            " · 约"+XianfanTravelPost.format_eta(eta) if eta>0 else "",
+            str(letter.get("body","")).substr(0,70)])
+    if entries.is_empty(): lines.append("没有已寄出的信。选择认识但不在身边的人，从人物档案中写信。")
+    return "\n\n".join(lines)
+
+func local_market_summary() -> String:
+    var location:=str(data.get("place",""))
+    if location not in ["石桥村·街口","临安县城·东市"]:
+        return "这里不是市集。可以打开地图寻找街口或东市，前往后才能实际交易。远方商品价格可在经济页查询，但不能隔空购买。"
+    var zone: String="村" if location=="石桥村·街口" else "城"
+    var society: Dictionary=data.get("society",{})
+    var stock: Dictionary=society.get("regions",{}).get(zone,{}).get("stock",{})
+    var lines: Array[String]=["【%s · 当前真实市价】" % location]
+    for good in ["粮","鱼","木","药","器"]:
+        lines.append("%s：%d文／份 · 库存%d" % [
+            good,XianfanSocietySim.regional_price(society,zone,good),int(stock.get(good,0))])
+    lines.append("\n买卖与零工需经过真实库存及钱库检查。")
+    return "\n".join(lines)
+
 func ai_context(person: String="", query: String="") -> Dictionary:
     # Store the complete original history on disk but load only evidence
     # relevant to this particular NPC and question into the model context.
@@ -338,6 +473,7 @@ func new_game() -> void:
     ]
     _setup_memories()
     _setup_society()
+    _setup_post()
     save()
 
 func _valid(d: Dictionary) -> bool:
@@ -694,6 +830,7 @@ func _tick(minutes: int, stamina_delta: int = 0, count_turn: bool = true) -> voi
             _sync_society_people()
             _archive_society_milestones()
             _archive_civic_memory()
+    _advance_letters()
     if count_turn:
         data["turn"] = int(data["turn"]) + 1
 
