@@ -38,9 +38,9 @@ static func job_catalog() -> Array[Dictionary]:
     return roles
 
 static func _name(idx: int) -> String:
-    var given:=GIVEN[idx%GIVEN.size()]
-    var suffix:=ENDING[int(idx/GIVEN.size())%ENDING.size()]
-    var surname:=SURNAME[idx%SURNAME.size()]
+    var given: String=str(GIVEN[idx%GIVEN.size()])
+    var suffix: String=str(ENDING[int(idx/GIVEN.size())%ENDING.size()])
+    var surname: String=str(SURNAME[idx%SURNAME.size()])
     return surname+given+suffix
 
 static func _region(npc: Dictionary) -> String:
