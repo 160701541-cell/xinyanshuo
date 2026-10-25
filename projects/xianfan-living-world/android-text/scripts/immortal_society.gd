@@ -193,6 +193,7 @@ static func advance_to(society: Dictionary, target_minute: int) -> int:
     if int(c.get("schema",0))!=SCHEMA or not valid(society): return 0
     var day:=int(target_minute/1440)+1
     var cursor:=int(c.get("last_day",day))
+    var old_day:=cursor
     if day<=cursor: return 0
     while cursor<day:
         cursor+=1
@@ -211,7 +212,7 @@ static func advance_to(society: Dictionary, target_minute: int) -> int:
             if cursor%360==0:
                 person["age"]=int(person["age"])+1
         c["last_day"]=cursor
-    return day-int(society["cultivation_world"].get("last_day",day)) # Caller uses state advancement, not this return.
+    return day-old_day
 
 static func snapshot(society: Dictionary, name: String, hour: int) -> Dictionary:
     var record: Dictionary=society.get("cultivation_world",{}).get("agents",{}).get(name,{})
