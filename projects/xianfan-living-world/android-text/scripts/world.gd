@@ -51,6 +51,7 @@ func _setup_society() -> void:
         data["society"]=XianfanSocietySim.initial_state(_clock())
     var society: Dictionary=data["society"]
     var civic_added:=XianfanCivicPopulation.initialize(society,int(society.get("last_hour",int(_clock()/60))))
+    var accounts_added:=XianfanEconomyAccounts.initialize(society,int(society.get("last_hour",int(_clock()/60))))
     if not XianfanSocietySim.valid(society):
         # Never silently destroy a corrupted economic ledger: log and leave it
         # unchanged rather than resetting all people's possessions.
@@ -59,7 +60,7 @@ func _setup_society() -> void:
     _sync_society_people()
     _archive_society_milestones()
     _archive_civic_memory()
-    if first_init or civic_added: save()
+    if first_init or civic_added or accounts_added: save()
 
 func _sync_society_people() -> void:
     var society: Dictionary=data.get("society",{})
@@ -190,6 +191,18 @@ func society_sectors() -> Array[String]:
 func society_status() -> String:
     if not data.has("society"): return "世界社会层尚未初始化"
     return XianfanSocietySim.report(data["society"],str(data.get("place","")))
+
+func economy_report(zone: String="") -> String:
+    if not data.has("society"): return "本存档尚无社会经济账本。"
+    if zone.is_empty():
+        zone="村" if str(data.get("place","")).begins_with("石桥村") else "城"
+    return XianfanEconomyAccounts.report(data["society"],zone)
+
+func economy_trend(zone: String="") -> Array[Dictionary]:
+    if not data.has("society"): return []
+    if zone.is_empty():
+        zone="村" if str(data.get("place","")).begins_with("石桥村") else "城"
+    return XianfanEconomyAccounts.trend(data["society"],zone,12)
 
 func society_nearby() -> Array[Dictionary]:
     if not data.has("society"): return []
@@ -1196,6 +1209,8 @@ func _society_player_trade(raw: String) -> String:
     var buy_grain:=raw.begins_with("买粗粮") or raw.begins_with("买粮")
     var sell_fish:=raw.begins_with("卖鱼") or raw.begins_with("卖一条鱼")
     var work:=raw.begins_with("做零工") or raw.begins_with("帮忙搬货")
+    if raw.contains("GDP") or raw.contains("生产总值") or raw.contains("经济统计") or raw.contains("经济报表"):
+        return economy_report()
     if raw.contains("物价") or raw.contains("今日行情") or raw.contains("查市场"):
         return society_status()
     if not (buy_grain or sell_fish or work): return ""
@@ -1217,6 +1232,7 @@ func _society_player_trade(raw: String) -> String:
         _add("粗粮",1)
         _tick(12,-1)
         society["total_trades"]=int(society["total_trades"])+1
+        XianfanEconomyAccounts.trade(society,zone,_clock(),buy_price,"玩家购粮")
         return "你从真实粮仓买下一份粗粮，花去%d文，价格取决于当地存货。" % buy_price
     if sell_fish:
         if not _has("小河鱼"): return "背包里没有小河鱼，不能拿假货卖。"
@@ -1228,16 +1244,20 @@ func _society_player_trade(raw: String) -> String:
         data["money"]=int(data["money"])+fish_price
         _tick(12,-1)
         society["total_trades"]=int(society["total_trades"])+1
+        XianfanEconomyAccounts.trade(society,zone,_clock(),fish_price,"玩家售鱼")
         return "市集收了你一条真正的鱼，按今日行情付%d文；鱼进入公共库藏。" % fish_price
     if work:
         if int(data["stamina"])<8: return "体力不足，没法完成一小时的零工。"
         if int(area["treasury"])<2: return "公共钱库缺钱，今天暂时无薪可发。"
         if int(area["wild"]["肥力"])<2: return "本地田力尚未恢复，今天没有可用的农事零工。"
+        var quotes:=XianfanEconomyAccounts.price_snapshot(society,zone)
         area["wild"]["肥力"]=int(area["wild"]["肥力"])-2
         stock["粮"]=int(stock["粮"])+2
         area["treasury"]=int(area["treasury"])-2
         data["money"]=int(data["money"])+2
         _tick(60,-8)
+        XianfanEconomyAccounts.production(society,zone,_clock(),"农林渔药",
+            {"粮":2},{},0,quotes,"玩家农事零工")
         return "你和其他人一样做完一小时农活，收获两份真实粮食进入仓库，并按公库现钱领了两文。"
     return ""
 
@@ -1252,6 +1272,8 @@ func _free_action(raw: String) -> String:
         return travel
     var direct_speech := _npc_free_chat(t)
     if not direct_speech.is_empty(): return direct_speech
+    if t.contains("GDP") or t.contains("生产总值") or t.contains("经济统计"):
+        return economy_report()
     if t.contains("物价") or t.contains("市价") or t.contains("今日行情"):
         return society_status()
     var market_result:=_society_player_trade(t)
