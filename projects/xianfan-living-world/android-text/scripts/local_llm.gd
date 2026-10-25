@@ -74,8 +74,8 @@ func talk(text: String, person: String, state: Dictionary) -> void:
     if not (parsed is Dictionary):
         answered.emit({"ok":true,"kind":"clarify","message":"动作解析格式不正确，请换种说法。","raw":text})
         return
-    var result: Dictionary=parsed
-    if str(result.get("kind",""))=="action":
-        answered.emit({"ok":true,"kind":"action","command":str(result.get("command","")).substr(0,200),"raw":text})
+    var parsed_action: Dictionary=parsed
+    if str(parsed_action.get("kind",""))=="action":
+        answered.emit({"ok":true,"kind":"action","command":str(parsed_action.get("command","")).substr(0,200),"raw":text})
     else:
-        answered.emit({"ok":true,"kind":"clarify","message":str(result.get("message","无法解析动作")).substr(0,200),"raw":text})
+        answered.emit({"ok":true,"kind":"clarify","message":str(parsed_action.get("message","无法解析动作")).substr(0,200),"raw":text})
