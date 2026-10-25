@@ -7,9 +7,9 @@
   "time": {
     "regnal_year": 3,
     "day": 2,
-    "hour": 10,
-    "minute": 44,
-    "display": "承平三年 · 第2日 · 10:44",
+    "hour": 11,
+    "minute": 14,
+    "display": "承平三年 · 第2日 · 11:14",
     "weather": "晴"
   },
   "player": {
@@ -26,7 +26,7 @@
     "root_commitment_sha256": "897ffd3bec4b0c505b934d584835158fecaf6ddea61c5d70df6b8160db914dd7",
     "hp": 100,
     "max_hp": 100,
-    "stamina": 53,
+    "stamina": 51,
     "max_stamina": 100,
     "money": 2,
     "money_unit": "文",
@@ -97,8 +97,8 @@
       "source": "shop:SEEDS@EV000014"
     }
   ],
-  "current_location": "临安县城·匠人巷口",
-  "last_event_id": "EV000015",
+  "current_location": "临安县城·旧书铺",
+  "last_event_id": "EV000016",
   "reference": {
     "origin": "GitHub 160701541-cell/xinyanshuo",
     "xianfan_branch": "xianfan/independent-living-county-v0.1",
@@ -153,8 +153,8 @@
   ],
   "location_id": "linan",
   "position": {
-    "x": 190,
-    "y": 355
+    "x": 154,
+    "y": 330
   },
   "known_npcs": [
     {
@@ -590,7 +590,7 @@
       "evidence": "08:00在厨房，后续活动为日程推演"
     }
   },
-  "sub_location": "临安县城·匠人巷口",
+  "sub_location": "临安旧书铺",
   "fishing_requests": {
     "rod_pair": {
       "target_count": 2,
@@ -747,6 +747,24 @@
       "access": "public streets only",
       "trades": 0,
       "conversation_outcomes": 0
+    },
+    "bookshop_visit": {
+      "site_id": "LN-BOOK-01",
+      "at": "承平三年 · 第2日 · 11:14",
+      "finite_stock": {
+        "ordinary_breathing_notes": 1,
+        "verified_cultivation_manual": 0
+      },
+      "quotes": {
+        "ordinary_breathing_notes": 2,
+        "verified_cultivation_manual": null
+      },
+      "genuine_cultivation_manual_available": false,
+      "ordinary_breathing_notes_not_cultivation": true,
+      "offer_to_purchase_genuine_manual_failed": true,
+      "merchant_response": "本铺没有可核验的入门修行功法；只有两文的凡俗调息册子。",
+      "no_purchase": true,
+      "merchants_met": "bookshop_vendor_identity_unknown"
     }
   }
 }
