@@ -15,6 +15,8 @@ func all_coins(sim: Dictionary) -> int:
         value+=int(region["treasury"])
     for actor in sim["agents"].values():
         value+=int(actor["coins"])
+    for person in sim.get("civic_agents",{}).values():
+        value+=int(person.get("coins",0))
     return value
 
 func _run() -> void:
