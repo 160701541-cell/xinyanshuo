@@ -299,6 +299,9 @@ static func _live_day(society: Dictionary, day: int) -> void:
             npc["wish"]="扩展本业的家产和人脉"
         else:
             npc["wish"]="在%s立足" % str(npc["faction"])
+    # NPC intentions and real social consequences advance even without AI
+    # or player proximity; one daily settlement with strict locality.
+    XianfanPsyche.advance_day(society,day)
 
 static func advance_daily(society: Dictionary, absolute_hour: int) -> int:
     var current_day:=int(absolute_hour/24)+1
