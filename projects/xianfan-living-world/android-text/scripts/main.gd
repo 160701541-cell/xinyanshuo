@@ -598,6 +598,9 @@ func _detect_npc_speech(line: String) -> String:
     if line.contains("孙成明") or line.contains("妹妹") or line.contains("成明"): return "孙成明"
     if line.contains("钱然泽") or line.contains("父亲") or line.contains("爹"): return "钱然泽"
     if line.contains("郑舟清") or line.contains("母亲") or line.contains("娘"): return "郑舟清"
+    for npc in game.npcs_status():
+        var person_name:=str(npc["name"])
+        if line.contains(person_name): return person_name
     return ""
 
 func _narration_needed(before_clock: int, before_place: String, outcome: String, speech: bool=false) -> bool:
