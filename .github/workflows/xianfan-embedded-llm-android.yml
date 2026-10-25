@@ -95,6 +95,12 @@ jobs:
           godot --headless --path . --script res://tests/test_director.gd > /tmp/ai-director.log 2>&1 || { cat /tmp/ai-director.log; exit 1; }
           cat /tmp/ai-director.log
           if grep -E '(SCRIPT ERROR|Parse Error|DIRECTOR TEST FAILURE|DIRECTOR TESTS FAILED)' /tmp/ai-director.log; then exit 1; fi
+      - name: Validate on-screen AI orchestration and streamed dialogue
+        run: |
+          cd projects/xianfan-living-world/android-text
+          godot --headless --path . --script res://tests/test_ai_orchestration.gd > /tmp/ai-orchestration.log 2>&1 || { cat /tmp/ai-orchestration.log; exit 1; }
+          cat /tmp/ai-orchestration.log
+          if grep -E '(SCRIPT ERROR|Parse Error|AI ORCHESTRATION FAILURE|ORCHESTRATION FAILED)' /tmp/ai-orchestration.log; then exit 1; fi
       - name: Build APK with native local runtime
         run: |
           cd projects/xianfan-living-world/android-text
