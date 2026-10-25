@@ -148,7 +148,8 @@ func _process(delta: float) -> void:
     var mins:=mini(60,int(clock_accumulator))
     if mins<1: return
     clock_accumulator-=float(mins)
-    game.passive_time(mins)
+    game.passive_time(mins,false)
+    if int(game._clock())%10==0: game.save()
     hud.text="%s · %s\n精力 %d/100 · 铜钱 %d文 · %s" % [
         game.time_string(),str(game.data["place"]),int(game.data["stamina"]),
         int(game.data["money"]),str(game.data["realm"])]
