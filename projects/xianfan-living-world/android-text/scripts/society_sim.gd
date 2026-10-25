@@ -142,7 +142,8 @@ static func _produce(society: Dictionary, npc: Dictionary, region: Dictionary, h
         made=true  # service work may earn salary; does not create goods.
     if made:
         npc["work_done"]=int(npc["work_done"])+1
-        society["total_production"]=int(society["total_production"])+1 if job in ["农夫","渔夫","樵夫","采药人","匠人"] else 0
+        if job in ["农夫","渔夫","樵夫","采药人","匠人"]:
+            society["total_production"]=int(society["total_production"])+1
         var day: Dictionary=society["daily"].get(str(int(hour/24)+1),{})
         if job in ["农夫","渔夫","樵夫","采药人","匠人"]:
             day["production"]=int(day.get("production",0))+1
