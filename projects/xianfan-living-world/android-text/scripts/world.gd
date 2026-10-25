@@ -230,11 +230,132 @@ func record_ai_dialogue(person: String, player_text: String, reply: String, engi
     log.append({"day":int(data["day"]),"speaker":person,"player":clean_player.substr(0,250),"reply":reply.strip_edges(),"ai":true,"engine":engine})
     if log.size()>80: log.pop_front()
     data["dialogue_log"]=log
+    # Append-only dialogue archive and NPC-indexed memory survive recent-log rotation.
+    # Dialogue is a record of what was said, not a source of new world facts.
+    var archive: Array=data.get("dialogue_archive",[])
+    var saved_turn: Dictionary=log.back().duplicate(true)
+    saved_turn["minute"]=int(data["minute"])
+    archive.append(saved_turn)
+    data["dialogue_archive"]=archive
+    var npc_memories: Dictionary=data.get("npc_memories",{})
+    var personal: Array=npc_memories.get(person,[])
+    personal.append({"day":int(data["day"]),"turn":int(data["turn"]),"player":clean_player.substr(0,250),"reply":reply.strip_edges().substr(0,350)})
+    npc_memories[person]=personal
+    data["npc_memories"]=npc_memories
     last_channel="对话"
     last_target=person
     last_result=reply.strip_edges()
     save()
     return last_result
+
+# Model may propose a bounded plot beat, but the rules engine authorizes and
+# stores every transition. Narrative text alone never grants resources or levels.
+const STORY_BEATS := {
+    "sister_choice":{"title":"成明的打算","place":"石桥村·家中","npc":"孙成明"},
+    "mother_warning":{"title":"母亲的叮嘱","place":"石桥村·家中","npc":"郑舟清"},
+    "forged_manual":{"title":"伪诀风波","place":"石桥村·家中","npc":"孙成明"},
+    "river_balance":{"title":"溪河枯竭","place":"石桥村·溪边","npc":""},
+    "forest_custom":{"title":"村社林规","place":"石桥村·林缘","npc":""},
+    "market_rumor":{"title":"东市闲闻","place":"临安县城·东市","npc":""},
+    "mountain_gate":{"title":"山门抉择","place":"青云山门·山门外","npc":""}
+}
+
+func available_story_beats() -> Array[Dictionary]:
+    var result: Array[Dictionary]=[]
+    var flags: Dictionary=data.get("story_flags",{})
+    for key in STORY_BEATS:
+        if flags.has(key): continue
+        var beat: Dictionary=STORY_BEATS[key]
+        if str(beat["place"])!=str(data["place"]): continue
+        var required_npc:=str(beat.get("npc",""))
+        if not required_npc.is_empty():
+            if not data["npc"].has(required_npc): continue
+            if str(data["npc"][required_npc].get("place",""))!=str(data["place"]): continue
+        if key=="forged_manual" and not data.get("manual_questioned",data.get("flags",{}).get("manual_questioned",false)): continue
+        if key=="river_balance" and int(data.get("fish_population",10))>2: continue
+        result.append({"id":key,"title":str(beat["title"])})
+    return result
+
+func story_context() -> Dictionary:
+    var npc_visible: Array=[]
+    for name in data["npc"]:
+        var n: Dictionary=data["npc"][name]
+        if str(n.get("place",""))==str(data["place"]):
+            npc_visible.append({"name":name,"activity":n.get("activity",""),"mood":n.get("mood",""),"wish":n.get("wish","未公开")})
+    return {"day":int(data["day"]),"minute":int(data["minute"]),"place":str(data["place"]),
+        "weather":str(data.get("weather","")),"stamina":int(data.get("stamina",0)),
+        "inventory":data.get("items",{}).duplicate(true),"realm":str(data.get("realm","凡人")),
+        "root":str(data.get("root","未检测")),"npc_here":npc_visible,
+        "world_facts":look(),"available_beats":available_story_beats(),
+        "last_rule_result":last_result.substr(0,340)}
+
+func recent_story_ai(n: int=3) -> String:
+    var events: Array=data.get("ai_story_log",[])
+    var lines: Array[String]=[]
+    for i in range(maxi(0,events.size()-n),events.size()):
+        var e: Dictionary=events[i]
+        lines.append(str(e.get("scene","")))
+    return "\n\n".join(lines)
+
+func _ai_story_must_reject(text: String) -> bool:
+    # Visible prose cannot impersonate irreversible numerical world changes.
+    for keyword in ["成功突破","已突破","灵根是","灵根为","获得灵石","得到灵石","凭空出现","境界提升","气血增加","铜钱增加","寿元增加"]:
+        if text.contains(keyword): return true
+    return false
+
+func record_ai_story(scene: String, beat_id: String, expected_clock: int, origin: String="local-gguf") -> Dictionary:
+    if _clock()!=expected_clock:
+        return {"ok":false,"error":"世界时间已变化，旧AI剧情不再有效。"}
+    var text_scene:=scene.strip_edges()
+    if text_scene.length()<8 or text_scene.length()>440:
+        return {"ok":false,"error":"AI剧情文字长度异常，未写入存档。"}
+    if _ai_story_must_reject(text_scene):
+        return {"ok":false,"error":"AI企图在旁白中擅自改动修为、钱财或属性。"}
+    var approved_id:=""
+    for available in available_story_beats():
+        if str(available["id"])==beat_id: approved_id=beat_id
+    var event: Dictionary={"day":int(data["day"]),"minute":int(data["minute"]),
+        "place":str(data["place"]),"scene":text_scene,"origin":origin,
+        "beat_id":approved_id,"rule_turn":int(data["turn"])}
+    var stories: Array=data.get("ai_story_log",[])
+    stories.append(event)
+    data["ai_story_log"]=stories
+    if not approved_id.is_empty():
+        var flags: Dictionary=data.get("story_flags",{})
+        flags[approved_id]={"day":int(data["day"]),"turn":int(data["turn"])}
+        data["story_flags"]=flags
+        var npc: Dictionary=data["npc"]
+        if approved_id=="sister_choice":
+            npc["孙成明"]["wish"]="想自己决定是否学习与出门见识"
+        elif approved_id=="mother_warning":
+            npc["郑舟清"]["wish"]="盼孩子平安回家、带好盘缠"
+        elif approved_id=="forged_manual":
+            npc["孙成明"]["wish"]="先辨别真伪，再谈修炼"
+        _note("【人生支线开启】"+str(STORY_BEATS[approved_id]["title"]))
+    save()
+    return {"ok":true,"approved_beat":approved_id,"scene":text_scene}
+
+func related_npc_memories(person: String, query: String, max_results: int=6) -> Array:
+    var all_npcs: Dictionary=data.get("npc_memories",{})
+    var memory: Array=all_npcs.get(person,[])
+    var tokens: Array[String]=[]
+    for i in range(maxi(0,query.length()-1)):
+        var chunk:=query.substr(i,2)
+        if not tokens.has(chunk): tokens.append(chunk)
+    var ranked: Array=[]
+    for i in range(memory.size()):
+        var item: Dictionary=memory[i]
+        var combined:=str(item.get("player",""))+" "+str(item.get("reply",""))
+        var relevance:=0
+        for token in tokens:
+            if combined.contains(token): relevance+=1
+        if relevance>0:
+            ranked.append({"score":relevance,"index":i,"memory":item})
+    ranked.sort_custom(func(a,b): return (int(a["score"])*10000+int(a["index"]))>(int(b["score"])*10000+int(b["index"])))
+    var selected: Array=[]
+    for i in range(mini(max_results,ranked.size())):
+        selected.append(ranked[i]["memory"])
+    return selected
 
 func npcs_status() -> Array[Dictionary]:
     var arr: Array[Dictionary] = []
