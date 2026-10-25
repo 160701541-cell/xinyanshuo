@@ -141,7 +141,7 @@ func _build() -> void:
     quick_row.add_theme_constant_override("separation", 7)
     root.add_child(quick_row)
     for quick in ["看看周围", "问妹妹在忙什么", "出门走走"]:
-        var q := _btn(quick, func(): _execute("去林缘看看" if quick == "出门走走" else quick))
+        var q := _btn(quick, func(): _execute("去林缘" if quick == "出门走走" else quick))
         q.size_flags_horizontal = Control.SIZE_EXPAND_FILL
         q.custom_minimum_size = Vector2(0, 48)
         q.add_theme_font_size_override("font_size", 17)
