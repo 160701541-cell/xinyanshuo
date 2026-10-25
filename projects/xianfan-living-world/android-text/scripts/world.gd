@@ -44,6 +44,25 @@ func memory_recall(person: String, query: String, limit: int=6) -> Array:
     if memory_store==null or not data.get("npc",{}).has(person): return []
     return memory_store.recall(person,query,limit)
 
+func ai_context(person: String="", query: String="") -> Dictionary:
+    # Store the complete original history on disk but load only evidence
+    # relevant to this particular NPC and question into the model context.
+    var context: Dictionary={
+        "day":int(data.get("day",0)),"minute":int(data.get("minute",0)),
+        "name":str(data.get("name","玩家")),"place":str(data.get("place","")),
+        "weather":str(data.get("weather","")),"realm":str(data.get("realm","凡人")),
+        "root":str(data.get("root","未检测")),"money":int(data.get("money",0)),
+        "stamina":int(data.get("stamina",0)),
+        "items":data.get("items",{}).duplicate(true),
+        "npc":data.get("npc",{}).duplicate(true),
+        "dialogue_log":data.get("dialogue_log",[]).slice(-80)
+    }
+    if not person.is_empty() and memory_store!=null and data["npc"].has(person):
+        var archive:=memory_store.digest(person,data["npc"][person])
+        archive["recalled"]=memory_store.recall(person,query,8)
+        context["memory_context"]=archive
+    return context
+
 func memory_storage_info(person: String) -> String:
     if memory_store==null: return "记忆库尚未初始化"
     var info:=memory_digest(person)
