@@ -22,6 +22,165 @@ const PEOPLE := [
 const JOB_WAGE := {"农夫":1,"渔夫":1,"樵夫":1,"采药人":1,"匠人":2,
     "商贩":1,"脚夫":1,"教书人":1,"学徒":0,"巡卒":2,"医者":2}
 const EVENT_LIMIT := 100
+# Supply-dependent quotes are the same for NPCs and player. Prices only
+# change when real local stocks cross thresholds, never via language-model text.
+const BASE_PRICE := {"粮":2,"木":3,"鱼":3,"药":5,"器":8}
+const REGIONAL_TARGET := {"村":{"粮":120,"木":18,"鱼":8,"药":8,"器":5},
+    "城":{"粮":300,"木":65,"鱼":15,"药":35,"器":30}}
+
+static func regional_price(society: Dictionary, region_name: String, good: String) -> int:
+    if not BASE_PRICE.has(good): return 0
+    var region: Dictionary=society.get("regions",{}).get(region_name,{})
+    var stock: Dictionary=region.get("stock",{})
+    var target: Dictionary=REGIONAL_TARGET.get(region_name,{})
+    if not stock.has(good): return 0
+    var quantity:=int(stock[good])
+    var expected:=maxi(1,int(target.get(good,10)))
+    var quote:=int(BASE_PRICE[good])
+    if quantity<=expected/4: quote+=3
+    elif quantity<=expected/2: quote+=2
+    elif quantity>=expected*3: quote-=2
+    elif quantity>=expected*2: quote-=1
+    return maxi(1,quote)
+
+static func _prepare_social(society: Dictionary) -> void:
+    if not society.has("households"):
+        society["households"]={}
+    if not society.has("caravans"):
+        society["caravans"]=[
+            {"id":"ROAD-FISH-01","from":"村","to":"城","good":"鱼","limit":2,
+                "agent":"孟远川","state":"idle","qty":0,"depart_hour":-1,"arrive_hour":-1},
+            {"id":"ROAD-TOOLS-02","from":"城","to":"村","good":"器","limit":1,
+                "agent":"秦九山","state":"idle","qty":0,"depart_hour":-1,"arrive_hour":-1}
+        ]
+    var members: Dictionary=society.get("agents",{})
+    # Assign starting households to pairs of people in each settlement.
+    # "Household" means mutual support, not invented romantic ties.
+    var per_region: Dictionary={"村":[],"城":[]}
+    for who in members:
+        var item: Dictionary=members[who]
+        if item.has("household"): continue
+        var region: String=_zone(str(item.get("origin","石桥村")))
+        per_region[region].append(str(who))
+    for region in per_region:
+        var names: Array=per_region[region]
+        for i in range(names.size()):
+            var who:=str(names[i])
+            var household_id: String=region+"-同户%02d" % int(i/2+1)
+            members[who]["household"]=household_id
+            var homes: Dictionary=society["households"]
+            var group: Array=homes.get(household_id,[])
+            if not group.has(who): group.append(who)
+            homes[household_id]=group
+    if not society.has("family_support_count"):
+        society["family_support_count"]=0
+    if not society.has("caravan_trades"):
+        society["caravan_trades"]=0
+
+static func _family_support(society: Dictionary, absolute_hour: int) -> void:
+    var agents: Dictionary=society["agents"]
+    for household in society.get("households",{}):
+        var members: Array=society["households"][household]
+        for needy_name in members:
+            var needy: Dictionary=agents[needy_name]
+            if int(needy.get("rations",0))>=1: continue
+            for donor_name in members:
+                if str(donor_name)==str(needy_name): continue
+                var donor: Dictionary=agents[donor_name]
+                if int(donor["rations"])>=2:
+                    donor["rations"]=int(donor["rations"])-1
+                    needy["rations"]=int(needy["rations"])+1
+                    society["family_support_count"]=int(society["family_support_count"])+1
+                    _event(society,absolute_hour,str(donor_name),
+                        "从自己真实口粮中分出一份，帮助同户的%s。" % str(needy_name))
+                    break
+
+static func _depart_caravans(society: Dictionary, absolute_hour: int) -> void:
+    for trip in society.get("caravans",[]):
+        var convoy: Dictionary=trip
+        if str(convoy["state"])!="idle": continue
+        var from_region: Dictionary=society["regions"][str(convoy["from"])]
+        var to_region: Dictionary=society["regions"][str(convoy["to"])]
+        var good:=str(convoy["good"])
+        var price:=regional_price(society,str(convoy["to"]),good)
+        var stock: Dictionary=from_region["stock"]
+        var qty:=mini(int(convoy["limit"]),maxi(0,int(stock[good])-1))
+        if qty<1 or int(to_region["treasury"])<qty*price: continue
+        stock[good]=int(stock[good])-qty
+        convoy["qty"]=qty
+        convoy["state"]="road"
+        convoy["depart_hour"]=absolute_hour
+        convoy["arrive_hour"]=absolute_hour+8
+        convoy["quoted_price"]=price
+        var who:=str(convoy["agent"])
+        var agent: Dictionary=society["agents"][who]
+        var cargo: Dictionary=agent.get("cargo",{})
+        cargo[good]=int(cargo.get(good,0))+qty
+        agent["cargo"]=cargo
+        _event(society,absolute_hour,who,"带着%d份%s从%s启程前往%s，货物已从起点仓库扣除。" % [
+            qty,good,str(convoy["from"]),str(convoy["to"])])
+
+static func _arrive_caravans(society: Dictionary, absolute_hour: int) -> void:
+    for trip in society.get("caravans",[]):
+        var convoy: Dictionary=trip
+        if str(convoy["state"])!="road": continue
+        if absolute_hour<int(convoy["arrive_hour"]): continue
+        var qty:=int(convoy["qty"])
+        var from_zone:=str(convoy["from"])
+        var to_zone:=str(convoy["to"])
+        var from_region: Dictionary=society["regions"][from_zone]
+        var to_region: Dictionary=society["regions"][to_zone]
+        var price:=int(convoy["quoted_price"])
+        var good:=str(convoy["good"])
+        var who:=str(convoy["agent"])
+        var agent: Dictionary=society["agents"][who]
+        var cargo: Dictionary=agent["cargo"]
+        if int(to_region["treasury"])>=qty*price:
+            to_region["treasury"]=int(to_region["treasury"])-qty*price
+            from_region["treasury"]=int(from_region["treasury"])+qty*price
+            to_region["stock"][good]=int(to_region["stock"][good])+qty
+            society["caravan_trades"]=int(society["caravan_trades"])+1
+            society["total_trades"]=int(society["total_trades"])+1
+            _event(society,absolute_hour,who,
+                "沿官道抵达%s，交割%d份%s；从目的地钱库划转%d文给起点钱库。" % [
+                    to_zone,qty,good,qty*price])
+        else:
+            # No buyer cash: the wagon turns back, but items remain physical.
+            # Mark a return journey rather than teleporting the stock.
+            convoy["state"]="returning"
+            convoy["arrive_hour"]=absolute_hour+8
+            _event(society,absolute_hour,who,"目的地无力付款，押货原路返回。")
+            continue
+        cargo[good]=maxi(0,int(cargo.get(good,0))-qty)
+        convoy["qty"]=0
+        convoy["state"]="idle"
+        convoy["arrive_hour"]=-1
+
+static func _return_caravans(society: Dictionary, absolute_hour: int) -> void:
+    for trip in society.get("caravans",[]):
+        var convoy: Dictionary=trip
+        if str(convoy["state"])!="returning" or absolute_hour<int(convoy["arrive_hour"]): continue
+        var good:=str(convoy["good"])
+        var qty:=int(convoy["qty"])
+        society["regions"][str(convoy["from"])]["stock"][good]=int(society["regions"][str(convoy["from"])]["stock"][good])+qty
+        var agent: Dictionary=society["agents"][str(convoy["agent"])]
+        var cargo: Dictionary=agent["cargo"]
+        cargo[good]=maxi(0,int(cargo.get(good,0))-qty)
+        convoy["state"]="idle"
+        convoy["qty"]=0
+        convoy["arrive_hour"]=-1
+        _event(society,absolute_hour,str(convoy["agent"]),"远行未能成交，所押货物如数退回原仓。")
+
+static func _caravan_position(society: Dictionary, npc: Dictionary, absolute_hour: int) -> bool:
+    for trip in society.get("caravans",[]):
+        var convoy: Dictionary=trip
+        if str(convoy["agent"])!=str(npc["name"]): continue
+        if str(convoy["state"]) in ["road","returning"]:
+            npc["place"]="临安官道"
+            npc["activity"]="押送有账可查的货物：" + str(convoy["good"])
+            return true
+    return false
+
 
 static func _zone(affiliation: String) -> String:
     return "村" if affiliation=="石桥村" else "城"
@@ -60,6 +219,7 @@ static func initial_state(absolute_minute: int) -> Dictionary:
             "cargo":{},"last_hour":int(absolute_minute/60)
         }
         idx+=1
+    _prepare_social(society)
     return society
 
 static func valid(society: Dictionary) -> bool:
@@ -80,6 +240,10 @@ static func valid(society: Dictionary) -> bool:
         var npc: Dictionary=agent
         if int(npc.get("coins",-1))<0 or int(npc.get("rations",-1))<0: return false
         if int(npc.get("health",-1))<0 or int(npc.get("energy",-1))<0: return false
+    for shipment in society.get("caravans",[]):
+        if not shipment is Dictionary: return false
+        if int(shipment.get("qty",0))<0: return false
+        if str(shipment.get("state","idle")) not in ["idle","road","returning"]: return false
     return true
 
 static func _event(society: Dictionary, hour: int, who: String, action: String) -> void:
@@ -204,7 +368,11 @@ static func _work_place(npc: Dictionary, hour: int) -> String:
     return str(npc["home"])
 
 static func _hour_step(society: Dictionary, absolute_hour: int) -> void:
+    _prepare_social(society)
     var hour:=absolute_hour%24
+    _return_caravans(society,absolute_hour)
+    _arrive_caravans(society,absolute_hour)
+    if hour==8: _depart_caravans(society,absolute_hour)
     if hour==5: _wild_grow(society,absolute_hour)
     var daykey:=str(int(absolute_hour/24)+1)
     if not society["daily"].has(daykey):
@@ -256,6 +424,9 @@ static func _hour_step(society: Dictionary, absolute_hour: int) -> void:
         if int(person["health"])<=0:
             person["activity"]="病卧不起"
             person["mood"]="虚弱"
+        elif _caravan_position(society,person,absolute_hour):
+            pass
+    if hour==19: _family_support(society,absolute_hour)
     society["total_steps"]=int(society["total_steps"])+1
     # Keep a rolling 30-day summary; hourly events remain bounded.
     var days: Dictionary=society.get("daily",{})
@@ -306,6 +477,19 @@ static func report(society: Dictionary, current_place: String) -> String:
         lines.append("· %s｜%s｜%s｜存钱%d文" % [
             str(agent.get("name","")),str(agent.get("job","")),
             str(agent.get("activity","")),int(agent.get("coins",0))])
+    if society.has("caravans"):
+        lines.append("【跨区商路 · 每日按真实库存运送】")
+        for shipment in society["caravans"]:
+            lines.append("· %s：%s→%s，%s %d份（%s）" % [
+                str(shipment.get("agent","")),str(shipment.get("from","")),str(shipment.get("to","")),
+                str(shipment.get("good","")),int(shipment.get("qty",0)),
+                str(shipment.get("state","idle"))])
+    lines.append("【本地实时牌价】粮%d文 · 鱼%d文 · 木%d文 · 药%d文 · 器%d文" % [
+        regional_price(society,region,"粮"),regional_price(society,region,"鱼"),
+        regional_price(society,region,"木"),regional_price(society,region,"药"),
+        regional_price(society,region,"器")])
+    lines.append("【村人互助】同户支援口粮%d次；跨区货物交割%d次" % [
+        int(society.get("family_support_count",0)),int(society.get("caravan_trades",0))])
     lines.append("【最近真实事件】")
     var events: Array=society.get("events",[])
     for e in events.slice(-6):
