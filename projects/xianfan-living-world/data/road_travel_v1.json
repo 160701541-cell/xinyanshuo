@@ -1,0 +1,35 @@
+{
+  "schema": "xianfan.road_travel.v1",
+  "version": "road-travel-1.0.0",
+  "status": "declared at turn 30; 由既有 county walk 数字反推，不另设新平衡",
+  "derivation": {
+    "source": "data/day2_home_and_county_rules_v1.json 的 county walk 115 分钟 / 17 精力",
+    "distance_m": 6000,
+    "meters_per_minute": 52.17,
+    "stamina_per_minute": 0.1478,
+    "check": "6000 / 52.17 = 115.0 分钟；115 * 0.1478 = 17.0 精力 —— 与既有规则逐位吻合"
+  },
+  "legs": [
+    { "id": "shiqiao-linan", "from": "shiqiao", "to": "linan", "route": "村道接官道", "distance_m": 6000, "terrain": "平路", "speed_factor": 1.0 },
+    { "id": "linan-qingyun", "from": "linan", "to": "qingyun", "route": "北门出城，沿山道折向东北", "distance_m": 13405, "terrain": "山路", "speed_factor": 0.72 },
+    { "id": "linan-lingshan", "from": "linan", "to": "lingshan", "route": "北门出城，经青石岭", "distance_m": 14203, "terrain": "山路", "speed_factor": 0.7 }
+  ],
+  "computed": {
+    "shiqiao_to_qingyun_minutes": 472,
+    "shiqiao_to_qingyun_note": "115 分钟官道 + 13405/(52.17*0.72)=357 分钟山路 = 472 分钟，约八个时辰，天亮前动身当天能到",
+    "shiqiao_to_lingshan_minutes": 504,
+    "shiqiao_to_lingshan_note": "115 + 14203/(52.17*0.7)=389 = 504 分钟，一天走不到，路上必须过夜"
+  },
+  "lodging": {
+    "inn": { "name": "山脚脚店", "copper_per_night": 8, "includes": "一床一被、一顿糙饭、热水一盆", "note": "只收现钱，不赊" },
+    "wild": { "risk": "露宿", "note": "不进店就得自己找背风处，夜里凉，精力恢复减半" }
+  },
+  "provisions": {
+    "travel_bread_copper_on_road": 4,
+    "note": "路上买一份饼四文；自家带粮换饼省一半，但粮是家里的"
+  },
+  "constraints": [
+    "钱不够就只能在半路回头，这不是剧情，是账",
+    "凡人走山路一天最多八到九个时辰，超了就是伤身"
+  ]
+}

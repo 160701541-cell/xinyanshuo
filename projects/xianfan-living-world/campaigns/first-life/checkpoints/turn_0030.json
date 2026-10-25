@@ -1,0 +1,269 @@
+{
+  "schema": 1,
+  "turn": 30,
+  "range": [
+    21,
+    30
+  ],
+  "event_ids": [
+    "EV000023",
+    "EV000024",
+    "EV000025",
+    "EV000026",
+    "EV000027",
+    "EV000028",
+    "EV000029",
+    "EV000030",
+    "EV000031",
+    "EV000032"
+  ],
+  "event_hash": "c72985933d2e9fe78bd26d5dfc0f1f37d9529cc9b62cefd5f7af13aa9ba14188",
+  "state_hash": "b7656d2a0b9c511578b3f4c89cfd3a3243dc357e5e6c4ba742a0a7310c05f1db",
+  "time": "承平三年 · 第8日 · 13:05",
+  "location": "石桥村·钱家院落",
+  "player": {
+    "id": "CFPLAYER00001",
+    "hp": 100,
+    "stamina": 98,
+    "money": 0,
+    "realm": "凡人（未修行）"
+  },
+  "inventory": [
+    {
+      "id": "coarse_cloth",
+      "name": "粗布衣",
+      "quantity": 1,
+      "equipped": true,
+      "category": "衣物",
+      "source": "出身基础衣着，视为原本穿在身上"
+    },
+    {
+      "id": "cloth_shoes",
+      "name": "布鞋",
+      "quantity": 1,
+      "equipped": true,
+      "category": "衣物",
+      "source": "出身基础衣着，视为原本穿在脚上"
+    },
+    {
+      "id": "rod_blank_wood_01",
+      "name": "未装线钩的简易竿坯",
+      "quantity": 0,
+      "equipped": false,
+      "category": "渔具半成品",
+      "source": "SH-BRUSH-B(枝1)+SH-FIBER-B(纤维1)",
+      "usable_for_fishing": false
+    },
+    {
+      "id": "woven_fish_basket",
+      "name": "简易编织鱼笼",
+      "quantity": 0,
+      "category": "渔具",
+      "equipped": false,
+      "source": "EV000012"
+    },
+    {
+      "id": "fishing_line",
+      "name": "钓鱼线",
+      "quantity": 0,
+      "category": "商品",
+      "equipped": false,
+      "source": "shop:GEAR@EV000014"
+    },
+    {
+      "id": "fish_hook",
+      "name": "鱼钩",
+      "quantity": 0,
+      "category": "商品",
+      "equipped": false,
+      "source": "shop:GEAR@EV000014"
+    },
+    {
+      "id": "vegetable_seed_packet",
+      "name": "青菜种子包",
+      "quantity": 0,
+      "category": "商品",
+      "equipped": false,
+      "source": "shop:SEEDS@EV000014"
+    },
+    {
+      "id": "weathered_qi_primer",
+      "name": "《引气初篇》（残旧）",
+      "quantity": 1,
+      "equipped": false,
+      "category": "来历不明的册子",
+      "source": "EV000017 临安县城街边购入，2文",
+      "provenance": "卖方未出示来历；纸页焦黄、有虫蛀、末三页残缺；无门无派印记"
+    },
+    {
+      "id": "river_fish",
+      "name": "小河鱼",
+      "quantity": 1,
+      "category": "渔获",
+      "equipped": false,
+      "source": "EV000026 鱼笼取回"
+    },
+    {
+      "id": "simple_fishing_rod",
+      "name": "简易手竿（竿坯+线+钩）",
+      "quantity": 1,
+      "equipped": false,
+      "category": "渔具",
+      "usable_for_fishing": true,
+      "source": "EV000026 河岸现场组装"
+    }
+  ],
+  "relevant_npcs": [
+    {
+      "id": "CFNPC00001",
+      "name": "钱然泽",
+      "age": 35,
+      "location": "shiqiao",
+      "notes": [
+        "早晨扛锄准备下田",
+        "询问玩家今日安排"
+      ]
+    },
+    {
+      "id": "CFNPC00002",
+      "name": "郑舟清",
+      "age": 49,
+      "location": "shiqiao",
+      "notes": [
+        "在厨房准备早饭",
+        "劝父亲先让孩子吃饭"
+      ]
+    },
+    {
+      "id": "CFNPC00003",
+      "name": "孙成明",
+      "age": 16,
+      "location": "shiqiao",
+      "notes": [
+        "承平三年第一日与心魇说结伴到村外采集枝草，协助制作一只小兽绳套。",
+        "承平三年第一日午前继续结伴在荒沟找草药；帮助整理辨认普通药草，没有成交买卖。",
+        "承平三年第一日正午，哥哥邀请她到泥岸挖泥鳅，她这一次没有同意。"
+      ]
+    },
+    {
+      "id": "CFNPC00008",
+      "name": "钟时云",
+      "age": 40,
+      "location": "linan",
+      "notes": [
+        "第2日在临安街边以2文卖出残旧《引气初篇》",
+        "留下一句\"日后好相见\"便走，未解释去处与来历"
+      ]
+    }
+  ],
+  "open_threads": [
+    {
+      "id": "T0001",
+      "title": "父亲询问今日安排",
+      "status": "早晨未回答；玩家已外出"
+    },
+    {
+      "id": "T0002",
+      "title": "院外模糊喊声",
+      "status": "仍未调查",
+      "detail": "来者与喊声内容未知"
+    },
+    {
+      "id": "T0005",
+      "title": "鱼笼与泥鳅诱饵",
+      "source": "EV000005",
+      "status": "鱼笼已布两只（GEAR-SH-RIVER-0001/0002）；仍缺玉米与酒作诱饵",
+      "known": "鱼笼×1在背包；没有捕到鱼和泥鳅",
+      "certainty": "已提交事件"
+    },
+    {
+      "id": "T0006",
+      "title": "两根鱼竿与家人取饭取水",
+      "status": "已当面问过：她承认被叫去晒谷，怕挨骂未补送",
+      "known": "历史上她同意回家、玩家直到傍晚才回家；GM未记录中午送饭结果与当晚解释，不能擅自补写原因",
+      "source": "EV000006",
+      "certainty": "已结算"
+    },
+    {
+      "id": "T0014",
+      "title": "二文一场空：功法真伪",
+      "status": "判定《引气初篇》为伪本，已停止照练",
+      "source": "EV000031",
+      "certainty": "已结算（六日实证 + 文本比对）"
+    },
+    {
+      "id": "T0015",
+      "title": "第二只鱼笼与简易手竿",
+      "status": "GEAR-SH-RIVER-0002 布于下游芦苇滩；简易手竿已成，尚未下竿",
+      "source": "day3_river_work_rod_sowing_and_intake",
+      "certainty": "已提交事件"
+    },
+    {
+      "id": "T0016",
+      "title": "青菜已播种",
+      "status": "钱家自留地播青菜一畦，月余后或有收成",
+      "source": "day3_river_work_rod_sowing_and_intake",
+      "certainty": "已提交事件"
+    },
+    {
+      "id": "T0017",
+      "title": "灵根与真正的引气法门",
+      "status": "本人仍不知有无灵根；县城无检测台，灵山与青云山城才有",
+      "source": "EV000031",
+      "certainty": "未解决"
+    }
+  ],
+  "confirmed_actions": [
+    {
+      "turn": 21,
+      "event": "EV000023",
+      "summary": "turn_committed"
+    },
+    {
+      "turn": 22,
+      "event": "EV000024",
+      "summary": "turn_committed"
+    },
+    {
+      "turn": 23,
+      "event": "EV000025",
+      "summary": "turn_committed"
+    },
+    {
+      "turn": 24,
+      "event": "EV000026",
+      "summary": "turn_committed"
+    },
+    {
+      "turn": 25,
+      "event": "EV000027",
+      "summary": "turn_committed"
+    },
+    {
+      "turn": 26,
+      "event": "EV000028",
+      "summary": "turn_committed"
+    },
+    {
+      "turn": 27,
+      "event": "EV000029",
+      "summary": "turn_committed"
+    },
+    {
+      "turn": 28,
+      "event": "EV000030",
+      "summary": "turn_committed"
+    },
+    {
+      "turn": 29,
+      "event": "EV000031",
+      "summary": "turn_committed"
+    },
+    {
+      "turn": 30,
+      "event": "EV000032",
+      "summary": "turn_committed"
+    }
+  ],
+  "caution": "摘要为检索索引；剧情事实以未删减原事件与已校验存档为准。"
+}

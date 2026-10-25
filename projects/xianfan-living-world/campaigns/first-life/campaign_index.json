@@ -1,8 +1,8 @@
 {
   "schema": 1,
   "campaign_id": "xianfan-canglan-text-20261024",
-  "turns_completed": 29,
-  "time": "承平三年 · 第8日 · 12:30",
+  "turns_completed": 103,
+  "time": "承平三年 · 第29日 · 06:00",
   "location": "石桥村·钱家院落",
   "player": {
     "id": "CFPLAYER00001",
@@ -13,12 +13,12 @@
     "root": "未检测",
     "hp": 100,
     "stamina": 100,
-    "copper": 0
+    "copper": 53
   },
   "family": {
     "id": "CFFAM00001",
-    "cash": 42,
-    "grain_dou": 52,
+    "cash": 22,
+    "grain_dou": 49,
     "people": [
       [
         "CFNPC00001",
@@ -39,28 +39,48 @@
         "手足"
       ]
     ],
-    "grain_remainder_millidou": 884
+    "grain_remainder_millidou": 464
   },
-  "last_event": "EV000031",
-  "last_event_hash": "16eb96580932f59264ebb54a0d840c7c42e52a4312a2ce7a137f3f43e864150e",
-  "full_state_sha256": "34cfa14b9e3678f7aa7dd7cf4df34f92f8cbb40b5f68aabee1fbfa4ff96019ce",
+  "last_event": "EV000105",
+  "last_event_hash": "4fae7924513c35c96f3b71b9104728632d5d42d92d081408b0b56b40a1cddf69",
+  "full_state_sha256": "b32999f868fe955daf8e51b1950f0437dbb1173e07b0c3a593c2f4f50b4281ee",
   "roots_hidden": true,
   "complete_source_event_ledger_synced": true,
   "full_state_parts_verified": true,
-  "next_checkpoint_turn": 20,
-  "last_action": "day8_conclude_manual_is_unusable",
+  "next_checkpoint_turn": 110,
+  "last_action": "sleep",
   "trap_status": "checked empty 16:18",
   "inventory_added": {
     "fishing_line": 1,
     "fish_hook": 1,
     "vegetable_seed_packet": 1
   },
-  "market_price_status": "QUOTED_DAY2",
-  "fishing_status": "one fish basket in water; one newly crafted basket carried",
-  "sister_errand": "unanswered food delivery request, not retroactively rewritten",
+  "market_price_status": "临安菜肉摊收购价：小河鱼 3 文/条（摊主当日现钱有限，一次收不下太多）；青菜 3 文/斤；野兔 7 文",
+  "fishing_status": "河道 SH-RIVER-01 被抽空过：累计捕走 15 条，现存 0；一天只回涨一条，靠河攒不出大钱",
+  "sister_errand": "第2日送饭失约已当面问清；此后她帮着看下游那只笼子；出发事宜她只被允许送到村口",
   "second_basket_status": "carried; user wishes deployment, requires river visit",
-  "manual_status": "genuine basic cultivation manual out of stock; offered ordinary breathing notes at 2 wen; not bought",
-  "sync_status": "SYNCED",
+  "manual_status": "手里那本《引气初篇》已判为伪本，不再照练；灵根仍未检测",
+  "sync_status": "PENDING_GITHUB",
   "sync_target": "160701541-cell/xinyanshuo@xianfan/independent-living-county-v0.1",
-  "last_synced_event": "EV000031"
+  "last_synced_event": "EV000031",
+  "journey_status": {
+    "goal": "去青云山门·测灵台测灵根",
+    "stage": "盘缠已备，定在第29日天亮前动身",
+    "copper_held": 53,
+    "fish_held_unsold": 4,
+    "planned_cost": {
+      "test_fee_copper": 30,
+      "lodging_per_night_copper": 8,
+      "nights_planned": 2,
+      "total_known": 46
+    },
+    "provisions": "自家烙饼带上，不在路上买",
+    "household_cash": 22,
+    "rule_files": [
+      "data/root_test_station_v1.json",
+      "data/road_travel_v1.json",
+      "data/fishing_v1.json"
+    ]
+  },
+  "next_action_hint": "第29日天亮前出门，走官道到临安，再沿山道北上青云山门"
 }

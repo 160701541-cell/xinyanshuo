@@ -20,7 +20,20 @@
       "born_at": null,
       "kinship_origin": "已结算出生档案；血缘细节未登记",
       "private_personality": "NOT_PUBLISHED",
-      "public_personality": [],
+      "public_personality": [
+        {
+          "tag": "does_not_believe_in_root_testing",
+          "kind": "observed",
+          "description": "认为测灵根是城里人骗钱的由头，种地不需要",
+          "basis_event": "EV000032"
+        },
+        {
+          "tag": "pays_only_after_seeing_effort",
+          "kind": "observed",
+          "description": "不肯凭一句话掏钱，看了整月的劳作才从家里现钱里拿二十文",
+          "basis_event": "EV000077"
+        }
+      ],
       "goals_observed": [],
       "life_events": [
         {
@@ -36,11 +49,32 @@
           "certainty": "known_fact",
           "text": "晚饭时问起县城摊子上有没有买东西；听说买了书，只问了一句识不识字便低头吃饭",
           "location": "石桥村·钱家院落"
+        },
+        {
+          "event_id": "EV000032",
+          "tag": "rejected_root_test_idea",
+          "certainty": "known_fact",
+          "text": "听儿子说要去测灵根，当面不认：种了一辈子地没测过也活到七十三",
+          "location": "石桥村·钱家院落"
+        },
+        {
+          "event_id": "EV000077",
+          "tag": "gave_twenty_wen_with_a_condition",
+          "certainty": "known_fact",
+          "text": "看了儿子一个月的早出晚归，从家里现钱里数出二十文，条件是测不出就回来种地",
+          "location": "石桥村·钱家院落"
+        },
+        {
+          "event_id": "EV000104",
+          "tag": "forbade_daughter_from_going",
+          "certainty": "known_fact",
+          "text": "不许女儿跟去青云，只准送到村口",
+          "location": "石桥村·钱家院落"
         }
       ],
       "relationships": {},
       "last_known_location": "石桥村田间（依据日程推演，未目击）",
-      "last_updated_event": "EV000022",
+      "last_updated_event": "EV000104",
       "base_temperament": {
         "version": "npc-base-temperament-v1",
         "source": "deterministic_world_seed",
@@ -86,11 +120,25 @@
           "text": "同意家人使用家庭粮食准备当日晚饭与次日早餐。",
           "certainty": "known_fact",
           "location": "石桥村钱家院落"
+        },
+        {
+          "event_id": "EV000032",
+          "tag": "asked_where_the_money_comes_from",
+          "certainty": "known_fact",
+          "text": "没拦也没答应，只问钱从哪儿来，说家里那点钱留着过冬",
+          "location": "石桥村·钱家院落"
+        },
+        {
+          "event_id": "EV000104",
+          "tag": "promised_to_bake_bread_for_the_road",
+          "certainty": "known_fact",
+          "text": "答应给儿子烙饼带上路，叮嘱路上别省、别赶夜路",
+          "location": "石桥村·钱家院落"
         }
       ],
       "relationships": {},
       "last_known_location": "石桥村钱家院落（推演）",
-      "last_updated_event": "EV000013",
+      "last_updated_event": "EV000104",
       "base_temperament": {
         "version": "npc-base-temperament-v1",
         "source": "deterministic_world_seed",
@@ -198,11 +246,32 @@
           "certainty": "known_fact",
           "text": "照册吐纳数日后头晕胸闷，被兄长叫停",
           "location": "石桥村·钱家院落"
+        },
+        {
+          "event_id": "EV000034",
+          "tag": "offered_to_help_with_the_cages",
+          "certainty": "known_fact",
+          "text": "提出帮着收河边的笼子，让兄长腾出手下地",
+          "location": "石桥村·钱家院落"
+        },
+        {
+          "event_id": "EV000077",
+          "tag": "asked_to_come_along_and_was_refused",
+          "certainty": "known_fact",
+          "text": "当场要求陪兄长同去青云，被父亲一口回绝",
+          "location": "石桥村·钱家院落"
+        },
+        {
+          "event_id": "EV000104",
+          "tag": "allowed_to_escort_to_the_village_gate_only",
+          "certainty": "known_fact",
+          "text": "只被允许送到村口",
+          "location": "石桥村·钱家院落"
         }
       ],
       "relationships": {},
       "last_known_location": "石桥村·村外荒沟",
-      "last_updated_event": "EV000031",
+      "last_updated_event": "EV000104",
       "base_temperament": {
         "version": "npc-base-temperament-v1",
         "source": "deterministic_world_seed",

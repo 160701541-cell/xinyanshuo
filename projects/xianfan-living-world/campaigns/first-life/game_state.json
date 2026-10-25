@@ -6,11 +6,11 @@
   "world_seed": "xianfan-canglan-text-20261024-v1",
   "time": {
     "regnal_year": 3,
-    "day": 8,
-    "hour": 12,
-    "minute": 30,
-    "display": "承平三年 · 第8日 · 12:30",
-    "weather": "晴"
+    "day": 29,
+    "hour": 6,
+    "minute": 0,
+    "display": "承平三年 · 第29日 · 06:00",
+    "weather": "多云"
   },
   "player": {
     "id": "CFPLAYER00001",
@@ -28,7 +28,7 @@
     "max_hp": 100,
     "stamina": 100,
     "max_stamina": 100,
-    "money": 0,
+    "money": 53,
     "money_unit": "文",
     "exp": 0,
     "family_id": "CFFAM00001",
@@ -108,7 +108,7 @@
     {
       "id": "river_fish",
       "name": "小河鱼",
-      "quantity": 1,
+      "quantity": 4,
       "category": "渔获",
       "equipped": false,
       "source": "EV000026 鱼笼取回"
@@ -124,7 +124,7 @@
     }
   ],
   "current_location": "石桥村·钱家院落",
-  "last_event_id": "EV000031",
+  "last_event_id": "EV000105",
   "reference": {
     "origin": "GitHub 160701541-cell/xinyanshuo",
     "xianfan_branch": "xianfan/independent-living-county-v0.1",
@@ -229,8 +229,8 @@
     "region_id": "shiqiao",
     "background": "自耕农家庭",
     "size": 4,
-    "cash": 42,
-    "grain_dou": 52,
+    "cash": 22,
+    "grain_dou": 49,
     "members": [
       {
         "id": "CFNPC00001",
@@ -264,7 +264,7 @@
       }
     ],
     "note": "家中库存并非玩家随身所有；不得未经交易或亲属许可扣取。",
-    "grain_remainder_millidou": 884
+    "grain_remainder_millidou": 464
   },
   "initial_rolls_public": {
     "random_key": "xianfan-canglan-text-20261024-v1|玩家:心魇说|性别:男|年龄:16|开局序号:1",
@@ -466,9 +466,9 @@
           {
             "id": "small_cyprinid",
             "name": "溪河小鱼群",
-            "population": 4,
+            "population": 0,
             "initial_population": 5,
-            "harvested": 1
+            "harvested": 15
           },
           {
             "id": "loach",
@@ -499,10 +499,10 @@
             "bait_id": null,
             "anchor": "stable_bank_reeds",
             "status": "deployed_waiting",
-            "catch_count": 0,
-            "checked_at": "承平三年 · 第3日 · 06:39",
+            "catch_count": 3,
+            "checked_at": "承平三年 · 第27日 · 06:57",
             "checked_at_clock_minutes": 3279,
-            "last_check_result": "removed_retained_fish"
+            "last_check_result": "empty"
           },
           {
             "id": "GEAR-SH-RIVER-0002",
@@ -524,10 +524,10 @@
             "bait_id": null,
             "anchor": "downstream_reed_bank",
             "status": "deployed_waiting",
-            "catch_count": 0,
-            "checked_at": null,
+            "catch_count": 5,
+            "checked_at": "承平三年 · 第27日 · 07:09",
             "checked_at_clock_minutes": null,
-            "last_check_result": null
+            "last_check_result": "empty"
           }
         ],
         "catch_events": [

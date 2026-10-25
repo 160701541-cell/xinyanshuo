@@ -1,0 +1,50 @@
+{
+  "schema": "xianfan.fishing.v1",
+  "version": "fishing-1.0.0",
+  "status": "declared at turn 30; 河段此前只有 population=4 一个数，没有捕获率也没有恢复规则",
+  "why": "要攒盘缠就得靠河，但河道里只有 5 条鱼的存量，没有恢复规则就等于无限取用。先写死生态再写收入。",
+  "river": {
+    "site_id": "SH-RIVER-01",
+    "species": "small_cyprinid",
+    "capacity": 5,
+    "population_now": 4,
+    "recovery": {
+      "when": "每日清晨",
+      "if_population_gte_1": { "condition": "population < capacity", "gain": 1, "note": "溪流连着上游水系，只要还剩一条，每天清晨自然回涨一条" },
+      "if_population_lt_1": { "immigration_percent": 45, "gain": 1, "note": "整段捞空了就得等上游游进来，不到一半的机会" }
+    }
+  },
+  "cage": {
+    "check_minutes": 12,
+    "check_stamina": 2,
+    "set_minutes": 10,
+    "set_stamina": 2,
+    "max_catch_per_cage_per_day": 1,
+    "catch_percent_by_weather": { "晴": 45, "多云": 45, "阴": 50, "小雨": 25 },
+    "roll_method": "SHA256(seed|cage-catch|dayN|gearId) % 100 < catch_percent",
+    "note": "小雨天水里浑浊、鱼不靠边，误捕反而少"
+  },
+  "rod": {
+    "minutes_per_hour_window": 60,
+    "stamina_per_hour": 2,
+    "catch_percent_per_hour": 22,
+    "max_hours_per_day": 3,
+    "roll_method": "SHA256(seed|rod-catch|dayN|hourIndex) % 100 < 22",
+    "note": "手竿比笼子笨，靠的是守；站半天不开口是常事"
+  },
+  "market": {
+    "stall": "PRODUCE",
+    "buy_prices": { "river_fish": 3, "leafy_vegetables": 3, "field_hare": 7 },
+    "buy_prices_note": "摊主收购价（玩家卖出），与 economy.linan.markets.PRODUCE.buy 一致，不另设",
+    "stall_cash_daily": {
+      "method": "initial_cash + (SHA256(seed|stall-cash|dayN|PRODUCE) % 7) - 3",
+      "floor": 5,
+      "note": "摊主现钱有限，一次卖太多他收不下，只能改日再来"
+    }
+  },
+  "forbidden": [
+    "没有鱼就说钓到了",
+    "一次卖出超过摊主现钱的货",
+    "把 population 直接写成固定值绕开恢复规则"
+  ]
+}

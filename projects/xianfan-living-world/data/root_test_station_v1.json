@@ -1,0 +1,38 @@
+{
+  "schema": "xianfan.root_test_station.v1",
+  "version": "root-test-1.0.0",
+  "status": "declared before any journey; effective from turn 30",
+  "why": "docs/31 只规定『检测点只有灵山药市与青云山门、县城测不了、一次定终身』，没给费用、耗时与准入。玩家既已决定去测，这些数必须先写死，否则只能靠叙述糊过去。",
+  "consistency": {
+    "from_module": "cultivation.mjs:detectRoot()",
+    "kept": ["只有 lingshan / qingyun 可测", "xiancheng 测不了", "一次定终身，不可复测"]
+  },
+  "stations": [
+    {
+      "id": "ST-LINGSHAN-01",
+      "place_id": "lingshan",
+      "name": "灵山药市·测灵台",
+      "fee_copper": 25,
+      "fee_note": "石台由药市执事代管，收的是灯油与擦拭的杂费，凡人付铜钱即可，不必有灵石",
+      "queue_minutes": 30,
+      "test_minutes": 20,
+      "registration": "药市口登记姓名、籍贯、来处；不查路引，但会记一笔"
+    },
+    {
+      "id": "ST-QINGYUN-01",
+      "place_id": "qingyun",
+      "name": "青云山门·测灵台",
+      "fee_copper": 30,
+      "fee_note": "山门执事另收过门钱；凡人上山要有由头，说不清来意会被挡在山门外",
+      "queue_minutes": 45,
+      "test_minutes": 20,
+      "registration": "山门外登记，须报明来意；凡俗身份不会被当作弟子候选，只是借用石台"
+    }
+  ],
+  "rules": {
+    "one_time_only": "测过即定终身，任何站点都不会为同一人重测",
+    "no_root_is_valid_result": "无灵根也是结果，石台不会因此退钱",
+    "reveal_writes_to_archive": "只有真的测过之后，灵根才允许写进公开档案",
+    "player_does_not_know_fee": "玩家在去之前不知道确切数目，这是正常的——他没去过"
+  }
+}

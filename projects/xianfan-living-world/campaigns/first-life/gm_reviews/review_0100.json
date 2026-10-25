@@ -1,0 +1,68 @@
+{
+  "schema": 1,
+  "protocol": "GM-QA-001",
+  "kind": "narrative_and_rules_review",
+  "at_turn": 100,
+  "range": [
+    91,
+    100
+  ],
+  "event_hash": "1c1023c42bdeedf3049efe1211929ce5f9c9acb45fba3857c1c2194e75c3a95c",
+  "source_event_ids": [
+    "EV000093",
+    "EV000094",
+    "EV000095",
+    "EV000096",
+    "EV000097",
+    "EV000098",
+    "EV000099",
+    "EV000100",
+    "EV000101",
+    "EV000102"
+  ],
+  "evidence": {
+    "story_consistency": {
+      "PASS": 10,
+      "FAIL": 0,
+      "NOT_CHECKED": 0
+    },
+    "actor_symmetry": {
+      "PASS": 0,
+      "FAIL": 0,
+      "NOT_CHECKED": 10
+    },
+    "causality": {
+      "PASS": 10,
+      "FAIL": 0,
+      "NOT_CHECKED": 0
+    },
+    "resource_conservation": {
+      "PASS": 10,
+      "FAIL": 0,
+      "NOT_CHECKED": 0
+    },
+    "npc_knowledge": {
+      "PASS": 0,
+      "FAIL": 0,
+      "NOT_CHECKED": 10
+    },
+    "pursuit_motivation": {
+      "PASS": 0,
+      "FAIL": 0,
+      "NOT_CHECKED": 10
+    },
+    "memory_continuity": {
+      "PASS": 10,
+      "FAIL": 0,
+      "NOT_CHECKED": 0
+    },
+    "save_integrity": {
+      "PASS": 0,
+      "FAIL": 0,
+      "NOT_CHECKED": 10
+    }
+  },
+  "issues": [],
+  "next_work": "补齐NOT_CHECKED的验证证据；避免虚报全PASS",
+  "constraint": "只有十回合已提交事件可产生评审；不能修改过去事件或世界数值。"
+}
