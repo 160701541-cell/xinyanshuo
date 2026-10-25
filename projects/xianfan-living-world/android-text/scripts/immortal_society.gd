@@ -229,7 +229,7 @@ static func _logistics(society: Dictionary, c: Dictionary, day: int) -> void:
     pending.append(bill)
     c["total_food_bought"]=int(c["total_food_bought"])+amount
     c["total_freight"]=int(c["total_freight"])+price_freight
-    var hour:=(day-1)*1440+480
+    var hour:=(day-1)*24+8
     XianfanEconomyAccounts.trade(society,"城",hour,purchase,"青云山门实购凡粮")
     XianfanEconomyAccounts.production(society,"城",hour,"公共与生活服务",
         {},{},price_freight,XianfanEconomyAccounts.price_snapshot(society,"城"),
