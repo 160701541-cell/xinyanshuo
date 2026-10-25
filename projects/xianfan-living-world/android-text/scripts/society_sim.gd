@@ -353,7 +353,7 @@ static func initial_state(absolute_minute: int) -> Dictionary:
         idx+=1
     _prepare_social(society)
     _life_defaults(society)
-    XianfanCivicPopulation.initialize(society,absolute_minute/60)
+    XianfanCivicPopulation.initialize(society,int(absolute_minute/60))
     return society
 
 static func valid(society: Dictionary) -> bool:
