@@ -1,0 +1,61 @@
+extends SceneTree
+var failures: Array[String]=[]
+
+func _initialize() -> void:
+    call_deferred("_run")
+
+func check(ok: bool, label: String) -> void:
+    if not ok:
+        failures.append(label)
+        push_error("DIRECTOR TEST FAILURE: "+label)
+
+func _run() -> void:
+    var world:=XianfanWorld.new()
+    world.new_game()
+    var before_money:=int(world.data["money"])
+    var before_root:=str(world.data["root"])
+    var before_stamina:=int(world.data["stamina"])
+    var before_clock:=world._clock()
+    var beats: Array[Dictionary]=world.available_story_beats()
+    check(beats.size()>=2,"family has at least two legal story seeds")
+    var false_beat: Dictionary=world.record_ai_story("清晨窗外的溪风摇动了门帘，院子里传来远远的鸡鸣。","mountain_gate",before_clock)
+    check(false_beat.get("ok",false),"narration without legal beat may still be stored")
+    check(str(false_beat.get("approved_beat",""))=="","model cannot activate remote place story beat")
+    check(world.data.get("story_flags",{}).is_empty(),"illegitimate plot flag blocked")
+    check(int(world.data["money"])==before_money,"narration does not change cash")
+    check(str(world.data["root"])==before_root,"narration does not reveal spirit root")
+    check(int(world.data["stamina"])==before_stamina,"narration does not change stamina")
+    var denied: Dictionary=world.record_ai_story("你成功突破境界，突然凭空出现一百块灵石，所有人都向你下跪。","sister_choice",before_clock)
+    check(not denied.get("ok",true),"model fabricated cultivation/money rejected")
+    check(world.data.get("story_flags",{}).is_empty(),"rejected story has no effects")
+    var good: Dictionary=world.record_ai_story("成明整理好行囊后看着院门，像是突然有了自己的主意。", "sister_choice",before_clock)
+    check(good.get("ok",false),"legal family plot seed accepted")
+    check(str(good.get("approved_beat",""))=="sister_choice","accepted beat ID")
+    check(world.data.get("story_flags",{}).has("sister_choice"),"story flag persisted")
+    check(str(world.data["npc"]["孙成明"].get("wish","")).contains("自己决定"),"NPC gets durable independent aspiration")
+    check(not world.available_story_beats().has({"id":"sister_choice","title":"成明的打算"}),"one-off plot seed not offered repeatedly")
+    var stale: Dictionary=world.record_ai_story("出门的脚步声渐渐远去，但院中的晨光尚未散尽。","none",before_clock-1)
+    check(not stale.get("ok",true),"story from stale time must not be saved")
+    check(world.recent_story_ai(2).contains("成明"),"story appears in reading screen")
+    for i in range(92):
+        var said: String="谈旧年往事第%d件" % i
+        world.record_ai_dialogue("孙成明",said,"我记得那是第%d件事。" % i,"local-gguf")
+    var archive: Array=world.data.get("dialogue_archive",[])
+    check(archive.size()==92,"untruncated conversation archive")
+    check(world.data.get("npc_memories",{}).get("孙成明",[]).size()==92,"NPC indexed memory survives recent window")
+    var nearby: Array=world.related_npc_memories("孙成明","旧年往事第78件",4)
+    check(nearby.size()>0,"semantic long-term memory retrieval")
+    check(world.data.get("dialogue_log",[]).size()<=80,"render log bounded while archive lossless")
+    world.save()
+    var restored:=XianfanWorld.new()
+    check(restored.data.get("dialogue_archive",[]).size()==92,"archive persists across reloads")
+    check(restored.data.get("story_flags",{}).has("sister_choice"),"story seed persists across reloads")
+    var local = load("res://scripts/local_llm.gd").new()
+    root.add_child(local)
+    var msgs: Array=local.build_messages("你记得第78件旧事吗？","孙成明",restored.data)
+    check(JSON.stringify(msgs).contains("旧年往事第78件"),"local NPC model context retrieves older relevant memories")
+    var payload: Array=local.build_story_messages("去溪边","你走到了溪边。",restored.story_context())
+    check(payload.size()==2 and JSON.stringify(payload).contains("beat_id"),"local director uses constrained JSON story proposal")
+    check(not JSON.stringify(payload).contains("山门执事为你揭示灵根"),"director grounded only in facts")
+    print("XIANFAN AI DIRECTOR TESTS PASS" if failures.is_empty() else "XIANFAN AI DIRECTOR TESTS FAILED")
+    quit(0 if failures.is_empty() else 1)
