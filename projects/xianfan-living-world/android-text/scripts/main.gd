@@ -63,6 +63,10 @@ var input_row: HBoxContainer
 var feedback_copy: Button
 var settings_button: Button
 var notice: Label
+var model_progress_bar: ProgressBar
+var model_progress_label: Label
+var resume_model_button: Button
+var model_download_seen := false
 var overlay: Control
 var modal_title: Label
 var modal_info: RichTextLabel
@@ -94,6 +98,7 @@ func _ready() -> void:
     local_llm.status_changed.connect(_local_status)
     local_llm.answered.connect(_on_ai_completed)
     local_llm.streaming.connect(_on_local_stream)
+    local_llm.download_progress.connect(_on_model_download_progress)
     var choice := FileAccess.open("user://xianfan_local_choice.txt",FileAccess.READ)
     if choice!=null and choice.get_as_text()=="1": local_enabled=true
     var director_file:=FileAccess.open(DIRECTOR_PREF,FileAccess.READ)
@@ -104,6 +109,8 @@ func _ready() -> void:
     _build()
     _restore_world_clock()
     _refresh()
+    if local_enabled:
+        call_deferred("_resume_previous_model_download")
 
 func _save_world_clock() -> void:
     var f:=FileAccess.open(WORLD_CLOCK_FILE,FileAccess.WRITE)
@@ -165,6 +172,7 @@ func _process(delta: float) -> void:
 
 func _notification(what: int) -> void:
     if what==NOTIFICATION_APPLICATION_PAUSED:
+        if local_llm!=null: local_llm.pause_download()
         clock_backgrounded=true
         if not game.data.is_empty():
             game.save()
@@ -174,6 +182,8 @@ func _notification(what: int) -> void:
         if not game.data.is_empty():
             _restore_world_clock()
             if is_inside_tree(): _refresh()
+        if local_enabled and local_llm!=null:
+            call_deferred("_resume_previous_model_download")
 
 func _box(color: Color, border: Color = Color.TRANSPARENT, roundness: int = 12) -> StyleBoxFlat:
     var b := StyleBoxFlat.new()
@@ -315,6 +325,20 @@ func _build() -> void:
     root.add_child(reader_footer)
     notice=_label("",16,GOLD)
     root.add_child(notice)
+    model_progress_label=_label("",15,GOLD)
+    model_progress_label.visible=false
+    root.add_child(model_progress_label)
+    model_progress_bar=ProgressBar.new()
+    model_progress_bar.min_value=0
+    model_progress_bar.max_value=100
+    model_progress_bar.value=0
+    model_progress_bar.show_percentage=true
+    model_progress_bar.custom_minimum_size=Vector2(0,15)
+    model_progress_bar.visible=false
+    root.add_child(model_progress_bar)
+    resume_model_button=_button("继续/重试模型下载（保留已下载数据）",func(): _retry_model_download(),15)
+    resume_model_button.visible=false
+    root.add_child(resume_model_button)
     cancel_ai_button=_button("停止本轮 AI 生成",func(): _cancel_model_generation(),16)
     cancel_ai_button.visible=false
     root.add_child(cancel_ai_button)
@@ -538,7 +562,7 @@ func _npc_action(text: String) -> void:
     _submit(text,false)
 
 func _open_ai_settings() -> void:
-    var expl:="AI 模式由你自行开启。API模式会把你输入的行动和少量游戏现场数据发送至你指定的服务商。\n\n本机服务模式仅连接已经在手机中运行的兼容服务，游戏安装包目前未自带模型权重或内置推理器。\n\n密钥不写入存档，也不加入反馈日志；关闭应用后需要重新填入。"
+    var expl:="AI模式可选：内置模型通过安卓原生推理库离线运行。GGUF权重需要单独下载，下载百分比、速度和缓存状态会显示在页面上；网络中断可按HTTP Range从已保存文件继续。\n\n本机服务模式则连接你已经启动的兼容服务；API模式才向你指定的服务商发送内容。密钥不写进人物存档。"
     _open_modal("AI 设置",expl)
     setting_provider=OptionButton.new()
     setting_provider.add_theme_color_override("font_color",PAPER)
@@ -712,11 +736,53 @@ func _entry_field(placeholder: String, value: String, hidden: bool) -> LineEdit:
     e.custom_minimum_size=Vector2(0,54)
     return e
 
+func _resume_previous_model_download() -> void:
+    if not local_enabled: return
+    local_llm.resume_pending()
+    _refresh_download_widgets()
+
+func _retry_model_download() -> void:
+    if bool(local_llm.get("loading")):
+        notice.text="下载任务仍在进行，网络异常时会自动重试。"
+        return
+    local_llm.load_model()
+    _refresh_download_widgets()
+
+func _on_model_download_progress(info: Dictionary) -> void:
+    model_download_seen=true
+    _refresh_download_widgets()
+    var total:=int(info.get("total",-1))
+    var downloaded:=int(info.get("bytes",0))
+    var speed:=float(info.get("speed_bps",0.0))
+    var progress_percent:=100.0*float(downloaded)/float(total) if total>0 else 0.0
+    model_progress_bar.value=clampf(progress_percent,0.0,100.0)
+    model_progress_bar.show_percentage=total>0
+    var size_text: String=("%.2f GB" % (float(total)/1000000000.0)) if total>0 else "总大小待服务器确认"
+    var phase:=str(info.get("phase","下载中"))
+    model_progress_label.text="%s · %s · %.2f GB / %s · %.2f MB/s · 第%d次连接" % [
+        str(local_llm.get("active_name")),phase,float(downloaded)/1000000000.0,
+        size_text,speed/1000000.0,int(info.get("attempt",0))]
+    var error_text:=str(info.get("error",""))
+    if not error_text.is_empty() and error_text!="paused":
+        model_progress_label.text+="\n网络诊断："+error_text
+
+func _refresh_download_widgets() -> void:
+    if model_progress_label==null: return
+    var worker: Node=local_llm.get("download_manager")
+    var pending:=false
+    if worker!=null and local_enabled:
+        pending=worker.is_pending(str(local_llm.get("model_source")))
+    var downloading:=bool(local_llm.get("loading")) and not bool(local_llm.get("loading_weights"))
+    model_progress_label.visible=downloading or pending or model_download_seen
+    model_progress_bar.visible=downloading or pending or model_download_seen
+    resume_model_button.visible=pending and not bool(local_llm.get("loading"))
+
 func _local_status(message: String) -> void:
     notice.text=message
     if message.contains("失败") or message.contains("无法运行") or message.contains("没有加载成功"):
         game.note_api_failure("内置GGUF模型 "+str(local_llm.get("active_name")),message)
     if view=="设置": _refresh()
+    _refresh_download_widgets()
 
 func _enable_local_and_load(confirmed: bool=false) -> void:
     var target_path:=pending_model_path if confirmed else (local_model_url.text if local_model_url!=null else str(local_llm.get("model_source")))
@@ -1023,4 +1089,13 @@ func _refresh() -> void:
         "设置":
             page_title.text="引擎与 AI 模式"
             scene_text.text="AI剧情导演："+director_mode+"；上下文 "+str(local_llm.get("context_tokens"))+" tokens。人物原始经历分别存入独立本地文件，日常按日汇总，重要对话与习惯有可追溯证据；不受当前上下文长度限制。\n\n当前："+(str(local_llm.status()) if local_enabled else ai.status())+"\n\n【游戏内模型库】支持0.6B、1.7B、4B、8B、14B Q4量化模型。点‘配置 AI 服务’ → ‘内置模型’ → 选择档位 → ‘下载/加载’。4B约2.50GB，8B约5.03GB，14B约9GB。大型模型需要大量RAM和储存空间，可能无法在普通手机上加载。\n\n【其他模型】也可填写合法HTTPS GGUF链接。下载失败请使用反馈页；实际推理速度取决于设备。\n\n【API】仍提供手动配置的OpenAI兼容API模式，密钥不随游戏提供。\n\n【存档】该预览版采用独立包名，不会覆盖已安装的主游戏；两者的存档互不通用。"
-    scene_text.call_deferred("scroll_to_line",0)
+    if view in ["剧情","对话"]:
+        # Only auto-follow the two chronological reading surfaces.
+        # Updating RichTextLabel invalidates line layout until next frame;
+        # deferred scrolling runs after the text has been rebuilt.
+        scene_text.scroll_following=true
+        scene_text.call_deferred("scroll_to_line",999999)
+    else:
+        scene_text.scroll_following=false
+        scene_text.call_deferred("scroll_to_line",0)
+    _refresh_download_widgets()
