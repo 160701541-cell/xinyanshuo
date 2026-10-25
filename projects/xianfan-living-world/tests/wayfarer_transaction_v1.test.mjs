@@ -1,0 +1,15 @@
+import assert from 'node:assert/strict';
+import {adjudicateWayfarerPurchase} from '../tools/wayfarer_transaction_v1.mjs';
+const base={player:{id:'CFPLAYER00001',money:2},time:{day:2,hour:11,minute:14},current_location:'linan',inventory:[]};
+const offer={vendor_id:'CFNPC00008',item_id:'weathered_qi_primer',available:1,price:2,authenticity:'unknown'};
+assert.throws(()=>adjudicateWayfarerPurchase(base,offer,{}),/NPC_CONSENT_REQUIRED/);
+assert.throws(()=>adjudicateWayfarerPurchase({...base,player:{id:'CFPLAYER00001',money:1}},offer,{encounterConfirmed:true,sellerAgrees:true}),/INSUFFICIENT_FUNDS/);
+assert.throws(()=>adjudicateWayfarerPurchase({...base,current_location:'shiqiao'},offer,{encounterConfirmed:true,sellerAgrees:true}),/SCENE_CHANGED/);
+const p=adjudicateWayfarerPurchase(base,offer,{encounterConfirmed:true,sellerAgrees:true});
+assert.equal(p.after.player.money,0);
+assert.equal(p.after.economy.wayfarers.CFNPC00008.cash,2);
+assert.equal(p.after.inventory.at(-1).authenticity,'unknown');
+assert.equal(p.after.time.display,'承平三年 · 第2日 · 11:23');
+assert.equal(base.player.money,2);
+assert.equal(p.authoritative,false);
+console.log('wayfarer transaction tests passed');
