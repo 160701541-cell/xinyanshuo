@@ -179,6 +179,12 @@ jobs:
           godot --headless --path . --script res://tests/test_sect_living.gd > /tmp/sect-living.log 2>&1 || { cat /tmp/sect-living.log; exit 1; }
           cat /tmp/sect-living.log
           if grep -E '(SCRIPT ERROR|Parse Error|SECT LIVING FAILURE)' /tmp/sect-living.log; then exit 1; fi
+      - name: Verify NPC psychology, real conduct, consent and private cases
+        run: |
+          cd projects/xianfan-living-world/android-text
+          godot --headless --path . --script res://tests/test_psyche.gd > /tmp/psyche.log 2>&1 || { cat /tmp/psyche.log; exit 1; }
+          cat /tmp/psyche.log
+          if grep -E '(SCRIPT ERROR|Parse Error|PSYCHE FAILURE)' /tmp/psyche.log; then exit 1; fi
       - name: Build APK with native local runtime
         run: |
           cd projects/xianfan-living-world/android-text
