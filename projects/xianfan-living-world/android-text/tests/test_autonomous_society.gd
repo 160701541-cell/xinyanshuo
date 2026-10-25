@@ -69,6 +69,26 @@ func _run() -> void:
     check(status.contains("24名持续演算"),"view reports real active NPC count")
     check(status.contains("公共钱库"),"economy ledger visible to user")
 
+    game.data["place"]="临安县城·东市"
+    var city: Dictionary=game.data["society"]["regions"]["城"]
+    var balance: int=game.data["money"]+_sum_money(game.data["society"])
+    var city_grain:=int(city["stock"]["粮"])
+    var bought:=game.act("买粗粮")
+    check(bought.contains("买下"),"player can buy real society food")
+    check(game.data["items"].get("粗粮",0)>=1,"purchased food becomes a physical inventory item")
+    check(int(city["stock"]["粮"])==city_grain-1,"market purchase decrements real public stock")
+    check(int(game.data["money"])+_sum_money(game.data["society"])==balance,"player purchase conserves combined money")
+    var fish_before:=int(city["stock"]["鱼"])
+    var sold:=game.act("卖一条鱼")
+    check(sold.contains("3文"),"player can sell real fish into society market")
+    check(int(city["stock"]["鱼"])==fish_before+1,"sold fish enters shared city supply")
+    check(int(game.data["money"])+_sum_money(game.data["society"])==balance,"player sale conserves money")
+    var grain_before:=int(city["stock"]["粮"])
+    var wage:=game.act("做零工")
+    check(wage.contains("两文"),"player can work alongside NPCs for wages")
+    check(int(city["stock"]["粮"])>=grain_before+2,"player labor produces accounted grain")
+    check(int(game.data["money"])+_sum_money(game.data["society"])==balance,"paid labor transfers wages without minting money")
+
     var loaded:=XianfanWorld.new()
     check(int(loaded.data["society"]["last_hour"])==int(game.data["society"]["last_hour"]),"society hour persists through save")
     check(int(loaded.data["society"]["total_steps"])==int(game.data["society"]["total_steps"]),"NPC simulation outcomes persist through reload")
