@@ -24,6 +24,7 @@ const PEOPLE := [
 ]
 static func _realm(level: int) -> String:
     if level<=0: return "修行预备"
+    if level>=14: return "筑基初期" if level==14 else ("筑基中期" if level==15 else "筑基后期")
     return "炼气%d层" % level
 
 static func _place(person: Dictionary, hour: int) -> String:
@@ -86,7 +87,7 @@ static func valid(society: Dictionary) -> bool:
                 if int(value)<0: return false
     for p in c.get("agents",{}).values():
         if not (p is Dictionary): return false
-        if int(p.get("realm_level",-1))<0 or int(p.get("realm_level",-1))>13: return false
+        if int(p.get("realm_level",-1))<0 or int(p.get("realm_level",-1))>16: return false
         if str(p.get("root","")) not in ROOT_SPEED: return false
     return true
 
@@ -186,18 +187,9 @@ static func _logistics(society: Dictionary, c: Dictionary, day: int) -> void:
         var quartermaster: Dictionary=c["agents"]["叶怀远"]
         _record(c,quartermaster,day,"粮食抵达","城区已付款在途货物%d份历经道路运送后交入山门粮库。" % amount)
     c["shipments"]=remaining
-    for person in c["agents"].values():
-        if not bool(person.get("alive",true)) or str(person["station"])!="青云山门": continue
-        if int(stock["口粮"])>0:
-            stock["口粮"]=int(stock["口粮"])-1
-            c["total_meals"]=int(c["total_meals"])+1
-        else:
-            person["wish"]="先求温饱，暂停耗力气的修行"
-            person["health"]=maxi(0,int(person["health"])-2)
-            person["energy"]=maxi(0,int(person["energy"])-8)
-            if int(person["health"])<=0:
-                person["alive"]=false
-                _record(c,person,day,"饥馑死亡","山门长期断粮且未能购得口粮，健康真实归零，已死亡。")
+    # Food, sanitation, fasting qualifications and spiritual cuisine use one
+    # shared ledger for sect cultivators and the real mortal workforce.
+    XianfanSectLiving.settle(society,c,day)
     if int(stock["口粮"])>=28 or not remaining.is_empty(): return
     var city: Dictionary=society.get("regions",{}).get("城",{})
     if city.is_empty(): return
@@ -303,9 +295,10 @@ static func report(society: Dictionary) -> String:
     var mountain: Dictionary=c["regions"]["青云山门"]
     var stock: Dictionary=mountain["stock"]
     var wild: Dictionary=mountain["wild"]
-    return "【仙门·已模拟样本】%d名具名修士/学徒；已结算吐纳%d人日\n青云库存：灵草%d、灵矿石%d、基础丹药%d、符箓%d、灵兽饲料%d\n自然资源：野生灵草%d、灵矿露头%d、野生灵兽%d；风险指标%d\n山门粮库%d份、铜钱%d文；购粮累计%d份、运费累计%d文。\n所有原料均有来源，不能据此推算天下宗门全部产能。" % [
+    var living_report:=XianfanSectLiving.needs_report(society)
+    return "【仙门·已模拟样本】%d名具名修士/学徒；已结算吐纳%d人日\n青云库存：灵草%d、灵矿石%d、基础丹药%d、符箓%d、灵兽饲料%d\n自然资源：野生灵草%d、灵矿露头%d、野生灵兽%d；风险指标%d\n山门粮库%d份、铜钱%d文；购粮累计%d份、运费累计%d文。\n所有原料均有来源，不能据此推算天下宗门全部产能。\n%s" % [
         c["agents"].size(),int(c["total_practice"]),int(stock["灵草"]),
         int(stock["灵矿石"]),int(stock["丹药"]),int(stock["符箓"]),
         int(stock["灵兽饲料"]),int(wild["灵草"]),int(wild["灵矿露头"]),
         int(wild["野生灵兽"]),int(mountain["hazard"]),
-        int(stock.get("口粮",0)),int(mountain.get("copper",0)),int(c.get("total_food_bought",0)),int(c.get("total_freight",0))]
+        int(stock.get("口粮",0)),int(mountain.get("copper",0)),int(c.get("total_food_bought",0)),int(c.get("total_freight",0)),living_report]
