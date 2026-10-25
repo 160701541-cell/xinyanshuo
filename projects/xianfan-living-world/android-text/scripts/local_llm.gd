@@ -198,9 +198,11 @@ func build_messages(text: String, person: String, state: Dictionary) -> Array:
     var messages: Array = []
     if not person.is_empty():
         var npc: Dictionary = state.get("npc",{}).get(person,{})
-        var relationship := "妹妹" if person=="孙成明" else ("父亲" if person=="钱然泽" else "母亲")
+        var relationship := "妹妹" if person=="孙成明" else ("父亲" if person=="钱然泽" else ("母亲" if person=="郑舟清" else str(npc.get("relationship","同乡"))))
         var personality := "心直口快、爱帮家里干活，有自己的打算，不是永远等着哥哥说话。" if person=="孙成明" else ("朴实慎重，不喜欢空口许诺。" if person=="钱然泽" else "细心务实，惦念家中饭食。")
-        var system_text := "你正在扮演独立人生修仙世界中的真实NPC%s，身份是玩家%s的%s。性格：%s。" % [person,nickname,relationship,personality]
+        if not person in ["孙成明","钱然泽","郑舟清"]:
+            personality=str(npc.get("trait","普通人；有自主生活、意愿与职业责任"))
+        var system_text := "你正在扮演独立人生修仙世界中的真实NPC%s，身份是玩家%s的%s。职业：%s。性格：%s。" % [person,nickname,relationship,str(npc.get("job","家务")),personality]
         system_text += "\n可信世界事实（优先级最高）：今天是第%d日 %02d:%02d。玩家位置：%s。你的当前位置：%s。你正在做：%s。你的情绪：%s。" % [current_day,int(time/60),time%60,scene,str(npc.get("place","未知")),str(npc.get("activity","家务")),str(npc.get("mood","平静"))]
         system_text += "\n约束：只扮演NPC，以一两句自然中文回答。每次要真正回应玩家最新问题和追问；不能答非所问、机械重复前一轮、虚构自己离开或正在路上。"
         system_text += "没有移动事件时不得宣称自己换了位置；你可以表达个人意愿和拒绝，但不能宣布获得物品、修炼突破、改变任何游戏数值。"
