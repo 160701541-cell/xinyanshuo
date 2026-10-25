@@ -16,6 +16,16 @@ const MODELS := [
     {"id":"14B","title":"Qwen3 14B · 超大型/高风险","size_gb":9.0,"ram_gb":20,"storage_gb":12.0,"path":"hf://Qwen/Qwen3-14B-GGUF/Qwen3-14B-Q4_K_M.gguf"}
 ]
 const PREF_PATH := "user://xianfan_local_model_selection.json"
+# All Qwen3 presets support 32K native context; on a phone KV cache RAM
+# and thermal throttling become the limit far earlier.
+const CONTEXT_CHOICES := [4096,8192,16384,32768]
+static func default_context(model_name: String) -> int:
+    if model_name=="4B" or model_name=="1.7B": return 16384
+    if model_name=="14B": return 4096
+    return 8192
+static func context_hint(tokens: int, model_name: String) -> String:
+    var risk:="常规" if tokens<=8192 else ("高内存/发热风险" if tokens<=16384 else "极高风险：12GB物理内存上8B可能被系统终止")
+    return "%d tokens · %s · 历史经历独立存在本地，不因上下文滚动而删除。必须卸载并重新加载模型才会改变已建立的上下文大小。" % [tokens,risk]
 
 static func preset(index: int) -> Dictionary:
     if index<0 or index>=MODELS.size(): return {}
@@ -39,6 +49,8 @@ var busy := false
 var generation_cancelled := false
 var current_chat: Variant
 var model_source := MODEL
+var context_tokens := 8192
+var context_customized := false
 var active_name := "0.6B"
 var last_error := ""
 var pending_confirmation := false
@@ -65,10 +77,22 @@ func _ready() -> void:
         if saved.begins_with("hf://") or saved.begins_with("https://") or saved.begins_with("user://"):
             model_source=saved
             _update_name()
+        var selected:=int(parsed.get("n_ctx",default_context(active_name)))
+        if CONTEXT_CHOICES.has(selected): context_tokens=selected
+        context_customized=bool(parsed.get("context_customized",false))
 
 func _update_name() -> void:
     var i:=preset_index(model_source)
     active_name=str(MODELS[i]["id"]) if i>=0 else "自定义"
+
+func context_usage() -> String:
+    if not model_ready or current_chat==null:
+        return "当前模型未加载。已设置 %d tokens；本地记忆不会随窗口溢出删除。" % context_tokens
+    if busy: return "模型正在生成，请完成或停止后再查询使用情况。"
+    var stats: Variant=await current_chat.get_stats()
+    if not (stats is Dictionary): return "原生库未返回上下文统计。"
+    return "当前模型上下文：%d / %d tokens，记忆另存独立本地文件。" % [
+        int(stats.get("context_used",0)),int(stats.get("context_size",context_tokens))]
 
 func unload_model() -> String:
     if loading or busy: return "模型正在下载或生成中，不能切换。"
@@ -85,7 +109,22 @@ func model_info() -> String:
 func persist_selection() -> void:
     var file:=FileAccess.open(PREF_PATH,FileAccess.WRITE)
     if file!=null:
-        file.store_string(JSON.stringify({"source":model_source}))
+        file.store_string(JSON.stringify({"source":model_source,"n_ctx":context_tokens,
+            "context_customized":context_customized}))
+
+func choose_context(tokens: int) -> String:
+    if not CONTEXT_CHOICES.has(tokens): return "不支持的上下文档位。"
+    if loading or busy: return "模型正在运行，请先完成当前任务。"
+    if model_ready and context_tokens!=tokens:
+        return "模型已经加载。请先卸载模型，再选择新的上下文长度。"
+    context_tokens=tokens
+    context_customized=true
+    persist_selection()
+    return "已设置 "+context_hint(tokens,active_name)
+
+func _ctx_for_model() -> void:
+    if not context_customized:
+        context_tokens=default_context(active_name)
 
 
 func choose_model(source: String) -> String:
@@ -98,13 +137,14 @@ func choose_model(source: String) -> String:
     if path.length()>500: return "模型地址过长。"
     model_source=path
     _update_name()
+    _ctx_for_model()
     last_error=""
     persist_selection()
     return "已选择 %s；请点下载/加载。首次下载不在APK内。" % active_name
 
 func status() -> String:
     if loading: return "正在下载或加载 %s（可能需数GB）；请保持应用前台运行。" % active_name
-    if model_ready: return "本机 %s 已加载，可离线对话" % active_name
+    if model_ready: return "本机 %s · %d tokens 已加载，可离线对话" % [active_name,context_tokens]
     if not ClassDB.class_exists("NobodyWhoChat"): return "%s：原生推理扩展未加载；请到反馈页复制错误。" % active_name
     if not last_error.is_empty(): return "%s：%s" % [active_name,last_error]
     return "%s 未加载。选定后点击下载/加载，模型会缓存到手机。" % active_name
@@ -125,7 +165,6 @@ func load_model() -> void:
     # the registered native class after loading the ARM64 extension.
     # Keep one 8B weight copy loaded, and reuse its chat context sequentially.
     # n_ctx=4096 balances conversation memory against a 12GB real-RAM Android phone.
-    var context_tokens := 4096 if active_name in ["4B","8B"] else (3072 if active_name=="14B" else 4096)
     var loaded = await ClassDB.class_call_static("NobodyWhoChat","create",model_source,{
         "n_ctx":context_tokens,"n_threads":3,"use_gpu":true,
         "context_shift":{"keep_first_turns":0,"keep_last_turns":3,"target":0.75},
@@ -168,6 +207,35 @@ func build_messages(text: String, person: String, state: Dictionary) -> Array:
         system_text += "玩家问‘你在哪条路’时，必须基于登记位置解释，不能只重复‘我正在路上’。不要输出JSON或带‘旁白’的段落。"
         # Full archive stays on disk, semantic retrieval brings only relevant
         # long-term talk back into the narrow LLM context.
+        var compact: Dictionary=state.get("memory_context",{})
+        if not compact.is_empty():
+            var anchor: Dictionary=compact.get("anchor",{})
+            var baseline:=str(anchor.get("baseline",""))
+            if not baseline.is_empty():
+                system_text+="\n【不可被日常摘要覆盖的性格基线】"+baseline
+            var stable_habits: Array=compact.get("habits",[])
+            if not stable_habits.is_empty():
+                system_text+="\n【多日行为证据支持的习惯】"+"；".join(stable_habits.slice(0,8))
+            var daily_rollups: Array=compact.get("last_week",[])
+            if not daily_rollups.is_empty():
+                system_text+="\n【近期真实日常摘要】"+"；".join(daily_rollups.slice(-4))
+            var pinned: Array=compact.get("important",[])
+            var special: Array[String]=[]
+            for i in range(maxi(0,pinned.size()-3),pinned.size()):
+                var exact: Dictionary=pinned[i]
+                special.append("第%d日：玩家说%s；你说%s" % [int(exact.get("day",0)),
+                    str(exact.get("player","")).substr(0,65),str(exact.get("reply","")).substr(0,75)])
+            if not special.is_empty():
+                system_text+="\n【不可轻易否认的重要旧话】"+"；".join(special)
+            var retrieved: Array=compact.get("recalled",[])
+            var old_relevant: Array[String]=[]
+            for past in retrieved.slice(0,8):
+                if not (past is Dictionary): continue
+                old_relevant.append("第%d日玩家说：%s；你答：%s" % [int(past.get("day",0)),
+                    str(past.get("player","")).substr(0,90),str(past.get("reply","")).substr(0,110)])
+            if not old_relevant.is_empty():
+                system_text+="\n【从独立本地原始档案检索出的相关回忆，原文可追溯】\n"+"\n".join(old_relevant)
+        # Compatibility fallback for older save versions without a sidecar:
         var stored: Dictionary=state.get("npc_memories",{})
         var memories: Array=stored.get(person,[])
         var latest_tokens: Array[String]=[]
@@ -189,7 +257,7 @@ func build_messages(text: String, person: String, state: Dictionary) -> Array:
             useful.append("第%d日 玩家曾说：%s；你当时答：%s" % [
                 int(old_memory.get("day",0)),str(old_memory.get("player","")).substr(0,65),
                 str(old_memory.get("reply","")).substr(0,85)])
-        if not useful.is_empty():
+        if compact.is_empty() and not useful.is_empty():
             system_text+="\n相关旧日交谈（仅为人物记忆，不是世界事实）：\n"+"\n".join(useful)
         messages.append({"role":"system","content":system_text})
         var all_dialogue: Array = state.get("dialogue_log",[])
