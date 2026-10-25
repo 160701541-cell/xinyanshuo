@@ -136,9 +136,7 @@ func _one_request(source: String, target: String, offset: int) -> Dictionary:
     var last_error:=""
     while redirects<=MAX_REDIRECTS:
         if paused or cancelled: return {"ok":false,"reason":"paused","total":-1}
-        var parsed:=URL.new()
-        # URL isn't a Godot built-in in all versions. Use a lightweight
-        # parser below instead of relying on platform-specific URL objects.
+        # The resolver deliberately permits HTTPS redirects only.
         var parts:=_split_url(url)
         if parts.is_empty(): return {"ok":false,"reason":"invalid_https_url","total":-1}
         _http=HTTPClient.new()
