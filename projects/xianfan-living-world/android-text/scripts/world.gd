@@ -626,7 +626,7 @@ func _free_action(raw: String) -> String:
         return _free_say(t)
     if t.contains("等候") or t.begins_with("等") or t.contains("待一会"):
         return _free_wait(t)
-    if t.contains("给") and (t.contains("妹妹") or t.contains("成明") or t.contains("母亲") or t.contains("娘") or t.contains("父亲") or t.contains("爹")) and (t.contains("鱼") or t.contains("草") or t.contains("柴") or t.contains("菜") or t.contains("书")):
+    if t.contains("给") and (t.contains("妹妹") or t.contains("成明") or t.contains("母亲") or t.contains("娘") or t.contains("父亲") or t.contains("爹")) and (t.contains("鱼") or t.contains("草") or t.contains("柴") or t.contains("枝") or t.contains("菜") or t.contains("书")):
         return _free_give(t)
     if t.contains("打扫") or t.contains("挑水") or t.contains("家务") or t.contains("劈柴") or t.contains("帮娘干活"):
         return _free_chore(t)
