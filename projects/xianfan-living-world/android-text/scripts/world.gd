@@ -12,6 +12,7 @@ var data: Dictionary = {}
 var memory_store: XianfanMemoryStore
 var narrative_db: XianfanNarrativeDB
 var world_chronicle: XianfanWorldFactChronicle
+var conditional_story: XianfanConditionalStory
 var journal: Array = []
 var last_result := ""
 var last_channel := "剧情"
@@ -21,6 +22,7 @@ var feedback: Array = []
 
 func _init() -> void:
     narrative_db=XianfanNarrativeDB.new()
+    conditional_story=XianfanConditionalStory.new()
     if not load_save():
         new_game()
     else:
@@ -613,6 +615,17 @@ func feedback_report() -> String:
 func note_api_failure(action: String, reason: String) -> void:
     _record_feedback(action, reason, "AI_API_FAILED")
 
+func local_chronicle(max_entries: int=6) -> String:
+    var current_region:="村" if str(data.get("place","")).begins_with("石桥村") else "城"
+    var records: Array=data.get("verified_local_events",[])
+    var lines: Array[String]=[]
+    for i in range(records.size()-1,-1,-1):
+        var record: Dictionary=records[i]
+        if str(record.get("region",""))!=current_region: continue
+        lines.append("第%d日 · %s" % [int(record.get("day",0)),str(record.get("detail",""))])
+        if lines.size()>=max_entries: break
+    return "\n".join(lines) if not lines.is_empty() else "本地区尚无达到条件的已核验公共经济或生态变化；不编造大事。"
+
 func authored_dialogue(person: String, text: String) -> Dictionary:
     if narrative_db==null: return {"covered":false}
     return narrative_db.answer(person,text,data)
@@ -709,6 +722,7 @@ func story_context() -> Dictionary:
         "society_events":data.get("society",{}).get("events",[]).slice(-6),
         "society_daily":data.get("society",{}).get("daily",{}).get(str(data["day"]),{}),
         "recent_npc_days":data.get("npc_life_events",[]).slice(-6),
+        "rule_verified_region_events":data.get("verified_local_events",[]).slice(-6),
         "open_plot_threads":data.get("story_flags",{}).keys()}
 
 func recent_story_ai(n: int=3) -> String:
@@ -863,6 +877,13 @@ func _tick(minutes: int, stamina_delta: int = 0, count_turn: bool = true) -> voi
             _sync_society_people()
             _archive_society_milestones()
             _archive_civic_memory()
+            if conditional_story!=null:
+                var observations:=conditional_story.observe(data)
+                for observation in observations:
+                    if world_chronicle!=null:
+                        var event: Dictionary=observation
+                        if not world_chronicle.append_rule_fact("rule_action","地区："+str(event["region"]),int(event["day"]),str(event["detail"]),str(event["id"]),str(event["region"])):
+                            push_warning("Regional observation mirrored only in original game save; JSONL history unavailable")
     _advance_letters()
     if count_turn:
         data["turn"] = int(data["turn"]) + 1
