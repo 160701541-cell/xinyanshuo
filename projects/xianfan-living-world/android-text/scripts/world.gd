@@ -199,6 +199,11 @@ func _daily() -> void:
     if eaten < 108:
         data["hp"] = maxi(0, int(data["hp"]) - 5)
         _note("【生计】家中四口的粮食不足，体力和健康都受到影响。")
+    # Forest resource regrowth is capped and independent from player wishes.
+    var forest: Dictionary = data.get("forest_stock",{"枯枝":6,"车前草":3})
+    forest["枯枝"]=mini(8,int(forest.get("枯枝",0))+2)
+    forest["车前草"]=mini(4,int(forest.get("车前草",0))+1)
+    data["forest_stock"]=forest
     # The environmental ledger is replenished only through a bounded migration rule.
     if int(data["fish_population"]) < int(data["fish_cap"]):
         data["fish_population"] = int(data["fish_population"]) + 1
@@ -453,6 +458,180 @@ func scene_overview() -> String:
             paragraph += "\n\n【路途与打算】\n你可以查看附近、往来行走，也能直接输入想说的话。"
     return paragraph
 
+# Free-text actions are resolved BEFORE fixed-button aliases.
+# Only the rules engine mutates the world. Unrecognized requests cannot grant items.
+func _free_observe(topic: String) -> String:
+    var place := str(data["place"])
+    if topic.contains("鱼") or topic.contains("溪") or topic.contains("河"):
+        if place == "石桥村·溪边":
+            return "你查看溪水与岸边。河道现有登记的小鱼%d条，岸上两只鱼笼须按时间检查；不能凭一句话生出渔获。" % int(data["fish_population"])
+        return "溪边不在你眼前。想查看鱼笼，需要先走到石桥溪边。"
+    if topic.contains("田") or topic.contains("菜") or topic.contains("庄稼"):
+        if place == "石桥村·家中":
+            return "院旁菜畦种着%s；播于第%d日。生长需要按农时结算。" % [str(data["field"]["crop"]),int(data["field"]["planted_day"])]
+        return "田地在村边，从这里看不清菜畦的生长情况。"
+    if topic.contains("妹妹") or topic.contains("成明"):
+        var npc: Dictionary = data["npc"]["孙成明"]
+        return "成明此刻登记在%s，正在%s。她的去向按自己的日程变化。" % [str(npc["place"]),str(npc["activity"])]
+    if topic.contains("包") or topic.contains("钱") or topic.contains("物品"):
+        return status()
+    return look()
+
+func _free_wait(raw: String) -> String:
+    var minutes := 15
+    var match_regex := RegEx.new()
+    match_regex.compile("([0-9]{1,3})\\s*(分钟|分|小时|时辰)")
+    var found := match_regex.search(raw)
+    if found:
+        minutes = int(found.get_string(1))
+        if found.get_string(2) == "小时": minutes *= 60
+        if found.get_string(2) == "时辰": minutes *= 120
+    elif raw.contains("一小时"): minutes = 60
+    elif raw.contains("半小时"): minutes = 30
+    elif raw.contains("一刻"): minutes = 15
+    elif raw.contains("两小时"): minutes = 120
+    if raw.contains("明天") or raw.contains("一整天") or raw.contains("几天"):
+        return "连续多日不能只靠站着等待；须先安排饮食、睡眠与补给。可说‘自动完成今日安排’。"
+    if minutes < 1 or minutes > 480: return "一次等待限1至480分钟，以免跳过饮食、睡眠和NPC日程。"
+    _tick(minutes)
+    return "你在%s停留了%d分钟。天色、家人日程和世界时间继续流转。" % [str(data["place"]),minutes]
+
+func _free_visit(raw: String) -> String:
+    var place := str(data["place"])
+    if raw.contains("林") or raw.contains("山脚树林") or raw.contains("野地"):
+        if place == "石桥村·家中": return _move("石桥村·林缘",24,4)
+        if place == "石桥村·溪边": return _move("石桥村·林缘",22,4)
+        return "离这片村外林缘还有一段路，须先返回石桥村。"
+    if place == "石桥村·林缘" and (raw.contains("回家") or raw.contains("回村")):
+        return _move("石桥村·家中",24,4)
+    if place == "石桥村·林缘" and (raw.contains("溪") or raw.contains("河")):
+        return _move("石桥村·溪边",22,4)
+    if raw.contains("青云") or raw.contains("山门"):
+        return _act_core("出发去青云" if place == "石桥村·家中" else "沿山道北上")
+    if raw.contains("县城") or raw.contains("临安") or raw.contains("市集"):
+        return _act_core("去东市")
+    if raw.contains("溪") or raw.contains("河边"):
+        if place == "石桥村·家中": return _act_core("去溪边")
+        return "目前不在能直接抵达石桥溪边的路段，需先返村。"
+    if raw.contains("回家") or raw.contains("回村"):
+        return _act_core("回家")
+    return "你暂不知道通往这个地点的安全道路。可以先打听线索，而不能瞬间移动。"
+
+func _free_collect(raw: String) -> String:
+    if str(data["place"]) != "石桥村·林缘":
+        return "采集地点不在眼前。村外林缘有落枝和普通草药；必须实际走到那里。"
+    var kind := "车前草" if raw.contains("药") or raw.contains("草") or raw.contains("车前") else "枯枝"
+    if raw.contains("砍") or raw.contains("伐") or raw.contains("整棵"):
+        return "整棵树是村社的林木，不是无主资源；须先征得管地人的准许。可以捡地上的枯枝。"
+    var stocks: Dictionary = data.get("forest_stock",{"枯枝":6,"车前草":3})
+    var count := int(stocks.get(kind,0))
+    if count < 1: return "这一带暂时没有可以安全采下的%s，需要等资源自然恢复。" % kind
+    if int(data["stamina"]) < 7: return "精力不足，今天不宜继续在野地采集。"
+    stocks[kind] = count-1
+    data["forest_stock"]=stocks
+    _tick(40,-7)
+    _add(kind,1)
+    return "你沿林缘寻找，取到一份%s。林地余量已登记，采走一份就少一份。" % kind
+
+func _free_chore(raw: String) -> String:
+    if str(data["place"]) != "石桥村·家中": return "家务要回到钱家院落才能做。"
+    if int(data.get("chores_day",0)) == int(data["day"]):
+        return "今天已经帮着做过一轮家务，家里暂时没有更多活需要你重复做。"
+    if int(data["stamina"]) < 8: return "你精力不足，家人劝你先歇一歇。"
+    _tick(45,-8)
+    data["chores_day"]=int(data["day"])
+    var npc: Dictionary = data["npc"]["孙成明"]
+    npc["rapport"]=mini(100,int(npc["rapport"])+2)
+    return "你把院子扫净，帮忙挑水劈细柴。家务用了45分钟，成明见你分担了活，态度亲近了些。"
+
+func _free_fish() -> String:
+    if str(data["place"]) != "石桥村·溪边": return "手竿得在溪边才能用。"
+    if not _has("简易鱼竿"): return "你身上没有能使用的鱼竿。"
+    if int(data["stamina"]) < 9: return "精力不足，先休息。"
+    _tick(70,-9)
+    if int(data["fish_population"]) <= 0: return "你钓了一个多小时，河段已无登记存量的小鱼，没有收获。"
+    var lucky := _roll("handline-%d" % int(data["turn"]),int(data["day"]))
+    if lucky >= 42: return "浮漂沉沉浮浮，你等了一个多小时，仍没有鱼上钩。"
+    data["fish_population"] = int(data["fish_population"])-1
+    _add("小河鱼")
+    return "你凭手竿钓起一条小河鱼。河段登记鱼群减少一条，背包增加一条。"
+
+func _free_give(raw: String) -> String:
+    var npc_name := ""
+    if raw.contains("妹妹") or raw.contains("成明"): npc_name="孙成明"
+    elif raw.contains("母亲") or raw.contains("娘"): npc_name="郑舟清"
+    elif raw.contains("父亲") or raw.contains("爹"): npc_name="钱然泽"
+    if npc_name.is_empty(): return "你打算把物品给谁？请说明人物和物品。"
+    if str(data["place"]) != "石桥村·家中": return "要当面交给家人，须先回到钱家院落。"
+    if npc_name=="孙成明" and not _sister_here(): return "成明不在家，暂时无法当面交给她。"
+    if npc_name=="钱然泽" and int(data["minute"]) >= 420 and int(data["minute"]) <= 1050:
+        return "父亲正在田里，待他回来再交。"
+    var item := ""
+    for candidate in ["小河鱼","枯枝","车前草","青菜","引气初篇"]:
+        if raw.contains(candidate) or candidate=="小河鱼" and raw.contains("鱼"):
+            item=candidate
+            break
+    if item.is_empty(): return "没听清你想交出什么物品。可说‘把小河鱼给妹妹’。"
+    if not _has(item): return "你背包里没有%s，不能凭话语创造财物。" % item
+    if item=="引气初篇":
+        return "这本残旧册子目前由成明保管，不应再次从你的背包重复赠送。"
+    _take(item)
+    var person: Dictionary = data["npc"][npc_name]
+    var owned: Dictionary = person.get("items",{})
+    owned[item]=int(owned.get(item,0))+1
+    person["items"]=owned
+    _tick(5)
+    if npc_name=="孙成明": person["rapport"]=mini(100,int(person["rapport"])+2)
+    return "你当面把一份%s交给%s。物品已从你的背包移入对方的物品账本。" % [item,npc_name]
+
+func _free_say(raw: String) -> String:
+    var who := ""
+    if raw.contains("妹妹") or raw.contains("成明"): who="孙成明"
+    elif raw.contains("母亲") or raw.contains("娘"): who="郑舟清"
+    elif raw.contains("父亲") or raw.contains("爹"): who="钱然泽"
+    if who.is_empty(): return "你想跟谁说话？可以写‘问妹妹今天忙什么’。"
+    var topic := "家常"
+    if raw.contains("饭") or raw.contains("饿"): topic="饭"
+    elif raw.contains("青云") or raw.contains("上山") or raw.contains("测灵"): topic="青云"
+    elif raw.contains("忙") or raw.contains("干什么"): topic="劳作"
+    elif raw.contains("鱼"): topic="捕鱼"
+    elif raw.contains("学习") or raw.contains("口诀"): topic="读书"
+    if topic in ["饭","青云"]: return _family_chat(who,topic)
+    if str(data["place"]) != "石桥村·家中": return "此人不在眼前，要找到对方才能交谈。"
+    if who=="孙成明" and not _sister_here(): return "成明正在外面忙自己的事情，暂时不能交谈。"
+    if who=="钱然泽" and int(data["minute"])>=420 and int(data["minute"])<=1050:
+        return "父亲此时还在田里，不能替他远程回答。"
+    _tick(4)
+    if who=="孙成明":
+        if topic=="捕鱼": return "成明说：‘河里的鱼最近少了不少。你要是还想下笼，得让它们缓一缓。’"
+        if topic=="读书": return "成明摇摇头：‘那册子不是假的吗？先别急着照练，我要先把今天的活做完。’"
+        return "成明抬头应你：‘我今天%s呢，忙完再多聊。’" % str(data["npc"]["孙成明"]["activity"])
+    if who=="郑舟清": return "母亲说：‘外头事情再多，也要顾着家里的米粮和脚下的路。’"
+    return "父亲放下手里的活：‘凡事得先看清楚，再动手。’"
+
+func _free_action(raw: String) -> String:
+    var t := raw.strip_edges().replace("，","").replace("。","").replace("！","")
+    if t.is_empty(): return ""
+    # Speech and inspection take priority over broad keyword shortcuts.
+    if t.contains("观察") or t.contains("查看") or t.contains("看看") or t.contains("打量") or t.contains("调查"):
+        if t.contains("鱼笼"): return _act_core("查看鱼笼")
+        return _free_observe(t)
+    if (t.contains("问") or t.contains("聊天") or t.contains("说话") or t.contains("聊聊") or t.contains("告诉")) and (t.contains("妹妹") or t.contains("成明") or t.contains("母亲") or t.contains("娘") or t.contains("父亲") or t.contains("爹")):
+        return _free_say(t)
+    if t.contains("等候") or t.begins_with("等") or t.contains("待一会"):
+        return _free_wait(t)
+    if t.contains("给") and (t.contains("妹妹") or t.contains("成明") or t.contains("母亲") or t.contains("娘") or t.contains("父亲") or t.contains("爹")) and (t.contains("鱼") or t.contains("草") or t.contains("柴") or t.contains("菜") or t.contains("书")):
+        return _free_give(t)
+    if t.contains("打扫") or t.contains("挑水") or t.contains("家务") or t.contains("劈柴") or t.contains("帮娘干活"):
+        return _free_chore(t)
+    if t.contains("钓鱼") or t.contains("甩竿") or t.contains("下竿"): return _free_fish()
+    if (t.contains("捡") or t.contains("拾") or t.contains("采") or t.contains("挖") or t.contains("砍")) and (t.contains("柴") or t.contains("枝") or t.contains("草") or t.contains("药") or t.contains("树") or t.contains("木")):
+        return _free_collect(t)
+    if t.contains("去") or t.contains("前往") or t.contains("走到") or t.contains("回村") or t.contains("回家"):
+        if t.contains("林") or t.contains("树林") or t.contains("森林") or t.contains("村外") or t.contains("溪") or t.contains("河边") or t.contains("青云") or t.contains("县城") or t.contains("临安") or t.contains("市集") or t.contains("回家") or t.contains("回村"):
+            return _free_visit(t)
+    return ""
+
 func _act_core(action: String) -> String:
     match action:
         "查看四周": return look()
@@ -587,10 +766,11 @@ func _resolve_input(raw: String) -> String:
     return text
 
 func act(action: String) -> String:
-    var canonical := _resolve_input(action)
-    if canonical.is_empty(): return "没有输入行动。"
+    if action.strip_edges().is_empty(): return "没有输入行动。"
     var before := _clock()
-    var result := _act_core(canonical)
+    var free_result := _free_action(action)
+    var canonical := _resolve_input(action) if free_result.is_empty() else "自由行动"
+    var result := _act_core(canonical) if free_result.is_empty() else free_result
     last_result = result
     # Explanations and unsupported phrases are visible but do not pollute the saved event journal.
     if not result.begins_with("暂不支持") and canonical != "询问吃饭对象" and canonical != "查看当前目标":
@@ -607,13 +787,15 @@ func look() -> String:
         "青云山门·山门外": return "高石阶旁立着宗门的测灵碑。凡人走到这里不容易；执事让排队，30文测灵费须在能够真正测试时缴纳。"
         "石桥村·家中": return "院里晒着谷物，灶上有烟，屋旁是菜畦。成明有自己的家务；父亲田里忙，母亲管家。"
         "石桥村·溪边": return "浅溪旁芦苇成片。第一只鱼笼还在水里，已登记的河鱼并非取之不尽。"
+        "石桥村·林缘": return "村外林缘落枝散乱，偶尔能找到车前草。往深处是村社林木，不得随意伐树。" 
     return "远处田野与山路相接，世界仍有人各自谋生。"
 
 func actions_for_place() -> Array[String]:
     match data["place"]:
         "临安县城·旧书铺": return ["查看四周", "向老道买书", "回石桥村", "去东市", "查看修炼结论"]
         "临安县城·东市": return ["查看四周", "沿山道北上", "山脚脚店投宿", "出售小河鱼", "出售青菜", "回旧书铺", "回石桥村"]
-        "石桥村·溪边": return ["查看四周", "查看鱼笼", "取鱼笼里的鱼", "布第二只鱼笼", "回家"]
+        "石桥村·溪边": return ["查看四周", "查看鱼笼", "钓鱼", "取鱼笼里的鱼", "去林缘", "回家"]
+        "石桥村·林缘": return ["查看四周", "捡枯枝", "采车前草", "去溪边", "回家"]
         "青云山门·山门外": return ["查看四周", "申请测灵根", "山脚脚店投宿", "查看修炼结论"]
         _: return ["查看四周", "自动完成今日安排", "跟妹妹说话", "教妹妹修炼", "读引气初篇", "静坐修炼", "连续修炼一天", "连续修炼十日", "查看修炼结论", "吃饭休息", "睡觉", "播种青菜", "收获青菜", "组装鱼竿", "去溪边", "出发去青云", "去东市"]
 

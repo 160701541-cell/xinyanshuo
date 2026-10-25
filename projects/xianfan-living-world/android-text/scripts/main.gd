@@ -140,14 +140,14 @@ func _build() -> void:
     quick_row = HBoxContainer.new()
     quick_row.add_theme_constant_override("separation", 7)
     root.add_child(quick_row)
-    for quick in ["查看四周", "跟妹妹说话", "当前目标"]:
-        var q := _btn(quick, func(): _execute("查看当前目标" if quick == "当前目标" else quick))
+    for quick in ["看看周围", "问妹妹在忙什么", "出门走走"]:
+        var q := _btn(quick, func(): _execute("去林缘看看" if quick == "出门走走" else quick))
         q.size_flags_horizontal = Control.SIZE_EXPAND_FILL
         q.custom_minimum_size = Vector2(0, 48)
         q.add_theme_font_size_override("font_size", 17)
         quick_row.add_child(q)
 
-    action_toggle = _btn("全部行动  ▾", func(): _toggle_actions())
+    action_toggle = _btn("参考操作 · 不限于这些  ▾", func(): _toggle_actions())
     action_toggle.custom_minimum_size = Vector2(0, 46)
     action_toggle.add_theme_font_size_override("font_size", 17)
     root.add_child(action_toggle)
@@ -168,7 +168,7 @@ func _build() -> void:
     input_row.add_theme_constant_override("separation", 8)
     root.add_child(input_row)
     command = LineEdit.new()
-    command.placeholder_text = "说句话或下指令，如：问妹妹吃饭了吗"
+    command.placeholder_text = "自由描述行动：去林边拾柴、问妹妹在忙什么..."
     command.size_flags_horizontal = Control.SIZE_EXPAND_FILL
     command.custom_minimum_size = Vector2(0, 62)
     command.add_theme_font_size_override("font_size", 19)
@@ -185,7 +185,7 @@ func _build() -> void:
 func _toggle_actions() -> void:
     drawer_open = not drawer_open
     scroll.visible = drawer_open
-    action_toggle.text = "收起行动  ▴" if drawer_open else "全部行动  ▾"
+    action_toggle.text = "收起参考操作  ▴" if drawer_open else "参考操作 · 不限于这些  ▾"
 
 func _switch(tab: String) -> void:
     current_tab = tab
