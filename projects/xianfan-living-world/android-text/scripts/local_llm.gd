@@ -103,7 +103,7 @@ func choose_model(source: String) -> String:
 func status() -> String:
     if loading: return "正在下载或加载 %s（可能需数GB）；请保持应用前台运行。" % active_name
     if model_ready: return "本机 %s 已加载，可离线对话" % active_name
-    if not ClassDB.class_exists("NobodyWhoChat"): return "原生推理扩展未加载，无法使用本地模型；可复制反馈日志。"
+    if not ClassDB.class_exists("NobodyWhoChat"): return "%s：原生推理扩展未加载；请到反馈页复制错误。" % active_name
     if not last_error.is_empty(): return "%s：%s" % [active_name,last_error]
     return "%s 未加载。选定后点击下载/加载，模型会缓存到手机。" % active_name
 
