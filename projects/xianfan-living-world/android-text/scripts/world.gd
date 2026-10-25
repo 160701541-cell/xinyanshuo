@@ -70,11 +70,12 @@ func _setup_society() -> void:
         return
     immortal_added=XianfanImmortalSociety.initialize(society,_clock())
     var sect_living_added:=XianfanSectLiving.migrate(society)
+    var psyche_added:=XianfanPsyche.ensure(society)
     _sync_society_people()
     _archive_society_milestones()
     _archive_civic_memory()
     _archive_immortal_memory()
-    if first_init or civic_added or accounts_added or immortal_added or sect_living_added: save()
+    if first_init or civic_added or accounts_added or immortal_added or sect_living_added or psyche_added: save()
 
 func _sync_society_people() -> void:
     var society: Dictionary=data.get("society",{})
@@ -130,6 +131,9 @@ func _sync_society_people() -> void:
         living["faction"]=str(info["faction"])
         living["trait"]=str(info["trait"])
         living["wish"]=str(info["wish"])
+        living["social"]=info.get("social",{}).duplicate(true)
+        living["psyche"]={"traits":XianfanPsyche.get_traits(info).duplicate(true),
+            "stress":int(info.get("psyche",{}).get("stress",0))}
         living["money"]=int(info["coins"])
         living["health"]=int(info["health"])
         living["energy"]=int(info["energy"])
@@ -154,6 +158,9 @@ func _sync_society_people() -> void:
             push_warning("Cannot merge new cultivator: existing historical NPC shares name "+name)
             continue
         var living:=info.duplicate(true)
+        # Full private psychology is not copied into a public NPC card.
+        living["psyche"]={"traits":XianfanPsyche.get_traits(info).duplicate(true),
+            "stress":int(info.get("psyche",{}).get("stress",0))}
         living["relationship"]="山门修士" if str(info.get("station",""))=="青云山门" else "行脚散修"
         living["social_class"]=str(info.get("standing","修士"))
         living["money"]=0
