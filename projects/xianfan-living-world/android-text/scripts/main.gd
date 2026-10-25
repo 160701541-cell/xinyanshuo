@@ -598,6 +598,10 @@ func _open_ai_settings() -> void:
     local_model_url=_entry_field("GGUF地址；可改成自定义HTTPS下载源",str(local_llm.get("model_source")),false)
     modal_form.add_child(local_model_url)
     local_model_fields.append(local_model_url)
+    var mirror_switch:=_button("官方站连不上？改用第三方镜像（点按切换）",
+        func(): _switch_model_mirror(),15)
+    modal_form.add_child(mirror_switch)
+    local_model_fields.append(mirror_switch)
     var ctx_title:=_label("模型上下文（长期经历在磁盘中，较大窗口增加RAM占用）",15,FADED)
     modal_form.add_child(ctx_title)
     local_model_fields.append(ctx_title)
@@ -638,6 +642,20 @@ func _open_ai_settings() -> void:
     modal_actions.add_child(_button("查看当前上下文占用",func(): _inspect_context_usage(),15))
     setting_provider.item_selected.connect(func(_index: int): _sync_provider_fields())
     _sync_provider_fields()
+
+func _switch_model_mirror() -> void:
+    if local_model_url==null: return
+    var current:=local_model_url.text.strip_edges()
+    if current.begins_with("https://hf-mirror.com/"):
+        local_model_url.text=current.replace("https://hf-mirror.com/","https://huggingface.co/")
+        notice.text="已切回Hugging Face官方站。"
+        return
+    var resolved:=XianfanResumableModelDownload.source_url(current)
+    if resolved.is_empty() or not resolved.begins_with("https://huggingface.co/"):
+        notice.text="仅支持为Hugging Face模型切换镜像；自定义地址请手动编辑。"
+        return
+    local_model_url.text=resolved.replace("https://huggingface.co/","https://hf-mirror.com/")
+    notice.text="已选第三方HF-Mirror。下载前仍会校验官方8B/14B模型SHA256；该镜像不是Hugging Face官方站。"
 
 func _choose_local_preset(index: int) -> void:
     var info:=XianfanLocalLLM.preset(index)
