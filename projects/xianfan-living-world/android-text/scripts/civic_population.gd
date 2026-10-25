@@ -283,10 +283,11 @@ static func _live_day(society: Dictionary, day: int) -> void:
             _event(society,npc,day,"因健康耗尽离世，原始身份保留，遗产归入公共库。")
             continue
         npc["energy"]=mini(100,int(npc["energy"])+8)
-        _produce(society,npc,day)
-        # Boarded mortals draw meals from the mountain sect store instead of
-        # also consuming/purchasing a second ration at their home village.
+        # A contracted mountain worker is paid by the sect's own budget and
+        # fed from the sect's kitchen. Village treasury must not pay the same
+        # worker or consume a second daily portion of food.
         if not bool(npc.get("sect_boarding",false)):
+            _produce(society,npc,day)
             _eat(society,npc,day)
         npc["last_day"]=day
         if day%360==0:
