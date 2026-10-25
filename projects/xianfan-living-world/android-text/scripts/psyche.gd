@@ -29,7 +29,11 @@ static func _new_psyche(npc: Dictionary) -> Dictionary:
 
 static func ensure(society: Dictionary) -> bool:
     var changed:=false
-    for npc in society.get("civic_agents",{}).values():
+    var existing: Array=[]
+    existing.append_array(society.get("civic_agents",{}).values())
+    existing.append_array(society.get("agents",{}).values())
+    existing.append_array(society.get("cultivation_world",{}).get("agents",{}).values())
+    for npc in existing:
         if not npc.has("psyche"):
             npc["psyche"]=_new_psyche(npc)
             changed=true
@@ -71,7 +75,10 @@ static func _social(npc: Dictionary, other_id: String, delta: int) -> void:
 static func _event(society: Dictionary, actor: Dictionary, day: int, kind: String,
         detail: String, peer: Dictionary={}) -> void:
     var line: String=detail
-    XianfanCivicPopulation._event(society,actor,day,line)
+    # Confidential grievances and alleged crimes belong in private records,
+    # not the county's world-readable public notice board.
+    if kind not in ["私下盗窃","失窃","越界纠缠","拒绝并求助"]:
+        XianfanCivicPopulation._event(society,actor,day,line)
     var memoir: Array=actor.get("biography",[])
     memoir.append({"day":day,"npc":str(actor["name"]),"category":kind,
         "detail":line,"person_id":str(actor["id"]),"other_id":str(peer.get("id","")),
@@ -101,6 +108,8 @@ static func resolve(society: Dictionary, actor_name: String, other_name: String,
     var outcome: Dictionary={"ok":false,"why":"not_feasible"}
     match action:
         "help":
+            if int(traits.get("compassion",0))<=55 and int(traits.get("altruism",0))<=60:
+                return outcome
             if int(actor.get("coins",0))<=0 or int(other.get("coins",0))>5:
                 return outcome
             var contribution:=mini(2,int(actor["coins"]))
@@ -114,6 +123,8 @@ static func resolve(society: Dictionary, actor_name: String, other_name: String,
                 "收到%s主动相助的%d文，记得这份帮助。" % [str(actor["name"]),contribution],actor)
             outcome={"ok":true,"kind":"help","delta_coins":contribution}
         "attempt_theft":
+            if int(traits.get("greed",0))<=75 or int(traits.get("self_control",100))>=35:
+                return outcome
             if int(other.get("coins",0))<=0: return outcome
             var amount:=mini(2,int(other["coins"]))
             other["coins"]=int(other["coins"])-amount
@@ -135,7 +146,7 @@ static func resolve(society: Dictionary, actor_name: String, other_name: String,
                 "发现自己少了%d文，尚不能确认是谁所为；此事需要证据调查。" % amount,actor)
             outcome={"ok":true,"kind":"theft","case_id":case_id,"delta_coins":amount}
         "express_interest":
-            if int(traits.get("desire",0))<=0: return outcome
+            if int(traits.get("desire",0))<=50 or int(traits.get("self_control",0))<25: return outcome
             var actor_id:=str(actor["id"])
             var recipient_id:=str(other["id"])
             # Consent is each person's voluntary choice; attractiveness,
@@ -163,7 +174,7 @@ static func resolve(society: Dictionary, actor_name: String, other_name: String,
             # Non-graphic, serious unlawful *attempt*. This action records
             # harassment and the affected person's right to refuse/report.
             # Sexual violence itself is NOT gamified or simulated here.
-            if int(traits.get("self_control",100))>=35 or int(traits.get("compassion",100))>=35:
+            if int(traits.get("desire",0))<=55 or int(traits.get("self_control",100))>=35 or int(traits.get("compassion",100))>=35:
                 return outcome
             var boundaries: Dictionary=other_mind["romance_consent"]
             if bool(boundaries.get(str(actor["id"]),false)): return outcome
