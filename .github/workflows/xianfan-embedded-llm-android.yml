@@ -74,13 +74,13 @@ jobs:
       - name: Verify existing game, NPC popup, and downloadable model control
         run: |
           cd projects/xianfan-living-world/android-text
-          godot --headless --path . --script res://tests/test_world.gd > /tmp/native-game-tests.log 2>&1
+          godot --headless --path . --script res://tests/test_world.gd > /tmp/native-game-tests.log 2>&1 || { cat /tmp/native-game-tests.log; exit 1; }
           cat /tmp/native-game-tests.log
           if grep -E '(SCRIPT ERROR|Parse Error|TEST FAILURE)' /tmp/native-game-tests.log; then exit 1; fi
-          godot --headless --path . --script res://tests/test_ai.gd > /tmp/native-ai-tests.log 2>&1
+          godot --headless --path . --script res://tests/test_ai.gd > /tmp/native-ai-tests.log 2>&1 || { cat /tmp/native-ai-tests.log; exit 1; }
           cat /tmp/native-ai-tests.log
           if grep -E '(SCRIPT ERROR|Parse Error|TEST FAILURE)' /tmp/native-ai-tests.log; then exit 1; fi
-          godot --headless --path . --script res://tests/test_ui.gd > /tmp/native-ui-tests.log 2>&1
+          godot --headless --path . --script res://tests/test_ui.gd > /tmp/native-ui-tests.log 2>&1 || { cat /tmp/native-ui-tests.log; exit 1; }
           cat /tmp/native-ui-tests.log
           if grep -E '(SCRIPT ERROR|Parse Error|TEST FAILURE)' /tmp/native-ui-tests.log; then exit 1; fi
       - name: Verify NPC continuity and answer grounding
