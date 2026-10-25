@@ -353,6 +353,7 @@ static func initial_state(absolute_minute: int) -> Dictionary:
         idx+=1
     _prepare_social(society)
     _life_defaults(society)
+    XianfanCivicPopulation.initialize(society,absolute_minute/60)
     return society
 
 static func valid(society: Dictionary) -> bool:
@@ -378,6 +379,7 @@ static func valid(society: Dictionary) -> bool:
                 if int(skill)<0: return false
         if int(npc.get("age",0))<0: return false
         if not bool(npc.get("alive",true)) and int(npc["coins"])!=0: return false
+    if not XianfanCivicPopulation.valid(society): return false
     for shipment in society.get("caravans",[]):
         if not shipment is Dictionary: return false
         if int(shipment.get("qty",0))<0: return false
@@ -591,6 +593,7 @@ static func _hour_step(society: Dictionary, absolute_hour: int) -> void:
             pass
     if hour==19: _family_support(society,absolute_hour)
     if hour==20: _daily_lifecycle(society,absolute_hour)
+    if hour==6: XianfanCivicPopulation.advance_daily(society,absolute_hour)
     society["total_steps"]=int(society["total_steps"])+1
     # Keep a rolling 30-day summary; hourly events remain bounded.
     var days: Dictionary=society.get("daily",{})
@@ -617,6 +620,8 @@ static func near_people(society: Dictionary, place: String) -> Array[Dictionary]
     for name in society.get("agents",{}):
         var npc: Dictionary=society["agents"][name]
         if bool(npc.get("alive",true)) and str(npc["place"])==place: result.append(npc.duplicate(true))
+    for npc in XianfanCivicPopulation.nearby(society,place,int(society.get("last_hour",0))):
+        result.append(npc)
     return result
 
 static func report(society: Dictionary, current_place: String) -> String:
@@ -661,6 +666,8 @@ static func report(society: Dictionary, current_place: String) -> String:
     lines.append("【人生演化】职业转换%d次 · 真实死亡%d人 · 人物重要经历%d条（旧人有档案可查）" % [
         int(society.get("career_changes",0)),int(society.get("deaths",0)),
         society.get("chronicle",[]).size()])
+    if society.has("civic_agents"):
+        lines.append(XianfanCivicPopulation.statistics(society))
     lines.append("【最近真实事件】")
     var events: Array=society.get("events",[])
     for e in events.slice(-6):
