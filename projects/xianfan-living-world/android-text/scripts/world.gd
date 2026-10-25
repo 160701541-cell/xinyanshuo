@@ -10,6 +10,8 @@ const VERSION := 4
 const MAX_JOURNAL := 100000
 var data: Dictionary = {}
 var memory_store: XianfanMemoryStore
+var narrative_db: XianfanNarrativeDB
+var world_chronicle: XianfanWorldFactChronicle
 var journal: Array = []
 var last_result := ""
 var last_channel := "剧情"
@@ -18,6 +20,7 @@ const FEEDBACK_PATH := "user://xianfan_feedback.json"
 var feedback: Array = []
 
 func _init() -> void:
+    narrative_db=XianfanNarrativeDB.new()
     if not load_save():
         new_game()
     else:
@@ -33,6 +36,10 @@ func _setup_memories() -> void:
         data["memory_campaign"]="legacy-"+str(data.get("source_event","first-life"))+"-"+str(data.get("name","player"))
     memory_store=XianfanMemoryStore.new()
     memory_store.configure(str(data["memory_campaign"]))
+    if world_chronicle==null:
+        world_chronicle=XianfanWorldFactChronicle.new()
+        if not world_chronicle.configure(str(data["memory_campaign"])):
+            push_warning("World fact chronicle directory not writable; authoritative game save remains intact")
     memory_store.sync_legacy(data)
     if not FileAccess.file_exists(SAVE_PATH) or not data.get("memory_sidecar_registered",false):
         data["memory_sidecar_registered"]=true
@@ -150,6 +157,8 @@ func _archive_society_milestones() -> void:
         if not memory_store.append_event(person,event,data["npc"][person]):
             _note("【存储告警】社会人生里程碑尚未写入独立记忆，主存档仍保留原件。")
             break
+        if world_chronicle!=null and not world_chronicle.append_rule_fact("society_milestone",person,int(event["day"]),str(event["activity"]),str(record.get("uid","")),str(event["place"])):
+            push_warning("Rule fact mirror not saved; existing society ledger and person memory remain authoritative")
         cursor+=1
     data["society_chronicle_cursor"]=cursor
 
@@ -176,6 +185,8 @@ func _archive_civic_memory() -> void:
         if not memory_store.append_event(who,entry,data["npc"][who]):
             _note("【存储告警】社会人生事件等待下次写入："+who)
             break
+        if world_chronicle!=null and not world_chronicle.append_rule_fact("civic_life",who,int(entry["day"]),str(entry["activity"]),str(event.get("uid","")),str(entry["place"])):
+            push_warning("Civic fact mirror not saved; canonical civic chronicle is unchanged")
         cursor+=1
         processed+=1
     data["civic_chronicle_cursor"]=cursor
@@ -602,7 +613,11 @@ func feedback_report() -> String:
 func note_api_failure(action: String, reason: String) -> void:
     _record_feedback(action, reason, "AI_API_FAILED")
 
-func record_ai_dialogue(person: String, player_text: String, reply: String, engine: String="api") -> String:
+func authored_dialogue(person: String, text: String) -> Dictionary:
+    if narrative_db==null: return {"covered":false}
+    return narrative_db.answer(person,text,data)
+
+func record_ai_dialogue(person: String, player_text: String, reply: String, engine: String="api", topic_id: String="") -> String:
     if not data["npc"].has(person): return "NPC不存在，无法进行对话。"
     var npc: Dictionary = data["npc"][person]
     if not bool(npc.get("alive",true)): return "人物已经离世；可以查看生前档案，但无法当面交谈。"
@@ -619,7 +634,8 @@ func record_ai_dialogue(person: String, player_text: String, reply: String, engi
             break
     var entry: Dictionary={"day":int(data["day"]),"minute":int(data["minute"]),
         "turn":int(data["turn"]),"speaker":person,"player":clean_player.substr(0,250),
-        "reply":reply.strip_edges(),"ai":true,"engine":engine}
+        "reply":reply.strip_edges(),"ai":engine in ["local-gguf","api"],"engine":engine,
+        "topic":topic_id}
     entry["uid"]="D-"+str(entry["day"])+"-"+str(entry["turn"])+"-"+(JSON.stringify(entry).sha256_text().substr(0,12))
     # Write to independent local append-only memory before trimming cached
     # copies in the main save. On write failure the main save retains everything.
