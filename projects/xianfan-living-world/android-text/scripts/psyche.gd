@@ -10,6 +10,15 @@ const TRAITS := ["greed","compassion","empathy","self_control","honesty","justic
     "dominance","caution","desire","resentment","shame","impulsivity",
     "forgiveness","diligence","attachment","risk_taking","conformity"]
 const DAILY_EVENT_CAP := 7
+const PSYCHE_CATALOG := "res://data/psyche_catalog_v1.json"
+
+static func catalog() -> Dictionary:
+    var stream:=FileAccess.open(PSYCHE_CATALOG,FileAccess.READ)
+    if stream==null: return {}
+    var loaded: Variant=JSON.parse_string(stream.get_as_text())
+    if not (loaded is Dictionary): return {}
+    if int(loaded.get("schema",0))!=SCHEMA: return {}
+    return loaded
 
 static func _roll(key: String, maximum: int=100) -> int:
     return int(("0x"+key.sha256_text().substr(0,7)).hex_to_int()) % maxi(1,maximum)
