@@ -264,7 +264,9 @@ func available_story_beats() -> Array[Dictionary]:
     var result: Array[Dictionary]=[]
     var flags: Dictionary=data.get("story_flags",{})
     for key in STORY_BEATS:
-        if flags.has(key): continue
+        # A completed storyline can naturally progress again after one week.
+        # This allows recurring plots without an AI-spawned infinite event tree.
+        if flags.has(key) and int(data["day"])-int(flags[key].get("day",0))<7: continue
         var beat: Dictionary=STORY_BEATS[key]
         if str(beat["place"])!=str(data["place"]): continue
         var required_npc:=str(beat.get("npc",""))
@@ -324,7 +326,9 @@ func record_ai_story(scene: String, beat_id: String, expected_clock: int, origin
     data["ai_story_log"]=stories
     if not approved_id.is_empty():
         var flags: Dictionary=data.get("story_flags",{})
-        flags[approved_id]={"day":int(data["day"]),"turn":int(data["turn"])}
+        var old_stage: Dictionary=flags.get(approved_id,{})
+        var next_phase:=mini(20,int(old_stage.get("phase",0))+1)
+        flags[approved_id]={"day":int(data["day"]),"turn":int(data["turn"]),"phase":next_phase}
         data["story_flags"]=flags
         var npc: Dictionary=data["npc"]
         if approved_id=="sister_choice":
@@ -333,7 +337,7 @@ func record_ai_story(scene: String, beat_id: String, expected_clock: int, origin
             npc["郑舟清"]["wish"]="盼孩子平安回家、带好盘缠"
         elif approved_id=="forged_manual":
             npc["孙成明"]["wish"]="先辨别真伪，再谈修炼"
-        _note("【人生支线开启】"+str(STORY_BEATS[approved_id]["title"]))
+        _note("【人生支线进展·第%d阶段】%s" % [next_phase,str(STORY_BEATS[approved_id]["title"])])
     save()
     return {"ok":true,"approved_beat":approved_id,"scene":text_scene}
 
