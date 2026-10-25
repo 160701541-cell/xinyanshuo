@@ -86,5 +86,6 @@ func _run() -> void:
     if issues.is_empty():
         print("SECT LIVING PASS: mortal contracts, bigu thresholds, pill/art cost, enjoyment, water, hygiene")
         quit(0)
+        return
     for issue in issues: push_error("SECT LIVING FAILURE: "+issue)
     quit(1)
