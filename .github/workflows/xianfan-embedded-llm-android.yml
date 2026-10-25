@@ -86,7 +86,7 @@ jobs:
       - name: Verify large-model selection without downloading model weights
         run: |
           cd projects/xianfan-living-world/android-text
-          godot --headless --path . --script res://tests/test_large_models.gd > /tmp/large-model-test.log 2>&1
+          godot --headless --path . --script res://tests/test_large_models.gd > /tmp/large-model-test.log 2>&1 || { cat /tmp/large-model-test.log; exit 1; }
           cat /tmp/large-model-test.log
           if grep -E '(SCRIPT ERROR|Parse Error|LARGE MODEL TEST:|PICKER FAILED)' /tmp/large-model-test.log; then exit 1; fi
       - name: Build APK with native local runtime
