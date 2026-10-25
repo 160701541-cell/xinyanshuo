@@ -80,6 +80,10 @@ func _sync_society_people() -> void:
         npc["health"]=int(entry["health"])
         npc["energy"]=int(entry["energy"])
         npc["rations"]=int(entry["rations"])
+        npc["household"]=str(entry.get("household","独居"))
+        npc["social"]=entry.get("social",{}).duplicate(true)
+        npc["cargo"]=entry.get("cargo",{}).duplicate(true)
+        npc["hunger"]=int(entry.get("hunger",0))
         npc["goal_progress"]=mini(100,int(entry["work_done"]))
         data["npc"][name]=npc
 
@@ -494,6 +498,10 @@ func npcs_status() -> Array[Dictionary]:
             "job":str(n.get("job","家务")),
             "money":int(n.get("money",0)),
             "health":int(n.get("health",100)),
+            "household":str(n.get("household","未登记")),
+            "social":n.get("social",{}),
+            "cargo":n.get("cargo",{}),
+            "hunger":int(n.get("hunger",0)),
             "place":str(n.get("place","未知")),
             "activity":str(n.get("activity","未知")),
             "wish":str(n.get("wish","未公开")),
@@ -1044,6 +1052,8 @@ func _society_player_trade(raw: String) -> String:
     var buy_grain:=raw.begins_with("买粗粮") or raw.begins_with("买粮")
     var sell_fish:=raw.begins_with("卖鱼") or raw.begins_with("卖一条鱼")
     var work:=raw.begins_with("做零工") or raw.begins_with("帮忙搬货")
+    if raw.contains("物价") or raw.contains("今日行情") or raw.contains("查市场"):
+        return society_status()
     if not (buy_grain or sell_fish or work): return ""
     if not data.has("society") or not XianfanSocietySim.valid(data["society"]):
         return "本地社会交易账本暂不可用，无法结算。"
@@ -1054,25 +1064,27 @@ func _society_player_trade(raw: String) -> String:
     var area: Dictionary=society["regions"][zone]
     var stock: Dictionary=area["stock"]
     if buy_grain:
-        if int(data["money"])<2: return "你连两文买粮钱也没有。"
+        var buy_price:=XianfanSocietySim.regional_price(society,zone,"粮")
+        if int(data["money"])<buy_price: return "今天粮价%d文，你带的钱不够。" % buy_price
         if int(stock["粮"])<1: return "集市粮仓已经卖空，无法凭空拿出粮食。"
-        data["money"]=int(data["money"])-2
-        area["treasury"]=int(area["treasury"])+2
+        data["money"]=int(data["money"])-buy_price
+        area["treasury"]=int(area["treasury"])+buy_price
         stock["粮"]=int(stock["粮"])-1
         _add("粗粮",1)
         _tick(12,-1)
         society["total_trades"]=int(society["total_trades"])+1
-        return "你从真实粮仓买下一份粗粮，花去2文。附近商贩随后仍要照常上工。"
+        return "你从真实粮仓买下一份粗粮，花去%d文，价格取决于当地存货。" % buy_price
     if sell_fish:
         if not _has("小河鱼"): return "背包里没有小河鱼，不能拿假货卖。"
-        if int(area["treasury"])<3: return "商贩公库只剩%d文，今天收不了鱼。" % int(area["treasury"])
+        var fish_price:=XianfanSocietySim.regional_price(society,zone,"鱼")
+        if int(area["treasury"])<fish_price: return "商贩公库只剩%d文，今天收不了鱼。" % int(area["treasury"])
         _take("小河鱼")
-        area["treasury"]=int(area["treasury"])-3
+        area["treasury"]=int(area["treasury"])-fish_price
         stock["鱼"]=int(stock["鱼"])+1
-        data["money"]=int(data["money"])+3
+        data["money"]=int(data["money"])+fish_price
         _tick(12,-1)
         society["total_trades"]=int(society["total_trades"])+1
-        return "市集收了你一条真正的鱼，付给你3文；鱼进入公共库藏。"
+        return "市集收了你一条真正的鱼，按今日行情付%d文；鱼进入公共库藏。" % fish_price
     if work:
         if int(data["stamina"])<8: return "体力不足，没法完成一小时的零工。"
         if int(area["treasury"])<2: return "公共钱库缺钱，今天暂时无薪可发。"
@@ -1096,6 +1108,8 @@ func _free_action(raw: String) -> String:
         return travel
     var direct_speech := _npc_free_chat(t)
     if not direct_speech.is_empty(): return direct_speech
+    if t.contains("物价") or t.contains("市价") or t.contains("今日行情"):
+        return society_status()
     var market_result:=_society_player_trade(t)
     if not market_result.is_empty(): return market_result
     # Speech and inspection take priority over broad keyword shortcuts.
