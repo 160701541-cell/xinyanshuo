@@ -26,6 +26,7 @@ static func _voice(name: String, npc: Dictionary) -> String:
     if name=="孙成明": return "sister"
     if name=="钱然泽": return "father"
     if name=="郑舟清": return "mother"
+    if bool(npc.get("cultivation_member",false)): return "cultivator"
     var work:=str(npc.get("job",""))
     var domain:=str(npc.get("sector",""))
     if domain.contains("官府") or work.contains("衙") or work.contains("巡") or work.contains("县令") or work.contains("吏"): return "official"
@@ -60,7 +61,8 @@ static func _unpack_speech(person: String, phrase: String, npc: Dictionary, data
         "{activity}":str(npc.get("activity","照顾手头的事")),
         "{place}":str(npc.get("place","附近")),
         "{wish}":str(npc.get("wish","平安过日子")),
-        "{day}":str(data.get("day",0))}
+        "{day}":str(data.get("day",0)),
+        "{realm}":str(npc.get("realm","未测境界"))}
     for key in substitutions: value=value.replace(str(key),str(substitutions[key]).substr(0,90))
     return value
 
@@ -88,6 +90,22 @@ func answer(person: String, question: String, data: Dictionary) -> Dictionary:
             query=query.trim_prefix(prefix).strip_edges()
             break
     if query.is_empty(): return {"covered":false,"reason":"empty"}
+    # Query the present speaker's actual certificate. Never infer the player's
+    # undisclosed root or claim a random cultivator has passed a test.
+    var asks_root:=query.contains("你的灵根") or query.contains("你是什么灵根") or query.contains("你测过灵根")
+    var asks_realm:=query.contains("你现在什么境界") or query.contains("你修炼到") or query.contains("你是炼气几层")
+    if asks_root or asks_realm:
+        var verified:=bool(npc.get("root_verified",false))
+        var root_info:=str(npc.get("root","待鉴定")) if verified else "尚无可信测灵记录"
+        var realm_info:=str(npc.get("realm","尚无明确境界")) if bool(npc.get("cultivation_member",false)) else "未登记修为"
+        var personal: String=""
+        if asks_root:
+            personal="我的根性记录是%s。" % root_info if verified else "我尚无可信的测灵记录，不会胡乱认定自己的根性。"
+        if asks_realm:
+            personal+="我目前的修行境界是%s。" % realm_info
+        return {"covered":true,"reply":personal,"topic":"verified_personal_status",
+            "voice":_voice(person,npc),"source":"verified-world-fact",
+            "speaker_id":str(npc.get("id",""))}
     var selected: Dictionary={}
     var top_score:=0
     for entry in _topics:
@@ -96,6 +114,7 @@ func answer(person: String, question: String, data: Dictionary) -> Dictionary:
         var score:=0
         for word in topic.get("keywords",[]):
             if query.contains(str(word)): score+=str(word).length()*10
+        if score>0: score+=int(topic.get("priority",0))
         if score>top_score:
             selected=topic
             top_score=score
