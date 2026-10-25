@@ -30,6 +30,7 @@ jobs:
       - name: Install audited NobodyWho v12.1.0 binary release for Android and Linux
         run: |
           set -eu
+          apt-get update -qq && apt-get install -y -qq curl unzip
           curl -fL --retry 3 --connect-timeout 20 "https://github.com/nobodywho-ooo/nobodywho/releases/download/nobodywho-godot-v12.1.0/nobodywho-godot-nobodywho-godot-v12.1.0.zip" -o /tmp/nobodywho-godot-v12.1.0.zip
           unzip -q /tmp/nobodywho-godot-v12.1.0.zip -d /tmp/nobodywho-release
           find /tmp/nobodywho-release -name '*.gdextension' -print
