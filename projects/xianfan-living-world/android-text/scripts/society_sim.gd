@@ -83,11 +83,11 @@ static func _family_support(society: Dictionary, absolute_hour: int) -> void:
         var members: Array=society["households"][household]
         for needy_name in members:
             var needy: Dictionary=agents[needy_name]
-            if int(needy.get("rations",0))>=1: continue
+            if not bool(needy.get("alive",true)) or int(needy.get("rations",0))>=1: continue
             for donor_name in members:
                 if str(donor_name)==str(needy_name): continue
                 var donor: Dictionary=agents[donor_name]
-                if int(donor["rations"])>=2:
+                if bool(donor.get("alive",true)) and int(donor["rations"])>=2:
                     donor["rations"]=int(donor["rations"])-1
                     needy["rations"]=int(needy["rations"])+1
                     society["family_support_count"]=int(society["family_support_count"])+1
@@ -99,6 +99,7 @@ static func _depart_caravans(society: Dictionary, absolute_hour: int) -> void:
     for trip in society.get("caravans",[]):
         var convoy: Dictionary=trip
         if str(convoy["state"])!="idle": continue
+        if not bool(society["agents"][str(convoy["agent"])].get("alive",true)): continue
         var from_region: Dictionary=society["regions"][str(convoy["from"])]
         var to_region: Dictionary=society["regions"][str(convoy["to"])]
         var good:=str(convoy["good"])
@@ -182,6 +183,137 @@ static func _caravan_position(society: Dictionary, npc: Dictionary, absolute_hou
     return false
 
 
+# Long-running NPC biography: objective training, career changes and mortality.
+# All transitions are deterministic; no LLM narration can alter possessions.
+static func _life_defaults(society: Dictionary) -> void:
+    if not society.has("chronicle"): society["chronicle"]=[]
+    if not society.has("deaths"): society["deaths"]=0
+    if not society.has("career_changes"): society["career_changes"]=0
+    if not society.has("births"): society["births"]=0
+    for name in society["agents"]:
+        var npc: Dictionary=society["agents"][name]
+        if not npc.has("alive"): npc["alive"]=true
+        if not npc.has("skills"): npc["skills"]={str(npc.get("job","学徒")):int(npc.get("work_done",0))}
+        if not npc.has("biography"): npc["biography"]=[]
+        if not npc.has("age_anchor_day"):
+            npc["age_anchor_day"]=int(int(npc.get("last_hour",0))/24)+1
+        if not npc.has("life_span"):
+            var numeric:=int(str(npc.get("id","0")).hash() & 0x7fffffff)
+            npc["life_span"]=73+numeric%17
+        if not npc.has("mentor"): npc["mentor"]=""
+        if not npc.has("training"):
+            npc["training"]=0
+
+static func _milestone(society: Dictionary, npc: Dictionary, hour: int, category: String, detail: String) -> void:
+    var record: Dictionary={"uid":"LIFE-"+str(npc["id"])+"-"+str(hour)+"-"+category,
+        "day":int(hour/24)+1,"hour":hour%24,"npc":str(npc["name"]),
+        "category":category,"detail":detail}
+    var archive: Array=society.get("chronicle",[])
+    archive.append(record)
+    society["chronicle"]=archive
+    var persona_log: Array=npc.get("biography",[])
+    persona_log.append(record.duplicate(true))
+    npc["biography"]=persona_log
+    _event(society,hour,str(npc["name"]),detail)
+
+static func _mentor_for(society: Dictionary, student: Dictionary) -> String:
+    var candidates: Array[String]=[]
+    for other_name in society["agents"]:
+        var mentor: Dictionary=society["agents"][other_name]
+        if str(mentor["id"])==str(student["id"]): continue
+        if not bool(mentor.get("alive",true)): continue
+        if str(mentor["origin"])!=str(student["origin"]): continue
+        if str(mentor["job"])!="匠人": continue
+        if int(mentor.get("skills",{}).get("匠人",0))<3: continue
+        candidates.append(str(other_name))
+    candidates.sort()
+    return candidates[0] if not candidates.is_empty() else ""
+
+static func _skill_work(society: Dictionary, npc: Dictionary, hour: int) -> void:
+    if not bool(npc.get("alive",true)): return
+    var job:=str(npc["job"])
+    var skills: Dictionary=npc.get("skills",{})
+    if job=="学徒":
+        var mentor_name:=_mentor_for(society,npc)
+        if mentor_name.is_empty():
+            npc["activity"]="本地尚无愿意教工艺的合格师傅，继续自学"
+            return
+        npc["mentor"]=mentor_name
+        var mentor: Dictionary=society["agents"][mentor_name]
+        if str(mentor.get("place",""))!=str(npc.get("place","")):
+            npc["activity"]="在工坊等师傅，整理器具"
+            return
+        # Learning costs time, requires a co-located trained craftsperson,
+        # and is distinct from inventing completed goods from a speech turn.
+        npc["training"]=int(npc["training"])+1
+        skills["匠人"]=int(skills.get("匠人",0))+1
+        if int(npc["training"])==1:
+            _milestone(society,npc,hour,"拜师","跟随%s在同一个工坊里开始学习木作。" % mentor_name)
+        elif int(npc["training"])>=24:
+            npc["job"]="匠人"
+            npc["wish"]="以手艺养活自己，不再只做学徒"
+            society["career_changes"]=int(society["career_changes"])+1
+            _milestone(society,npc,hour,"出师","师从%s累计24次真实工时，已出师成为匠人。" % mentor_name)
+    else:
+        skills[job]=int(skills.get(job,0))+1
+        if int(skills[job])==20:
+            _milestone(society,npc,hour,"技艺","经过20次实际工作，%s的%s技艺变得熟练。" % [str(npc["name"]),job])
+    npc["skills"]=skills
+
+static func _retire_person(society: Dictionary, npc: Dictionary, hour: int, reason: String) -> void:
+    if not bool(npc.get("alive",true)): return
+    npc["alive"]=false
+    npc["death_day"]=int(hour/24)+1
+    npc["health"]=0
+    npc["place"]="故人名录"
+    npc["activity"]="已故（%s）" % reason
+    npc["wish"]=""
+    var assets:=int(npc["coins"])
+    var foods:=int(npc["rations"])
+    var receiver: String=""
+    for peer in society.get("households",{}).get(str(npc.get("household","")),[]):
+        if str(peer)==str(npc["name"]): continue
+        var person: Dictionary=society["agents"].get(str(peer),{})
+        if not person.is_empty() and bool(person.get("alive",true)):
+            receiver=str(peer)
+            break
+    if not receiver.is_empty():
+        var heir: Dictionary=society["agents"][receiver]
+        heir["coins"]=int(heir["coins"])+assets
+        heir["rations"]=int(heir["rations"])+foods
+    else:
+        var region: Dictionary=society["regions"][_zone(str(npc["origin"]))]
+        region["treasury"]=int(region["treasury"])+assets
+        region["stock"]["粮"]=int(region["stock"]["粮"])+foods
+    npc["coins"]=0
+    npc["rations"]=0
+    society["deaths"]=int(society["deaths"])+1
+    _milestone(society,npc,hour,"死亡","%s因%s离世，遗留%d文与%d份口粮%s。" % [
+        str(npc["name"]),reason,assets,foods,
+        "交由同户%s继承" % receiver if not receiver.is_empty() else "归还当地公共库"])
+    # This milestone retains identity and NPC ID in a permanent biography;
+    # the actor does not reappear as a working NPC after death.
+
+static func _daily_lifecycle(society: Dictionary, hour: int) -> void:
+    var day:=int(hour/24)+1
+    _life_defaults(society)
+    for name in society["agents"]:
+        var npc: Dictionary=society["agents"][name]
+        if not bool(npc.get("alive",true)): continue
+        if int(npc["health"])<=0:
+            _retire_person(society,npc,hour,"长期饥饿或疾病")
+            continue
+        var anchor:=int(npc.get("age_anchor_day",day))
+        if day-anchor>=360:
+            npc["age"]=int(npc["age"])+1
+            npc["age_anchor_day"]=anchor+360
+            if int(npc["age"])%10==0:
+                _milestone(society,npc,hour,"生辰","年满%d岁；如今以%s为生。" % [int(npc["age"]),str(npc["job"])])
+        if day%30==0 and int(npc["age"])>=67:
+            npc["health"]=maxi(0,int(npc["health"])-3)
+        if int(npc["age"])>=int(npc["life_span"]) or int(npc["health"])<=0:
+            _retire_person(society,npc,hour,"寿终" if int(npc["health"])>0 else "疾病")
+
 static func _zone(affiliation: String) -> String:
     return "村" if affiliation=="石桥村" else "城"
 
@@ -220,6 +352,7 @@ static func initial_state(absolute_minute: int) -> Dictionary:
         }
         idx+=1
     _prepare_social(society)
+    _life_defaults(society)
     return society
 
 static func valid(society: Dictionary) -> bool:
@@ -240,6 +373,11 @@ static func valid(society: Dictionary) -> bool:
         var npc: Dictionary=agent
         if int(npc.get("coins",-1))<0 or int(npc.get("rations",-1))<0: return false
         if int(npc.get("health",-1))<0 or int(npc.get("energy",-1))<0: return false
+        if npc.has("skills"):
+            for skill in npc["skills"].values():
+                if int(skill)<0: return false
+        if int(npc.get("age",0))<0: return false
+        if not bool(npc.get("alive",true)) and int(npc["coins"])!=0: return false
     for shipment in society.get("caravans",[]):
         if not shipment is Dictionary: return false
         if int(shipment.get("qty",0))<0: return false
@@ -373,6 +511,7 @@ static func _work_place(npc: Dictionary, hour: int) -> String:
 
 static func _hour_step(society: Dictionary, absolute_hour: int) -> void:
     _prepare_social(society)
+    _life_defaults(society)
     var hour:=absolute_hour%24
     _return_caravans(society,absolute_hour)
     _arrive_caravans(society,absolute_hour)
@@ -387,6 +526,9 @@ static func _hour_step(society: Dictionary, absolute_hour: int) -> void:
         var area:=_zone(str(person["origin"]))
         var region: Dictionary=society["regions"][area]
         var job:=str(person["job"])
+        if not bool(person.get("alive",true)):
+            person["last_hour"]=absolute_hour
+            continue
         if hour<6 or hour>=21:
             person["place"]=str(person["home"])
             person["activity"]="在家睡觉"
@@ -405,6 +547,7 @@ static func _hour_step(society: Dictionary, absolute_hour: int) -> void:
             person["energy"]=maxi(0,int(person["energy"])-1)
             if hour in [9,15] and int(person["energy"])>=6:
                 _produce(society,person,region,absolute_hour)
+                _skill_work(society,person,absolute_hour)
         elif hour in [19,20]:
             person["place"]=str(person["home"])
             person["activity"]="走亲访友" if hour==19 else "休闲学习"
@@ -447,6 +590,7 @@ static func _hour_step(society: Dictionary, absolute_hour: int) -> void:
         elif _caravan_position(society,person,absolute_hour):
             pass
     if hour==19: _family_support(society,absolute_hour)
+    if hour==20: _daily_lifecycle(society,absolute_hour)
     society["total_steps"]=int(society["total_steps"])+1
     # Keep a rolling 30-day summary; hourly events remain bounded.
     var days: Dictionary=society.get("daily",{})
@@ -472,7 +616,7 @@ static func near_people(society: Dictionary, place: String) -> Array[Dictionary]
     var result: Array[Dictionary]=[]
     for name in society.get("agents",{}):
         var npc: Dictionary=society["agents"][name]
-        if str(npc["place"])==place: result.append(npc.duplicate(true))
+        if bool(npc.get("alive",true)) and str(npc["place"])==place: result.append(npc.duplicate(true))
     return result
 
 static func report(society: Dictionary, current_place: String) -> String:
@@ -510,6 +654,9 @@ static func report(society: Dictionary, current_place: String) -> String:
         regional_price(society,region,"器")])
     lines.append("【村人互助】同户支援口粮%d次；跨区货物交割%d次" % [
         int(society.get("family_support_count",0)),int(society.get("caravan_trades",0))])
+    lines.append("【人生演化】职业转换%d次 · 真实死亡%d人 · 人物重要经历%d条（旧人有档案可查）" % [
+        int(society.get("career_changes",0)),int(society.get("deaths",0)),
+        society.get("chronicle",[]).size()])
     lines.append("【最近真实事件】")
     var events: Array=society.get("events",[])
     for e in events.slice(-6):
