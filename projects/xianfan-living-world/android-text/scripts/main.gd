@@ -324,7 +324,7 @@ func _enable_local_and_load() -> void:
     ai.configure("关闭",ai.endpoint,ai.model,"")
     var f:=FileAccess.open("user://xianfan_local_choice.txt",FileAccess.WRITE)
     if f!=null: f.store_string("1")
-    var model_status:=local_llm.choose_model(local_model_url.text if local_model_url!=null else local_llm.model_source)
+    var model_status: String = str(local_llm.choose_model(local_model_url.text if local_model_url!=null else str(local_llm.get("model_source"))))
     if not model_status.contains("模型地址已更新"): notice.text=model_status
     else: local_llm.load_model()
     _refresh()
