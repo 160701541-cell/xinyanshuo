@@ -56,7 +56,9 @@ static func _daily_place(npc: Dictionary, hour: int) -> String:
     return str(npc["work_place"])
 
 static func initialize(society: Dictionary, start_hour: int) -> bool:
-    if society.has("civic_agents"): return false
+    if society.has("civic_agents"):
+        if not society.has("civic_chronicle"): society["civic_chronicle"]=[]
+        return false
     var civilians: Dictionary={}
     var roles:=job_catalog()
     var idx:=0
@@ -99,6 +101,7 @@ static func initialize(society: Dictionary, start_hour: int) -> bool:
     society["civic_schema"]=SCHEMA
     society["civic_last_day"]=int(start_hour/24)+1
     society["civic_life_events"]=[]
+    society["civic_chronicle"]=[]
     society["civic_total_work"]=0
     society["civic_total_trade"]=0
     return true
@@ -119,6 +122,9 @@ static func _event(society: Dictionary, npc: Dictionary, day: int, detail: Strin
         "sector":str(npc["sector"]),"detail":detail})
     if events.size()>MAX_DAILY_HIGHLIGHTS: events.pop_front()
     society["civic_life_events"]=events
+    var history: Array=society.get("civic_chronicle",[])
+    history.append(events.back().duplicate(true))
+    society["civic_chronicle"]=history
 
 static func _produce(society: Dictionary, npc: Dictionary, day: int) -> bool:
     var region: Dictionary=society["regions"][_region(npc)]
