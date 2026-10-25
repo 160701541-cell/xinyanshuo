@@ -53,6 +53,7 @@ var stamina_bar: ProgressBar
 var modal_card: PanelContainer
 var modal_heading_strip: PanelContainer
 var reader_footer: Label
+var route_canvas: XianfanRouteCanvas
 var cancel_ai_button: Button
 var tab_buttons: HBoxContainer
 var actor_buttons: VBoxContainer
@@ -309,6 +310,10 @@ func _build() -> void:
     inside.add_child(paper_heading_strip)
     page_title=_label("眼前",21,JADE_INK)
     paper_heading_strip.add_child(page_title)
+    route_canvas=XianfanRouteCanvas.new()
+    route_canvas.visible=false
+    route_canvas.location_tapped.connect(_on_map_pin)
+    inside.add_child(route_canvas)
     scene_text=RichTextLabel.new()
     scene_text.bbcode_enabled=false
     scene_text.scroll_active=true
@@ -452,11 +457,23 @@ func _show_page(name: String) -> void:
     _close_modal()
     _change_tab(name)
 
+func _on_map_pin(place: String) -> void:
+    if place==str(game.data["place"]):
+        notice.text="你已经在这里。"
+        return
+    for road in XianfanTravelPost.available_routes(str(game.data["place"])):
+        if str(road["to"])==place:
+            _go_from_map(str(road["cmd"]),place)
+            return
+    notice.text="地点已标出，但当前没有可直接抵达的道路。请逐段前往，无法瞬间移动。"
+
 func _show_map() -> void:
     # A route schematic of locations the rule engine can actually reach.
     # Do not pass an unimplemented waypoint to the time/position engine.
     var now:=str(game.data["place"])
     page_title.text="地图 · 已知道路"
+    route_canvas.visible=true
+    route_canvas.set_position_place(now)
     var names: Array[String]=[]
     for item in XianfanTravelPost.PLACES:
         var row: Dictionary=item
@@ -1177,6 +1194,7 @@ func _refresh() -> void:
         tab.add_theme_color_override("font_color",PAPER)
         tab.add_theme_color_override("font_hover_color",PAPER)
     var suggestions: Array[String]=[]
+    route_canvas.visible=view=="地图"
     actor_buttons.visible=false
     feedback_copy.visible=view=="反馈"
     settings_button.visible=view=="设置"
