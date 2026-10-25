@@ -195,7 +195,7 @@ static func report(society: Dictionary, zone: String) -> String:
         if area==zone or (zone=="村" and area.contains("石桥村")) or (zone=="城" and area.contains("临安县")):
             money_sum+=int(actor.get("coins",0))
     var lines: Array[String]=[
-        "【%s · 经济统计】" % ("石桥村" if zone=="村" else "临安县城"),
+        "【%s · 已模拟经济样本】" % ("石桥村" if zone=="村" else "临安县城样本（非全县）"),
         "统计自游戏第%d日启用；只统计可追溯的规则产出，不回填过去。" %
             (int(int(society["economy_accounts"]["started_at_hour"])/24)+1),
         "【本日新增价值】实际产值%d文（固定基期），名义%d文" % [
@@ -221,7 +221,8 @@ static func report(society: Dictionary, zone: String) -> String:
     if int(year["gdp_real"])>0:
         lines.append("【样本经济价格比】当年名义/实际 ×100＝%.1f（仅模拟产出结构，不代表全县CPI）。" % (
             float(year["gdp_nominal"])*100.0/float(year["gdp_real"])))
-    lines.append("【口径警告】本表是已模拟活动的部分GDP，不是临安县的完整GDP。职业工资、救济、二手转卖、商队交割不重复计入生产；年份按360个游戏日。")
+    lines.append("【统计边界】当前仅有石桥村与临安县城两个样本经济区；县域其他乡镇、村落、村际物流及行业尚未建账，故绝对禁止将县城样本GDP作为临安县全县GDP，或据此断言村县经济规模相当。")
+    lines.append("【口径警告】本表是已模拟活动的部分增加值。职业工资、救济、二手转卖、商队交割不重复计入生产；年份按360个游戏日。")
     return "\n".join(lines)
 
 static func trend(society: Dictionary, zone: String, last_months: int=12) -> Array[Dictionary]:
