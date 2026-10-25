@@ -64,6 +64,8 @@ func _go() -> void:
         "Unverified root disallows fabricated breakthroughs regardless of accumulated experience")
     check(game.world_chronicle!=null and game.world_chronicle.number_of_facts()>0,
         "Sect production and practice must leave durable independently indexed fact records")
+    game.passive_time(720)
+    game.passive_time(720)
     check(int(immortal["total_food_bought"])>0,"Real food purchased from town")
     var shipments: Array=immortal.get("shipments",[])
     check(shipments.size()>0,"Goods must remain in transit during delivery")
