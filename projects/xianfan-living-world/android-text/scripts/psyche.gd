@@ -90,7 +90,7 @@ static func _event(society: Dictionary, actor: Dictionary, day: int, kind: Strin
     var line: String=detail
     # Confidential grievances and alleged crimes belong in private records,
     # not the county's world-readable public notice board.
-    if kind not in ["私下盗窃","失窃","越界纠缠","拒绝并求助"]:
+    if kind not in ["私下盗窃","失窃","越界纠缠","拒绝并求助","借债","借出","偿债","收回借款","债务逾期"]:
         XianfanCivicPopulation._event(society,actor,day,line)
     var memoir: Array=actor.get("biography",[])
     memoir.append({"day":day,"npc":str(actor["name"]),"category":kind,
