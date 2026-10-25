@@ -29,10 +29,10 @@ jobs:
           cp /root/.config/godot/editor_settings-4.4.tres "$HOME/.config/godot/editor_settings-4.4.tres"
           test -s "$HOME/.local/share/godot/export_templates/4.4.1.stable/android_debug.apk"
           test -d /usr/lib/jvm/java-17-openjdk-amd64
-      - name: Install Android target API 35 build tools
+      - name: Install Android 34 SDK tools required by Godot 4.4
         run: |
-          sdkmanager --install "platforms;android-35" "build-tools;35.0.0"
-          ls -ld "$ANDROID_HOME/platforms/android-35" "$ANDROID_HOME/build-tools/35.0.0"
+          sdkmanager --install "platforms;android-34" "build-tools;34.0.0"
+          ls -ld "$ANDROID_HOME/platforms/android-34" "$ANDROID_HOME/build-tools/34.0.0"
       - name: Validate GDScript and import project
         run: |
           cd projects/xianfan-living-world/android-text
