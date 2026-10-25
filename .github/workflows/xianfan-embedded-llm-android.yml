@@ -77,6 +77,12 @@ jobs:
           godot --headless --path . --script res://tests/test_ui.gd > /tmp/native-ui-tests.log 2>&1
           cat /tmp/native-ui-tests.log
           if grep -E '(SCRIPT ERROR|Parse Error|TEST FAILURE)' /tmp/native-ui-tests.log; then exit 1; fi
+      - name: Verify NPC continuity and answer grounding
+        run: |
+          cd projects/xianfan-living-world/android-text
+          godot --headless --path . --script res://tests/test_dialogue_context.gd > /tmp/npc-continuity.log 2>&1
+          cat /tmp/npc-continuity.log
+          if grep -E '(SCRIPT ERROR|Parse Error|NPC CONTEXT FAIL)' /tmp/npc-continuity.log; then exit 1; fi
       - name: Build APK with native local runtime
         run: |
           cd projects/xianfan-living-world/android-text
