@@ -155,7 +155,10 @@ func _archive_civic_memory() -> void:
     if memory_store==null or not data.has("society"): return
     var event_log: Array=data["society"].get("civic_chronicle",[])
     var cursor:=clampi(int(data.get("civic_chronicle_cursor",0)),0,event_log.size())
-    while cursor<event_log.size():
+    # Limit disk I/O per world tick. The canonical chronicle remains in the
+    # main save until its entries are mirrored into person-specific JSONL.
+    var processed:=0
+    while cursor<event_log.size() and processed<12:
         var event: Dictionary=event_log[cursor]
         var who:=str(event.get("npc",""))
         if not data["npc"].has(who):
@@ -172,11 +175,12 @@ func _archive_civic_memory() -> void:
             _note("【存储告警】社会人生事件等待下次写入："+who)
             break
         cursor+=1
+        processed+=1
     data["civic_chronicle_cursor"]=cursor
 
 func society_roster(sector: String="",page: int=0) -> Dictionary:
     if not data.has("society"): return {"size":0,"pages":1,"page":0,"entries":[]}
-    return XianfanCivicPopulation.roster(data["society"],sector,page,12)
+    return XianfanCivicPopulation.roster(data["society"],sector,page,6)
 
 func society_sectors() -> Array[String]:
     var choices: Array[String]=[]
