@@ -4,6 +4,7 @@ class_name XianfanLocalLLM
 # Model downloaded only after an explicit button press, never at startup.
 signal status_changed(message: String)
 signal answered(payload: Dictionary)
+signal streaming(kind: String, content: String)
 const MODEL := "hf://NobodyWho/Qwen_Qwen3-0.6B-GGUF/Qwen_Qwen3-0.6B-Q4_K_M.gguf"
 # Sources: official Qwen GGUF file names; sizes in decimal GB, rounded.
 # RAM figures are conservative guidance, not a guarantee of successful loading.
@@ -35,6 +36,7 @@ static func model_hint(index: int) -> String:
 var model_ready := false
 var loading := false
 var busy := false
+var generation_cancelled := false
 var current_chat: Variant
 var model_source := MODEL
 var active_name := "0.6B"
@@ -216,6 +218,24 @@ func build_messages(text: String, person: String, state: Dictionary) -> Array:
         messages.append({"role":"user","content":"当前地点："+scene+"；第%d日；玩家行动：" % current_day+cleaned_text.substr(0,300)})
     return messages
 
+# Render tokens incrementally without awaiting the same stream twice.
+# Never save partially generated text; only a completed response can be committed.
+func _collect_stream(stream: Variant, kind: String) -> Variant:
+    var full: String=""
+    var last_emit:=0
+    while true:
+        var token: Variant=await stream.next_token()
+        if token==null: break
+        if generation_cancelled: return null
+        full+=str(token)
+        var now:=Time.get_ticks_msec()
+        if now-last_emit>=180:
+            last_emit=now
+            streaming.emit(kind,full.substr(maxi(0,full.length()-900)))
+    if generation_cancelled: return null
+    streaming.emit(kind,full.substr(maxi(0,full.length()-900)))
+    return full
+
 # Story director proposes only observations and a named candidate plot beat.
 # World.record_ai_story() is the sole authorization point.
 func build_story_messages(player_action: String, resolved_event: String, facts: Dictionary) -> Array:
@@ -240,6 +260,7 @@ func tell_story(player_action: String, resolved_event: String, facts: Dictionary
         answered.emit({"ok":false,"kind":"story","error":"本地模型正在忙或尚未加载。"})
         return
     busy=true
+    generation_cancelled=false
     var messages:=build_story_messages(player_action,resolved_event,facts)
     var settings: Dictionary={"template_variables":{"enable_thinking":false}}
     if ClassDB.class_exists("NobodyWhoSamplerPresets"):
@@ -249,7 +270,7 @@ func tell_story(player_action: String, resolved_event: String, facts: Dictionary
         busy=false
         answered.emit({"ok":false,"kind":"story","error":"剧情生成上下文创建失败。"})
         return
-    var output: Variant=await stream.completed()
+    var output: Variant=await _collect_stream(stream,"story")
     busy=false
     if output==null:
         answered.emit({"ok":false,"kind":"story","error":"本地AI剧情生成失败。"})
@@ -271,6 +292,7 @@ func tell_story(player_action: String, resolved_event: String, facts: Dictionary
 
 func cancel_generation() -> void:
     if busy and current_chat!=null:
+        generation_cancelled=true
         current_chat.stop_generation()
 
 func _unusable_duplicate(reply: String, person: String, state: Dictionary, current_text: String) -> bool:
@@ -295,6 +317,7 @@ func talk(text: String, person: String, state: Dictionary) -> void:
         answered.emit({"ok":false,"error":"NPC不在眼前。先走到对方所在地，不能远程生成当面对话。"})
         return
     busy=true
+    generation_cancelled=false
     var messages := build_messages(text,person,state)
     # complete() replaces the native chat history, preventing NPC cross-talk and
     # keeping reliable turn-taking based on the persistent game save.
@@ -306,7 +329,7 @@ func talk(text: String, person: String, state: Dictionary) -> void:
         busy=false
         answered.emit({"ok":false,"error":"本地模型无法建立上下文，未写入人物记忆。"})
         return
-    var output: Variant=await stream.completed()
+    var output: Variant=await _collect_stream(stream,"dialogue" if not person.is_empty() else "action")
     if output==null:
         busy=false
         answered.emit({"ok":false,"error":"模型生成失败，未写入对话。"})
@@ -318,7 +341,7 @@ func talk(text: String, person: String, state: Dictionary) -> void:
         retry.append({"role":"user","content":"你刚刚原样重复了上一轮答复。请具体回答我现在追问的内容，并且不得声称自己换了地方。"})
         var second_stream=current_chat.complete(retry,{})
         if second_stream!=null:
-            var second: Variant=await second_stream.completed()
+            var second: Variant=await _collect_stream(second_stream,"dialogue")
             if second!=null:
                 reply=str(second).strip_edges()
     busy=false
