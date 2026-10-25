@@ -73,7 +73,7 @@ static func migrate(society: Dictionary) -> bool:
                 "employed":job in MORTAL_JOBS,"job":job}
             changed=true
         # An exterior visitor/aspirant still eats their OWN civilian rations.
-        if job in MORTAL_JOBS:
+        if job in MORTAL_JOBS and bool(roster[person_name].get("employed",false)):
             person["sect_boarding"]=true
             person["sect_contract"]=str(roster[person_name]["contract"])
             if not person.has("physiology"):
