@@ -102,7 +102,7 @@ func current_bytes(source: String) -> int:
 func is_pending(source: String) -> bool:
     if source_url(source).is_empty(): return false
     var m:=_manifest(source)
-    return not m.is_empty() and str(m.get("state","")) in ["downloading","paused","retrying","failed"] and current_bytes(source)>0
+    return not m.is_empty() and str(m.get("state","")) in ["downloading","paused","retrying","failed"]
 
 func _publish(source: String, bytes: int, expected: int, phase: String, error: String="") -> void:
     var now:=Time.get_ticks_msec()
@@ -362,6 +362,8 @@ func begin(source: String) -> void:
             return
         reason=str(result.get("reason","下载失败"))
         if reason=="paused": break
+        if reason in ["server_ignored_range","content_range_mismatch","invalid_https_url","unsafe_redirect"]:
+            break # Cannot safely append; preserve previous bytes and report.
         _save_manifest(source,int(result.get("total",-1)),"retrying")
         _publish(source,current_bytes(source),int(result.get("total",-1)),"网络重试",reason)
         for second in range(mini(15,_attempt*3)):
