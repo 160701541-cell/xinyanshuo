@@ -107,6 +107,12 @@ jobs:
           godot --headless --path . --script res://tests/test_npc_memory_store.gd > /tmp/npc-sidecar.log 2>&1 || { cat /tmp/npc-sidecar.log; exit 1; }
           cat /tmp/npc-sidecar.log
           if grep -E '(SCRIPT ERROR|Parse Error|NPC SIDECAR TEST FAILURE|MEMORY TESTS FAILED)' /tmp/npc-sidecar.log; then exit 1; fi
+      - name: Verify living world simulation, economic conservation and persistence
+        run: |
+          cd projects/xianfan-living-world/android-text
+          godot --headless --path . --script res://tests/test_autonomous_society.gd > /tmp/autonomous-world.log 2>&1 || { cat /tmp/autonomous-world.log; exit 1; }
+          cat /tmp/autonomous-world.log
+          if grep -E '(SCRIPT ERROR|Parse Error|SOCIETY TEST FAILURE|SOCIETY TESTS FAILED)' /tmp/autonomous-world.log; then exit 1; fi
       - name: Build APK with native local runtime
         run: |
           cd projects/xianfan-living-world/android-text
