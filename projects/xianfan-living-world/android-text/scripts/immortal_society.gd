@@ -120,6 +120,7 @@ static func _work(c: Dictionary, person: Dictionary, day: int) -> void:
     var wild: Dictionary=zone["wild"]
     var stock: Dictionary=zone["stock"]
     var job:=str(person["job"])
+    if int(person.get("health",100))<35: return
     var done:=false
     if job in ["灵植夫","行脚采药人","游历散修"]:
         if int(wild["灵草"])>=1:
@@ -190,6 +191,7 @@ static func _logistics(society: Dictionary, c: Dictionary, day: int) -> void:
             stock["口粮"]=int(stock["口粮"])-1
             c["total_meals"]=int(c["total_meals"])+1
         else:
+            person["wish"]="先求温饱，暂停耗力气的修行"
             person["health"]=maxi(0,int(person["health"])-2)
             person["energy"]=maxi(0,int(person["energy"])-8)
             if int(person["health"])<=0:
@@ -239,7 +241,7 @@ static func _practice(c: Dictionary, person: Dictionary, day: int) -> void:
     if not bool(person.get("root_verified",false)) or not bool(person.get("verified_manual",false)): return
     var root_name:=str(person.get("root",""))
     if not ROOT_SPEED.has(root_name) or int(person["realm_level"])>=13: return
-    if int(person["energy"])<30: return
+    if int(person["energy"])<30 or int(person.get("health",100))<35: return
     var zone: Dictionary=c["regions"][str(person["station"])]
     var gain: float=2.0*float(ROOT_SPEED[root_name])*(1.0+float(zone["qi_density"]))
     var load: float=float(person["meridian_load"])
@@ -290,7 +292,8 @@ static func snapshot(society: Dictionary, name: String, hour: int) -> Dictionary
     person["place"]=_place(record,hour)
     var hour_of_day:=hour%24
     person["activity"]="正在%s" % str(record["job"]) if hour_of_day>=7 and hour_of_day<=18 else "回到落脚处歇息"
-    person["mood"]="专注" if hour_of_day>=7 and hour_of_day<=18 else "平静"
+    person["mood"]="虚弱" if int(person.get("health",100))<60 else (
+        "专注" if hour_of_day>=7 and hour_of_day<=18 else "平静")
     return person
 
 static func report(society: Dictionary) -> String:
