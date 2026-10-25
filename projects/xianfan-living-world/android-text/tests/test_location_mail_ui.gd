@@ -48,7 +48,7 @@ func _run() -> void:
     ui._change_tab("剧情")
     assert_ok(not ui.scene_text.text.contains("候补官吏"),"story view hides county occupation census")
     ui._change_tab("地图")
-    assert_ok(ui.scene_text.text.contains("当前位置"),"map displays present location")
+    assert_ok(ui.scene_text.text.contains("当前所在"),"map displays present location")
     assert_ok(ui.actor_buttons.get_child_count()>2,"map exposes executable nearby routes")
     ui._change_tab("人物")
     assert_ok(ui.scene_text.text.contains("眼前"),"people view groups nearby")
