@@ -125,6 +125,12 @@ jobs:
           godot --headless --path . --script res://tests/test_socioeconomic_depth.gd > /tmp/social-depth.log 2>&1 || { cat /tmp/social-depth.log; exit 1; }
           cat /tmp/social-depth.log
           if grep -E '(SCRIPT ERROR|Parse Error|SOCIAL DEPTH TEST FAILURE|SOCIAL DEPTH TESTS FAILED)' /tmp/social-depth.log; then exit 1; fi
+      - name: Verify lifetime professions, aging, death, inheritance, NPC biographies
+        run: |
+          cd projects/xianfan-living-world/android-text
+          godot --headless --path . --script res://tests/test_npc_life_cycle.gd > /tmp/life-test.log 2>&1 || { cat /tmp/life-test.log; exit 1; }
+          cat /tmp/life-test.log
+          if grep -E '(SCRIPT ERROR|Parse Error|LIFECYCLE TEST FAILURE|NPC LIFE CYCLE TESTS FAILED)' /tmp/life-test.log; then exit 1; fi
       - name: Build APK with native local runtime
         run: |
           cd projects/xianfan-living-world/android-text
