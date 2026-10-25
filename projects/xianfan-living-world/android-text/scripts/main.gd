@@ -510,6 +510,16 @@ func _go_from_map(command_text: String, destination: String) -> void:
     if str(game.data["place"])==destination:
         _change_tab("地图")
 
+func _do_market_action(command_text: String) -> void:
+    var before:=str(game.data["place"])
+    var outcome:=game.act(command_text)
+    notice.text=outcome.substr(0,240)
+    _change_tab("市集")
+    if not outcome.begins_with("暂不支持") and before==str(game.data["place"]):
+        # Marketplace is a persistent workspace; a purchase should not throw
+        # the player back to a long story or global debug census page.
+        scene_text.text=game.local_market_summary()+"\n\n【刚刚成交】\n"+outcome.substr(0,360)
+
 func _open_contact_list() -> void:
     var contacts: Array[Dictionary]=game.known_contacts()
     var lines: Array[String]=["只列认识的人，不把县城全部居民当作你的熟人。远方交谈需要实际会面，或付费寄信。"]
@@ -1247,9 +1257,9 @@ func _refresh() -> void:
             actor_buttons.visible=true
             _wipe(actor_buttons)
             if str(game.data["place"]) in ["石桥村·街口","临安县城·东市"]:
-                actor_buttons.add_child(_button("买一份粗粮",func(): _submit("买粗粮",false),17))
-                actor_buttons.add_child(_button("卖一条小河鱼",func(): _submit("卖鱼",false),17))
-                actor_buttons.add_child(_button("找一小时零工",func(): _submit("做零工",false),17))
+                actor_buttons.add_child(_button("买一份粗粮",func(): _do_market_action("买粗粮"),17))
+                actor_buttons.add_child(_button("卖一条小河鱼",func(): _do_market_action("卖鱼"),17))
+                actor_buttons.add_child(_button("找一小时零工",func(): _do_market_action("做零工"),17))
             else:
                 actor_buttons.add_child(_button("打开地图，前往真正的集市",func(): _show_page("地图"),17))
         "书信":
