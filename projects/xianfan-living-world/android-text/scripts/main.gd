@@ -1321,6 +1321,20 @@ func _refresh() -> void:
             _wipe(actor_buttons)
             actor_buttons.add_child(_button("查看本地区社会经济详情",func(): _open_economy_region(region),16))
             actor_buttons.add_child(_button("浏览行业与社会身份（按页）",func(): _open_society_roster(),16))
+        "仙门":
+            page_title.text="仙门 · 实际修炼与灵材生产"
+            scene_text.text=game.immortal_status()
+            actor_buttons.visible=true
+            _wipe(actor_buttons)
+            if str(game.data.get("place",""))=="青云山门·山门外":
+                for person in game.nearby_people(40):
+                    if not bool(person.get("cultivation_member",false)): continue
+                    var who:=str(person["name"])
+                    actor_buttons.add_child(_button("%s · %s · %s" % [
+                        who,str(person.get("realm","修行预备")),
+                        str(person.get("job",""))],func(): _open_npc(who),16))
+            else:
+                actor_buttons.add_child(_button("从地图查看前往青云山门的道路",func(): _show_page("地图"),16))
         "经济":
             page_title.text="经济账本 · GDP / 财政 / 物价"
             var current_zone: String="村" if str(game.data["place"]).begins_with("石桥村") else "城"
@@ -1334,7 +1348,7 @@ func _refresh() -> void:
             scene_text.text="主界面只保留经常使用的页面。以下资料和工具按需打开，不再挤在游历剧情中。"
             actor_buttons.visible=true
             _wipe(actor_buttons)
-            for name in ["书信","世界","经济","设置","反馈"]:
+            for name in ["书信","仙门","世界","经济","设置","反馈"]:
                 var target_page:=str(name)
                 actor_buttons.add_child(_button("打开 · "+target_page,func(): _show_page(target_page),17))
         "反馈":
