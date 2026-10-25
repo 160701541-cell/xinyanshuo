@@ -1,0 +1,27 @@
+{
+  "version": "spirit-stone-1.0.0",
+  "declared_before_roll": true,
+  "exchange": { "low_grade_stone_copper": 200, "note": "一块下品灵石折二百文；凡人用铜钱，修士论灵石，药市两个都收" },
+  "shops": {
+    "lingshan_sutra_stall": {
+      "id": "SHOP-LINGSHAN-SUTRA-01",
+      "name": "灵山药市·散修货栈",
+      "location_id": "lingshan",
+      "goods": [
+        { "id": "qi_primer_genuine", "name": "《引气初篇》（正本，可验）", "price_copper": 200,
+          "note": "与市面上的拼凑残本不同，页数齐全、有收功章" },
+        { "id": "xiaozhoutian_jue", "name": "《小周天引气诀》", "price_copper": 400,
+          "note": "比初篇完整，讲周天运转，散修常用" },
+        { "id": "broken_fragment_lot", "name": "残篇一束（三五种，来源杂）", "price_copper": 80,
+          "note": "真假难辨，买回来多半要自己比对" }
+      ],
+      "appraisal": { "name": "验册", "price_copper": 5,
+        "note": "货栈门口有替人验册的老头，五文钱看一本，看得比买家自己准" }
+    }
+  },
+  "rules": [
+    "功法只能买、只能换、只能有人教，不能凭空得到",
+    "残篇不保证可用，买前验册另收费",
+    "凡人月钱三十五到九十文，一块灵石对凡人是两三个月的工钱"
+  ]
+}

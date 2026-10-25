@@ -1,8 +1,8 @@
 {
   "schema": 1,
   "campaign_id": "xianfan-canglan-text-20261024",
-  "turns_completed": 114,
-  "time": "承平三年 · 第31日 · 06:00",
+  "turns_completed": 149,
+  "time": "承平三年 · 第47日 · 06:00",
   "location": "石桥村·钱家院落",
   "player": {
     "id": "CFPLAYER00001",
@@ -12,13 +12,13 @@
     "realm": "凡人（未修行）",
     "root": "四灵根",
     "hp": 100,
-    "stamina": 66.8,
-    "copper": 15
+    "stamina": 100,
+    "copper": 95
   },
   "family": {
     "id": "CFFAM00001",
     "cash": 22,
-    "grain_dou": 49,
+    "grain_dou": 46,
     "people": [
       [
         "CFNPC00001",
@@ -39,16 +39,16 @@
         "手足"
       ]
     ],
-    "grain_remainder_millidou": 356
+    "grain_remainder_millidou": 848
   },
-  "last_event": "EV000116",
-  "last_event_hash": "83011ef5e11cff54f2e6440a7701c49ceadc972c8dea82e4d52b1b8a607b70ab",
-  "full_state_sha256": "563d0bb55a4615c7ff94065b674eae8f4d815b1cd44a077fd44d5037d177777e",
+  "last_event": "EV000151",
+  "last_event_hash": "dfbb77d5147b62b3ae5fd53906b9fecf57760ba290103af0367b30ae595f4a00",
+  "full_state_sha256": "3e13f1f7fce40fc0b81eb2134d07d03fe5dab435d775d1c5bef666bc40e5499d",
   "roots_hidden": false,
   "complete_source_event_ledger_synced": true,
   "full_state_parts_verified": true,
-  "next_checkpoint_turn": 120,
-  "last_action": "sleep",
+  "next_checkpoint_turn": 150,
+  "last_action": "supper_and_sleep",
   "trap_status": "checked empty 16:18",
   "inventory_added": {
     "fishing_line": 1,
@@ -60,9 +60,9 @@
   "sister_errand": "第2日送饭失约已当面问清；此后她帮着看下游那只笼子；出发事宜她只被允许送到村口",
   "second_basket_status": "carried; user wishes deployment, requires river visit",
   "manual_status": "手里那本《引气初篇》已判为伪本，不再照练；灵根已测，缺的是真正的入门功法",
-  "sync_status": "SYNCED",
+  "sync_status": "PENDING_GITHUB",
   "sync_target": "160701541-cell/xinyanshuo@xianfan/independent-living-county-v0.1",
-  "last_synced_event": "EV000116",
+  "last_synced_event": "EV000105",
   "journey_status": {
     "goal": "去青云山门·测灵台测灵根",
     "stage": "已完成：第29日出发、当日测出结果、第30日回到家",
@@ -85,5 +85,40 @@
     "fee_copper": 30,
     "method": "从 world_seed 重新抽签，与存档 root_commitment_sha256 逐位比对一致后才写入",
     "one_time_only": true
+  },
+  "forage_status": {
+    "discovered_sites": [
+      "SH-SLOPE-N-01",
+      "SH-RIVER-BEND-01",
+      "SH-WOODS-E-01"
+    ],
+    "learned_from": "CFNPC00002",
+    "day": 46,
+    "met_buyer": "CFNPC00010",
+    "known_prices": {
+      "qi_primer_genuine_copper": 200,
+      "appraisal_copper": 5,
+      "low_grade_stone_copper": 200
+    },
+    "days_worked": 16,
+    "sites": [
+      "SH-SLOPE-N-01",
+      "SH-RIVER-BEND-01",
+      "SH-WOODS-E-01"
+    ],
+    "earned": {
+      "total_copper": 80,
+      "from_linan_stall": 20,
+      "from_itinerant_buyer": 60
+    },
+    "unsold_stock": "车前草×2、柴胡×3、地榆×10、艾草×5、蒲公英×8",
+    "conclusion": "村外三处只出凡草，灵草十不存一；县城药材摊一天收不下多少，灵草还被压到六折"
+  },
+  "money_status": {
+    "held": 95,
+    "household_cash": 22,
+    "qi_primer_price_copper": 200,
+    "gap_to_qi_primer": 105,
+    "note": "正本《引气初篇》二百文一块灵石，散修货栈还有残篇八十文（真假难辨）"
   }
 }

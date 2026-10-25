@@ -6,11 +6,11 @@
   "world_seed": "xianfan-canglan-text-20261024-v1",
   "time": {
     "regnal_year": 3,
-    "day": 31,
+    "day": 47,
     "hour": 6,
     "minute": 0,
-    "display": "承平三年 · 第31日 · 06:00",
-    "weather": "晴"
+    "display": "承平三年 · 第47日 · 06:00",
+    "weather": "阴"
   },
   "player": {
     "id": "CFPLAYER00001",
@@ -26,9 +26,9 @@
     "root_commitment_sha256": "897ffd3bec4b0c505b934d584835158fecaf6ddea61c5d70df6b8160db914dd7",
     "hp": 100,
     "max_hp": 100,
-    "stamina": 66.8,
+    "stamina": 100,
     "max_stamina": 100,
-    "money": 15,
+    "money": 95,
     "money_unit": "文",
     "exp": 0,
     "family_id": "CFFAM00001",
@@ -129,10 +129,74 @@
       "equipped": false,
       "category": "食物",
       "source": "第29日出门前母亲郑舟清烙的"
+    },
+    {
+      "id": "fresh_plantain",
+      "name": "车前草",
+      "quantity": 2,
+      "equipped": false,
+      "category": "药材",
+      "source": "自己在村外采的"
+    },
+    {
+      "id": "chaihu",
+      "name": "柴胡",
+      "quantity": 3,
+      "equipped": false,
+      "category": "药材",
+      "source": "自己在村外采的"
+    },
+    {
+      "id": "diyu",
+      "name": "地榆",
+      "quantity": 10,
+      "equipped": false,
+      "category": "药材",
+      "source": "自己在村外采的"
+    },
+    {
+      "id": "mugwort",
+      "name": "艾草",
+      "quantity": 5,
+      "equipped": false,
+      "category": "药材",
+      "source": "自己在村外采的"
+    },
+    {
+      "id": "dandelion",
+      "name": "蒲公英",
+      "quantity": 8,
+      "equipped": false,
+      "category": "药材",
+      "source": "自己在村外采的"
+    },
+    {
+      "id": "huiqi_grass",
+      "name": "回气草",
+      "quantity": 0,
+      "equipped": false,
+      "category": "药材",
+      "source": "自己在村外采的"
+    },
+    {
+      "id": "turing_shen",
+      "name": "土灵参",
+      "quantity": 0,
+      "equipped": false,
+      "category": "药材",
+      "source": "自己在村外采的"
+    },
+    {
+      "id": "ninglu_flower",
+      "name": "凝露花",
+      "quantity": 0,
+      "equipped": false,
+      "category": "药材",
+      "source": "自己在村外采的"
     }
   ],
   "current_location": "石桥村·钱家院落",
-  "last_event_id": "EV000116",
+  "last_event_id": "EV000151",
   "reference": {
     "origin": "GitHub 160701541-cell/xinyanshuo",
     "xianfan_branch": "xianfan/independent-living-county-v0.1",
@@ -242,6 +306,16 @@
       "location_id": "qingyun",
       "health": "正常",
       "alive": true
+    },
+    {
+      "id": "CFNPC00010",
+      "name": "曹景言",
+      "relation": "跑灵山药市的收药散修",
+      "sex": "男",
+      "age": 36,
+      "location_id": "linan",
+      "health": "正常",
+      "alive": true
     }
   ],
   "family": {
@@ -250,7 +324,7 @@
     "background": "自耕农家庭",
     "size": 4,
     "cash": 22,
-    "grain_dou": 49,
+    "grain_dou": 46,
     "members": [
       {
         "id": "CFNPC00001",
@@ -284,7 +358,7 @@
       }
     ],
     "note": "家中库存并非玩家随身所有；不得未经交易或亲属许可扣取。",
-    "grain_remainder_millidou": 356
+    "grain_remainder_millidou": 848
   },
   "initial_rolls_public": {
     "random_key": "xianfan-canglan-text-20261024-v1|玩家:心魇说|性别:男|年龄:16|开局序号:1",

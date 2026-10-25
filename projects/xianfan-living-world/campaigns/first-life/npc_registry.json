@@ -162,11 +162,18 @@
           "certainty": "known_fact",
           "text": "儿子回来先问钱花完了没有；听说剩十五文，没再说话",
           "location": "石桥村·钱家院落"
+        },
+        {
+          "event_id": "EV000117",
+          "tag": "told_where_the_herbs_grow",
+          "certainty": "known_fact",
+          "text": "把北坡、溪湾、东头林子三处采药去处指给儿子，并说好药都长在人家圈起来的地里",
+          "location": "石桥村·钱家院落"
         }
       ],
       "relationships": {},
       "last_known_location": "石桥村钱家院落（推演）",
-      "last_updated_event": "EV000115",
+      "last_updated_event": "EV000117",
       "base_temperament": {
         "version": "npc-base-temperament-v1",
         "source": "deterministic_world_seed",
@@ -309,11 +316,18 @@
           "certainty": "known_fact",
           "text": "头一句问\"四样色，是不是比别人多\"",
           "location": "石桥村·钱家院落"
+        },
+        {
+          "event_id": "EV000117",
+          "tag": "asked_to_come_along",
+          "certainty": "known_fact",
+          "text": "说认草比哥哥快，要跟去采药，被\"爹说过\"挡回",
+          "location": "石桥村·钱家院落"
         }
       ],
       "relationships": {},
       "last_known_location": "石桥村·村外荒沟",
-      "last_updated_event": "EV000115",
+      "last_updated_event": "EV000117",
       "base_temperament": {
         "version": "npc-base-temperament-v1",
         "source": "deterministic_world_seed",
@@ -448,6 +462,58 @@
       },
       "last_known_location": "qingyun",
       "last_updated_event": "EV000110"
+    },
+    "CFNPC00010": {
+      "id": "CFNPC00010",
+      "campaign_id": "xianfan-canglan-text-20261024",
+      "name": "曹景言",
+      "sex": "男",
+      "age": 36,
+      "residence": "linan",
+      "roles": [
+        "跑灵山药市的收药散修"
+      ],
+      "base_temperament": {
+        "version": "npc-base-temperament-v1",
+        "source": "deterministic_world_seed",
+        "scores": {
+          "curiosity": 43,
+          "diligence": 55,
+          "caution": 53,
+          "sociability": 59,
+          "cooperation": 40,
+          "stress_tolerance": 61
+        },
+        "warning": "Generated base propensity, not a claim of player-observed behavior or guaranteed action"
+      },
+      "public_personality": [
+        {
+          "tag": "prices_by_the_plant",
+          "kind": "observed",
+          "description": "开口先说价钱和去处，不说客套话",
+          "basis_event": "EV000149"
+        },
+        {
+          "tag": "warns_about_boundaries",
+          "kind": "observed",
+          "description": "主动提醒灵田有主、偷采重罚",
+          "basis_event": "EV000149"
+        }
+      ],
+      "life_events": [
+        {
+          "event_id": "EV000149",
+          "tag": "bought_three_spirit_herbs",
+          "certainty": "known_fact",
+          "text": "按八五折收下三株灵草，付六十文，并说明县城摊子不识灵草、灵山按株论价多两成",
+          "location": "临安县城·西市"
+        }
+      ],
+      "relationships": {
+        "CFPLAYER00001": "第一次打交道的卖药人"
+      },
+      "last_known_location": "linan",
+      "last_updated_event": "EV000149"
     }
   }
 }

@@ -1,0 +1,46 @@
+{
+  "version": "herb-forage-1.0.0",
+  "declared_before_roll": true,
+  "note": "散修采药规则。石桥村周边属 xiancheng 灵气区（0.18），没有成片灵田，只有零散低阶草木；真正的灵草地另有归属。本文件在任何采集骰之前写定。",
+  "sites": [
+    { "id": "SH-SLOPE-N-01", "name": "村北乱石坡", "site_id": "shiqiao-outskirts-v1",
+      "walk_minutes": 12, "search_minutes": 35, "search_stamina": 5,
+      "terrain_note": "石头缝里长草，羊也来啃", "per_day": 1 },
+    { "id": "SH-RIVER-BEND-01", "name": "溪湾湿滩", "site_id": "shiqiao-outskirts-v1",
+      "walk_minutes": 13, "search_minutes": 35, "search_stamina": 5,
+      "terrain_note": "水退下去的地方，泥是软的", "per_day": 1 },
+    { "id": "SH-WOODS-E-01", "name": "东边杂木林", "site_id": "shiqiao-outskirts-v1",
+      "walk_minutes": 17, "search_minutes": 35, "search_stamina": 5,
+      "terrain_note": "树密，日头照不进来", "per_day": 1 }
+  ],
+  "yield_table_per_site_day": [
+    { "band": "0-599", "weight": 600, "result": "mortal", "count_roll": [1, 2] },
+    { "band": "600-899", "weight": 300, "result": "none" },
+    { "band": "900-989", "weight": 90, "result": "spirit", "count_roll": [1, 1] },
+    { "band": "990-999", "weight": 10, "result": "rare", "count_roll": [1, 1] }
+  ],
+  "herbs": {
+    "mortal": [
+      { "id": "fresh_plantain", "name": "车前草", "price_copper": 2 },
+      { "id": "chaihu", "name": "柴胡", "price_copper": 3 },
+      { "id": "dandelion", "name": "蒲公英", "price_copper": 2 },
+      { "id": "diyu", "name": "地榆", "price_copper": 3 },
+      { "id": "mugwort", "name": "艾草", "price_copper": 2 }
+    ],
+    "spirit": [
+      { "id": "huiqi_grass", "name": "回气草", "price_copper": 18 },
+      { "id": "ninglu_flower", "name": "凝露花", "price_copper": 24 },
+      { "id": "turing_shen", "name": "土灵参", "price_copper": 30 }
+    ],
+    "rare": [
+      { "id": "chixu_grass", "name": "赤须草", "price_copper": 90 }
+    ]
+  },
+  "why_here": "低阶灵草在凡地也会零星生出，只是十不存一；要成片采，得去灵山、青云山外的灵田边角，那些地方有主。",
+  "market": {
+    "linan_herb_stall": { "buys": ["mortal", "spirit", "rare"], "spirit_price_factor": 0.6,
+      "note": "县城药材摊不识灵气，灵草按凡草的路子压价" },
+    "lingshan_market": { "buys": ["mortal", "spirit", "rare"], "spirit_price_factor": 1.0,
+      "note": "灵山药市按株论价" }
+  }
+}
