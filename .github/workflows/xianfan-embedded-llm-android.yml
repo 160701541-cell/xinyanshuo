@@ -149,6 +149,12 @@ jobs:
           godot --headless --path . --script res://tests/test_download_integrity.gd > /tmp/download-integrity.log 2>&1 || { cat /tmp/download-integrity.log; exit 1; }
           cat /tmp/download-integrity.log
           if grep -E '(SCRIPT ERROR|Parse Error|DOWNLOAD INTEGRITY FAILURE|INTEGRITY TESTS FAILED)' /tmp/download-integrity.log; then exit 1; fi
+      - name: Audit GDP value-added production and periodized economic accounts
+        run: |
+          cd projects/xianfan-living-world/android-text
+          godot --headless --path . --script res://tests/test_economic_accounts.gd > /tmp/gdp-economy.log 2>&1 || { cat /tmp/gdp-economy.log; exit 1; }
+          cat /tmp/gdp-economy.log
+          if grep -E '(SCRIPT ERROR|Parse Error|GDP ACCOUNT TEST FAILURE|GDP ACCOUNT TESTS FAILED)' /tmp/gdp-economy.log; then exit 1; fi
       - name: Build APK with native local runtime
         run: |
           cd projects/xianfan-living-world/android-text
