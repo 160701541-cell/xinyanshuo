@@ -1,0 +1,70 @@
+extends SceneTree
+var failures: Array[String]=[]
+func _initialize() -> void:
+    call_deferred("_run")
+func assert_ok(ok: bool, message: String) -> void:
+    if not ok:
+        failures.append(message)
+        push_error("LOCATION MAIL UI FAILURE: "+message)
+
+func _run() -> void:
+    var game:=XianfanWorld.new()
+    game.new_game()
+    assert_ok(XianfanTravelPost.available_routes("石桥村·家中").size()>=3,"home routes are real")
+    assert_ok(XianfanTravelPost.available_routes("青云山门·山门外").is_empty(),"undocumented return route is not invented")
+    var quote: Dictionary=XianfanTravelPost.postage("临安县城·东市","石桥村·家中")
+    assert_ok(quote.get("ok",false),"cross-town letter transport possible")
+    assert_ok(int(quote["fee"])>2 and int(quote["minutes"])>=230,"different district takes more money and time")
+    var money_before: int=int(game.data["money"])
+    var public_before: int=int(game.data["society"]["regions"]["村"]["treasury"])
+    var rejection: Dictionary=game.send_letter("张三","你好")
+    assert_ok(not rejection.get("ok",false),"cannot post to an unknown arbitrary person")
+    assert_ok(int(game.data["money"])==money_before,"failed letter does not take money")
+    var sister_quote: Dictionary=game.postage_quote("孙成明")
+    assert_ok(int(sister_quote["fee"])==2,"same village mail lower charge")
+    var sent: Dictionary=game.send_letter("孙成明","下次我们一起到溪边看晚霞，好吗？")
+    assert_ok(sent.get("ok",false),"letter to known family accepted")
+    assert_ok(int(game.data["money"])==money_before-2,"postage debited from real player purse")
+    assert_ok(int(game.data["society"]["regions"]["村"]["treasury"])==public_before+2,"postage credited into actual region treasury")
+    assert_ok(str(game.data["letters"][0]["status"])=="在途","no instant text message")
+    assert_ok(game.data["dialogue_log"].is_empty(),"post never impersonates local speech")
+    game.passive_time(500)
+    assert_ok(str(game.data["letters"][0]["status"])=="已送达","letter delivered only after simulated time")
+    assert_ok(game.letters_report().contains("已送达"),"post appears in independent ledger")
+    game.save()
+    var resumed:=XianfanWorld.new()
+    assert_ok(resumed.data.get("letters",[]).size()==1,"mail survives app restart")
+    assert_ok(str(resumed.data["letters"][0]["status"])=="已送达","delivery status survives restart")
+    assert_ok(not resumed.at_same_place("钱然泽"),"father in field is not at home")
+    assert_ok(resumed.at_same_place("孙成明"),"sister currently shares location with player")
+    var nearby:=resumed.nearby_people(999)
+    for n in nearby:
+        assert_ok(str(n["place"])==str(resumed.data["place"]),"nearby list never leaks distant citizen")
+    var ui=load("res://main.tscn").instantiate()
+    root.add_child(ui)
+    ui.game.new_game()
+    ui._refresh()
+    assert_ok(ui.tab_buttons.get_child_count()==6,"six task-oriented tabs instead of seven crowded debug tabs")
+    ui._change_tab("剧情")
+    assert_ok(not ui.scene_text.text.contains("候补官吏"),"story view hides county occupation census")
+    ui._change_tab("地图")
+    assert_ok(ui.scene_text.text.contains("当前位置"),"map displays present location")
+    assert_ok(ui.actor_buttons.get_child_count()>2,"map exposes executable nearby routes")
+    ui._change_tab("人物")
+    assert_ok(ui.scene_text.text.contains("眼前"),"people view groups nearby")
+    ui._open_npc("钱然泽")
+    var buttons: Array[String]=[]
+    for child in ui.modal_actions.get_children():
+        if child is Button: buttons.append(str(child.text))
+    assert_ok(not buttons.has("当面交谈"),"absent father cannot be contacted face-to-face")
+    var mail_present:=false
+    for label in buttons:
+        if label.contains("写信"): mail_present=true
+    assert_ok(mail_present,"remote acquaintance offers paid letter")
+    ui._close_modal()
+    ui._change_tab("市集")
+    assert_ok(ui.scene_text.text.contains("不是市集"),"home cannot act as distant market")
+    ui._change_tab("更多")
+    assert_ok(ui.scene_text.text.contains("按需打开"),"secondary tools hidden from the story")
+    print("XIANFAN LOCATION MAIL UI PASS" if failures.is_empty() else "XIANFAN LOCATION MAIL UI FAILED")
+    quit(0 if failures.is_empty() else 1)
