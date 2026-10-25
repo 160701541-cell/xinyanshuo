@@ -21,6 +21,14 @@ jobs:
           godot --version
           echo "ANDROID_HOME=$ANDROID_HOME"
           ls -lah /root/.local/share/godot/export_templates || true
+      - name: Restore Godot Android toolchain paths inside container
+        run: |
+          mkdir -p "$HOME/.local/share/godot/export_templates/4.4.1.stable"
+          cp -a /root/.local/share/godot/export_templates/4.4.1.stable/. "$HOME/.local/share/godot/export_templates/4.4.1.stable/"
+          mkdir -p "$HOME/.config/godot"
+          printf '[gd_resource type="EditorSettings" format=3]\\n[resource]\\nexport/android/java_sdk_path = "/usr/lib/jvm/java-17-openjdk-amd64"\\nexport/android/android_sdk_path = "/usr/lib/android-sdk"\\nexport/android/debug_keystore = "/root/debug.keystore"\\nexport/android/debug_keystore_user = "androiddebugkey"\\nexport/android/debug_keystore_pass = "android"\\n' > "$HOME/.config/godot/editor_settings-4.4.tres"
+          test -s "$HOME/.local/share/godot/export_templates/4.4.1.stable/android_debug.apk"
+          test -d /usr/lib/jvm/java-17-openjdk-amd64
       - name: Validate GDScript and import project
         run: |
           cd projects/xianfan-living-world/android-text
