@@ -167,6 +167,12 @@ jobs:
           godot --headless --path . --script res://tests/test_narrative_db.gd > /tmp/narrative-db.log 2>&1 || { cat /tmp/narrative-db.log; exit 1; }
           cat /tmp/narrative-db.log
           if grep -E '(SCRIPT ERROR|Parse Error|NARRATIVE DB FAILURE)' /tmp/narrative-db.log; then exit 1; fi
+      - name: Verify independent cultivator occupations, breakthroughs, herb ecology and player save
+        run: |
+          cd projects/xianfan-living-world/android-text
+          godot --headless --path . --script res://tests/test_immortal_society.gd > /tmp/immortal-world.log 2>&1 || { cat /tmp/immortal-world.log; exit 1; }
+          cat /tmp/immortal-world.log
+          if grep -E '(SCRIPT ERROR|Parse Error|IMMORTAL SOCIETY FAILURE)' /tmp/immortal-world.log; then exit 1; fi
       - name: Build APK with native local runtime
         run: |
           cd projects/xianfan-living-world/android-text
