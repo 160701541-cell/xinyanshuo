@@ -43,12 +43,18 @@ func talk(text: String, person: String, state: Dictionary) -> void:
         answered.emit({"ok":false,"error":"未下载并加载本地模型。请先在设置里点击下载。"})
         return
     var npc: Dictionary=state.get("npc",{}).get(person,{})
-    if npc.is_empty() or str(npc.get("place",""))!=str(state.get("place","")):
+    if not person.is_empty() and (npc.is_empty() or str(npc.get("place",""))!=str(state.get("place",""))):
         answered.emit({"ok":false,"error":"NPC不在身边，不能进行当面对话。"})
         return
     busy=true
-    var prompt := "你正扮演古风生活游戏里的%s。现在正%s，情绪%s。" % [person,str(npc.get("activity","忙碌")),str(npc.get("mood","平静"))]
-    prompt += "\n只能扮演NPC，回复简短自然的中文口语。不能凭空修改游戏地点、物品、亲密值、灵根或修为。\n玩家刚才说："+text.substr(0,250)+"\nNPC回应："
+    var prompt := ""
+    if not person.is_empty():
+        prompt = "你正扮演古风生活游戏里的%s。现在正%s，情绪%s。" % [person,str(npc.get("activity","忙碌")),str(npc.get("mood","平静"))]
+        prompt += "\n只能扮演NPC，回复简短自然的中文口语。不能凭空修改游戏地点、物品、亲密值、灵根或修为。\n玩家刚才说："+text.substr(0,250)+"\nNPC回应："
+    else:
+        prompt="你是古风文字游戏的行为解释器。只回复一个JSON对象，形如{\"kind\":\"action\",\"command\":\"去林缘\"}，无法执行时回复{\"kind\":\"clarify\",\"message\":\"尚未开发的动作\"}。"
+        prompt+="\n不能创造钱、装备、人物属性或者突破。已支持行动：查看四周、去林缘、捡枯枝、采车前草、钓鱼、出发去青云、等30分钟、回家、打扫院子、睡觉。"
+        prompt+="\n地点："+str(state.get("place","未知"))+" 玩家要求："+text.substr(0,250)+"\nJSON："
     var stream=current_chat.ask(prompt)
     var result=await stream.completed()
     busy=false
@@ -56,4 +62,20 @@ func talk(text: String, person: String, state: Dictionary) -> void:
     if result==null or reply.is_empty():
         answered.emit({"ok":false,"error":"原生本地模型没有返回可用回复。"})
         return
-    answered.emit({"ok":true,"kind":"dialogue","npc":person,"reply":reply.substr(0,300),"raw":text})
+    if not person.is_empty():
+        answered.emit({"ok":true,"kind":"dialogue","npc":person,"reply":reply.substr(0,300),"raw":text})
+        return
+    var a:=reply.find("{")
+    var b:=reply.rfind("}")
+    if a<0 or b<a:
+        answered.emit({"ok":true,"kind":"clarify","message":"本地模型无法转换这项行动；请改用具体文字指令。","raw":text})
+        return
+    var parsed: Variant=JSON.parse_string(reply.substr(a,b-a+1))
+    if not (parsed is Dictionary):
+        answered.emit({"ok":true,"kind":"clarify","message":"动作解析格式不正确，请换种说法。","raw":text})
+        return
+    var result: Dictionary=parsed
+    if str(result.get("kind",""))=="action":
+        answered.emit({"ok":true,"kind":"action","command":str(result.get("command","")).substr(0,200),"raw":text})
+    else:
+        answered.emit({"ok":true,"kind":"clarify","message":str(result.get("message","无法解析动作")).substr(0,200),"raw":text})
