@@ -94,10 +94,23 @@ static func _wild_grow(society: Dictionary, absolute_hour: int) -> void:
         var wild: Dictionary=region["wild"]
         var cap: Dictionary=region["cap"]
         for key in ["肥力","木林","野鱼","野药"]:
-            var growth:=2 if key=="肥力" else 1
+            var growth:=70 if region_key=="村" else 32
+            if key=="木林": growth=4
+            elif key=="野鱼": growth=4
+            elif key=="野药": growth=3
             wild[key]=mini(int(cap[key]),int(wild[key])+growth)
+        # Existing unnamed farming households are simulated as one cooperative
+        # batch to balance the named citizens, NOT per-person 18k population.
+        var collective:=40 if region_key=="村" else 22
+        var stores: Dictionary=region["stock"]
+        var capacity:=460 if region_key=="村" else 860
+        var harvest:=mini(collective,mini(int(wild["肥力"]),maxi(0,capacity-int(stores["粮"]))))
+        if harvest>0:
+            wild["肥力"]=int(wild["肥力"])-harvest
+            stores["粮"]=int(stores["粮"])+harvest
+            society["total_production"]=int(society["total_production"])+harvest
+            _event(society,absolute_hour,"村社农田" if region_key=="村" else "县城周边农田","集体农户收获%d份真实粮食；已扣除田力并受粮仓容量限制。" % harvest)
     var day:=int(absolute_hour/24)+1
-    _event(society,absolute_hour,"自然生态","土壤恢复、林木更新、鱼群迁入；恢复量受上限限制。")
     society["daily"][str(day)]={"production":0,"trades":0,"consumption":0,"wages":0}
 
 static func _grant_pay(society: Dictionary, npc: Dictionary, region: Dictionary, hour: int) -> void:
