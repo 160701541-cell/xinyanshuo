@@ -60,5 +60,7 @@
   "sister_errand": "unanswered food delivery request, not retroactively rewritten",
   "second_basket_status": "carried; user wishes deployment, requires river visit",
   "manual_status": "genuine basic cultivation manual out of stock; offered ordinary breathing notes at 2 wen; not bought",
-  "sync_status": "PENDING_GITHUB"
+  "sync_status": "SYNCED",
+  "sync_target": "160701541-cell/xinyanshuo@xianfan/independent-living-county-v0.1",
+  "last_synced_event": "EV000031"
 }
