@@ -62,6 +62,7 @@ static func initialize(society: Dictionary, start_minute: int) -> bool:
         people[name]={
             "id":"CULT%06d" % (i+1),"name":name,"job":str(row[1]),
             "root":str(row[2]),"root_verified":true,
+            "bigu_recipe_verified":name=="许晚照",
             "verified_manual":true,"realm_level":level,"realm":_realm(level),
             "progress":0.0,"meridian_load":0.0,
             "age":19+(i*7)%35,"alive":true,"health":100,"energy":85,
@@ -139,7 +140,21 @@ static func _work(c: Dictionary, person: Dictionary, day: int) -> void:
             done=true
             _record(c,person,day,"采矿","在青云山门开采1份已生成的灵矿露头，矿点减少1，库存灵矿石增加1。")
     elif job=="丹房学徒":
-        if int(stock["灵草"])>=3 and int(stock["灵矿石"])>=1:
+        # Special fasting medicine is not the same as a basic pill. It needs
+        # verified formula, apprentice practice, real spiritual rice, herbs and
+        # ore. Old saves do not magically acquire prescription knowledge.
+        var skill_count:=int(person.get("skills",{}).get("丹房学徒",0))
+        var special:=bool(person.get("bigu_recipe_verified",false)) and skill_count>=12 and day%12==0
+        if special and int(stock["灵草"])>=2 and int(stock["灵米"])>=2 and int(stock["灵矿石"])>=1:
+            stock["灵草"]=int(stock["灵草"])-2
+            stock["灵米"]=int(stock["灵米"])-2
+            stock["灵矿石"]=int(stock["灵矿石"])-1
+            stock["辟谷丹"]=int(stock.get("辟谷丹",0))+1
+            c["total_bigu_pills"]=int(c.get("total_bigu_pills",0))+1
+            done=true
+            _record(c,person,day,"辟谷丹炼制",
+                "有真实丹方并练习至少12次后，耗2份灵草、2份灵米、1份灵矿石，完成1枚有时效的辟谷丹；药物仅入山门药库。")
+        elif int(stock["灵草"])>=3 and int(stock["灵矿石"])>=1:
             stock["灵草"]=int(stock["灵草"])-3
             stock["灵矿石"]=int(stock["灵矿石"])-1
             stock["丹药"]=int(stock["丹药"])+1
