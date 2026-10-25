@@ -161,6 +161,12 @@ jobs:
           godot --headless --path . --script res://tests/test_location_mail_ui.gd > /tmp/location-mail-ui.log 2>&1 || { cat /tmp/location-mail-ui.log; exit 1; }
           cat /tmp/location-mail-ui.log
           if grep -E '(SCRIPT ERROR|Parse Error|LOCATION MAIL UI FAILURE|LOCATION MAIL UI FAILED)' /tmp/location-mail-ui.log; then exit 1; fi
+      - name: Verify authored NPC personalities and persistent fact history
+        run: |
+          cd projects/xianfan-living-world/android-text
+          godot --headless --path . --script res://tests/test_narrative_db.gd > /tmp/narrative-db.log 2>&1 || { cat /tmp/narrative-db.log; exit 1; }
+          cat /tmp/narrative-db.log
+          if grep -E '(SCRIPT ERROR|Parse Error|NARRATIVE DB FAILURE)' /tmp/narrative-db.log; then exit 1; fi
       - name: Build APK with native local runtime
         run: |
           cd projects/xianfan-living-world/android-text
