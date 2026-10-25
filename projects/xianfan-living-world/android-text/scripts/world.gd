@@ -368,6 +368,8 @@ func npcs_status() -> Array[Dictionary]:
             "relationship":"妹妹" if key=="孙成明" else ("父亲" if key=="钱然泽" else "母亲"),
             "place":str(n.get("place","未知")),
             "activity":str(n.get("activity","未知")),
+            "wish":str(n.get("wish","未公开")),
+            "goal_progress":int(n.get("goal_progress",0)),
             "mood":str(n.get("mood","未公开")),
             "rapport":int(n.get("rapport",0)) if key=="孙成明" else -1,
             "learning":int(n.get("learning",0)) if key=="孙成明" else -1,
@@ -436,6 +438,14 @@ func _daily() -> void:
     sister["mood"] = ["平静", "忙碌", "有些困倦", "精神不错"][day % 4]
     if int(sister["learning"]) > 0 and day % 2 == 0:
         sister["learning"] = mini(100, int(sister["learning"]) + 1)
+    # Long-lived independent intentions evolve through simulation, not freeform
+    # LLM claims; no spiritual breakthrough is inferred from ordinary study.
+    if not str(sister.get("wish","")).is_empty():
+        sister["goal_progress"]=mini(100,int(sister.get("goal_progress",0))+2)
+        if day % 4==0 and sister["place"]=="石桥村·家中":
+            sister["activity"]="忙完家务后自行温习旧书"
+    if not str(data["npc"]["郑舟清"].get("wish","")).is_empty():
+        data["npc"]["郑舟清"]["goal_progress"]=mini(100,int(data["npc"]["郑舟清"].get("goal_progress",0))+1)
     data["npc"]["钱然泽"]["activity"] = "修理农具" if day % 6 == 0 else "田间劳作"
     data["npc"]["郑舟清"]["activity"] = "料理厨房" if day % 3 != 0 else "晾晒家粮"
     if int(data["field"]["planted_day"]) > 0 and day == int(data["field"]["planted_day"]) + 3:
