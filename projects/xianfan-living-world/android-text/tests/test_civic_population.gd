@@ -55,6 +55,27 @@ func _run() -> void:
     var second: Dictionary=XianfanCivicPopulation.roster(social,"",1,12)
     check(int(first["size"])==population.size() and second["entries"].size()>0,"paged registration browses entire population")
 
+    var hardship: Dictionary=social.duplicate(true)
+    var unemployed: Dictionary={}
+    for n in hardship["civic_agents"].values():
+        if str(n.get("job",""))=="无业人":
+            unemployed=n
+            break
+    check(not unemployed.is_empty(),"named unemployed people are not classified as salaried servants")
+    if not unemployed.is_empty():
+        check(str(unemployed["standing"])=="失业居民","social status is separate from occupation")
+        var region: Dictionary=hardship["regions"][str(unemployed["region"])]
+        unemployed["coins"]=0
+        unemployed["rations"]=0
+        var before_reserve:=int(region["stock"]["粮"])
+        var before_treasury:=int(region["treasury"])
+        var credited:=XianfanCivicPopulation._produce(hardship,unemployed,3)
+        check(not credited,"unemployed person cannot magically earn public wages")
+        check(int(region["treasury"])==before_treasury,"unemployed work doesn't drain salaries")
+        XianfanCivicPopulation._eat(hardship,unemployed,3)
+        check(int(region["stock"]["粮"])==before_reserve-1,
+            "public relief is a real debited food ration, not decorative storytelling")
+        check(int(hardship.get("civic_relief",0))==1,"public granary relief recorded")
     var original_cash:=_all_coins(social)
     var a: Dictionary=social.duplicate(true)
     var other: Dictionary=social.duplicate(true)
