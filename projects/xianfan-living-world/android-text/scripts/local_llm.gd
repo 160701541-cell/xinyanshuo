@@ -121,7 +121,14 @@ func load_model() -> void:
     # inference on device; no remote Chat Completions server or API key is used.
     # Dynamic call avoids a compile-time link on x86 CI; Android still resolves
     # the registered native class after loading the ARM64 extension.
-    var loaded = await ClassDB.class_call_static("NobodyWhoChat","create",model_source, {"n_ctx":2048,"n_threads":3,"template_variables":{"enable_thinking":false}})
+    # Keep one 8B weight copy loaded, and reuse its chat context sequentially.
+    # n_ctx=4096 balances conversation memory against a 12GB real-RAM Android phone.
+    var context_tokens := 4096 if active_name in ["4B","8B"] else (3072 if active_name=="14B" else 4096)
+    var loaded = await ClassDB.class_call_static("NobodyWhoChat","create",model_source,{
+        "n_ctx":context_tokens,"n_threads":3,"use_gpu":true,
+        "context_shift":{"keep_first_turns":0,"keep_last_turns":3,"target":0.75},
+        "template_variables":{"enable_thinking":false}
+    })
     loading=false
     heartbeat.stop()
     if loaded==null:
@@ -157,6 +164,31 @@ func build_messages(text: String, person: String, state: Dictionary) -> Array:
         system_text += "\n约束：只扮演NPC，以一两句自然中文回答。每次要真正回应玩家最新问题和追问；不能答非所问、机械重复前一轮、虚构自己离开或正在路上。"
         system_text += "没有移动事件时不得宣称自己换了位置；你可以表达个人意愿和拒绝，但不能宣布获得物品、修炼突破、改变任何游戏数值。"
         system_text += "玩家问‘你在哪条路’时，必须基于登记位置解释，不能只重复‘我正在路上’。不要输出JSON或带‘旁白’的段落。"
+        # Full archive stays on disk, semantic retrieval brings only relevant
+        # long-term talk back into the narrow LLM context.
+        var stored: Dictionary=state.get("npc_memories",{})
+        var memories: Array=stored.get(person,[])
+        var latest_tokens: Array[String]=[]
+        for i in range(maxi(0,cleaned_text.length()-1)):
+            var token:=cleaned_text.substr(i,2)
+            if not latest_tokens.has(token): latest_tokens.append(token)
+        var ranked: Array=[]
+        for i in range(memories.size()):
+            var memory: Dictionary=memories[i]
+            var phrase:=str(memory.get("player",""))+" "+str(memory.get("reply",""))
+            var score:=0
+            for token in latest_tokens:
+                if phrase.contains(token): score+=1
+            if score>0: ranked.append({"rank":score*10000+i,"item":memory})
+        ranked.sort_custom(func(a,b): return int(a["rank"])>int(b["rank"]))
+        var useful: Array[String]=[]
+        for i in range(mini(4,ranked.size())):
+            var old_memory: Dictionary=ranked[i]["item"]
+            useful.append("第%d日 玩家曾说：%s；你当时答：%s" % [
+                int(old_memory.get("day",0)),str(old_memory.get("player","")).substr(0,65),
+                str(old_memory.get("reply","")).substr(0,85)])
+        if not useful.is_empty():
+            system_text+="\n相关旧日交谈（仅为人物记忆，不是世界事实）：\n"+"\n".join(useful)
         messages.append({"role":"system","content":system_text})
         var all_dialogue: Array = state.get("dialogue_log",[])
         var scoped: Array = []
@@ -184,6 +216,63 @@ func build_messages(text: String, person: String, state: Dictionary) -> Array:
         messages.append({"role":"user","content":"当前地点："+scene+"；第%d日；玩家行动：" % current_day+cleaned_text.substr(0,300)})
     return messages
 
+# Story director proposes only observations and a named candidate plot beat.
+# World.record_ai_story() is the sole authorization point.
+func build_story_messages(player_action: String, resolved_event: String, facts: Dictionary) -> Array:
+    var options: Array=facts.get("available_beats",[])
+    var hooks: Array[String]=["none"]
+    for beat in options:
+        hooks.append(str(beat.get("id","")))
+    var setup := "你是中国古风人生修仙文字游戏的世界叙事导演。"
+    setup+="只输出一个JSON对象，包含scene字符串(35到180字)，beat_id字符串。"
+    setup+="仅描写当前真实发生的动作、环境、人物自然反应、已知矛盾和伏笔；有因有果、富有仙侠气韵，不重复数值日志。"
+    setup+="不得生成任何规则未结算的战利品、伤害、修为、灵根、财富、异地传送或NPC移动。"
+    setup+="beat_id只能从以下名单选择："+", ".join(hooks)+"。没有自然衔接时使用none。"
+    setup+="不要在scene中描写beat_id尚未被规则确认的效果；人物并非玩家的附庸，他们各有愿望。"
+    var prompt := "已核算动作："+player_action.substr(0,180)
+    prompt+="\n规则确定结果："+resolved_event.substr(0,340)
+    prompt+="\n真实世界快照："+JSON.stringify(facts).substr(0,1300)
+    prompt+="\n请给出简短剧情与最多一个伏笔。"
+    return [{"role":"system","content":setup},{"role":"user","content":prompt}]
+
+func tell_story(player_action: String, resolved_event: String, facts: Dictionary, expected_clock: int) -> void:
+    if busy or not model_ready:
+        answered.emit({"ok":false,"kind":"story","error":"本地模型正在忙或尚未加载。"})
+        return
+    busy=true
+    var messages:=build_story_messages(player_action,resolved_event,facts)
+    var settings: Dictionary={"template_variables":{"enable_thinking":false}}
+    if ClassDB.class_exists("NobodyWhoSamplerPresets"):
+        settings["sampler"]=ClassDB.class_call_static("NobodyWhoSamplerPresets","temperature",0.65)
+    var stream=current_chat.complete(messages,settings)
+    if stream==null:
+        busy=false
+        answered.emit({"ok":false,"kind":"story","error":"剧情生成上下文创建失败。"})
+        return
+    var output: Variant=await stream.completed()
+    busy=false
+    if output==null:
+        answered.emit({"ok":false,"kind":"story","error":"本地AI剧情生成失败。"})
+        return
+    var raw:=str(output).strip_edges()
+    var a:=raw.find("{")
+    var b:=raw.rfind("}")
+    if a<0 or b<=a:
+        answered.emit({"ok":false,"kind":"story","error":"剧情模型未按约定输出JSON。"})
+        return
+    var payload: Variant=JSON.parse_string(raw.substr(a,b-a+1))
+    if not (payload is Dictionary):
+        answered.emit({"ok":false,"kind":"story","error":"剧情JSON解析失败。"})
+        return
+    var result: Dictionary=payload
+    answered.emit({"ok":true,"kind":"story","scene":str(result.get("scene","")).substr(0,460),
+        "beat_id":str(result.get("beat_id","none")).substr(0,45),
+        "expected_clock":expected_clock,"origin":"local-gguf"})
+
+func cancel_generation() -> void:
+    if busy and current_chat!=null:
+        current_chat.stop_generation()
+
 func _unusable_duplicate(reply: String, person: String, state: Dictionary, current_text: String) -> bool:
     if person.is_empty(): return false
     var logs: Array = state.get("dialogue_log",[])
@@ -209,7 +298,10 @@ func talk(text: String, person: String, state: Dictionary) -> void:
     var messages := build_messages(text,person,state)
     # complete() replaces the native chat history, preventing NPC cross-talk and
     # keeping reliable turn-taking based on the persistent game save.
-    var stream = current_chat.complete(messages,{})
+    var sampler_settings: Dictionary={"template_variables":{"enable_thinking":false}}
+    if ClassDB.class_exists("NobodyWhoSamplerPresets"):
+        sampler_settings["sampler"]=ClassDB.class_call_static("NobodyWhoSamplerPresets","temperature",0.72 if not person.is_empty() else 0.2)
+    var stream = current_chat.complete(messages,sampler_settings)
     if stream==null:
         busy=false
         answered.emit({"ok":false,"error":"本地模型无法建立上下文，未写入人物记忆。"})
