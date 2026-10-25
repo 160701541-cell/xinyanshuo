@@ -11,10 +11,15 @@ const MAX_JOURNAL := 100000
 var data: Dictionary = {}
 var journal: Array = []
 var last_result := ""
+var last_channel := "剧情"
+var last_target := ""
+const FEEDBACK_PATH := "user://xianfan_feedback.json"
+var feedback: Array = []
 
 func _init() -> void:
     if not load_save():
         new_game()
+    _load_feedback()
 
 func new_game() -> void:
     data = {
@@ -165,6 +170,93 @@ func save() -> void:
         DirAccess.copy_absolute(main, backup)
     var err := DirAccess.rename_absolute(temp, main)
     if err != OK: push_error("Cannot commit save: " + str(err))
+
+func _load_feedback() -> void:
+    feedback.clear()
+    if not FileAccess.file_exists(FEEDBACK_PATH): return
+    var file := FileAccess.open(FEEDBACK_PATH, FileAccess.READ)
+    if file == null: return
+    var parsed: Variant = JSON.parse_string(file.get_as_text())
+    if parsed is Array: feedback = parsed.slice(-80)
+
+func _record_feedback(input: String, message: String, code: String) -> void:
+    var record := {
+        "code": code,
+        "action": input.substr(0, 350),
+        "reason": message.substr(0, 350),
+        "time": time_string(),
+        "place": str(data.get("place","未知")),
+        "game_schema": int(data.get("schema",0)),
+        "source_event": str(data.get("source_event","")),
+        "mode": "离线规则"
+    }
+    feedback.append(record)
+    if feedback.size() > 80: feedback.pop_front()
+    var f := FileAccess.open(FEEDBACK_PATH, FileAccess.WRITE)
+    if f != null:
+        f.store_string(JSON.stringify(feedback, "  "))
+
+func feedback_report() -> String:
+    var lines: Array[String] = []
+    lines.append("《仙凡·苍岚》问题与功能反馈")
+    lines.append("版本：Android文字游戏 v1.3 · Godot 4.4.1")
+    lines.append("规则存档：%s · %s" % [str(data.get("source_event","")),time_string()])
+    lines.append("当前位置：" + str(data.get("place","")))
+    lines.append("注意：以下仅是用户输入与规则错误，不包含 API 密钥、网络请求体或私人服务器配置。")
+    if feedback.is_empty(): lines.append("尚无未支持动作和错误记录。")
+    var start := maxi(0, feedback.size()-30)
+    for i in range(start, feedback.size()):
+        var entry: Dictionary = feedback[i]
+        lines.append("\n#%d [%s] %s\n行动：%s\n原因：%s" % [i+1,str(entry.get("time","")),str(entry.get("code","")),str(entry.get("action","")),str(entry.get("reason",""))])
+    return "\n".join(lines)
+
+func note_api_failure(action: String, reason: String) -> void:
+    _record_feedback(action, reason, "AI_API_FAILED")
+
+func record_ai_dialogue(person: String, player_text: String, reply: String) -> String:
+    if not data["npc"].has(person): return "NPC不存在，无法进行对话。"
+    var npc: Dictionary = data["npc"][person]
+    if str(npc.get("place","")) != str(data["place"]):
+        return "%s不在此处，无法进行当面交谈。" % person
+    if reply.strip_edges().is_empty() or reply.length() > 700:
+        return "AI返回的对话长度异常，没有写入存档。"
+    _tick(4)
+    var log: Array = data.get("dialogue_log",[])
+    log.append({"day":int(data["day"]),"speaker":person,"player":player_text.substr(0,250),"reply":reply.strip_edges(),"ai":true})
+    if log.size()>80: log.pop_front()
+    data["dialogue_log"]=log
+    last_channel="对话"
+    last_target=person
+    last_result=reply.strip_edges()
+    save()
+    return last_result
+
+func npcs_status() -> Array[Dictionary]:
+    var arr: Array[Dictionary] = []
+    for key in ["孙成明","钱然泽","郑舟清"]:
+        if not data["npc"].has(key): continue
+        var n: Dictionary = data["npc"][key]
+        arr.append({
+            "name":key,"id":str(n.get("id","")),
+            "age":16 if key=="孙成明" else (35 if key=="钱然泽" else 49),
+            "relationship":"妹妹" if key=="孙成明" else ("父亲" if key=="钱然泽" else "母亲"),
+            "place":str(n.get("place","未知")),
+            "activity":str(n.get("activity","未知")),
+            "mood":str(n.get("mood","未公开")),
+            "rapport":int(n.get("rapport",0)) if key=="孙成明" else -1,
+            "learning":int(n.get("learning",0)) if key=="孙成明" else -1,
+            "items":n.get("items",{}),
+            "here":str(n.get("place",""))==str(data["place"])
+        })
+    return arr
+
+func dialogue_recent(n: int=24) -> String:
+    var lines: Array[String] = []
+    var records: Array = data.get("dialogue_log",[])
+    for i in range(maxi(0,records.size()-n),records.size()):
+        var v: Dictionary = records[i]
+        lines.append("你 · 第%d日\n%s\n\n%s · %s\n%s" % [int(v.get("day",0)),str(v.get("player","")),str(v.get("speaker","")),("AI生成" if v.get("ai",false) else "规则对话"),str(v.get("reply",""))])
+    return "\n\n────────────\n\n".join(lines) if not lines.is_empty() else "还没有对话。点击NPC卡片可以交谈，或者在下方直接输入。"
 
 func _note(msg: String) -> void:
     if journal.size() < MAX_JOURNAL: journal.append(msg)
@@ -778,10 +870,30 @@ func act(action: String) -> String:
     var canonical := _resolve_input(action) if free_result.is_empty() else "自由行动"
     var result := _act_core(canonical) if free_result.is_empty() else free_result
     last_result = result
-    # Explanations and unsupported phrases are visible but do not pollute the saved event journal.
-    if not result.begins_with("暂不支持") and canonical != "询问吃饭对象" and canonical != "查看当前目标":
-        _note("【%s · %s】\n%s" % [time_string(), action, result])
-    # Only committed actions affect clock; unknown input does not do so.
+    var line := action.strip_edges()
+    var dialogue := (line.contains("妹妹") or line.contains("成明") or line.contains("母亲") or line.contains("父亲") or line.contains("爹") or line.contains("娘")) and (line.contains("问") or line.contains("说") or line.contains("聊") or line.contains("吃饭了吗"))
+    dialogue = dialogue or canonical.begins_with("问妹妹") or canonical.begins_with("问母亲") or canonical.begins_with("问父亲") or canonical=="跟妹妹说话"
+    var is_rejected := result.begins_with("暂不支持")
+    if is_rejected:
+        _record_feedback(line, result, "UNSUPPORTED_ACTION")
+        last_channel="反馈"
+        last_target=""
+    elif dialogue:
+        var who := "孙成明"
+        if line.contains("母亲") or line.contains("娘"): who="郑舟清"
+        elif line.contains("父亲") or line.contains("爹"): who="钱然泽"
+        last_channel="对话"
+        last_target=who
+        if _clock() > before:
+            var conversations: Array = data.get("dialogue_log",[])
+            conversations.append({"day":int(data["day"]),"speaker":who,"player":line.substr(0,250),"reply":result,"ai":false})
+            if conversations.size()>80: conversations.pop_front()
+            data["dialogue_log"]=conversations
+    else:
+        last_channel="剧情"
+        last_target=""
+        if canonical != "询问吃饭对象" and canonical != "查看当前目标":
+            _note("【%s · %s】\n%s" % [time_string(), line, result])
     if _clock() < before: push_error("World time unexpectedly reversed")
     save()
     return result
