@@ -1554,8 +1554,42 @@ func _free_action(raw: String) -> String:
             return _free_visit(t)
     return ""
 
+# Small but real mortal work at a sect. No secret root roll, free spirit stone,
+# unowned pill, instant status change, or free cash creation is permitted.
+func _work_at_sect() -> String:
+    if str(data.get("place",""))!="青云山门·山门外":
+        return "山门雇工只能亲自到青云山门登记，不能隔空领工钱。"
+    var hour:=int(data.get("minute",0)/60)
+    if hour<7 or hour>=18:
+        return "此刻不是山门杂役交工的时辰，请白天再来。"
+    if int(data.get("stamina",0))<5:
+        return "你太疲倦了，还不能承担一小时搬运与洒扫。"
+    var today:=int(data.get("day",0))
+    var work: Dictionary=data.get("sect_mortal_work",{})
+    if int(work.get("day",-1))!=today: work={"day":today,"hours":0}
+    if int(work.get("hours",0))>=6: return "山门今日安排给你的杂役工时已经做满，明日可再来。"
+    var society: Dictionary=data.get("society",{})
+    var culture: Dictionary=society.get("cultivation_world",{})
+    var region: Dictionary=culture.get("regions",{}).get("青云山门",{})
+    if region.is_empty() or int(region.get("copper",0))<2:
+        return "山门目前缺少足额铜钱支付杂役工钱，执事暂不招工。"
+    var steward: Dictionary=data.get("npc",{}).get("叶怀远",{})
+    if steward.is_empty() or not bool(steward.get("alive",false)):
+        return "负责登记杂役的山门执事不在，无法签发这一时段的工作。"
+    region["copper"]=int(region["copper"])-2
+    data["money"]=int(data["money"])+2
+    work["hours"]=int(work["hours"])+1
+    data["sect_mortal_work"]=work
+    _tick(60,-5)
+    var fact:="山门执事验收你的一小时扫院与搬运，山门库款实付2文，个人获得2文，精力消耗5点。"
+    if world_chronicle!=null:
+        world_chronicle.append_rule_fact("rule_action",str(data.get("name","玩家")),
+            today,fact,"SECT-WORK-"+str(today)+"-"+str(work["hours"]),"青云山门·山门外")
+    return fact
+
 func _act_core(action: String) -> String:
     match action:
+        "做山门杂役": return _work_at_sect()
         "查看四周": return look()
         "去村口":
             if data["place"]=="石桥村·街口": return "你已在石桥村街口；商贩和村民照常做自己的营生。"
@@ -1658,6 +1692,8 @@ func _resolve_input(raw: String) -> String:
             if text.contains("父亲") or text.contains("爹") or text.contains("爸爸"): return "问父亲吃饭了吗"
             return "询问吃饭对象"
         if text.contains("吃") or text.contains("饿") or text.contains("开饭"): return "吃饭休息"
+    if text.contains("山门") and (text.contains("杂役") or text.contains("做工") or text.contains("打工")):
+        return "做山门杂役"
     if text.contains("青云") and question:
         if text.contains("妹妹") or text.contains("成明"): return "问妹妹青云的事"
         if text.contains("母亲") or text.contains("娘"): return "问母亲青云的事"
@@ -1757,7 +1793,7 @@ func actions_for_place() -> Array[String]:
         "石桥村·街口": return ["查看四周","查看物价","买粗粮","卖鱼","做零工","回家","去溪边"]
         "石桥村·溪边": return ["查看四周", "查看鱼笼", "钓鱼", "取鱼笼里的鱼", "去林缘", "回家"]
         "石桥村·林缘": return ["查看四周", "捡枯枝", "采车前草", "去溪边", "回家"]
-        "青云山门·山门外": return ["查看四周", "申请测灵根", "山脚脚店投宿", "查看修炼结论"]
+        "青云山门·山门外": return ["查看四周", "做山门杂役", "申请测灵根", "山脚脚店投宿", "查看修炼结论"]
         _: return ["查看四周", "去村口", "自动完成今日安排", "跟妹妹说话", "教妹妹修炼", "读引气初篇", "静坐修炼", "连续修炼一天", "连续修炼十日", "查看修炼结论", "吃饭休息", "睡觉", "播种青菜", "收获青菜", "组装鱼竿", "去溪边", "出发去青云", "去东市"]
 
 func status() -> String:
