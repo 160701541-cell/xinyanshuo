@@ -1,0 +1,17 @@
+import assert from 'node:assert/strict';
+import {createHash} from 'node:crypto';
+import {verifyRootReveal,simulateCultivationDays} from '../tools/cultivation_batch_candidate.mjs';
+const commitment=createHash('sha256').update('test-reveal').digest('hex');
+assert.equal(verifyRootReveal(commitment,'test-reveal'),true);
+assert.throws(()=>verifyRootReveal(commitment,'false'),/ROOT_REVEAL_MISMATCH/);
+const base={worldSeed:'test-world',rootCommitment:commitment,rootReveal:'test-reveal',manual:{id:'weathered_qi_primer',authenticated:true},rootGrade:0,comprehension:50,startDay:3,days:5,householdGrainMillidou:1000,playerStamina:51,sibling:{consent:true,comprehension:50}};
+assert.throws(()=>simulateCultivationDays({...base,manual:{id:'weathered_qi_primer',authenticated:false}}),/MANUAL_UNVERIFIED/);
+assert.throws(()=>simulateCultivationDays({...base,rootReveal:'wrong'}),/ROOT_REVEAL_MISMATCH/);
+const result=simulateCultivationDays(base);
+assert.equal(result.successDay,null);
+assert.equal(result.daysSimulated,5);
+assert.equal(result.grainRemaining,460);
+assert.equal(result.ledger.reduce((sum,item)=>sum+item.grainConsumed,0),540);
+assert.deepEqual(simulateCultivationDays(base),result);
+assert.throws(()=>simulateCultivationDays({...base,days:10}),/INSUFFICIENT_HOUSEHOLD_GRAIN/);
+console.log('cultivation candidate tests passed');
