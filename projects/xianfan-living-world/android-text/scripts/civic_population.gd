@@ -61,6 +61,9 @@ static func _house(region: String, idx: int) -> String:
 
 static func _daily_place(npc: Dictionary, hour: int) -> String:
     if not bool(npc.get("alive",true)): return "故人名录"
+    # A resident with an existing long-term mountain boarding contract sleeps
+    # in the sect compound; no nightly teleportation between village and gate.
+    if bool(npc.get("sect_boarding",false)): return "青云山门·山门外"
     if hour<7 or hour>=19: return str(npc["home"])
     if hour in [12,18]: return str(npc["home"])
     return str(npc["work_place"])
