@@ -1316,6 +1316,7 @@ func _refresh() -> void:
             var region_accounts: Dictionary=s.get("economy_accounts",{}).get("regions",{}).get(region,{})
             var region_totals: Dictionary=region_accounts.get("total",{})
             scene_text.text+="\n【累计增加值（GDP）】%d文（固定基期，非交易额）" % int(region_totals.get("gdp_real",0))
+            scene_text.text+="\n\n【本地真实纪事 · 世界规则自动生成】\n"+game.local_chronicle(5)
             actor_buttons.visible=true
             _wipe(actor_buttons)
             actor_buttons.add_child(_button("查看本地区社会经济详情",func(): _open_economy_region(region),16))
