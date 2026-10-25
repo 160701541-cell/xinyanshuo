@@ -49,8 +49,8 @@ func _run() -> void:
     var offender: Dictionary=people["陆行"]
     offender["psyche"]["traits"]["greed"]=95
     offender["psyche"]["traits"]["self_control"]=5
-    var private_cases_before:=society["psyche_cases"].size()
-    var public_events_before:=society["civic_chronicle"].size()
+    var private_cases_before: int=(society["psyche_cases"] as Array).size()
+    var public_events_before: int=(society["civic_chronicle"] as Array).size()
     var pot_before:=int(offender["coins"])+int(giver["coins"])
     var theft:=XianfanPsyche.resolve(society,"陆行","赵禾","attempt_theft",34)
     check(bool(theft.get("ok",false)) and society["psyche_cases"].size()==private_cases_before+1,
