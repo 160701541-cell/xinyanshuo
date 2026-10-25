@@ -1279,7 +1279,7 @@ func _refresh() -> void:
                 int(s.get("total_steps",0)),int(s.get("total_trades",0))]
             var region_accounts: Dictionary=s.get("economy_accounts",{}).get("regions",{}).get(region,{})
             var region_totals: Dictionary=region_accounts.get("total",{})
-            scene_text.text+="\n【已核算GDP】%d文（固定基期增加值）" % int(region_totals.get("gdp_real",0))
+            scene_text.text+="\n【累计增加值（GDP）】%d文（固定基期，非交易额）" % int(region_totals.get("gdp_real",0))
             actor_buttons.visible=true
             _wipe(actor_buttons)
             actor_buttons.add_child(_button("查看本地区社会经济详情",func(): _open_economy_region(region),16))
