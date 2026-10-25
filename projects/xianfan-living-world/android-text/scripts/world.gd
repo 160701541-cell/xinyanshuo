@@ -612,6 +612,12 @@ func _free_say(raw: String) -> String:
 func _free_action(raw: String) -> String:
     var t := raw.strip_edges().replace("，","").replace("。","").replace("！","")
     if t.is_empty(): return ""
+    # Move to a destination first, then execute the requested gathering there.
+    if (t.contains("去") or t.contains("前往") or t.contains("走到")) and (t.contains("林缘") or t.contains("树林") or t.contains("村外")) and (t.contains("拾") or t.contains("捡") or t.contains("采")):
+        var travel := _free_visit(t)
+        if str(data["place"]) == "石桥村·林缘":
+            return travel + "\n" + _free_collect(t)
+        return travel
     # Speech and inspection take priority over broad keyword shortcuts.
     if t.contains("观察") or t.contains("查看") or t.contains("看看") or t.contains("打量") or t.contains("调查"):
         if t.contains("鱼笼"): return _act_core("查看鱼笼")
