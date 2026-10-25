@@ -341,6 +341,7 @@ func _open_npc(name: String) -> void:
         "【正在做】"+str(chosen["activity"]),
         "【情绪】"+str(chosen["mood"]),
         "【个人心愿】"+str(chosen.get("wish","尚未透露")),
+        "【心愿行动进度】%d/100（不等于修为）" % int(chosen.get("goal_progress",0)),
         "【在场】"+("可以当面交流" if chosen["here"] else "不在身边，不能远程互动"),
         "【持有物品】"+items]
     if int(chosen["rapport"])>=0: details.append("【关系】亲近程度 %d/100" % int(chosen["rapport"]))
@@ -577,7 +578,12 @@ func _submit(text: String, typed: bool) -> void:
         raw="跟"+current_npc+"说："+raw
     command.clear()
     command.release_focus()
-    if local_enabled and bool(local_llm.get("model_ready")):
+    # Fast-path exact game actions and buttons; reserve heavy 8B inference for
+    # natural language and narrative generation, not known button commands.
+    var immediate:=not typed and npc_to_chat.is_empty()
+    if typed and npc_to_chat.is_empty() and game.actions_for_place().has(raw):
+        immediate=true
+    if not immediate and local_enabled and bool(local_llm.get("model_ready")):
         request_text=raw
         if bool(local_llm.get("busy")):
             notice.text="本地AI仍在生成上一轮内容。请等它完成再继续，避免丢失对话。"
