@@ -1,0 +1,110 @@
+extends RefCounted
+class_name XianfanNarrativeDB
+# Offline authored responses grounded in the current authoritative world save.
+# No model, internet, or fabricated historical facts are needed for a hit.
+const CATALOG := "res://data/narrative_dialogue_v1.json"
+var _topics: Array=[]
+var _loaded := false
+
+func _init() -> void:
+    var stream:=FileAccess.open(CATALOG,FileAccess.READ)
+    if stream==null: return
+    var payload: Variant=JSON.parse_string(stream.get_as_text())
+    if payload is Dictionary and int(payload.get("schema",0))==1:
+        _topics=payload.get("topics",[])
+        _loaded=true
+
+func catalog_count() -> int:
+    var count:=0
+    for topic in _topics:
+        if not (topic is Dictionary): continue
+        for lines in topic.get("voices",{}).values():
+            count+=lines.size()
+    return count
+
+static func _voice(name: String, npc: Dictionary) -> String:
+    if name=="孙成明": return "sister"
+    if name=="钱然泽": return "father"
+    if name=="郑舟清": return "mother"
+    var work:=str(npc.get("job",""))
+    var domain:=str(npc.get("sector",""))
+    if domain.contains("官府") or work.contains("衙") or work.contains("巡") or work.contains("县令") or work.contains("吏"): return "official"
+    if domain.contains("文教") or work.contains("先生") or work.contains("书") or work.contains("学") or work.contains("刻印"): return "scholar"
+    if domain.contains("市场") or domain.contains("贸易") or work.contains("商") or work.contains("贩") or work.contains("掌柜"): return "merchant"
+    if domain.contains("农桑") or work.contains("农") or work.contains("牧") or work.contains("田"): return "farmer"
+    if domain.contains("金石") or domain.contains("纺织") or work.contains("匠") or work.contains("工"): return "artisan"
+    if domain.contains("水业") or domain.contains("山林") or work.contains("脚夫") or work.contains("船") or work.contains("猎"): return "traveler"
+    return "resident"
+
+static func _selection(seed: String, count: int) -> int:
+    if count<=0: return 0
+    var digest:=seed.sha256_text()
+    return int("0x"+digest.substr(0,6))%count
+
+static func _unpack_speech(person: String, phrase: String, npc: Dictionary, data: Dictionary) -> String:
+    var value:=phrase
+    var substitutions: Dictionary={
+        "{name}":person,"{job}":str(npc.get("job","家务")),
+        "{activity}":str(npc.get("activity","照顾手头的事")),
+        "{place}":str(npc.get("place","附近")),
+        "{wish}":str(npc.get("wish","平安过日子")),
+        "{day}":str(data.get("day",0))}
+    for key in substitutions: value=value.replace(str(key),str(substitutions[key]).substr(0,90))
+    return value
+
+static func _first_person_fact(name: String, npc: Dictionary) -> String:
+    var events: Array=npc.get("biography",[])
+    for idx in range(events.size()-1,-1,-1):
+        if not (events[idx] is Dictionary): continue
+        var entry: Dictionary=events[idx]
+        if str(entry.get("npc",name))!=name: continue
+        var detail:=str(entry.get("detail","")).strip_edges()
+        if not detail.is_empty():
+            return "第%d日我亲身经历过：%s" % [int(entry.get("day",0)),detail.substr(0,120)]
+    return ""
+
+func answer(person: String, question: String, data: Dictionary) -> Dictionary:
+    if not _loaded: return {"covered":false,"reason":"catalog_not_loaded"}
+    var npc: Dictionary=data.get("npc",{}).get(person,{})
+    if npc.is_empty() or not bool(npc.get("alive",true)):
+        return {"covered":false,"reason":"absent_or_dead"}
+    if str(npc.get("place",""))!=str(data.get("place","")):
+        return {"covered":false,"reason":"not_here"}
+    var query:=question.strip_edges()
+    for prefix in ["跟"+person+"说：","跟"+person+"说:","对"+person+"说：","对"+person+"说:","问"+person]:
+        if query.begins_with(prefix):
+            query=query.trim_prefix(prefix).strip_edges()
+            break
+    if query.is_empty(): return {"covered":false,"reason":"empty"}
+    var selected: Dictionary={}
+    var top_score:=0
+    for entry in _topics:
+        if not (entry is Dictionary): continue
+        var topic: Dictionary=entry
+        var score:=0
+        for word in topic.get("keywords",[]):
+            if query.contains(str(word)): score+=str(word).length()*10
+        if score>top_score:
+            selected=topic
+            top_score=score
+    if selected.is_empty(): return {"covered":false,"reason":"uncovered_question"}
+    var voice:=_voice(person,npc)
+    var voices: Dictionary=selected.get("voices",{})
+    var lines: Array=voices.get(voice,voices.get("resident",[]))
+    if lines.is_empty(): return {"covered":false,"reason":"missing_voice"}
+    var topic_id:=str(selected.get("id",""))
+    var index:=_selection(str(npc.get("id",person))+"|"+topic_id,lines.size())
+    var text:=_unpack_speech(person,str(lines[index]),npc,data)
+    if topic_id=="personal_history":
+        var personal_fact:=_first_person_fact(person,npc)
+        if not personal_fact.is_empty():
+            text=personal_fact+"。"+text
+    if topic_id=="recent_events":
+        # No omniscience: private actor milestones, county ledgers and rumor
+        # are not automatically public knowledge. Only verified self-events
+        # may be added to speech, never an imagined public scandal.
+        var personal_event:=_first_person_fact(person,npc)
+        if not personal_event.is_empty():
+            text=personal_event+"。"+text
+    return {"covered":true,"reply":text,"topic":topic_id,"voice":voice,
+        "source":"authored-local-library","speaker_id":str(npc.get("id",""))}
