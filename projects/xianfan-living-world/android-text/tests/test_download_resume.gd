@@ -54,7 +54,7 @@ func _run() -> void:
     verify(ui.scene_text.scroll_following,"dialogue page is configured to follow newly appended speech")
     ui._on_model_download_progress({"source":src,"bytes":1000000000,"total":4000000000,
         "phase":"下载中","speed_bps":4200000.0,"attempt":2})
-    verify(ui.model_progress_label.visible,"real download progress is visible outside modal settings")
+    verify(not ui.model_progress_label.visible,"completed or inactive download widgets do not clutter dialogue or story")
     verify(ui.model_progress_label.text.contains("1.00 GB / 4.00 GB"),"UI shows real downloaded and total GB")
     verify(ui.model_progress_bar.value>=24.9 and ui.model_progress_bar.value<=25.1,
         "real 25% progress bar is computed from byte ratio")
