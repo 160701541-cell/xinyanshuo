@@ -1277,13 +1277,17 @@ func _refresh() -> void:
             scene_text.text="【当前区域】%s\n【具名社会居民】%d人\n【自主演算】%d小时\n【货物交易】%d次\n\n世界按真实时间推进；其他居民不必等待你的行动。" % [
                 str(game.data["place"]),int(roster.get("size",0)),
                 int(s.get("total_steps",0)),int(s.get("total_trades",0))]
+            var region_accounts: Dictionary=s.get("economy_accounts",{}).get("regions",{}).get(region,{})
+            var region_totals: Dictionary=region_accounts.get("total",{})
+            scene_text.text+="\n【已核算GDP】%d文（固定基期增加值）" % int(region_totals.get("gdp_real",0))
             actor_buttons.visible=true
             _wipe(actor_buttons)
             actor_buttons.add_child(_button("查看本地区社会经济详情",func(): _open_economy_region(region),16))
             actor_buttons.add_child(_button("浏览行业与社会身份（按页）",func(): _open_society_roster(),16))
         "经济":
-            page_title.text="经济 · GDP / 财政 / 物价"
-            scene_text.text="GDP是已模拟生产的增加值，不能直接把所有成交额相加。\n\n选择下面的地区查看经济报表。"
+            page_title.text="经济账本 · GDP / 财政 / 物价"
+            var current_zone: String="村" if str(game.data["place"]).begins_with("石桥村") else "城"
+            scene_text.text=game.economy_report(current_zone)
             actor_buttons.visible=true
             _wipe(actor_buttons)
             actor_buttons.add_child(_button("石桥村经济报表",func(): _open_economy_region("村"),17))
