@@ -328,7 +328,7 @@ func _build() -> void:
     actor_buttons.add_theme_constant_override("separation",6)
     inside.add_child(actor_buttons)
 
-    reader_footer=_label("写下行动，或前往地图 / 人物 / 市集",14,FADED)
+    reader_footer=_label("身在此处 · 看场景 → 选行动 → 世界结算；也可直接输入",14,FADED)
     reader_footer.horizontal_alignment=HORIZONTAL_ALIGNMENT_CENTER
     root.add_child(reader_footer)
     notice=_label("",16,GOLD)
@@ -1230,6 +1230,9 @@ func _refresh() -> void:
             page_title.text="眼前 · "+str(game.data["place"])
             # The story screen shows what happens here, not a world census.
             scene_text.text=game.look()
+            # MUD-style contextual scene: visible local presence, not a global roster.
+            var present_count:=game.nearby_people(999).size()
+            scene_text.text+="\n\n〔眼前〕%d位人物在此 · 点击【对话】选择交谈对象" % present_count
             if not game.last_result.is_empty() and game.last_channel=="剧情":
                 scene_text.text+="\n\n【刚刚发生】\n"+game.last_result.substr(0,700)
             var generated:=game.recent_story_ai(1)
