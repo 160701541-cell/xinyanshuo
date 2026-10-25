@@ -23,7 +23,7 @@ func _run() -> void:
     ui.local_enabled=true
     ui.local_llm.set("model_ready",true)
     ui.director_mode="关键事件"
-    var current_time:=ui.game._clock()
+    var current_time: int=int(ui.game._clock())
     var current_place:=str(ui.game.data["place"])
     expect(ui._narration_needed(current_time-90,current_place,"家里忙了一整日"),"important elapsed world event can request story")
     expect(not ui._narration_needed(current_time,current_place,"查看四周"),"zero-cost observation avoids large 8B narrative pass")
