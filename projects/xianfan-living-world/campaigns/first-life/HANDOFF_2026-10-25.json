@@ -1,0 +1,74 @@
+{
+  "schema": "xianfan.handoff.v1",
+  "created_date": "2026-10-25",
+  "status": "handoff_only_not_authoritative",
+  "repository": "160701541-cell/xinyanshuo",
+  "branch": "xianfan/independent-living-county-v0.1",
+  "base_dir": "projects/xianfan-living-world",
+  "authoritative": {
+    "last_event_id": "EV000016",
+    "turns_completed": 14,
+    "time": "承平三年 · 第2日 · 11:14",
+    "place": "临安县城·旧书铺",
+    "money_wen": 2,
+    "stamina": 51,
+    "health": 100,
+    "realm": "凡人（未修行）",
+    "root": "未检测",
+    "last_event_hash": "4b374a75f13c599dab5e1d8b6a451e5d6f8009550b225476fc9c44449a2e23b4",
+    "full_state_hash": "bc7836055c7ac70d53303450c3fcdaec89341ac8b7da8ad1a9e258a98ede2347",
+    "root_commitment": "897ffd3bec4b0c505b934d584835158fecaf6ddea61c5d70df6b8160db914dd7"
+  },
+  "pending_intents": [
+    {
+      "type": "trade",
+      "detail": "邋遢游方道人以2文出售一本残旧《引气初篇》，真伪未知，老道仅一次说日后好相见"
+    },
+    {
+      "type": "travel",
+      "detail": "玩家作揖拜谢，赶回石桥村家中"
+    },
+    {
+      "type": "study",
+      "detail": "认真阅读背诵功法并尝试引气入体，尚不等于成功"
+    },
+    {
+      "type": "dialogue",
+      "detail": "玩家质问妹妹孙成明昨日失约送饭，前GM剧情里她说忘了，但未正式存档"
+    },
+    {
+      "type": "teach",
+      "detail": "饭后将书教给孙成明，评估其悟性；妹妹独立自愿学习"
+    },
+    {
+      "type": "rest",
+      "detail": "睡觉休息，冥想不能完全代替睡眠"
+    },
+    {
+      "type": "day_batch",
+      "detail": "第三日整天自动处理第一鱼笼中原有鱼、第二鱼笼布设、竿坯加线钩、菜种播种、进食与夜间修行；每项需真实结算"
+    },
+    {
+      "type": "repeat_until",
+      "detail": "最新请求是持续引气修行直至出现经规则核实的结果，自动跨日吃饭睡觉，不要无谓打断"
+    }
+  ],
+  "npc_notes": {
+    "sister": "孙成明,16岁,已有送饭承诺未履行;解释为忘记仅属此前未提交演绎",
+    "vendor": "CFNPC00008仅为候选新登记角色;不得把名字、真实身份、修为当已知事实"
+  },
+  "rule_preferences": {
+    "daily_batch": true,
+    "life_simulation": true,
+    "major_interrupts_only": true,
+    "no_fake_commits": true,
+    "dialogue_natural": true,
+    "cultivation": "有灵根适当条件下可数小时至数日引气成功，但必须依据灵根承诺、功法真伪、悟性和演算",
+    "deep_meditation": "有限恢复，不能无限代替睡眠"
+  },
+  "candidate_rules": [
+    "data/wayfarer_manual_trade.json",
+    "data/farewell_rule_v1.json"
+  ],
+  "instructions": "先验证事件哈希及分支最新SHA；补算未提交行动；各次追加事件+同时写四份权威存档；用代码复核；不得把前GM模拟的具体数值当成确定事实；接续执行直到确定修行结果。"
+}
