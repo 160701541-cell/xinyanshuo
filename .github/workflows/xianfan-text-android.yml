@@ -37,6 +37,12 @@ jobs:
         run: |
           cd projects/xianfan-living-world/android-text
           godot --headless --path . --script res://tests/test_world.gd
+      - name: Smoke-launch native UI
+        run: |
+          cd projects/xianfan-living-world/android-text
+          godot --headless --path . --quit-after 30 > /tmp/xianfan-ui.log 2>&1
+          cat /tmp/xianfan-ui.log
+          if grep -E '(SCRIPT ERROR|Parse Error|Invalid call)' /tmp/xianfan-ui.log; then exit 1; fi
       - name: Export Android debug APK
         run: |
           cd projects/xianfan-living-world/android-text

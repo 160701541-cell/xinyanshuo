@@ -1,12 +1,14 @@
 extends SceneTree
 
+var failed := false
+
 func _initialize() -> void:
     call_deferred("_run")
 
 func _must(condition: bool, message: String) -> void:
     if not condition:
+        failed = true
         push_error("WORLD TEST FAILURE: " + message)
-        quit(1)
 
 func _run() -> void:
     var world := XianfanWorld.new()
@@ -32,4 +34,4 @@ func _run() -> void:
     _must(replay.data["source_event"] == "EV000105", "save anchored to event 105")
     _must(replay.journal.size() >= 4, "persisted events")
     print("XIANFAN WORLD SMOKE TESTS PASS")
-    quit(0)
+    quit(1 if failed else 0)
