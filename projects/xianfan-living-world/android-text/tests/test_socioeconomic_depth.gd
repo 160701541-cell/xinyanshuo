@@ -29,7 +29,7 @@ func _run() -> void:
     check(XianfanSocietySim.regional_price(high,"城","粮")>quote,"scarce grain becomes dearer")
     high["regions"]["城"]["stock"]["粮"]=1500
     check(XianfanSocietySim.regional_price(high,"城","粮")<quote,"abundant grain becomes cheaper")
-    var young:=society["households"]["村-同户01"]
+    var young: Array=society["households"]["村-同户01"]
     var needy: Dictionary=society["agents"][young[0]]
     var donor: Dictionary=society["agents"][young[1]]
     needy["rations"]=0
@@ -86,7 +86,7 @@ func _run() -> void:
     check(_total_cash(paused)==money,"zero-money-creation holds across twelve days")
     var world:=XianfanWorld.new()
     world.new_game()
-    var before:=world.data["npc"].size()
+    var before: int=world.data["npc"].size()
     world.passive_time(720)
     world.passive_time(720)
     var dossier: Dictionary={}
