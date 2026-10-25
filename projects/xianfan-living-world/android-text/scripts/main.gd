@@ -12,6 +12,7 @@ var game := XianfanWorld.new()
 var ai: XianfanAI
 var local_llm: XianfanLocalLLM
 var local_enabled := false
+var local_model_url: LineEdit
 var view := "剧情"
 var current_npc := "孙成明"
 var scene_text: RichTextLabel
@@ -293,6 +294,8 @@ func _open_ai_settings() -> void:
     for x in [setting_url,setting_model,setting_key]: modal_form.add_child(x)
     modal_actions.add_child(_button("填入 DeepSeek 示例接口",func(): _preset_api("https://api.deepseek.com/chat/completions","deepseek-flash")))
     modal_actions.add_child(_button("填入 OpenAI 接口",func(): _preset_api("https://api.openai.com/v1/chat/completions","gpt-5-mini")))
+    local_model_url=_entry_field("GGUF模型地址或备用HTTPS镜像",local_llm.model_source,false)
+    modal_form.add_child(local_model_url)
     modal_actions.add_child(_button("下载/加载离线Qwen3-0.6B",func(): _enable_local_and_load()))
     modal_actions.add_child(_button("保存本次配置",func(): _save_ai_settings()))
 
@@ -321,7 +324,9 @@ func _enable_local_and_load() -> void:
     ai.configure("关闭",ai.endpoint,ai.model,"")
     var f:=FileAccess.open("user://xianfan_local_choice.txt",FileAccess.WRITE)
     if f!=null: f.store_string("1")
-    local_llm.load_model()
+    var model_status:=local_llm.choose_model(local_model_url.text if local_model_url!=null else local_llm.model_source)
+    if not model_status.contains("模型地址已更新"): notice.text=model_status
+    else: local_llm.load_model()
     _refresh()
 
 func _save_ai_settings() -> void:
