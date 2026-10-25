@@ -9,6 +9,17 @@ var ready := false
 var loading := false
 var busy := false
 var current_chat: Variant
+var model_source := MODEL
+
+func choose_model(source: String) -> String:
+    if ready or loading: return "模型正在使用中，无法切换。"
+    var path := source.strip_edges()
+    if path.is_empty(): path=MODEL
+    if not (path.begins_with("hf://") or path.begins_with("https://") or path.begins_with("user://")):
+        return "只允许 Hugging Face 模型、HTTPS GGUF地址或已下载的user://模型。"
+    if path.length()>500: return "模型地址过长。"
+    model_source=path
+    return "模型地址已更新。请点击下载/加载。"
 
 func status() -> String:
     if loading: return "模型下载或加载中（约数百MB；请使用稳定Wi-Fi）"
@@ -25,7 +36,7 @@ func load_model() -> void:
     status_changed.emit("开始下载/打开 Qwen3 0.6B Q4 模型。首次需要稳定网络和足够手机空间。")
     # The native plugin downloads the model and caches it. It runs CPU-based
     # inference on device; no remote Chat Completions server or API key is used.
-    var loaded = await NobodyWhoChat.create(MODEL, {})
+    var loaded = await NobodyWhoChat.create(model_source, {"n_ctx":2048,"n_threads":3,"template_variables":{"enable_thinking":false}})
     loading=false
     if loaded==null:
         ready=false
