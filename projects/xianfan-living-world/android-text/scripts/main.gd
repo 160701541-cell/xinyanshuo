@@ -785,8 +785,9 @@ func _refresh_download_widgets() -> void:
 
 func _local_status(message: String) -> void:
     notice.text=message
-    if message.contains("失败") or message.contains("无法运行") or message.contains("没有加载成功"):
-        game.note_api_failure("内置GGUF模型 "+str(local_llm.get("active_name")),message)
+    if ["失败","无法","已停止","错误","校验","异常","不完整","损坏","中断","HTTP","网络诊断"].any(
+        func(marker: String): return message.contains(marker)):
+        game.note_api_failure("本机GGUF "+str(local_llm.get("active_name")),message)
     if view=="设置": _refresh()
     _refresh_download_widgets()
 
