@@ -640,6 +640,9 @@ static func report(society: Dictionary, current_place: String) -> String:
         "《仙凡 · 自运转的人间》",
         "这个世界里有%d名持续演算身份的具名居民（在世%d、已故%d）；只有在世者还会工作，这并非全县人口。" % [
             actors.size(),living,actors.size()-living],
+        "【区域背景人口】石桥村约%d、临安县及城区约%d（背景人口仅按区域汇总；不是这些人都拥有独立身份记录）。" % [
+            int(society["regions"]["村"].get("population_aggregate",0)),
+            int(society["regions"]["城"].get("population_aggregate",0))],
         "【所在地点】%s；附近职业NPC %d人" % [current_place,nearby.size()],
         "【本地库藏】粮%d份 · 木%d份 · 鱼%d条 · 药%d份 · 器具%d件" % [
             int(supply.get("粮",0)),int(supply.get("木",0)),int(supply.get("鱼",0)),
