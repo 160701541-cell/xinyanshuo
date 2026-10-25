@@ -33,7 +33,7 @@ func _run() -> void:
     ui._close_modal()
     _assert(not ui.overlay.visible,"modal closes")
     ui._change_tab("地图")
-    _assert(ui.scene_text.text.contains("当前位置"),"existing locations have travel navigation")
+    _assert(ui.scene_text.text.contains("当前所在"),"existing locations have travel navigation")
     ui._change_tab("市集")
     _assert(ui.scene_text.text.contains("市集") or ui.scene_text.text.contains("当前"),"market separated from story")
     ui._change_tab("更多")
