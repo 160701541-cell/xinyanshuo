@@ -22,6 +22,11 @@ var ai: XianfanAI
 var local_llm: Node
 var local_enabled := false
 var local_model_url: LineEdit
+var local_model_selector: OptionButton
+var local_model_hint: Label
+var local_model_fields: Array[Control]=[]
+var remote_model_fields: Array[Control]=[]
+var pending_model_path := ""
 var view := "剧情"
 var current_npc := "孙成明"
 var scene_text: RichTextLabel
@@ -361,14 +366,61 @@ func _open_ai_settings() -> void:
     setting_url=_entry_field("请求地址（https://.../v1/chat/completions）",ai.endpoint,false)
     setting_model=_entry_field("模型名（服务端实际提供的model）",ai.model,false)
     setting_key=_entry_field("API密钥（只在本次运行内存中保存）","",true)
-    for x in [setting_url,setting_model,setting_key]: modal_form.add_child(x)
-    modal_actions.add_child(_button("填入 DeepSeek 示例接口",func(): _preset_api("https://api.deepseek.com/chat/completions","deepseek-flash")))
-    modal_actions.add_child(_button("填入 OpenAI 接口",func(): _preset_api("https://api.openai.com/v1/chat/completions","gpt-5-mini")))
-    modal_form.add_child(_label("本地 Qwen3-0.6B Q4_K_M · 文件约484MB，建议手机至少6GB内存、预留1GB空间。首次需联网下载，之后离线使用。",15,FADED))
-    local_model_url=_entry_field("GGUF 地址（预设 Hugging Face，可自定义 HTTPS）",str(local_llm.get("model_source")),false)
+    remote_model_fields.clear()
+    local_model_fields.clear()
+    for control in [setting_url,setting_model,setting_key]:
+        modal_form.add_child(control)
+        remote_model_fields.append(control)
+    local_model_selector=OptionButton.new()
+    local_model_selector.add_theme_color_override("font_color",PAPER)
+    local_model_selector.add_theme_stylebox_override("normal",_box(PANEL,DIVIDER,6))
+    for item in XianfanLocalLLM.MODELS:
+        var model_item: Dictionary=item
+        local_model_selector.add_item("%s · %.2f GB" % [str(model_item["title"]),float(model_item["size_gb"])])
+    var current_index:=XianfanLocalLLM.preset_index(str(local_llm.get("model_source")))
+    local_model_selector.select(current_index if current_index>=0 else 2)
+    local_model_selector.custom_minimum_size=Vector2(0,54)
+    local_model_selector.item_selected.connect(_choose_local_preset)
+    modal_form.add_child(local_model_selector)
+    local_model_fields.append(local_model_selector)
+    local_model_hint=_label(XianfanLocalLLM.model_hint(current_index if current_index>=0 else 2),15,FADED)
+    modal_form.add_child(local_model_hint)
+    local_model_fields.append(local_model_hint)
+    local_model_url=_entry_field("GGUF地址；可改成自定义HTTPS下载源",str(local_llm.get("model_source")),false)
     modal_form.add_child(local_model_url)
-    modal_actions.add_child(_button("下载/加载内置 Qwen3-0.6B",func(): _enable_local_and_load()))
-    modal_actions.add_child(_button("保存本次配置",func(): _save_ai_settings()))
+    local_model_fields.append(local_model_url)
+    modal_actions.add_child(_button("DeepSeek API 示例",func(): _preset_api("https://api.deepseek.com/chat/completions","deepseek-flash")))
+    modal_actions.add_child(_button("OpenAI API 示例",func(): _preset_api("https://api.openai.com/v1/chat/completions","gpt-5-mini")))
+    modal_actions.add_child(_button("下载/加载选中的本地模型",func(): _enable_local_and_load()))
+    modal_actions.add_child(_button("卸载已运行的模型（切换时使用）",func(): _unload_active_model(),16))
+    modal_actions.add_child(_button("保存设置（不自动下载）",func(): _save_ai_settings()))
+    setting_provider.item_selected.connect(func(_index: int): _sync_provider_fields())
+    _sync_provider_fields()
+
+func _choose_local_preset(index: int) -> void:
+    var info:=XianfanLocalLLM.preset(index)
+    if info.is_empty(): return
+    local_model_url.text=str(info["path"])
+    local_model_hint.text=XianfanLocalLLM.model_hint(index)
+
+func _sync_provider_fields() -> void:
+    var is_local:=setting_provider.get_item_text(setting_provider.selected)=="内置模型"
+    for control in local_model_fields: control.visible=is_local
+    for control in remote_model_fields: control.visible=not is_local
+    var actions:=modal_actions.get_children()
+    for idx in range(actions.size()):
+        var button: Control=actions[idx]
+        # Two API preset actions, two local model actions, one save button.
+        button.visible = (not is_local) if idx<2 else (is_local if idx<4 else true)
+    if is_local:
+        modal_info.text="在游戏中选择 1.7B / 4B / 8B / 14B 等本地模型，首次由手机自行下载GGUF，下载后缓存并离线生成。大型模型可能耗尽内存甚至被安卓终止。"
+    else:
+        modal_info.text="API模式通过你配置的服务联网。密钥仅本次运行内存保存；无需下载安装本地模型。"
+
+func _unload_active_model() -> void:
+    notice.text=str(local_llm.unload_model())
+    if local_model_hint!=null:
+        local_model_hint.text=str(local_llm.status())
 
 func _preset_api(url: String, model_id: String) -> void:
     setting_provider.select(1)
@@ -393,26 +445,39 @@ func _local_status(message: String) -> void:
     notice.text=message
     if view=="设置": _refresh()
 
-func _enable_local_and_load() -> void:
+func _enable_local_and_load(confirmed: bool=false) -> void:
+    var target_path:=pending_model_path if confirmed else (local_model_url.text if local_model_url!=null else str(local_llm.get("model_source")))
+    var tier:=XianfanLocalLLM.preset_index(target_path)
+    if tier>=3 and not confirmed:
+        pending_model_path=target_path
+        _open_modal("确认下载大型模型",XianfanLocalLLM.model_hint(tier)+"\n\n这是大文件下载和高内存操作。耗电、发热、性能下降、系统杀进程均有可能。请确认设备存储和RAM足够，再自行选择是否继续。")
+        modal_actions.add_child(_button("我了解风险 · 确认下载",func(): _enable_local_and_load(true)))
+        return
     _close_modal()
+    var status_result: String=str(local_llm.choose_model(target_path))
+    if not status_result.begins_with("已选择"):
+        notice.text=status_result
+        return
     local_enabled=true
     ai.configure("关闭",ai.endpoint,ai.model,"")
     var f:=FileAccess.open("user://xianfan_local_choice.txt",FileAccess.WRITE)
     if f!=null: f.store_string("1")
-    var path := str(local_llm.get("model_source"))
-    if local_model_url!=null: path=local_model_url.text
-    var model_status: String = str(local_llm.choose_model(path))
-    if model_status.contains("模型地址已更新"):
-        local_llm.load_model()
-    else:
-        notice.text=model_status
+    notice.text=status_result
+    local_llm.load_model()
     _refresh()
 
 func _save_ai_settings() -> void:
     var p:=setting_provider.get_item_text(setting_provider.selected)
     if p=="内置模型":
-        _enable_local_and_load()
+        local_enabled=true
+        ai.configure("关闭",ai.endpoint,ai.model,"")
+        var f:=FileAccess.open("user://xianfan_local_choice.txt",FileAccess.WRITE)
+        if f!=null: f.store_string("1")
+        var result:=str(local_llm.choose_model(local_model_url.text))
         setting_key.clear()
+        _close_modal()
+        notice.text="已选择模型。请重新进入设置，点击‘下载/加载’，才会开始下载。"+result
+        _refresh()
         return
     local_enabled=false
     var choice_file:=FileAccess.open("user://xianfan_local_choice.txt",FileAccess.WRITE)
@@ -593,5 +658,5 @@ func _refresh() -> void:
             scene_text.text=game.feedback_report()
         "设置":
             page_title.text="引擎与 AI 模式"
-            scene_text.text="当前："+(str(local_llm.status()) if local_enabled else ai.status())+"\n\n【游戏内下载】本试验版APK包含安卓ARM64原生推理扩展。选择‘内置模型’，点‘下载/加载内置 Qwen3-0.6B’，将在本机下载约484MB的GGUF模型；下载后缓存于手机，可断网推理。建议至少6GB内存、预留1GB空间。首次下载需要网络访问 Hugging Face。\n\n【其他模型】也可填写合法HTTPS GGUF链接。下载失败请使用反馈页；实际推理速度取决于设备。\n\n【API】仍提供手动配置的OpenAI兼容API模式，密钥不随游戏提供。\n\n【存档】该预览版采用独立包名，不会覆盖已安装的主游戏；两者的存档互不通用。"
+            scene_text.text="当前："+(str(local_llm.status()) if local_enabled else ai.status())+"\n\n【游戏内模型库】支持0.6B、1.7B、4B、8B、14B Q4量化模型。点‘配置 AI 服务’ → ‘内置模型’ → 选择档位 → ‘下载/加载’。4B约2.50GB，8B约5.03GB，14B约9GB。大型模型需要大量RAM和储存空间，可能无法在普通手机上加载。\n\n【其他模型】也可填写合法HTTPS GGUF链接。下载失败请使用反馈页；实际推理速度取决于设备。\n\n【API】仍提供手动配置的OpenAI兼容API模式，密钥不随游戏提供。\n\n【存档】该预览版采用独立包名，不会覆盖已安装的主游戏；两者的存档互不通用。"
     scene_text.call_deferred("scroll_to_line",0)
