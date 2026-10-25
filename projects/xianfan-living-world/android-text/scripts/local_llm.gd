@@ -383,6 +383,9 @@ func talk(text: String, person: String, state: Dictionary) -> void:
         answered.emit({"ok":false,"error":"本地模型尚未完成下载/加载。"})
         return
     var npc: Dictionary=state.get("npc",{}).get(person,{})
+    if not person.is_empty() and not npc.is_empty() and not bool(npc.get("alive",true)):
+        answered.emit({"ok":false,"error":"这位人物已故，只能查看生前档案，不能模拟当面交流。"})
+        return
     if not person.is_empty() and (npc.is_empty() or str(npc.get("place",""))!=str(state.get("place",""))):
         answered.emit({"ok":false,"error":"NPC不在眼前。先走到对方所在地，不能远程生成当面对话。"})
         return
