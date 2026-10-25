@@ -55,6 +55,12 @@ jobs:
       - name: Import game with native extension
         run: |
           cd projects/xianfan-living-world/android-text
+          godot --headless --path . --script res://scripts/society_sim.gd > /tmp/society-parser.log 2>&1 || true
+          echo "SOCIETY SCRIPT DIAGNOSTIC:"
+          cat /tmp/society-parser.log
+          godot --headless --path . --script res://scripts/world.gd > /tmp/world-parser.log 2>&1 || true
+          echo "WORLD SCRIPT DIAGNOSTIC:"
+          cat /tmp/world-parser.log
           godot --headless --path . --editor --import --quit > /tmp/native-import.log 2>&1
           cat /tmp/native-import.log
           if grep -E '(SCRIPT ERROR|Parse Error)' /tmp/native-import.log; then exit 1; fi
