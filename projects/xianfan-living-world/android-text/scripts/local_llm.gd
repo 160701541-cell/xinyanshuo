@@ -63,6 +63,10 @@ var load_started_ticks := 0
 var heartbeat: Timer
 var download_manager: XianfanResumableModelDownload
 var loading_weights := false
+const MAX_DIALOGUE_SECONDS := 45.0
+const MAX_STORY_SECONDS := 60.0
+var _generation_watchdog: Timer
+var _generation_timed_out := false
 
 func _heartbeat() -> void:
     if not loading: return
@@ -85,6 +89,10 @@ func _ready() -> void:
     heartbeat.one_shot=false
     heartbeat.timeout.connect(_heartbeat)
     add_child(heartbeat)
+    _generation_watchdog=Timer.new()
+    _generation_watchdog.one_shot=true
+    _generation_watchdog.timeout.connect(_on_generation_timeout)
+    add_child(_generation_watchdog)
     if not FileAccess.file_exists(PREF_PATH): return
     var file:=FileAccess.open(PREF_PATH,FileAccess.READ)
     if file==null: return
@@ -387,6 +395,23 @@ func build_messages(text: String, person: String, state: Dictionary) -> Array:
         messages.append({"role":"user","content":"当前地点："+scene+"；第%d日；玩家行动：" % current_day+cleaned_text.substr(0,300)})
     return messages
 
+# Stop an excessively slow inference instead of leaving NPC conversation busy forever.
+# Timeout fires even while next_token() is awaiting the native backend.
+func _on_generation_timeout() -> void:
+    if not busy or current_chat==null: return
+    _generation_timed_out=true
+    generation_cancelled=true
+    status_changed.emit("本机AI本轮超过时间上限，正在停止原生推理；请改用1.7B/4B或检查GPU实际加速。")
+    current_chat.stop_generation()
+
+func _begin_generation(seconds: float) -> void:
+    _generation_timed_out=false
+    generation_cancelled=false
+    _generation_watchdog.start(seconds)
+
+func _end_generation() -> void:
+    _generation_watchdog.stop()
+
 # Render tokens incrementally without awaiting the same stream twice.
 # Never save partially generated text; only a completed response can be committed.
 func _collect_stream(stream: Variant, kind: String) -> Variant:
@@ -438,17 +463,19 @@ func tell_story(player_action: String, resolved_event: String, facts: Dictionary
         answered.emit({"ok":false,"kind":"story","error":"本地模型正在忙或尚未加载。"})
         return
     busy=true
-    generation_cancelled=false
+    _begin_generation(MAX_STORY_SECONDS)
     var messages:=build_story_messages(player_action,resolved_event,facts)
     var settings: Dictionary={"template_variables":{"enable_thinking":false}}
     if ClassDB.class_exists("NobodyWhoSamplerPresets"):
         settings["sampler"]=ClassDB.class_call_static("NobodyWhoSamplerPresets","temperature",0.65)
     var stream=current_chat.complete(messages,settings)
     if stream==null:
+        _end_generation()
         busy=false
         answered.emit({"ok":false,"kind":"story","error":"剧情生成上下文创建失败。"})
         return
     var output: Variant=await _collect_stream(stream,"story")
+    _end_generation()
     busy=false
     if output==null:
         answered.emit({"ok":false,"kind":"story","error":"本地AI剧情生成失败。"})
@@ -471,6 +498,7 @@ func tell_story(player_action: String, resolved_event: String, facts: Dictionary
 func cancel_generation() -> void:
     if busy and current_chat!=null:
         generation_cancelled=true
+        _end_generation()
         current_chat.stop_generation()
 
 func _unusable_duplicate(reply: String, person: String, state: Dictionary, current_text: String) -> bool:
@@ -498,7 +526,7 @@ func talk(text: String, person: String, state: Dictionary) -> void:
         answered.emit({"ok":false,"error":"NPC不在眼前。先走到对方所在地，不能远程生成当面对话。"})
         return
     busy=true
-    generation_cancelled=false
+    _begin_generation(MAX_DIALOGUE_SECONDS)
     var messages := build_messages(text,person,state)
     # complete() replaces the native chat history, preventing NPC cross-talk and
     # keeping reliable turn-taking based on the persistent game save.
@@ -507,13 +535,15 @@ func talk(text: String, person: String, state: Dictionary) -> void:
         sampler_settings["sampler"]=ClassDB.class_call_static("NobodyWhoSamplerPresets","temperature",0.72 if not person.is_empty() else 0.2)
     var stream = current_chat.complete(messages,sampler_settings)
     if stream==null:
+        _end_generation()
         busy=false
         answered.emit({"ok":false,"error":"本地模型无法建立上下文，未写入人物记忆。"})
         return
     var output: Variant=await _collect_stream(stream,"dialogue" if not person.is_empty() else "action")
     if output==null:
+        _end_generation()
         busy=false
-        answered.emit({"ok":false,"error":"模型生成失败，未写入对话。"})
+        answered.emit({"ok":false,"error":"AI生成超时，已尝试停止本轮推理；建议使用4B/1.7B及4096上下文。" if _generation_timed_out else "模型生成失败，未写入对话。"})
         return
     var reply := str(output).strip_edges()
     if not person.is_empty() and _unusable_duplicate(reply,person,state,text):
@@ -525,6 +555,7 @@ func talk(text: String, person: String, state: Dictionary) -> void:
             var second: Variant=await _collect_stream(second_stream,"dialogue")
             if second!=null:
                 reply=str(second).strip_edges()
+    _end_generation()
     busy=false
     if reply.is_empty():
         answered.emit({"ok":false,"error":"模型返回了空白答复。"})
