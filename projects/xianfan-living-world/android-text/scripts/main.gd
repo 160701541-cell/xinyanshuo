@@ -494,11 +494,25 @@ func _on_ai_completed(payload: Dictionary) -> void:
     elif kind=="dialogue":
         var person:=str(payload.get("npc",""))
         var reply:=str(payload.get("reply",""))
-        var response:=game.record_ai_dialogue(person,request_text,reply)
-        if game.last_channel=="对话":
+        var source := str(payload.get("engine","api"))
+        var already_replied := false
+        var history: Array=game.data.get("dialogue_log",[])
+        for i in range(history.size()-1,-1,-1):
+            var old: Dictionary=history[i]
+            if str(old.get("speaker",""))==person:
+                already_replied = str(old.get("reply","")).strip_edges()==reply.strip_edges() and str(old.get("player","")).strip_edges()!=request_text.strip_edges()
+                break
+        if already_replied:
+            game.note_api_failure(request_text,"NPC对不同问题重复上一条回复；本轮未写入对话。")
+            view="反馈"
+            notice.text="模型机械重复了上一条答复，已记录问题，请到反馈页复制。"
+            _refresh()
+            return
+        var response:=game.record_ai_dialogue(person,request_text,reply,source)
+        if response==reply.strip_edges() and game.last_channel=="对话":
             current_npc=person
             view="对话"
-            notice.text="NPC 已回复；本次对话未改变游戏数值、物品或修为。"
+            notice.text=("本机 Qwen · 本次对话已记忆" if source=="local-gguf" else "外部 API · 本次对话已记忆")+"；未改动游戏物品和修为。"
         else:
             game.note_api_failure(request_text,response)
             view="反馈"
