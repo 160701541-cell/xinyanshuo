@@ -55,6 +55,15 @@ func memory_recall(person: String, query: String, limit: int=6) -> Array:
     if memory_store==null or not data.get("npc",{}).has(person): return []
     return memory_store.recall(person,query,limit)
 
+func _ensure_legacy_minds() -> bool:
+    var changed:=false
+    for person_name in data.get("npc",{}):
+        var actor: Dictionary=data["npc"][person_name]
+        if not actor.has("psyche"):
+            actor["psyche"]=XianfanPsyche._new_psyche(actor)
+            changed=true
+    return changed
+
 func _setup_society() -> void:
     var first_init:=not data.has("society")
     if first_init:
@@ -72,10 +81,11 @@ func _setup_society() -> void:
     var sect_living_added:=XianfanSectLiving.migrate(society)
     var psyche_added:=XianfanPsyche.ensure(society)
     _sync_society_people()
+    var added_minds:=_ensure_legacy_minds()
     _archive_society_milestones()
     _archive_civic_memory()
     _archive_immortal_memory()
-    if first_init or civic_added or accounts_added or immortal_added or sect_living_added or psyche_added: save()
+    if first_init or civic_added or accounts_added or immortal_added or sect_living_added or psyche_added or added_minds: save()
 
 func _sync_society_people() -> void:
     var society: Dictionary=data.get("society",{})
