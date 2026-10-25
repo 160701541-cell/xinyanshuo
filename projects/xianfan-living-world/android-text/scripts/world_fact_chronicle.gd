@@ -31,7 +31,7 @@ func configure(campaign: String) -> bool:
 
 func append_rule_fact(source: String, person: String, day: int, detail: String, original_uid: String="", place: String="") -> bool:
     if not _readable or _path.is_empty(): return false
-    if source not in ["society_milestone","civic_life","rule_action"]: return false
+    if source not in ["society_milestone","civic_life","rule_action","immortal_society"]: return false
     if person.is_empty() or detail.strip_edges().is_empty() or day<1: return false
     var normalized:=source+"|"+person+"|"+str(day)+"|"+original_uid+"|"+detail
     var event_id:="FACT-"+normalized.sha256_text().substr(0,24)
