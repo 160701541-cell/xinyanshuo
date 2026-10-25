@@ -1175,12 +1175,15 @@ func _act_core(action: String) -> String:
             if data["place"] == "石桥村·家中": return "你已经在家。"
             return _move("石桥村·家中", 124, 18)
         "去溪边":
-            if data["place"] != "石桥村·家中": return "你得先在石桥村家中整理行装。"
-            return _move("石桥村·溪边", 18, 3)
+            if data["place"]=="石桥村·街口": return _move("石桥村·溪边",16,3)
+            if data["place"] != "石桥村·家中": return "你得先回到石桥村，再去溪边。"
+            return _move("石桥村·溪边",18,3)
         "回家":
             if data["place"] == "石桥村·家中": return "你已经在家。"
-            if data["place"] == "石桥村·溪边": return _move("石桥村·家中", 18, 2)
-            return _move("石桥村·家中", 124, 18)
+            if data["place"] == "石桥村·溪边": return _move("石桥村·家中",18,2)
+            if data["place"] == "石桥村·街口": return _move("石桥村·家中",12,2)
+            if data["place"] == "石桥村·林缘": return _move("石桥村·家中",24,4)
+            return _move("石桥村·家中",124,18)
         "出发去青云":
             if data["place"] != "石桥村·家中": return "要从石桥村家里启程。"
             if int(data["money"]) < 30: return "测灵台需30文，你现在盘缠不足，不宜贸然上路。"
