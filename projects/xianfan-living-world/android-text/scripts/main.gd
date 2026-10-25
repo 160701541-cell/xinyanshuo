@@ -737,8 +737,14 @@ func _entry_field(placeholder: String, value: String, hidden: bool) -> LineEdit:
     return e
 
 func _resume_previous_model_download() -> void:
-    if not local_enabled: return
-    local_llm.resume_pending()
+    if not local_enabled or local_llm==null: return
+    # Android can resume before the download coroutine has processed the
+    # previous socket-close. Give it a bounded chance to save its .part state.
+    for attempt in range(6):
+        if not bool(local_llm.get("loading")): break
+        await get_tree().create_timer(0.35).timeout
+    if not bool(local_llm.get("loading")):
+        local_llm.resume_pending()
     _refresh_download_widgets()
 
 func _retry_model_download() -> void:
