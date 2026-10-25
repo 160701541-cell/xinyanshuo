@@ -36,7 +36,9 @@ func load_model() -> void:
     status_changed.emit("开始下载/打开 Qwen3 0.6B Q4 模型。首次需要稳定网络和足够手机空间。")
     # The native plugin downloads the model and caches it. It runs CPU-based
     # inference on device; no remote Chat Completions server or API key is used.
-    var loaded = await NobodyWhoChat.create(model_source, {"n_ctx":2048,"n_threads":3,"template_variables":{"enable_thinking":false}})
+    # Dynamic call avoids a compile-time link on x86 CI; Android still resolves
+    # the registered native class after loading the ARM64 extension.
+    var loaded = await ClassDB.class_call_static("NobodyWhoChat","create",model_source, {"n_ctx":2048,"n_threads":3,"template_variables":{"enable_thinking":false}})
     loading=false
     if loaded==null:
         ready=false
