@@ -36,7 +36,7 @@ func _run() -> void:
     var old_root:=str(ui.game.data["root"])
     ui._on_ai_completed({"ok":true,"kind":"story","scene":"窗外微风拂过庭院，成明停下手中细活，像是有话要说。","beat_id":"sister_choice","expected_clock":current_time,"origin":"local-gguf"})
     expect(ui.game.data.get("story_flags",{}).has("sister_choice"),"AI suggested beat passes authoritative rules")
-    expect(ui.scene_text.text.contains("本地AI叙事"),"story shows independently of player dialogue")
+    expect(ui.scene_text.text.contains("人生故事"),"story shows independently of player dialogue")
     expect(ui.scene_text.text.contains("成明停下手中细活"),"accepted narration is visible")
     expect(int(ui.game.data["stamina"])==old_stamina,"narrator cannot change stamina")
     expect(int(ui.game.data["money"])==old_money,"narrator cannot change money")
