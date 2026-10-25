@@ -279,13 +279,13 @@ func _open_ai_settings() -> void:
     for i in range(setting_provider.item_count):
         if setting_provider.get_item_text(i)==ai.provider: setting_provider.select(i)
     modal_form.add_child(setting_provider)
-    setting_url=_input("请求地址（https://.../v1/chat/completions）",ai.endpoint,false)
-    setting_model=_input("模型名（服务端实际提供的model）",ai.model,false)
-    setting_key=_input("API密钥（只在本次运行内存中保存）","",true)
+    setting_url=_entry_field("请求地址（https://.../v1/chat/completions）",ai.endpoint,false)
+    setting_model=_entry_field("模型名（服务端实际提供的model）",ai.model,false)
+    setting_key=_entry_field("API密钥（只在本次运行内存中保存）","",true)
     for x in [setting_url,setting_model,setting_key]: modal_form.add_child(x)
     modal_actions.add_child(_button("保存本次配置",func(): _save_ai_settings()))
 
-func _input(placeholder: String, value: String, hidden: bool) -> LineEdit:
+func _entry_field(placeholder: String, value: String, hidden: bool) -> LineEdit:
     var e:=LineEdit.new()
     e.placeholder_text=placeholder
     e.text=value
