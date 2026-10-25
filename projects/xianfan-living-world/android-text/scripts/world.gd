@@ -222,7 +222,12 @@ func record_ai_dialogue(person: String, player_text: String, reply: String, engi
         return "AI返回的对话长度异常，没有写入存档。"
     _tick(4)
     var log: Array = data.get("dialogue_log",[])
-    log.append({"day":int(data["day"]),"speaker":person,"player":player_text.substr(0,250),"reply":reply.strip_edges(),"ai":true})
+    var clean_player := player_text.strip_edges()
+    for prefix in ["跟"+person+"说：","跟"+person+"说:","对"+person+"说：","对"+person+"说:"]:
+        if clean_player.begins_with(prefix):
+            clean_player=clean_player.trim_prefix(prefix).strip_edges()
+            break
+    log.append({"day":int(data["day"]),"speaker":person,"player":clean_player.substr(0,250),"reply":reply.strip_edges(),"ai":true,"engine":engine})
     if log.size()>80: log.pop_front()
     data["dialogue_log"]=log
     last_channel="对话"
@@ -255,7 +260,10 @@ func dialogue_recent(n: int=24) -> String:
     var records: Array = data.get("dialogue_log",[])
     for i in range(maxi(0,records.size()-n),records.size()):
         var v: Dictionary = records[i]
-        lines.append("你 · 第%d日\n%s\n\n%s · %s\n%s" % [int(v.get("day",0)),str(v.get("player","")),str(v.get("speaker","")),("AI生成" if v.get("ai",false) else "规则对话"),str(v.get("reply",""))])
+        var source := "规则对话"
+        if v.get("ai",false):
+            source = "手机本地AI" if str(v.get("engine",""))=="local-gguf" else ("API生成" if str(v.get("engine",""))=="api" else "AI生成")
+        lines.append("你 · 第%d日\n%s\n\n%s · %s\n%s" % [int(v.get("day",0)),str(v.get("player","")),str(v.get("speaker","")),source,str(v.get("reply",""))])
     return "\n\n────────────\n\n".join(lines) if not lines.is_empty() else "还没有对话。点击NPC卡片可以交谈，或者在下方直接输入。"
 
 func _note(msg: String) -> void:
