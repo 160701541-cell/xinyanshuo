@@ -114,7 +114,7 @@ func _ready() -> void:
     _restore_world_clock()
     _refresh()
     if local_enabled:
-        call_deferred("_resume_previous_model_download")
+        call_deferred("_restore_local_ai_on_startup")
 
 func _save_world_clock() -> void:
     var f:=FileAccess.open(WORLD_CLOCK_FILE,FileAccess.WRITE)
@@ -903,6 +903,23 @@ func _entry_field(placeholder: String, value: String, hidden: bool) -> LineEdit:
     e.add_theme_stylebox_override("focus",_box(Color("#FEFCF7"),GOLD,6))
     e.custom_minimum_size=Vector2(0,54)
     return e
+
+# Restore the last explicitly selected model without downloading anything at boot.
+# Pending partial downloads are not resumed silently on a cold start: a network
+# transfer must remain a clear user action; an existing verified cache can load.
+func _restore_local_ai_on_startup() -> void:
+    if not local_enabled or local_llm==null: return
+    if bool(local_llm.get("model_ready")) or bool(local_llm.get("loading")): return
+    var source:=str(local_llm.get("model_source"))
+    var cached_path:=source
+    if not source.begins_with("user://"):
+        var downloader: XianfanResumableModelDownload=local_llm.get("download_manager")
+        cached_path=downloader.final_path(source)
+    if FileAccess.file_exists(cached_path):
+        notice.text="检测到上次使用的本地模型，正在自动加载（不会联网重新下载）。"
+        local_llm.load_model()
+    else:
+        notice.text="已恢复本地AI选项；模型文件尚未就绪，请在设置中确认下载或继续断点。"
 
 func _resume_previous_model_download() -> void:
     if not local_enabled or local_llm==null: return
