@@ -143,6 +143,12 @@ jobs:
           godot --headless --path . --script res://tests/test_download_resume.gd > /tmp/download-resume.log 2>&1 || { cat /tmp/download-resume.log; exit 1; }
           cat /tmp/download-resume.log
           if grep -E '(SCRIPT ERROR|Parse Error|GGUF DOWNLOAD TEST FAILURE|GGUF DOWNLOAD TESTS FAILED)' /tmp/download-resume.log; then exit 1; fi
+      - name: Verify GGUF bytes, official SHA256 checks and corrupt-model rejection
+        run: |
+          cd projects/xianfan-living-world/android-text
+          godot --headless --path . --script res://tests/test_download_integrity.gd > /tmp/download-integrity.log 2>&1 || { cat /tmp/download-integrity.log; exit 1; }
+          cat /tmp/download-integrity.log
+          if grep -E '(SCRIPT ERROR|Parse Error|DOWNLOAD INTEGRITY FAILURE|INTEGRITY TESTS FAILED)' /tmp/download-integrity.log; then exit 1; fi
       - name: Build APK with native local runtime
         run: |
           cd projects/xianfan-living-world/android-text
