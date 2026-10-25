@@ -26,6 +26,16 @@ const DOMAINS := [
     ["社会边缘",["漂泊流民","乞食人","杂役","家仆","更夫","寡居者","无业人","孤儿照看人","廉价脚夫","卖柴童工","守墓人","行乞艺人"],"乡民互助","贫苦/流寓","石桥村·街口","service"]
 ]
 const ACTIVE_COUNT_PER_ROLE := 2
+const NONWORKING := ["漂泊流民","乞食人","无业人","寡居者","寻仙少年","引气旁听生","书院生员","童生"]
+const STANDING_OVERRIDES := {
+    "县令":"官员","县丞":"官员","主簿":"官府文吏","典史":"官府文吏",
+    "捕快":"差役","衙役":"差役","税吏":"税吏","里正":"乡里领袖",
+    "镖师":"江湖行当","寻仙少年":"求道凡人","行脚访仙客":"求道凡人",
+    "灵田杂役":"山门雇工","丹房童子":"山门雇工","道童":"道门学徒",
+    "住持":"出家修士","僧人":"出家修士","家仆":"雇役",
+    "漂泊流民":"流民","乞食人":"乞食者","无业人":"失业居民",
+    "书院生员":"士子","童生":"士子","寡居者":"独居居民"
+}
 const MAX_DAILY_HIGHLIGHTS := 32
 
 static func job_catalog() -> Array[Dictionary]:
@@ -82,7 +92,7 @@ static func initialize(society: Dictionary, start_hour: int) -> bool:
             civilians[name]={
                 "id":"CIV%06d"%(idx+1),"name":name,"age":16+(idx*13)%50,
                 "job":str(card["job"]),"sector":str(card["sector"]),
-                "faction":str(card["faction"]),"standing":str(card["standing"]),
+                "faction":str(card["faction"]),"standing":str(STANDING_OVERRIDES.get(str(card["job"]),card["standing"])),
                 "effect":str(card["effect"]),"region":region,"origin":home.split("·")[0],
                 "home":home,"work_place":workplace,"place":_daily_place(
                     {"alive":true,"home":home,"work_place":workplace},start_hour%24),
@@ -104,6 +114,7 @@ static func initialize(society: Dictionary, start_hour: int) -> bool:
     society["civic_chronicle"]=[]
     society["civic_total_work"]=0
     society["civic_total_trade"]=0
+    society["civic_relief"]=0
     return true
 
 static func valid(society: Dictionary) -> bool:
@@ -131,6 +142,11 @@ static func _produce(society: Dictionary, npc: Dictionary, day: int) -> bool:
     var stock: Dictionary=region["stock"]
     var wild: Dictionary=region["wild"]
     var effect:=str(npc["effect"])
+    # Residents without a job do not receive wages merely because an entry
+    # exists in the population registry.
+    if str(npc["job"]) in NONWORKING:
+        npc["activity"]="寻找生计或学习，暂无付薪职位"
+        return false
     var made:=false
     match effect:
         "grain":
@@ -198,6 +214,15 @@ static func _eat(society: Dictionary, npc: Dictionary, day: int) -> void:
             region["stock"]["粮"]=int(region["stock"]["粮"])-1
             npc["rations"]=int(npc["rations"])+1
             society["civic_total_trade"]=int(society.get("civic_total_trade",0))+1
+    if int(npc["rations"])==0 and int(npc["coins"])<2:
+        # Unemployed and destitute citizens may receive real grain from a
+        # village/city public granary, subject to a nonzero relief reserve.
+        if str(npc["standing"]) in ["流民","乞食者","失业居民","独居居民"] and int(region["stock"]["粮"])>15:
+            region["stock"]["粮"]=int(region["stock"]["粮"])-1
+            npc["rations"]=int(npc["rations"])+1
+            society["civic_relief"]=int(society.get("civic_relief",0))+1
+            if int(society["civic_relief"])<=3:
+                _event(society,npc,day,"公共粮仓按实物支给一份口粮，缓解本人的困境。")
     if int(npc["rations"])>=1:
         npc["rations"]=int(npc["rations"])-1
         npc["hunger"]=maxi(0,int(npc["hunger"])-1)
@@ -302,6 +327,7 @@ static func statistics(society: Dictionary) -> String:
     lines.append("【阶层/身份登记】")
     for standing in statuses:
         lines.append("%s %d人" % [str(standing),int(statuses[standing])])
-    lines.append("【低频生活账本】已结算生产/劳务%d次，买粮交易%d次；所有个人现金来自现存库银和交易。" % [
-        int(society.get("civic_total_work",0)),int(society.get("civic_total_trade",0))])
+    lines.append("【低频生活账本】职业劳动%d次 · 买粮交易%d次 · 公粮援助%d份（粮库实际扣除）。失业者不会凭空领工资。" % [
+        int(society.get("civic_total_work",0)),int(society.get("civic_total_trade",0)),
+        int(society.get("civic_relief",0))])
     return "\n".join(lines)
