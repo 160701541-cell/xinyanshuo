@@ -308,8 +308,8 @@
     "apk_code": 1176,
     "apk_sha256": "3cef8894246ddd4c481c48abfc99a55008f82be17885706f2cbd060b9ed21a7a",
     "apk_file": "android-preview/base/Canglan-AncientWorld-v0.2.0-dev.176-Stable-Signed-ARM64.apk",
-    "pck_revision": 167,
-    "pck_sha256": "0b1577e774f22959939a7befd0d7b183765f217d5e75683ac46b973207ac5b8e"
+    "pck_revision": 208,
+    "pck_sha256": "d1feda6b468ab483ef84e26a78e0c1745ec373df00106e665115be325a3e091c"
   },
   "observed_at_utc": "2026-10-14T19:49:02Z"
 }
