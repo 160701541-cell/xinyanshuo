@@ -19,5 +19,5 @@
     "instruction": "Read last SHA, CI outcome and next action. Resume without overriding Work."
   },
   "threshold_minutes": 90,
-  "checked_at_utc": "2026-11-04T15:44:23+00:00"
+  "checked_at_utc": "2026-11-04T16:36:58+00:00"
 }
