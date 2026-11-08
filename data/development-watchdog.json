@@ -8,9 +8,9 @@
     "id": 42445548742,
     "branch": "main",
     "workflow": "Canglan Cloud Autonomous Fuzz and Quality Review",
-    "status": "queued",
+    "status": "in_progress",
     "conclusion": null,
-    "last_event_utc": "2026-11-08T04:07:57Z",
+    "last_event_utc": "2026-11-08T04:08:19Z",
     "run_url": "https://github.com/160701541-cell/canglan-world/actions/runs/42445548742"
   },
   "recovery": {
@@ -19,5 +19,5 @@
     "instruction": "Read last SHA, CI outcome and next action. Resume without overriding Work."
   },
   "threshold_minutes": 90,
-  "checked_at_utc": "2026-11-08T04:08:24+00:00"
+  "checked_at_utc": "2026-11-08T04:08:52+00:00"
 }
