@@ -1,16 +1,16 @@
 {
   "schema": 1,
   "channel": "canglan-development-watchdog",
-  "light": "yellow",
-  "reason": "WORKFLOW_AWAITING_RESULT",
+  "light": "green",
+  "reason": "LATEST_WORKFLOW_SUCCEEDED",
   "meaning": "GitHub workflow health only; not ChatGPT internal thinking health",
   "evidence": {
     "id": 45822398834,
     "branch": "main",
     "workflow": "Canglan Cloud Autonomous Fuzz and Quality Review",
-    "status": "queued",
-    "conclusion": null,
-    "last_event_utc": "2026-11-26T12:43:58Z",
+    "status": "completed",
+    "conclusion": "success",
+    "last_event_utc": "2026-11-26T12:44:27Z",
     "run_url": "https://github.com/160701541-cell/canglan-world/actions/runs/45822398834"
   },
   "recovery": {
@@ -19,5 +19,5 @@
     "instruction": "Read last SHA, CI outcome and next action. Resume without overriding Work."
   },
   "threshold_minutes": 90,
-  "checked_at_utc": "2026-11-26T12:44:26+00:00"
+  "checked_at_utc": "2026-11-26T12:44:58+00:00"
 }
